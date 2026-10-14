@@ -15,7 +15,7 @@ import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT = ROOT / "content/world/cities.json"
+DEFAULT = ROOT / "content/region-blueprints/cities.json"
 STAMP = (2020, 1, 1, 0, 0, 0)
 ID = re.compile(r"^[a-z][a-z0-9_]{1,40}$")
 MOD = "underground_city_world"

@@ -10,7 +10,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 from build_world_prototype import LOOT, package, render, validate
-WORLD = json.loads((ROOT / "content/world/cities.json").read_text(encoding="utf-8"))
+WORLD = json.loads((ROOT / "content/region-blueprints/cities.json").read_text(encoding="utf-8"))
 
 
 class WorldPrototypeTests(unittest.TestCase):

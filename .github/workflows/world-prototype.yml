@@ -3,14 +3,14 @@ name: Three-city world prototype
 on:
   pull_request:
     paths:
-      - 'content/world/**'
+      - 'content/region-blueprints/**'
       - 'scripts/build_world_prototype.py'
       - 'tests/test_world_prototype.py'
       - '.github/workflows/world-prototype.yml'
   push:
     branches: [main]
     paths:
-      - 'content/world/**'
+      - 'content/region-blueprints/**'
       - 'scripts/build_world_prototype.py'
       - 'tests/test_world_prototype.py'
       - '.github/workflows/world-prototype.yml'
