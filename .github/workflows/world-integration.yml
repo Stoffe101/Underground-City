@@ -64,6 +64,9 @@ jobs:
         run: |
           set -euo pipefail
           python scripts/validate_intercity.py
+          if [[ "$CANDIDATE" == "qshop" ]]; then
+            python scripts/install_qshop_templates.py --server-root rpg-core/run
+          fi
           if [[ "$CANDIDATE" == "lostcities" ]]; then
             mkdir -p rpg-core/run/mods
             python scripts/build_world_prototype.py --output rpg-core/run/mods/underground-city-world-prototype.jar

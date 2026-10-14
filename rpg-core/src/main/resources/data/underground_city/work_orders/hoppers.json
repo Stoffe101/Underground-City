@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "title": "Build warehouse sorting equipment",
+  "career": "smith",
+  "level": 3,
+  "item": "minecraft:hopper",
+  "count": 2,
+  "credits": 120,
+  "xp": 250,
+  "capacity": 4,
+  "refill_ticks": 6000
+}

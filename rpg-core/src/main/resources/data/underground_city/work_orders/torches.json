@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "title": "Assemble redstone signal lights",
+  "career": "technician",
+  "level": 1,
+  "item": "minecraft:redstone_torch",
+  "count": 16,
+  "credits": 32,
+  "xp": 125,
+  "capacity": 4,
+  "refill_ticks": 6000
+}

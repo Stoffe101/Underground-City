@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "title": "Supply a community supper",
+  "career": "farmer",
+  "level": 3,
+  "item": "minecraft:pumpkin_pie",
+  "count": 8,
+  "credits": 96,
+  "xp": 250,
+  "capacity": 4,
+  "refill_ticks": 6000
+}

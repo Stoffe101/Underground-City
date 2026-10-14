@@ -49,6 +49,10 @@ def verify_templates(base: Path = TEMPLATE) -> list[str]:
             continue
         if any(term in ident for term in ("diamond", "netherite", "gun", "weapon")):
             errors.append(f"Advanced gear must not enter the starter shop: {ident}")
+        if (type(row.get("globalLimit")) is not int or row["globalLimit"] <= 0 or
+            type(row.get("playerLimit")) is not int or row["playerLimit"] <= 0 or
+            row.get("limitReset") != "DAILY"):
+            errors.append(f"Starter demand must be bounded with DAILY world-time limits: {ident}")
         all_items.setdefault(ident, {})[operation] = price / qty
     for item, values in all_items.items():
         if "BUY" in values and "SELL" in values and values["BUY"] <= values["SELL"]:
@@ -61,8 +65,9 @@ def install(server_root: Path, source: Path = TEMPLATE) -> dict:
     if issues:
         raise ValueError("Invalid original QShop templates: " + "; ".join(issues))
     dest = server_root / "config/qshop"
-    existing_live = server_root / "world/serverconfig/qshop"
-    if existing_live.exists():
+    # Preserve renamed dedicated worlds and client saves as well as world/.
+    existing_live = list(server_root.glob("**/serverconfig/qshop"))
+    if existing_live:
         raise ValueError(
             "Existing world QShop configuration found. Back up and review "
             "serverconfig/qshop first; starter templates cannot overwrite live markets."

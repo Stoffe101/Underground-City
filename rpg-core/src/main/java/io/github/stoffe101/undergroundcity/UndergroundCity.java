@@ -12,6 +12,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
+import net.minecraftforge.event.AddReloadListenerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
@@ -43,12 +44,19 @@ public final class UndergroundCity {
         () -> new BlockItem(TERMINAL.get(), new Item.Properties()));
 
 
-    public UndergroundCity() {
-        BLOCKS.register(FMLJavaModLoadingContext.get().getModEventBus());
-        ITEMS.register(FMLJavaModLoadingContext.get().getModEventBus());
-        FMLJavaModLoadingContext.get().getModEventBus().addListener(this::addCreativeTab);
+    public UndergroundCity(FMLJavaModLoadingContext context) {
+        BLOCKS.register(context.getModEventBus());
+        ITEMS.register(context.getModEventBus());
+        context.getModEventBus().addListener(this::addCreativeTab);
         TerminalNetwork.register();
         MinecraftForge.EVENT_BUS.register(this);
+        MinecraftForge.EVENT_BUS.register(new WorkOrderService());
+        MinecraftForge.EVENT_BUS.register(new SupplierNpc());
+    }
+
+    @SubscribeEvent
+    public void reload(AddReloadListenerEvent event) {
+        event.addListener(WorkOrderCatalog.INSTANCE);
     }
 
     private void addCreativeTab(BuildCreativeModeTabContentsEvent event) {
@@ -60,6 +68,13 @@ public final class UndergroundCity {
     @SubscribeEvent
     public void onLogin(PlayerEvent.PlayerLoggedInEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        try {
+            WorkOrderService.recover(player);
+        } catch (RuntimeException error) {
+            com.mojang.logging.LogUtils.getLogger().error("Citizen settlement recovery failed", error);
+            player.connection.disconnect(Component.literal("Work-order recovery failed. Restore provider/storage and reconnect."));
+            return;
+        }
         Optional<CitizenState.Citizen> profile = CitizenState.get(player.server).find(player.getUUID());
         if (profile.isEmpty()) {
             player.sendSystemMessage(Component.literal(

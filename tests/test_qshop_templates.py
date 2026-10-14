@@ -54,6 +54,25 @@ class QShopTemplateTests(unittest.TestCase):
             self.assertFalse((server/"config/qshop/shops/uc_starter_supply.json").exists())
             self.assertIn('"other"', existing.read_text())
 
+    def test_renamed_and_client_worlds_are_preserved(self):
+        for relative in ("cities/serverconfig/qshop", "saves/private/serverconfig/qshop"):
+            with self.subTest(relative=relative), tempfile.TemporaryDirectory() as d:
+                server = Path(d)
+                (server/relative).mkdir(parents=True)
+                with self.assertRaisesRegex(ValueError, "Existing world"):
+                    install(server)
+                self.assertFalse((server/"config/qshop").exists())
+
+    def test_unlimited_employer_demand_is_rejected(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            (root/"shops").mkdir()
+            (root/"currencies.json").write_bytes((TEMPLATE/"currencies.json").read_bytes())
+            shop = json.loads((TEMPLATE/"shops/uc_starter_supply.json").read_text())
+            shop["entries"][0]["globalLimit"] = -1
+            (root/"shops/uc_starter_supply.json").write_text(json.dumps(shop))
+            self.assertTrue(any("bounded" in issue for issue in verify_templates(root)))
+
     def test_invalid_prices_and_high_tier_loot_cannot_pass_template_check(self):
         with tempfile.TemporaryDirectory() as d:
             root = Path(d)

@@ -9,7 +9,7 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 public final class ClientTerminal {
     private ClientTerminal() {}
 
-    public static void open(BlockPos pos) {
-        Minecraft.getInstance().setScreen(new TerminalScreen(pos));
+    public static void open(BlockPos pos, TerminalData data) {
+        Minecraft.getInstance().setScreen(new TerminalScreen(pos, data));
     }
 }

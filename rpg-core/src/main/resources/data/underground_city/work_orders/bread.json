@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "title": "Bake the canteen bread order",
+  "career": "farmer",
+  "level": 2,
+  "item": "minecraft:bread",
+  "count": 8,
+  "credits": 36,
+  "xp": 180,
+  "capacity": 4,
+  "refill_ticks": 6000
+}

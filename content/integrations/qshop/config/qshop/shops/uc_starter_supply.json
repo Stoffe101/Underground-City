@@ -1,6 +1,6 @@
 {
   "id": "uc_starter_supply",
-  "displayName": "Underground City • Civilian Supply",
+  "displayName": "Supply",
   "currency": "credits",
   "icon": "minecraft:paper",
   "entries": [
@@ -13,8 +13,9 @@
       },
       "currency": "credits",
       "price": 8,
-      "globalLimit": -1,
-      "playerLimit": -1
+      "globalLimit": 32,
+      "playerLimit": 16,
+      "limitReset": "DAILY"
     },
     {
       "type": "BUY",
@@ -25,8 +26,9 @@
       },
       "currency": "credits",
       "price": 20,
-      "globalLimit": -1,
-      "playerLimit": -1
+      "globalLimit": 32,
+      "playerLimit": 16,
+      "limitReset": "DAILY"
     },
     {
       "type": "BUY",
@@ -37,8 +39,9 @@
       },
       "currency": "credits",
       "price": 24,
-      "globalLimit": -1,
-      "playerLimit": -1
+      "globalLimit": 32,
+      "playerLimit": 16,
+      "limitReset": "DAILY"
     },
     {
       "type": "BUY",
@@ -49,8 +52,9 @@
       },
       "currency": "credits",
       "price": 18,
-      "globalLimit": -1,
-      "playerLimit": -1
+      "globalLimit": 32,
+      "playerLimit": 16,
+      "limitReset": "DAILY"
     },
     {
       "type": "SELL",
@@ -61,8 +65,9 @@
       },
       "currency": "credits",
       "price": 12,
-      "globalLimit": -1,
-      "playerLimit": -1
+      "globalLimit": 16,
+      "playerLimit": 8,
+      "limitReset": "DAILY"
     },
     {
       "type": "SELL",
@@ -73,8 +78,9 @@
       },
       "currency": "credits",
       "price": 12,
-      "globalLimit": -1,
-      "playerLimit": -1
+      "globalLimit": 16,
+      "playerLimit": 8,
+      "limitReset": "DAILY"
     },
     {
       "type": "SELL",
@@ -85,8 +91,9 @@
       },
       "currency": "credits",
       "price": 6,
-      "globalLimit": -1,
-      "playerLimit": -1
+      "globalLimit": 16,
+      "playerLimit": 8,
+      "limitReset": "DAILY"
     }
   ]
 }
