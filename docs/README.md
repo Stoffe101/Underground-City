@@ -25,6 +25,7 @@ The docs here distinguish **confirmed product direction**, **design proposals**,
 - [Map creation and imports](technical/world-pipeline.md)
 - [Reuse-first mod and modpack policy](technical/reuse-first.md)
 - [First-join class and city selection candidates](technical/onboarding-reuse-spike.md)
+- [Pinned first-login test profiles and automation](technical/onboarding-screening-packs.md)
 - [Testing and reliability](technical/testing.md)
 
 ## Production

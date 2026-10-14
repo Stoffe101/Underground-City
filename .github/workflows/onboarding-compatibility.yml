@@ -1,0 +1,133 @@
+name: Forge third-party onboarding smoke tests
+
+on:
+  pull_request:
+    paths:
+      - 'content/modpacks/onboarding-candidates.json'
+      - 'rpg-core/build.gradle'
+      - '.github/workflows/onboarding-compatibility.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'content/modpacks/onboarding-candidates.json'
+      - 'rpg-core/build.gradle'
+      - '.github/workflows/onboarding-compatibility.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  discover:
+    name: Read pinned candidates
+    runs-on: ubuntu-latest
+    outputs:
+      candidates: ${{ steps.list.outputs.candidates }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build matrix from reviewed registry
+        id: list
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "candidates=$(jq -c '[.profiles[].id]' content/modpacks/onboarding-candidates.json)" >> "$GITHUB_OUTPUT"
+
+  smoke:
+    name: Forge GameTest + ${{ matrix.candidate }}
+    needs: discover
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        candidate: ${{ fromJSON(needs.discover.outputs.candidates) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.8'
+      - name: Install original Underground City menu configs for screening
+        env:
+          SCREENING_MOD: ${{ matrix.candidate }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/build_onboarding_candidates.py --output build/onboarding-screening
+          python - <<'PY'
+          import os
+          import zipfile
+          from pathlib import Path
+          selected = os.environ["SCREENING_MOD"]
+          pack = Path("build/onboarding-screening") / f"underground-city-onboarding-{selected}.zip"
+          with zipfile.ZipFile(pack) as archive:
+              for name in archive.namelist():
+                  if not name.startswith("overrides/config/"):
+                      continue
+                  rel = name.removeprefix("overrides/config/")
+                  if rel not in {"class_enhancement.toml", "classmod-common.toml"}:
+                      raise SystemExit(f"Unexpected config in screening ZIP: {name}")
+                  target = Path("rpg-core/run/config") / rel
+                  target.parent.mkdir(parents=True, exist_ok=True)
+                  target.write_bytes(archive.read(name))
+                  print("Installed original candidate config:", target)
+          PY
+      - name: Boot isolated Forge GameTestServer with one pinned mod
+        env:
+          SCREENING_MOD: ${{ matrix.candidate }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gradle -p rpg-core runGameTestServer -PucScreeningMod="$SCREENING_MOD" --no-daemon --stacktrace
+      - name: Verify Forge did not revert our supported config settings
+        env:
+          SCREENING_MOD: ${{ matrix.candidate }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          import os
+          import sys
+          import tomllib
+          from pathlib import Path
+          sys.path.insert(0, str(Path("scripts").resolve()))
+          from build_onboarding_candidates import class_enhancement_config, class_selection_config
+          catalog = json.loads(Path("content/onboarding/catalog.json").read_text())
+          id = os.environ["SCREENING_MOD"]
+          configurations = {
+              "class-enhancement": ("class_enhancement.toml", class_enhancement_config),
+              "class-selection": ("classmod-common.toml", class_selection_config),
+          }
+          if id in configurations:
+              filename, factory = configurations[id]
+              actual = tomllib.loads((Path("rpg-core/run/config") / filename).read_text())
+              expected = tomllib.loads(factory(catalog))
+              for key, value in expected["general"].items():
+                  if actual.get("general", {}).get(key) != value:
+                      raise SystemExit(f"Forge changed config {filename} general.{key}: {actual.get('general', {}).get(key)!r} expected {value!r}")
+              if id == "class-enhancement":
+                  for key, expected_fields in expected["custom_classes"].items():
+                      actual_fields = actual.get("custom_classes", {}).get(key, {})
+                      for field, expected_value in expected_fields.items():
+                          if actual_fields.get(field) != expected_value:
+                              raise SystemExit(f"Forge changed class config {key}.{field}: {actual_fields.get(field)!r} expected {expected_value!r}")
+              print("Forge kept all authored Underground City settings for", id)
+          else:
+              print("No original config to verify for", id)
+          PY
+      - name: Test scope reminder
+        if: always()
+        env:
+          SCREENING_MOD: ${{ matrix.candidate }}
+        run: |
+          echo "### $SCREENING_MOD" >> "$GITHUB_STEP_SUMMARY"
+          echo "This checks dependency resolution and a **headless Forge GameTestServer** boot with our Core in a disposable environment." >> "$GITHUB_STEP_SUMMARY"
+          echo "The third-party mod is a temporary CI dependency; its binary is **not** committed or uploaded as an artifact." >> "$GITHUB_STEP_SUMMARY"
+          echo "This does **not** check the real first-login GUI, two human clients, multiplayer UI packets, or modpack gameplay." >> "$GITHUB_STEP_SUMMARY"
