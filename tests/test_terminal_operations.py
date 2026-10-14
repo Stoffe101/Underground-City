@@ -202,6 +202,21 @@ class DropboxAndRaidsTests(unittest.TestCase):
                             credits=300, tier=3)
         self.model.give_item("seller", "weapon-nbt-uuid-9", "gun_equipment", quality=79)
 
+    def test_weapon_instance_cannot_be_minted_again_after_dropoff_and_reload(self):
+        m = self.model
+        m.list_item("seller", "weapon-nbt-uuid-9", 500, "sale-unique")
+        m.accept_buyer("sale-unique", marker_id="box-unique", marker_approved=True)
+        m.deposit("seller", "sale-unique", at_approved_box=True)
+        m.register("other", "valewood", "farmer")
+        with self.assertRaisesRegex(ValueError, "already registered"):
+            m.give_item("other", "weapon-nbt-uuid-9", "gun_equipment")
+        restored = TerminalSimulation.restore(DATA, SUPPLY, json.loads(json.dumps(m.snapshot())))
+        with self.assertRaisesRegex(ValueError, "already registered"):
+            restored.give_item("other", "weapon-nbt-uuid-9", "gun_equipment")
+        restored.collect_money("seller", "sale-unique")
+        with self.assertRaisesRegex(ValueError, "already registered"):
+            restored.give_item("seller", "weapon-nbt-uuid-9", "gun_equipment")
+
     def test_market_sale_escrow_and_single_seller_payout(self):
         m = self.model
         price = 650
