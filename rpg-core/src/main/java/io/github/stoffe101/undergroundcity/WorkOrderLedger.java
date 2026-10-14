@@ -153,12 +153,19 @@ public final class WorkOrderLedger {
                 NbtIo.write(root, out); out.flush(); channel.force(true);
             }
             Files.move(temporary, path, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
-            try (FileChannel parent = FileChannel.open(path.getParent(), StandardOpenOption.READ)) {
-                parent.force(true);
-            }
+            forceDirectory(path.getParent());
         } catch (IOException error) {
             faulted = true; // do not continue after an uncertain durable write
             throw new IllegalStateException("Cannot durably save work orders", error);
+        }
+    }
+
+    static void forceDirectory(Path directory) throws IOException {
+        // Java cannot open Windows directory handles as FileChannels. Keep file
+        // fsync + atomic replacement there; POSIX also syncs the parent entry.
+        if (System.getProperty("os.name", "").startsWith("Windows")) return;
+        try (FileChannel parent = FileChannel.open(directory, StandardOpenOption.READ)) {
+            parent.force(true);
         }
     }
 }

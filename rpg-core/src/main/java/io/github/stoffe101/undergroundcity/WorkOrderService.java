@@ -120,9 +120,7 @@ public final class WorkOrderService {
                 try (var channel = java.nio.channels.FileChannel.open(file.toPath(), java.nio.file.StandardOpenOption.READ)) {
                     channel.force(true);
                 }
-                try (var directory = java.nio.channels.FileChannel.open(file.toPath().getParent(), java.nio.file.StandardOpenOption.READ)) {
-                    directory.force(true);
-                }
+                WorkOrderLedger.forceDirectory(file.toPath().getParent());
             } catch (java.io.IOException error) {
                 throw new IllegalStateException("Player data was not durably saved", error);
             }

@@ -70,6 +70,7 @@ public final class TerminalScreen extends Screen {
     }
     public void showPage(Page page) { current=page; refresh(); }
     public Page currentPage() { return current; }
+    TerminalData snapshot() { return data; }
     private void refresh() {
         if (shop==null) return;
         for (int i=0;i<tabs.length;i++) tabs[i].active=current!=Page.values()[i];

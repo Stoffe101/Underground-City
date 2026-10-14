@@ -23,6 +23,10 @@ minecraft {
             }
         }
         client {
+            if (providers.gradleProperty('ucJourneyClient').isPresent()) {
+                jvmArgs '-Duc.journey.client=true', '-Xmx1G', '-XX:ActiveProcessorCount=2'
+                args '--username', providers.gradleProperty('ucJourneyClient').get(), '--width', '1920', '--height', '1080'
+            }
             if (providers.gradleProperty('ucVisualCapture').orNull == 'true') {
                 def scale = providers.gradleProperty('ucVisualScale').orElse('3').get()
                 def screenWidth = providers.gradleProperty('ucVisualWidth').orElse('1920').get()
@@ -31,7 +35,15 @@ minecraft {
                 args '--width', screenWidth, '--height', screenHeight
             }
         }
-        server { args '--nogui' }
+        server {
+            args '--nogui'
+            if (providers.gradleProperty('ucWorldSurvey').orNull == 'true') {
+                jvmArgs '-Duc.worldSurvey=true', '-XX:ActiveProcessorCount=2'
+            }
+            if (providers.gradleProperty('ucJourneyPhase').isPresent()) {
+                jvmArgs "-Duc.journey.phase=${providers.gradleProperty('ucJourneyPhase').get()}", '-Xmx1G', '-XX:ActiveProcessorCount=2'
+            }
+        }
         gameTestServer {
             property 'forge.enabledGameTestNamespaces', mod_id
         }

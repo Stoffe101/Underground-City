@@ -78,6 +78,31 @@ jobs:
         run: |
           set -euo pipefail
           gradle -p rpg-core runGameTestServer -PucWorldCandidate="$CANDIDATE" --no-daemon --stacktrace
+      - name: Survey actual native city generation in a fresh dedicated world
+        if: matrix.candidate == 'lostcities'
+        shell: bash
+        run: |
+          python scripts/install_world_prototype.py --server-root rpg-core/run-world-survey
+          printf 'eula=true\n' > rpg-core/run-world-survey/eula.txt
+          printf 'level-seed=20261014\nserver-ip=127.0.0.1\nonline-mode=false\nview-distance=3\nsimulation-distance=3\nmax-tick-time=-1\n' > rpg-core/run-world-survey/server.properties
+          timeout 900s gradle -p rpg-core runServer -PucWorldCandidate=lostcities -PucRunDir=run-world-survey -PucWorldSurvey=true --no-daemon --stacktrace
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          report=json.loads(Path('rpg-core/run-world-survey/world-survey.json').read_text())
+          assert report['status']=='three_city_structures_observed', report
+          assert len(report['observations'])==3
+          PY
+      - name: Preserve native world-survey evidence without world saves or mod binaries
+        if: always() && matrix.candidate == 'lostcities'
+        uses: actions/upload-artifact@v4
+        with:
+          name: uc-native-city-survey-${{ github.sha }}
+          path: |
+            rpg-core/run-world-survey/world-survey.json
+            rpg-core/run-world-survey/logs/*.log
+          retention-days: 7
+          if-no-files-found: warn
       - name: Report measured scope
         if: always()
         env:
