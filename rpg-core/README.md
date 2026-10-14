@@ -21,3 +21,9 @@ CI will also attempt the build and upload the original compiled mod jar as an ar
 - Identity is stored in the Overworld's `SavedData` under `underground_city_citizens`, not in a file in this repository.
 
 Current limits: three illustrative cities but no built world, no real XP awarding from professions, and command onboarding rather than UI. No city taxes, buildings, inventory item registration, or NPCs have been implemented. Preserve world backups and do not use this development module with valued saves until persistence has been acceptance-tested.
+
+## Automated checks
+
+CI builds the mod using ForgeGradle and executes a dedicated GameTestServer with an original one-block template. The in-engine test validates NBT roundtrip of two independent citizens, XP isolation, and rejection of duplicate registrations. A separate pure-Java regression harness covers XP limits and progression monotonicity. Passing a GameTest does **not** replace actual two-client tests with selected third-party mods.
+
+The registration/career commands are an **experimental fallback**. Before expanding them, evaluate RoleCraft and Pufferfish's Skills as possible existing replacements. See [reuse-first policy](../docs/technical/reuse-first.md).

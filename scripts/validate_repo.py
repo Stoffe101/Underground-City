@@ -54,8 +54,16 @@ try:
     tracked = subprocess.check_output(["git", "ls-files"], cwd=ROOT, text=True).splitlines()
     blocked_suffixes = {".jar", ".zip", ".7z", ".rar", ".mca", ".mcr", ".schem", ".schematic", ".nbt", ".litematic", ".key", ".pem"}
     blocked_directories = {"world", "worlds", "saves", "playerdata", "secrets", "backups"}
+    permitted_template = "rpg-core/src/main/resources/data/underground_city/structures/empty.nbt"
+    permitted_sha256 = "c2e9e1dbc61b46857273e9ac52f7b9b9bdf503779068e1609a84e29fd5265cf0"
+    import hashlib
     for tracked_file in tracked:
         location = Path(tracked_file)
+        if tracked_file == permitted_template:
+            digest = hashlib.sha256((ROOT / tracked_file).read_bytes()).hexdigest()
+            if digest != permitted_sha256:
+                issues.append("Allowed GameTest template changed without explicit rights review: " + tracked_file)
+            continue
         if location.suffix.lower() in blocked_suffixes:
             issues.append("Restricted binary or secret-like file tracked: " + tracked_file)
         if any(part.lower() in blocked_directories for part in location.parts[:-1]):

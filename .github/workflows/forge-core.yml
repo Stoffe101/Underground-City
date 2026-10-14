@@ -37,6 +37,8 @@ jobs:
           gradle-version: '8.8'
       - name: Build mod (reobfuscates jar)
         run: gradle -p rpg-core build --no-daemon --stacktrace
+      - name: Run in-engine dedicated GameTestServer checks
+        run: gradle -p rpg-core runGameTestServer --no-daemon --stacktrace
       - name: Inspect generated files
         run: |
           ls -lah rpg-core/build/libs
