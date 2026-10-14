@@ -45,6 +45,17 @@ class InterCityDesignTests(unittest.TestCase):
         x["supply"]["career_milestones"][1]["legitimate_paths"] = []
         self.assertTrue(any("peaceful" in err for err in validate(x)))
 
+    def test_remote_purchase_cannot_replace_actual_foreign_city_visit(self):
+        x = copy.deepcopy(self.base)
+        x["supply"]["career_milestones"][0]["visit_requirement"] = "none"
+        self.assertTrue(any("first-hand inter-city travel" in err for err in validate(x)))
+        x = copy.deepcopy(self.base)
+        x["supply"]["policy"]["require_all_three_city_visits_for_tier_3"] = False
+        self.assertTrue(any("Progression safety policy" in err for err in validate(x)))
+        x = copy.deepcopy(self.base)
+        x["supply"]["location_reward_templates"][0]["commodity_pool"] = []
+        self.assertTrue(any("every specialty" in err for err in validate(x)))
+
     def test_conflict_relations_and_safe_options_are_mandatory(self):
         x = copy.deepcopy(self.base)
         x["conflict"]["initial_relations"] = []
