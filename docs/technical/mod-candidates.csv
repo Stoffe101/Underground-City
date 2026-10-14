@@ -1,0 +1,15 @@
+id,display_name,project_url,domain,priority,status,release_target,notes
+lost_cities,The Lost Cities,https://www.curseforge.com/minecraft/mc-mods/the-lost-cities,world,critical,candidate,1.20.1 Forge,Profile spike required
+custom_npcs,CustomNPCs-Unofficial,https://www.curseforge.com/minecraft/mc-mods/customnpcs-unofficial,npc,critical,candidate,1.20.1 Forge,NPC scripting and server spike
+lootr,Lootr,https://www.curseforge.com/minecraft/mc-mods/lootr,loot,critical,candidate,1.20.1 Forge,Imported chest test
+tacz,Timeless and Classics Zero,https://www.curseforge.com/minecraft/mc-mods/timeless-and-classics-zero,combat,critical,candidate,1.20.1 Forge,Blueprint and NPC interaction
+tacz_research,TaCZ Weapon Research and Blueprints,https://www.curseforge.com/minecraft/mc-mods/tacz-weapon-research-blueprints,research,high,candidate,1.20.1 Forge,Exact dependency version check
+puffish,Pufferfish Skills,https://www.curseforge.com/minecraft/mc-mods/puffish-skills,progression,high,candidate,1.20.1 Forge,Custom XP and rewards integration
+currency,Lightmans Currency,https://www.curseforge.com/minecraft/mc-mods/lightmans-currency,economy,high,candidate,1.20.1 Forge,API and duplication check
+kubejs,KubeJS,https://www.curseforge.com/minecraft/mc-mods/kubejs,scripting,high,candidate,1.20.1 Forge,Recipe and data hooks
+ftb_quests,FTB Quests,https://www.curseforge.com/minecraft/mc-mods/ftb-quests-forge,quests,high,candidate,1.20.1 Forge,Co-op quest semantics
+create,Create,https://www.curseforge.com/minecraft/mc-mods/create,industry,medium,candidate,1.20.1 Forge,Industrial balance and tick cost
+farmers_delight,Farmers Delight,https://www.curseforge.com/minecraft/mc-mods/farmers-delight,farming,medium,candidate,1.20.1 Forge,Processing and food
+vinery,Lets Do Vinery,https://www.curseforge.com/minecraft/mc-mods/lets-do-vinery,farming,medium,candidate,1.20.1 Forge,Exact loader availability
+minecolonies,MineColonies,https://www.curseforge.com/minecraft/mc-mods/minecolonies,npc,spike,candidate,1.20.1 Forge,Alternative NPC approach
+worldedit,WorldEdit,https://www.curseforge.com/minecraft/mc-mods/worldedit,tooling,medium,candidate,1.20.1 Forge,Development world editor
