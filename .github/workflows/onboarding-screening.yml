@@ -59,5 +59,5 @@ jobs:
           echo "## Isolated onboarding screening profiles" >> "$GITHUB_STEP_SUMMARY"
           echo "Generated 3 CurseForge-format ZIP imports referencing pinned official mod files." >> "$GITHUB_STEP_SUMMARY"
           echo "No downloaded third-party mod binaries are stored or published by CI." >> "$GITHUB_STEP_SUMMARY"
-          echo "The Class Enhancement TOML fragment is reference only, not a working installed config." >> "$GITHUB_STEP_SUMMARY"
+          echo "Class Selection and Class Enhancement include original authored candidate configs; Role Selection uses its own defaults." >> "$GITHUB_STEP_SUMMARY"
           echo "Real launcher import, two-client server and persistence tests remain pending." >> "$GITHUB_STEP_SUMMARY"

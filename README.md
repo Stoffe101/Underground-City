@@ -56,7 +56,7 @@ Our [offline modpack auditor](scripts/audit_modpack.py) reads CurseForge/Modrint
 
 The project now has two additional testing tiers before deciding whether to build a custom registration screen:
 
-- [Original-author reference-only CurseForge ZIP test profiles](docs/technical/onboarding-screening-packs.md) for Class Selection Mod, Class Enhancement and Role Selection.
+- [Original-author pinned CurseForge ZIP test profiles with original city/profession configuration](docs/technical/onboarding-screening-packs.md) for Class Selection Mod, Class Enhancement and Role Selection.
 - [Isolated Forge GameTestServer smoke checks](.github/workflows/onboarding-compatibility.yml), one candidate at a time, using temporary third-party dependencies without shipping their binaries.
 
 This is an **evaluation**, not a selected or confirmed compatible onboarding mod. City and career entries come from [our own catalog](content/onboarding/catalog.json), and we will use only one provider to own initial identity and rewards.

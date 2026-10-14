@@ -24,15 +24,25 @@ Or generate them locally with Python 3.11:
 
 CI validates the original city/career catalog, the exact pinned file IDs and official source URLs, zip consistency, deterministic output, and exclusion of bundled third-party binaries. The existing modpack auditor then re-parses each generated ZIP.
 
-## Class Enhancement: four-career reference
+## Candidate configurations included automatically
 
-The Class Enhancement ZIP contains our **original authored** reference at:
+The **Class Selection Mod** ZIP now includes an *original* Forge config at:
+
+    overrides/config/classmod-common.toml
+
+It preconfigures our three city factions, chooses vanilla Minecraft icons, and disables the fantasy race step. This mod's actual class definitions are managed by its in-game administrator interface, so its default class selection is **not yet our four professions**. We will not pretend otherwise.
+
+The **Class Enhancement** ZIP includes an original, minimal Forge config:
+
+    overrides/config/class_enhancement.toml
+
+It disables the fantasy default classes, enables four custom class slots, and defines our Farmer, Engineer, Gunsmith and Technician choices, their original descriptions and vanilla-item icons. Forge may add other missing defaults on initial launch, which is expected. A copy of the original profession fragment also lives at:
 
     overrides/underground-city/reference/class_enhancement_classes.toml
 
-It only uses keys documented on the author's CurseForge page (custom class sections, id, name, description, stats, attributes, equipment, items, commands). It is **not an automatically applied or complete mod configuration**. The released mod generates additional settings, including a custom-class count; inspect those rather than overwriting the whole configuration or guessing keys.
+The **Role Selection** ZIP intentionally remains at default behavior: its per-role JSON5 schema is not yet grounded in generated runtime files and should not be guessed.
 
-Class Selection Mod offers an in-game admin editor. Configure cities and professions through that supported UI after validating basic functionality. Role Selection's JSON5 syntax should be obtained from its own generated files before preparing a full config.
+These configurations are independently authored for local private testing. An accepted config is **not evidence** that the GUI is readable or that the selected identity is interoperable with another mod's faction/economy state.
 
 ## Why RPG Core is not in these profiles
 

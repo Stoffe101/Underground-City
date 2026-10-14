@@ -63,6 +63,7 @@ class CandidatePackTests(unittest.TestCase):
             section = parsed["custom_classes"][f"custom_{i}"]
             self.assertEqual(section["id"], career["id"])
             self.assertEqual(section["commands"], [])
+            self.assertTrue(section["icon"].startswith("minecraft:"))
             self.assertEqual(section["items"], [])
             self.assertEqual(section["attributes"], [])
 
