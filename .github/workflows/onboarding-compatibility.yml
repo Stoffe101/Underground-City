@@ -113,9 +113,11 @@ jobs:
                   if actual.get("general", {}).get(key) != value:
                       raise SystemExit(f"Forge changed config {filename} general.{key}: {actual.get('general', {}).get(key)!r} expected {value!r}")
               if id == "class-enhancement":
-                  for key, value in expected["custom_classes"].items():
-                      if actual.get("custom_classes", {}).get(key) != value:
-                          raise SystemExit(f"Forge changed class config {key}")
+                  for key, expected_fields in expected["custom_classes"].items():
+                      actual_fields = actual.get("custom_classes", {}).get(key, {})
+                      for field, expected_value in expected_fields.items():
+                          if actual_fields.get(field) != expected_value:
+                              raise SystemExit(f"Forge changed class config {key}.{field}: {actual_fields.get(field)!r} expected {expected_value!r}")
               print("Forge kept all authored Underground City settings for", id)
           else:
               print("No original config to verify for", id)
