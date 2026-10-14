@@ -40,9 +40,23 @@ if (screeningModId != null && !screeningModId.trim().isEmpty()) {
         throw new GradleException("Unknown onboarding screening candidate: " + screeningModId)
     }
 }
+// World/economy candidates remain isolated. Resolve exactly one pinned original
+// CurseForge artifact through CurseMaven for a disposable headless smoke run.
+def worldCandidateId = providers.gradleProperty('ucWorldCandidate').orNull
+def worldCandidate = null
+if (worldCandidateId != null && !worldCandidateId.trim().isEmpty()) {
+    def registry = new JsonSlurper().parse(file('../content/modpacks/world-mod-candidates.json'))
+    worldCandidate = registry.candidates.find { it.id == worldCandidateId }
+    if (worldCandidate == null) {
+        throw new GradleException("Unknown world gameplay candidate: " + worldCandidateId)
+    }
+    if (screeningMod != null) {
+        throw new GradleException("Do not run unrelated onboarding and world candidate tests together")
+    }
+}
 repositories {
     mavenCentral()
-    if (screeningMod != null) {
+    if (screeningMod != null || worldCandidate != null) {
         maven {
             url = uri('https://cursemaven.com')
             content { includeGroup 'curse.maven' }
@@ -54,6 +68,9 @@ dependencies {
     if (screeningMod != null) {
         // CurseMaven coordinates are derived solely from pinned reviewed JSON IDs.
         runtimeOnly fg.deobf("curse.maven:uc-onboarding-${screeningMod.project_id}:${screeningMod.file_id}")
+    }
+    if (worldCandidate != null) {
+        runtimeOnly fg.deobf("curse.maven:uc-world-${worldCandidate.project_id}:${worldCandidate.file_id}")
     }
 }
 tasks.named('processResources', ProcessResources).configure {
