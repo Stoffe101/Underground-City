@@ -1,0 +1,210 @@
+{
+  "schema_version": 1,
+  "prototype_only": true,
+  "coordinate_units": "overworld_blocks",
+  "terrain_verified": false,
+  "routes": [
+    {
+      "id": "ironhaven_valewood",
+      "from": "ironhaven",
+      "to": "valewood",
+      "kind": "guarded_highway",
+      "waypoints": [
+        [
+          500,
+          190
+        ],
+        [
+          800,
+          290
+        ],
+        [
+          1080,
+          390
+        ],
+        [
+          1410,
+          470
+        ],
+        [
+          1660,
+          840
+        ]
+      ],
+      "crossings": [
+        {
+          "id": "east_causeway",
+          "kind": "proposed_bridge",
+          "between_waypoints": [
+            1,
+            2
+          ],
+          "requires_water_or_ravine_survey": true
+        }
+      ],
+      "checkpoints": [
+        {
+          "id": "ironhaven_east_gate",
+          "position": [
+            650,
+            235
+          ],
+          "faction": "ironhaven",
+          "risk": "inspection"
+        },
+        {
+          "id": "valewood_west_gate",
+          "position": [
+            1560,
+            690
+          ],
+          "faction": "valewood",
+          "risk": "inspection"
+        }
+      ],
+      "travel_modes": [
+        "vehicle",
+        "walking",
+        "licensed_convoy"
+      ],
+      "security": "patrolled",
+      "lore": "Ironhaven manufactured goods reach Valewood's crop-and-vineyard exporters"
+    },
+    {
+      "id": "ironhaven_blackwater",
+      "from": "ironhaven",
+      "to": "blackwater",
+      "kind": "militarized_highway",
+      "waypoints": [
+        [
+          -480,
+          310
+        ],
+        [
+          -790,
+          440
+        ],
+        [
+          -1070,
+          600
+        ],
+        [
+          -1380,
+          780
+        ],
+        [
+          -1620,
+          920
+        ]
+      ],
+      "crossings": [
+        {
+          "id": "west_viaduct",
+          "kind": "proposed_bridge",
+          "between_waypoints": [
+            2,
+            3
+          ],
+          "requires_water_or_ravine_survey": true
+        }
+      ],
+      "checkpoints": [
+        {
+          "id": "ironhaven_west_gate",
+          "position": [
+            -600,
+            360
+          ],
+          "faction": "ironhaven",
+          "risk": "high"
+        },
+        {
+          "id": "blackwater_east_gate",
+          "position": [
+            -1530,
+            860
+          ],
+          "faction": "blackwater",
+          "risk": "high"
+        }
+      ],
+      "travel_modes": [
+        "vehicle",
+        "walking",
+        "licensed_convoy"
+      ],
+      "security": "contested",
+      "lore": "Electronics and alloys move across a militarized border"
+    },
+    {
+      "id": "valewood_blackwater",
+      "from": "valewood",
+      "to": "blackwater",
+      "kind": "long_perimeter_route",
+      "waypoints": [
+        [
+          1680,
+          920
+        ],
+        [
+          900,
+          1630
+        ],
+        [
+          0,
+          2100
+        ],
+        [
+          -900,
+          1850
+        ],
+        [
+          -1670,
+          1280
+        ]
+      ],
+      "crossings": [],
+      "checkpoints": [
+        {
+          "id": "valewood_north_tradepost",
+          "position": [
+            1570,
+            1010
+          ],
+          "faction": "valewood",
+          "risk": "inspection"
+        },
+        {
+          "id": "blackwater_north_roadblock",
+          "position": [
+            -1550,
+            1360
+          ],
+          "faction": "blackwater",
+          "risk": "high"
+        }
+      ],
+      "travel_modes": [
+        "vehicle",
+        "walking",
+        "smuggler_convoy"
+      ],
+      "security": "unpredictable",
+      "lore": "A remote, longer alternative to the militarized central highways"
+    }
+  ],
+  "construction_policy": {
+    "requires_in_game_terrain_heightmap": true,
+    "require_review_before_paste": true,
+    "avoid_player_structures": true,
+    "protect_story_regions": true,
+    "road_width_blocks": 9,
+    "bridge_width_blocks": 11,
+    "generate_working_crossings": false
+  },
+  "transport": {
+    "on_foot_viable_before_vehicle_unlock": true,
+    "inter_city_fast_travel": "licensed_convoys_after_discovery",
+    "convoys_work_for_noncombat_players": true
+  }
+}
