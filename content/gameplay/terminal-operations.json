@@ -46,7 +46,8 @@
       "samples": [
         "rare_seeds",
         "machined_parts",
-        "small_electronic_parts"
+        "small_electronic_parts",
+        "household_trade_goods"
       ],
       "replenishment_policy": "apartment_common"
     },
@@ -66,7 +67,8 @@
         "optical_components",
         "machined_parts",
         "licensed_weapon_component",
-        "control_circuits"
+        "control_circuits",
+        "household_trade_goods"
       ],
       "replenishment_policy": "apartment_affluent"
     },
@@ -85,7 +87,8 @@
       "samples": [
         "encrypted_design",
         "control_circuits",
-        "paper_records"
+        "paper_records",
+        "household_trade_goods"
       ],
       "replenishment_policy": "office"
     },
@@ -105,7 +108,8 @@
         "refined_alloy",
         "machined_parts",
         "security_fabric",
-        "licensed_weapon_component"
+        "licensed_weapon_component",
+        "household_trade_goods"
       ],
       "replenishment_policy": "industrial"
     },
@@ -125,7 +129,8 @@
         "weapon_repair_kit",
         "optical_components",
         "licensed_weapon_component",
-        "encrypted_design"
+        "encrypted_design",
+        "household_trade_goods"
       ],
       "replenishment_policy": "illegal_cache"
     }
@@ -137,7 +142,38 @@
     "not_all_drops_matches_player_profession": true,
     "household_inventory_shared": true,
     "refill_respects_household_budget": true,
-    "never_unlimited_rare_blueprint_farming": true
+    "never_unlimited_rare_blueprint_farming": true,
+    "specialty_materials_respect_city_origin": true,
+    "foreign_city_components_only_as_rare_high_security_imports": true,
+    "foreign_import_chance_percent": 10,
+    "loot_item_affinities": {
+      "rare_seeds": "farmer",
+      "biopolymer": "farmer",
+      "agro_catalyst": "farmer",
+      "machined_parts": "smith",
+      "refined_alloy": "smith",
+      "licensed_weapon_component": "gunsmith",
+      "weapon_repair_kit": "gunsmith",
+      "optical_components": "gunsmith",
+      "control_circuits": "technician",
+      "encrypted_design": "technician",
+      "small_electronic_parts": "technician",
+      "household_trade_goods": "general",
+      "paper_records": "general",
+      "security_fabric": "general"
+    },
+    "commodity_origin": {
+      "rare_seeds": "valewood",
+      "biopolymer": "valewood",
+      "agro_catalyst": "valewood",
+      "machined_parts": "ironhaven",
+      "refined_alloy": "ironhaven",
+      "security_fabric": "ironhaven",
+      "licensed_weapon_component": "ironhaven",
+      "control_circuits": "blackwater",
+      "encrypted_design": "blackwater",
+      "optical_components": "blackwater"
+    }
   },
   "shipments": {
     "incident_chance_percent": 20,
