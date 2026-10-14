@@ -31,6 +31,12 @@ public final class WorldTourHarness {
     private static long stageStarted=System.nanoTime(),lastReport;
     private WorldTourHarness() {}
 
+    /** The chunk mesh dispatcher does not exist until the first level frame; treat that as "not idle yet". */
+    private static boolean meshesIdle(Minecraft mc) {
+        try { return mc.levelRenderer!=null && mc.levelRenderer.hasRenderedAllChunks(); }
+        catch(NullPointerException notReady) { return false; }
+    }
+
     @SubscribeEvent public static void render(TickEvent.RenderTickEvent event) {
         if(!ENABLED || finished || event.phase!=TickEvent.Phase.END) return;
         Minecraft mc=Minecraft.getInstance();
@@ -43,7 +49,7 @@ public final class WorldTourHarness {
                 +", captured="+captured+", screen="+(mc.screen==null?"none":mc.screen.getClass().getName())
                 +", player="+(mc.player!=null)+", server="+(mc.getSingleplayerServer()!=null)
                 +", loadedChunks="+(mc.level==null?0:mc.level.getChunkSource().getLoadedChunksCount())
-                +", meshesIdle="+(mc.levelRenderer!=null && mc.levelRenderer.hasRenderedAllChunks());
+                +", meshesIdle="+meshesIdle(mc);
             if(mc.screen!=null) state+=", buttons="+mc.screen.children().stream()
                 .filter(child->child instanceof Button).map(child->((Button)child).getMessage().getString()).toList();
             System.out.println("[UC-WORLD-VISUAL] "+state);
@@ -117,8 +123,7 @@ public final class WorldTourHarness {
         }
         if(Math.abs(mc.player.getX()-targetX)>2 || Math.abs(mc.player.getZ()-targetZ)>2) return;
         if(++ticks<160 || !mc.level.getChunkSource().hasChunk((int)Math.floor(targetX/16),(int)Math.floor(targetZ/16))) return;
-        boolean terrainReady=mc.level.getChunkSource().getLoadedChunksCount()>=MIN_LOADED_CHUNKS
-            && mc.levelRenderer.hasRenderedAllChunks();
+        boolean terrainReady=mc.level.getChunkSource().getLoadedChunksCount()>=MIN_LOADED_CHUNKS && meshesIdle(mc);
         if(!terrainReady && System.nanoTime()-stageStarted<READY_WAIT_NANOS) return;
         System.out.println("[UC-WORLD-VISUAL] Capturing "+CITIES.get(current)+": loadedChunks="
             +mc.level.getChunkSource().getLoadedChunksCount()+", terrainReady="+terrainReady);

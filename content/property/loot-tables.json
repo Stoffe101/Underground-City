@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "status": "implemented_in_core_data_only",
+  "disclaimer": "Contextual stack tables for Household Safes. Common items are ordinary vanilla goods. Specialist regional parts (underground_city: items) are deliberately rare imports in secured premises and criminal caches only; ordinary homes never yield them, and lawful regional exchanges stay the reliable source (D-027, D-030).",
+  "tables": {
+    "apartment_common": [
+      {"item": "minecraft:bread", "weight": 12, "min": 1, "max": 3},
+      {"item": "minecraft:paper", "weight": 9, "min": 1, "max": 5},
+      {"item": "minecraft:iron_nugget", "weight": 5, "min": 1, "max": 4},
+      {"item": "minecraft:leather", "weight": 4, "min": 1, "max": 2}
+    ],
+    "apartment_affluent": [
+      {"item": "minecraft:gold_nugget", "weight": 7, "min": 1, "max": 4},
+      {"item": "minecraft:emerald", "weight": 2, "min": 1, "max": 2},
+      {"item": "minecraft:clock", "weight": 3, "min": 1, "max": 1},
+      {"item": "minecraft:book", "weight": 8, "min": 1, "max": 2},
+      {"item": "underground_city:security_fabric", "weight": 1, "min": 1, "max": 1}
+    ],
+    "office": [
+      {"item": "minecraft:paper", "weight": 10, "min": 1, "max": 6},
+      {"item": "minecraft:redstone", "weight": 8, "min": 1, "max": 3},
+      {"item": "minecraft:compass", "weight": 2, "min": 1, "max": 1},
+      {"item": "minecraft:iron_nugget", "weight": 5, "min": 1, "max": 3},
+      {"item": "underground_city:control_circuits", "weight": 1, "min": 1, "max": 1}
+    ],
+    "industrial": [
+      {"item": "minecraft:iron_ingot", "weight": 6, "min": 1, "max": 2},
+      {"item": "minecraft:copper_ingot", "weight": 9, "min": 1, "max": 4},
+      {"item": "minecraft:redstone", "weight": 6, "min": 1, "max": 3},
+      {"item": "minecraft:coal", "weight": 10, "min": 1, "max": 5},
+      {"item": "underground_city:machined_parts", "weight": 2, "min": 1, "max": 2},
+      {"item": "underground_city:refined_alloy", "weight": 1, "min": 1, "max": 1}
+    ],
+    "illegal_cache": [
+      {"item": "minecraft:gold_ingot", "weight": 2, "min": 1, "max": 2},
+      {"item": "minecraft:crossbow", "weight": 1, "min": 1, "max": 1},
+      {"item": "minecraft:iron_ingot", "weight": 7, "min": 1, "max": 3},
+      {"item": "minecraft:emerald", "weight": 2, "min": 1, "max": 2},
+      {"item": "underground_city:machined_parts", "weight": 2, "min": 1, "max": 2},
+      {"item": "underground_city:optical_components", "weight": 1, "min": 1, "max": 1},
+      {"item": "underground_city:encrypted_design", "weight": 1, "min": 1, "max": 1}
+    ]
+  }
+}

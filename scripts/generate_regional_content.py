@@ -76,6 +76,26 @@ def validate(data: dict) -> None:
             raise SystemExit(f"{o['id']} margin {margin:.2f} outside {lo}-{hi}")
 
 
+SECURITY_LOCKPICKS = {"low": 1, "medium": 2, "high": 3, "faction": 4}
+
+
+def load_property() -> tuple[dict, dict]:
+    policies = json.loads((ROOT / "content/property/restock-policies.json").read_text(encoding="utf-8"))
+    loot = json.loads((ROOT / "content/property/loot-tables.json").read_text(encoding="utf-8"))
+    ids = {p["id"] for p in policies["policies"]}
+    if set(loot["tables"]) != ids:
+        raise SystemExit("Every property policy needs exactly one loot table")
+    for policy in policies["policies"]:
+        if not (1 <= policy["capacity"] <= 9 and 0 <= policy["initial_stock"] <= policy["capacity"]
+                and policy["security"] in SECURITY_LOCKPICKS and policy["items_per_interval"] >= 1):
+            raise SystemExit(f"Invalid property policy {policy['id']}")
+    return policies, loot
+
+
+def lootable_item_ids(data: dict) -> set[str]:
+    return {f"{NAMESPACE}:{e['id']}" for e in data["commodities"] + data["products"] + data["tools"]}
+
+
 # ---------------------------------------------------------------- icon drawing
 def _fill(px, boxes, color):
     for x0, y0, x1, y1 in boxes:
@@ -243,6 +263,27 @@ def icon(kind: str, pal) -> "Image.Image":
     return out
 
 
+def safe_texture() -> "Image.Image":
+    """Original 16x16 steel safe face: panel, dial and handle (no third-party art)."""
+    from PIL import Image, ImageDraw
+
+    light, mid, dark, accent, outline = PALETTES["neutral"]
+    img = Image.new("RGBA", (16, 16), dark + (255,))
+    d = ImageDraw.Draw(img)
+    d.rectangle((0, 0, 15, 15), outline=outline + (255,))
+    d.rectangle((1, 1, 14, 14), outline=light + (255,))
+    d.rectangle((2, 2, 13, 13), fill=mid + (255,))
+    d.rectangle((2, 2, 13, 3), fill=light + (255,))
+    d.rectangle((2, 13, 13, 13), fill=dark + (255,))
+    d.ellipse((5, 4, 11, 10), fill=dark + (255,))
+    d.ellipse((6, 5, 10, 9), fill=light + (255,))
+    d.ellipse((7, 6, 9, 8), fill=accent + (255,))
+    d.rectangle((6, 11, 10, 12), fill=dark + (255,))
+    for corner in ((3, 3), (12, 3), (3, 12), (12, 12)):
+        d.point(corner, fill=outline + (255,))
+    return img
+
+
 def palette_for(entry: dict):
     return PALETTES[entry.get("city", "neutral")]
 
@@ -311,6 +352,33 @@ def build(data: dict) -> dict[Path, bytes]:
             "requirements": [{"item": f"{NAMESPACE}:{k}", "count": v} for k, v in o["requirements"].items()],
             "credits": o["credits"], "xp": o["xp"], "capacity": defaults["capacity"],
             "refill_ticks": defaults["refill_ticks"]}).encode()
+    policies, loot = load_property()
+    allowed_items = lootable_item_ids(data)
+    for policy in policies["policies"]:
+        files[Path(f"rpg-core/src/main/resources/data/{NAMESPACE}/property_policies/{policy['id']}.json")] = jdump({
+            "schema_version": 1, "capacity": policy["capacity"], "initial_stock": policy["initial_stock"],
+            "interval_ticks": policy["interval_minutes"] * 1200, "items_per_interval": policy["items_per_interval"],
+            "lockpicks": SECURITY_LOCKPICKS[policy["security"]],
+            "loot_table": f"{NAMESPACE}:property/{policy['id']}"}).encode()
+    for name, entries in loot["tables"].items():
+        pool = []
+        for entry in entries:
+            namespace, _, _ = entry["item"].partition(":")
+            if namespace == NAMESPACE and entry["item"] not in allowed_items:
+                raise SystemExit(f"Loot table {name} references unknown Core item {entry['item']}")
+            pool.append({"type": "minecraft:item", "name": entry["item"], "weight": entry["weight"], "functions": [
+                {"function": "minecraft:set_count", "count": {"min": entry["min"], "max": entry["max"]}}]})
+        files[Path(f"rpg-core/src/main/resources/data/{NAMESPACE}/loot_tables/property/{name}.json")] = jdump(
+            {"type": "minecraft:chest", "pools": [{"rolls": 1, "entries": pool}]}).encode()
+    safe_png = BytesIO()
+    safe_texture().save(safe_png, "PNG", optimize=True)
+    files[Path(f"rpg-core/src/main/resources/assets/{NAMESPACE}/textures/block/property_cache.png")] = safe_png.getvalue()
+    files[Path(f"rpg-core/src/main/resources/assets/{NAMESPACE}/models/block/property_cache.json")] = jdump(
+        {"parent": "minecraft:block/cube_all", "textures": {"all": f"{NAMESPACE}:block/property_cache"}}).encode()
+    files[Path(f"rpg-core/src/main/resources/assets/{NAMESPACE}/models/item/property_cache.json")] = jdump(
+        {"parent": f"{NAMESPACE}:block/property_cache"}).encode()
+    files[Path(f"rpg-core/src/main/resources/assets/{NAMESPACE}/blockstates/property_cache.json")] = jdump(
+        {"variants": {"": {"model": f"{NAMESPACE}:block/property_cache"}}}).encode()
     blueprint = json.loads((ROOT / "content/region-blueprints/cities.json").read_text(encoding="utf-8"))
     for city in blueprint["cities"]:
         files[Path(f"rpg-core/src/main/resources/data/{NAMESPACE}/regions/{city['id']}.json")] = jdump({
