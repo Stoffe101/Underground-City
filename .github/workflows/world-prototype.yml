@@ -11,6 +11,10 @@ on:
       - 'scripts/render_world_plan.py'
       - 'tests/test_intercity.py'
       - 'tests/test_world_plan_diagram.py'
+      - 'scripts/simulate_regional_supply.py'
+      - 'scripts/render_supply_board.py'
+      - 'tests/test_regional_supply.py'
+      - 'tests/test_supply_board.py'
       - 'scripts/build_world_prototype.py'
       - 'tests/test_world_prototype.py'
       - '.github/workflows/world-prototype.yml'
@@ -43,6 +47,13 @@ jobs:
           python -m unittest discover -s tests -p 'test_intercity.py' -v
           python -m unittest discover -s tests -p 'test_world_plan_diagram.py' -v
           python scripts/validate_intercity.py --report build/world/intercity-validation.json
+      - name: Test reusable city inventories and repeatable regional crafting
+        run: |
+          python -m unittest discover -s tests -p 'test_regional_supply.py' -v
+          python -m unittest discover -s tests -p 'test_supply_board.py' -v
+          python scripts/simulate_regional_supply.py --report build/world/recurring-supply-validation.json
+      - name: Render city-specific recurring procurement board
+        run: python scripts/render_supply_board.py --output build/world/supply-board.md
       - name: Render preliminary corridor diagram
         run: python scripts/render_world_plan.py --output build/world/route-plan.svg
       - name: Package reversible low-code Forge world expansion
@@ -68,6 +79,8 @@ jobs:
             build/world/underground-city-world-prototype.jar
             build/world/intercity-validation.json
             build/world/route-plan.svg
+            build/world/recurring-supply-validation.json
+            build/world/supply-board.md
           retention-days: 14
           if-no-files-found: error
       - name: Explicit scope
@@ -78,3 +91,5 @@ jobs:
           echo "World must be created with a compatible Lost Cities profile enabling predefined city generation." >> "$GITHUB_STEP_SUMMARY"
           echo "Three routes, two candidate bridge spans, contested gates, advanced-career cross-city supply chains, and gradual property-restock MODEL are source-validated." >> "$GITHUB_STEP_SUMMARY"
           echo "Route-plan.svg is a schematic, **not** an actual terrain map or bridge-placement result." >> "$GITHUB_STEP_SUMMARY"
+          echo "Validated 9 original specialty suppliers and 12 repeatable crafting/work-order models, shared stock, active-clock refill, and durable idempotent purchases." >> "$GITHUB_STEP_SUMMARY"
+          echo "Supply-board.md is a human-readable *design preview*, not live Minecraft shop prices or registered recipes." >> "$GITHUB_STEP_SUMMARY"
