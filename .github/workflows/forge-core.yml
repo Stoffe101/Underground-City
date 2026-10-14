@@ -31,6 +31,10 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+      - name: Set up Python for export packaging
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
       - name: Install Gradle 8.8
         uses: gradle/actions/setup-gradle@v4
         with:
@@ -43,6 +47,19 @@ jobs:
         run: |
           ls -lah rpg-core/build/libs
           test -n "$(find rpg-core/build/libs -maxdepth 1 -name 'underground_city-*.jar' -print -quit)"
+      - name: Create clean Modrinth and CurseForge starter imports
+        run: |
+          JAR="$(find rpg-core/build/libs -maxdepth 1 -name 'underground_city-*.jar' -print -quit)"
+          python scripts/package_starter.py --jar "$JAR" --output build/preview-packs
+          python scripts/audit_modpack.py --pack build/preview-packs/underground-city-core-preview.mrpack > /dev/null
+          python scripts/audit_modpack.py --pack build/preview-packs/underground-city-core-preview-curseforge.zip > /dev/null
+      - name: Upload starter import archives
+        uses: actions/upload-artifact@v4
+        with:
+          name: underground-city-importable-starter-${{ github.sha }}
+          path: build/preview-packs/*
+          if-no-files-found: error
+          retention-days: 7
       - name: Upload mod for development review
         uses: actions/upload-artifact@v4
         with:

@@ -27,3 +27,7 @@ Current limits: three illustrative cities but no built world, no real XP awardin
 CI builds the mod using ForgeGradle and executes a dedicated GameTestServer with an original one-block template. The in-engine test validates NBT roundtrip of two independent citizens, XP isolation, and rejection of duplicate registrations. A separate pure-Java regression harness covers XP limits and progression monotonicity. Passing a GameTest does **not** replace actual two-client tests with selected third-party mods.
 
 The registration/career commands are an **experimental fallback**. Before expanding them, evaluate RoleCraft and Pufferfish's Skills as possible existing replacements. See [reuse-first policy](../docs/technical/reuse-first.md).
+
+## Ready-to-import preview builds
+
+A green Forge CI run also creates `underground-city-core-preview.mrpack` and `underground-city-core-preview-curseforge.zip` inside its **starter import archives** artifact. Import either archive with a launcher supporting that format, rather than manually configuring Forge for this minimal test. It includes only the original Core jar. Save in a separate development instance/world, never overwrite your existing saves. Actual imports still need live-client verification.
