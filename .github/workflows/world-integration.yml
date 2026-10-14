@@ -33,7 +33,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          jq -e '.schema_version == 1 and .minecraft == "1.20.1" and .forge == "47.4.10" and (.candidates | length == 3)' content/modpacks/world-mod-candidates.json
+          jq -e '.schema_version == 1 and .minecraft == "1.20.1" and .forge == "47.4.10" and (.candidates | length == 4)' content/modpacks/world-mod-candidates.json
           echo "candidates=$(jq -c '[.candidates[].id]' content/modpacks/world-mod-candidates.json)" >> "$GITHUB_OUTPUT"
 
   smoke:
