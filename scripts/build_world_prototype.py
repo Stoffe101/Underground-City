@@ -2,7 +2,7 @@
 """Create original prototype Lost Cities low-code mod with EXACTLY three city anchors.
 
 This is a reversible experimental datapack/Forge low-code mod. It defines
-named city shapes and optional vanilla loot tables but cannot automatically
+named city shapes, offline-only route plans, and loot tables but cannot automatically
 connect cities by roads, add populations, lock doors, or select the world
 generation profile. Those require further integration and tested assets.
 """
@@ -13,6 +13,8 @@ import math
 import re
 import zipfile
 from pathlib import Path
+
+from validate_intercity import load as load_intercity, validate as validate_intercity
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT = ROOT / "content/region-blueprints/cities.json"
@@ -170,6 +172,20 @@ def render(data: dict) -> dict[str, bytes]:
     for name, entries in LOOT.items():
         files[f"data/underground_city/loot_tables/chests/{name}.json"] = json_bytes(
             loot_table(entries))
+    # Ship design metadata so future import/bridge/loot tools can consume it,
+    # but do NOT imply Lost Cities automatically places roads or restocks chests.
+    planning = load_intercity(ROOT)
+    planning["cities"] = data
+    issues = validate_intercity(planning)
+    if issues:
+        raise ValueError("Intercity world plan invalid: " + "; ".join(issues))
+    for tag, file_id in (
+        ("routes", "corridors"),
+        ("supply", "intercity-supply"),
+        ("restock", "restock-policies"),
+        ("conflict", "border-conflict"),
+    ):
+        files[f"assets/underground_city/prototype_plans/{file_id}.json"] = json_bytes(planning[tag])
     return files
 
 
