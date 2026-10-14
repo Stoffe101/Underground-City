@@ -29,7 +29,7 @@ jobs:
   screenshot:
     name: Minecraft ${{ matrix.profile }} (real framebuffer)
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 18
     strategy:
       fail-fast: false
       max-parallel: 1
@@ -82,19 +82,21 @@ jobs:
           LIBGL_ALWAYS_SOFTWARE: '1'
           GALLIUM_DRIVER: llvmpipe
           MESA_GL_VERSION_OVERRIDE: '3.3'
+          ALSOFT_DRIVERS: 'null'
+          SDL_AUDIODRIVER: dummy
         run: |
           set -euo pipefail
           rm -f rpg-core/run/visual-capture-complete.txt
           mkdir -p rpg-core/run/screenshots
           rm -f rpg-core/run/screenshots/uc-terminal-*.png
           setsid xvfb-run -a -s "-screen 0 ${UC_W}x${UC_H}x24" \
-            timeout 1100s gradle -p rpg-core runClient \
+            timeout 510s gradle -p rpg-core runClient \
               -PucVisualCapture=true -PucVisualScale="$UC_SCALE" \
               -PucVisualWidth="$UC_W" -PucVisualHeight="$UC_H" \
               --no-daemon --stacktrace > /tmp/uc-visual-client.log 2>&1 &
           game_pid=$!
           completed=0
-          for step in $(seq 1 350); do
+          for step in $(seq 1 170); do
             if test -s rpg-core/run/visual-capture-complete.txt; then
               completed=1
               break
@@ -110,6 +112,7 @@ jobs:
           tail -90 /tmp/uc-visual-client.log
           if test "$completed" -ne 1; then
             echo "REAL CLIENT DID NOT CAPTURE ALL PANELS: check client logs above"
+            grep -E '\[UC-VISUAL\]|ERROR|Exception|SoundEngine|OpenAL' /tmp/uc-visual-client.log | tail -80 || true
             exit 1
           fi
           cat rpg-core/run/visual-capture-complete.txt

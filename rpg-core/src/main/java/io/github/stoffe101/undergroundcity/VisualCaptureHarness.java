@@ -27,6 +27,7 @@ public final class VisualCaptureHarness {
     private static int stableFrames;
     private static int renderCount;
     private static boolean completed;
+    private static int observedClientTicks;
 
     private VisualCaptureHarness() {}
 
@@ -34,12 +35,18 @@ public final class VisualCaptureHarness {
     public static void onTick(TickEvent.ClientTickEvent event) {
         if (!ENABLED || completed || started || event.phase != TickEvent.Phase.END) return;
         Minecraft mc = Minecraft.getInstance();
+        observedClientTicks++;
+        if (observedClientTicks == 1 || observedClientTicks % 100 == 0) {
+            System.out.println("[UC-VISUAL] Client tick " + observedClientTicks
+                + " screen=" + (mc.screen == null ? "<none>" : mc.screen.getClass().getName()));
+        }
         if (!(mc.screen instanceof TitleScreen)) return;
         int scale = Integer.getInteger("uc.visualCapture.scale", 3);
         if (scale < 1 || scale > 4) throw new IllegalArgumentException("Bad GUI scale");
         mc.options.guiScale().set(scale);
         mc.resizeDisplay();
         started = true;
+        System.out.println("[UC-VISUAL] TitleScreen ready. Starting terminal capture at GUI scale " + scale);
         mc.setScreen(new TerminalScreen());
     }
 
@@ -69,6 +76,8 @@ public final class VisualCaptureHarness {
             return;
         }
         renderCount++;
+        if (renderCount == 1 || renderCount % 100 == 0)
+            System.out.println("[UC-VISUAL] terminal rendered frames=" + renderCount + " tab=" + current);
         // First render at new tab, then wait a few frames before capture.
         if (stableFrames == 0) {
             screen.showPage(PAGES[current]);
