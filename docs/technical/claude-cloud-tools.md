@@ -1,6 +1,6 @@
 # Claude Code cloud Minecraft MCP setup
 
-Our root `.mcp.json` pins two third-party research tools. They are optional research aids, **not proof of a tested, playable modpack**:
+Our repository config uses two third-party research tools. The Modrinth package version is pinned in `.mcp.json`; the ModLens executable version is pinned by the cloud setup script. They are optional research aids, **not proof of a tested, playable modpack**:
 
 | MCP | Pinned version | Purpose | Verification (2026-10-15) |
 | --- | --- | --- | --- |
@@ -21,9 +21,9 @@ Independent community tools may change or become unavailable. Do not use write/p
    npm install --global --no-audit --no-fund @creeperhost/modlens-mcp@1.6.29
    ```
 
-   This pre-installs the package before Claude Code launches instead of relying on a slow cold MCP `npx` install. Our `.mcp.json` still uses pinned `npx` so local environments retain a fallback and the warm cache may be reused. This setup script runs **in Anthropic's cloud**, not on the player's PC. Confirm actual tool initialization in a new cloud session; package installs and caches can still fail.
+   This pre-installs the package before Claude Code launches instead of relying on a slow cold MCP `npx` install. The project's `.mcp.json` launches the global `modlens-mcp` executable directly; this **requires** the cloud setup script above (or an equivalent installation) before the next cloud session. A local developer who wants to use ModLens outside Claude cloud must install the executable in their local environment separately. This setup script runs **in Anthropic's cloud**, not on the player's PC. Confirm actual tool initialization in a new cloud session; package installs and caches can still fail.
 4. Keep `MODRINTH_TOKEN` **unset**; public search requires none, and this private project does not authorize publishing. Do not put tokens in the repo or setup script.
-5. Save and start a **new cloud session** using the repository branch that includes the latest `.mcp.json` and `.claude/settings.json`, or merge the changes into `main` first. Anthropic caches successful setup scripts and their installed packages in environment snapshots; initial setup may still take tens of seconds.
+5. Save and start a **new cloud session** using the repository branch that includes the latest `.mcp.json` and `.claude/settings.json`, or merge the changes into `main` first. **Without the setup script, ModLens will be unavailable** in a fresh cloud image because the executable is not preinstalled by default. Anthropic caches successful setup scripts and their installed packages in environment snapshots; initial setup may still take tens of seconds.
 
 GitHub access is supplied by Claude Code's normal GitHub integration. The separate GitHub MCP is not required.
 
