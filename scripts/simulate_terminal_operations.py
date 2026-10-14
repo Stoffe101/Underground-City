@@ -143,10 +143,14 @@ class TerminalSimulation:
         self.items: dict[str, dict[str, dict]] = {}
         self.receipts: set[str] = set()
         self.raid_cooldown: dict[str, int] = {}
+        self.owner_online_minutes: dict[str, int] = {}
 
     @property
     def now(self) -> int:
         return self.supply.active_minute
+
+    def _owner_now(self, player: str) -> int:
+        return self.owner_online_minutes[player]
 
     def register(self, player: str, home: str, career: str, *, credits: int = 3000, tier: int = 1) -> None:
         if tier not in (1, 2, 3):
@@ -155,9 +159,19 @@ class TerminalSimulation:
         # Tiers granted here ONLY as test fixture. Production uses quest verification.
         self.supply.players[player]["tier"] = tier
         self.items[player] = {}
+        self.owner_online_minutes[player] = 0
 
-    def advance(self, minutes: int, *, players_online: bool = True) -> None:
+    def advance(self, minutes: int, *, players_online: bool = True,
+                online_players: set[str] | None = None) -> None:
+        # Shared suppliers recover when anyone plays. Personal time-limited
+        # shipments/boxes do NOT expire while only the co-op partner is online.
         self.supply.advance_active_time(minutes, players_online=players_online)
+        if players_online:
+            online = set(self.owner_online_minutes) if online_players is None else online_players
+            if not online <= set(self.owner_online_minutes):
+                raise ValueError("Unknown online player")
+            for player in online:
+                self.owner_online_minutes[player] += minutes
         for oid in list(self.orders):
             self._update_order(oid)
 
@@ -192,7 +206,7 @@ class TerminalSimulation:
         kinds = (["road_crash", "gang_ambush"] if legal
                  else self.rules["shipments"]["incident_types"])
         incident_type = kinds[_roll(f"{self.seed}|type|{order_id}") % len(kinds)] if incident else None
-        event_minute = (self.now + self.rules["shipments"]["active_minutes_to_dispatch"]
+        event_minute = (self._owner_now(player) + self.rules["shipments"]["active_minutes_to_dispatch"]
                         + self.rules["shipments"]["travel_active_minutes"])
         self.orders[order_id] = {
             "owner": player, "commodity": commodity, "count": count,
@@ -212,12 +226,13 @@ class TerminalSimulation:
         order = self.orders[order_id]
         if order["state"] not in ("in_transit", "recovery_open"):
             return
-        if self.now < order["arrival_minute"]:
+        owner_now = self._owner_now(order["owner"])
+        if owner_now < order["arrival_minute"]:
             return
         if order["incident_type"] is None:
             self._grant_order_cargo(order)
             order["state"] = "delivered"
-        elif self.now >= order["deadline"]:
+        elif owner_now >= order["deadline"]:
             if order["legal"]:
                 self.supply.players[order["owner"]]["credits"] += order["price"]
                 order["state"] = "insured"
@@ -263,7 +278,7 @@ class TerminalSimulation:
         self.listings[listing_id] = {
             "owner": player, "item_id": item_id, "item_tag": item["tag"],
             "guide_price": band["market_price"], "price": price,
-            "state": "open", "created": self.now, "dropbox_id": None,
+            "state": "open", "created": self._owner_now(player), "dropbox_id": None,
         }
         return dict(self.listings[listing_id])
 
@@ -285,7 +300,7 @@ class TerminalSimulation:
         }
         listing["state"] = "accepted"
         listing["dropbox_id"] = marker_id
-        listing["pickup_deadline"] = self.now + self.rules["black_market"]["dropbox_pickup_window_minutes"]
+        listing["pickup_deadline"] = self._owner_now(listing["owner"]) + self.rules["black_market"]["dropbox_pickup_window_minutes"]
         return dict(listing)
 
     def deposit(self, player: str, listing_id: str, *, at_approved_box: bool) -> dict:
@@ -293,7 +308,7 @@ class TerminalSimulation:
         if listing["owner"] != player or listing["state"] != "accepted" or not at_approved_box:
             raise PermissionError("Seller must be at their assigned approved city box")
         box = self.dropboxes[listing["dropbox_id"]]
-        if self.now >= listing["pickup_deadline"]:
+        if self._owner_now(player) >= listing["pickup_deadline"]:
             raise ValueError("Dropbox deadline expired")
         if listing["item_id"] not in self.items[player]:
             raise ValueError("Original item no longer in seller inventory")
@@ -328,7 +343,7 @@ class TerminalSimulation:
             return
         deadline = (listing.get("pickup_deadline") if listing["state"] == "accepted"
                     else listing["created"] + self.rules["black_market"]["listing_expiry_active_minutes"])
-        if self.now < deadline:
+        if self._owner_now(listing["owner"]) < deadline:
             return
         if listing["state"] == "accepted":
             box = self.dropboxes[listing["dropbox_id"]]
@@ -347,15 +362,15 @@ class TerminalSimulation:
             raise PermissionError("Late-game tier or equipment requirement missing")
         if arrived_at_real_target is not True:
             raise PermissionError("Selecting raid on PC cannot teleport/spawn rewards")
-        if self.now < self.raid_cooldown.get(f"{player}:{raid_id}", 0):
+        if self._owner_now(player) < self.raid_cooldown.get(f"{player}:{raid_id}", 0):
             raise ValueError("Raid is cooling down")
         if any(r["owner"] == player and r["state"] == "active" for r in self.raids.values()):
             raise ValueError("One active raid per player")
         self.raids[transaction_id] = {
-            "owner": player, "template": raid_id, "start": self.now,
+            "owner": player, "template": raid_id, "start": self._owner_now(player),
             "state": "active", "reward_claimed": False,
         }
-        self.raid_cooldown[f"{player}:{raid_id}"] = self.now + rule["cooldown_active_minutes"]
+        self.raid_cooldown[f"{player}:{raid_id}"] = self._owner_now(player) + rule["cooldown_active_minutes"]
         return dict(self.raids[transaction_id])
 
     def complete_raid(self, player: str, transaction_id: str,
@@ -365,7 +380,7 @@ class TerminalSimulation:
             raise PermissionError("Reward requires live verified raid objectives")
         rule = next(r for r in self.rules["raid_templates"]
                     if r["id"] == raid["template"])
-        if self.now > raid["start"] + rule["active_minutes"]:
+        if self._owner_now(player) > raid["start"] + rule["active_minutes"]:
             raid["state"] = "failed"
             raise ValueError("Raid expired")
         raid["state"] = "completed"
@@ -380,6 +395,7 @@ class TerminalSimulation:
             "listings": self.listings, "dropboxes": self.dropboxes,
             "raids": self.raids, "buyer_budget": self.buyer_budget,
             "items": self.items, "raid_cooldown": self.raid_cooldown,
+            "owner_online_minutes": self.owner_online_minutes,
         }))
 
     @classmethod
@@ -396,6 +412,7 @@ class TerminalSimulation:
         result.buyer_budget = save["buyer_budget"]
         result.items = save["items"]
         result.raid_cooldown = save["raid_cooldown"]
+        result.owner_online_minutes = save["owner_online_minutes"]
         if type(result.buyer_budget) is not int or result.buyer_budget < 0:
             raise ValueError("Corrupt NPC buyer balance")
         return result
