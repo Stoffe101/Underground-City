@@ -23,6 +23,8 @@ Use `D-###` IDs. Status values: **accepted (product intent)**, **proposed**, **n
 | D-018 | accepted (product intent) | First join should present home city then profession, inspired by Cisco's layered race/blessing/class selection | Avoid a fantasy race dependency; all residents remain humans by default |
 | D-019 | needs spike | Prefer a proven faction/class selector or configuration-driven class UI over custom onboarding GUI | Evaluate Class Selection Mod first, then Class Enhancement/RoleCraft/Origins alternatives |
 | D-020 | proposed | Portable city and profession design catalog defined once and adapter-owned by the selected mod | No duplicate onboarding screens, starter grants, or XP authorities |
+| D-021 | proposed | Prototype three fixed cities with Lost Cities' original datapack registries | Validate actual generation, biome/seam quality and populated city realism before final world choice |
+| D-022 | accepted (product intent) | Burglary and legal careers are parallel progression paths | Homes can be robbed with ownership, real scarcity and evidence-driven city policing; Lootr reserved for co-op exploration caches |
 | D-014 | proposed | Visible active NPCs + bounded off-screen economic simulation | Plausible cities without thousands of ticking entities |
 
 ## Open decisions

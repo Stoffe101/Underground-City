@@ -1,0 +1,61 @@
+name: Three-city world prototype
+
+on:
+  pull_request:
+    paths:
+      - 'content/world/**'
+      - 'scripts/build_world_prototype.py'
+      - 'tests/test_world_prototype.py'
+      - '.github/workflows/world-prototype.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'content/world/**'
+      - 'scripts/build_world_prototype.py'
+      - 'tests/test_world_prototype.py'
+      - '.github/workflows/world-prototype.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Validate and package original world content
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Validate 3-city placement, styles, and loot tables
+        run: python -m unittest discover -s tests -p 'test_world_prototype.py' -v
+      - name: Package reversible low-code Forge world expansion
+        run: python scripts/build_world_prototype.py --output build/world/underground-city-world-prototype.jar
+      - name: Verify jar contents
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import zipfile
+          path="build/world/underground-city-world-prototype.jar"
+          with zipfile.ZipFile(path) as archive:
+              names = archive.namelist()
+              assert len([x for x in names if "/predefinedcities/" in x]) == 3
+              assert len([x for x in names if "/citystyles/" in x]) == 3
+              assert len([x for x in names if "/loot_tables/chests/" in x]) == 5
+              print("World expansion built: 3 city anchors, 3 styles, 5 unassigned loot tables")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: underground-city-experimental-world-${{ github.sha }}
+          path: build/world/underground-city-world-prototype.jar
+          retention-days: 14
+          if-no-files-found: error
+      - name: Explicit scope
+        run: |
+          echo "## Three-city experiment" >> "$GITHUB_STEP_SUMMARY"
+          echo "Original Forge low-code pack built with 3 predefined cities and 5 unassigned loot tables." >> "$GITHUB_STEP_SUMMARY"
+          echo "No full Minecraft world has been generated, and no road connections or burglary NPC systems are implemented." >> "$GITHUB_STEP_SUMMARY"
+          echo "World must be created with a compatible Lost Cities profile enabling predefined city generation." >> "$GITHUB_STEP_SUMMARY"

@@ -13,6 +13,7 @@ The docs here distinguish **confirmed product direction**, **design proposals**,
 - [NPC population and simulation](design/npcs.md)
 - [Crime, policing, and conflict](design/crime-and-war.md)
 - [Exploration and loot](design/exploration-and-loot.md)
+- [Burglary and property gameplay](design/burglary-and-property.md)
 - [Narrative and quests](design/story.md)
 - [UX and accessibility](design/ui-ux.md)
 
@@ -23,6 +24,7 @@ The docs here distinguish **confirmed product direction**, **design proposals**,
 - [Mod and loader audit](technical/mod-audit.md)
 - [Compare candidate modpacks and installed JARs](technical/modpack-comparison.md)
 - [Map creation and imports](technical/world-pipeline.md)
+- [Experimental three-city generator and loot](technical/three-city-prototype.md)
 - [Reuse-first mod and modpack policy](technical/reuse-first.md)
 - [First-join class and city selection candidates](technical/onboarding-reuse-spike.md)
 - [Pinned first-login test profiles and automation](technical/onboarding-screening-packs.md)

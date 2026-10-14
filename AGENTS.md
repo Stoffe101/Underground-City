@@ -2,6 +2,7 @@
 
 Project: Underground City, a private-play semi-modern Minecraft living-world RPG. Read `README.md`, `docs/README.md`, `docs/production/decisions.md`, and `docs/production/mvp-v0.1.md` before modifying code, world assets, or gameplay data.
 
+- **World prototype safety**: The three-city generator is experimental, creates original Lost Cities data, and is not a world save; never describe procedural skylines as furnished inhabited cities or unassigned loot tables as loot actively placed in buildings. See docs/technical/three-city-prototype.md.
 - **Onboarding provider screening**: generate candidates only from the pinned content/modpacks/onboarding-candidates.json registry; no third-party JARs in commits/artifacts; headless Forge GameTest is not client UI proof. See docs/technical/onboarding-screening-packs.md.
 - **Reuse before rebuilding**: evaluate installed compatible mods, creator-approved configs, and existing modpack components before writing replacement systems; document choice and APIs. See `docs/technical/reuse-first.md`.
 - **Do not silently lock technologies**: Java 1.20.1 / Forge 47.x / Java 17 are candidate baselines. Verify exact versions and dependencies before implementation.

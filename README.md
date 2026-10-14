@@ -60,3 +60,7 @@ The project now has two additional testing tiers before deciding whether to buil
 - [Isolated Forge GameTestServer smoke checks](.github/workflows/onboarding-compatibility.yml), one candidate at a time, using temporary third-party dependencies without shipping their binaries.
 
 This is an **evaluation**, not a selected or confirmed compatible onboarding mod. City and career entries come from [our own catalog](content/onboarding/catalog.json), and we will use only one provider to own initial identity and rewards.
+
+## Experimental three-city world content
+
+We now have original, data-driven preliminary city definitions for **Ironhaven, Valewood and Blackwater**, a small [world-prototype generator](scripts/build_world_prototype.py), and a [CI workflow](.github/workflows/world-prototype.yml) to package three Lost Cities predefined-city assets, three distinct skyline-density styles and five **currently unassigned** vanilla placeholder loot tables as a reversible original-content Forge low-code mod. This is **not yet a generated, tested, road-connected or populated world**; it requires a properly configured Lost Cities world profile and in-engine validation. See [world notes](docs/technical/three-city-prototype.md) and [burglary/property design](docs/design/burglary-and-property.md).
