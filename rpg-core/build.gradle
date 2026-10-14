@@ -23,6 +23,10 @@ minecraft {
             }
         }
         client {
+            if (providers.gradleProperty('ucWorldTour').orNull == 'true') {
+                jvmArgs '-Duc.worldTour=true', '-Xmx2G', '-XX:ActiveProcessorCount=2'
+                args '--username', 'UC_WorldSurvey', '--width', '1920', '--height', '1080'
+            }
             if (providers.gradleProperty('ucJourneyClient').isPresent()) {
                 jvmArgs '-Duc.journey.client=true', '-Xmx1G', '-XX:ActiveProcessorCount=2'
                 args '--username', providers.gradleProperty('ucJourneyClient').get(), '--width', '1920', '--height', '1080'

@@ -1,0 +1,88 @@
+package io.github.stoffe101.undergroundcity;
+
+import com.google.gson.JsonParser;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.Screenshot;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.client.gui.screens.AccessibilityOnboardingScreen;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.GameType;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import java.nio.file.Files;
+import java.util.List;
+
+/** Actual cloned survey-world images, opt-in and confined to a disposable instance. */
+@Mod.EventBusSubscriber(modid=UndergroundCity.MOD_ID,value=Dist.CLIENT)
+public final class WorldTourHarness {
+    private static final boolean ENABLED=Boolean.getBoolean("uc.worldTour");
+    private static final List<String> CITIES=List.of("ironhaven","valewood","blackwater");
+    private static boolean opening,positioned,captured,finished;
+    private static int current,ticks;
+    private static double targetX,targetZ;
+    private WorldTourHarness() {}
+
+    @SubscribeEvent public static void render(TickEvent.RenderTickEvent event) {
+        if(!ENABLED || finished || event.phase!=TickEvent.Phase.END) return;
+        Minecraft mc=Minecraft.getInstance();
+        var folder=mc.gameDirectory.toPath().toAbsolutePath().normalize();
+        if(!folder.getFileName().toString().equals("run-world-tour")) throw new IllegalStateException("World tour requires disposable directory");
+        if(!opening && (mc.screen instanceof TitleScreen || mc.screen instanceof AccessibilityOnboardingScreen)) {
+            if(!Files.isRegularFile(folder.resolve("saves/world/level.dat"))) throw new IllegalStateException("Native survey-world clone missing");
+            opening=true;mc.options.guiScale().set(3);mc.options.renderDistance().set(4);
+            mc.options.pauseOnLostFocus=false;mc.options.framerateLimit().set(30);mc.options.hideGui=true;mc.resizeDisplay();
+            mc.createWorldOpenFlows().loadLevel(mc.screen,"world");
+            return;
+        }
+        // Only the cloned disposable world can reach this opt-in confirmation.
+        if(opening && mc.player==null && mc.screen!=null) {
+            for(var child:mc.screen.children()) if(child instanceof Button button) {
+                String label=button.getMessage().getString();
+                if(label.equals("Proceed") || label.equals("I know what I'm doing!")) {button.onPress();break;}
+            }
+        }
+        if(!captured || mc.screen!=null) return;
+        String name="uc-world-"+CITIES.get(current)+".png";
+        try {
+            var file=folder.resolve("screenshots").resolve(name);
+            if(!Files.isRegularFile(file) || Files.size(file)<1024) return;
+            captured=false;positioned=false;ticks=0;
+            if(++current==CITIES.size()) {
+                Files.writeString(folder.resolve("world-tour-complete.txt"),"actual_survey_world=true\nviewports=1920x1080_gui3\ncities=3\n");
+                finished=true;mc.stop();
+            }
+        } catch(java.io.IOException error) {throw new IllegalStateException("World tour screenshot failed",error);}
+    }
+
+    @SubscribeEvent public static void tick(TickEvent.ClientTickEvent event) {
+        if(!ENABLED || finished || captured || event.phase!=TickEvent.Phase.END) return;
+        Minecraft mc=Minecraft.getInstance();var server=mc.getSingleplayerServer();
+        if(mc.player==null || mc.level==null || server==null || mc.screen!=null) return;
+        if(!positioned) {
+            String city=CITIES.get(current);
+            // Definitions are server datapack resources, not client assets.
+            try(var reader=server.getResourceManager().getResource(ResourceLocation.fromNamespaceAndPath(
+                UndergroundCity.MOD_ID,"lostcities/predefinedcities/"+city+".json")).orElseThrow().openAsReader()) {
+                var data=JsonParser.parseReader(reader).getAsJsonObject();
+                targetX=data.get("chunkx").getAsInt()*16+40;targetZ=data.get("chunkz").getAsInt()*16+40;
+            } catch(java.io.IOException error) {throw new IllegalStateException(error);}
+            var playerId=mc.player.getUUID();double x=targetX,z=targetZ;
+            server.execute(()->{
+                var player=server.getPlayerList().getPlayer(playerId);
+                if(player==null) throw new IllegalStateException("World-tour player missing");
+                player.setGameMode(GameType.SPECTATOR);server.overworld().setDayTime(6000);
+                server.overworld().setWeatherParameters(6000,0,false,false);
+                player.teleportTo(server.overworld(),x,160,z,135,40);
+            });
+            positioned=true;ticks=0;return;
+        }
+        if(Math.abs(mc.player.getX()-targetX)>2 || Math.abs(mc.player.getZ()-targetZ)>2) return;
+        if(++ticks<160 || !mc.level.getChunkSource().hasChunk((int)Math.floor(targetX/16),(int)Math.floor(targetZ/16))) return;
+        captured=true;
+        mc.execute(()->Screenshot.grab(mc.gameDirectory,"uc-world-"+CITIES.get(current)+".png",mc.getMainRenderTarget(),
+            response->System.out.println("[UC-WORLD-VISUAL] "+response.getString())));
+    }
+}

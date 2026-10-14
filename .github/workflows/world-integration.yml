@@ -103,6 +103,58 @@ jobs:
             rpg-core/run-world-survey/logs/*.log
           retention-days: 7
           if-no-files-found: warn
+      - name: Prepare a disposable client clone of the generated survey world
+        if: success() && matrix.candidate == 'lostcities'
+        run: |
+          sudo apt-get update && sudo apt-get install -y xvfb libgl1-mesa-dri
+          python - <<'PY'
+          import shutil
+          from pathlib import Path
+          source=Path('rpg-core/run-world-survey')
+          target=Path('rpg-core/run-world-tour')
+          assert not target.exists()
+          shutil.copytree(source/'world',target/'saves/world')
+          shutil.copytree(source/'config',target/'config')
+          shutil.copytree(source/'mods',target/'mods')
+          PY
+      - name: Capture actual generated city environments with a native Minecraft client
+        if: success() && matrix.candidate == 'lostcities'
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+          GALLIUM_DRIVER: llvmpipe
+          LP_NUM_THREADS: '1'
+          ALSOFT_DRIVERS: 'null'
+          SDL_AUDIODRIVER: dummy
+        run: |
+          timeout 900s xvfb-run -a -s '-screen 0 1920x1080x24' gradle -p rpg-core runClient -PucWorldCandidate=lostcities -PucRunDir=run-world-tour -PucWorldTour=true --no-daemon --stacktrace
+          test -f rpg-core/run-world-tour/world-tour-complete.txt
+          python - <<'PY'
+          from pathlib import Path
+          from struct import unpack
+          for city in ('ironhaven','valewood','blackwater'):
+              png=Path(f'rpg-core/run-world-tour/screenshots/uc-world-{city}.png').read_bytes()
+              assert png[:8]==b'\x89PNG\r\n\x1a\n'
+              assert unpack('>II',png[16:24])==(1920,1080)
+          PY
+      - name: Upload short-lived actual-world images for explicit review
+        if: always() && matrix.candidate == 'lostcities'
+        uses: actions/upload-artifact@v4
+        with:
+          name: uc-visual-gallery-world-${{ github.sha }}
+          path: rpg-core/run-world-tour/screenshots/uc-world-*.png
+          retention-days: 1
+          if-no-files-found: warn
+      - name: Preserve client world-tour diagnostics without saves
+        if: always() && matrix.candidate == 'lostcities'
+        uses: actions/upload-artifact@v4
+        with:
+          name: uc-world-tour-diagnostics-${{ github.sha }}
+          path: |
+            rpg-core/run-world-tour/logs/*.log
+            rpg-core/run-world-tour/crash-reports/*.txt
+            rpg-core/run-world-tour/world-tour-complete.txt
+          retention-days: 7
+          if-no-files-found: warn
       - name: Report measured scope
         if: always()
         env:

@@ -62,7 +62,7 @@ public final class CloudJourneyClient {
             }
         }
     }
-    private static void clickShop(com.qshop.client.ShopScreen screen,double x,double y) {
+    private static void clickShop(net.minecraft.client.gui.screens.Screen screen,double x,double y) {
         screen.mouseClicked(com.qshop.client.QShopScreenInput.toScaledCoordinate(x,screen.width),
             com.qshop.client.QShopScreenInput.toScaledCoordinate(y,screen.height),0);
     }
