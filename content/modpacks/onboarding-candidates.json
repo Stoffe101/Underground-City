@@ -12,7 +12,7 @@
       "source": "https://www.curseforge.com/minecraft/mc-mods/class-selection-mod/files/8602401",
       "license": "All Rights Reserved",
       "mode": "faction-then-class",
-      "setup": "Use the mod's built-in in-game admin editor to create the three city factions and four profession classes. Do not install the RPG Core alongside this initial screening pack. Investigate available integration commands or documented APIs before committing to this mod."
+      "setup": "The imported pack now sets three original city sides and disables fantasy race selection automatically. The mod still uses its own default class list, which needs conversion into four Underground City professions through the in-game admin editor after UI validation. No RPG Core is bundled."
     },
     {
       "id": "class-enhancement",
@@ -23,7 +23,7 @@
       "source": "https://www.curseforge.com/minecraft/mc-mods/class-enhancement/files/8467070",
       "license": "All Rights Reserved",
       "mode": "class-only",
-      "setup": "This mod provides a configurable class screen, not separate city selection. Configure four custom classes under config/class_enhancement.toml. See the authored reference fragment under underground-city/reference; do not simply overwrite the mod's generated full config. Adjust the mod's class-count settings in its own generated config."
+      "setup": "The imported pack now configures four original Underground City professions and disables the default fantasy classes. It does not select citizenship; inspect the actual menu and persistence before combining any other provider. No RPG Core is bundled."
     },
     {
       "id": "role-selection",
