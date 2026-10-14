@@ -84,7 +84,7 @@ jobs:
         run: |
           python scripts/install_world_prototype.py --server-root rpg-core/run-world-survey
           printf 'eula=true\n' > rpg-core/run-world-survey/eula.txt
-          printf 'level-seed=20261014\nserver-ip=127.0.0.1\nonline-mode=false\nview-distance=3\nsimulation-distance=3\nmax-tick-time=-1\n' > rpg-core/run-world-survey/server.properties
+          printf 'level-seed=20261014\nserver-ip=127.0.0.1\nonline-mode=false\nview-distance=3\nsimulation-distance=3\n' > rpg-core/run-world-survey/server.properties
           timeout 900s gradle -p rpg-core runServer -PucWorldCandidate=lostcities -PucRunDir=run-world-survey -PucWorldSurvey=true --no-daemon --stacktrace
           python - <<'PY'
           import json

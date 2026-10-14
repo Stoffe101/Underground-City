@@ -5,6 +5,7 @@ import sys
 import tempfile
 import unittest
 import zipfile
+import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -37,6 +38,13 @@ class WorldPrototypeTests(unittest.TestCase):
             self.assertEqual(definition["citystyle"], city["city_style"])
             self.assertEqual(style["inherit"], "lostcities:citystyle_standard")
             self.assertEqual(style["buildingsettings"]["maxfloors"], city["max_floors"])
+
+    def test_world_package_accepts_actual_pinned_forge_mod_version(self):
+        metadata = tomllib.loads(render(WORLD)["META-INF/mods.toml"].decode())
+        dependency = metadata["dependencies"]["underground_city_world"][0]
+        self.assertEqual(dependency["modId"], "lostcities")
+        # The published Forge manifest includes its game-prefix, not plain 7.x.
+        self.assertEqual(dependency["versionRange"], "[1.20-7.5.5]")
 
     def test_no_unknown_modded_ids_in_prototype_loot(self):
         files = render(WORLD)

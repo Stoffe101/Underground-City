@@ -147,7 +147,7 @@ def render(data: dict) -> dict[str, bytes]:
         'description="Original three-city world placement and prototype loot."\n'
         '\n[[dependencies.underground_city_world]]\n'
         'modId="lostcities"\nmandatory=true\n'
-        'versionRange="[7,)"\nordering="AFTER"\nside="BOTH"\n'
+        'versionRange="[1.20-7.5.5]"\nordering="AFTER"\nside="BOTH"\n'
     ).encode()
     files["pack.mcmeta"] = json_bytes({
         "pack": {"pack_format": 15,
