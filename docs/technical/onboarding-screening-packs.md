@@ -51,3 +51,11 @@ The experimental RPG Core presently prompts for its own registration. Installing
 This workflow does not claim any such gameplay test has already passed. Private use does not automatically permit redistribution of original third-party mod binaries.
 
 Related: [onboarding research](onboarding-reuse-spike.md), [test matrix](../production/onboarding-tests.md), and [reuse-first policy](reuse-first.md).
+
+## Automated optional headless runtime checks
+
+The [Forge third-party onboarding smoke workflow](../../.github/workflows/onboarding-compatibility.yml) provides a second tier of testing. It reads the **same pinned candidate registry** as the launcher ZIP generator, then executes a separate Forge 1.20.1 GameTestServer job for each candidate. The Gradle dependency resolves from CurseMaven and is used only temporarily on GitHub's runners. No copied mod JAR is committed or uploaded in a workflow artifact.
+
+These headless tests can detect unresolved dependencies, classloading errors, dedicated-server crashes, and compatibility failures with our experimental Forge Core. **They do not prove** menu functionality, modded-item behavior, actual two-client gameplay, or the desirability of any specific profession UI.
+
+A failed candidate job is a useful result: review its logs and pin an alternate legitimate release or decide to reject that candidate. Do not silently bypass that failure by reporting the whole shortlist as compatible.

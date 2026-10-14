@@ -1,0 +1,68 @@
+name: Forge third-party onboarding smoke tests
+
+on:
+  pull_request:
+    paths:
+      - 'content/modpacks/onboarding-candidates.json'
+      - 'rpg-core/build.gradle'
+      - '.github/workflows/onboarding-compatibility.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'content/modpacks/onboarding-candidates.json'
+      - 'rpg-core/build.gradle'
+      - '.github/workflows/onboarding-compatibility.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  discover:
+    name: Read pinned candidates
+    runs-on: ubuntu-latest
+    outputs:
+      candidates: ${{ steps.list.outputs.candidates }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build matrix from reviewed registry
+        id: list
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "candidates=$(jq -c '[.profiles[].id]' content/modpacks/onboarding-candidates.json)" >> "$GITHUB_OUTPUT"
+
+  smoke:
+    name: Forge GameTest + ${{ matrix.candidate }}
+    needs: discover
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        candidate: ${{ fromJSON(needs.discover.outputs.candidates) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.8'
+      - name: Boot isolated Forge GameTestServer with one pinned mod
+        env:
+          SCREENING_MOD: ${{ matrix.candidate }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gradle -p rpg-core runGameTestServer -PucScreeningMod="$SCREENING_MOD" --no-daemon --stacktrace
+      - name: Test scope reminder
+        if: always()
+        env:
+          SCREENING_MOD: ${{ matrix.candidate }}
+        run: |
+          echo "### $SCREENING_MOD" >> "$GITHUB_STEP_SUMMARY"
+          echo "This checks dependency resolution and a **headless Forge GameTestServer** boot with our Core in a disposable environment." >> "$GITHUB_STEP_SUMMARY"
+          echo "The third-party mod is a temporary CI dependency; its binary is **not** committed or uploaded as an artifact." >> "$GITHUB_STEP_SUMMARY"
+          echo "This does **not** check the real first-login GUI, two human clients, multiplayer UI packets, or modpack gameplay." >> "$GITHUB_STEP_SUMMARY"

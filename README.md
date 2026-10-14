@@ -51,3 +51,12 @@ Our custom **RPG Core** will make the authoritative decisions about players, pro
 The [RPG Core scaffold](rpg-core/README.md) compiles against Forge 1.20.1 and has an in-engine persistence GameTest. The [Forge Core workflow](.github/workflows/forge-core.yml) builds the mod and produces short-lived artifacts: an original-mod JAR and minimal importable starter archives for Modrinth/CurseForge-compatible launchers. The starter archives contain **only our original mod**, with no third-party code/assets or world.
 
 Our [offline modpack auditor](scripts/audit_modpack.py) reads CurseForge/Modrinth pack exports or installed Forge/Fabric JAR metadata to identify package contents, duplicate mod IDs, and suspected missing dependencies. The [reuse-first policy](docs/technical/reuse-first.md) guides decisions about using existing mods and packs instead of expanding custom code prematurely.
+
+## First-join mod candidate automation
+
+The project now has two additional testing tiers before deciding whether to build a custom registration screen:
+
+- [Original-author reference-only CurseForge ZIP test profiles](docs/technical/onboarding-screening-packs.md) for Class Selection Mod, Class Enhancement and Role Selection.
+- [Isolated Forge GameTestServer smoke checks](.github/workflows/onboarding-compatibility.yml), one candidate at a time, using temporary third-party dependencies without shipping their binaries.
+
+This is an **evaluation**, not a selected or confirmed compatible onboarding mod. City and career entries come from [our own catalog](content/onboarding/catalog.json), and we will use only one provider to own initial identity and rewards.
