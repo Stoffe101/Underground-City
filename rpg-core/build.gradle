@@ -1,3 +1,5 @@
+import groovy.json.JsonSlurper
+
 plugins {
     id 'eclipse'
     id 'idea'
@@ -27,9 +29,32 @@ minecraft {
         }
     }
 }
-repositories { mavenCentral() }
+// Optional screening only: resolve one pinned original-author mod at a time.
+// Nothing is embedded in our jar or published in CI artifacts.
+def screeningModId = providers.gradleProperty('ucScreeningMod').orNull
+def screeningMod = null
+if (screeningModId != null && !screeningModId.trim().isEmpty()) {
+    def registry = new JsonSlurper().parse(file('../content/modpacks/onboarding-candidates.json'))
+    screeningMod = registry.profiles.find { it.id == screeningModId }
+    if (screeningMod == null) {
+        throw new GradleException("Unknown onboarding screening candidate: " + screeningModId)
+    }
+}
+repositories {
+    mavenCentral()
+    if (screeningMod != null) {
+        maven {
+            url = uri('https://cursemaven.com')
+            content { includeGroup 'curse.maven' }
+        }
+    }
+}
 dependencies {
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
+    if (screeningMod != null) {
+        // CurseMaven coordinates are derived solely from pinned reviewed JSON IDs.
+        runtimeOnly fg.deobf("curse.maven:uc-onboarding-${screeningMod.project_id}:${screeningMod.file_id}")
+    }
 }
 tasks.named('processResources', ProcessResources).configure {
     def props = [
