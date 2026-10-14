@@ -1,0 +1,114 @@
+name: Three-city world prototype
+
+on:
+  pull_request:
+    paths:
+      - 'content/region-blueprints/**'
+      - 'content/factions/**'
+      - 'content/progression/**'
+      - 'content/property/**'
+      - 'scripts/validate_intercity.py'
+      - 'scripts/render_world_plan.py'
+      - 'tests/test_intercity.py'
+      - 'tests/test_world_plan_diagram.py'
+      - 'scripts/simulate_regional_supply.py'
+      - 'scripts/render_supply_board.py'
+      - 'tests/test_regional_supply.py'
+      - 'tests/test_supply_board.py'
+      - 'content/gameplay/**'
+      - 'content/integrations/qshop/**'
+      - 'scripts/install_qshop_templates.py'
+      - 'tests/test_qshop_templates.py'
+      - 'scripts/simulate_terminal_operations.py'
+      - 'tests/test_terminal_operations.py'
+      - 'scripts/build_world_prototype.py'
+      - 'tests/test_world_prototype.py'
+      - '.github/workflows/world-prototype.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'content/region-blueprints/**'
+      - 'scripts/build_world_prototype.py'
+      - 'tests/test_world_prototype.py'
+      - '.github/workflows/world-prototype.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Validate and package original world content
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Validate 3-city placement, styles, and loot tables
+        run: python -m unittest discover -s tests -p 'test_world_prototype.py' -v
+      - name: Test planned crossings, multi-city recipe dependencies, and progressive stock
+        run: |
+          python -m unittest discover -s tests -p 'test_intercity.py' -v
+          python -m unittest discover -s tests -p 'test_world_plan_diagram.py' -v
+          python scripts/validate_intercity.py --report build/world/intercity-validation.json
+      - name: Test reusable city inventories and repeatable regional crafting
+        run: |
+          python -m unittest discover -s tests -p 'test_regional_supply.py' -v
+          python -m unittest discover -s tests -p 'test_supply_board.py' -v
+          python scripts/simulate_regional_supply.py --report build/world/recurring-supply-validation.json
+      - name: Test PC terminal, profession loot, risky shipping, and escrow/raid state
+        run: |
+          python -m unittest discover -s tests -p 'test_terminal_operations.py' -v
+          python scripts/simulate_terminal_operations.py
+      - name: Check original QShop starter catalog and safe installer
+        run: |
+          python -m unittest discover -s tests -p 'test_qshop_templates.py' -v
+          python scripts/install_qshop_templates.py --server-root build/qshop-stage
+      - name: Render city-specific recurring procurement board
+        run: python scripts/render_supply_board.py --output build/world/supply-board.md
+      - name: Render preliminary corridor diagram
+        run: python scripts/render_world_plan.py --output build/world/route-plan.svg
+      - name: Package reversible low-code Forge world expansion
+        run: python scripts/build_world_prototype.py --output build/world/underground-city-world-prototype.jar
+      - name: Verify jar contents
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import zipfile
+          path="build/world/underground-city-world-prototype.jar"
+          with zipfile.ZipFile(path) as archive:
+              names = archive.namelist()
+              assert len([x for x in names if "/predefinedcities/" in x]) == 3
+              assert len([x for x in names if "/citystyles/" in x]) == 3
+              assert len([x for x in names if "/loot_tables/chests/" in x]) == 5
+              print("World expansion built: 3 city anchors, 3 styles, 5 unassigned loot tables")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: underground-city-experimental-world-${{ github.sha }}
+          path: |
+            build/world/underground-city-world-prototype.jar
+            build/world/intercity-validation.json
+            build/world/route-plan.svg
+            build/world/recurring-supply-validation.json
+            build/world/supply-board.md
+            build/qshop-stage/config/qshop/currencies.json
+            build/qshop-stage/config/qshop/shops/uc_starter_supply.json
+          retention-days: 14
+          if-no-files-found: error
+      - name: Explicit scope
+        run: |
+          echo "## Three-city experiment" >> "$GITHUB_STEP_SUMMARY"
+          echo "Original Forge low-code pack built with 3 predefined cities and 5 unassigned loot tables." >> "$GITHUB_STEP_SUMMARY"
+          echo "No full Minecraft world has been generated, and no road connections or burglary NPC systems are implemented." >> "$GITHUB_STEP_SUMMARY"
+          echo "World must be created with a compatible Lost Cities profile enabling predefined city generation." >> "$GITHUB_STEP_SUMMARY"
+          echo "Three routes, two candidate bridge spans, contested gates, advanced-career cross-city supply chains, and gradual property-restock MODEL are source-validated." >> "$GITHUB_STEP_SUMMARY"
+          echo "Route-plan.svg is a schematic, **not** an actual terrain map or bridge-placement result." >> "$GITHUB_STEP_SUMMARY"
+          echo "Validated 9 original specialty suppliers and 12 repeatable crafting/work-order models, shared stock, active-clock refill, and durable idempotent purchases." >> "$GITHUB_STEP_SUMMARY"
+          echo "Supply-board.md is a human-readable *design preview*, not live Minecraft shop prices or registered recipes." >> "$GITHUB_STEP_SUMMARY"
+          echo "Verified terminal design data and tested simulator transitions for home loot, premium imports/incidents, shared black-market escrow/dropboxes, and raid tier/objectives." >> "$GITHUB_STEP_SUMMARY"
+          echo "QShop original starter shop config tested and packed separately from third-party jar; this opens only civilian vanilla trades." >> "$GITHUB_STEP_SUMMARY"
+          echo "No physical regional merchant, delivery risk, gang/police raid or burglary safe is generated by these source tests." >> "$GITHUB_STEP_SUMMARY"

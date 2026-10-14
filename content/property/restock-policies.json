@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "prototype_only": true,
+  "unit": "server_active_minutes",
+  "clock_rule": "increment_only_while_one_or_more_players_active",
+  "max_backlog_intervals": 8,
+  "restock_only_when_chunk_active": true,
+  "one_authoritative_inventory_per_property": true,
+  "policies": [
+    {
+      "id": "apartment_common",
+      "capacity": 6,
+      "initial_stock": 5,
+      "interval_minutes": 40,
+      "items_per_interval": 1,
+      "max_value_per_180_minutes": 45,
+      "security": "low",
+      "loot_table": "underground_city:chests/apartment_common"
+    },
+    {
+      "id": "apartment_affluent",
+      "capacity": 9,
+      "initial_stock": 7,
+      "interval_minutes": 70,
+      "items_per_interval": 1,
+      "max_value_per_180_minutes": 100,
+      "security": "high",
+      "loot_table": "underground_city:chests/apartment_affluent"
+    },
+    {
+      "id": "office",
+      "capacity": 7,
+      "initial_stock": 6,
+      "interval_minutes": 60,
+      "items_per_interval": 1,
+      "max_value_per_180_minutes": 85,
+      "security": "medium",
+      "loot_table": "underground_city:chests/office"
+    },
+    {
+      "id": "industrial",
+      "capacity": 8,
+      "initial_stock": 7,
+      "interval_minutes": 55,
+      "items_per_interval": 1,
+      "max_value_per_180_minutes": 110,
+      "security": "high",
+      "loot_table": "underground_city:chests/industrial"
+    },
+    {
+      "id": "illegal_cache",
+      "capacity": 5,
+      "initial_stock": 3,
+      "interval_minutes": 90,
+      "items_per_interval": 1,
+      "max_value_per_180_minutes": 120,
+      "security": "faction",
+      "loot_table": "underground_city:chests/illegal_cache"
+    }
+  ],
+  "rules": {
+    "cooldown_applies_per_property_not_per_player": true,
+    "do_not_refill_occupied_slots": true,
+    "never_replace_player_added_items": true,
+    "persist_last_restock_clock_and_stock": true,
+    "repeat_burglary_escalates_witness_attention": true,
+    "restock_sources": "NPC household budget and supply",
+    "no_random_money_creation": true,
+    "essential_blueprints_have_deterministic_quest_alternative": true
+  }
+}

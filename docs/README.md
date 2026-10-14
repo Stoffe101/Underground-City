@@ -13,6 +13,11 @@ The docs here distinguish **confirmed product direction**, **design proposals**,
 - [NPC population and simulation](design/npcs.md)
 - [Crime, policing, and conflict](design/crime-and-war.md)
 - [Exploration and loot](design/exploration-and-loot.md)
+- [Burglary and property gameplay](design/burglary-and-property.md)
+- [Progressive property restocking](design/gradual-property-restock.md)
+- [Dangerous crossings and inter-city progression](design/intercity-progression.md)
+- [Repeatable supplies and profession work orders](design/recurring-supply-chains.md)
+- [PC terminal, risky deliveries, black-market dropboxes, and raids](design/terminal-and-underworld.md)
 - [Narrative and quests](design/story.md)
 - [UX and accessibility](design/ui-ux.md)
 
@@ -23,6 +28,7 @@ The docs here distinguish **confirmed product direction**, **design proposals**,
 - [Mod and loader audit](technical/mod-audit.md)
 - [Compare candidate modpacks and installed JARs](technical/modpack-comparison.md)
 - [Map creation and imports](technical/world-pipeline.md)
+- [Experimental three-city generator and loot](technical/three-city-prototype.md)
 - [Reuse-first mod and modpack policy](technical/reuse-first.md)
 - [First-join class and city selection candidates](technical/onboarding-reuse-spike.md)
 - [Pinned first-login test profiles and automation](technical/onboarding-screening-packs.md)
@@ -46,3 +52,7 @@ The docs here distinguish **confirmed product direction**, **design proposals**,
 - [Third-party notices](../THIRD_PARTY_NOTICES.md)
 
 **Update convention:** Proposed mechanics are not described as working. Technical assumptions are not described as verified. Each candidate mod requires its own dedicated-server test and license review.
+
+- [Visual QA and screenshot cleanup](technical/visual-qa.md)
+
+- [October 19 trial-build and two-player test checklist](production/oct19-test-readiness.md)

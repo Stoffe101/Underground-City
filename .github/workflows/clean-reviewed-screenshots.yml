@@ -1,0 +1,48 @@
+name: Delete reviewed visual screenshot artifacts
+
+on:
+  workflow_dispatch:
+    inputs:
+      reviewed_run_id:
+        description: "GitHub Actions run ID of the visual gallery you actually inspected"
+        required: true
+        type: string
+      review_completed:
+        description: "Check only AFTER every screenshot was visually inspected and issues logged"
+        required: true
+        type: boolean
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  cleanup:
+    name: Remove ONLY reviewed uc-visual-gallery artifacts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Review gate
+        env:
+          RUN_ID: ${{ inputs.reviewed_run_id }}
+          APPROVED: ${{ inputs.review_completed }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$RUN_ID" =~ ^[0-9]+$ ]] || { echo "Invalid run id"; exit 1; }
+          [[ "$APPROVED" == "true" ]] || { echo "Screenshot review not confirmed"; exit 1; }
+      - name: Delete only screenshot artifacts from specified reviewed run
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ inputs.reviewed_run_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          response="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID/artifacts?per_page=100")"
+          count=0
+          while read -r artifact_id; do
+            [[ -n "$artifact_id" ]] || continue
+            gh api --method DELETE "repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id" >/dev/null
+            count=$((count+1))
+          done < <(jq -r '.artifacts[] | select(.name | startswith("uc-visual-gallery-")) | .id' <<< "$response")
+          echo "Deleted $count reviewed visual-gallery artifacts from run $RUN_ID." >> "$GITHUB_STEP_SUMMARY"
+          echo "No mod jars, world builds, CI logs, other runs, or non-screenshot artifacts were deleted." >> "$GITHUB_STEP_SUMMARY"

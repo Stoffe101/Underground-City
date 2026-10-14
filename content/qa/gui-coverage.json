@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "policy": "Every integrated interactive GUI and panel must be captured at each supported test resolution and reviewed. Third-party candidates are not assumed covered until installed and automated.",
+  "integrated_surfaces": [
+    {
+      "id": "operations_terminal.contracts",
+      "expected_file": "uc-terminal-contracts.png",
+      "owner": "underground_city",
+      "group": "operations_terminal",
+      "description": "Contract tab, in native Minecraft Screen"
+    },
+    {
+      "id": "operations_terminal.imports",
+      "expected_file": "uc-terminal-imports.png",
+      "owner": "underground_city",
+      "group": "operations_terminal",
+      "description": "Regional import tab"
+    },
+    {
+      "id": "operations_terminal.deliveries",
+      "expected_file": "uc-terminal-deliveries.png",
+      "owner": "underground_city",
+      "group": "operations_terminal",
+      "description": "In-transit cargo / incident tab"
+    },
+    {
+      "id": "operations_terminal.black_market",
+      "expected_file": "uc-terminal-black_market.png",
+      "owner": "underground_city",
+      "group": "operations_terminal",
+      "description": "Black market exchange tab"
+    },
+    {
+      "id": "operations_terminal.raids",
+      "expected_file": "uc-terminal-raids.png",
+      "owner": "underground_city",
+      "group": "operations_terminal",
+      "description": "Late-game raid-selection tab"
+    }
+  ],
+  "unintegrated_future_interfaces": [
+    "Class Selection Mod onboarding menu",
+    "Class Enhancement profession picker",
+    "Role Selection first-join screen",
+    "Faction Friction territory/war menus",
+    "Lost Cities world-creation profiles",
+    "FTB Quests chapters and quest inspector",
+    "Chosen economy mod marketplace/shop UI",
+    "TaCZ weapon UI, attachments and gun workbenches",
+    "NPC dialogue and interactions",
+    "Locks Reforged lockpicking GUI",
+    "Property chest/safe inventory",
+    "Inventory and item inspector",
+    "Future vehicle controls",
+    "Raids mission planning and actual mission HUD"
+  ],
+  "supported_viewports": [
+    {
+      "id": "standard_1080p",
+      "width": 1920,
+      "height": 1080,
+      "gui_scale": 3
+    },
+    {
+      "id": "ultrawide_1440p",
+      "width": 3440,
+      "height": 1440,
+      "gui_scale": 2
+    }
+  ],
+  "screenshots_real_framebuffer": true,
+  "assert_all_integrated_screens": true,
+  "minimum_difference_pixels": 100,
+  "review_model": "CI checks technical screenshot completeness, contrast and duplication; actual artistic/UX judgement requires review of each image after artifact creation.",
+  "artifact_retention_days": 1
+}

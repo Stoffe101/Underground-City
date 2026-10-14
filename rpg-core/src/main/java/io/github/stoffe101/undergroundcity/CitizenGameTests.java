@@ -7,6 +7,9 @@ import net.minecraftforge.gametest.GameTestHolder;
 import net.minecraftforge.gametest.PrefixGameTestTemplate;
 
 import java.util.UUID;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraftforge.fml.ModList;
+import net.minecraftforge.registries.ForgeRegistries;
 
 /** In-engine GameTests. Runs in dedicated GameTestServer without human clients. */
 @GameTestHolder(UndergroundCity.MOD_ID)
@@ -32,6 +35,19 @@ public final class CitizenGameTests {
         check(farmer.careerXp() == 350, "Career XP did not survive roundtrip");
         check(technician.generalXp.get("trading") == 1200, "General XP did not survive roundtrip");
         check(loaded.find(UUID.randomUUID()).isEmpty(), "Unregistered player unexpectedly present");
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty")
+    public static void terminalAndOptionalQShopCommand(GameTestHelper helper) {
+        check(new ResourceLocation(UndergroundCity.MOD_ID, "operations_terminal")
+            .equals(ForgeRegistries.BLOCKS.getKey(UndergroundCity.TERMINAL.get())),
+            "Original one-block operations PC missing from block registry");
+        if (ModList.get().isLoaded("qshop")) {
+            check(helper.getLevel().getServer().getCommands().getDispatcher()
+                    .getRoot().getChild("qshop") != null,
+                "QShop was loaded without registering its expected server command");
+        }
         helper.succeed();
     }
 

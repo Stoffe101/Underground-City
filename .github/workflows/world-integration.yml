@@ -1,0 +1,87 @@
+name: World and property mod smoke matrix
+
+on:
+  pull_request:
+    paths:
+      - 'content/modpacks/world-mod-candidates.json'
+      - 'content/region-blueprints/**'
+      - 'scripts/build_world_prototype.py'
+      - 'rpg-core/build.gradle'
+      - '.github/workflows/world-integration.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'content/modpacks/world-mod-candidates.json'
+      - 'content/region-blueprints/**'
+      - 'scripts/build_world_prototype.py'
+      - 'rpg-core/build.gradle'
+      - '.github/workflows/world-integration.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-pins:
+    name: Validate pinned releases
+    runs-on: ubuntu-latest
+    outputs:
+      candidates: ${{ steps.list.outputs.candidates }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: list
+        shell: bash
+        run: |
+          set -euo pipefail
+          jq -e '.schema_version == 1 and .minecraft == "1.20.1" and .forge == "47.4.10" and (.candidates | length == 4)' content/modpacks/world-mod-candidates.json
+          echo "candidates=$(jq -c '[.candidates[].id]' content/modpacks/world-mod-candidates.json)" >> "$GITHUB_OUTPUT"
+
+  smoke:
+    name: Forge smoke / ${{ matrix.candidate }}
+    needs: validate-pins
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    strategy:
+      fail-fast: false
+      matrix:
+        candidate: ${{ fromJSON(needs.validate-pins.outputs.candidates) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.8'
+      - name: Generate original low-code city data when testing Lost Cities
+        env:
+          CANDIDATE: ${{ matrix.candidate }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/validate_intercity.py
+          if [[ "$CANDIDATE" == "lostcities" ]]; then
+            mkdir -p rpg-core/run/mods
+            python scripts/build_world_prototype.py --output rpg-core/run/mods/underground-city-world-prototype.jar
+          fi
+      - name: Resolve pinned mod and launch Forge GameTestServer
+        env:
+          CANDIDATE: ${{ matrix.candidate }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gradle -p rpg-core runGameTestServer -PucWorldCandidate="$CANDIDATE" --no-daemon --stacktrace
+      - name: Report measured scope
+        if: always()
+        env:
+          CANDIDATE: ${{ matrix.candidate }}
+        run: |
+          echo "## $CANDIDATE" >> "$GITHUB_STEP_SUMMARY"
+          echo "This is one **isolated headless startup/GameTest smoke test**, using a temporary original-author CurseMaven dependency." >> "$GITHUB_STEP_SUMMARY"
+          echo "Lost Cities additionally receives our own prototype low-code JAR in an ephemeral run/mods folder." >> "$GITHUB_STEP_SUMMARY"
+          echo "Passing does not demonstrate actual generated bridges, populated towns, loot refill in chests, or war AI." >> "$GITHUB_STEP_SUMMARY"
+          echo "No third-party mod binaries are committed or uploaded in CI artifacts." >> "$GITHUB_STEP_SUMMARY"

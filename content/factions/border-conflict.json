@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "prototype_only": true,
+  "initial_relations": [
+    {
+      "cities": [
+        "ironhaven",
+        "valewood"
+      ],
+      "status": "armed_standoff",
+      "risk": "medium",
+      "civilian_access": "convoy_pass_or_limited_trade_permit"
+    },
+    {
+      "cities": [
+        "ironhaven",
+        "blackwater"
+      ],
+      "status": "active_border_conflict",
+      "risk": "high",
+      "civilian_access": "document_check_and_escort"
+    },
+    {
+      "cities": [
+        "valewood",
+        "blackwater"
+      ],
+      "status": "trade_embargo",
+      "risk": "high",
+      "civilian_access": "neutral_contract_or_remote_trade"
+    }
+  ],
+  "visitor_rules": {
+    "foreign_citizen_at_public_gate": "warn_and_inspect_without_instant_death",
+    "illegal_border_crossing": "trespass_evidence_and_local_heat",
+    "contested_military_zone": "hostile_patrols_and_warning_before_engagement_where_feasible",
+    "valid_trade_pass": "civilian_access_to_designated_market_and_contractors",
+    "legitimate_supply_obtainable_without_pvp": true,
+    "black_market_routes": "higher_profit_higher_heat",
+    "death_or_capture": "recoverable_within_session",
+    "player_versus_player": "disabled_by_default",
+    "faction_war_evolves_with_story": true,
+    "safe_starters_and_registration_offices": true,
+    "no_passive_offline_raids": true
+  },
+  "crossing_contracts": [
+    {
+      "corridor": "ironhaven_valewood",
+      "options": [
+        "escort",
+        "trade_manifest",
+        "infiltrate"
+      ],
+      "neutral_pass_through": true
+    },
+    {
+      "corridor": "ironhaven_blackwater",
+      "options": [
+        "authorized_convoy",
+        "high_risk_crossing",
+        "black_market_courier"
+      ],
+      "neutral_pass_through": false
+    },
+    {
+      "corridor": "valewood_blackwater",
+      "options": [
+        "licensed_broker",
+        "backroad_smuggler",
+        "reputation_access"
+      ],
+      "neutral_pass_through": true
+    }
+  ]
+}
