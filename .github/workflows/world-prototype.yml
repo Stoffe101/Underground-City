@@ -105,7 +105,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: uc-fresh-world-profile-${{ github.sha }}
-          path: build/world-survey-stage/
+          path: |
+            build/world-survey-stage/config/
+            build/world-survey-stage/defaultconfigs/
           retention-days: 7
       - name: Explicit scope
         run: |

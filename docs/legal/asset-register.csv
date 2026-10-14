@@ -1,2 +1,4 @@
 id,kind,name,creator,source_url,version_or_revision,license_url,permission_status,allowed_use,attribution,redistribution_allowed,notes
 EXAMPLE-ONLY,example,Replace this row before tracking assets,N/A,N/A,N/A,N/A,candidate,none,not applicable,no,Illustrative placeholder; no asset has been imported
+qshop-api,mod-api,Q Shop,QLNPLUS,https://github.com/QLNPLUS/Q-shop/releases/tag/v1.8.4-forge-1.20.1,1.8.4,https://github.com/QLNPLUS/Q-shop/blob/v1.8.4-forge-1.20.1/LICENSE,under_review,official API and temporary private runtime tests,QLNPLUS,no,No source or assets copied; original translations/configs only; SHA256 recorded in integration guide
+lostcities-source,mod-source-review,The Lost Cities,McJty,https://github.com/McJtyMods/LostCities/commit/61ed3004,1.20-7.5.5,https://github.com/McJtyMods/LostCities/blob/61ed3004/LICENSE,candidate,read-only versioned codec and profile review,McJty,no,Original world/profile configs; no third-party structures or binary copied

@@ -56,3 +56,5 @@ The docs here distinguish **confirmed product direction**, **design proposals**,
 - [Visual QA and screenshot cleanup](technical/visual-qa.md)
 
 - [October 19 trial-build and two-player test checklist](production/oct19-test-readiness.md)
+
+- [Real economy, work orders, recovery and named supplier](technical/economy-integration.md)

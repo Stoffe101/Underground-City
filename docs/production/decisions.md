@@ -10,7 +10,7 @@ Use `D-###` IDs. Status values: **accepted (product intent)**, **proposed**, **n
 | D-004 | accepted (product intent) | Career levels + branching profession trees + separate general skills | Multiple ways to progress and specialize |
 | D-005 | accepted (product intent) | Curated connected finite region, assembled from legitimate existing maps, permitted structures, or customized generation | Entire cities cannot be handmade |
 | D-006 | accepted (product intent) | Original project material proprietary/ARR; third-party rights respected | Private scope; provenance required |
-| D-007 | proposed | Java 1.20.1 + Forge 47.x + Java 17 | Promising mod availability; confirm in compatibility tests |
+| D-007 | accepted for current slice | Java 1.20.1 + Forge 47.4.10 + Java 17 | Explicit target; cloud compile, Forge GameTests and real-client captures |
 | D-008 | needs spike | Lost Cities city generation versus adapting an existing connected modern-city world | Measure visuals, compatibility, pathfinding, customization, and region boundaries |
 | D-009 | proposed | Dedicated custom RPG Core for server-authoritative persistence and event integration | Avoid fragile independent scripts as source of truth |
 | D-010 | needs spike | CustomNPCs vs MineColonies vs other NPC approaches | AI, performance, licenses, map integration |
@@ -42,6 +42,11 @@ Use `D-###` IDs. Status values: **accepted (product intent)**, **proposed**, **n
 | D-037 | experimental (implemented adapter) | Start with Q Shop 1.8.4 as optional authoritative currency and vanilla civilian supply shop | PC sends bounded positional request, server validates actual placed block, distance and citizenship, then invokes official Q Shop command; regional source shops still locked |
 | D-038 | accepted (safety) | Original provider templates must never overwrite live Q Shop world/shop data | Generate/copy first-run configs only after validation, abort when existing worlds already have market data |
 | D-014 | proposed | Visible active NPCs + bounded off-screen economic simulation | Plausible cities without thousands of ticking entities |
+
+| D-039 | implemented starter slice | Q Shop 1.8.4 owns all live credits; Core bridges bounded recurring orders and career XP | Official API/version/checksum pinned; real buy/sell and delivery GameTests; no duplicate wallet |
+| D-040 | implemented, recovery acceptance pending | Synchronous prepared-settlement journal with absolute replay targets, saved-player verification and fsync | Prevent retry rewards; two connected cloud clients and ordinary restart passed; abrupt process-kill/power-loss tests still required |
+| D-041 | implemented prototype | Reuse one persistent vanilla villager supply clerk and its native routines | No bespoke NPC framework; real entity/binding tests; no populated city or police claim |
+| D-042 | native generation tested | Install original three-city profile only in a fresh instance | Lost Cities 7.5.5 source revision 61ed3004; buildings verified at all three anchors; terrain aesthetics/highways pending |
 
 ## Open decisions
 

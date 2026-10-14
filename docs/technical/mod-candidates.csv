@@ -29,3 +29,4 @@ origins_ui_fixes,Origins QoL UI Fixes,https://www.curseforge.com/minecraft/mc-mo
 locks_reforged,Locks Reforged,https://www.curseforge.com/minecraft/mc-mods/locks-reforged,property,high,candidate,1.20.1 Forge,Lock picking doors and chests; check generated structure integration and shared burglary inventory
 lootchest_refill,[TACZ] Lootchest Refill,https://www.curseforge.com/minecraft/mc-mods/lootchest-refill,property,critical,candidate,1.20.1 Forge,1.1.2 pinned file 7711372; timers min/max items; test shared apartment stock and economics
 faction_friction,Faction Friction,https://www.curseforge.com/minecraft/mc-mods/faction-friction,factions,high,candidate,1.20.1 Forge,1.8.0R pinned file 9042001; territory diplomacy war; test safe civilian crossings and city affiliations
+qshop,Q Shop,https://github.com/QLNPLUS/Q-shop,economy,critical,testing,1.20.1 Forge 1.8.4,Official addon API; real Core buy sell work orders and two-client restart tested; full pack pending

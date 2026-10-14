@@ -1,8 +1,8 @@
 # Mod and loader audit
 
-**Research snapshot: October 14, 2026. Candidates only. None has been installed or tested together in this repository.**
+**October 14, 2026:** Q Shop 1.8.4 plus original Core now have actual transaction/GameTest/client/restart evidence. Other listed mods remain candidates or isolated smoke-tested providers; no complete combined city modpack is certified.
 
-The proposed baseline is **Minecraft Java 1.20.1 + Forge 47.x + Java 17**, pending reproducible checks on a client and dedicated server. All releases need exact filename, checksum, dependency and rights review before selection.
+The current verified starter baseline is **Minecraft Java 1.20.1 + Forge 47.4.10 + Java 17**. All releases need exact filename, checksum, dependency and rights review before selection.
 
 | Candidate | Goal | Priority | Status |
 | --- | --- | --- | --- |
@@ -45,3 +45,7 @@ The machine-readable [candidate register](mod-candidates.csv) is for tracking, n
 ## Design caution: role ownership
 
 Do not ship both RoleCraft-owned profession XP and RPG Core-owned profession XP without an explicit adapter. The first-login interface should be supplied by one provider. Test whether RoleCraft can support custom hacker and gunsmith roles before committing to it, and test Pufferfish's Skills as a complementary UI only if progression data can be synchronized safely. See [reuse-first policy](reuse-first.md).
+
+## Selected starter provider
+
+[Q Shop 1.8.4](economy-integration.md) by QLNPLUS owns live credits and civilian trades. Its official Java API/release/checksum were reviewed and exercised with Core, including two actual cloud clients and dedicated restart. ARR source/assets/binaries are not redistributed. This does not certify Q Shop together with Lost Cities, TaCZ, an NPC framework and every other candidate. Lost Cities 7.5.5, Lootchest Refill and Faction Friction still have isolated Core smoke evidence, not actual city/refill/war playthroughs.

@@ -1,6 +1,6 @@
 # Testing and evidence strategy
 
-**No gameplay tests have been run.** Start with docs/manifest lint. Real integration tests begin once the modpack and world exist.
+Cloud Forge runtime tests now exercise the starter economy/work-order APIs and a named vanilla supplier; real-client screenshot tests cover 13 controlled interface states. Two actual cloud clients have also traded and reconnected after a dedicated restart; native blocks are observed at all three city anchors. These are not two-human-client or complete modpack acceptance. See [October 19 evidence](../production/oct19-test-readiness.md).
 
 | Level | Evidence required |
 | --- | --- |

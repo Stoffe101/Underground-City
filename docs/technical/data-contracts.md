@@ -1,6 +1,6 @@
 # Data contracts and progression integrity
 
-These are proposed **illustrative** records. No runtime loader, schema or registry entries exist yet.
+The examples below remain illustrative designs. Runtime schema-1 work orders now load through the vanilla datapack reload system and validate item registries, career IDs, quantities, prices, XP and shared demand. Accepted terms and settlement targets are snapshotted in the durable journal; see [economy integration](economy-integration.md).
 
 ## Rules
 
