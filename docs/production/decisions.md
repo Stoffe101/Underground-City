@@ -29,6 +29,8 @@ Use `D-###` IDs. Status values: **accepted (product intent)**, **proposed**, **n
 | D-024 | accepted (product intent) | All three cities connected through guarded bridges/highways or suitable wilderness bypasses | World geometry and crossing hazards must be tested before anything is pasted |
 | D-025 | accepted (product intent) | Occupied homes slowly restock shared goods instead of becoming permanently depleted or instantly resetting | Provisional 1 item per elapsed active-play interval, caps, persistence and per-home economy funding; reuse an existing refill mod when possible |
 | D-026 | needs spike | Lost Cities 7.5.5 highways, [TACZ] Lootchest Refill 1.1.2 and Faction Friction 1.8.0R could supply infrastructure, timed restock and warfare | Pin releases and run isolated tests, then a combined in-world test |
+| D-027 | accepted (product intent) | High-tier goods and work orders *repeatedly consume* city-exclusive specialty supplies rather than requiring one-time visits only | Encourages recurring dangerous trade/procurement between cities while keeping vanilla basics local |
+| D-028 | proposed | Use bounded shared NPC supplier inventories, active-play replenishment, batched orders and optional expensive late-game imports | Avoid frustrating one-item trips, offline disadvantages and co-op duplication; requires Forge integration |
 | D-014 | proposed | Visible active NPCs + bounded off-screen economic simulation | Plausible cities without thousands of ticking entities |
 
 ## Open decisions

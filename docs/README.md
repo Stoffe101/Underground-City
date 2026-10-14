@@ -16,6 +16,7 @@ The docs here distinguish **confirmed product direction**, **design proposals**,
 - [Burglary and property gameplay](design/burglary-and-property.md)
 - [Progressive property restocking](design/gradual-property-restock.md)
 - [Dangerous crossings and inter-city progression](design/intercity-progression.md)
+- [Repeatable supplies and profession work orders](design/recurring-supply-chains.md)
 - [Narrative and quests](design/story.md)
 - [UX and accessibility](design/ui-ux.md)
 
