@@ -15,6 +15,7 @@ import zipfile
 from pathlib import Path
 
 from validate_intercity import load as load_intercity, validate as validate_intercity
+from simulate_regional_supply import read_json as read_supply_json, validate as validate_regional_supply
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT = ROOT / "content/region-blueprints/cities.json"
@@ -186,6 +187,15 @@ def render(data: dict) -> dict[str, bytes]:
         ("conflict", "border-conflict"),
     ):
         files[f"assets/underground_city/prototype_plans/{file_id}.json"] = json_bytes(planning[tag])
+    recurring = read_supply_json(ROOT / "content/progression/recurring-supply.json")
+    economy_issues = validate_regional_supply(
+        recurring, data, planning["catalog"], planning["supply"]
+    )
+    if economy_issues:
+        raise ValueError("Recurring regional economy invalid: " + "; ".join(economy_issues))
+    # Packaged as clearly inert design data. Minecraft doesn't load these
+    # prototype_plan files as recipes, items, NPC shop inventories or contracts.
+    files["assets/underground_city/prototype_plans/recurring-supply.json"] = json_bytes(recurring)
     return files
 
 
