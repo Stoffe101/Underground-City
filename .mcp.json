@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "modlens": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@creeperhost/modlens-mcp"
+      ]
+    },
+    "modrinth": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@justinscott12/modrinth-mcp"
+      ]
+    }
+  }
+}
