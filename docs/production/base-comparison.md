@@ -33,3 +33,7 @@ The GCA author describes **Kuro's Economy** for bank accounts, automatic payment
 - Test **RoleCraft** for career UI and police. Its published roles are farmer/blacksmith etc.; custom Gunsmith/Hacker extendability remains unknown.
 
 Do not claim that these components work together until two-client dedicated-server tests pass.
+
+## Repeatable inventory comparison tooling
+
+The new [pack comparator](../technical/modpack-comparison.md) takes two official launcher-export manifests and calculates overlapping or unique CurseForge project IDs (or equivalent identifiers within the same export format). It can also compare installed JAR metadata by declared mod ID. It will not try to conflate CurseForge and Modrinth identities or claim compatibility from an overlap score. CI tests comparison behavior using synthetic manifests so the tool remains useful independently of any downloaded modpack.
