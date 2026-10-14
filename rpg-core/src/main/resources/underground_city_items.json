@@ -1,0 +1,115 @@
+{
+  "schema_version": 1,
+  "items": [
+    {
+      "id": "refined_alloy",
+      "kind": "commodity",
+      "stack": 64
+    },
+    {
+      "id": "machined_parts",
+      "kind": "commodity",
+      "stack": 64
+    },
+    {
+      "id": "security_fabric",
+      "kind": "commodity",
+      "stack": 64
+    },
+    {
+      "id": "rare_seeds",
+      "kind": "commodity",
+      "stack": 64
+    },
+    {
+      "id": "biopolymer",
+      "kind": "commodity",
+      "stack": 64
+    },
+    {
+      "id": "agro_catalyst",
+      "kind": "commodity",
+      "stack": 64
+    },
+    {
+      "id": "control_circuits",
+      "kind": "commodity",
+      "stack": 64
+    },
+    {
+      "id": "encrypted_design",
+      "kind": "commodity",
+      "stack": 64
+    },
+    {
+      "id": "optical_components",
+      "kind": "commodity",
+      "stack": 64
+    },
+    {
+      "id": "irrigation_service_kit",
+      "kind": "product",
+      "stack": 16
+    },
+    {
+      "id": "climate_module",
+      "kind": "product",
+      "stack": 16
+    },
+    {
+      "id": "precision_greenhouse_unit",
+      "kind": "product",
+      "stack": 16
+    },
+    {
+      "id": "precision_machinery_parts",
+      "kind": "product",
+      "stack": 16
+    },
+    {
+      "id": "field_repair_set",
+      "kind": "product",
+      "stack": 16
+    },
+    {
+      "id": "composite_housing",
+      "kind": "product",
+      "stack": 16
+    },
+    {
+      "id": "optic_mount_kit",
+      "kind": "product",
+      "stack": 16
+    },
+    {
+      "id": "licensed_service_kit",
+      "kind": "product",
+      "stack": 16
+    },
+    {
+      "id": "specialized_equipment_platform",
+      "kind": "product",
+      "stack": 16
+    },
+    {
+      "id": "industrial_controller",
+      "kind": "product",
+      "stack": 16
+    },
+    {
+      "id": "agri_sensor_repair",
+      "kind": "product",
+      "stack": 16
+    },
+    {
+      "id": "security_array",
+      "kind": "product",
+      "stack": 16
+    },
+    {
+      "id": "lockpick",
+      "kind": "tool",
+      "stack": 16
+    }
+  ]
+}

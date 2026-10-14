@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "group": "underground_city_regional",
+  "ingredients": [
+    {
+      "item": "underground_city:optical_components"
+    },
+    {
+      "item": "underground_city:agro_catalyst"
+    },
+    {
+      "item": "minecraft:redstone"
+    }
+  ],
+  "result": {
+    "item": "underground_city:agri_sensor_repair",
+    "count": 2
+  }
+}

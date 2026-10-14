@@ -24,7 +24,7 @@ import java.util.function.Supplier;
  * This is NOT a remote city supplier, contraband order, or raid service.
  */
 public final class TerminalNetwork {
-    private static final String VERSION = "3";
+    private static final String VERSION = "4";
     private static final String STARTER_SHOP_ID = "uc_starter_supply";
     private static final double MAX_TERMINAL_DISTANCE_SQUARED = 64.0;
     private static final java.util.Map<ServerPlayer, Integer> REQUEST_TIMES = new java.util.WeakHashMap<>();
@@ -57,6 +57,19 @@ public final class TerminalNetwork {
                 });
                 context.setPacketHandled(true);
             }, Optional.of(NetworkDirection.PLAY_TO_SERVER));
+        CHANNEL.registerMessage(3, RegionalBuy.class,
+            (packet, buffer) -> {
+                buffer.writeBlockPos(packet.pos); buffer.writeUtf(packet.commodity, 128);
+                buffer.writeVarInt(packet.quantity); buffer.writeUUID(packet.nonce);
+            }, buffer -> new RegionalBuy(buffer.readBlockPos(), buffer.readUtf(128), buffer.readVarInt(), buffer.readUUID()),
+            (packet, supplier) -> {
+                NetworkEvent.Context context = supplier.get();
+                context.enqueueWork(() -> {
+                    ServerPlayer player = context.getSender();
+                    if (player != null) RegionalMarket.buy(player, packet.pos, packet.commodity, packet.quantity, packet.nonce);
+                });
+                context.setPacketHandled(true);
+            }, Optional.of(NetworkDirection.PLAY_TO_SERVER));
     }
 
     private static void receiveOpen(OpenTerminal packet, Supplier<NetworkEvent.Context> supplier) {
@@ -82,7 +95,12 @@ public final class TerminalNetwork {
 
     /** Called after physical right-click, not by a remote client action. */
     public static void open(ServerPlayer player, BlockPos pos) {
-        CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new OpenTerminal(pos.immutable(), TerminalData.snapshot(player)));
+        CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new OpenTerminal(pos.immutable(), TerminalData.snapshot(player, pos)));
+    }
+
+    /** Client click on a regional offer; quantity is validated and the price is server-owned. */
+    public static void requestRegionalBuy(BlockPos pos, String commodity, int quantity) {
+        CHANNEL.sendToServer(new RegionalBuy(pos.immutable(), commodity, quantity, UUID.randomUUID()));
     }
 
     public static void requestWork(BlockPos pos, int action, String id, UUID nonce) {
@@ -147,4 +165,5 @@ public final class TerminalNetwork {
     }
 
     private record WorkAction(BlockPos pos, int action, String id, UUID nonce) {}
+    private record RegionalBuy(BlockPos pos, String commodity, int quantity, UUID nonce) {}
 }

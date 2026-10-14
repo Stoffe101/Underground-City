@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "city": "ironhaven",
+  "item": "underground_city:machined_parts",
+  "unit_price": 18,
+  "initial": 18,
+  "capacity": 36,
+  "units_per_interval": 4,
+  "interval_ticks": 54000,
+  "max_order": 8
+}

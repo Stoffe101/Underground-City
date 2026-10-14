@@ -1,0 +1,17 @@
+{
+  "schema_version": 2,
+  "title": "Commission a precision greenhouse unit",
+  "career": "farmer",
+  "level": 5,
+  "foreign_visits": 2,
+  "requirements": [
+    {
+      "item": "underground_city:precision_greenhouse_unit",
+      "count": 1
+    }
+  ],
+  "credits": 210,
+  "xp": 600,
+  "capacity": 2,
+  "refill_ticks": 12000
+}

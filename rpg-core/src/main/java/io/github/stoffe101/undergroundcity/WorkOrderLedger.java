@@ -25,6 +25,7 @@ import java.util.WeakHashMap;
  * saved. Recovery runs before the player can interact. No second wallet lives here.
  */
 public final class WorkOrderLedger {
+    private static final String PURCHASE = "purchase";
     private static final Map<MinecraftServer, WorkOrderLedger> INSTANCES = new WeakHashMap<>();
     private final Path path;
     private CompoundTag root;
@@ -127,10 +128,92 @@ public final class WorkOrderLedger {
         checkHealthy();
         CompoundTag record = player(player);
         if (!record.contains("pending")) throw new IllegalStateException("No prepared settlement");
-        record.putInt("earned_xp_target", record.getCompound("pending").getInt("xp"));
-        record.putInt("completed", Math.addExact(record.getInt("completed"), 1));
-        record.remove("pending"); record.remove("order"); record.remove("job");
+        CompoundTag pending = record.getCompound("pending");
+        if (PURCHASE.equals(pending.getString("kind"))) {
+            // A regional purchase never touches an accepted order or career XP.
+            record.putInt("purchases", Math.addExact(record.getInt("purchases"), 1));
+            record.remove("pending");
+        } else {
+            record.putInt("earned_xp_target", pending.getInt("xp"));
+            record.putInt("completed", Math.addExact(record.getInt("completed"), 1));
+            record.remove("pending"); record.remove("order"); record.remove("job");
+        }
         putPlayer(player, record); persist();
+    }
+
+    // ---------------------------------------------------------------- regional exchange
+
+    /** Replenished shared units for a supplier line. Does not persist by itself. */
+    int regionalUnits(RegionalStock stock) {
+        CompoundTag stocks = root.getCompound("regional");
+        CompoundTag state = stocks.getCompound(stock.id());
+        long now = clock();
+        int units = state.contains("units") ? Math.min(stock.capacity(), state.getInt("units")) : stock.initial();
+        long last = state.contains("last_tick") ? state.getLong("last_tick") : now;
+        if (units < 0 || last > now) throw new IllegalStateException("Invalid saved supplier stock");
+        if (units >= stock.capacity()) last = now; // a full shelf cannot bank a hidden backlog
+        long intervals = (now - last) / stock.intervalTicks();
+        if (intervals > 0) {
+            long gained = Math.multiplyExact(intervals, (long) stock.unitsPerInterval());
+            units = (int) Math.min(stock.capacity(), units + gained);
+            last = units >= stock.capacity() ? now : last + intervals * stock.intervalTicks();
+        }
+        state.putInt("units", units); state.putLong("last_tick", last);
+        stocks.put(stock.id(), state); root.put("regional", stocks);
+        return units;
+    }
+
+    /** Idempotently records that a registered citizen used an exchange inside {@code city}. */
+    boolean noteVisit(UUID player, String city) {
+        if (faulted || !ProgressionRules.validCity(city)) return false;
+        CompoundTag record = player(player);
+        ListTag visited = record.getList("visited", Tag.TAG_STRING);
+        for (int i = 0; i < visited.size(); i++) if (visited.getString(i).equals(city)) return false;
+        visited.add(net.minecraft.nbt.StringTag.valueOf(city));
+        record.put("visited", visited);
+        putPlayer(player, record); persist();
+        return true;
+    }
+
+    int foreignVisits(UUID player, String homeCity) {
+        ListTag visited = player(player).getList("visited", Tag.TAG_STRING);
+        int count = 0;
+        for (int i = 0; i < visited.size(); i++) if (!visited.getString(i).equals(homeCity)) count++;
+        return count;
+    }
+
+    boolean hasPurchase(UUID player, UUID purchase) {
+        ListTag recent = player(player).getList("recent_purchases", Tag.TAG_STRING);
+        for (int i = 0; i < recent.size(); i++) if (recent.getString(i).equals(purchase.toString())) return true;
+        return false;
+    }
+
+    /**
+     * Durably commits the shared-stock decrement, the purchase nonce and the absolute
+     * inventory/wallet targets together, BEFORE the live player or Q Shop wallet changes.
+     */
+    void preparePurchase(UUID player, UUID purchase, RegionalStock stock, int quantity,
+                         ListTag inventoryAfter, double balanceAfter, int xpNow) {
+        checkHealthy();
+        CompoundTag record = player(player);
+        if (record.contains("pending")) throw new IllegalStateException("Finish recovery before buying");
+        if (hasPurchase(player, purchase)) throw new IllegalStateException("Purchase was already processed");
+        if (!Double.isFinite(balanceAfter) || balanceAfter < 0 || xpNow < 0) throw new IllegalArgumentException("Invalid settlement");
+        int units = regionalUnits(stock);
+        if (quantity < 1 || quantity > stock.maxOrder() || quantity > units) {
+            throw new IllegalStateException("Supplier stock changed; refresh the terminal");
+        }
+        root.getCompound("regional").getCompound(stock.id()).putInt("units", units - quantity);
+        CompoundTag pending = new CompoundTag();
+        pending.putString("kind", PURCHASE); pending.putString("commodity", stock.id()); pending.putInt("quantity", quantity);
+        pending.put("inventory", inventoryAfter.copy()); pending.putDouble("balance", balanceAfter);
+        pending.putInt("xp", xpNow);
+        record.put("pending", pending);
+        ListTag recent = record.getList("recent_purchases", Tag.TAG_STRING);
+        recent.add(net.minecraft.nbt.StringTag.valueOf(purchase.toString()));
+        while (recent.size() > 8) recent.remove(0);
+        record.put("recent_purchases", recent);
+        putPlayer(player, record); persist(); // BEFORE touching inventory or Q Shop
     }
 
     private void putPlayer(UUID id, CompoundTag value) {

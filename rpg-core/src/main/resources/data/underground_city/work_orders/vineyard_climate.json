@@ -1,0 +1,17 @@
+{
+  "schema_version": 2,
+  "title": "Install a vineyard climate module",
+  "career": "farmer",
+  "level": 4,
+  "foreign_visits": 1,
+  "requirements": [
+    {
+      "item": "underground_city:climate_module",
+      "count": 1
+    }
+  ],
+  "credits": 150,
+  "xp": 350,
+  "capacity": 2,
+  "refill_ticks": 12000
+}

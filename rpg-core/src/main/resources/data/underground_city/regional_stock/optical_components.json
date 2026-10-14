@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "city": "blackwater",
+  "item": "underground_city:optical_components",
+  "unit_price": 34,
+  "initial": 12,
+  "capacity": 24,
+  "units_per_interval": 2,
+  "interval_ticks": 84000,
+  "max_order": 8
+}

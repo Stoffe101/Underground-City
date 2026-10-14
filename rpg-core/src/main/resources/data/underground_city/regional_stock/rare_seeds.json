@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "city": "valewood",
+  "item": "underground_city:rare_seeds",
+  "unit_price": 14,
+  "initial": 17,
+  "capacity": 36,
+  "units_per_interval": 4,
+  "interval_ticks": 60000,
+  "max_order": 8
+}

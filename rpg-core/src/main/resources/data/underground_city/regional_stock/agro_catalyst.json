@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "city": "valewood",
+  "item": "underground_city:agro_catalyst",
+  "unit_price": 30,
+  "initial": 12,
+  "capacity": 25,
+  "units_per_interval": 2,
+  "interval_ticks": 90000,
+  "max_order": 8
+}

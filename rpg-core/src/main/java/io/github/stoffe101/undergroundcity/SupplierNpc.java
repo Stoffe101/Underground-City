@@ -68,6 +68,25 @@ public final class SupplierNpc {
         return clerk;
     }
     static boolean owns(State state,Villager villager) { return villager.getUUID().equals(state.clerk); }
+    /** A dead or discarded clerk must not permanently block replacement. Unloading is NOT removal. */
+    static boolean releaseIfRemoved(net.minecraft.server.MinecraftServer server,Villager villager,
+                                    net.minecraft.world.entity.Entity.RemovalReason reason) {
+        State state=state(server);
+        if(!owns(state,villager)) return false;
+        if(reason!=net.minecraft.world.entity.Entity.RemovalReason.KILLED
+            && reason!=net.minecraft.world.entity.Entity.RemovalReason.DISCARDED) return false;
+        state.clerk=null;state.dimension=null;state.terminal=null;state.setDirty();
+        server.overworld().getDataStorage().save();
+        return true;
+    }
+    @SubscribeEvent public void removed(net.minecraftforge.event.entity.EntityLeaveLevelEvent event) {
+        if(event.getLevel().isClientSide() || !(event.getEntity() instanceof Villager villager)) return;
+        var removal=villager.getRemovalReason();
+        if(removal==null || villager.getServer()==null) return;
+        if(releaseIfRemoved(villager.getServer(),villager,removal)) {
+            com.mojang.logging.LogUtils.getLogger().warn("Supply clerk {} was removed ({}); /uc_clerk may place a replacement",villager.getUUID(),removal);
+        }
+    }
     @SubscribeEvent public void interact(PlayerInteractEvent.EntityInteract event) {
         if(!(event.getEntity() instanceof ServerPlayer player) || !(event.getTarget() instanceof Villager villager)) return;
         State state=state(player.server);

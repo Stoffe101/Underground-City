@@ -28,9 +28,9 @@ public final class VisualCaptureHarness {
     private VisualCaptureHarness() {}
     private static TerminalData fixture(int level,int held,boolean active,boolean online) {
         return new TerminalData("valewood","farmer",level,level==1?0:125,60,online,
-            active?UUID.fromString("00000000-0000-0000-0000-000000000001"):null,
-            List.of(new TerminalData.Row("underground_city:bread","Bake the canteen bread order",
-                "minecraft:bread",8,held,2,36,180,4,active)));
+            active?UUID.fromString("00000000-0000-0000-0000-000000000001"):null,0,"",
+            List.of(new TerminalData.Row("underground_city:bread","Bake the canteen bread order",2,36,180,4,active,0,
+                List.of(new TerminalData.Req("minecraft:bread",8,held)))),List.of());
     }
     private static void start(Minecraft mc) {
         int scale=Integer.getInteger("uc.visualCapture.scale",3);

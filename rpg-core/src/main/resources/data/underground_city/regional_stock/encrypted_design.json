@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "city": "blackwater",
+  "item": "underground_city:encrypted_design",
+  "unit_price": 80,
+  "initial": 6,
+  "capacity": 15,
+  "units_per_interval": 1,
+  "interval_ticks": 120000,
+  "max_order": 3
+}

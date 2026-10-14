@@ -1,0 +1,17 @@
+{
+  "schema_version": 2,
+  "title": "Field repair sets for the municipal depot",
+  "career": "smith",
+  "level": 4,
+  "foreign_visits": 1,
+  "requirements": [
+    {
+      "item": "underground_city:field_repair_set",
+      "count": 4
+    }
+  ],
+  "credits": 140,
+  "xp": 300,
+  "capacity": 2,
+  "refill_ticks": 12000
+}

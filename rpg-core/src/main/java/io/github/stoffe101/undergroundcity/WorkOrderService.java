@@ -21,7 +21,10 @@ import java.util.UUID;
 public final class WorkOrderService {
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    public static void action(ServerPlayer player, BlockPos pos, int action, String id, UUID nonce) {
+    /** Authorized, rate-limited, journaled terminal operation; always refreshes the terminal. */
+    interface Operation { void run(WorkOrderLedger ledger, CitizenState.Citizen citizen); }
+
+    static void guarded(ServerPlayer player, BlockPos pos, Operation operation) {
         if (!TerminalNetwork.requestSlot(player)) return;
         if (!TerminalNetwork.authorizedForStarterShop(player, pos)) {
             player.sendSystemMessage(Component.literal("Register and use a nearby placed Operations Terminal."));
@@ -33,23 +36,7 @@ public final class WorkOrderService {
             WorkOrderLedger ledger = WorkOrderLedger.get(player.server);
             if (ledger.player(player.getUUID()).contains("pending")) recover(player);
             CitizenState.Citizen citizen = CitizenState.get(player.server).find(player.getUUID()).orElseThrow();
-            switch (action) {
-                case 0 -> {
-                    WorkOrder order = WorkOrderCatalog.INSTANCE.find(id);
-                    if (order == null || !order.career().equals(citizen.career)) {
-                        throw new IllegalStateException("This order belongs to another profession");
-                    }
-                    if (citizen.careerLevel() < order.level()) throw new IllegalStateException("Career level " + order.level() + " required");
-                    ledger.accept(player.getUUID(), order);
-                    player.sendSystemMessage(Component.literal("Accepted: " + order.title() + ". Deliver " + order.count() + " " + order.item() + "."));
-                }
-                case 1 -> complete(player, nonce);
-                case 2 -> {
-                    ledger.cancel(player.getUUID(), nonce);
-                    player.sendSystemMessage(Component.literal("Order cancelled. Employer demand returned."));
-                }
-                default -> throw new IllegalStateException("Unknown work-order action");
-            }
+            operation.run(ledger, citizen);
         } catch (RuntimeException error) {
             player.sendSystemMessage(Component.literal(error.getMessage() == null ? "Work-order transaction failed" : error.getMessage()));
             if (WorkOrderLedger.get(player.server).faulted()
@@ -62,35 +49,75 @@ public final class WorkOrderService {
         TerminalNetwork.open(player, pos);
     }
 
-    static void complete(ServerPlayer player, UUID nonce) {
-        WorkOrderLedger ledger = WorkOrderLedger.get(player.server);
+    public static void action(ServerPlayer player, BlockPos pos, int action, String id, UUID nonce) {
+        guarded(player, pos, (ledger, citizen) -> {
+            switch (action) {
+                case 0 -> accept(player, ledger, citizen, id);
+                case 1 -> complete(player, nonce);
+                case 2 -> {
+                    ledger.cancel(player.getUUID(), nonce);
+                    player.sendSystemMessage(Component.literal("Order cancelled. Employer demand returned."));
+                }
+                default -> throw new IllegalStateException("Unknown work-order action");
+            }
+        });
+    }
+
+    /** Career, level and rival-city visit gates for accepting a catalog order. */
+    static void accept(ServerPlayer player, WorkOrderLedger ledger, CitizenState.Citizen citizen, String id) {
+        WorkOrder order = WorkOrderCatalog.INSTANCE.find(id);
+        if (order == null || !order.career().equals(citizen.career)) {
+            throw new IllegalStateException("This order belongs to another profession");
+        }
+        if (citizen.careerLevel() < order.level()) throw new IllegalStateException("Career level " + order.level() + " required");
+        int visits = ledger.foreignVisits(player.getUUID(), citizen.city);
+        if (visits < order.foreignVisits()) {
+            int more = order.foreignVisits() - visits;
+            throw new IllegalStateException("Use a terminal inside " + more + " more rival " + (more == 1 ? "city" : "cities") + " first");
+        }
+        ledger.accept(player.getUUID(), order);
+        player.sendSystemMessage(Component.literal("Accepted: " + order.title() + ". Deliver " + describe(order) + "."));
+    }
+
+    private static String describe(WorkOrder order) {
+        return order.requirements().stream().map(r -> r.count() + " " + r.item()).collect(java.util.stream.Collectors.joining(", "));
+    }
+
+    static void complete(ServerPlayer player, UUID nonce) { complete(player, WorkOrderLedger.get(player.server), nonce); }
+
+    static void complete(ServerPlayer player, WorkOrderLedger ledger, UUID nonce) {
         WorkOrder order = ledger.checkActive(player.getUUID(), nonce);
         CitizenState.Citizen citizen = CitizenState.get(player.server).find(player.getUUID()).orElseThrow();
         if (!order.career().equals(citizen.career)) throw new IllegalStateException("Profession changed");
         // Plan removal on a COPY; incomplete deliveries leave the live inventory untouched.
         Inventory after = new Inventory(player);
         after.load(player.getInventory().save(new ListTag()));
-        int needed = order.count();
-        for (int slot = 0; slot < after.items.size() && needed > 0; slot++) {
-            ItemStack stack = after.items.get(slot);
-            if (order.matches(stack)) {
-                int take = Math.min(needed, stack.getCount());
-                stack.shrink(take); needed -= take;
+        java.util.List<String> missing = new java.util.ArrayList<>();
+        for (WorkOrder.Requirement requirement : order.requirements()) {
+            int needed = requirement.count();
+            for (int slot = 0; slot < after.items.size() && needed > 0; slot++) {
+                ItemStack stack = after.items.get(slot);
+                if (order.matches(requirement, stack)) {
+                    int take = Math.min(needed, stack.getCount());
+                    stack.shrink(take); needed -= take;
+                }
             }
+            if (needed > 0) missing.add(needed + " plain " + requirement.item());
         }
-        if (needed > 0) throw new IllegalStateException("Missing " + needed + " plain " + order.item() + ". Named/enchanted goods are protected.");
+        if (!missing.isEmpty()) throw new IllegalStateException("Missing " + String.join(", ", missing) + ". Named/enchanted goods are protected.");
         double target = QShopEconomy.balance(player) + order.credits();
         if (target > 1_000_000_000) throw new IllegalStateException("Wallet limit reached");
         int xpTarget = ProgressionRules.totalXp(citizen.careerXp(), order.xp());
         ledger.prepare(player.getUUID(), nonce, after.save(new ListTag()), target, xpTarget);
-        recover(player);
+        recover(player, ledger);
         player.sendSystemMessage(Component.literal("Delivered " + order.title() + ": +" + order.credits()
             + " credits, +" + order.xp() + " career XP. Level " + citizen.careerLevel() + "."));
     }
 
     /** Prepared absolute targets are replayed BEFORE any post-login interaction. */
-    public static void recover(ServerPlayer player) {
-        WorkOrderLedger ledger = WorkOrderLedger.get(player.server);
+    public static void recover(ServerPlayer player) { recover(player, WorkOrderLedger.get(player.server)); }
+
+    static void recover(ServerPlayer player, WorkOrderLedger ledger) {
         CompoundTag record = ledger.player(player.getUUID());
         CitizenState citizens = CitizenState.get(player.server);
         if (citizens.find(player.getUUID()).isEmpty()) {

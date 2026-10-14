@@ -1,0 +1,17 @@
+{
+  "schema_version": 2,
+  "title": "Precision optic mounts for the licensed range",
+  "career": "gunsmith",
+  "level": 3,
+  "foreign_visits": 1,
+  "requirements": [
+    {
+      "item": "underground_city:optic_mount_kit",
+      "count": 4
+    }
+  ],
+  "credits": 230,
+  "xp": 320,
+  "capacity": 2,
+  "refill_ticks": 12000
+}

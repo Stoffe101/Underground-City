@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "status": "implemented_in_core_data_only",
+  "disclaimer": "Source of truth for the original Core commodity/product items, finite regional supplier stock, shapeless crafting recipes and recurring work orders. Run scripts/generate_regional_content.py to regenerate rpg-core resources. Item IDs can be rebound to compatible mod items by datapack once those mods are pinned (see docs/design/recurring-supply-chains.md). Supplier availability is gated by the server-confirmed city region of the placed terminal, not by a client claim.",
+  "clock": "server_active_ticks_while_a_human_is_online",
+  "economy_rules": {
+    "minimum_margin": 1.3,
+    "maximum_margin": 2.1,
+    "note": "Order credits must exceed the shared-stock purchase price of every consumed commodity by 30%-110%, so recurring jobs earn money but never print it from free goods."
+  },
+  "commodities": [
+    {"id": "refined_alloy",      "city": "ironhaven", "name": "Refined Alloy Ingot",     "icon": "ingot",   "stock": {"initial": 15, "capacity": 30, "units_per_interval": 3, "interval_minutes": 60,  "unit_price": 28, "max_order": 8}},
+    {"id": "machined_parts",     "city": "ironhaven", "name": "Machined Parts",          "icon": "gear",    "stock": {"initial": 18, "capacity": 36, "units_per_interval": 4, "interval_minutes": 45,  "unit_price": 18, "max_order": 8}},
+    {"id": "security_fabric",    "city": "ironhaven", "name": "Security Fabric",         "icon": "fabric",  "stock": {"initial": 10, "capacity": 24, "units_per_interval": 2, "interval_minutes": 65,  "unit_price": 22, "max_order": 8}},
+    {"id": "rare_seeds",         "city": "valewood",  "name": "Rare Seed Stock",         "icon": "seeds",   "stock": {"initial": 17, "capacity": 36, "units_per_interval": 4, "interval_minutes": 50,  "unit_price": 14, "max_order": 8}},
+    {"id": "biopolymer",         "city": "valewood",  "name": "Biopolymer Sheet",        "icon": "vial",    "stock": {"initial": 14, "capacity": 30, "units_per_interval": 3, "interval_minutes": 65,  "unit_price": 24, "max_order": 8}},
+    {"id": "agro_catalyst",      "city": "valewood",  "name": "Agricultural Catalyst",   "icon": "crystal", "stock": {"initial": 12, "capacity": 25, "units_per_interval": 2, "interval_minutes": 75,  "unit_price": 30, "max_order": 8}},
+    {"id": "control_circuits",   "city": "blackwater", "name": "Control Circuit Board",  "icon": "chip",    "stock": {"initial": 15, "capacity": 30, "units_per_interval": 3, "interval_minutes": 60,  "unit_price": 32, "max_order": 8}},
+    {"id": "encrypted_design",   "city": "blackwater", "name": "Encrypted Design Disc",  "icon": "disc",    "stock": {"initial": 6,  "capacity": 15, "units_per_interval": 1, "interval_minutes": 100, "unit_price": 80, "max_order": 3}},
+    {"id": "optical_components", "city": "blackwater", "name": "Optical Component",      "icon": "lens",    "stock": {"initial": 12, "capacity": 24, "units_per_interval": 2, "interval_minutes": 70,  "unit_price": 34, "max_order": 8}}
+  ],
+  "products": [
+    {"id": "irrigation_service_kit", "name": "Irrigation Service Kit", "icon": "kit", "city": "valewood", "count": 2, "inputs": {"machined_parts": 1, "rare_seeds": 2, "minecraft:bucket": 1}},
+    {"id": "climate_module", "name": "Vineyard Climate Module", "icon": "module", "city": "valewood", "count": 1, "inputs": {"agro_catalyst": 2, "control_circuits": 1, "minecraft:glass": 1}},
+    {"id": "precision_greenhouse_unit", "name": "Precision Greenhouse Unit", "icon": "cube", "city": "valewood", "count": 1, "inputs": {"agro_catalyst": 2, "machined_parts": 2, "control_circuits": 1, "minecraft:glass": 1, "minecraft:iron_ingot": 1}},
+    {"id": "precision_machinery_parts", "name": "Precision Machinery Parts", "icon": "bearing", "city": "ironhaven", "count": 2, "inputs": {"refined_alloy": 2, "control_circuits": 1, "minecraft:iron_ingot": 1}},
+    {"id": "field_repair_set", "name": "Field Repair Set", "icon": "wrench", "city": "ironhaven", "count": 2, "inputs": {"machined_parts": 1, "biopolymer": 1, "minecraft:stick": 1}},
+    {"id": "composite_housing", "name": "Composite Equipment Housing", "icon": "shell", "city": "ironhaven", "count": 2, "inputs": {"refined_alloy": 2, "biopolymer": 2, "control_circuits": 1, "minecraft:iron_ingot": 1}},
+    {"id": "optic_mount_kit", "name": "Precision Optic Mount Kit", "icon": "bracket", "city": "blackwater", "count": 2, "inputs": {"machined_parts": 2, "optical_components": 1, "minecraft:iron_ingot": 1}},
+    {"id": "licensed_service_kit", "name": "Licensed Security Service Kit", "icon": "clipboard", "city": "blackwater", "count": 1, "inputs": {"refined_alloy": 1, "control_circuits": 1, "minecraft:paper": 1}},
+    {"id": "specialized_equipment_platform", "name": "Specialized Equipment Platform", "icon": "plate", "city": "blackwater", "count": 1, "inputs": {"machined_parts": 2, "biopolymer": 1, "encrypted_design": 1, "minecraft:iron_ingot": 2}},
+    {"id": "industrial_controller", "name": "Industrial Controller", "icon": "box", "city": "blackwater", "count": 1, "inputs": {"control_circuits": 2, "machined_parts": 1, "minecraft:redstone": 1}},
+    {"id": "agri_sensor_repair", "name": "Agricultural Sensor Repair Pack", "icon": "dish", "city": "valewood", "count": 2, "inputs": {"optical_components": 1, "agro_catalyst": 1, "minecraft:redstone": 1}},
+    {"id": "security_array", "name": "Municipal Security Array", "icon": "panel", "city": "ironhaven", "count": 1, "inputs": {"control_circuits": 2, "refined_alloy": 1, "biopolymer": 2, "minecraft:redstone": 1, "minecraft:glass": 1}}
+  ],
+  "tools": [
+    {"id": "lockpick", "name": "Lockpick", "icon": "lockpick", "recipe": {"minecraft:iron_nugget": 2, "minecraft:stick": 1}, "count": 2}
+  ],
+  "orders": [
+    {"id": "greenhouse_service", "title": "Service the greenhouse irrigation line", "career": "farmer", "level": 3, "foreign_visits": 1, "requirements": {"irrigation_service_kit": 4}, "credits": 150, "xp": 300},
+    {"id": "vineyard_climate", "title": "Install a vineyard climate module", "career": "farmer", "level": 4, "foreign_visits": 1, "requirements": {"climate_module": 1}, "credits": 150, "xp": 350},
+    {"id": "greenhouse_unit", "title": "Commission a precision greenhouse unit", "career": "farmer", "level": 5, "foreign_visits": 2, "requirements": {"precision_greenhouse_unit": 1}, "credits": 210, "xp": 600},
+    {"id": "foundry_parts", "title": "Calibrated machine parts for the foundry", "career": "smith", "level": 3, "foreign_visits": 1, "requirements": {"precision_machinery_parts": 4}, "credits": 290, "xp": 320},
+    {"id": "depot_repairs", "title": "Field repair sets for the municipal depot", "career": "smith", "level": 4, "foreign_visits": 1, "requirements": {"field_repair_set": 4}, "credits": 140, "xp": 300},
+    {"id": "composite_housings", "title": "Composite equipment housings", "career": "smith", "level": 5, "foreign_visits": 2, "requirements": {"composite_housing": 2}, "credits": 225, "xp": 600},
+    {"id": "optic_mounts", "title": "Precision optic mounts for the licensed range", "career": "gunsmith", "level": 3, "foreign_visits": 1, "requirements": {"optic_mount_kit": 4}, "credits": 230, "xp": 320},
+    {"id": "licensed_service", "title": "Licensed security service call", "career": "gunsmith", "level": 4, "foreign_visits": 1, "requirements": {"licensed_service_kit": 2}, "credits": 200, "xp": 330},
+    {"id": "equipment_platform", "title": "Specialized equipment platform", "career": "gunsmith", "level": 5, "foreign_visits": 2, "requirements": {"specialized_equipment_platform": 1}, "credits": 230, "xp": 600},
+    {"id": "controller_install", "title": "Industrial controller installation", "career": "technician", "level": 3, "foreign_visits": 1, "requirements": {"industrial_controller": 1}, "credits": 135, "xp": 320},
+    {"id": "sensor_repairs", "title": "Agricultural sensor repair visits", "career": "technician", "level": 4, "foreign_visits": 1, "requirements": {"agri_sensor_repair": 4}, "credits": 210, "xp": 330},
+    {"id": "security_array_install", "title": "Municipal security array", "career": "technician", "level": 5, "foreign_visits": 2, "requirements": {"security_array": 1}, "credits": 230, "xp": 600}
+  ],
+  "order_defaults": {"capacity": 2, "refill_ticks": 12000}
+}

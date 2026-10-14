@@ -29,6 +29,10 @@ jobs:
         run: python scripts/validate_repo.py
       - name: Validate provider-neutral cities, professions and Core compatibility
         run: python scripts/validate_onboarding_catalog.py
+      - name: Install image library for generated-item checks
+        run: python -m pip install --disable-pip-version-check 'Pillow==11.3.0'
+      - name: Verify generated regional content is current
+        run: python scripts/generate_regional_content.py --check
       - name: Exercise CurseForge/Modrinth export and installed JAR parsing
         run: python -m unittest discover -s tests -p 'test_*.py' -v
       - name: Test progression without running Minecraft

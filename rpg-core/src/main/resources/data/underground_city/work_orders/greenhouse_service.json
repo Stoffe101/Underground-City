@@ -1,0 +1,17 @@
+{
+  "schema_version": 2,
+  "title": "Service the greenhouse irrigation line",
+  "career": "farmer",
+  "level": 3,
+  "foreign_visits": 1,
+  "requirements": [
+    {
+      "item": "underground_city:irrigation_service_kit",
+      "count": 4
+    }
+  ],
+  "credits": 150,
+  "xp": 300,
+  "capacity": 2,
+  "refill_ticks": 12000
+}

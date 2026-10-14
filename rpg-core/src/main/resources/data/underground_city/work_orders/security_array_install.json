@@ -1,0 +1,17 @@
+{
+  "schema_version": 2,
+  "title": "Municipal security array",
+  "career": "technician",
+  "level": 5,
+  "foreign_visits": 2,
+  "requirements": [
+    {
+      "item": "underground_city:security_array",
+      "count": 1
+    }
+  ],
+  "credits": 230,
+  "xp": 600,
+  "capacity": 2,
+  "refill_ticks": 12000
+}

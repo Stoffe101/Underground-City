@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "equipment",
+  "group": "underground_city_tools",
+  "ingredients": [
+    {
+      "item": "minecraft:iron_nugget"
+    },
+    {
+      "item": "minecraft:iron_nugget"
+    },
+    {
+      "item": "minecraft:stick"
+    }
+  ],
+  "result": {
+    "item": "underground_city:lockpick",
+    "count": 2
+  }
+}

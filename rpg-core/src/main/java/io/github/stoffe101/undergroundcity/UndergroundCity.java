@@ -44,7 +44,15 @@ public final class UndergroundCity {
         () -> new BlockItem(TERMINAL.get(), new Item.Properties()));
 
 
+    private static final java.util.Map<String, RegistryObject<Item>> CORE_ITEMS = new java.util.LinkedHashMap<>();
+    private static final java.util.Map<String, String> CORE_ITEM_KINDS = new java.util.LinkedHashMap<>();
+
     public UndergroundCity(FMLJavaModLoadingContext context) {
+        for (CoreItems.Definition definition : CoreItems.definitions()) {
+            CORE_ITEMS.put(definition.id(), ITEMS.register(definition.id(),
+                () -> new Item(new Item.Properties().stacksTo(definition.stack()))));
+            CORE_ITEM_KINDS.put(definition.id(), definition.kind());
+        }
         BLOCKS.register(context.getModEventBus());
         ITEMS.register(context.getModEventBus());
         context.getModEventBus().addListener(this::addCreativeTab);
@@ -57,11 +65,19 @@ public final class UndergroundCity {
     @SubscribeEvent
     public void reload(AddReloadListenerEvent event) {
         event.addListener(WorkOrderCatalog.INSTANCE);
+        event.addListener(RegionalCatalog.INSTANCE);
+        event.addListener(CityRegions.INSTANCE);
     }
 
     private void addCreativeTab(BuildCreativeModeTabContentsEvent event) {
         if (event.getTabKey() == CreativeModeTabs.FUNCTIONAL_BLOCKS) {
             event.accept(TERMINAL_ITEM);
+        }
+        if (event.getTabKey() == CreativeModeTabs.INGREDIENTS) {
+            CORE_ITEMS.forEach((id, item) -> { if (!CORE_ITEM_KINDS.get(id).equals("tool")) event.accept(item); });
+        }
+        if (event.getTabKey() == CreativeModeTabs.TOOLS_AND_UTILITIES) {
+            CORE_ITEMS.forEach((id, item) -> { if (CORE_ITEM_KINDS.get(id).equals("tool")) event.accept(item); });
         }
     }
 
