@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "purpose": "provider-neutral design content, not a working mod configuration",
+  "selection_order": ["city", "profession"],
+  "cities": [
+    {
+      "id": "valewood",
+      "name": "Valewood",
+      "subtitle": "Agricultural & Trade Federation",
+      "description": "A prosperous rural municipality built around food, vineyards, and regional commerce. Grow a business, influence local trade routes, and protect a city dependent on imports.",
+      "economy": ["agriculture", "wine", "logistics"],
+      "advantages": ["Strong agricultural market", "Low-intensity starting district"],
+      "challenges": ["Limited industrial infrastructure", "Trade route disruptions"],
+      "starter_contact_role": "registrar"
+    },
+    {
+      "id": "ironhaven",
+      "name": "Ironhaven",
+      "subtitle": "Industrial City-State",
+      "description": "An industrial metropolis where factories, workshops, corporate contracts, and city security provide opportunity while labor disputes and corruption shape daily life.",
+      "economy": ["manufacturing", "metalworking", "security"],
+      "advantages": ["Reliable industrial demand", "Access to advanced workspaces"],
+      "challenges": ["High overhead", "Strict equipment licensing"],
+      "starter_contact_role": "registrar"
+    },
+    {
+      "id": "blackwater",
+      "name": "Blackwater",
+      "subtitle": "Urban Commercial Freeport",
+      "description": "A dense commercial city with powerful private interests, technology companies, security checkpoints, and a thriving but risky underground marketplace.",
+      "economy": ["commerce", "technology", "grey_market"],
+      "advantages": ["Varied high-value customers", "Advanced technical contacts"],
+      "challenges": ["Unpredictable enforcement", "Higher criminal exposure"],
+      "starter_contact_role": "registrar"
+    }
+  ],
+  "professions": [
+    {
+      "id": "farmer",
+      "name": "Farmer / Vintner",
+      "description": "Cultivate crops, operate vineyards, produce quality beverages and food, negotiate sales, and expand into an agricultural business.",
+      "branches": ["cultivation", "vintner", "agribusiness"],
+      "starter_objectives": ["Plant and harvest a starter crop", "Deliver a municipal produce order"],
+      "legal_path": true,
+      "criminal_path": false
+    },
+    {
+      "id": "smith",
+      "name": "Smith / Engineer",
+      "description": "Repair equipment, process ores and parts, improve production machinery, and supply civilian construction and industrial projects.",
+      "branches": ["metallurgy", "machining", "industrial_engineering"],
+      "starter_objectives": ["Process a starter material", "Fulfill a workshop maintenance order"],
+      "legal_path": true,
+      "criminal_path": false
+    },
+    {
+      "id": "gunsmith",
+      "name": "Gunsmith / Arms Dealer",
+      "description": "Learn firearm repair and safe licensed manufacture, discover blueprints, supply legitimate security clients, or risk illegal underground trade.",
+      "branches": ["gunsmithing", "underground_trade", "logistics"],
+      "starter_objectives": ["Repair a basic licensed component", "Complete a legal supply contract"],
+      "legal_path": true,
+      "criminal_path": true
+    },
+    {
+      "id": "technician",
+      "name": "Hacker / Technician",
+      "description": "Maintain terminals and infrastructure, build automation, provide defensive cybersecurity, and take fictional in-game network infiltration contracts.",
+      "branches": ["programming", "cybersecurity", "intrusion"],
+      "starter_objectives": ["Diagnose a damaged terminal", "Install or repair a client security device"],
+      "legal_path": true,
+      "criminal_path": true
+    }
+  ],
+  "general_skills": [
+    {"id": "driving", "name": "Driving"},
+    {"id": "fitness", "name": "Fitness"},
+    {"id": "shooting", "name": "Shooting"},
+    {"id": "trading", "name": "Trading"},
+    {"id": "social", "name": "Social Influence"}
+  ]
+}

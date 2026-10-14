@@ -12,6 +12,12 @@
 
 Every proposed custom module gets an explicit build-versus-buy justification in an issue. **Do not assume RoleCraft or any other mod exposes a public API simply because it has admin commands.**
 
+## First-login screen: reuse priority
+
+See [first-join onboarding spike](onboarding-reuse-spike.md). Cisco's layered origin/blessing/class UI demonstrates a reusable *pattern*, while [Class Selection Mod](https://www.curseforge.com/minecraft/mc-mods/class-selection-mod) already has a potentially ideal **faction → class** experience, plus announced TaCZ and Epic Fight compatibility. Validate the published artifact and its APIs before replacing our prototype `/uc register`. If the two-layer mod is unsuitable, assess [Class Enhancement](https://www.curseforge.com/minecraft/mc-mods/class-enhancement) and [RoleCraft](https://www.curseforge.com/minecraft/mc-mods/role-craft), then [Origins Classes Forge](https://www.curseforge.com/minecraft/mc-mods/origins-classes-forge).
+
+The provider-neutral [city/profession catalog](../../content/onboarding/catalog.json) can be adapted to one chosen provider, and CI checks it matches fallback Core IDs. **Do not install two overlapping first-login UIs**.
+
 ## Existing packs worth inspecting locally
 
 | Pack | MC / Loader | Existing strengths | Important drawbacks | Priority |

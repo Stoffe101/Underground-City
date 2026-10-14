@@ -24,6 +24,7 @@ The docs here distinguish **confirmed product direction**, **design proposals**,
 - [Compare candidate modpacks and installed JARs](technical/modpack-comparison.md)
 - [Map creation and imports](technical/world-pipeline.md)
 - [Reuse-first mod and modpack policy](technical/reuse-first.md)
+- [First-join class and city selection candidates](technical/onboarding-reuse-spike.md)
 - [Testing and reliability](technical/testing.md)
 
 ## Production
@@ -34,6 +35,7 @@ The docs here distinguish **confirmed product direction**, **design proposals**,
 - [Risks](production/risks.md)
 - [Backlog](production/backlog.md)
 - [Existing modpack base comparison](production/base-comparison.md)
+- [First-join provider test matrix](production/onboarding-tests.md)
 
 ## Legal and assets
 
