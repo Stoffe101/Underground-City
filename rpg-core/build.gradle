@@ -22,7 +22,15 @@ minecraft {
                 underground_city { source sourceSets.main }
             }
         }
-        client {}
+        client {
+            if (providers.gradleProperty('ucVisualCapture').orNull == 'true') {
+                def scale = providers.gradleProperty('ucVisualScale').orElse('3').get()
+                def screenWidth = providers.gradleProperty('ucVisualWidth').orElse('1920').get()
+                def screenHeight = providers.gradleProperty('ucVisualHeight').orElse('1080').get()
+                jvmArgs '-Duc.visualCapture=true', "-Duc.visualCapture.scale=${scale}"
+                args '--width', screenWidth, '--height', screenHeight
+            }
+        }
         server { args '--nogui' }
         gameTestServer {
             property 'forge.enabledGameTestNamespaces', mod_id
