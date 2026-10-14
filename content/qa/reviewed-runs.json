@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "runs": [
+    {
+      "run_id": 38633439879,
+      "head_sha": "02ee0bed6b2144c26c202eb92a65631a863fadb0",
+      "artifact_ids": [
+        11926229264,
+        11926418509
+      ],
+      "review_completed": true,
+      "reviewer": "Codex cloud task",
+      "surfaces_per_profile": 13,
+      "findings": "Inspected both galleries. Shortened names fit; modal limit labels still clipped due resource priority. Narrow checker excluded wallet balance. Corrected in subsequent commits."
+    },
+    {
+      "run_id": 38642758272,
+      "head_sha": "05de987e5c2872f722c84395346e71b3fd821194",
+      "artifact_ids": [
+        11931222323,
+        11930224492
+      ],
+      "review_completed": true,
+      "reviewer": "Codex cloud task",
+      "surfaces_per_profile": 13,
+      "findings": "Inspected all 26 actual framebuffers. Terminal status, tab indicator, rewards and footer fit at both scales. Installed Q Shop funded/zero balances differ visibly; compact Limit All/You summary, total and disabled low-funds confirmation fit within the real modal. UI visual fixtures are not transaction evidence."
+    }
+  ]
+}
