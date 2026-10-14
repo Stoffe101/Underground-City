@@ -13,7 +13,8 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
 from build_onboarding_candidates import (
-    build, class_enhancement_fragment, generate_manifest, validate_profiles
+    build, class_enhancement_fragment, class_enhancement_config,
+    class_selection_config, generate_manifest, validate_profiles
 )
 
 PROFILES = json.loads(
@@ -64,6 +65,42 @@ class CandidatePackTests(unittest.TestCase):
             self.assertEqual(section["commands"], [])
             self.assertEqual(section["items"], [])
             self.assertEqual(section["attributes"], [])
+
+
+    def test_playable_candidate_config_inputs(self):
+        class_cfg = tomllib.loads(class_enhancement_config(CATALOG))
+        self.assertTrue(class_cfg["general"]["disableDefaultClasses"])
+        self.assertEqual(class_cfg["general"]["customClassSlots"], 4)
+        self.assertEqual(
+            {x["id"] for x in class_cfg["custom_classes"].values()},
+            {x["id"] for x in CATALOG["professions"]},
+        )
+        side_cfg = tomllib.loads(class_selection_config(CATALOG))
+        self.assertFalse(side_cfg["general"]["enableRaceSelection"])
+        self.assertTrue(side_cfg["general"]["requireSideBeforeClassSelection"])
+        self.assertEqual(
+            side_cfg["general"]["sideOptions"],
+            [x["id"] for x in CATALOG["cities"]],
+        )
+        self.assertEqual(len(side_cfg["general"]["sideDefinitions"]), 3)
+        self.assertTrue(all(v.count("|") == 3 for v in side_cfg["general"]["sideDefinitions"]))
+
+    def test_archived_config_paths_are_importable(self):
+        with tempfile.TemporaryDirectory() as root:
+            paths = build(PROFILES, CATALOG, Path(root))
+            for path in paths:
+                with zipfile.ZipFile(path) as archive:
+                    files = set(archive.namelist())
+                    if path.stem.endswith("class-enhancement"):
+                        self.assertIn("overrides/config/class_enhancement.toml", files)
+                        payload = tomllib.loads(archive.read(
+                            "overrides/config/class_enhancement.toml").decode("utf-8"))
+                        self.assertTrue(payload["general"]["disableDefaultClasses"])
+                    if path.stem.endswith("class-selection"):
+                        self.assertIn("overrides/config/classmod-common.toml", files)
+                        payload = tomllib.loads(archive.read(
+                            "overrides/config/classmod-common.toml").decode("utf-8"))
+                        self.assertEqual(len(payload["general"]["sideOptions"]), 3)
 
     def test_pins_and_sources_are_required(self):
         broken = copy.deepcopy(PROFILES)
