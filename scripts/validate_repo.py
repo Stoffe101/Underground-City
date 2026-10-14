@@ -47,6 +47,22 @@ if csv_path.exists():
         if (row.get("status") or "") not in ("candidate", "testing", "approved_for_local_use", "retired"):
             issues.append("Invalid status for " + candidate_id)
 
+
+# Also protect against accidental commits of third-party binaries or private worlds.
+try:
+    import subprocess
+    tracked = subprocess.check_output(["git", "ls-files"], cwd=ROOT, text=True).splitlines()
+    blocked_suffixes = {".jar", ".zip", ".7z", ".rar", ".mca", ".mcr", ".schem", ".schematic", ".nbt", ".litematic", ".key", ".pem"}
+    blocked_directories = {"world", "worlds", "saves", "playerdata", "secrets", "backups"}
+    for tracked_file in tracked:
+        location = Path(tracked_file)
+        if location.suffix.lower() in blocked_suffixes:
+            issues.append("Restricted binary or secret-like file tracked: " + tracked_file)
+        if any(part.lower() in blocked_directories for part in location.parts[:-1]):
+            issues.append("Restricted world/save directory tracked: " + tracked_file)
+except (OSError, subprocess.CalledProcessError):
+    issues.append("Cannot check tracked files: git is required to validate repository contents")
+
 if issues:
     print("Repository validation failed:")
     for item in issues:
