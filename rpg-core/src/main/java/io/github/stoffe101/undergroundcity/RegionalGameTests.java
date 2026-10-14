@@ -393,4 +393,55 @@ public final class RegionalGameTests {
         } finally { fixture.close(); }
         helper.succeed();
     }
+
+    @GameTest(template = "empty")
+    public static void orderWithRemovedItemCanStillBeCancelled(GameTestHelper helper) throws Exception {
+        if (!QShopEconomy.available()) { helper.succeed(); return; }
+        Fixture fixture = fixture(helper, "valewood");
+        try {
+            FakePlayer farmer = player(helper, "valewood", "farmer");
+            WorkOrder harvest = WorkOrderCatalog.INSTANCE.find("underground_city:harvest");
+            UUID nonce = fixture.ledger.accept(farmer.getUUID(), harvest);
+            int demand = fixture.ledger.available(harvest);
+            // Simulate the providing mod/datapack disappearing after acceptance.
+            fixture.ledger.player(farmer.getUUID()).getCompound("job").getList("reqs", 10).getCompound(0).putString("item", "gone:missing_item");
+            rejected(() -> fixture.ledger.checkActive(farmer.getUUID(), nonce));
+            rejected(() -> WorkOrderService.complete(farmer, fixture.ledger, nonce));
+            rejected(() -> fixture.ledger.cancel(farmer.getUUID(), UUID.randomUUID())); // wrong receipt stays rejected
+            check(fixture.ledger.player(farmer.getUUID()).hasUUID("order"), "A rejected cancel released the order");
+            fixture.ledger.cancel(farmer.getUUID(), nonce);
+            check(!fixture.ledger.player(farmer.getUUID()).hasUUID("order") && !fixture.ledger.player(farmer.getUUID()).contains("job"), "Unavailable order was not released");
+            check(fixture.ledger.available(harvest) == demand, "Releasing an unloadable order must not mint shared demand");
+            WorkOrderService.accept(farmer, fixture.ledger, CitizenState.get(farmer.server).find(farmer.getUUID()).orElseThrow(), "underground_city:harvest");
+            check(fixture.ledger.player(farmer.getUUID()).hasUUID("order"), "Player could not accept a new order after release");
+        } finally { fixture.close(); }
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty")
+    public static void supplierBindingIsReleasedOnDeathButNotOnChunkUnload(GameTestHelper helper) {
+        FakePlayer operator = player(helper, "ironhaven", "technician");
+        SupplierNpc.forgetForTest(operator.server);
+        BlockPos pos = helper.absolutePos(new BlockPos(0, 2, 6));
+        helper.getLevel().setBlockAndUpdate(pos, UndergroundCity.TERMINAL.get().defaultBlockState());
+        helper.getLevel().setBlockAndUpdate(pos.east().below(), net.minecraft.world.level.block.Blocks.STONE.defaultBlockState());
+        helper.getLevel().setBlockAndUpdate(pos.east(), net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
+        helper.getLevel().setBlockAndUpdate(pos.east().above(), net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
+        operator.moveTo(pos.getX() + .5, pos.getY(), pos.getZ() + .5);
+        var clerk = SupplierNpc.spawn(operator, pos, pos.east());
+        check(!SupplierNpc.releaseIfRemoved(operator.server, clerk, net.minecraft.world.entity.Entity.RemovalReason.UNLOADED_TO_CHUNK), "Chunk unload released the clerk");
+        check(!SupplierNpc.releaseIfRemoved(operator.server, clerk, net.minecraft.world.entity.Entity.RemovalReason.CHANGED_DIMENSION), "Dimension change released the clerk");
+        check(SupplierNpc.owns(SupplierNpc.state(operator.server), clerk), "Binding lost without removal");
+        check(SupplierNpc.releaseIfRemoved(operator.server, clerk, net.minecraft.world.entity.Entity.RemovalReason.KILLED), "Death did not release the binding");
+        check(!SupplierNpc.owns(SupplierNpc.state(operator.server), clerk), "Dead clerk is still registered");
+        clerk.discard();
+        var replacement = SupplierNpc.spawn(operator, pos, pos.east());
+        check(SupplierNpc.owns(SupplierNpc.state(operator.server), replacement), "Operator could not place a replacement");
+        // A non-clerk villager is never affected.
+        var stranger = net.minecraft.world.entity.EntityType.VILLAGER.create(helper.getLevel());
+        check(!SupplierNpc.releaseIfRemoved(operator.server, stranger, net.minecraft.world.entity.Entity.RemovalReason.KILLED), "Unrelated villager released the binding");
+        replacement.discard();
+        SupplierNpc.forgetForTest(operator.server);
+        helper.succeed();
+    }
 }

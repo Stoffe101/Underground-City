@@ -30,11 +30,21 @@ final class QShopJourneyActions {
                 int dialogX=left+50,dialogY=top+45;
                 clickShop(screen,dialogX+41,dialogY+121);stage++;
                 System.out.println("[UC-JOURNEY] clicked provider confirmation stage="+stage);
-                if(stage==7) {
-                    try {Files.writeString(mc.gameDirectory.toPath().resolve("journey-client-actions.txt"),"real_terminal_accept,real_terminal_deliver,qshop_buy,qshop_sell\n");}
-                    catch(java.io.IOException error) {throw new IllegalStateException(error);}
-                }
             }
+        }
+        // The fixture server reopens the terminal after the provider trades; buy one regional item with a real click.
+        if(stage==7 && mc.screen instanceof TerminalScreen screen && !screen.snapshot().offers().isEmpty()
+                && screen.snapshot().xp()>=125) {
+            int panelW=Math.min(420,screen.width-16),panelH=Math.min(268,screen.height-16);
+            int left=(screen.width-panelW)/2,top=(screen.height-panelH)/2;
+            screen.showPage(TerminalScreen.Page.IMPORTS);
+            if(!screen.mouseClicked(left+panelW-124+24,top+96+10,0)) throw new IllegalStateException("Regional BUY 1 button did not accept the click");
+            stage++;
+            System.out.println("[UC-JOURNEY] clicked regional exchange BUY 1; offers="+screen.snapshot().offers().size()
+                +" region="+screen.snapshot().region());
+            try {Files.writeString(mc.gameDirectory.toPath().resolve("journey-client-actions.txt"),
+                "real_terminal_accept,real_terminal_deliver,qshop_buy,qshop_sell,regional_exchange_buy\n");}
+            catch(java.io.IOException error) {throw new IllegalStateException(error);}
         }
     }
     private static void clickShop(net.minecraft.client.gui.screens.Screen screen,double x,double y) {

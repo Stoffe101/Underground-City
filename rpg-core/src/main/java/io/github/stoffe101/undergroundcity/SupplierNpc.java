@@ -67,6 +67,10 @@ public final class SupplierNpc {
         operator.server.overworld().getDataStorage().save();
         return clerk;
     }
+    /** Test seam: forget any registered clerk. */
+    static void forgetForTest(net.minecraft.server.MinecraftServer server) {
+        State state=state(server);state.clerk=null;state.dimension=null;state.terminal=null;state.setDirty();
+    }
     static boolean owns(State state,Villager villager) { return villager.getUUID().equals(state.clerk); }
     /** A dead or discarded clerk must not permanently block replacement. Unloading is NOT removal. */
     static boolean releaseIfRemoved(net.minecraft.server.MinecraftServer server,Villager villager,

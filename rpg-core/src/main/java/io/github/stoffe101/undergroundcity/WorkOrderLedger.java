@@ -95,11 +95,19 @@ public final class WorkOrderLedger {
     }
 
     void cancel(UUID player, UUID nonce) {
-        checkActive(player, nonce);
+        checkHealthy();
         CompoundTag record = player(player);
-        WorkOrder order = WorkOrder.load(record.getCompound("job"));
-        int units = available(order);
-        root.getCompound("demand").getCompound(order.id()).putInt("units", Math.min(order.capacity(), units + 1));
+        if (record.contains("pending") || !record.hasUUID("order") || !record.getUUID("order").equals(nonce)) {
+            throw new IllegalStateException("Order has changed or was already completed; refresh the terminal");
+        }
+        try {
+            WorkOrder order = WorkOrder.load(record.getCompound("job"));
+            int units = available(order);
+            root.getCompound("demand").getCompound(order.id()).putInt("units", Math.min(order.capacity(), units + 1));
+        } catch (IllegalArgumentException unavailable) {
+            // The accepted terms reference an item or schema that no longer exists (mod/datapack removed).
+            // Free the player without touching shared employer demand.
+        }
         record.remove("order"); record.remove("job");
         putPlayer(player, record); persist();
     }

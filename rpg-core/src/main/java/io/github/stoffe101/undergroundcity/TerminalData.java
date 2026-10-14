@@ -31,15 +31,28 @@ public record TerminalData(String city, String career, int level, int xp, double
         if (!region.isEmpty()) ledger.noteVisit(player.getUUID(), region); // physically at a placed terminal inside the city
         CompoundTag record = ledger.player(player.getUUID());
         UUID active = record.hasUUID("order") ? record.getUUID("order") : null;
-        WorkOrder accepted = active == null ? null : WorkOrder.load(record.getCompound("job"));
+        WorkOrder accepted = null;
+        boolean unavailable = false;
+        if (active != null) {
+            try { accepted = WorkOrder.load(record.getCompound("job")); }
+            catch (IllegalArgumentException removedItem) { unavailable = true; } // item/mod removed after acceptance
+        }
+        final WorkOrder acceptedOrder = accepted;
         List<WorkOrder> jobs = new ArrayList<>(WorkOrderCatalog.INSTANCE.forCareer(citizen.career));
-        if (accepted != null) {
-            jobs.removeIf(job -> job.id().equals(accepted.id())); jobs.add(0, accepted);
+        if (acceptedOrder != null) {
+            jobs.removeIf(job -> job.id().equals(acceptedOrder.id())); jobs.add(0, acceptedOrder);
         }
         List<Row> rows = jobs.stream().limit(MAX_ROWS).map(job -> new Row(job.id(), job.title(), job.level(),
-            job.credits(), job.xp(), ledger.available(job), accepted != null && job.id().equals(accepted.id()),
+            job.credits(), job.xp(), ledger.available(job), acceptedOrder != null && job.id().equals(acceptedOrder.id()),
             job.foreignVisits(), job.requirements().stream().map(req -> new Req(req.item().toString(), req.count(),
                 player.getInventory().items.stream().filter(stack -> job.matches(req, stack)).mapToInt(stack -> stack.getCount()).sum())).toList())).toList();
+        if (unavailable) {
+            // Lets the player cancel an order whose accepted terms can no longer be loaded.
+            List<Row> withNotice = new ArrayList<>();
+            withNotice.add(new Row("underground_city:unavailable", "Order unavailable - cancel to continue", 1, 0, 0, 0, true, 0, List.of()));
+            withNotice.addAll(rows);
+            rows = withNotice.stream().limit(MAX_ROWS).toList();
+        }
         boolean economy = QShopEconomy.available() && QShopEconomy.configured(player.server) && !ledger.faulted();
         return new TerminalData(citizen.city, citizen.career, citizen.careerLevel(), citizen.careerXp(),
             economy ? QShopEconomy.balance(player) : 0, economy, active, ledger.foreignVisits(player.getUUID(), citizen.city),
