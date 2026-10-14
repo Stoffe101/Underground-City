@@ -108,8 +108,9 @@ jobs:
       - name: Prepare a disposable client clone of the generated survey world
         if: success() && matrix.candidate == 'lostcities'
         run: |
-          sudo apt-get update && sudo apt-get install -y xvfb libgl1-mesa-dri
-          python -m pip install Pillow
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq xvfb xauth libgl1-mesa-dri libgl1 mesa-utils
+          python -m pip install --disable-pip-version-check 'Pillow==11.3.0'
           python - <<'PY'
           import shutil
           from pathlib import Path
@@ -119,6 +120,9 @@ jobs:
           shutil.copytree(source/'world',target/'saves/world')
           shutil.copytree(source/'config',target/'config')
           shutil.copytree(source/'mods',target/'mods')
+          # The early loading window is irrelevant to world evidence and its GL
+          # negotiation is the observed failure mode under llvmpipe.
+          (target/'config'/'fml.toml').write_text('earlyWindowControl = false\n')
           PY
       - name: Capture actual generated city environments with a native Minecraft client
         if: success() && matrix.candidate == 'lostcities'
@@ -126,11 +130,33 @@ jobs:
           LIBGL_ALWAYS_SOFTWARE: '1'
           GALLIUM_DRIVER: llvmpipe
           LP_NUM_THREADS: '1'
+          # Forge's early display requests GL 4.6 first and times out on llvmpipe
+          # without this override; the passing Visual QA client uses the same one.
+          MESA_GL_VERSION_OVERRIDE: '3.3'
           ALSOFT_DRIVERS: 'null'
           SDL_AUDIODRIVER: dummy
         run: |
-          timeout 900s xvfb-run -a -s '-screen 0 1920x1080x24' gradle -p rpg-core runClient -PucWorldCandidate=lostcities -PucEconomyTest=true -PucRunDir=run-world-tour -PucWorldTour=true --no-daemon --stacktrace
-          test -f rpg-core/run-world-tour/world-tour-complete.txt
+          set -euo pipefail
+          rm -f rpg-core/run-world-tour/world-tour-complete.txt
+          setsid xvfb-run -a -s '-screen 0 1920x1080x24' \
+            timeout 840s gradle -p rpg-core runClient -PucWorldCandidate=lostcities -PucEconomyTest=true \
+              -PucRunDir=run-world-tour -PucWorldTour=true --no-daemon --stacktrace \
+              > /tmp/uc-world-tour-client.log 2>&1 &
+          game_pid=$!
+          completed=0
+          # Poll instead of waiting for a fixed timeout so a dead early display
+          # fails in seconds and every later stage is bounded by the harness.
+          for step in $(seq 1 290); do
+            if test -s rpg-core/run-world-tour/world-tour-complete.txt; then completed=1; break; fi
+            if ! kill -0 "$game_pid" 2>/dev/null; then break; fi
+            sleep 3
+          done
+          kill -- -"$game_pid" 2>/dev/null || true
+          wait "$game_pid" || true
+          grep -E 'UC-WORLD-VISUAL|EARLYDISPLAY|ERROR|Exception' /tmp/uc-world-tour-client.log | tail -60 || true
+          mkdir -p rpg-core/run-world-tour/logs
+          cp /tmp/uc-world-tour-client.log rpg-core/run-world-tour/logs/world-tour-client-stdout.log
+          test "$completed" -eq 1 || { echo "NATIVE WORLD TOUR DID NOT COMPLETE"; exit 1; }
           python - <<'PY'
           from pathlib import Path
           from struct import unpack
