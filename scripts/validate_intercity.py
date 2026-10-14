@@ -143,6 +143,10 @@ def validate(data: dict[str, dict]) -> list[str]:
             errors.append(f"{milestone['id']}: missing cross-city resource dependency")
         if not milestone.get("legitimate_paths"):
             errors.append(f"{milestone['id']}: no peaceful progress route")
+        expected_visit = ("personally_visit_all_three_cities" if milestone["tier"] == 3
+                          else "personally_visit_at_least_one_required_foreign_city")
+        if milestone.get("visit_requirement") != expected_visit:
+            errors.append(f"{milestone['id']}: first-hand inter-city travel must be necessary")
         unlocked_by_profession[career].add(milestone["tier"])
     for career, tiers in unlocked_by_profession.items():
         if tiers != {2, 3}:
@@ -151,9 +155,27 @@ def validate(data: dict[str, dict]) -> list[str]:
     policy = supply["policy"]
     for key in ("tier_1_resources_available_in_home_city", "advanced_tiers_require_multiple_cities",
                 "all_essential_inputs_have_nonviolent_routes", "no_city_borders_are_absolute_player_softlocks",
-                "no_requirement_for_absent_third_player"):
+                "no_requirement_for_absent_third_player",
+                "require_physical_non_home_city_visit_for_tier_2",
+                "require_all_three_city_visits_for_tier_3",
+                "remote_resale_does_not_satisfy_first_discovery",
+                "legal_market_access_exists_during_war_but_requires_permit_or_escort"):
         if policy.get(key) is not True:
             errors.append(f"Progression safety policy {key} must be true")
+
+    seen_source_sites = set()
+    for site in supply.get("location_reward_templates", []):
+        city = site.get("city")
+        if city not in specialties or city in seen_source_sites:
+            errors.append(f"Invalid or duplicate resource site for city {city}")
+            continue
+        seen_source_sites.add(city)
+        if set(site.get("commodity_pool", [])) != specialties[city]:
+            errors.append(f"{city}: loot/source plan does not include every specialty")
+        if not site.get("legal_method") or not site.get("risk_method"):
+            errors.append(f"{city}: need both safe work and dangerous acquisition options")
+    if seen_source_sites != set(cities):
+        errors.append("Every city must have an explorable specialty location")
 
     relations = data["conflict"]["initial_relations"]
     if {frozenset(x["cities"]) for x in relations} != expected_pairs:
