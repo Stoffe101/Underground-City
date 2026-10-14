@@ -54,7 +54,8 @@
       ],
       "risky_paths": [
         "black_market"
-      ]
+      ],
+      "visit_requirement": "personally_visit_at_least_one_required_foreign_city"
     },
     {
       "id": "farmer_bio_lab_3",
@@ -82,7 +83,8 @@
       "risky_paths": [
         "theft",
         "smuggling"
-      ]
+      ],
+      "visit_requirement": "personally_visit_all_three_cities"
     },
     {
       "id": "smith_cnc_2",
@@ -105,7 +107,8 @@
       ],
       "risky_paths": [
         "industrial_robbery"
-      ]
+      ],
+      "visit_requirement": "personally_visit_at_least_one_required_foreign_city"
     },
     {
       "id": "smith_composites_3",
@@ -132,7 +135,8 @@
       ],
       "risky_paths": [
         "contraband"
-      ]
+      ],
+      "visit_requirement": "personally_visit_all_three_cities"
     },
     {
       "id": "gunsmith_component_2",
@@ -156,7 +160,8 @@
       "risky_paths": [
         "smuggling",
         "burglary"
-      ]
+      ],
+      "visit_requirement": "personally_visit_at_least_one_required_foreign_city"
     },
     {
       "id": "gunsmith_research_3",
@@ -184,7 +189,8 @@
       "risky_paths": [
         "military_cache",
         "theft"
-      ]
+      ],
+      "visit_requirement": "personally_visit_all_three_cities"
     },
     {
       "id": "technician_network_2",
@@ -207,7 +213,8 @@
       ],
       "risky_paths": [
         "smuggling"
-      ]
+      ],
+      "visit_requirement": "personally_visit_at_least_one_required_foreign_city"
     },
     {
       "id": "technician_security_3",
@@ -234,7 +241,8 @@
       ],
       "risky_paths": [
         "industrial_espionage"
-      ]
+      ],
+      "visit_requirement": "personally_visit_all_three_cities"
     }
   ],
   "policy": {
@@ -243,6 +251,57 @@
     "all_essential_inputs_have_nonviolent_routes": true,
     "no_city_borders_are_absolute_player_softlocks": true,
     "defeat_does_not_permanently_destroy_rare_research": true,
-    "no_requirement_for_absent_third_player": true
-  }
+    "no_requirement_for_absent_third_player": true,
+    "require_physical_non_home_city_visit_for_tier_2": true,
+    "require_all_three_city_visits_for_tier_3": true,
+    "remote_resale_does_not_satisfy_first_discovery": true,
+    "legal_market_access_exists_during_war_but_requires_permit_or_escort": true
+  },
+  "location_reward_templates": [
+    {
+      "city": "ironhaven",
+      "location_types": [
+        "factories",
+        "machine_shops",
+        "military_warehouses"
+      ],
+      "commodity_pool": [
+        "refined_alloy",
+        "machined_parts",
+        "security_fabric"
+      ],
+      "legal_method": "manufacturing_order_or_authorized_supplier",
+      "risk_method": "factory_break_in_or_military_salvage"
+    },
+    {
+      "city": "valewood",
+      "location_types": [
+        "greenhouses",
+        "vineyards",
+        "agri_laboratories"
+      ],
+      "commodity_pool": [
+        "rare_seeds",
+        "biopolymer",
+        "agro_catalyst"
+      ],
+      "legal_method": "agricultural_contract_or_farm_purchase",
+      "risk_method": "restricted_greenhouse_intrusion"
+    },
+    {
+      "city": "blackwater",
+      "location_types": [
+        "electronics_malls",
+        "tech_laboratories",
+        "data_vaults"
+      ],
+      "commodity_pool": [
+        "control_circuits",
+        "encrypted_design",
+        "optical_components"
+      ],
+      "legal_method": "certified_vendor_or_research_contract",
+      "risk_method": "industrial_espionage_or_high_risk_loot"
+    }
+  ]
 }
