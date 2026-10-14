@@ -31,6 +31,11 @@ Use `D-###` IDs. Status values: **accepted (product intent)**, **proposed**, **n
 | D-026 | needs spike | Lost Cities 7.5.5 highways, [TACZ] Lootchest Refill 1.1.2 and Faction Friction 1.8.0R could supply infrastructure, timed restock and warfare | Pin releases and run isolated tests, then a combined in-world test |
 | D-027 | accepted (product intent) | High-tier goods and work orders *repeatedly consume* city-exclusive specialty supplies rather than requiring one-time visits only | Encourages recurring dangerous trade/procurement between cities while keeping vanilla basics local |
 | D-028 | proposed | Use bounded shared NPC supplier inventories, active-play replenishment, batched orders and optional expensive late-game imports | Avoid frustrating one-item trips, offline disadvantages and co-op duplication; requires Forge integration |
+| D-029 | accepted (product intent) | One interactable home PC/laptop hosts contracts, foreign supply orders, shipments, black-market listings and high-tier raid selection | One navigation hub, physical world resolution; reuse quest/economy mods behind small adapters |
+| D-030 | accepted (product intent) | Gun components and profession goods can appear in appropriately secured apartment safes, workshops and gang caches | Rare/shared, context-based loot with restocking budgets; avoid turning every house into a weapon cache |
+| D-031 | accepted (product intent) | Expensive optional remote imports can suffer uncommon road crashes/ambushes and become timed recovery objectives | Owner-online timer; legal insured cargo protected from irreversible arbitrary loss; contraband at police risk |
+| D-032 | accepted (product intent) | Black-market seller listings use a bounded price guide, funded buyer escrow and a single-use physical dropbox | Preserve exact item NBT; verify positions, no duplication on reload or expiration; buyer stock/budget is finite |
+| D-033 | accepted (product intent) | Later raids target existing gang hideouts/warehouses and, at higher tiers, police stations | Real map objectives, cooldowns, security/heat response; never instant rewards from clicking terminal |
 | D-014 | proposed | Visible active NPCs + bounded off-screen economic simulation | Plausible cities without thousands of ticking entities |
 
 ## Open decisions

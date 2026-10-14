@@ -56,3 +56,7 @@ Actual mod compatibility and features must be checked on the **exact 1.20.1 Forg
 ## Acceptance goals
 
 A player can be a farmer and progress legally. A second player can choose criminal activity and progress through different equipment, contacts and risk. Either can help the other's career by trading supplies and contacts. A successful robbery is visible to the game systems, appropriately scarce, shared when appropriate, and creates real but non-ruinous social/legal consequences.
+
+## Criminal progression in a physical world
+
+The [terminal / underworld design](terminal-and-underworld.md) links stolen gun parts and electronics to real potential buyers and raid contracts without assuming every apartment contains a weapon. Rarer parts belong chiefly to locked safes, industrial facilities and gang caches. The same terminal can arrange high-cost foreign deliveries, black-market listings, real dropbox exchanges and later raids against gang hideouts and police stations. The terminal and all world interactions remain source-level designs and a small transaction simulation, not functional Minecraft systems.
