@@ -26,21 +26,55 @@ class TerminalCatalogTests(unittest.TestCase):
     def test_unsecure_house_loot_never_awards_rare_weapons(self):
         for index in range(200):
             result = household_loot(DATA, "apartment_common",
-                                    safe_opened=False, seed=str(index))
+                                    city="ironhaven", safe_opened=False, seed=str(index))
             self.assertFalse(any("weapon" in x or "gun" in x
                                  for x in result["items"]))
             result = household_loot(DATA, "apartment_affluent",
-                                    safe_opened=False, seed=str(index))
+                                    city="ironhaven", safe_opened=False, seed=str(index))
             self.assertNotIn("licensed_weapon_component", result["items"])
 
     def test_valuable_safe_loot_possible_but_not_guaranteed(self):
         found = set()
         for index in range(1500):
             reward = household_loot(DATA, "illegal_cache",
-                                    safe_opened=True, seed=str(index))
+                                    city="ironhaven", safe_opened=True, seed=str(index))
             found.update(reward["items"])
         self.assertIn("licensed_weapon_component", found)
         self.assertIn("optical_components", found)
+
+    def test_city_origin_makes_basic_loot_geographically_distinct(self):
+        ironhaven = set()
+        valewood = set()
+        for ix in range(2000):
+            ironhaven.update(household_loot(DATA, "apartment_common",
+                                             city="ironhaven", safe_opened=False,
+                                             seed=str(ix))["items"])
+            valewood.update(household_loot(DATA, "apartment_common",
+                                           city="valewood", safe_opened=False,
+                                           seed=str(ix))["items"])
+        self.assertIn("machined_parts", ironhaven)
+        self.assertNotIn("rare_seeds", ironhaven)
+        self.assertIn("rare_seeds", valewood)
+        self.assertNotIn("machined_parts", valewood)
+        self.assertIn("household_trade_goods", ironhaven & valewood)
+        with self.assertRaises(ValueError):
+            household_loot(DATA, "apartment_common", city="unknown",
+                            safe_opened=False, seed="bad")
+
+    def test_rare_imports_only_possible_in_secure_high_value_areas(self):
+        found_import = False
+        for ix in range(4000):
+            rare = household_loot(DATA, "illegal_cache",
+                                  city="valewood", safe_opened=True,
+                                  seed=str(ix))["items"]
+            if "licensed_weapon_component" in rare:
+                found_import = True
+        self.assertTrue(found_import)
+        for ix in range(500):
+            common = household_loot(DATA, "apartment_common",
+                                    city="valewood", safe_opened=False,
+                                    seed=str(ix))["items"]
+            self.assertNotIn("licensed_weapon_component", common)
 
     def test_catalog_rejects_infinite_loot_and_bad_escrow(self):
         bad = copy.deepcopy(DATA)
