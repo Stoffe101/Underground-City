@@ -153,6 +153,15 @@ def render(data: dict) -> dict[str, bytes]:
         "pack": {"pack_format": 15,
                  "description": "Underground City original Lost Cities world prototype"}
     })
+    # Fixed city anchors must survive vanilla ocean/river biomes. The standard
+    # style multiplies their city factor below the building threshold there.
+    files["data/underground_city/lostcities/worldstyles/three_city.json"] = json_bytes({
+        "outsidestyle": "lostcities:outside",
+        "bridgesupport": "v",
+        "highwaysupport": "v",
+        "citystyles": [{"factor": 1.0, "citystyle": "lostcities:citystyle_standard"}],
+        "citybiomemultipliers": [],
+    })
     for city in data["cities"]:
         name = city["id"]
         base = "data/underground_city/lostcities/"

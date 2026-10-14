@@ -16,6 +16,7 @@ def profile(data: dict) -> dict:
         "public": True,
         "lostcity": {
             "description": "Underground City disposable three-city survey",
+            "worldStyle": "underground_city:three_city",
             "generateSpawners": False,
             "generateLoot": True,
             "ruinChance": 0.0,
@@ -26,6 +27,8 @@ def profile(data: dict) -> dict:
             "cityChance": 0.0,
             "cityMinRadius": 100,
             "cityMaxRadius": max(city["radius_blocks"] for city in data["cities"]),
+            "cityMinHeight": -64,
+            "cityMaxHeight": 320,
         },
         "explosions": {"explosionChance": 0.0, "miniExplosionChance": 0.0},
     }
@@ -37,6 +40,7 @@ def install(server_root: Path, data: dict) -> list[str]:
         raise ValueError("Existing save found. City profiles only belong in a new disposable instance.")
     files = {
         "config/lostcities/profiles/uc_three_city.json": json.dumps(settings, indent=2)+"\n",
+        "config/lostcities/common.toml": '[profiles]\ndimensionsWithProfiles = ["minecraft:overworld=uc_three_city", "lostcities:lostcity=biosphere", "lostworlds:abyss=biosphere_caves"]\n',
         "defaultconfigs/lostcities-server.toml": '[profiles]\nselectedProfile = "uc_three_city"\nselectedCustomJson = ""\n',
     }
     jar = server_root/"mods/underground-city-world-prototype.jar"

@@ -46,6 +46,11 @@ class WorldPrototypeTests(unittest.TestCase):
         # The published Forge manifest includes its game-prefix, not plain 7.x.
         self.assertEqual(dependency["versionRange"], "[1.20-7.5.5]")
 
+    def test_fixed_city_style_does_not_suppress_ocean_anchors(self):
+        style=json.loads(render(WORLD)["data/underground_city/lostcities/worldstyles/three_city.json"])
+        self.assertEqual(style["citybiomemultipliers"], [])
+        self.assertEqual(style["outsidestyle"], "lostcities:outside")
+
     def test_no_unknown_modded_ids_in_prototype_loot(self):
         files = render(WORLD)
         loot_files = [k for k in files if "/loot_tables/chests/" in k]

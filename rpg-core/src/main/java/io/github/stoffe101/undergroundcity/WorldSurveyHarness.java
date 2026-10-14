@@ -39,6 +39,8 @@ public final class WorldSurveyHarness {
             try(var reader=resource.openAsReader()) {definition=JsonParser.parseReader(reader).getAsJsonObject();}
             int cx=definition.get("chunkx").getAsInt(),cz=definition.get("chunkz").getAsInt();
             var level=server.overworld();var position=new BlockPos.MutableBlockPos();
+            String biome=level.getBiome(new BlockPos(cx*16+8,64,cz*16+8)).unwrapKey()
+                .map(key->key.location().toString()).orElse("unknown");
             int glass=0,minY=level.getMaxBuildHeight(),maxY=level.getMinBuildHeight();
             for(int dx=-1;dx<=1;dx++) for(int dz=-1;dz<=1;dz++) {
                 var chunk=level.getChunk(cx+dx,cz+dz); // Forces native terrain/structure generation.
@@ -56,6 +58,7 @@ public final class WorldSurveyHarness {
             JsonObject observation=new JsonObject();observation.addProperty("city",city);
             observation.addProperty("center_chunk_x",cx);observation.addProperty("center_chunk_z",cz);
             observation.addProperty("generated_chunks",9);observation.addProperty("actual_glass_blocks",glass);
+            observation.addProperty("center_biome",biome);
             observation.addProperty("min_window_y",minY);observation.addProperty("max_window_y",maxY);
             observations.add(observation);
             if(glass<64 || maxY-minY<8) throw new IllegalStateException("No substantial generated urban structure at "+city+": "+observation);
