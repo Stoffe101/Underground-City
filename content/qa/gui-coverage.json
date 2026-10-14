@@ -73,6 +73,41 @@
       "description": "Provider unavailable"
     },
     {
+      "id": "operations_terminal.exchange",
+      "expected_file": "uc-exchange-ironhaven.png",
+      "owner": "underground_city",
+      "group": "operations_terminal",
+      "description": "Regional exchange with three Ironhaven lines, one sold out"
+    },
+    {
+      "id": "operations_terminal.exchange_low_funds",
+      "expected_file": "uc-exchange-low-funds.png",
+      "owner": "underground_city",
+      "group": "operations_terminal",
+      "description": "Regional exchange with insufficient credits for some purchases"
+    },
+    {
+      "id": "operations_terminal.imports_outside_city",
+      "expected_file": "uc-imports-outside-city.png",
+      "owner": "underground_city",
+      "group": "operations_terminal",
+      "description": "Imports tab outside every city exchange"
+    },
+    {
+      "id": "contracts.regional",
+      "expected_file": "uc-contract-regional.png",
+      "owner": "underground_city",
+      "group": "contracts",
+      "description": "Accepted recurring order consuming a crafted regional product"
+    },
+    {
+      "id": "contracts.visit_locked",
+      "expected_file": "uc-contract-visit-locked.png",
+      "owner": "underground_city",
+      "group": "contracts",
+      "description": "Recurring order locked until a rival-city exchange has been used"
+    },
+    {
       "id": "qshop.main",
       "expected_file": "uc-qshop-main.png",
       "owner": "qshop",
@@ -104,7 +139,7 @@
     "TaCZ weapon UI, attachments and gun workbenches",
     "NPC dialogue and interactions",
     "Locks Reforged lockpicking GUI",
-    "Property chest/safe inventory",
+    "Property safe inventory (reuses the vanilla chest screen; needs an in-world client capture)",
     "Inventory and item inspector",
     "Future vehicle controls",
     "Raids mission planning and actual mission HUD",

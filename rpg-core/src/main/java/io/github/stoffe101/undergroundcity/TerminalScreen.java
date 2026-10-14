@@ -20,7 +20,7 @@ import java.util.List;
 public final class TerminalScreen extends Screen {
     public enum Page {
         CONTRACTS("CONTRACTS", "CAREER WORK ORDERS", List.of()),
-        IMPORTS("IMPORTS", "CIVILIAN SUPPLY", List.of("Buy ordinary supplies or sell surplus through Q Shop.", "Specialist regional suppliers are sold only at terminals placed inside their city.", "Remote imports and cargo incidents are not available yet.")),
+        IMPORTS("IMPORTS", "CIVILIAN SUPPLY", List.of("Buy ordinary supplies or sell surplus through Q Shop.", "Specialist goods are sold only inside their own city.", "Remote imports and cargo incidents are not available yet.")),
         DELIVERIES("DELIVERIES", "SHIPMENT TRACKING", List.of("No shipments are in transit.", "Cargo ordering and physical recovery scenes are pending.", "Recovery timers will pause while their owner is offline.")),
         BLACK_MARKET("MARKET", "PRIVATE EXCHANGE", List.of("The black market is unavailable.", "Funded buyers and physical dropbox escrow are pending.", "Keep your equipment until secure exchanges are enabled.")),
         RAIDS("RAIDS", "TACTICAL CONTRACTS", List.of("No surveyed raid targets are available.", "Raids require real buildings, guards and objectives.", "Progress through civilian work orders while this is developed."));
@@ -29,7 +29,7 @@ public final class TerminalScreen extends Screen {
         Page(String tab, String heading, List<String> copy) { this.tab=tab; this.heading=heading; this.copy=copy; }
     }
 
-    private static final int MAX_OFFER_ROWS = 4, LOT = 4;
+    private static final int MAX_OFFER_ROWS = 3, LOT = 4, ROW_TOP = 108, ROW_STEP = 26;
     private Page current = Page.CONTRACTS;
     private final BlockPos terminalPosition;
     private final TerminalData data;
@@ -65,7 +65,7 @@ public final class TerminalScreen extends Screen {
         next=addRenderableWidget(Button.builder(Component.literal(">"),b->{selected++;refresh();})
             .bounds(left+panelW-43,top+77,24,20).build());
         for (int i=0;i<MAX_OFFER_ROWS;i++) {
-            int index=i, y=top+96+i*26;
+            int index=i, y=top+ROW_TOP-2+i*ROW_STEP;
             buyOne[i]=addRenderableWidget(Button.builder(Component.literal("BUY 1"),b->buy(index,1))
                 .bounds(left+panelW-124,y,48,20).build());
             buyLot[i]=addRenderableWidget(Button.builder(Component.literal("BUY "+LOT),b->buy(index,LOT))
@@ -162,7 +162,7 @@ public final class TerminalScreen extends Screen {
         g.drawString(font,"UNDERGROUND // OPERATIONS",left+24,top+10,0xffebf5fb,false);
         g.fill(left+9,top+70,left+panelW-9,top+panelH-66,0xff172738);
         boolean exchange=current==Page.IMPORTS && exchangeOpen();
-        g.drawString(font,exchange?cityName(data.region())+" EXCHANGE":current.heading,left+18,top+81,0xff55d3bc,false);
+        g.drawString(font,exchange?capitalize(data.region()).toUpperCase(java.util.Locale.ROOT)+" EXCHANGE":current.heading,left+18,top+81,0xff55d3bc,false);
         int tabStep=(panelW-16)/5;
         g.fill(left+8+current.ordinal()*tabStep,top+63,left+8+current.ordinal()*tabStep+tabStep-2,top+65,0xff55d3bc);
         if (current==Page.CONTRACTS) renderWork(g);
@@ -174,30 +174,36 @@ public final class TerminalScreen extends Screen {
                 wrapped(g,data.region().isEmpty()?"This terminal is outside every city exchange.":"No regional stock is listed for this city.",left+18,y,panelW-36,0xffe1af6c);
             }
         }
-        String footer=data.career()+" L"+data.level()+" | "+(data.economy()?String.format(java.util.Locale.ROOT,"%.0f credits",data.balance()):"Economy offline");
+        String footer=capitalize(data.career())+" L"+data.level()+" | "+(data.economy()?String.format(java.util.Locale.ROOT,"%.0f credits",data.balance()):"Economy offline");
         g.drawString(font,footer,left+12,top+panelH-28,0xffe1af6c,false);
         g.drawString(font,"ESC TO CLOSE",left+panelW-88,top+panelH-15,0xff9bb6ca,false);
-        g.drawString(font,data.city()+(data.region().isEmpty()?"":"  |  at "+cityName(data.region())),left+12,top+panelH-15,0xff9bb6ca,false);
+        g.drawString(font,capitalize(data.city())+(data.region().isEmpty()?"":"  |  at "+capitalize(data.region())),left+12,top+panelH-15,0xff9bb6ca,false);
         super.render(g,mouseX,mouseY,partialTick);
     }
 
-    static String cityName(String id) {
+    static String capitalize(String id) {
         return id.isEmpty()?"":Character.toUpperCase(id.charAt(0))+id.substring(1);
     }
 
     private void renderExchange(GuiGraphics g) {
-        g.drawString(font,"Shared stock | replenishes during active play",left+18,top+90,0xff9bb6ca,false);
+        g.drawString(font,"Shared stock | replenishes during active play",left+18,top+93,0xff9bb6ca,false);
         for (int i=0;i<Math.min(MAX_OFFER_ROWS,data.offers().size());i++) {
             TerminalData.Offer offer=data.offers().get(i);
-            int y=top+99+i*26;
+            int y=top+ROW_TOP+i*ROW_STEP;
             g.renderItem(new ItemStack(item(offer.item())),left+18,y);
-            String name=itemName(offer.item());
-            g.drawString(font,font.plainSubstrByWidth(name,panelW-210),left+40,y,0xffebf5fb,false);
-            boolean soldOut=offer.stock()==0;
-            g.drawString(font,offer.price()+" Cr each  |  "+(soldOut?"SOLD OUT":offer.stock()+"/"+offer.capacity()+" in stock"),
-                left+40,y+10,soldOut?0xffe1736c:0xffc0d0df,false);
+            g.drawString(font,font.plainSubstrByWidth(itemName(offer.item()),panelW-210),left+40,y,0xffebf5fb,false);
+            boolean soldOut=offer.stock()==0, poor=data.economy() && data.balance()<offer.price();
+            String line=offer.price()+" Cr each  |  "+(soldOut?"SOLD OUT":offer.stock()+"/"+offer.capacity()+" in stock");
+            if (!soldOut && poor) line+="  |  NEED "+(int)Math.ceil(offer.price()-data.balance())+" MORE";
+            g.drawString(font,font.plainSubstrByWidth(line,panelW-170),left+40,y+10,soldOut?0xffe1736c:poor?0xffe1af6c:0xffc0d0df,false);
         }
-        if (data.offers().size()>MAX_OFFER_ROWS) g.drawString(font,"+"+(data.offers().size()-MAX_OFFER_ROWS)+" more lines hidden",left+18,top+99+MAX_OFFER_ROWS*26,0xff9bb6ca,false);
+        if (data.offers().size()>MAX_OFFER_ROWS) g.drawString(font,"+"+(data.offers().size()-MAX_OFFER_ROWS)+" more lines not shown",left+18,top+ROW_TOP+MAX_OFFER_ROWS*ROW_STEP,0xff9bb6ca,false);
+    }
+
+    /** Journey/QA hook: a real mouse click at the centre of an offer's buy button. */
+    boolean clickBuy(int row,boolean lot) {
+        Button button=(lot?buyLot:buyOne)[row];
+        return mouseClicked(button.getX()+button.getWidth()/2.0,button.getY()+button.getHeight()/2.0,0);
     }
 
     private void renderWork(GuiGraphics g) {

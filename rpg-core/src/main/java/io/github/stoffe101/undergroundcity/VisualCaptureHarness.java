@@ -32,6 +32,20 @@ public final class VisualCaptureHarness {
             List.of(new TerminalData.Row("underground_city:bread","Bake the canteen bread order",2,36,180,4,active,0,
                 List.of(new TerminalData.Req("minecraft:bread",8,held)))),List.of());
     }
+    private static final List<TerminalData.Offer> IRONHAVEN_OFFERS=List.of(
+        new TerminalData.Offer("underground_city:machined_parts","underground_city:machined_parts",18,16,36,8),
+        new TerminalData.Offer("underground_city:refined_alloy","underground_city:refined_alloy",28,14,30,8),
+        new TerminalData.Offer("underground_city:security_fabric","underground_city:security_fabric",22,0,24,8));
+    private static TerminalData exchange(String region,double balance) {
+        return new TerminalData("valewood","farmer",3,520,balance,true,null,region.isEmpty()?0:1,region,
+            List.of(),region.isEmpty()?List.of():IRONHAVEN_OFFERS);
+    }
+    private static TerminalData regionalContract(boolean accepted,int held,int visits) {
+        return new TerminalData("valewood","farmer",3,520,230,true,
+            accepted?UUID.fromString("00000000-0000-0000-0000-000000000002"):null,visits,"valewood",
+            List.of(new TerminalData.Row("underground_city:greenhouse_service","Service the greenhouse irrigation line",3,150,300,2,accepted,1,
+                List.of(new TerminalData.Req("underground_city:irrigation_service_kit",4,held)))),List.of());
+    }
     private static void start(Minecraft mc) {
         int scale=Integer.getInteger("uc.visualCapture.scale",3);
         if(scale<1||scale>4) throw new IllegalArgumentException("Bad GUI scale");
@@ -43,6 +57,11 @@ public final class VisualCaptureHarness {
         cases.add(new Case("uc-contract-locked",TerminalScreen.Page.CONTRACTS,fixture(1,0,false,true),0));
         cases.add(new Case("uc-contract-unregistered",TerminalScreen.Page.CONTRACTS,TerminalData.offline(),0));
         cases.add(new Case("uc-contract-offline",TerminalScreen.Page.CONTRACTS,fixture(2,8,false,false),0));
+        cases.add(new Case("uc-exchange-ironhaven",TerminalScreen.Page.IMPORTS,exchange("ironhaven",120),0));
+        cases.add(new Case("uc-exchange-low-funds",TerminalScreen.Page.IMPORTS,exchange("ironhaven",20),0));
+        cases.add(new Case("uc-imports-outside-city",TerminalScreen.Page.IMPORTS,exchange("",120),0));
+        cases.add(new Case("uc-contract-regional",TerminalScreen.Page.CONTRACTS,regionalContract(true,2,1),0));
+        cases.add(new Case("uc-contract-visit-locked",TerminalScreen.Page.CONTRACTS,regionalContract(false,0,0),0));
         if(!QShopEconomy.available()) throw new IllegalStateException("Visual coverage requires installed Q Shop 1.8.4");
         cases.add(new Case("uc-qshop-main",null,null,1));
         cases.add(new Case("uc-qshop-low-funds",null,null,2));

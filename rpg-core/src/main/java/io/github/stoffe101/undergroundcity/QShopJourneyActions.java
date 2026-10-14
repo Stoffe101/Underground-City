@@ -35,10 +35,8 @@ final class QShopJourneyActions {
         // The fixture server reopens the terminal after the provider trades; buy one regional item with a real click.
         if(stage==7 && mc.screen instanceof TerminalScreen screen && !screen.snapshot().offers().isEmpty()
                 && screen.snapshot().xp()>=125) {
-            int panelW=Math.min(420,screen.width-16),panelH=Math.min(268,screen.height-16);
-            int left=(screen.width-panelW)/2,top=(screen.height-panelH)/2;
             screen.showPage(TerminalScreen.Page.IMPORTS);
-            if(!screen.mouseClicked(left+panelW-124+24,top+96+10,0)) throw new IllegalStateException("Regional BUY 1 button did not accept the click");
+            if(!screen.clickBuy(0,false)) throw new IllegalStateException("Regional BUY 1 button did not accept the click");
             stage++;
             System.out.println("[UC-JOURNEY] clicked regional exchange BUY 1; offers="+screen.snapshot().offers().size()
                 +" region="+screen.snapshot().region());

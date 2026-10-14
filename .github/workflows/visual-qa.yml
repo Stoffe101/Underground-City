@@ -39,10 +39,14 @@ jobs:
             width: 1920
             height: 1080
             scale: 3
+            crop: '320,128,1600,952'
+            review_width: 900
           - profile: gui2-1440p
             width: 3440
             height: 1440
             scale: 2
+            crop: '1290,442,2150,998'
+            review_width: 860
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -69,8 +73,8 @@ jobs:
           from pathlib import Path
           d=json.loads(Path('content/qa/gui-coverage.json').read_text())
           assert d['schema_version']==1
-          assert len(d['integrated_surfaces'])==13
-          assert len({s['expected_file'] for s in d['integrated_surfaces']})==13
+          assert len(d['integrated_surfaces'])==18
+          assert len({s['expected_file'] for s in d['integrated_surfaces']})==18
           assert d['screenshots_real_framebuffer']
           PY
       - name: Launch real Forge client under software OpenGL, capture every integrated tab
@@ -126,6 +130,14 @@ jobs:
             --screenshots rpg-core/run/screenshots \
             --width "$UC_W" --height "$UC_H" \
             --report "build/visual-qa/${{ matrix.profile }}/audit.json"
+      - name: Print panel-cropped review copies of the actual screens into the job log
+        if: always()
+        shell: bash
+        run: |
+          python -m pip install --disable-pip-version-check 'Pillow==11.3.0' >/dev/null
+          python scripts/emit_review_images.py --format png --colors 32 \
+            --max-width ${{ matrix.review_width }} --crop "${{ matrix.crop }}" \
+            rpg-core/run/screenshots/uc-*.png || true
       - name: Upload ONLY the actual real-client screenshots for artistic review
         if: always()
         uses: actions/upload-artifact@v4

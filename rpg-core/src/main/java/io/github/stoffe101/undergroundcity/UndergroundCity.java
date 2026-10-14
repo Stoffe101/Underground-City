@@ -74,6 +74,7 @@ public final class UndergroundCity {
         }
         BLOCKS.register(context.getModEventBus());
         BLOCK_ENTITIES.register(context.getModEventBus());
+        LostCitiesLink.register(context.getModEventBus());
         ITEMS.register(context.getModEventBus());
         context.getModEventBus().addListener(this::addCreativeTab);
         TerminalNetwork.register();
