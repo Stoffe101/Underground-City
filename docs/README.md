@@ -52,3 +52,5 @@ The docs here distinguish **confirmed product direction**, **design proposals**,
 - [Third-party notices](../THIRD_PARTY_NOTICES.md)
 
 **Update convention:** Proposed mechanics are not described as working. Technical assumptions are not described as verified. Each candidate mod requires its own dedicated-server test and license review.
+
+- [Visual QA and screenshot cleanup](technical/visual-qa.md)

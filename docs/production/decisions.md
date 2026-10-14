@@ -36,6 +36,9 @@ Use `D-###` IDs. Status values: **accepted (product intent)**, **proposed**, **n
 | D-031 | accepted (product intent) | Expensive optional remote imports can suffer uncommon road crashes/ambushes and become timed recovery objectives | Owner-online timer; legal insured cargo protected from irreversible arbitrary loss; contraband at police risk |
 | D-032 | accepted (product intent) | Black-market seller listings use a bounded price guide, funded buyer escrow and a single-use physical dropbox | Preserve exact item NBT; verify positions, no duplication on reload or expiration; buyer stock/budget is finite |
 | D-033 | accepted (product intent) | Later raids target existing gang hideouts/warehouses and, at higher tiers, police stations | Real map objectives, cooldowns, security/heat response; never instant rewards from clicking terminal |
+| D-034 | accepted (product intent), prototype | Compact one-block PC terminal, not a multicompartment computer construction system | Original Forge block + server→client native five-tab read-only screen until economy backend is safe |
+| D-035 | accepted (product intent), prototype | Continuous real-client screenshot coverage of every integrated GUI panel and screen state, across viewport scales | CI checks completeness, image contrast/duplicates; review screenshots for aesthetic/function and purge screenshot artifacts immediately after review |
+| D-036 | needs spike | Reuse existing PCs only when license and mod UI API make it better | CC:Tweaked is Lua terminal-oriented; Noish decorative assets are ARR; original simple block is safer pending future UI-capable asset |
 | D-014 | proposed | Visible active NPCs + bounded off-screen economic simulation | Plausible cities without thousands of ticking entities |
 
 ## Open decisions
