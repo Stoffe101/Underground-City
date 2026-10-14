@@ -24,6 +24,17 @@
       "reviewer": "Codex cloud task",
       "surfaces_per_profile": 13,
       "findings": "Inspected all 26 actual framebuffers. Terminal status, tab indicator, rewards and footer fit at both scales. Installed Q Shop funded/zero balances differ visibly; compact Limit All/You summary, total and disabled low-funds confirmation fit within the real modal. UI visual fixtures are not transaction evidence."
+    },
+    {
+      "run_id": 38647511483,
+      "head_sha": "85e106dda4f23a14256f5b4fd0643a1e0f693e03",
+      "artifact_ids": [
+        11932769542
+      ],
+      "review_completed": true,
+      "reviewer": "Codex cloud task",
+      "surfaces_per_profile": 3,
+      "findings": "Inspected every actual PNG. Rejected all three: uniform cleared sky color, no visible terrain. Gameplay-tick capture preceded world rendering. Moved capture to render END and added variance/duplicate rejection. Native block evidence remains separate and valid."
     }
   ]
 }

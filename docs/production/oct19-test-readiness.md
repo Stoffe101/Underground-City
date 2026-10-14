@@ -14,6 +14,13 @@ The **starter profession/economy slice is playable** with Minecraft 1.20.1, Forg
 
 See [integration/setup/recovery guide](../technical/economy-integration.md), [visual QA](../technical/visual-qa.md), and [world prototype](../technical/three-city-prototype.md).
 
+## Major implementation locations
+
+- [Runtime module](../../rpg-core/src/main/java/io/github/stoffe101/undergroundcity): work-order catalog/service/journal, Q Shop adapter, packet authorization, native terminal, supplier binding and opt-in cloud QA harnesses.
+- [Datapack work orders](../../rpg-core/src/main/resources/data/underground_city/work_orders) and [original provider templates](../../content/integrations/qshop): real registry items, bounded rewards/demand and finite civilian trades.
+- [Fresh-world installer](../../scripts/install_world_prototype.py) and [original world generator](../../scripts/build_world_prototype.py): safe profile selection, namespaced styles and fixed city anchors.
+- [Hosted workflows](../../.github/workflows): provider GameTests, two actual clients/restart, real UI captures, native terrain generation/tour and reviewed-gallery cleanup.
+
 ## Recorded verification
 
 | Evidence | Result and practical limit |
@@ -22,6 +29,7 @@ See [integration/setup/recovery guide](../technical/economy-integration.md), [vi
 | Repository tests | 79 tests passed, documentation/catalog validation passed |
 | Forge provider tests | Eight required tests passed in [hosted economy run](https://github.com/Stoffe101/Underground-City/actions/runs/38642758185): actual currency/items, farmer production recipe, fresh Smith tools, missing/protected goods, stale receipts, shared demand, journal disk reload/recovery, registered PC and named-clerk binding |
 | Core-only Forge | Passed without Q Shop; provider-only cases explicitly skip |
+| Core-only native client | The corrected Core client reached the normal Minecraft menu in Codex Cloud with exactly three loaded mods (Minecraft, Forge, Core), without Q Shop. Actual window inspected; exited normally. |
 | Two actual cloud clients | Farmer and Smith connected to a loopback-only dedicated server, used real terminal mouse actions and Q Shop buy/sell modals; both ended with **28 credits, 125 XP, level 2, four seeds, zero logs and one completion receipt** |
 | Dedicated-server restart ([hosted reproduction](https://github.com/Stoffe101/Underground-City/actions/runs/38642758171)) | Same world restarted; both actual clients reconnected and retained those values without another reward. `journey-phase1.json` and `journey-phase2.json` report passed |
 | Visual review | Thirteen actual framebuffer states per viewport, 1920×1080 GUI3 and 3440×1440 GUI2. Inspected captures; corrected clipped names/currency, missing-item feedback, selected-tab emphasis, modal coordinate conversion and label-pack priority |
@@ -43,6 +51,10 @@ Windows runtime and full power-loss/process-kill recovery with connected clients
 6. The new dedicated-world probe found the original low-code package requesting Lost Cities `[7,)`, while the pinned Forge JAR declares **`1.20-7.5.5`**. Earlier isolated GameTests had not exercised this physical `run/mods` package. The dependency now pins the actual published version, with a regression check and a dedicated native-block survey.
 
 7. The first loaded-world probe found no buildings at Ironhaven. Standard ocean/river city-factor penalties can suppress fixed anchors; the fresh installer now selects an original unrestricted-biome world style and explicitly maps the Overworld to the profile. The revised native test passed at all three anchors; actual client environment captures provide a separate visual gate.
+
+8. The first native city-client tour revealed `NoClassDefFoundError: com/qshop/client/ShopScreen`: provider types in an always-loaded journey event subscriber broke clients without Q Shop. Provider-specific fixture actions now live behind a helper loaded only when the journey flag and provider are present. The corrected Core-only cloud client reached its normal menu; the hosted world tour exercises the same boundary with Lost Cities.
+
+9. Initial world-tour files were dimensionally valid but uniformly sky-colored. Actual visual review rejected them. The capture now reads the framebuffer after rendering and the hosted checker rejects blank/duplicate environment images. Terrain visual approval requires the new gallery.
 
 ## Still incomplete
 

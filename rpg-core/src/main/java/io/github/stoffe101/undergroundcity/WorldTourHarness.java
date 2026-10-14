@@ -21,7 +21,7 @@ import java.util.List;
 public final class WorldTourHarness {
     private static final boolean ENABLED=Boolean.getBoolean("uc.worldTour");
     private static final List<String> CITIES=List.of("ironhaven","valewood","blackwater");
-    private static boolean opening,positioned,captured,finished;
+    private static boolean opening,positioned,captureRequested,captured,finished;
     private static int current,ticks;
     private static double targetX,targetZ;
     private static long stageStarted=System.nanoTime(),lastReport;
@@ -66,6 +66,13 @@ public final class WorldTourHarness {
                 }
             }
         }
+        if(captureRequested && mc.screen==null && mc.player!=null && mc.level!=null) {
+            // Client ticks run after the target is cleared but before terrain is
+            // rendered. Read the completed framebuffer at render-tick END.
+            captureRequested=false;captured=true;
+            Screenshot.grab(mc.gameDirectory,"uc-world-"+CITIES.get(current)+".png",mc.getMainRenderTarget(),
+                response->System.out.println("[UC-WORLD-VISUAL] "+response.getString()));
+        }
         if(!captured || mc.screen!=null) return;
         String name="uc-world-"+CITIES.get(current)+".png";
         try {
@@ -80,7 +87,7 @@ public final class WorldTourHarness {
     }
 
     @SubscribeEvent public static void tick(TickEvent.ClientTickEvent event) {
-        if(!ENABLED || finished || captured || event.phase!=TickEvent.Phase.END) return;
+        if(!ENABLED || finished || captured || captureRequested || event.phase!=TickEvent.Phase.END) return;
         Minecraft mc=Minecraft.getInstance();var server=mc.getSingleplayerServer();
         if(mc.player==null || mc.level==null || server==null || mc.screen!=null) return;
         if(!positioned) {
@@ -103,8 +110,6 @@ public final class WorldTourHarness {
         }
         if(Math.abs(mc.player.getX()-targetX)>2 || Math.abs(mc.player.getZ()-targetZ)>2) return;
         if(++ticks<160 || !mc.level.getChunkSource().hasChunk((int)Math.floor(targetX/16),(int)Math.floor(targetZ/16))) return;
-        captured=true;
-        mc.execute(()->Screenshot.grab(mc.gameDirectory,"uc-world-"+CITIES.get(current)+".png",mc.getMainRenderTarget(),
-            response->System.out.println("[UC-WORLD-VISUAL] "+response.getString())));
+        captureRequested=true;
     }
 }
