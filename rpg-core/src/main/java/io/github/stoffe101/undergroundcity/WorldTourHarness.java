@@ -50,7 +50,7 @@ public final class WorldTourHarness {
         }
         if(!opening && (mc.screen instanceof TitleScreen || mc.screen instanceof AccessibilityOnboardingScreen)) {
             if(!Files.isRegularFile(folder.resolve("saves/world/level.dat"))) throw new IllegalStateException("Native survey-world clone missing");
-            opening=true;stageStarted=now;mc.options.guiScale().set(3);mc.options.renderDistance().set(4);
+            opening=true;stageStarted=now;mc.options.guiScale().set(3);mc.options.renderDistance().set(8);
             mc.options.pauseOnLostFocus=false;mc.options.framerateLimit().set(30);mc.options.hideGui=true;mc.resizeDisplay();
             mc.createWorldOpenFlows().loadLevel(mc.screen,"world");
             return;
@@ -104,7 +104,8 @@ public final class WorldTourHarness {
                 if(player==null) throw new IllegalStateException("World-tour player missing");
                 player.setGameMode(GameType.SPECTATOR);server.overworld().setDayTime(6000);
                 server.overworld().setWeatherParameters(6000,0,false,false);
-                player.teleportTo(server.overworld(),x,160,z,135,40);
+                // Keep the ground within terrain fog distance from this aerial camera.
+                player.teleportTo(server.overworld(),x,150,z,135,55);
             });
             positioned=true;ticks=0;return;
         }
