@@ -25,6 +25,10 @@ Use `D-###` IDs. Status values: **accepted (product intent)**, **proposed**, **n
 | D-020 | proposed | Portable city and profession design catalog defined once and adapter-owned by the selected mod | No duplicate onboarding screens, starter grants, or XP authorities |
 | D-021 | proposed | Prototype three fixed cities with Lost Cities' original datapack registries | Validate actual generation, biome/seam quality and populated city realism before final world choice |
 | D-022 | accepted (product intent) | Burglary and legal careers are parallel progression paths | Homes can be robbed with ownership, real scarcity and evidence-driven city policing; Lootr reserved for co-op exploration caches |
+| D-023 | accepted (product intent) | All advanced professions require real journeys to other rival cities | Tier 2 at least one foreign city; tier 3 all three; lawful and high-risk supply options |
+| D-024 | accepted (product intent) | All three cities connected through guarded bridges/highways or suitable wilderness bypasses | World geometry and crossing hazards must be tested before anything is pasted |
+| D-025 | accepted (product intent) | Occupied homes slowly restock shared goods instead of becoming permanently depleted or instantly resetting | Provisional 1 item per elapsed active-play interval, caps, persistence and per-home economy funding; reuse an existing refill mod when possible |
+| D-026 | needs spike | Lost Cities 7.5.5 highways, [TACZ] Lootchest Refill 1.1.2 and Faction Friction 1.8.0R could supply infrastructure, timed restock and warfare | Pin releases and run isolated tests, then a combined in-world test |
 | D-014 | proposed | Visible active NPCs + bounded off-screen economic simulation | Plausible cities without thousands of ticking entities |
 
 ## Open decisions

@@ -20,7 +20,7 @@
 4. Search logical containers: closet, desk, safe, workbench. **Shared household stock**, not per-player Lootr copies.
 5. Convert items to dirty/unlicensed inventory where relevant; choose to keep, return, sell to a fence, or complete a story investigation.
 6. NPCs report witnessed entry/theft; police evidence and city heat respond based on observed events, not psychic detection.
-7. Respect non-permanent recovery: stolen NPC goods refill only from an economic budget or after a transparent cooldown, not by logging out.
+7. Respect **gradual recovery**: the robbed apartment doesn't reset instantly. At a common household's 40-minute prototype interval it could have 1 item after 40 active minutes, 3 after 120, and up to a bounded maximum later. See [restock policy](gradual-property-restock.md). Existing NPC economic sources must fund those future items.
 
 ## Exploit prevention and cooperative fairness
 
@@ -45,6 +45,7 @@
 | --- | --- | --- |
 | City architecture | Lost Cities fixed cities + custom city styles | Functional building type, civic geography, long roads |
 | Lock and minigame | [Locks Reforged](https://www.curseforge.com/minecraft/mc-mods/locks-reforged) | Ownership policy, trespass event, alarms |
+| Time-based apartment restocking | [[TACZ] Lootchest Refill](https://www.curseforge.com/minecraft/mc-mods/lootchest-refill) | Test partially filled households, per-property shared stock, game clock and funds before selecting |
 | Multiplayer exploration loot | [Lootr](https://www.curseforge.com/minecraft/mc-mods/lootr) | Verify Lost Cities generation and injected tables |
 | Chest/item loot tables | Vanilla datapacks or [LootrConf](https://github.com/103841-ops/lootr-config) | Assign tables to appropriate building type/context |
 | NPCs and witnesses | Existing NPC framework / MCA Reborn | Resident presence, report/witness events |

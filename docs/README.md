@@ -14,6 +14,8 @@ The docs here distinguish **confirmed product direction**, **design proposals**,
 - [Crime, policing, and conflict](design/crime-and-war.md)
 - [Exploration and loot](design/exploration-and-loot.md)
 - [Burglary and property gameplay](design/burglary-and-property.md)
+- [Progressive property restocking](design/gradual-property-restock.md)
+- [Dangerous crossings and inter-city progression](design/intercity-progression.md)
 - [Narrative and quests](design/story.md)
 - [UX and accessibility](design/ui-ux.md)
 

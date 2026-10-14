@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "minecraft": "1.20.1",
+  "forge": "47.4.10",
+  "candidates": [
+    {
+      "id": "lostcities",
+      "name": "The Lost Cities",
+      "project_id": 269024,
+      "file_id": 8862717,
+      "version": "7.5.5",
+      "source": "https://www.curseforge.com/minecraft/mc-mods/the-lost-cities/files/8862717",
+      "use": "world_generation_and_native_highway_planning",
+      "lowcode_world_dependency": true,
+      "mod_id": "lostcities"
+    },
+    {
+      "id": "lootchest_refill",
+      "name": "[TACZ] Lootchest Refill",
+      "project_id": 1399385,
+      "file_id": 7711372,
+      "version": "1.1.2",
+      "source": "https://www.curseforge.com/minecraft/mc-mods/lootchest-refill/files/7711372",
+      "use": "timed_incremental_container_refills",
+      "lowcode_world_dependency": false,
+      "mod_id": "lootchestrefill"
+    },
+    {
+      "id": "faction_friction",
+      "name": "Faction Friction",
+      "project_id": 1545398,
+      "file_id": 9042001,
+      "version": "1.8.0R",
+      "source": "https://www.curseforge.com/minecraft/mc-mods/faction-friction/files/9042001",
+      "use": "geopolitical_factions_warfare_and_claims",
+      "lowcode_world_dependency": false,
+      "mod_id": "factionfriction"
+    }
+  ],
+  "test_scope": {
+    "each_mod_isolated": true,
+    "world_mod_with_generated_lowcode_jar": true,
+    "no_third_party_jar_artifact": true,
+    "do_not_publish_unverified_interoperability": true
+  }
+}

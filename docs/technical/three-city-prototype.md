@@ -54,3 +54,15 @@ The generated world mod also adds **five original vanilla-item loot tables**: or
 First prove the three cities generate. Then screenshot-review actual environments, create/connect travel routes, classify buildings by use, apply legal versus explore/rob loot policies, insert NPCs with homes/workplaces, and implement robbery events through **existing lock and economy integrations**. The technical constraint is not the raw number of buildings, but producing believable lived-in locations without spending months furnishing every room.
 
 For reference: [world pipeline](world-pipeline.md), [mod compatibility](mod-audit.md), [modpack reuse](reuse-first.md).
+
+## Rival city corridors and gradual restock extension
+
+[Corridor blueprint](../../content/region-blueprints/corridors.json) now describes a three-edge network: Ironhaven–Valewood, Ironhaven–Blackwater and Valewood–Blackwater. Two route segments are marked **proposed bridges** with guarded gates; the third is a longer frontier bypass. The [route preview SVG generator](../../scripts/render_world_plan.py) visualizes that **schematic**, and the [intercity validator](../../scripts/validate_intercity.py) checks endpoints, neighboring-city avoidance, crossings, gates, war-state pairs, cross-city recipe prerequisites and stock-recovery rules. CI packages an SVG and machine-readable report next to our original low-code world data.
+
+Our [inter-city progression design](../design/intercity-progression.md) requires visiting at least one rival city for tier 2 and all three cities for tier 3, with both a legitimate supplier route and a riskier alternative. The underlying commodities are currently logical design identifiers, **not actual registered Minecraft items or crafting recipes**.
+
+Our [property restocking design](../design/gradual-property-restock.md) describes slow replenishment of **shared** household inventories, with partial refills and caps. Pure Python tests exercise that logic. No chests are filled or refilled in Minecraft yet.
+
+### Native Lost Cities highways
+
+Forge **Lost Cities 7.5.5** includes the versioned 7.5 inter-city highway network, roads, intersections and highway bridge features. We will test [the pinned Forge 1.20.1 release](https://www.curseforge.com/minecraft/mc-mods/the-lost-cities/files/8862717) in the [world smoke workflow](../../.github/workflows/world-integration.yml). The highway planner targets approximate city concentrations and **does not promise** to connect our three fixed city anchors, especially when random-city chance is disabled. It will need explicit surveying and possible original structure/world-edit additions. The schematic route bridges are placeholders, not placed blocks.
