@@ -70,6 +70,7 @@ public final class WorldSurveyHarness {
             com.mojang.logging.LogUtils.getLogger().error("Native city survey failed",error);
         }
         report.add("observations",observations);
+        report.addProperty("qshop_credits_ready",QShopEconomy.available() && QShopEconomy.configured(server));
         report.addProperty("roads_bridges_population_verified",false);
         try {Files.writeString(folder.resolve("world-survey.json"),report.toString()+"\n");}
         catch(java.io.IOException error) {throw new IllegalStateException("Cannot record world survey",error);}

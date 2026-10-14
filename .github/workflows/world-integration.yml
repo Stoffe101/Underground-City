@@ -83,15 +83,17 @@ jobs:
         shell: bash
         run: |
           python scripts/install_world_prototype.py --server-root rpg-core/run-world-survey
+          python scripts/install_qshop_templates.py --server-root rpg-core/run-world-survey
           printf 'eula=true\n' > rpg-core/run-world-survey/eula.txt
           printf 'level-seed=20261014\nserver-ip=127.0.0.1\nonline-mode=false\nview-distance=3\nsimulation-distance=3\n' > rpg-core/run-world-survey/server.properties
-          timeout 900s gradle -p rpg-core runServer -PucWorldCandidate=lostcities -PucRunDir=run-world-survey -PucWorldSurvey=true --no-daemon --stacktrace
+          timeout 900s gradle -p rpg-core runServer -PucWorldCandidate=lostcities -PucEconomyTest=true -PucRunDir=run-world-survey -PucWorldSurvey=true --no-daemon --stacktrace
           python - <<'PY'
           import json
           from pathlib import Path
           report=json.loads(Path('rpg-core/run-world-survey/world-survey.json').read_text())
           assert report['status']=='three_city_structures_observed', report
           assert len(report['observations'])==3
+          assert report['qshop_credits_ready'] is True, report
           PY
       - name: Preserve native world-survey evidence without world saves or mod binaries
         if: always() && matrix.candidate == 'lostcities'
@@ -127,7 +129,7 @@ jobs:
           ALSOFT_DRIVERS: 'null'
           SDL_AUDIODRIVER: dummy
         run: |
-          timeout 900s xvfb-run -a -s '-screen 0 1920x1080x24' gradle -p rpg-core runClient -PucWorldCandidate=lostcities -PucRunDir=run-world-tour -PucWorldTour=true --no-daemon --stacktrace
+          timeout 900s xvfb-run -a -s '-screen 0 1920x1080x24' gradle -p rpg-core runClient -PucWorldCandidate=lostcities -PucEconomyTest=true -PucRunDir=run-world-tour -PucWorldTour=true --no-daemon --stacktrace
           test -f rpg-core/run-world-tour/world-tour-complete.txt
           python - <<'PY'
           from pathlib import Path
