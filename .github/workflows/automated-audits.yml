@@ -27,6 +27,8 @@ jobs:
           java-version: '17'
       - name: Validate repo and third-party candidate metadata
         run: python scripts/validate_repo.py
+      - name: Validate provider-neutral cities, professions and Core compatibility
+        run: python scripts/validate_onboarding_catalog.py
       - name: Exercise CurseForge/Modrinth export and installed JAR parsing
         run: python -m unittest discover -s tests -p 'test_*.py' -v
       - name: Test progression without running Minecraft

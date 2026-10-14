@@ -20,6 +20,9 @@ Use `D-###` IDs. Status values: **accepted (product intent)**, **proposed**, **n
 | D-015 | accepted (product intent) | Prefer reusing compatible existing mods and modpacks instead of replicating their mechanics | Private two-player focus and minimal ongoing maintenance; validate first |
 | D-016 | needs spike | RoleCraft might provide registration, career progression, player restrictions and police items | Test configurability for gunsmith/hacker and mod APIs before deciding |
 | D-017 | needs spike | GCA/DeceasedCraft/Crusthaven/ModernCraft as candidate base packs | Audit content/rights/overlap and dedicated-server performance |
+| D-018 | accepted (product intent) | First join should present home city then profession, inspired by Cisco's layered race/blessing/class selection | Avoid a fantasy race dependency; all residents remain humans by default |
+| D-019 | needs spike | Prefer a proven faction/class selector or configuration-driven class UI over custom onboarding GUI | Evaluate Class Selection Mod first, then Class Enhancement/RoleCraft/Origins alternatives |
+| D-020 | proposed | Portable city and profession design catalog defined once and adapter-owned by the selected mod | No duplicate onboarding screens, starter grants, or XP authorities |
 | D-014 | proposed | Visible active NPCs + bounded off-screen economic simulation | Plausible cities without thousands of ticking entities |
 
 ## Open decisions
