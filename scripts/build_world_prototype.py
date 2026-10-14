@@ -16,6 +16,7 @@ from pathlib import Path
 
 from validate_intercity import load as load_intercity, validate as validate_intercity
 from simulate_regional_supply import read_json as read_supply_json, validate as validate_regional_supply
+from simulate_terminal_operations import validate as validate_terminal_operations
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT = ROOT / "content/region-blueprints/cities.json"
@@ -196,6 +197,13 @@ def render(data: dict) -> dict[str, bytes]:
     # Packaged as clearly inert design data. Minecraft doesn't load these
     # prototype_plan files as recipes, items, NPC shop inventories or contracts.
     files["assets/underground_city/prototype_plans/recurring-supply.json"] = json_bytes(recurring)
+    terminal = read_supply_json(ROOT / "content/gameplay/terminal-operations.json")
+    terminal_issues = validate_terminal_operations(terminal, recurring, planning["restock"])
+    if terminal_issues:
+        raise ValueError("Terminal planning model invalid: " + "; ".join(terminal_issues))
+    # Inert original design source: not a live computer screen, chest loot table
+    # injection, world shipment encounter, physical black-market box or raid.
+    files["assets/underground_city/prototype_plans/terminal-operations.json"] = json_bytes(terminal)
     return files
 
 
