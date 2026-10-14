@@ -183,6 +183,7 @@ class TerminalSimulation:
         self.raids: dict[str, dict] = {}
         self.buyer_budget = 6000
         self.items: dict[str, dict[str, dict]] = {}
+        self.known_item_ids: set[str] = set()
         self.receipts: set[str] = set()
         self.raid_cooldown: dict[str, int] = {}
         self.owner_online_minutes: dict[str, int] = {}
@@ -296,13 +297,14 @@ class TerminalSimulation:
 
     def give_item(self, player: str, instance_id: str, tag: str, *,
                   quality: int = 100) -> None:
-        if not instance_id or any(instance_id in owned for owned in self.items.values()):
-            raise ValueError("Each item requires a distinct globally unique instance ID")
+        if not instance_id or instance_id in self.known_item_ids:
+            raise ValueError("Item instance ID already registered, sold or spent")
         if tag not in {x["item_tag"] for x in self.rules["black_market"]["price_bands"]}:
             raise ValueError("Item not accepted on market")
         if not 1 <= quality <= 100:
             raise ValueError("Item quality out of range")
         self.items[player][instance_id] = {"tag": tag, "quality": quality}
+        self.known_item_ids.add(instance_id)
 
     def list_item(self, player: str, item_id: str, price: int, listing_id: str) -> dict:
         if listing_id in self.listings or not listing_id:
@@ -436,7 +438,8 @@ class TerminalSimulation:
             "version": 1, "supply": self.supply.snapshot(), "orders": self.orders,
             "listings": self.listings, "dropboxes": self.dropboxes,
             "raids": self.raids, "buyer_budget": self.buyer_budget,
-            "items": self.items, "raid_cooldown": self.raid_cooldown,
+            "items": self.items, "known_item_ids": sorted(self.known_item_ids),
+            "raid_cooldown": self.raid_cooldown,
             "owner_online_minutes": self.owner_online_minutes,
         }))
 
@@ -453,6 +456,13 @@ class TerminalSimulation:
         result.raids = save["raids"]
         result.buyer_budget = save["buyer_budget"]
         result.items = save["items"]
+        known_items = save["known_item_ids"]
+        if not isinstance(known_items, list) or len(known_items) != len(set(known_items)):
+            raise ValueError("Corrupted saved item identity ledger")
+        result.known_item_ids = set(known_items)
+        if any(item_id not in result.known_item_ids
+               for inventory in result.items.values() for item_id in inventory):
+            raise ValueError("Inventory references unknown item identity")
         result.raid_cooldown = save["raid_cooldown"]
         result.owner_online_minutes = save["owner_online_minutes"]
         if type(result.buyer_budget) is not int or result.buyer_budget < 0:
