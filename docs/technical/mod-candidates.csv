@@ -16,3 +16,7 @@ worldedit,WorldEdit,https://www.curseforge.com/minecraft/mc-mods/worldedit,tooli
 rolecraft,RoleCraft,https://www.curseforge.com/minecraft/mc-mods/role-craft,roleplay,critical,candidate,1.20.1 Forge,Published roles first-login menu police tools item restrictions; verify custom roles and API
 pueblo_vivo,Pueblo Vivo,https://www.curseforge.com/minecraft/mc-mods/pueblo-vivo,settlement,high,candidate,1.20.1 Forge,Early beta village projects and civic dashboard; test custom city integration
 cnpc,C Npc,https://www.curseforge.com/minecraft/mc-mods/cnpc,npc,spike,candidate,1.20.1 Forge,Newer NPC editor with dialogue and factions; compare CustomNPCs
+kuros_economy,Kuros Economy,https://www.curseforge.com/minecraft/mc-mods/kuros-economy,economy,critical,candidate,1.20.1 Forge,Jobs taxes banknotes contracts salary and automatic payments; compare Lightmans and APIs
+mca_reborn,MCA Reborn,https://www.curseforge.com/minecraft/mc-mods/minecraft-comes-alive-reborn,npc,critical,candidate,1.20.1 Forge,Interactive human villagers family relationships and potential settlement progression
+villager_comfort,Villager Comfort Updated,https://www.curseforge.com/minecraft/mc-mods/villager-comfort-updated,npc,high,candidate,1.20.1 Forge,Villager needs for NPC economy; verify MCA compatibility and behavior
+immersive_vehicles,Immersive Vehicles MTS,https://www.curseforge.com/minecraft/mc-mods/minecraft-transport-simulator,vehicles,high,candidate,1.20.1 Forge,Requires a separately licensed compatible vehicle content pack

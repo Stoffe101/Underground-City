@@ -20,3 +20,16 @@
 ## Acceptance evidence
 
 Source/version of base pack, manifest delta, licenses/credits, clean two-player dedicated-server boot, average TPS and FPS, one legal profession loop, role/skill integration test, gameplay screenshot comparison, and an explicit switch/keep decision. No claim of compatibility from the fact that two projects both say 'Forge 1.20.1'.
+
+## GCA's currently advertised components (research, not installed)
+
+The GCA author describes **Kuro's Economy** for bank accounts, automatic payments, checks and government ID cards; **MCA Reborn** for interactable village populations; **Villager Comfort** for housing/social needs; **Immersive Vehicles** for transport; and **TaCZ** for firearms. Its stated goal encourages **player-to-player** economic interdependence. We must adapt that design for only two humans by allowing NPC buyers, producers, transport workers and shops. GCA's legacy pack rules (survival food, thirst, crafting restrictions) may feel oppressive for our balanced RPG unless adjusted. Source: [GCA description](https://www.curseforge.com/minecraft/modpacks/gca).
+
+### Current leading component comparison
+
+- Test **Kuro's Economy vs Lightman's Currency** in separate profiles. Favor the one that offers dependable jobs, taxes and contracts without needing a custom transaction engine.
+- Test **MCA Reborn + Villager Comfort** for ambient town life. Use a named/story NPC framework only where it adds capabilities that MCA cannot cover.
+- Test **Immersive Vehicles** with one legally usable compatible vehicle content pack before committing to a road system.
+- Test **RoleCraft** for career UI and police. Its published roles are farmer/blacksmith etc.; custom Gunsmith/Hacker extendability remains unknown.
+
+Do not claim that these components work together until two-client dedicated-server tests pass.

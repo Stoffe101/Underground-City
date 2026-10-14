@@ -29,6 +29,10 @@ These are **candidate packs for locally installed A/B experiments**, not include
 | --- | --- | --- |
 | [RoleCraft](https://www.curseforge.com/minecraft/mc-mods/role-craft) | Career choice, early career XP and role perks, player management, crafting restrictions, police cuff/search tools | Published roles are predefined; test whether custom Hacker/Gunsmith careers can be configured. ARR; cannot assume an integration API |
 | [Pufferfish's Skills](https://www.curseforge.com/minecraft/mc-mods/puffish-skills) | Branching profession/general skill UI and perks | Verify compatibility with career provider; choose one source of truth for XP |
+| [Kuro's Economy](https://www.curseforge.com/minecraft/mc-mods/kuros-economy) | Money, banking, shops, jobs, tax, recurring payments and contracts | Strong first alternative to a bespoke civic economy; inspect actual 1.20.1 API and NPC buyer support. Do **not** install concurrently with another major economy unless reconciled |
+| [MCA Reborn](https://www.curseforge.com/minecraft/mc-mods/minecraft-comes-alive-reborn) | Interactive villagers, relationships, personalities, village ranks | Strong ambient townspeople candidate; confirm interactions in custom urban buildings |
+| [Villager Comfort Updated](https://www.curseforge.com/minecraft/mc-mods/villager-comfort-updated) | Social/environmental needs for village residents | Can make population happiness meaningful if compatible with MCA |
+| [Immersive Vehicles](https://www.curseforge.com/minecraft/mc-mods/minecraft-transport-simulator) | Vehicle, fuel, transport and cargo features | Requires compatible additional vehicle content pack; review separately |
 | [Lightman's Currency](https://www.curseforge.com/minecraft/mc-mods/lightmans-currency) | Currency, bank/shop functions | Validate transaction hooks for city taxes/ledger before coding own bank |
 | [Pueblo Vivo](https://www.curseforge.com/minecraft/mc-mods/pueblo-vivo) | Village citizenship, stock/warehouse, projects, relationships and settlements | Primarily vanilla village system; may not work with custom generated city regions. Investigate separately |
 | [C'Npc](https://www.curseforge.com/minecraft/mc-mods/cnpc) | NPC dialogue, quests, factions, patrol paths and trading | Very new/low-usage; compare stability and compatibility with CustomNPCs before selection |
@@ -37,7 +41,7 @@ These are **candidate packs for locally installed A/B experiments**, not include
 | [TaCZ + research addon](https://www.curseforge.com/minecraft/mc-mods/tacz-weapon-research-blueprints) | Weapons, parts, research, blueprints | Exact TaCZ, Kotlin and Fzzy dependencies; competing blueprint addons |
 | [The Lost Cities](https://www.curseforge.com/minecraft/mc-mods/the-lost-cities) | Procedurally assembled urban terrain | Inhabited cities and special buildings need extra work |
 
-**Conflicts to resolve deliberately:** RoleCraft vs custom registration/career XP; RoleCraft XP vs Pufferfish skills; NPC framework vs an autonomous settlement mod; multiple TaCZ research implementations; currency mod vs custom financial ledger.
+**Conflicts to resolve deliberately:** Kuro's Economy versus Lightman's Currency as the main currency authority; MCA Reborn versus any other villager replacement; police functionality in RoleCraft versus other law mods; vehicle content pack compatibility;  RoleCraft vs custom registration/career XP; RoleCraft XP vs Pufferfish skills; NPC framework vs an autonomous settlement mod; multiple TaCZ research implementations; currency mod vs custom financial ledger.
 
 ## Immediate impact on RPG Core scaffold
 
