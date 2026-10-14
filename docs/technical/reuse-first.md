@@ -31,6 +31,7 @@ These are **candidate packs for locally installed A/B experiments**, not include
 | [Pufferfish's Skills](https://www.curseforge.com/minecraft/mc-mods/puffish-skills) | Branching profession/general skill UI and perks | Verify compatibility with career provider; choose one source of truth for XP |
 | [Lightman's Currency](https://www.curseforge.com/minecraft/mc-mods/lightmans-currency) | Currency, bank/shop functions | Validate transaction hooks for city taxes/ledger before coding own bank |
 | [Pueblo Vivo](https://www.curseforge.com/minecraft/mc-mods/pueblo-vivo) | Village citizenship, stock/warehouse, projects, relationships and settlements | Primarily vanilla village system; may not work with custom generated city regions. Investigate separately |
+| [C'Npc](https://www.curseforge.com/minecraft/mc-mods/cnpc) | NPC dialogue, quests, factions, patrol paths and trading | Very new/low-usage; compare stability and compatibility with CustomNPCs before selection |
 | [CustomNPCs-Unofficial](https://www.curseforge.com/minecraft/mc-mods/customnpcs-unofficial) | Quest NPC creation, shops, patrol routes and scripting | Performance, import and compatibility test required |
 | [Lootr](https://www.curseforge.com/minecraft/mc-mods/lootr) | Per-player loot synchronization | Imported-world chest assignment needs actual test |
 | [TaCZ + research addon](https://www.curseforge.com/minecraft/mc-mods/tacz-weapon-research-blueprints) | Weapons, parts, research, blueprints | Exact TaCZ, Kotlin and Fzzy dependencies; competing blueprint addons |
