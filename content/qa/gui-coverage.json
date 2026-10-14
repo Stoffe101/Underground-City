@@ -36,6 +36,62 @@
       "owner": "underground_city",
       "group": "operations_terminal",
       "description": "Late-game raid-selection tab"
+    },
+    {
+      "id": "contracts.accepted",
+      "expected_file": "uc-contract-accepted.png",
+      "owner": "underground_city",
+      "group": "contracts",
+      "description": "Accepted order with enough goods"
+    },
+    {
+      "id": "contracts.missing",
+      "expected_file": "uc-contract-missing.png",
+      "owner": "underground_city",
+      "group": "contracts",
+      "description": "Accepted order with missing goods"
+    },
+    {
+      "id": "contracts.locked",
+      "expected_file": "uc-contract-locked.png",
+      "owner": "underground_city",
+      "group": "contracts",
+      "description": "Order above player career level"
+    },
+    {
+      "id": "contracts.unregistered",
+      "expected_file": "uc-contract-unregistered.png",
+      "owner": "underground_city",
+      "group": "contracts",
+      "description": "Player without citizenship"
+    },
+    {
+      "id": "contracts.offline",
+      "expected_file": "uc-contract-offline.png",
+      "owner": "underground_city",
+      "group": "contracts",
+      "description": "Provider unavailable"
+    },
+    {
+      "id": "qshop.main",
+      "expected_file": "uc-qshop-main.png",
+      "owner": "qshop",
+      "group": "qshop",
+      "description": "Installed Q Shop marketplace with funded snapshot"
+    },
+    {
+      "id": "qshop.low-funds",
+      "expected_file": "uc-qshop-low-funds.png",
+      "owner": "qshop",
+      "group": "qshop",
+      "description": "Installed Q Shop marketplace with zero credits"
+    },
+    {
+      "id": "qshop.trade-modal",
+      "expected_file": "uc-qshop-trade-modal.png",
+      "owner": "qshop",
+      "group": "qshop",
+      "description": "Installed Q Shop actual trade modal opened by mouse event"
     }
   ],
   "unintegrated_future_interfaces": [
@@ -45,14 +101,14 @@
     "Faction Friction territory/war menus",
     "Lost Cities world-creation profiles",
     "FTB Quests chapters and quest inspector",
-    "Chosen economy mod marketplace/shop UI",
     "TaCZ weapon UI, attachments and gun workbenches",
     "NPC dialogue and interactions",
     "Locks Reforged lockpicking GUI",
     "Property chest/safe inventory",
     "Inventory and item inspector",
     "Future vehicle controls",
-    "Raids mission planning and actual mission HUD"
+    "Raids mission planning and actual mission HUD",
+    "Q Shop admin editor, item picker, tabs, search and permission/error variants"
   ],
   "supported_viewports": [
     {
@@ -72,5 +128,6 @@
   "assert_all_integrated_screens": true,
   "minimum_difference_pixels": 100,
   "review_model": "CI checks technical screenshot completeness, contrast and duplication; actual artistic/UX judgement requires review of each image after artifact creation.",
-  "artifact_retention_days": 1
+  "artifact_retention_days": 1,
+  "capture_context": "Actual installed client screens, controlled server-snapshot fixtures in main menu. Gameplay transactions separately tested by Forge GameTests."
 }

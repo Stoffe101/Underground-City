@@ -69,8 +69,8 @@ jobs:
           from pathlib import Path
           d=json.loads(Path('content/qa/gui-coverage.json').read_text())
           assert d['schema_version']==1
-          assert len(d['integrated_surfaces'])==5
-          assert len({s['expected_file'] for s in d['integrated_surfaces']})==5
+          assert len(d['integrated_surfaces'])==13
+          assert len({s['expected_file'] for s in d['integrated_surfaces']})==13
           assert d['screenshots_real_framebuffer']
           PY
       - name: Launch real Forge client under software OpenGL, capture every integrated tab
@@ -88,10 +88,10 @@ jobs:
           set -euo pipefail
           rm -f rpg-core/run/visual-capture-complete.txt
           mkdir -p rpg-core/run/screenshots
-          rm -f rpg-core/run/screenshots/uc-terminal-*.png
+          rm -f rpg-core/run/screenshots/uc-*.png
           setsid xvfb-run -a -s "-screen 0 ${UC_W}x${UC_H}x24" \
             timeout 510s gradle -p rpg-core runClient \
-              -PucVisualCapture=true -PucVisualScale="$UC_SCALE" \
+              -PucEconomyTest=true -PucVisualCapture=true -PucVisualScale="$UC_SCALE" \
               -PucVisualWidth="$UC_W" -PucVisualHeight="$UC_H" \
               --no-daemon --stacktrace > /tmp/uc-visual-client.log 2>&1 &
           game_pid=$!
@@ -132,11 +132,19 @@ jobs:
         with:
           name: uc-visual-gallery-${{ matrix.profile }}-${{ github.sha }}
           path: |
-            rpg-core/run/screenshots/uc-terminal-*.png
+            rpg-core/run/screenshots/uc-*.png
             build/visual-qa/${{ matrix.profile }}/audit.json
           if-no-files-found: warn
           retention-days: 1
           compression-level: 6
+      - name: Preserve client failure diagnostics separately from reviewed galleries
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: uc-visual-diagnostics-${{ matrix.profile }}-${{ github.sha }}
+          path: rpg-core/run/logs/*.log
+          retention-days: 3
+          if-no-files-found: warn
       - name: Coverage and cleanup reminder
         if: always()
         shell: bash
