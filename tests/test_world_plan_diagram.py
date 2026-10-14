@@ -22,7 +22,7 @@ class RoutePreviewTests(unittest.TestCase):
         for city in ("Ironhaven", "Valewood", "Blackwater"):
             self.assertIn(city, preview)
         self.assertIn("Roads built: 0", preview)
-        self.assertIn("NOT", preview)
+        self.assertIn("not in-game terrain", preview)
 
 
 if __name__ == "__main__":
