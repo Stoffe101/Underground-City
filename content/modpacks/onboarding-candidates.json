@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "minecraft": "1.20.1",
+  "forge": "47.4.10",
+  "profiles": [
+    {
+      "id": "class-selection",
+      "display_name": "Class Selection Mod",
+      "project_id": 1477894,
+      "file_id": 8602401,
+      "version": "1.6.0",
+      "source": "https://www.curseforge.com/minecraft/mc-mods/class-selection-mod/files/8602401",
+      "license": "All Rights Reserved",
+      "mode": "faction-then-class",
+      "setup": "Use the mod's built-in in-game admin editor to create the three city factions and four profession classes. Do not install the RPG Core alongside this initial screening pack. Investigate available integration commands or documented APIs before committing to this mod."
+    },
+    {
+      "id": "class-enhancement",
+      "display_name": "Class Enhancement",
+      "project_id": 1460324,
+      "file_id": 8467070,
+      "version": "2.6",
+      "source": "https://www.curseforge.com/minecraft/mc-mods/class-enhancement/files/8467070",
+      "license": "All Rights Reserved",
+      "mode": "class-only",
+      "setup": "This mod provides a configurable class screen, not separate city selection. Configure four custom classes under config/class_enhancement.toml. See the authored reference fragment under underground-city/reference; do not simply overwrite the mod's generated full config. Adjust the mod's class-count settings in its own generated config."
+    },
+    {
+      "id": "role-selection",
+      "display_name": "Role Selection",
+      "project_id": 1591717,
+      "file_id": 8719333,
+      "version": "1.0.1",
+      "source": "https://www.curseforge.com/minecraft/mc-mods/role-selection/files/8719333",
+      "license": "MIT",
+      "mode": "first-login-role",
+      "setup": "One-time role menu with generated JSON5 role files. Test the default first-join UI before designing custom role JSON5; the author has documented its config paths but the exact serialized field schema has not been verified. This candidate does not supply faction/city selection."
+    }
+  ]
+}

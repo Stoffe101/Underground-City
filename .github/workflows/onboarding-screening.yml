@@ -1,0 +1,63 @@
+name: Onboarding candidate profiles
+
+on:
+  pull_request:
+    paths:
+      - 'content/onboarding/**'
+      - 'content/modpacks/onboarding-candidates.json'
+      - 'scripts/build_onboarding_candidates.py'
+      - 'scripts/validate_onboarding_catalog.py'
+      - 'tests/test_onboarding_candidates.py'
+      - '.github/workflows/onboarding-screening.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'content/onboarding/**'
+      - 'content/modpacks/onboarding-candidates.json'
+      - 'scripts/build_onboarding_candidates.py'
+      - 'scripts/validate_onboarding_catalog.py'
+      - 'tests/test_onboarding_candidates.py'
+      - '.github/workflows/onboarding-screening.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  generate:
+    name: Create isolated CurseForge imports (no third-party JARs)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Validate original city and profession definitions
+        run: python scripts/validate_onboarding_catalog.py
+      - name: Run candidate package regression tests
+        run: python -m unittest discover -s tests -p 'test_*.py' -v
+      - name: Generate pinned candidate imports
+        run: python scripts/build_onboarding_candidates.py --output build/onboarding-screening
+      - name: Verify exports using existing pack auditor
+        shell: bash
+        run: |
+          set -euo pipefail
+          for file in build/onboarding-screening/*.zip; do
+            python scripts/audit_modpack.py --pack "$file" > /dev/null
+          done
+          test "$(find build/onboarding-screening -maxdepth 1 -name '*.zip' | wc -l)" -eq 3
+      - name: Publish short-lived screening packs
+        uses: actions/upload-artifact@v4
+        with:
+          name: underground-city-onboarding-screening-${{ github.sha }}
+          path: build/onboarding-screening/*.zip
+          if-no-files-found: error
+          retention-days: 14
+      - name: Summarize
+        run: |
+          echo "## Isolated onboarding screening profiles" >> "$GITHUB_STEP_SUMMARY"
+          echo "Generated 3 CurseForge-format ZIP imports referencing pinned official mod files." >> "$GITHUB_STEP_SUMMARY"
+          echo "No downloaded third-party mod binaries are stored or published by CI." >> "$GITHUB_STEP_SUMMARY"
+          echo "The Class Enhancement TOML fragment is reference only, not a working installed config." >> "$GITHUB_STEP_SUMMARY"
+          echo "Real launcher import, two-client server and persistence tests remain pending." >> "$GITHUB_STEP_SUMMARY"
