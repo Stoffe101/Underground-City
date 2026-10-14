@@ -1,0 +1,9 @@
+{
+  "currencies": [
+    {
+      "id": "credits",
+      "name": "Credits",
+      "color": "#55D3BC"
+    }
+  ]
+}

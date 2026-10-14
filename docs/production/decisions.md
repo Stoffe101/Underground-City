@@ -39,6 +39,8 @@ Use `D-###` IDs. Status values: **accepted (product intent)**, **proposed**, **n
 | D-034 | accepted (product intent), prototype | Compact one-block PC terminal, not a multicompartment computer construction system | Original Forge block + server→client native five-tab read-only screen until economy backend is safe |
 | D-035 | accepted (product intent), prototype | Continuous real-client screenshot coverage of every integrated GUI panel and screen state, across viewport scales | CI checks completeness, image contrast/duplicates; review screenshots for aesthetic/function and purge screenshot artifacts immediately after review |
 | D-036 | needs spike | Reuse existing PCs only when license and mod UI API make it better | CC:Tweaked is Lua terminal-oriented; Noish decorative assets are ARR; original simple block is safer pending future UI-capable asset |
+| D-037 | experimental (implemented adapter) | Start with Q Shop 1.8.4 as optional authoritative currency and vanilla civilian supply shop | PC sends bounded positional request, server validates actual placed block, distance and citizenship, then invokes official Q Shop command; regional source shops still locked |
+| D-038 | accepted (safety) | Original provider templates must never overwrite live Q Shop world/shop data | Generate/copy first-run configs only after validation, abort when existing worlds already have market data |
 | D-014 | proposed | Visible active NPCs + bounded off-screen economic simulation | Plausible cities without thousands of ticking entities |
 
 ## Open decisions

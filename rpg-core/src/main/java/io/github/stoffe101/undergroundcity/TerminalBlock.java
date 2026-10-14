@@ -60,7 +60,7 @@ public final class TerminalBlock extends HorizontalDirectionalBlock {
         if (!level.isClientSide && player instanceof ServerPlayer serverPlayer) {
             // This is an information-only preview. Future purchases and raid
             // actions must validate identity, location, funds and permissions server-side.
-            TerminalNetwork.open(serverPlayer);
+            TerminalNetwork.open(serverPlayer, pos);
         }
         return InteractionResult.sidedSuccess(level.isClientSide);
     }

@@ -1,0 +1,92 @@
+{
+  "id": "uc_starter_supply",
+  "displayName": "Underground City • Civilian Supply",
+  "currency": "credits",
+  "icon": "minecraft:paper",
+  "entries": [
+    {
+      "type": "BUY",
+      "displayName": "Basic seeds (x4)",
+      "item": {
+        "item": "minecraft:wheat_seeds",
+        "count": 4
+      },
+      "currency": "credits",
+      "price": 8,
+      "globalLimit": -1,
+      "playerLimit": -1
+    },
+    {
+      "type": "BUY",
+      "displayName": "Rations (x4)",
+      "item": {
+        "item": "minecraft:bread",
+        "count": 4
+      },
+      "currency": "credits",
+      "price": 20,
+      "globalLimit": -1,
+      "playerLimit": -1
+    },
+    {
+      "type": "BUY",
+      "displayName": "Materials (x16)",
+      "item": {
+        "item": "minecraft:cobblestone",
+        "count": 16
+      },
+      "currency": "credits",
+      "price": 24,
+      "globalLimit": -1,
+      "playerLimit": -1
+    },
+    {
+      "type": "BUY",
+      "displayName": "Workbench",
+      "item": {
+        "item": "minecraft:crafting_table",
+        "count": 1
+      },
+      "currency": "credits",
+      "price": 18,
+      "globalLimit": -1,
+      "playerLimit": -1
+    },
+    {
+      "type": "SELL",
+      "displayName": "Deliver wheat (x8)",
+      "item": {
+        "item": "minecraft:wheat",
+        "count": 8
+      },
+      "currency": "credits",
+      "price": 12,
+      "globalLimit": -1,
+      "playerLimit": -1
+    },
+    {
+      "type": "SELL",
+      "displayName": "Deliver logs (x8)",
+      "item": {
+        "item": "minecraft:oak_log",
+        "count": 8
+      },
+      "currency": "credits",
+      "price": 12,
+      "globalLimit": -1,
+      "playerLimit": -1
+    },
+    {
+      "type": "SELL",
+      "displayName": "Deliver basic stone (x16)",
+      "item": {
+        "item": "minecraft:cobblestone",
+        "count": 16
+      },
+      "currency": "credits",
+      "price": 6,
+      "globalLimit": -1,
+      "playerLimit": -1
+    }
+  ]
+}

@@ -1,6 +1,7 @@
 package io.github.stoffe101.undergroundcity;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.core.BlockPos;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 
@@ -8,7 +9,7 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 public final class ClientTerminal {
     private ClientTerminal() {}
 
-    public static void open() {
-        Minecraft.getInstance().setScreen(new TerminalScreen());
+    public static void open(BlockPos pos) {
+        Minecraft.getInstance().setScreen(new TerminalScreen(pos));
     }
 }

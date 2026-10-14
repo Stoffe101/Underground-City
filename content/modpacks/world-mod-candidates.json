@@ -35,6 +35,17 @@
       "use": "geopolitical_factions_warfare_and_claims",
       "lowcode_world_dependency": false,
       "mod_id": "factionfriction"
+    },
+    {
+      "id": "qshop",
+      "name": "Q Shop",
+      "project_id": 1654563,
+      "file_id": 9060558,
+      "version": "1.8.4",
+      "source": "https://www.curseforge.com/minecraft/mc-mods/q-shop/files/9060558",
+      "use": "starter_shop_currency_and_server_authoritative_buy_sell_via_documented_qshop_interface",
+      "lowcode_world_dependency": false,
+      "mod_id": "qshop"
     }
   ],
   "test_scope": {

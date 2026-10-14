@@ -38,3 +38,7 @@ Nothing about the original compact PC prevents later swapping the **model** for 
 This initial pipeline is a **foundation**. Required next: capture actual in-world placed-block view and right-click handoff, registered first-join screens when integrated, GUI click/tab focus/accessibility, at least one modal and scroll list per provider, real test data cases including long strings/low wallet stock, and baseline comparison after the first images receive visual approval.
 
 Do not delete screenshot evidence *before* inspecting it. Do not keep unnecessary screenshots beyond actual review. The explicit human/assistant visual review loop is still required.
+
+## First operational third-party GUI dependency
+
+The current terminal's Imports panel includes an **OPEN CIVILIAN SUPPLY SHOP** button only when launched from a physically placed PC; clicking it asks the server to validate the block and citizen, then opens Q Shop's *own* civilian shop window if installed. The tab's standalone screenshot capture uses a preview without a source position, so the shop button is disabled. **The Q Shop GUI is NOT included in the five terminal-tab screenshots**. Before promoting this trial to production, add Q Shop main window/trade modal/price guide and error-state captures to the coverage manifest, and visually inspect the captured images.

@@ -1,6 +1,7 @@
 package io.github.stoffe101.undergroundcity;
 
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.core.BlockPos;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -20,7 +21,7 @@ public final class TerminalScreen extends Screen {
         IMPORTS("IMPORTS", "REGIONAL SUPPLIERS",
             "Find components produced by Ironhaven, Valewood and Blackwater.",
             "Remote shipments cost more than direct foreign purchases.",
-            "Order placement is locked until stock and wallet integration."),
+            "Starter civilian shop available with Q Shop installed."),
         DELIVERIES("DELIVERIES", "SHIPMENT TRACKING",
             "Watch incoming cargo and potential recovery events.",
             "Personal incident timers will pause while you are offline.",
@@ -46,12 +47,19 @@ public final class TerminalScreen extends Screen {
     }
 
     private static final int PANEL_W = 366;
-    private static final int PANEL_H = 224;
+    private static final int PANEL_H = 252;
     private Page current = Page.CONTRACTS;
+    private final BlockPos terminalPosition;
+    private Button starterMarket;
     private final Button[] tabs = new Button[Page.values().length];
 
     public TerminalScreen() {
+        this(null);
+    }
+
+    public TerminalScreen(BlockPos terminalPosition) {
         super(Component.literal("Underground City | Operations"));
+        this.terminalPosition = terminalPosition;
     }
 
     @Override
@@ -64,6 +72,12 @@ public final class TerminalScreen extends Screen {
             tabs[i] = addRenderableWidget(Button.builder(Component.literal(page.tab),
                 button -> showPage(page)).bounds(left + 8 + i * step, top + 45, 68, 20).build());
         }
+        starterMarket = addRenderableWidget(Button.builder(
+            Component.literal("OPEN CIVILIAN SUPPLY SHOP"),
+            button -> {
+                if (terminalPosition != null) TerminalNetwork.requestStarterShop(terminalPosition);
+            }
+        ).bounds(left + 19, top + 193, PANEL_W - 38, 19).build());
         refreshTabs();
     }
 
@@ -80,6 +94,10 @@ public final class TerminalScreen extends Screen {
         for (int i = 0; i < tabs.length; i++) {
             if (tabs[i] != null) tabs[i].active = current != Page.values()[i];
         }
+        if (starterMarket != null) {
+            starterMarket.visible = current == Page.IMPORTS;
+            starterMarket.active = terminalPosition != null && current == Page.IMPORTS;
+        }
     }
 
     @Override
@@ -92,7 +110,7 @@ public final class TerminalScreen extends Screen {
         graphics.fill(left, top, left + PANEL_W, top + 37, 0xff182d42);
         graphics.fill(left + 12, top + 11, left + 16, top + 25, 0xff55d3bc);
         graphics.drawString(font, "UNDERGROUND // NETWORK", left + 24, top + 10, 0xffebf5fb, false);
-        graphics.drawString(font, "OFFLINE PREVIEW", left + PANEL_W - 106, top + 12, 0xffe7b47c, false);
+        graphics.drawString(font, "EARLY ACCESS", left + PANEL_W - 88, top + 12, 0xffe7b47c, false);
         graphics.fill(left + 9, top + 74, left + PANEL_W - 9, top + PANEL_H - 43, 0xff172738);
         graphics.drawString(font, current.heading, left + 19, top + 85, 0xff55d3bc, false);
         for (int i = 0; i < current.copy.size(); i++) {
@@ -106,7 +124,7 @@ public final class TerminalScreen extends Screen {
                     0xffc0d0df, false);
             }
         }
-        graphics.drawString(font, "DATA CONNECTION: NOT CONFIGURED", left + 12, top + PANEL_H - 30,
+        graphics.drawString(font, current == Page.IMPORTS ? "QSHOP: CIVILIAN GOODS ONLY" : "OPERATIONS: PREVIEW ONLY", left + 12, top + PANEL_H - 30,
             0xffe1af6c, false);
         graphics.drawString(font, "ESC TO CLOSE", left + PANEL_W - 88, top + PANEL_H - 30,
             0xff9bb6ca, false);

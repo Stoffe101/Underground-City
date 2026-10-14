@@ -54,3 +54,5 @@ The docs here distinguish **confirmed product direction**, **design proposals**,
 **Update convention:** Proposed mechanics are not described as working. Technical assumptions are not described as verified. Each candidate mod requires its own dedicated-server test and license review.
 
 - [Visual QA and screenshot cleanup](technical/visual-qa.md)
+
+- [October 19 trial-build and two-player test checklist](production/oct19-test-readiness.md)
