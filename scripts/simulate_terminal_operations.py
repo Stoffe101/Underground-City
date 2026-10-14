@@ -52,9 +52,28 @@ def validate(data: dict, supply: dict, property_data: dict) -> list[str]:
         issues.append("Ordinary common apartments must not become weapon farms")
     loots = data["special_loot"]
     for rule in ("household_inventory_shared", "high_tier_parts_in_locked_safes_or_high_risk_structures",
-                 "refill_respects_household_budget", "never_unlimited_rare_blueprint_farming"):
+                 "refill_respects_household_budget", "never_unlimited_rare_blueprint_farming",
+                 "specialty_materials_respect_city_origin", "foreign_city_components_only_as_rare_high_security_imports"):
         if loots.get(rule) is not True:
             issues.append(f"Important loot safeguard missing: {rule}")
+    affinities = loots.get("loot_item_affinities", {})
+    origins = loots.get("commodity_origin", {})
+    known_cities = {s["city"] for s in supply["supplier_stock"]}
+    if not 0 <= loots.get("foreign_import_chance_percent", -1) <= 15:
+        issues.append("Imported burglary components must stay rare")
+    by_supplier = {s["id"]: s["city"] for s in supply["supplier_stock"]}
+    for ident, city in origins.items():
+        if city not in known_cities or (ident in by_supplier and by_supplier[ident] != city):
+            issues.append(f"Contradictory origin for {ident}")
+    if any(origins.get(ident) != city for ident, city in by_supplier.items()):
+        issues.append("Every regional supplier item needs same city origin in loot")
+    for profile in profiles:
+        for item in profile["samples"]:
+            if item not in affinities:
+                issues.append(f"{profile['id']}: no profession affinity for {item}")
+    if any(v not in {"farmer", "smith", "gunsmith", "technician", "general"}
+           for v in affinities.values()):
+        issues.append("Invalid profession item affinity")
     timing = data["shipments"]
     for k in ("active_minutes_to_dispatch", "travel_active_minutes", "salvage_deadline_active_minutes"):
         if type(timing.get(k)) is not int or timing[k] <= 0:
@@ -94,7 +113,7 @@ def validate(data: dict, supply: dict, property_data: dict) -> list[str]:
         for item in profile["samples"]:
             if item not in supply_ids and item not in {
                 "licensed_weapon_component", "weapon_repair_kit",
-                "small_electronic_parts", "paper_records",
+                "small_electronic_parts", "paper_records", "household_trade_goods",
             }:
                 issues.append(f"{profile['id']}: unknown conceptual item {item}")
     return issues
@@ -104,22 +123,45 @@ def _roll(seed: str) -> int:
     return int.from_bytes(hashlib.sha256(seed.encode("utf-8")).digest()[:8], "big")
 
 
-def household_loot(data: dict, category: str, *, safe_opened: bool, seed: str) -> dict:
-    """Theoretical reward potential. Real container assignment is NOT implemented."""
+def household_loot(data: dict, category: str, *, city: str, safe_opened: bool, seed: str) -> dict:
+    """City-aware fictional loot odds; runtime chest insertion is NOT implemented.
+
+    This models a single rare-item *opportunity*, not the entire household
+    inventory and not a source of unlimited unique blueprints.
+    """
     profile = next(p for p in data["loot_profiles"] if p["id"] == category)
-    rng = random.Random(_roll(f"{seed}:{category}:{safe_opened}"))
+    rules = data["special_loot"]
+    if city not in {"ironhaven", "valewood", "blackwater"}:
+        raise ValueError("A loot roll must know the real source city")
+    rng = random.Random(_roll(f"{seed}:{category}:{city}:{safe_opened}"))
     if safe_opened and rng.randrange(100) >= profile["locked_safe_chance_percent"]:
-        # A household may not even have a locked safe. Caller also must
-        # verify legitimate access, lockpicking and shared restock state.
         return {"safe_present": False, "items": []}
     if rng.randrange(100) >= profile["rare_item_probability_percent"]:
         return {"safe_present": bool(safe_opened), "items": []}
-    candidates = list(profile["samples"])
-    if not safe_opened and category == "apartment_affluent":
-        candidates = [x for x in candidates if x != "licensed_weapon_component"]
-    if not safe_opened and category in ("industrial", "illegal_cache"):
-        candidates = [x for x in candidates if x != "licensed_weapon_component"]
-    return {"safe_present": bool(safe_opened), "items": [rng.choice(candidates)]}
+    weighted = []
+    for item in profile["samples"]:
+        if item == "licensed_weapon_component" and not safe_opened:
+            continue
+        origin = rules["commodity_origin"].get(item)
+        if origin is not None and origin != city:
+            # Imported rare stock can be found in select secured premium homes
+            # or smuggler caches, never mass-farmed from ordinary apartments.
+            if not safe_opened or category not in {"apartment_affluent", "illegal_cache"}:
+                continue
+            if rng.randrange(100) >= rules["foreign_import_chance_percent"]:
+                continue
+        weight = profile["profession_weights"][rules["loot_item_affinities"][item]]
+        if weight > 0:
+            weighted.append((item, weight))
+    if not weighted:
+        return {"safe_present": bool(safe_opened), "items": []}
+    total = sum(weight for _, weight in weighted)
+    selection = rng.randrange(total)
+    for item, weight in weighted:
+        if selection < weight:
+            return {"safe_present": bool(safe_opened), "items": [item]}
+        selection -= weight
+    raise AssertionError("Weighted household pool failed")
 
 
 @dataclass(frozen=True)
@@ -254,8 +296,8 @@ class TerminalSimulation:
 
     def give_item(self, player: str, instance_id: str, tag: str, *,
                   quality: int = 100) -> None:
-        if not instance_id or instance_id in self.items[player]:
-            raise ValueError("Each item requires a distinct durable instance ID")
+        if not instance_id or any(instance_id in owned for owned in self.items.values()):
+            raise ValueError("Each item requires a distinct globally unique instance ID")
         if tag not in {x["item_tag"] for x in self.rules["black_market"]["price_bands"]}:
             raise ValueError("Item not accepted on market")
         if not 1 <= quality <= 100:
