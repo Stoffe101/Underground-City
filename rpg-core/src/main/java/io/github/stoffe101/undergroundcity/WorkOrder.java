@@ -39,7 +39,13 @@ public record WorkOrder(String id, String title, String career, int level,
 
     public boolean matches(ItemStack stack) {
         // Never silently consume enchanted, damaged, named or mod-NBT equipment.
-        return stack.is(deliveryItem()) && !stack.hasTag() && !stack.isDamaged();
+        if (!stack.is(deliveryItem()) || stack.isDamaged()) return false;
+        CompoundTag tag = stack.getTag();
+        boolean freshVanillaTool = stack.isDamageableItem() && tag != null
+            && tag.getAllKeys().equals(java.util.Set.of("Damage"))
+            && tag.contains("Damage", net.minecraft.nbt.Tag.TAG_INT) && tag.getInt("Damage") == 0;
+        if (stack.hasTag() && !freshVanillaTool) return false;
+        return stack.serializeNBT().getCompound("ForgeCaps").isEmpty();
     }
 
     public CompoundTag save() {

@@ -163,4 +163,25 @@ public final class WorkOrderGameTests {
         check(ledger.player(player.getUUID()).getInt("completed")==1,"Recovery committed multiple receipts");
         helper.succeed();
     }
+
+    @GameTest(template="empty")
+    public static void smithFreshVanillaTools(GameTestHelper helper) {
+        if (!QShopEconomy.available()) { helper.succeed(); return; }
+        FakePlayer player=player(helper,"smith");
+        WorkOrder job=WorkOrderCatalog.INSTANCE.find("underground_city:stone_tools");
+        for(int slot=0;slot<3;slot++) {
+            ItemStack tool=new ItemStack(Items.STONE_PICKAXE);
+            tool.setDamageValue(0);
+            check(tool.hasTag() && job.matches(tool),"Vanilla Damage:0 tool was rejected");
+            player.getInventory().setItem(slot,tool);
+        }
+        ItemStack damaged=new ItemStack(Items.STONE_PICKAXE);damaged.setDamageValue(1);
+        check(!job.matches(damaged),"Damaged tool qualifies as a new delivery");
+        QShopEconomy.applyBalance(player,0);
+        UUID nonce=WorkOrderLedger.get(player.server).accept(player.getUUID(),job);
+        WorkOrderService.complete(player,nonce);
+        check(player.getInventory().countItem(Items.STONE_PICKAXE)==0,"Smith tools not consumed");
+        check(QShopEconomy.balance(player)==24,"Smith reward missing");
+        helper.succeed();
+    }
 }
