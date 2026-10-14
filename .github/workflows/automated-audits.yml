@@ -1,0 +1,44 @@
+name: Content & compatibility tooling
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    - cron: '17 6 * * 1'
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: Offline modpack parser and progression tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Validate repo and third-party candidate metadata
+        run: python scripts/validate_repo.py
+      - name: Exercise CurseForge/Modrinth export and installed JAR parsing
+        run: python -m unittest discover -s tests -p 'test_*.py' -v
+      - name: Test progression without running Minecraft
+        run: |
+          mkdir -p /tmp/underground-city-test-classes
+          javac -d /tmp/underground-city-test-classes \
+            rpg-core/src/main/java/io/github/stoffe101/undergroundcity/ProgressionRules.java \
+            rpg-core/src/test/java/io/github/stoffe101/undergroundcity/ProgressionRulesHarness.java
+          java -cp /tmp/underground-city-test-classes io.github.stoffe101.undergroundcity.ProgressionRulesHarness
+      - name: CI summary
+        if: always()
+        run: |
+          echo "## Underground City automation" >> "$GITHUB_STEP_SUMMARY"
+          echo "Static repository and pack-inventory tests run without distributing mod binaries." >> "$GITHUB_STEP_SUMMARY"
+          echo "Actual mod compatibility still requires dedicated-server testing." >> "$GITHUB_STEP_SUMMARY"

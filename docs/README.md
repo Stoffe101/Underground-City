@@ -21,7 +21,9 @@ The docs here distinguish **confirmed product direction**, **design proposals**,
 - [High-level architecture](technical/architecture.md)
 - [Gameplay data contracts](technical/data-contracts.md)
 - [Mod and loader audit](technical/mod-audit.md)
+- [Compare candidate modpacks and installed JARs](technical/modpack-comparison.md)
 - [Map creation and imports](technical/world-pipeline.md)
+- [Reuse-first mod and modpack policy](technical/reuse-first.md)
 - [Testing and reliability](technical/testing.md)
 
 ## Production
@@ -31,6 +33,7 @@ The docs here distinguish **confirmed product direction**, **design proposals**,
 - [Decisions](production/decisions.md)
 - [Risks](production/risks.md)
 - [Backlog](production/backlog.md)
+- [Existing modpack base comparison](production/base-comparison.md)
 
 ## Legal and assets
 

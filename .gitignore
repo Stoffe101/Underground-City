@@ -61,6 +61,8 @@ server.properties
 *.mca
 *.mcr
 *.nbt
+# The one original minimal GameTest template (allowlist also enforced by CI)
+!rpg-core/src/main/resources/data/underground_city/structures/empty.nbt
 *.litematic
 *.blend
 *.psd

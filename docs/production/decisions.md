@@ -17,6 +17,9 @@ Use `D-###` IDs. Status values: **accepted (product intent)**, **proposed**, **n
 | D-011 | needs spike | TaCZ blueprint/research addon selected after one-at-a-time compatibility review | Avoid duplicated blueprint systems |
 | D-012 | proposed | No passive offline taxation or world-economy punishment | Fair for intermittent private co-op |
 | D-013 | proposed | Server-authoritative ledgers, idempotent quests and transactions, stable data IDs, migrations | Prevent exploits and save corruption |
+| D-015 | accepted (product intent) | Prefer reusing compatible existing mods and modpacks instead of replicating their mechanics | Private two-player focus and minimal ongoing maintenance; validate first |
+| D-016 | needs spike | RoleCraft might provide registration, career progression, player restrictions and police items | Test configurability for gunsmith/hacker and mod APIs before deciding |
+| D-017 | needs spike | GCA/DeceasedCraft/Crusthaven/ModernCraft as candidate base packs | Audit content/rights/overlap and dedicated-server performance |
 | D-014 | proposed | Visible active NPCs + bounded off-screen economic simulation | Plausible cities without thousands of ticking entities |
 
 ## Open decisions

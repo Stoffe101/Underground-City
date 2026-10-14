@@ -18,3 +18,7 @@
 A contract only pays once. A reconnect does not regrant the starting kit. Two players' personal loot and skill XP are independent. No tax accrues offline. No critical progression depends on an absent human profession. Incompatible mods do not silently corrupt the only save. City AI does not attack citizens without a defined rule.
 
 Store actual test evidence with commit SHA, Java/Forge/mod versions, server logs (redacted), steps, outcomes, screenshots and rollback notes. Keep raw player data and private saves out of public Git.
+
+## Evidence from initial implementation
+
+On October 14, 2026, Forge 47.4.10 compiled the initial Core in GitHub Actions and the headless GameTestServer reported **1 required test passed**. The test checked independent citizen records and a save-data NBT roundtrip; it did **not** test dedicated-server restart or two connected Minecraft clients. Offline Python tests verify packaged/exported modpack readers and pure-Java progression behavior. Real multiplayer and third-party mod compatibility remain open tasks.

@@ -2,6 +2,7 @@
 
 Project: Underground City, a private-play semi-modern Minecraft living-world RPG. Read `README.md`, `docs/README.md`, `docs/production/decisions.md`, and `docs/production/mvp-v0.1.md` before modifying code, world assets, or gameplay data.
 
+- **Reuse before rebuilding**: evaluate installed compatible mods, creator-approved configs, and existing modpack components before writing replacement systems; document choice and APIs. See `docs/technical/reuse-first.md`.
 - **Do not silently lock technologies**: Java 1.20.1 / Forge 47.x / Java 17 are candidate baselines. Verify exact versions and dependencies before implementation.
 - **No unlicensed imports**: Never copy external mod binaries, structures, music, textures, screenshots, scripts, or maps into this repo without explicit applicable permission; update the third-party register.
 - **NPC-first co-op**: All essential story quests and professions must be completable with two players and NPC substitutes.
