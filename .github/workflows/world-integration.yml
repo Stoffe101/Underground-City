@@ -157,22 +157,32 @@ jobs:
           mkdir -p rpg-core/run-world-tour/logs
           cp /tmp/uc-world-tour-client.log rpg-core/run-world-tour/logs/world-tour-client-stdout.log
           test "$completed" -eq 1 || { echo "NATIVE WORLD TOUR DID NOT COMPLETE"; exit 1; }
+      - name: Check actual city frames are real terrain, not blank or duplicate
+        if: success() && matrix.candidate == 'lostcities'
+        run: |
           python - <<'PY'
           from pathlib import Path
           from struct import unpack
           from PIL import Image, ImageStat
           import hashlib
-          hashes=set()
+          hashes=set(); failures=[]
           for city in ('ironhaven','valewood','blackwater'):
               png=Path(f'rpg-core/run-world-tour/screenshots/uc-world-{city}.png').read_bytes()
               assert png[:8]==b'\x89PNG\r\n\x1a\n'
               assert unpack('>II',png[16:24])==(1920,1080)
               image=Image.open(f'rpg-core/run-world-tour/screenshots/uc-world-{city}.png').convert('RGB')
-              assert max(ImageStat.Stat(image).stddev)>8, f'{city}: blank framebuffer'
+              stats=ImageStat.Stat(image)
+              print(city, 'stddev', [round(v,1) for v in stats.stddev], 'mean', [round(v,1) for v in stats.mean])
+              if max(stats.stddev)<=8: failures.append(f'{city}: blank framebuffer')
               digest=hashlib.sha256(image.tobytes()).hexdigest()
-              assert digest not in hashes, f'{city}: duplicate environment'
+              if digest in hashes: failures.append(f'{city}: duplicate environment')
               hashes.add(digest)
+          assert not failures, failures
           PY
+      - name: Print downscaled copies of the city frames into the job log for review
+        if: always() && matrix.candidate == 'lostcities'
+        run: |
+          python scripts/emit_review_images.py --max-width 640 --quality 55 rpg-core/run-world-tour/screenshots/uc-world-*.png || true
       - name: Upload short-lived actual-world images for explicit review
         if: always() && matrix.candidate == 'lostcities'
         uses: actions/upload-artifact@v4

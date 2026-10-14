@@ -21,6 +21,10 @@ import java.util.List;
 public final class WorldTourHarness {
     private static final boolean ENABLED=Boolean.getBoolean("uc.worldTour");
     private static final List<String> CITIES=List.of("ironhaven","valewood","blackwater");
+    // Software rendering and Lost Cities generation are slow: wait for real terrain, but always capture
+    // (and let the hosted checker reject blank frames) before the stage limit.
+    private static final int MIN_LOADED_CHUNKS=60;
+    private static final long READY_WAIT_NANOS=240_000_000_000L,STAGE_LIMIT_NANOS=330_000_000_000L;
     private static boolean opening,positioned,captureRequested,captured,finished;
     private static int current,ticks;
     private static double targetX,targetZ;
@@ -37,20 +41,22 @@ public final class WorldTourHarness {
             lastReport=now;
             String state="city="+CITIES.get(current)+", ticks="+ticks+", positioned="+positioned
                 +", captured="+captured+", screen="+(mc.screen==null?"none":mc.screen.getClass().getName())
-                +", player="+(mc.player!=null)+", server="+(mc.getSingleplayerServer()!=null);
+                +", player="+(mc.player!=null)+", server="+(mc.getSingleplayerServer()!=null)
+                +", loadedChunks="+(mc.level==null?0:mc.level.getChunkSource().getLoadedChunksCount())
+                +", meshesIdle="+(mc.levelRenderer!=null && mc.levelRenderer.hasRenderedAllChunks());
             if(mc.screen!=null) state+=", buttons="+mc.screen.children().stream()
                 .filter(child->child instanceof Button).map(child->((Button)child).getMessage().getString()).toList();
             System.out.println("[UC-WORLD-VISUAL] "+state);
             try {Files.writeString(folder.resolve("world-tour-state.txt"),state+"\n");}
             catch(java.io.IOException error) {throw new IllegalStateException(error);}
         }
-        if(opening && now-stageStarted>240_000_000_000L) {
+        if(opening && now-stageStarted>STAGE_LIMIT_NANOS) {
             System.err.println("[UC-WORLD-VISUAL] Stage timed out; inspect world-tour-state.txt");
             finished=true;mc.stop();return;
         }
         if(!opening && (mc.screen instanceof TitleScreen || mc.screen instanceof AccessibilityOnboardingScreen)) {
             if(!Files.isRegularFile(folder.resolve("saves/world/level.dat"))) throw new IllegalStateException("Native survey-world clone missing");
-            opening=true;stageStarted=now;mc.options.guiScale().set(3);mc.options.renderDistance().set(8);
+            opening=true;stageStarted=now;mc.options.guiScale().set(3);mc.options.renderDistance().set(6);
             mc.options.pauseOnLostFocus=false;mc.options.framerateLimit().set(30);mc.options.hideGui=true;mc.resizeDisplay();
             mc.createWorldOpenFlows().loadLevel(mc.screen,"world");
             return;
@@ -111,6 +117,11 @@ public final class WorldTourHarness {
         }
         if(Math.abs(mc.player.getX()-targetX)>2 || Math.abs(mc.player.getZ()-targetZ)>2) return;
         if(++ticks<160 || !mc.level.getChunkSource().hasChunk((int)Math.floor(targetX/16),(int)Math.floor(targetZ/16))) return;
+        boolean terrainReady=mc.level.getChunkSource().getLoadedChunksCount()>=MIN_LOADED_CHUNKS
+            && mc.levelRenderer.hasRenderedAllChunks();
+        if(!terrainReady && System.nanoTime()-stageStarted<READY_WAIT_NANOS) return;
+        System.out.println("[UC-WORLD-VISUAL] Capturing "+CITIES.get(current)+": loadedChunks="
+            +mc.level.getChunkSource().getLoadedChunksCount()+", terrainReady="+terrainReady);
         captureRequested=true;
     }
 }
