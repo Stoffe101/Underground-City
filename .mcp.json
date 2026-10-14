@@ -4,14 +4,14 @@
       "command": "npx",
       "args": [
         "-y",
-        "@creeperhost/modlens-mcp"
+        "@creeperhost/modlens-mcp@1.6.29"
       ]
     },
     "modrinth": {
       "command": "npx",
       "args": [
         "-y",
-        "@justinscott12/modrinth-mcp"
+        "@justinscott12/modrinth-mcp@0.1.2"
       ]
     }
   }
