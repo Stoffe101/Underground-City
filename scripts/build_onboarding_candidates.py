@@ -117,6 +117,67 @@ def class_enhancement_fragment(catalog: dict) -> str:
     return fragment
 
 
+
+def class_enhancement_config(catalog: dict) -> str:
+    """Original minimal *actual* Forge config using fields verified in boot logs."""
+    fragment = class_enhancement_fragment(catalog)
+    content = (
+        "# Underground City authored config for Class Enhancement 2.6.\n"
+        "# Forge generates remaining default settings at startup.\n"
+        "[general]\n"
+        "disableDefaultClasses = true\n"
+        f"customClassSlots = {len(catalog['professions'])}\n"
+        "allowClassReselection = false\n\n"
+        + fragment[fragment.index("[custom_classes.custom_0]"):]
+    )
+    tomllib.loads(content)
+    return content
+
+
+def class_selection_config(catalog: dict) -> str:
+    """Customize the faction/side menu with three original cities.
+
+    Config keys and sideDefinitions format verified from mod 1.6.0 Forge boot.
+    The class list itself is maintained through the mod's admin editor.
+    """
+    textures = {
+        "valewood": "minecraft:textures/item/wheat.png",
+        "ironhaven": "minecraft:textures/item/iron_ingot.png",
+        "blackwater": "minecraft:textures/item/redstone.png",
+    }
+    cities = catalog["cities"]
+    sides = []
+    for city in cities:
+        if city["id"] not in textures:
+            raise ValueError(f"City {city['id']} needs an original/vanilla menu icon")
+        fields = (city["id"], city["name"], city["subtitle"], textures[city["id"]])
+        if any("|" in field or "\n" in field for field in fields):
+            raise ValueError("Faction fields must not contain config delimiters")
+        sides.append("|".join(fields))
+    lines = [
+        "# Underground City original side/citizenship settings for Class Selection Mod 1.6.0.",
+        "# The mod still owns its class list; edit classes via its admin UI.",
+        "[general]",
+        "enableRaceSelection = false",
+        "requireRaceBeforeClassSelection = false",
+        "requireRaceBeforeSideSelection = false",
+        "enableSideSelection = true",
+        "requireSideBeforeClassSelection = true",
+        "showClassGuiOnFirstJoin = true",
+        "forceClassSelection = true",
+        "allowClassChangeOnlyOnFirstJoin = true",
+        "giveStarterKitOnlyFirstTime = true",
+        "enableAuthentication = false",
+        "enableMessenger = false",
+        "sideOptions = " + json.dumps([city["id"] for city in cities]),
+        "sideDefinitions = " + json.dumps(sides, ensure_ascii=False),
+        "",
+    ]
+    content = "\n".join(lines)
+    tomllib.loads(content)
+    return content
+
+
 def candidate_notes(definition: dict, profile: dict) -> str:
     return (
         "UNDERGROUND CITY: ISOLATED ONBOARDING EVALUATION\n"
@@ -165,8 +226,15 @@ def build(definition: dict, catalog: dict, output: Path) -> list[Path]:
                 candidate_notes(definition, profile).encode("utf-8"),
         }
         if profile["id"] == "class-enhancement":
+            entries["overrides/config/class_enhancement.toml"] = (
+                class_enhancement_config(catalog).encode("utf-8")
+            )
             entries["overrides/underground-city/reference/class_enhancement_classes.toml"] = (
                 class_enhancement_fragment(catalog).encode("utf-8")
+            )
+        elif profile["id"] == "class-selection":
+            entries["overrides/config/classmod-common.toml"] = (
+                class_selection_config(catalog).encode("utf-8")
             )
         path = output / f"underground-city-onboarding-{profile['id']}.zip"
         zip_with_fixed_metadata(path, entries)
