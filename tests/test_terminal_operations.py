@@ -132,6 +132,22 @@ class DeliveriesTests(unittest.TestCase):
             m.order("v", "control_circuits", 8, "huge-order",
                     legal=True, permit_verified=True)
 
+    def test_delivery_timer_pauses_while_only_partner_plays(self):
+        m = self.market
+        self.rules["shipments"]["incident_chance_percent"] = 100
+        m.register("partner", "valewood", "farmer", credits=1000)
+        m.order("a", "control_circuits", 1, "partner-clock",
+                legal=True, permit_verified=True)
+        m.advance(200, online_players={"partner"})
+        self.assertEqual(m.orders["partner-clock"]["state"], "in_transit")
+        self.assertEqual(m.owner_online_minutes["a"], 0)
+        m.advance(50, online_players={"a", "partner"})
+        self.assertEqual(m.orders["partner-clock"]["state"], "recovery_open")
+        m.advance(25, online_players={"partner"})
+        self.assertEqual(m.orders["partner-clock"]["state"], "recovery_open")
+        m.salvage("a", "partner-clock", at_verified_crash_site=True)
+        self.assertEqual(m.orders["partner-clock"]["state"], "recovered")
+
     def test_save_restore_in_transit_and_no_double_delivery(self):
         m = self.market
         self.rules["shipments"]["incident_chance_percent"] = 0
