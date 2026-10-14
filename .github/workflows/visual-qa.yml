@@ -1,0 +1,144 @@
+name: Visual QA - real Minecraft screens
+
+on:
+  pull_request:
+    paths:
+      - 'rpg-core/src/main/**'
+      - 'rpg-core/build.gradle'
+      - 'content/qa/gui-coverage.json'
+      - 'scripts/verify_gui_gallery.py'
+      - '.github/workflows/visual-qa.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'rpg-core/src/main/**'
+      - 'rpg-core/build.gradle'
+      - 'content/qa/gui-coverage.json'
+      - 'scripts/verify_gui_gallery.py'
+      - '.github/workflows/visual-qa.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: visual-qa-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  screenshot:
+    name: Minecraft ${{ matrix.profile }} (real framebuffer)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        include:
+          - profile: gui3-1080p
+            width: 1920
+            height: 1080
+            scale: 3
+          - profile: gui2-1440p
+            width: 3440
+            height: 1440
+            scale: 2
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.8'
+      - name: Install virtual display and PNG checker
+        shell: bash
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq xvfb xauth libgl1-mesa-dri libgl1 mesa-utils
+          python -m pip install --disable-pip-version-check 'Pillow==11.3.0'
+      - name: Validate coverage manifest (no missing required GUI panels)
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('content/qa/gui-coverage.json').read_text())
+          assert d['schema_version']==1
+          assert len(d['integrated_surfaces'])==5
+          assert len({s['expected_file'] for s in d['integrated_surfaces']})==5
+          assert d['screenshots_real_framebuffer']
+          PY
+      - name: Launch real Forge client under software OpenGL, capture every integrated tab
+        shell: bash
+        env:
+          UC_W: ${{ matrix.width }}
+          UC_H: ${{ matrix.height }}
+          UC_SCALE: ${{ matrix.scale }}
+          LIBGL_ALWAYS_SOFTWARE: '1'
+          GALLIUM_DRIVER: llvmpipe
+          MESA_GL_VERSION_OVERRIDE: '3.3'
+        run: |
+          set -euo pipefail
+          rm -f rpg-core/run/visual-capture-complete.txt
+          mkdir -p rpg-core/run/screenshots
+          rm -f rpg-core/run/screenshots/uc-terminal-*.png
+          setsid xvfb-run -a -s "-screen 0 ${UC_W}x${UC_H}x24" \
+            timeout 1100s gradle -p rpg-core runClient \
+              -PucVisualCapture=true -PucVisualScale="$UC_SCALE" \
+              -PucVisualWidth="$UC_W" -PucVisualHeight="$UC_H" \
+              --no-daemon --stacktrace > /tmp/uc-visual-client.log 2>&1 &
+          game_pid=$!
+          completed=0
+          for step in $(seq 1 350); do
+            if test -s rpg-core/run/visual-capture-complete.txt; then
+              completed=1
+              break
+            fi
+            if ! kill -0 "$game_pid" 2>/dev/null; then
+              break
+            fi
+            sleep 3
+          done
+          # All children in the session, including Gradle's Minecraft client.
+          kill -- -"$game_pid" 2>/dev/null || true
+          wait "$game_pid" || true
+          tail -90 /tmp/uc-visual-client.log
+          if test "$completed" -ne 1; then
+            echo "REAL CLIENT DID NOT CAPTURE ALL PANELS: check client logs above"
+            exit 1
+          fi
+          cat rpg-core/run/visual-capture-complete.txt
+      - name: Verify actual screenshots (file, dimensions, nonblank, distinct tabs)
+        shell: bash
+        env:
+          UC_W: ${{ matrix.width }}
+          UC_H: ${{ matrix.height }}
+        run: |
+          python scripts/verify_gui_gallery.py \
+            --screenshots rpg-core/run/screenshots \
+            --width "$UC_W" --height "$UC_H" \
+            --report "build/visual-qa/${{ matrix.profile }}/audit.json"
+      - name: Upload ONLY the actual real-client screenshots for artistic review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: uc-visual-gallery-${{ matrix.profile }}-${{ github.sha }}
+          path: |
+            rpg-core/run/screenshots/uc-terminal-*.png
+            build/visual-qa/${{ matrix.profile }}/audit.json
+          if-no-files-found: warn
+          retention-days: 1
+          compression-level: 6
+      - name: Coverage and cleanup reminder
+        if: always()
+        shell: bash
+        run: |
+          echo "## Real Minecraft screenshots: ${{ matrix.profile }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "All **currently integrated** UI tabs must be present. Other mod GUIs are explicitly listed as NOT YET TESTED in content/qa/gui-coverage.json." >> "$GITHUB_STEP_SUMMARY"
+          echo "Automated tests check missing screenshots, blank panels and duplicates; **visual taste, alignment, typography and click feel still require actual image review**." >> "$GITHUB_STEP_SUMMARY"
+          echo "Screenshots expire in ONE DAY; after image review call the visual artifact cleanup workflow to delete them immediately. Do not delete before anyone can inspect." >> "$GITHUB_STEP_SUMMARY"
