@@ -82,12 +82,18 @@ def toml_string(value: str) -> str:
 
 
 def class_enhancement_fragment(catalog: dict) -> str:
-    """Only emit exact keys documented by the Class Enhancement author.
+    """Emit documented and Forge-observed class fields for version 2.6.
 
     Not a full class_enhancement.toml. This is an original reference fragment,
     excluded from automatically loaded Minecraft config paths.
     """
     careers = catalog["professions"]
+    profession_icons = {
+        "farmer": "minecraft:wheat",
+        "smith": "minecraft:iron_ingot",
+        "gunsmith": "minecraft:crossbow",
+        "technician": "minecraft:redstone",
+    }
     lines = [
         "# Original Underground City class reference for Class Enhancement V2.6.",
         "# This is NOT a complete mod config or automatically applied.",
@@ -98,11 +104,14 @@ def class_enhancement_fragment(catalog: dict) -> str:
     ]
     for idx, career in enumerate(careers):
         text = career["description"].replace("\n", " ").strip()
+        if career["id"] not in profession_icons:
+            raise ValueError(f"No UI icon for profession {career['id']}")
         lines += [
             f"[custom_classes.custom_{idx}]",
             "id = " + toml_string(career["id"]),
             "name = " + toml_string(career["name"]),
             "description = " + toml_string(text),
+            "icon = " + toml_string(profession_icons[career["id"]]),
             "stats = []",
             "attributes = []",
             'main_hand = ""',
