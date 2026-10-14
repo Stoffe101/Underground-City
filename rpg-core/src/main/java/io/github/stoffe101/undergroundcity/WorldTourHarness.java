@@ -6,6 +6,7 @@ import net.minecraft.client.Screenshot;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.gui.screens.AccessibilityOnboardingScreen;
+import net.minecraft.client.gui.screens.ConfirmScreen;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.GameType;
 import net.minecraftforge.api.distmarker.Dist;
@@ -23,6 +24,7 @@ public final class WorldTourHarness {
     private static boolean opening,positioned,captured,finished;
     private static int current,ticks;
     private static double targetX,targetZ;
+    private static long stageStarted=System.nanoTime(),lastReport;
     private WorldTourHarness() {}
 
     @SubscribeEvent public static void render(TickEvent.RenderTickEvent event) {
@@ -30,9 +32,25 @@ public final class WorldTourHarness {
         Minecraft mc=Minecraft.getInstance();
         var folder=mc.gameDirectory.toPath().toAbsolutePath().normalize();
         if(!folder.getFileName().toString().equals("run-world-tour")) throw new IllegalStateException("World tour requires disposable directory");
+        long now=System.nanoTime();
+        if(now-lastReport>30_000_000_000L) {
+            lastReport=now;
+            String state="city="+CITIES.get(current)+", ticks="+ticks+", positioned="+positioned
+                +", captured="+captured+", screen="+(mc.screen==null?"none":mc.screen.getClass().getName())
+                +", player="+(mc.player!=null)+", server="+(mc.getSingleplayerServer()!=null);
+            if(mc.screen!=null) state+=", buttons="+mc.screen.children().stream()
+                .filter(child->child instanceof Button).map(child->((Button)child).getMessage().getString()).toList();
+            System.out.println("[UC-WORLD-VISUAL] "+state);
+            try {Files.writeString(folder.resolve("world-tour-state.txt"),state+"\n");}
+            catch(java.io.IOException error) {throw new IllegalStateException(error);}
+        }
+        if(opening && now-stageStarted>240_000_000_000L) {
+            System.err.println("[UC-WORLD-VISUAL] Stage timed out; inspect world-tour-state.txt");
+            finished=true;mc.stop();return;
+        }
         if(!opening && (mc.screen instanceof TitleScreen || mc.screen instanceof AccessibilityOnboardingScreen)) {
             if(!Files.isRegularFile(folder.resolve("saves/world/level.dat"))) throw new IllegalStateException("Native survey-world clone missing");
-            opening=true;mc.options.guiScale().set(3);mc.options.renderDistance().set(4);
+            opening=true;stageStarted=now;mc.options.guiScale().set(3);mc.options.renderDistance().set(4);
             mc.options.pauseOnLostFocus=false;mc.options.framerateLimit().set(30);mc.options.hideGui=true;mc.resizeDisplay();
             mc.createWorldOpenFlows().loadLevel(mc.screen,"world");
             return;
@@ -41,7 +59,11 @@ public final class WorldTourHarness {
         if(opening && mc.player==null && mc.screen!=null) {
             for(var child:mc.screen.children()) if(child instanceof Button button) {
                 String label=button.getMessage().getString();
-                if(label.equals("Proceed") || label.equals("I know what I'm doing!")) {button.onPress();break;}
+                if(label.equals("Proceed") || label.equals("I know what I'm doing!")
+                    || (mc.screen instanceof ConfirmScreen && (label.equals("Yes") || label.equals("Continue")))) {
+                    System.out.println("[UC-WORLD-VISUAL] Confirmed cloned-world load: "+label);
+                    button.onPress();break;
+                }
             }
         }
         if(!captured || mc.screen!=null) return;
@@ -49,7 +71,7 @@ public final class WorldTourHarness {
         try {
             var file=folder.resolve("screenshots").resolve(name);
             if(!Files.isRegularFile(file) || Files.size(file)<1024) return;
-            captured=false;positioned=false;ticks=0;
+            captured=false;positioned=false;ticks=0;stageStarted=now;
             if(++current==CITIES.size()) {
                 Files.writeString(folder.resolve("world-tour-complete.txt"),"actual_survey_world=true\nviewports=1920x1080_gui3\ncities=3\n");
                 finished=true;mc.stop();

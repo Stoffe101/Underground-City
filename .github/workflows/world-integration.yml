@@ -153,6 +153,7 @@ jobs:
             rpg-core/run-world-tour/logs/*.log
             rpg-core/run-world-tour/crash-reports/*.txt
             rpg-core/run-world-tour/world-tour-complete.txt
+            rpg-core/run-world-tour/world-tour-state.txt
           retention-days: 7
           if-no-files-found: warn
       - name: Report measured scope
