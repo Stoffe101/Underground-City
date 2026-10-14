@@ -3,5 +3,12 @@
     "commit": "",
     "pr": "",
     "sessionUrl": false
+  },
+  "permissions": {
+    "deny": [
+      "mcp__modrinth__modrinth_create_project",
+      "mcp__modrinth__modrinth_create_version",
+      "mcp__modrinth__modrinth_modify_version"
+    ]
   }
 }
