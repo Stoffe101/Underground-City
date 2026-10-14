@@ -33,6 +33,8 @@ The docs here distinguish **confirmed product direction**, **design proposals**,
 - [First-join class and city selection candidates](technical/onboarding-reuse-spike.md)
 - [Pinned first-login test profiles and automation](technical/onboarding-screening-packs.md)
 - [Testing and reliability](technical/testing.md)
+- [AI-assisted development, docs and PR workflow](technical/agent-workflow.md)
+- [Claude Code cloud MCP setup](technical/claude-cloud-tools.md)
 
 ## Production
 

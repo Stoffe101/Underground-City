@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "modlens": {
+      "command": "modlens-mcp",
+      "args": []
+    },
+    "modrinth": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@justinscott12/modrinth-mcp@0.1.2"
+      ]
+    }
+  }
+}
