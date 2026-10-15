@@ -18,6 +18,12 @@ minecraft {
         configureEach {
             workingDirectory project.file(providers.gradleProperty('ucRunDir').orElse('run').get())
             property 'forge.logging.console.level', 'info'
+            if (providers.gradleProperty('ucPack').isPresent()) {
+                // Dev-pack mods such as TaCZ are mixin mods whose refmaps use SRG names; this development environment
+                // runs with the official names, so Mixin must remap the refmaps (the documented ForgeGradle 6 recipe).
+                property 'mixin.env.remapRefMap', 'true'
+                property 'mixin.env.refMapRemappingFile', "${projectDir}/build/createSrgToMcp/output.srg"
+            }
             mods {
                 underground_city { source sourceSets.main }
             }
@@ -136,6 +142,9 @@ dependencies {
     if (worldCandidate != null) {
         runtimeOnly fg.deobf("curse.maven:uc-world-${worldCandidate.project_id}:${worldCandidate.file_id}")
     }
+}
+if (!devPackMods.isEmpty()) {
+    tasks.matching { it.name.startsWith('prepareRun') }.configureEach { dependsOn 'createSrgToMcp' }
 }
 devPackMods.each { mod -> dependencies.add('runtimeOnly', fg.deobf("maven.modrinth:${mod.slug}:${mod.version_id}")) }
 configurations { qshopOriginal; devPackOriginal }

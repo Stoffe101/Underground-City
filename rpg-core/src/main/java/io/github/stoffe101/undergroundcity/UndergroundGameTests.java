@@ -827,7 +827,9 @@ public final class UndergroundGameTests {
         DistrictCatalog.District district = DistrictCatalog.INSTANCE.find("founders_row");
         BlockPos origin = helper.absolutePos(new BlockPos(0, 10, 0)).offset(-12, 0, -8);
         BlockPos lo = origin.offset(district.min()), hi = origin.offset(district.max());
-        for (int cx = lo.getX() >> 4; cx <= hi.getX() >> 4; cx++) for (int cz = lo.getZ() >> 4; cz <= hi.getZ() >> 4; cz++) level.getChunk(cx, cz);
+        // Keep the lot's chunks loaded for the whole test (a plain getChunk leaves them unticketed, so they may unload
+        // and take the clerk entity with them), exactly as a standing operator would.
+        for (int cx = lo.getX() >> 4; cx <= hi.getX() >> 4; cx++) for (int cz = lo.getZ() >> 4; cz <= hi.getZ() >> 4; cz++) level.setChunkForced(cx, cz, true);
         SupplierNpc.forgetForTest(level.getServer());
         DistrictBuilder.forgetForTest(level, district.id());
         Fixture fixture = fixture(helper, "valewood");
@@ -867,6 +869,7 @@ public final class UndergroundGameTests {
             DistrictBuilder.forgetForTest(level, district.id());
             SupplierNpc.forgetForTest(level.getServer());
             level.setBlockAndUpdate(marker, Blocks.AIR.defaultBlockState());
+            for (int cx = lo.getX() >> 4; cx <= hi.getX() >> 4; cx++) for (int cz = lo.getZ() >> 4; cz <= hi.getZ() >> 4; cz++) level.setChunkForced(cx, cz, false);
             fixture.close();
         }
         helper.succeed();
