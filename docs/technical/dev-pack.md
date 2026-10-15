@@ -42,13 +42,16 @@ mods' items by registry id only.
 
 ## What is and is not verified
 
+Two different environments matter. The **ForgeGradle development environment** (`-PucPack=...`) runs the Core GameTests with the real mods on the classpath; it is stricter than a real server in one way (Forge throws, only in development, when a mod reads its config in its constructor) and different in another (it does not register Immersive Vehicles content-pack items). The **production-style boot check** (`scripts/run_prod_boot_check.py`) installs a real Forge 1.20.1-47.4.10 server, puts the reobfuscated Core jar, Q Shop and the pinned mods in an ordinary `mods` folder and boots it, so it exercises the same jars a launcher would.
+
 | Claim | Status |
 | --- | --- |
-| Every pin resolves on Modrinth with the recorded hashes | implemented and tested (`resolve_dev_pack.py --check`) |
-| `firearms` set resolves and downloads with hash verification | verified in the cloud container (`fetch_dev_pack.py`) |
-| Core GameTests pass with the `firearms` set loaded | see the PR's CI evidence; the real TaCZ/Blueprint cases run only here |
-| The motorboat keeps 27 slots of cargo (named, damaged, NBT items) through a save and load | GameTest in the `vehicles` job; read from jar bytecode first |
-| A player can drive the boat or a car | **not tested**; no real-client driving test exists |
-| Immersive Vehicles and Modern Life boot together with Q Shop and TaCZ | **not verified** |
-| The vehicles and TaCZ Blueprints default config for this world | **not written**; TaCZ Blueprints needs a shipped config to default-unlock a starter gun and its file name has not been confirmed |
-| Boat travel is a valid alternative route on the new map | design only; the new water layout is surveyed by the seed scan, but no one has sailed it |
+| Every pin resolves on Modrinth with the recorded hashes | implemented and tested (`resolve_dev_pack.py --check`, hosted job "Pins still resolve and match") |
+| Core GameTests pass with the `firearms` set (real TaCZ and TaCZ Blueprints) | hosted run: **All 54 required tests passed**; TaCZ's mixins need `mixin.env.remapRefMap` in this environment (fixed in `build.gradle`) |
+| Core GameTests pass with the `vehicles` set | hosted run passed, but Immersive Vehicles content-pack items did **not** register in the dev environment (23 recipe parse errors "Unknown item mts:..."), so this proves only that the engine loads beside Core |
+| Production-style boot with Core, Q Shop, TaCZ, TaCZ Blueprints, Modern Life, Immersive Vehicles, the Official Content Pack and the Official Automobile Pack together | hosted run **passed**: every mod loaded; Core loaded 43 work orders with TaCZ present, 10 Farmer skills and the Founders Row district; registries held TaCZ 11 items, TaCZ Blueprints 8, Modern Life 477 items and 4 entities, `mts` 634 items |
+| The Motorboat keeps 27 slots of cargo (named, damaged and NBT-tagged items) through a save and load | hosted production-style run: `boat_cargo = ok`. Modern Life cannot boot in the dev environment, so the GameTest for it skips there |
+| A player can drive the boat or a car, steer, refuel, or load cargo through the real UI | **not tested**; no client driving test exists |
+| Q Shop, TaCZ and the vehicle mods work together in a client, or in two clients | **not verified**; only a dedicated-server boot is |
+| TaCZ Blueprints default config for this world | **not written**: its `world/serverconfig/taczblueprints-server.toml` has `enabledGuns` (documented as `tacz:gun/<name>`), `enabledAttachments`, `enabledAmmo` and a 5% structure-chest blueprint chance, but the accepted spelling and effect of a starter-gun entry was not exercised |
+| Boat travel is a valid alternative route on the new map | design only; the survey proves real water under the bridges (see the three-city notes), but no one has sailed it |

@@ -30,6 +30,12 @@ public final class BootSmokeHarness {
         for (String ns : List.of("tacz", "taczblueprints", "modernlife", "mts", "mtsofficialpack", "oamp")) {
             if (ModList.get().isLoaded(ns)) System.out.println("[UC-BOOT] registry " + ns + " items=" + OptionalModProbes.items(ns) + " entities=" + OptionalModProbes.entities(ns));
         }
+        if (ModList.get().isLoaded("mts")) {
+            // Immersive Vehicles registers every content-pack vehicle and part as an item named mts:<pack>.<name>.
+            for (String pack : List.of("mtsofficialpack", "oamp")) {
+                System.out.println("[UC-BOOT] mts pack " + pack + " items=" + OptionalModProbes.itemsWithPrefix("mts", pack + "."));
+            }
+        }
         if (ModList.get().isLoaded("modernlife")) {
             List<String> problems = OptionalModProbes.boatCargoRoundTrip(server.overworld());
             System.out.println("[UC-BOOT] boat_cargo=" + (problems.isEmpty() ? "ok" : "FAILED " + problems));

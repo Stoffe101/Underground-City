@@ -47,5 +47,9 @@ final class OptionalModProbes {
 
     /** How many items and entity types a namespace registered; zero means the mod (or its content packs) did not register. */
     static int items(String namespace) { return (int) ForgeRegistries.ITEMS.getKeys().stream().filter(key -> key.getNamespace().equals(namespace)).count(); }
+    /** Items of one namespace whose path starts with a prefix (content packs register as mts:<pack>.<name>). */
+    static int itemsWithPrefix(String namespace, String prefix) {
+        return (int) ForgeRegistries.ITEMS.getKeys().stream().filter(key -> key.getNamespace().equals(namespace) && key.getPath().startsWith(prefix)).count();
+    }
     static int entities(String namespace) { return (int) ForgeRegistries.ENTITY_TYPES.getKeys().stream().filter(key -> key.getNamespace().equals(namespace)).count(); }
 }
