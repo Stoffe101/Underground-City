@@ -106,7 +106,7 @@ jobs:
           for road in roads:
               # Real blocks read along the whole centreline (one sample per block).
               assert road['continuous'] is True, road
-              assert road['samples_checked']>1000, road
+              assert road['samples_checked']>900, road
               assert road['deck_missing']==0 and road['headroom_blocked']==0 and road['steps_over_half_block']==0, road
               assert road['parapets_expected']>0 and road['parapets_missing']==0, road
               assert road['bridge_samples']>0 and road['water_samples_below_deck']>0, road

@@ -36,7 +36,7 @@ class InterCityDesignTests(unittest.TestCase):
         self.assertLessEqual(travel["maximum_routine_door_to_door_minutes"], 10)
         self.assertTrue(travel["all_three_routes_walkable_within_budget"])
         self.assertEqual(self.base["routes"]["road_generation"]["unpaved_route_kinds"], [])
-        self.assertEqual(self.base["routes"]["road_generation"]["reference_seed"], 166)
+        self.assertEqual(self.base["routes"]["road_generation"]["reference_seed"], 5908)
         oversized = copy.deepcopy(self.base)
         # Deliberately detour an existing mandatory paved road far into the wilderness.
         oversized["routes"]["routes"][0]["waypoints"].insert(2, [500, 4500])
