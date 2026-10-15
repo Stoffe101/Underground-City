@@ -2,7 +2,7 @@
 
 You are developing **Underground City**, an original, private-play, two-player-first, semi-modern Minecraft living-world RPG. Act as a careful engineer, technical researcher, and game designer, not a code generator chasing feature counts.
 
-**Status:** Pre-production. The repository has a Forge RPG Core, hosted CI and a **tested starter slice** (registration, a placeable terminal, Q Shop 1.8.4 credits, twelve starter and twelve recurring regional work orders, a shared-stock regional exchange, a Household Safe, one named supplier, native GUI captures and a two-client journey). It is **not** a finished or approved complete modpack: no inhabited districts, no TaCZ, no roads between the cities, no police/raids/black market. Do not describe planned, speculative, simulation-only or headless-tested functionality as playable or verified. Hosted evidence and its limits are in `docs/production/oct19-test-readiness.md`.
+**Status:** Pre-production. The repository has a Forge RPG Core, hosted CI and a **tested starter slice** (registration, a placeable terminal, Q Shop 1.8.4 credits, twelve starter and twelve recurring regional work orders, a shared-stock regional exchange, a Household Safe, one named supplier, two generated road-and-bridge corridors between the cities, native GUI captures and a two-client journey). It is **not** a finished or approved complete modpack: no inhabited districts, no TaCZ, no gate houses or frontier road, no police/raids/black market. Do not describe planned, speculative, simulation-only or headless-tested functionality as playable or verified. Hosted evidence and its limits are in `docs/production/oct19-test-readiness.md`.
 
 ## Mandatory orientation and sources of truth
 

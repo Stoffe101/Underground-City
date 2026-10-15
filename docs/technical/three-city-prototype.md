@@ -1,6 +1,6 @@
 # Three-city experimental world generator
 
-**Status: original source/profile plus successful native dedicated-server building generation at all three anchors; visual tour under review. No connected/populated city claim.**
+**Status: original source/profile, native building generation at all three anchors, and original road/bridge generation along two inter-city corridors (measured on a dedicated server and photographed by a native client). No populated, furnished or inhabited city claim.**
 
 The world uses The Lost Cities' [1.20.1 predefined-city registry](https://mcjty.eu/docs/mods/lost-cities/asset_structure), packaged as an original Forge low-code mod. This avoids building thousands of structures by hand. Version-targeted semantics matter: city centers are chunk coordinates, radii are in **blocks**.
 
@@ -12,7 +12,7 @@ The world uses The Lost Cities' [1.20.1 predefined-city registry](https://mcjty.
 | Valewood | 2016, 704 | 410 blocks | Lower-rise, more parks, 3-floor cap |
 | Blackwater | -2016, 1072 | 570 blocks | Dense commercial towers, 11-floor cap |
 
-These starting locations, skyline caps, terrain seed, and styles are **test values**, not approved canonical geography. No city actually has its own hand-made factory, vineyard, residence interior or functioning NPC population yet. The generator does not automatically connect the three centers via vehicle-ready highway. Those features require later map inspection and asset work.
+These starting locations, skyline caps, terrain seed, and styles are **test values**, not approved canonical geography. No city actually has its own hand-made factory, vineyard, residence interior or functioning NPC population yet. Lost Cities' own highway planner never connects these fixed centers (measured, see below); Core's corridor road feature does, for the two main roads. Furnished interiors and NPC homes still require asset work.
 
 All three styles inherit the mod's standard city style instead of copying third-party structures. A unique city style primarily changes **building density, floor cap and park frequency**. Proper unique architecture, landmarks, NPC home/job markers, civic services and apartment interiors follow after the preliminary world is viewed in-engine.
 
@@ -33,7 +33,7 @@ For a **new disposable world** with Minecraft 1.20.1, Forge 47.4.10 and Lost Cit
 1. Obtain the original author mod separately; build/install our original files with `python scripts/install_world_prototype.py --server-root <fresh-instance>`.
 2. The installer selects `uc_three_city` in server defaults and maps the Overworld in `config/lostcities/common.toml`. Its profile disables random city centers, spawners and damage, and scans the largest predefined radius.
 3. Its original `underground_city:three_city` world style omits the standard ocean/river penalties, so fixed city anchors remain eligible across vanilla biomes. Height bounds cover the Overworld. This can produce significant terrain platforms/seams that need actual visual inspection.
-4. Create a fresh world, using seed `20261014` to reproduce the hosted survey. Confirm all three centers, terrain transitions, safe spawn, roads and chunk performance.
+4. Create a fresh world, using seed `579` to reproduce the hosted survey (see [seed choice](#seed-choice-water-between-the-cities-is-a-feature) for why; the earlier `20261014` put Ironhaven in the sea). Confirm all three centers, terrain transitions, safe spawn, roads and chunk performance.
 5. Do not move prototype coordinates or apply this profile to an existing save. The installer rejects existing saves/configs/packages; generation changes affect new chunks only.
 
 A passing ZIP/unit test proves **only source validation**. A separate next-stage in-engine Lost Cities test must prove the mod reads all three assets and generates them at the specified centers with no random extra city center. The dedicated native-block survey now provides generation evidence at all three anchors; it does not prove no extra city centers across the entire world.
@@ -49,7 +49,7 @@ The generated world mod also adds **five original vanilla-item loot tables**: or
 
 ## Next milestones
 
-Three-anchor building generation is now proven. Next screenshot-review actual environments, create/connect travel routes, classify buildings by use, apply legal versus explore/rob loot policies, insert NPCs with homes/workplaces, and implement robbery events through **existing lock and economy integrations**. The technical constraint is not the raw number of buildings, but producing believable lived-in locations without spending months furnishing every room.
+Three-anchor building generation and two roads with bridges are now proven in a dedicated server. Next: gate houses, classify buildings by use, apply legal versus explore/rob loot policies, insert NPCs with homes/workplaces, and implement robbery events through **existing lock and economy integrations**. The technical constraint is not the raw number of buildings, but producing believable lived-in locations without spending months furnishing every room.
 
 For reference: [world pipeline](world-pipeline.md), [mod compatibility](mod-audit.md), [modpack reuse](reuse-first.md).
 
@@ -63,7 +63,43 @@ Our [property restocking design](../design/gradual-property-restock.md) describe
 
 ### Native Lost Cities highways
 
-Forge **Lost Cities 7.5.5** includes the versioned 7.5 inter-city highway network, roads, intersections and highway bridge features. We will test [the pinned Forge 1.20.1 release](https://www.curseforge.com/minecraft/mc-mods/the-lost-cities/files/8862717) in the [world smoke workflow](../../.github/workflows/world-integration.yml). The highway planner targets approximate city concentrations and **does not promise** to connect our three fixed city anchors, especially when random-city chance is disabled. It will need explicit surveying and possible original structure/world-edit additions. The schematic route bridges are placeholders, not placed blocks.
+Forge **Lost Cities 7.5.5** includes the versioned 7.5 inter-city highway network. Its planner builds hubs only from approximate **random** city potential, never from predefined cities, so with random cities off (our profile) no highway exists. Measured on two seeds: zero highway chunks among 3,097 sampled chunk plans (city rings, corridor lines, a 12-chunk lattice) while 1,968 city chunks lay inside the declared radii. We therefore do not rely on it, and build our own roads (next section).
+
+## Roads and bridges (original, generated with new chunks)
+
+`underground_city:corridor_roads` is a Forge worldgen **Feature** in Core. A datapack, generated from [corridors.json](../../content/region-blueprints/corridors.json) and [cities.json](../../content/region-blueprints/cities.json) by `scripts/build_world_prototype.py`, places it in every Overworld biome (`forge:add_features`, last decoration step), so:
+
+- It runs only while **new chunks** are generated in a fresh world. It cannot rewrite an existing save, and nothing is pasted or edited afterwards.
+- Coordinates are data, not Java: route waypoints and the Lost Cities circles come from the blueprint. Two routes are built (`guarded_highway`, `militarized_highway`); the long frontier route stays unpaved. The road stops at each city circle, where Lost Cities owns the street grid.
+- Geometry is a pure function of the world seed and the route data ([`CorridorPlan`](../../rpg-core/src/main/java/io/github/stoffe101/undergroundcity/CorridorPlan.java)), so every chunk agrees with its neighbours without storing anything. The deck profile is sampled every 4 blocks from the chunk generator's own surface and ocean-floor heights, smoothed, and slope-limited to half a block per two blocks (slabs make the half steps, so a walker or horse needs no jumping).
+- The deck is 7 blocks of polished andesite. **Where water lies below, the deck rides four free blocks above it so a boat can sail beneath**; connected parapet walls, a lantern every 16 blocks and stone-brick supports (piers every 24 blocks) make a bridge. Viaducts cross dry ravines the same way, shallow dips are filled, hills are cut by at most 8 blocks, and trees or leaves on the road are removed.
+- Every chunk repairs the road across its eight neighbours, so a tree or vanilla structure placed after a neighbour's run cannot leave a leaf block in the road whatever order chunks generate in.
+- Only vanilla blocks are used; no third-party structure, schematic or texture is copied.
+
+Water between the cities is **a feature, not a defect**: a bridge is the safe way over, and a boat is the alternative (rivers and straits stay open under every bridge).
+
+### Verification (seed 579, native dedicated server in the cloud container)
+
+`WorldRoadVerifier` forces the road chunks to generate on worker threads (a chunk ticket; `ServerLevel.setChunkForced` generates on the server thread and trips the 60 s watchdog), then reads the **real blocks** on the centreline every block: deck present, three free blocks of headroom, no step above half a block between neighbours, a parapet on the bridge sides, and water with free blocks under the deck.
+
+| Road | Length | Bridge/viaduct deck | Longest bridge | Longest open water under deck | Deck missing | Headroom blocked | Steps > half block | Parapets missing |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Ironhaven – Valewood | 1,400 | 343 blocks | 120 | 38 | 0 of 1,252 | 0 | 0 | 0 of 654 |
+| Ironhaven – Blackwater | 1,295 | 422 blocks | 184 | 129 | 0 of 1,117 | 0 | 0 | 0 of 772 |
+
+Both reports say `continuous: true`; 284 chunks generated in 323 s on two software cores. Plan construction took about 3 s. The smallest measured free height between water and the bridge underside was 3 blocks (at shoreline ramps); the design value over water is 4. This proves the blocks exist and form a gap-free walkable line. It does **not** prove: that vehicles from a vehicle mod fit, that mobs behave on the road, that the roads look good (that is the separate frame review below), or that anything lives along them. Vanilla structures generated on top of the road centreline are repaired by the neighbour pass but a rare conflict could still appear; it would show as `deck_missing` in the next survey.
+
+### Frame review (native client in the cloud container, seed 579)
+
+Twelve real frames were viewed (six city, six road). What the numbers did not show and the frames did: the parapet walls were unconnected posts (fixed: a second pass joins them), and one oblique bridge frame was nearly all sky or aimed at a few unmeshed blocks because the camera was high and steep or the deck was not loaded yet (fixed: a low, farther camera and a wait until the client holds the deck block). After the fixes the bridge frames show a long stone deck on piers over open water and over a river, connected parapets with lanterns, 4 free blocks under the deck for a boat, and a ground road cut through taiga and birch forest with slab ramps. Known rough edges: slab ramps and diagonal edges look stepped, trees overhang the parapet in places, and the Ironhaven oblique city frame stared at a nearby rooftop (the camera is now higher; not yet re-shot). These are local container frames, not hosted artifacts, so nothing is recorded in `content/qa/reviewed-runs.json` for them.
+
+### Seed choice: water between the cities is a feature
+
+Design intent (user, October 15): ocean or large rivers between the cities make the bridges pivotal, and a boat should be a valid alternative. Seed `20261014` put Ironhaven itself in the sea and the Ironhaven–Blackwater road 100% under water, so it was replaced. `WorldSeedScanHarness` ranks seeds in two stages (a cheap climate-sampler pass, then the chunk generator's real surface and ocean-floor heights along the real road centrelines) for: dry city sites, 6-35% water per built road in gaps of 48-320 blocks, and land elsewhere. Of 10,000 seeds, 302 finalists were re-scored with real heights. Seed `3130` (best of an earlier climate-only scan) was generated first and rejected: about half of its Ironhaven–Valewood road lay on water. Seed `579` (fifth of the real-height ranking) was then generated and measured. It has dry cities, two roads with long bridges over rivers and braided shoals, and an open **sea** on the unpaved Valewood–Blackwater edge (944-block longest water run), so travel there is by boat or around through Ironhaven. This ranking is a tool, not proof of quality: a seed's other terrain was not reviewed.
+
+### What is still not built
+
+Gate houses at the checkpoints, a built road on the Valewood–Blackwater edge, rest stops, road signs, NPC patrols and vehicle-mod compatibility. The checkpoint, `travel_modes` and `security` fields in `corridors.json` remain design data.
 
 ## Source-checked fresh-instance setup
 

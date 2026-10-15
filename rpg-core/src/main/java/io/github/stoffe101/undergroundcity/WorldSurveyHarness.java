@@ -45,6 +45,7 @@ public final class WorldSurveyHarness {
     private static double[] waypointArcLength;
     private static int sampleIndex;
     private static boolean corridorsLoaded;
+    private static WorldRoadVerifier roads;
     private WorldSurveyHarness() {}
 
     @SubscribeEvent public static void tick(TickEvent.ServerTickEvent event) {
@@ -69,6 +70,11 @@ public final class WorldSurveyHarness {
             }
             if(corridorStep(server,folder)) return;
             report.add("corridor_terrain",corridorReport());
+            if(Files.isRegularFile(folder.resolve("corridors.json"))) {
+                if(roads==null) roads=new WorldRoadVerifier();
+                if(roads.step(server)) return;
+                report.add("roads",roads.report());
+            }
             report.addProperty("status","three_city_structures_observed");
         } catch(Exception error) {
             report.addProperty("status","failed");report.addProperty("error",error.toString());
@@ -76,8 +82,8 @@ public final class WorldSurveyHarness {
         }
         report.add("observations",observations);
         report.addProperty("qshop_credits_ready",QShopEconomy.available() && QShopEconomy.configured(server));
-        // Population and furnished interiors are never inferred from a block survey.
-        report.addProperty("roads_bridges_population_verified",false);
+        // Population and furnished interiors are never inferred from a block survey; roads are measured above.
+        report.addProperty("population_verified",false);
         try {Files.writeString(folder.resolve("world-survey.json"),report.toString()+"\n");}
         catch(java.io.IOException error) {throw new IllegalStateException("Cannot record world survey",error);}
         finished=true;server.halt(false);

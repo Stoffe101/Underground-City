@@ -36,17 +36,17 @@ Examples: a gunsmith needs Ironhaven machining and Blackwater optics for advance
 
 ## Roads, bridges, and topology
 
-Three planned corridors form a *connected triangle*: Ironhaven–Valewood (guarded highway, candidate causeway), Ironhaven–Blackwater (militarized highway, candidate viaduct), and Valewood–Blackwater (longer frontier bypass for traders or smugglers).
+Three corridors form a *connected triangle*: Ironhaven–Valewood (guarded highway), Ironhaven–Blackwater (militarized highway), and Valewood–Blackwater (a longer frontier edge for traders or smugglers).
 
-[Corridor plan](../../content/region-blueprints/corridors.json) records provisional block-coordinate polylines, gate locations, modes and security. The CI-rendered SVG is deliberately labeled as schematic. **None of these roads, bridges, mountains, rivers or checkpoints have been generated or surveyed in the world yet.**
+[Corridor plan](../../content/region-blueprints/corridors.json) records block-coordinate polylines, gate locations, modes and security. **The two highways are now real blocks**: Core's `corridor_roads` worldgen feature builds a 7-wide deck with parapets and supports into newly generated chunks, and rides four free blocks above any water so a boat can pass beneath ([measurements](../technical/three-city-prototype.md#roads-and-bridges-original-generated-with-new-chunks)). Water between the cities is deliberate: **a bridge is the safe way over and a boat is the alternative.** In the reference seed the Valewood–Blackwater edge is open sea, so a direct trip needs a boat; the other way round goes through Ironhaven. Checkpoint gate houses, rest stops, patrols and the frontier road are still design only.
 
-### How roads should actually be built
+### How roads are built
 
-1. Test an exact pinned **Lost Cities 7.5.x** release, which includes newer inter-city highway planning; compare generated city-center connections against our three predetermined centers. The automatic highway algorithm does not promise to connect arbitrary predefined cities.
-2. Generate the world on a disposable seed and capture terrain heightmaps at every planned crossing. A requested bridge may need to be moved if there is no actual water, gorge, river or suitable deck level.
-3. Prefer Lost Cities' native highway/bridge parts and reproducible world editing or structure imports for the gaps, rather than inventing another full world-generation engine.
-4. Add two-sided border checkpoints, roads navigable by the chosen vehicle mod, pedestrian routes, abandoned service stations and risk/reward stops.
-5. Pregen affected chunks, then screenshot-review road alignment, entry/exit, safety rails, terrain seams and city approach landmarks. Preserve backups and never overwrite an existing inhabited save.
+1. Lost Cities' native highway planner ignores predefined cities (measured), so it is not used.
+2. A deterministic profile is derived from the chunk generator's own heights for the seed, then slope-limited so walking, riding and vehicles never meet more than a half-block rise per two blocks.
+3. Generation is limited to new chunks of a fresh world; it never edits an existing save.
+4. A native dedicated-server survey reads the real blocks along each road; a native client photographs a bridge from the side and from the deck. Both must be reviewed on every change, because passing numbers can still look wrong.
+5. Still to add: two-sided border checkpoints, vehicle-mod compatibility, abandoned service stations and risk/reward stops.
 
 ## Living cities rather than empty terrain
 

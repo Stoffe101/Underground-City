@@ -2,9 +2,10 @@
 """Create original prototype Lost Cities low-code mod with EXACTLY three city anchors.
 
 This is a reversible experimental datapack/Forge low-code mod. It defines
-named city shapes, offline-only route plans, and loot tables but cannot automatically
-connect cities by roads, add populations, lock doors, or select the world
-generation profile. Those require further integration and tested assets.
+named city shapes, route plans, the datapack configuration of Underground City
+Core's road/bridge worldgen feature, and loot tables. It cannot add populations,
+lock doors, or select the world generation profile. Roads are only built into
+NEWLY generated chunks of a fresh world; nothing rewrites an existing save.
 """
 from __future__ import annotations
 import argparse
@@ -73,6 +74,57 @@ def validate(data: dict) -> None:
     if data["profile_requirements"].get("city_max_radius_at_least", 0) < max(
             c["radius_blocks"] for c in cities):
         raise ValueError("City radius profile scan must include every predefined city")
+
+
+ROAD_FEATURE = "underground_city:corridor_roads"
+
+
+def road_feature(cities: dict, corridors: dict) -> dict[str, dict]:
+    """Datapack files that place Core's road feature in every Overworld biome.
+
+    Coordinates come only from the blueprints: the route waypoints and the circles
+    Lost Cities owns. Only the routes whose kind is listed as buildable receive a
+    deck; the long frontier route stays an unpaved path.
+    """
+    policy = corridors.get("construction_policy", {})
+    generation = corridors.get("road_generation", {})
+    width = policy.get("road_width_blocks")
+    if type(width) is not int or not 3 <= width <= 15:
+        raise ValueError("road_width_blocks must be an integer between 3 and 15")
+    if generation.get("mode") != "worldgen_feature" or generation.get("feature") != ROAD_FEATURE:
+        raise ValueError("road_generation must select the Core corridor road feature")
+    if generation.get("new_chunks_only") is not True:
+        raise ValueError("Roads must only be built into newly generated chunks")
+    kinds = set(generation.get("build_route_kinds", []))
+    routes = []
+    for route in corridors["routes"]:
+        if route["kind"] not in kinds:
+            continue
+        points = route["waypoints"]
+        if len(points) < 2 or any(len(p) != 2 or any(type(v) is not int for v in p) for p in points):
+            raise ValueError(f"{route['id']}: road waypoints must be integer [x, z] pairs")
+        routes.append({"id": route["id"], "waypoints": points})
+    if not routes:
+        raise ValueError("No buildable road routes in the blueprint")
+    circles = [{"id": c["id"], "x": float(c["center_chunk"][0] * 16 + 8),
+                "z": float(c["center_chunk"][1] * 16 + 8), "radius": float(c["radius_blocks"])}
+               for c in cities["cities"]]
+    namespace = "data/underground_city/"
+    return {
+        namespace + "worldgen/configured_feature/corridor_roads.json": {
+            "type": ROAD_FEATURE,
+            "config": {"width": width, "routes": routes, "cities": circles},
+        },
+        namespace + "worldgen/placed_feature/corridor_roads.json": {
+            "feature": ROAD_FEATURE, "placement": [],
+        },
+        namespace + "forge/biome_modifier/corridor_roads.json": {
+            "type": "forge:add_features",
+            "biomes": "#minecraft:is_overworld",
+            "features": ROAD_FEATURE,
+            "step": "top_layer_modification",
+        },
+    }
 
 
 def json_bytes(obj: dict) -> bytes:
@@ -148,6 +200,9 @@ def render(data: dict) -> dict[str, bytes]:
         '\n[[dependencies.underground_city_world]]\n'
         'modId="lostcities"\nmandatory=true\n'
         'versionRange="[1.20-7.5.5]"\nordering="AFTER"\nside="BOTH"\n'
+        '\n[[dependencies.underground_city_world]]\n'
+        'modId="underground_city"\nmandatory=true\n'
+        'versionRange="[0.1.0,)"\nordering="AFTER"\nside="BOTH"\n'
     ).encode()
     files["pack.mcmeta"] = json_bytes({
         "pack": {"pack_format": 15,
@@ -190,6 +245,8 @@ def render(data: dict) -> dict[str, bytes]:
     issues = validate_intercity(planning)
     if issues:
         raise ValueError("Intercity world plan invalid: " + "; ".join(issues))
+    for name, document in road_feature(data, planning["routes"]).items():
+        files[name] = json_bytes(document)
     for tag, file_id in (
         ("routes", "corridors"),
         ("supply", "intercity-supply"),

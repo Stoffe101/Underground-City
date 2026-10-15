@@ -10,7 +10,8 @@ The **starter profession/economy slice is playable** with Minecraft 1.20.1, Forg
 - A fsynced prepared-settlement journal coordinates exact inventory, the provider wallet and XP. Connected-player inventory/capability saves are verified before settling. Login recovery applies absolute targets; no duplicate increment or second wallet.
 - Real Q Shop civilian buy/sell UI with finite global/personal world-time daily limits; short Supply/Cr labels. A text-only built-in compatibility resource pack gives compact modal labels explicit priority, rather than modifying protected mod assets.
 - OP `/uc_clerk` spawns one named persistent vanilla supplier beside a real PC over a clear solid floor. Its saved UUID/dimension/PC binding opens the same terminal. Supply clerk routines reuse vanilla AI, beds and lecterns; normal emerald trading is intercepted only for that clerk.
-- Safe installers preserve existing templates and reject live/renamed/client saves. Fresh-world setup stages original city assets plus a source-checked Lost Cities 7.5.5 profile.
+- Safe installers preserve existing templates and reject live/renamed/client saves. Fresh-world setup stages original city assets plus a source-checked Lost Cities 7.5.5 profile **and the road/bridge feature configuration**.
+- Two inter-city highways (Ironhaven–Valewood about 1,250 blocks and Ironhaven–Blackwater about 1,115 blocks between the city edges) are generated as blocks with bridges where water lies between the cities; boats pass beneath. New chunks of a fresh world only.
 
 See [integration/setup/recovery guide](../technical/economy-integration.md), [visual QA](../technical/visual-qa.md), and [world prototype](../technical/three-city-prototype.md).
 
@@ -33,6 +34,7 @@ See [integration/setup/recovery guide](../technical/economy-integration.md), [vi
 | Two actual cloud clients | Farmer and Smith connected to a loopback-only dedicated server, used real terminal mouse actions and Q Shop buy/sell modals; both ended with **28 credits, 125 XP, level 2, four seeds, zero logs and one completion receipt** |
 | Dedicated-server restart ([hosted reproduction](https://github.com/Stoffe101/Underground-City/actions/runs/38642758171)) | Same world restarted; both actual clients reconnected and retained those values without another reward. `journey-phase1.json` and `journey-phase2.json` report passed |
 | Visual review | Thirteen actual framebuffer states per viewport, 1920×1080 GUI3 and 3440×1440 GUI2. Inspected captures; corrected clipped names/currency, missing-item feedback, selected-tab emphasis, modal coordinate conversion and label-pack priority |
+| Roads and bridges | Cloud dedicated server, seed 579, 284 chunks: every centreline block read; both roads `continuous` (deck, headroom, no step above half a block, parapets). Pure-Java geometry harness and Python datapack tests pass. See [world notes](../technical/three-city-prototype.md#roads-and-bridges-original-generated-with-new-chunks). Not tested with a vehicle mod, mobs or two humans |
 | Native city generation | [Dedicated survey](https://github.com/Stoffe101/Underground-City/actions/runs/38644583100) passed: nine actual chunks per city, 1,040 / 1,505 / 1,492 window blocks at Ironhaven / Valewood / Blackwater. This does not verify roads, population or visual quality. |
 | Hosted baseline checks | [Forge build](https://github.com/Stoffe101/Underground-City/actions/runs/38634409102), [visual capture/check](https://github.com/Stoffe101/Underground-City/actions/runs/38642758272), [mod smoke matrix](https://github.com/Stoffe101/Underground-City/actions/runs/38634408704), [content checks](https://github.com/Stoffe101/Underground-City/actions/runs/38634408972) and [world packaging](https://github.com/Stoffe101/Underground-City/actions/runs/38634409167) passed |
 
@@ -58,7 +60,7 @@ Windows runtime and full power-loss/process-kill recovery with connected clients
 
 ## Still incomplete
 
-No fully surveyed three-city terrain, traversable inter-city bridges, populated district, regional suppliers, advanced Create/TaCZ items/recipes, skill trees, city treasuries/taxes, police/factions, burglary/refill containers, imported shipments, crash recovery, black-market escrow/dropboxes or raid locations. The corresponding Python models remain design simulations. Gunsmith starter orders use archery/range equipment, not guns. The clerk is one NPC prototype with no automatic death/replacement recovery; provide a safe room and backup the save.
+Roads exist between the cities in a fresh seed-579 world but have no gate houses, rest stops or patrols, and the Valewood–Blackwater edge is open sea (boat, or detour through Ironhaven). No populated district, regional suppliers, advanced Create/TaCZ items/recipes, skill trees, city treasuries/taxes, police/factions, burglary/refill containers, imported shipments, crash recovery, black-market escrow/dropboxes or raid locations. The corresponding Python models remain design simulations. Gunsmith starter orders use archery/range equipment, not guns. The clerk is one NPC prototype with no automatic death/replacement recovery; provide a safe room and backup the save.
 
 Q Shop editor/search/item-picker states and uninstalled onboarding/FTB/TaCZ/NPC dialogue/safe/faction interfaces remain outside the current capture manifest. Small-window/long-localization and controller/accessibility interaction coverage needs expansion.
 
@@ -72,7 +74,7 @@ Q Shop editor/search/item-picker states and uninstalled onboarding/FTB/TaCZ/NPC 
 6. Try missing materials, duplicate clicks, an unregistered citizen, a broken/fake terminal and distance beyond eight blocks. No reward or item loss should result. Check a partner's same-career reservation reduces shared demand.
 7. Provide a safe floor/room beside a PC, spawn `/uc_clerk` as OP, add a bed/lectern and test its interaction/routines/save persistence. Keep it protected from mobs.
 8. Review all PC tabs/Q Shop modal at normal GUI scale, including compact limit labels and disabled states. Test keyboard focus, practical readability and transaction feedback.
-9. For terrain experimentation only, use `python scripts/install_world_prototype.py --server-root <fresh-instance>` and obtain Lost Cities separately. Survey each planned center and every crossing; no road/bridge claim is made until actual terrain is inspected.
+9. For terrain experimentation only, create a **new** world with seed `579` using `python scripts/install_world_prototype.py --server-root <fresh-instance>` and obtain Lost Cities separately (roads exist only in newly generated chunks). Walk from Ironhaven's edge near (572, 214) to Valewood's edge near (1619, 780) and from Ironhaven's edge near (-505, 320) to Blackwater's edge near (-1489, 843); expect bridges over the water, boats passing underneath, and report anything that blocks walking, riding or sailing. Try pre-generating with a spectator walk first to avoid long first-time chunk generation.
 
 ## Next development priorities
 

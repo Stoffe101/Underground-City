@@ -7,7 +7,6 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator;
-import net.minecraft.world.level.levelgen.NoiseGeneratorSettings;
 import net.minecraft.world.level.levelgen.RandomState;
 import net.minecraft.world.level.storage.LevelResource;
 import net.minecraftforge.event.TickEvent;
@@ -20,9 +19,11 @@ import java.util.Comparator;
 import java.util.List;
 
 /**
- * Diagnostic seed ranking. For each candidate seed it builds a fresh noise RandomState and asks the live chunk generator
- * for ocean-floor versus surface height at the three city anchors and along the blueprint corridors, without generating
- * chunks. It never changes a world. Enable with -Duc.seedScan=start,count in the disposable survey directory.
+ * Diagnostic seed ranking, never part of gameplay. Design target (D-046): dry city sites, and on the two built roads
+ * a few real water gaps (large rivers or straits) that a bridge crosses and a boat can also use, with land elsewhere.
+ * Stage 1 is a cheap climate-sampler ranking of many seeds; stage 2 re-scores the best candidates with the chunk
+ * generator's own surface and ocean-floor heights along the real road centrelines. It never changes a world. Enable
+ * with -Duc.seedScan=start,count[,finalists] in the disposable survey directory.
  */
 @Mod.EventBusSubscriber(modid=UndergroundCity.MOD_ID)
 public final class WorldSeedScanHarness {
@@ -30,18 +31,25 @@ public final class WorldSeedScanHarness {
     private static final int SPACING=16;
     /** Vanilla climate: continentalness below -0.19 is ocean; above -0.11 is inland. Values are quantised x10000. */
     private static final long OCEAN=-1900,INLAND=-1100;
+    /** A bridge span worth building and sailing under is neither a stream nor a sea. */
+    private static final int GAP_MIN=48,GAP_MAX=320;
+    private static final double WATER_MAX=0.35,WATER_MIN=0.06;
     private record Anchor(String id,double x,double z,int radius) {}
-    private record Result(long seed,boolean anchorsDry,int waterSamples,int longestRunBlocks,int deepest,List<String> wetAnchors,
-                          List<int[]> routeStats,double score) {}
+    private record Cheap(long seed,int wetAnchors,double score,double ocean,int longest) {}
+    private record Accurate(long seed,int wetAnchors,double score,List<double[]> routeStats,List<List<Integer>> runs) {}
     private static List<Anchor> anchors;
-    private static List<List<double[]>> routes;
-    private static List<String> routeIds;
-    /** Per route: {fromArc,toArc} blocks along the polyline for each proposed bridge/viaduct segment. */
-    private static List<List<double[]>> crossingRanges;
-    /** A bridge or boat crossing should be a real but bridgeable gap: neither absent nor a sea. */
-    private static final int GAP_MIN=96,GAP_MAX=320;
-    private static final List<Result> results=new ArrayList<>();
+    private static List<CorridorPlan> routes;
+    /** Sample positions: five points per anchor, then the open centreline of each built road every 16 blocks. */
+    private static List<double[]> positions;
+    private static int[] routeStart,routeEnd;
+    private static final List<Cheap> cheap=new ArrayList<>();
+    private static final List<Accurate> accurate=new ArrayList<>();
+    private static List<Long> finalists;
+    private static int finalistIndex,sampleIndex;
+    private static int[] surface,floor;
+    private static RandomState current;
     private static long next,end;
+    private static int finalistCount;
     private static boolean initialised,finished;
     private WorldSeedScanHarness() {}
 
@@ -54,125 +62,182 @@ public final class WorldSeedScanHarness {
             if(!initialised) {
                 initialised=true;
                 String[] parts=SPEC.split(",");
-                next=Long.parseLong(parts[0].trim());end=next+Math.min(Long.parseLong(parts[1].trim()),20000);
-                anchors=new ArrayList<>();
-                for(String id:List.of("ironhaven","valewood","blackwater")) {
-                    try(var reader=server.getResourceManager().getResource(ResourceLocation.fromNamespaceAndPath(UndergroundCity.MOD_ID,
-                        "lostcities/predefinedcities/"+id+".json")).orElseThrow().openAsReader()) {
-                        var json=JsonParser.parseReader(reader).getAsJsonObject();
-                        anchors.add(new Anchor(id,json.get("chunkx").getAsInt()*16+8,json.get("chunkz").getAsInt()*16+8,json.get("radius").getAsInt()));
-                    }
-                }
-                routes=new ArrayList<>();routeIds=new ArrayList<>();crossingRanges=new ArrayList<>();
-                var root=JsonParser.parseString(Files.readString(folder.resolve("corridors.json"))).getAsJsonObject();
-                for(var route:root.getAsJsonArray("routes")) {
-                    List<double[]> points=new ArrayList<>();
-                    for(var point:route.getAsJsonObject().getAsJsonArray("waypoints")) {
-                        points.add(new double[]{point.getAsJsonArray().get(0).getAsDouble(),point.getAsJsonArray().get(1).getAsDouble()});
-                    }
-                    routes.add(points);routeIds.add(route.getAsJsonObject().get("id").getAsString());
-                    double[] arc=new double[points.size()];
-                    for(int i=1;i<points.size();i++) arc[i]=arc[i-1]+Math.hypot(points.get(i)[0]-points.get(i-1)[0],points.get(i)[1]-points.get(i-1)[1]);
-                    List<double[]> ranges=new ArrayList<>();
-                    if(route.getAsJsonObject().has("crossings")) for(var crossing:route.getAsJsonObject().getAsJsonArray("crossings")) {
-                        var between=crossing.getAsJsonObject().getAsJsonArray("between_waypoints");
-                        ranges.add(new double[]{arc[between.get(0).getAsInt()],arc[between.get(1).getAsInt()]});
-                    }
-                    crossingRanges.add(ranges);
-                }
+                next=Long.parseLong(parts[0].trim());end=next+Math.min(Long.parseLong(parts[1].trim()),50000);
+                finalistCount=parts.length>2?Integer.parseInt(parts[2].trim()):300;
+                load(server,folder);
             }
             long deadline=System.nanoTime()+30_000_000L;
             var level=server.overworld();var generator=level.getChunkSource().getGenerator();
             if(!(generator instanceof NoiseBasedChunkGenerator noise)) throw new IllegalStateException("Seed scan needs a noise-based generator, found "+generator.getClass());
             var settings=noise.generatorSettings().value();
             var noiseGetter=server.registryAccess().registryOrThrow(Registries.NOISE).asLookup();
-            while(next<end && System.nanoTime()<deadline) {
-                results.add(evaluate(level,noise,RandomState.create(settings,noiseGetter,next),next));
-                next++;
-            }
-            if(next<end) return;
-            results.sort(Comparator.comparingDouble(Result::score));
-            JsonObject report=new JsonObject();
-            report.addProperty("method","fresh RandomState per seed; climate sampler continentalness (ocean below -0.19, inland above -0.11) at anchors (centre plus four points at half radius) and every "+SPACING+" blocks along the corridors; a cheap ranking only, verify winners with the height survey");
-            report.addProperty("seeds_evaluated",results.size());
-            report.addProperty("design_target","dry anchors; one bridgeable water gap of "+GAP_MIN+"-"+GAP_MAX+" blocks inside each proposed bridge segment; land everywhere else");
-            JsonArray top=new JsonArray();
-            for(int i=0;i<Math.min(25,results.size());i++) {
-                Result r=results.get(i);JsonObject entry=new JsonObject();
-                entry.addProperty("seed",r.seed);entry.addProperty("anchors_dry",r.anchorsDry);entry.addProperty("wet_anchors",String.join(",",r.wetAnchors));
-                entry.addProperty("corridor_water_samples",r.waterSamples);entry.addProperty("longest_water_run_blocks",r.longestRunBlocks);
-                entry.addProperty("ocean_depth_index",r.deepest);entry.addProperty("score",r.score);
-                JsonArray per=new JsonArray();
-                for(int route=0;route<r.routeStats.size();route++) {
-                    JsonObject stats=new JsonObject();int[] v=r.routeStats.get(route);
-                    stats.addProperty("route",routeIds.get(route));stats.addProperty("water_samples",v[0]);stats.addProperty("longest_run_blocks",v[1]);stats.addProperty("samples",v[2]);stats.addProperty("bridge_segment_gap_blocks",v[3]);per.add(stats);
+            if(next<end) {
+                while(next<end && System.nanoTime()<deadline) {
+                    cheap.add(evaluateCheap(RandomState.create(settings,noiseGetter,next),next));
+                    next++;
                 }
-                entry.add("routes",per);top.add(entry);
+                if(next<end) return;
+                cheap.sort(Comparator.comparingDouble(Cheap::score));
+                finalists=new ArrayList<>();
+                for(int i=0;i<Math.min(finalistCount,cheap.size());i++) finalists.add(cheap.get(i).seed);
+                // The previous reference seed and the first candidate are always re-scored for comparison.
+                for(long reference:new long[]{20261014L,3130L}) if(!finalists.contains(reference)) finalists.add(reference);
+                System.out.println("[UC-SEEDS] Stage 1 done: "+cheap.size()+" seeds ranked; re-scoring "+finalists.size()+" with real terrain heights");
+                surface=new int[positions.size()];floor=new int[positions.size()];
             }
-            report.add("best",top);
-            JsonObject baseline=new JsonObject();
-            results.stream().filter(r->r.seed==20261014L).findFirst().ifPresent(r->{baseline.addProperty("seed",r.seed);baseline.addProperty("anchors_dry",r.anchorsDry);
-                baseline.addProperty("corridor_water_samples",r.waterSamples);baseline.addProperty("longest_water_run_blocks",r.longestRunBlocks);baseline.addProperty("score",r.score);});
-            report.add("current_reference_seed",baseline);
-            Files.writeString(folder.resolve("seed-scan.json"),report+"\n");
-            System.out.println("[UC-SEEDS] Evaluated "+results.size()+" seeds; best="+(results.isEmpty()?"none":results.get(0).seed+" score "+results.get(0).score));
+            while(finalistIndex<finalists.size() && System.nanoTime()<deadline) {
+                long seed=finalists.get(finalistIndex);
+                if(sampleIndex==0 || current==null) current=RandomState.create(settings,noiseGetter,seed);
+                var random=current;
+                while(sampleIndex<positions.size() && System.nanoTime()<deadline) {
+                    double[] p=positions.get(sampleIndex);
+                    int x=(int)Math.floor(p[0]),z=(int)Math.floor(p[1]);
+                    surface[sampleIndex]=noise.getBaseHeight(x,z,Heightmap.Types.WORLD_SURFACE_WG,level,random);
+                    floor[sampleIndex]=noise.getBaseHeight(x,z,Heightmap.Types.OCEAN_FLOOR_WG,level,random);
+                    sampleIndex++;
+                }
+                if(sampleIndex<positions.size()) return;
+                accurate.add(evaluateAccurate(seed));
+                finalistIndex++;sampleIndex=0;
+                if(finalistIndex%25==0) System.out.println("[UC-SEEDS] Stage 2: "+finalistIndex+" of "+finalists.size());
+            }
+            if(finalistIndex<finalists.size()) return;
+            report(folder);
         } catch(Exception error) {
             com.mojang.logging.LogUtils.getLogger().error("Seed scan failed",error);
         }
         finished=true;server.halt(false);
     }
 
+    private static void load(net.minecraft.server.MinecraftServer server,java.nio.file.Path folder) throws java.io.IOException {
+        anchors=new ArrayList<>();
+        List<CorridorPlan.City> circles=new ArrayList<>();
+        for(String id:List.of("ironhaven","valewood","blackwater")) {
+            try(var reader=server.getResourceManager().getResource(ResourceLocation.fromNamespaceAndPath(UndergroundCity.MOD_ID,
+                "lostcities/predefinedcities/"+id+".json")).orElseThrow().openAsReader()) {
+                var json=JsonParser.parseReader(reader).getAsJsonObject();
+                var anchor=new Anchor(id,json.get("chunkx").getAsInt()*16+8,json.get("chunkz").getAsInt()*16+8,json.get("radius").getAsInt());
+                anchors.add(anchor);circles.add(new CorridorPlan.City(anchor.x,anchor.z,anchor.radius));
+            }
+        }
+        var root=JsonParser.parseString(Files.readString(folder.resolve("corridors.json"))).getAsJsonObject();
+        var kinds=new java.util.HashSet<String>();
+        for(var kind:root.getAsJsonObject("road_generation").getAsJsonArray("build_route_kinds")) kinds.add(kind.getAsString());
+        routes=new ArrayList<>();
+        for(var element:root.getAsJsonArray("routes")) {
+            var route=element.getAsJsonObject();
+            if(!kinds.contains(route.get("kind").getAsString())) continue;
+            var waypoints=route.getAsJsonArray("waypoints");
+            double[] xs=new double[waypoints.size()],zs=new double[waypoints.size()];
+            for(int i=0;i<xs.length;i++) {xs[i]=waypoints.get(i).getAsJsonArray().get(0).getAsDouble();zs[i]=waypoints.get(i).getAsJsonArray().get(1).getAsDouble();}
+            routes.add(new CorridorPlan(route.get("id").getAsString(),xs,zs,7,circles));
+        }
+        positions=new ArrayList<>();
+        for(Anchor anchor:anchors) {
+            double[][] offsets={{0,0},{anchor.radius/2.0,0},{-anchor.radius/2.0,0},{0,anchor.radius/2.0},{0,-anchor.radius/2.0}};
+            for(double[] o:offsets) positions.add(new double[]{anchor.x+o[0],anchor.z+o[1]});
+        }
+        routeStart=new int[routes.size()];routeEnd=new int[routes.size()];
+        for(int r=0;r<routes.size();r++) {
+            routeStart[r]=positions.size();
+            for(double s=0;s<=routes.get(r).length();s+=SPACING) if(routes.get(r).openAt(s)) positions.add(routes.get(r).pointAt(s));
+            routeEnd[r]=positions.size();
+        }
+    }
+
     private static long continentalness(RandomState random,double x,double z) {
         return random.sampler().sample((int)Math.floor(x)>>2,64>>2,(int)Math.floor(z)>>2).continentalness();
     }
 
-    private static Result evaluate(net.minecraft.server.level.ServerLevel level,NoiseBasedChunkGenerator generator,RandomState random,long seed) {
-        List<String> wet=new ArrayList<>();
-        for(Anchor anchor:anchors) {
-            int dryPoints=0;
-            double[][] offsets={{0,0},{anchor.radius/2.0,0},{-anchor.radius/2.0,0},{0,anchor.radius/2.0},{0,-anchor.radius/2.0}};
-            for(double[] o:offsets) if(continentalness(random,anchor.x+o[0],anchor.z+o[1])>INLAND) dryPoints++;
-            if(dryPoints<4) wet.add(anchor.id);
+    /** Stage 1: anchors on land, roads not mostly sea. Rivers are invisible here, which is why stage 2 exists. */
+    private static Cheap evaluateCheap(RandomState random,long seed) {
+        int wet=0;
+        for(int a=0;a<anchors.size();a++) {
+            int dry=0;
+            for(int k=0;k<5;k++) if(continentalness(random,positions.get(a*5+k)[0],positions.get(a*5+k)[1])>INLAND) dry++;
+            if(dry<4) wet++;
         }
-        int water=0,longest=0,deepest=0;List<int[]> perRoute=new ArrayList<>();
-        double gapPenalty=0,strayWaterSamples=0;
-        for(int routeIndex=0;routeIndex<routes.size();routeIndex++) {
-            List<double[]> route=routes.get(routeIndex);List<double[]> ranges=crossingRanges.get(routeIndex);
-            int routeWater=0,routeLongest=0,run=0,samples=0;
-            int[] crossingRun=new int[ranges.size()],crossingLongest=new int[ranges.size()];
-            double along=0;
-            for(int i=1;i<route.size();i++) {
-                double[] a=route.get(i-1),b=route.get(i);double length=Math.hypot(b[0]-a[0],b[1]-a[1]);
-                for(double position=(i==1?0:SPACING);position<=length;position+=SPACING) {
-                    double t=position/length;
-                    long continents=continentalness(random,a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t);
-                    boolean ocean=continents<OCEAN;
-                    double arc=along+position;
-                    int crossing=-1;
-                    for(int c=0;c<ranges.size();c++) if(arc>=ranges.get(c)[0] && arc<=ranges.get(c)[1]) crossing=c;
-                    samples++;
-                    if(ocean) {
-                        routeWater++;run++;routeLongest=Math.max(routeLongest,run);deepest=(int)Math.max(deepest,(OCEAN-continents)/100);
-                        if(crossing>=0) {crossingRun[crossing]++;crossingLongest[crossing]=Math.max(crossingLongest[crossing],crossingRun[crossing]);} else strayWaterSamples++;
-                    } else {
-                        run=0;
-                        if(crossing>=0) crossingRun[crossing]=0;
-                    }
-                }
-                along+=length;
+        double score=wet*1_000_000.0,oceanTotal=0;int longestAll=0;
+        for(int r=0;r<routes.size();r++) {
+            int samples=0,ocean=0,run=0,longest=0;
+            for(int i=routeStart[r];i<routeEnd[r];i++) {
+                samples++;
+                if(continentalness(random,positions.get(i)[0],positions.get(i)[1])<OCEAN) {ocean++;run++;longest=Math.max(longest,run);} else run=0;
             }
-            for(int c=0;c<ranges.size();c++) {
-                int gap=crossingLongest[c]*SPACING;
-                if(gap==0) gapPenalty+=4000;                       // no water: the bridge would not be pivotal
-                else if(gap<GAP_MIN) gapPenalty+=(GAP_MIN-gap)*10;  // a puddle
-                else if(gap>GAP_MAX) gapPenalty+=(gap-GAP_MAX)*10;  // a sea, not a bridge
-            }
-            water+=routeWater;longest=Math.max(longest,routeLongest*SPACING);
-            perRoute.add(new int[]{routeWater,routeLongest*SPACING,samples,ranges.isEmpty()?-1:crossingLongest[0]*SPACING});
+            double fraction=samples==0?0:(double)ocean/samples;
+            if(fraction>WATER_MAX) score+=(fraction-WATER_MAX)*3000;
+            if(longest*SPACING>GAP_MAX) score+=(longest*SPACING-GAP_MAX)*10;
+            oceanTotal+=fraction;longestAll=Math.max(longestAll,longest*SPACING);
         }
-        boolean anchorsDry=wet.isEmpty();
-        // Lower is better: wet anchors dominate, then missing/oversized bridge gaps, then ocean outside the bridge segments.
-        double score=(wet.size()*1_000_000.0)+gapPenalty+strayWaterSamples*40.0;
-        return new Result(seed,anchorsDry,water,longest,deepest,wet,perRoute,score);
+        return new Cheap(seed,wet,score,oceanTotal/Math.max(1,routes.size()),longestAll);
+    }
+
+    /** Stage 2: real surface versus ocean-floor heights. Water is surface above floor. */
+    private static Accurate evaluateAccurate(long seed) {
+        int wet=0;
+        for(int a=0;a<anchors.size();a++) {
+            int water=0;
+            for(int k=0;k<5;k++) if(surface[a*5+k]>floor[a*5+k]) water++;
+            if(water>=2) wet++;
+        }
+        double score=wet*1_000_000.0;
+        List<double[]> stats=new ArrayList<>();List<List<Integer>> allRuns=new ArrayList<>();
+        for(int r=0;r<routes.size();r++) {
+            int samples=0,waterSamples=0,run=0,steep=0,deepest=0;
+            List<Integer> runs=new ArrayList<>();
+            for(int i=routeStart[r];i<routeEnd[r];i++) {
+                samples++;
+                boolean water=surface[i]>floor[i];
+                if(water) {waterSamples++;run++;deepest=Math.max(deepest,surface[i]-floor[i]);}
+                if(!water || i+1==routeEnd[r]) {if(run>0) runs.add(run*SPACING);run=0;}
+                if(i>routeStart[r] && Math.abs(surface[i]-surface[i-1])>=8) steep++;
+            }
+            double fraction=samples==0?0:(double)waterSamples/samples;
+            if(fraction>WATER_MAX) score+=(fraction-WATER_MAX)*4000;
+            if(fraction<WATER_MIN) score+=(WATER_MIN-fraction)*3000;
+            int bridgeable=0;
+            for(int length:runs) {
+                if(length>GAP_MAX) score+=(length-GAP_MAX)*10;
+                if(length>=GAP_MIN && length<=GAP_MAX) bridgeable++;
+            }
+            if(bridgeable==0) score+=400;
+            if(runs.size()>5) score+=(runs.size()-5)*150;
+            score+=steep*8;
+            stats.add(new double[]{samples,waterSamples,fraction,steep,deepest,bridgeable});
+            allRuns.add(runs);
+        }
+        return new Accurate(seed,wet,score,stats,allRuns);
+    }
+
+    private static void report(java.nio.file.Path folder) throws java.io.IOException {
+        accurate.sort(Comparator.comparingDouble(Accurate::score));
+        JsonObject report=new JsonObject();
+        report.addProperty("method","stage 1: climate-sampler continentalness for "+cheap.size()+" seeds; stage 2: chunk-generator surface vs ocean-floor height every "+SPACING+" blocks on the open centreline of each built road, plus five points per city; ranking only, verify with the generation survey");
+        report.addProperty("design_target","dry city sites; per built road "+Math.round(WATER_MIN*100)+"-"+Math.round(WATER_MAX*100)+"% water in bridgeable gaps of "+GAP_MIN+"-"+GAP_MAX+" blocks (large rivers or straits crossed by bridge or boat); land elsewhere");
+        report.addProperty("seeds_ranked",cheap.size());report.addProperty("seeds_rescored",accurate.size());
+        JsonArray top=new JsonArray();
+        for(int i=0;i<Math.min(15,accurate.size());i++) top.add(describe(accurate.get(i)));
+        report.add("best",top);
+        JsonObject references=new JsonObject();
+        for(Accurate result:accurate) if(result.seed==20261014L || result.seed==3130L) references.add(Long.toString(result.seed),describe(result));
+        report.add("references",references);
+        Files.writeString(folder.resolve("seed-scan.json"),report+"\n");
+        System.out.println("[UC-SEEDS] Best: "+(accurate.isEmpty()?"none":accurate.get(0).seed+" score "+accurate.get(0).score));
+    }
+
+    private static JsonObject describe(Accurate result) {
+        JsonObject entry=new JsonObject();
+        entry.addProperty("seed",result.seed);entry.addProperty("wet_cities",result.wetAnchors);entry.addProperty("score",Math.round(result.score*10)/10.0);
+        JsonArray per=new JsonArray();
+        for(int r=0;r<routes.size();r++) {
+            double[] v=result.routeStats.get(r);JsonObject stats=new JsonObject();
+            stats.addProperty("route",routes.get(r).id());stats.addProperty("samples",(int)v[0]);
+            stats.addProperty("water_fraction",Math.round(v[2]*1000)/1000.0);stats.addProperty("steep_steps",(int)v[3]);
+            stats.addProperty("deepest_water",(int)v[4]);stats.addProperty("bridgeable_gaps",(int)v[5]);
+            JsonArray runs=new JsonArray();result.runs.get(r).forEach(runs::add);stats.add("water_runs_blocks",runs);
+            per.add(stats);
+        }
+        entry.add("routes",per);
+        return entry;
     }
 }

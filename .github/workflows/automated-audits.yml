@@ -42,6 +42,10 @@ jobs:
             rpg-core/src/main/java/io/github/stoffe101/undergroundcity/ProgressionRules.java \
             rpg-core/src/test/java/io/github/stoffe101/undergroundcity/ProgressionRulesHarness.java
           java -cp /tmp/underground-city-test-classes io.github.stoffe101.undergroundcity.ProgressionRulesHarness
+          javac -d /tmp/underground-city-test-classes \
+            rpg-core/src/main/java/io/github/stoffe101/undergroundcity/CorridorPlan.java \
+            rpg-core/src/test/java/io/github/stoffe101/undergroundcity/CorridorPlanHarness.java
+          java -cp /tmp/underground-city-test-classes io.github.stoffe101.undergroundcity.CorridorPlanHarness
       - name: CI summary
         if: always()
         run: |

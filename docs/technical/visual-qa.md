@@ -66,3 +66,9 @@ Reviewed unchanged-layout regressions: accepted/ready contract, regional contrac
 ### Native city tour lessons (real frames)
 
 The first hosted tour frames passed the automated blank/duplicate check but were poor evidence: a camera aimed mostly at sky with the ground beyond the six-chunk render distance. Viewing the actual PNGs also revealed that Lost Cities chunks can report unprimed heightmaps (-64), which put a top-down camera underground, and that queue-idle is not a reliable "terrain meshed" signal. The tour now samples real blocks for camera height and waits for a stable rendered-section count before each of six shots (a top-down view and an oblique skyline per city).
+
+### Bridge and road frames
+
+The native tour also reads the survey report to find the widest water crossing and the longest ground stretch on each built road, and photographs three views per road: the bridge from 75 blocks to the side and 14 above the deck, a walker's view from the deck 60 blocks before the middle of the crossing, and a walker's view along the plain road. These frames, like the city frames, are review copies printed into the hosted job log and one-day gallery artifacts; the automated check only rejects blank, wrong-size, unexpected or duplicate images. Whether a bridge looks right is decided by looking at it.
+
+Looking at the first local frames found two things the numbers could not: the parapet walls stood as unconnected posts (they are placed without neighbour updates; a second pass now joins them), and a high, steep oblique camera spent more than half the frame on the unrendered sky beyond the render distance (the camera is now low and far, with render distance 8 for road shots).

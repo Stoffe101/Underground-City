@@ -55,6 +55,12 @@ public final class UndergroundCity {
         BLOCK_ENTITIES.register("property_cache", () -> net.minecraft.world.level.block.entity.BlockEntityType.Builder
             .of(PropertyCacheBlockEntity::new, PROPERTY_CACHE.get()).build(null));
 
+    private static final DeferredRegister<net.minecraft.world.level.levelgen.feature.Feature<?>> FEATURES =
+        DeferredRegister.create(ForgeRegistries.FEATURES, MOD_ID);
+    /** Inter-city roads and bridges; only active where the world prototype datapack places it in the Overworld. */
+    public static final RegistryObject<net.minecraft.world.level.levelgen.feature.Feature<?>> CORRIDOR_ROADS =
+        FEATURES.register("corridor_roads", CorridorRoadFeature::new);
+
     /** Registry lookup of an original Core item by path. */
     public static Item item(String path) {
         RegistryObject<Item> registered = CORE_ITEMS.get(path);
@@ -74,6 +80,7 @@ public final class UndergroundCity {
         }
         BLOCKS.register(context.getModEventBus());
         BLOCK_ENTITIES.register(context.getModEventBus());
+        FEATURES.register(context.getModEventBus());
         LostCitiesLink.register(context.getModEventBus());
         ITEMS.register(context.getModEventBus());
         context.getModEventBus().addListener(this::addCreativeTab);

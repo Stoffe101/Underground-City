@@ -6,6 +6,8 @@ on:
       - 'content/modpacks/world-mod-candidates.json'
       - 'content/region-blueprints/**'
       - 'scripts/build_world_prototype.py'
+      - 'scripts/install_world_prototype.py'
+      - 'rpg-core/src/main/**'
       - 'rpg-core/build.gradle'
       - '.github/workflows/world-integration.yml'
   push:
@@ -14,6 +16,8 @@ on:
       - 'content/modpacks/world-mod-candidates.json'
       - 'content/region-blueprints/**'
       - 'scripts/build_world_prototype.py'
+      - 'scripts/install_world_prototype.py'
+      - 'rpg-core/src/main/**'
       - 'rpg-core/build.gradle'
       - '.github/workflows/world-integration.yml'
   workflow_dispatch:
@@ -40,7 +44,7 @@ jobs:
     name: Forge smoke / ${{ matrix.candidate }}
     needs: validate-pins
     runs-on: ubuntu-latest
-    timeout-minutes: 50
+    timeout-minutes: 80
     strategy:
       fail-fast: false
       matrix:
@@ -86,8 +90,8 @@ jobs:
           python scripts/install_qshop_templates.py --server-root rpg-core/run-world-survey
           printf 'eula=true\n' > rpg-core/run-world-survey/eula.txt
           cp content/region-blueprints/corridors.json rpg-core/run-world-survey/corridors.json
-          printf 'level-seed=20261014\nserver-ip=127.0.0.1\nonline-mode=false\nview-distance=3\nsimulation-distance=3\n' > rpg-core/run-world-survey/server.properties
-          timeout 900s gradle -p rpg-core runServer -PucWorldCandidate=lostcities -PucEconomyTest=true -PucRunDir=run-world-survey -PucWorldSurvey=true --no-daemon --stacktrace
+          printf 'level-seed=579\nserver-ip=127.0.0.1\nonline-mode=false\nview-distance=3\nsimulation-distance=3\n' > rpg-core/run-world-survey/server.properties
+          timeout 1700s gradle -p rpg-core runServer -PucWorldCandidate=lostcities -PucEconomyTest=true -PucRunDir=run-world-survey -PucWorldSurvey=true --no-daemon --stacktrace
           python - <<'PY'
           import json
           from pathlib import Path
@@ -95,6 +99,18 @@ jobs:
           assert report['status']=='three_city_structures_observed', report
           assert len(report['observations'])==3
           assert report['qshop_credits_ready'] is True, report
+          roads=report['roads']['routes']
+          assert [r['id'] for r in roads]==['ironhaven_valewood','ironhaven_blackwater'], roads
+          for road in roads:
+              # Real blocks read along the whole centreline (one sample per block).
+              assert road['continuous'] is True, road
+              assert road['samples_checked']>1000, road
+              assert road['deck_missing']==0 and road['headroom_blocked']==0 and road['steps_over_half_block']==0, road
+              assert road['parapets_expected']>0 and road['parapets_missing']==0, road
+              assert road['bridge_samples']>0 and road['water_samples_below_deck']>0, road
+              assert road['min_free_blocks_over_water']>=3, road
+              assert 'showcase' in road and 'land_showcase' in road, road
+          print('roads', [(r['id'], r['samples_checked'], r['longest_bridge_blocks']) for r in roads])
           PY
       - name: Preserve native world-survey evidence without world saves or mod binaries
         if: always() && matrix.candidate == 'lostcities'
@@ -121,6 +137,8 @@ jobs:
           shutil.copytree(source/'world',target/'saves/world')
           shutil.copytree(source/'config',target/'config')
           shutil.copytree(source/'mods',target/'mods')
+          # The tour reads where the measured bridges are from the survey report.
+          shutil.copy(source/'world-survey.json',target/'world-survey.json')
           # The early loading window is irrelevant to world evidence and its GL
           # negotiation is the observed failure mode under llvmpipe.
           (target/'config'/'fml.toml').write_text('earlyWindowControl = false\n')
@@ -140,14 +158,14 @@ jobs:
           set -euo pipefail
           rm -f rpg-core/run-world-tour/world-tour-complete.txt
           setsid xvfb-run -a -s '-screen 0 1920x1080x24' \
-            timeout 840s gradle -p rpg-core runClient -PucWorldCandidate=lostcities -PucEconomyTest=true \
+            timeout 1700s gradle -p rpg-core runClient -PucWorldCandidate=lostcities -PucEconomyTest=true \
               -PucRunDir=run-world-tour -PucWorldTour=true --no-daemon --stacktrace \
               > /tmp/uc-world-tour-client.log 2>&1 &
           game_pid=$!
           completed=0
           # Poll instead of waiting for a fixed timeout so a dead early display
           # fails in seconds and every later stage is bounded by the harness.
-          for step in $(seq 1 290); do
+          for step in $(seq 1 570); do
             if test -s rpg-core/run-world-tour/world-tour-complete.txt; then completed=1; break; fi
             if ! kill -0 "$game_pid" 2>/dev/null; then break; fi
             sleep 3
@@ -158,7 +176,7 @@ jobs:
           mkdir -p rpg-core/run-world-tour/logs
           cp /tmp/uc-world-tour-client.log rpg-core/run-world-tour/logs/world-tour-client-stdout.log
           test "$completed" -eq 1 || { echo "NATIVE WORLD TOUR DID NOT COMPLETE"; exit 1; }
-      - name: Check actual city frames are real terrain, not blank or duplicate
+      - name: Check actual city and bridge frames are real terrain, not blank or duplicate
         if: success() && matrix.candidate == 'lostcities'
         run: |
           python - <<'PY'
@@ -166,8 +184,18 @@ jobs:
           from struct import unpack
           from PIL import Image, ImageStat
           import hashlib
+          import json
           hashes=set(); failures=[]
-          for city in ('ironhaven-top','ironhaven-oblique','valewood-top','valewood-oblique','blackwater-top','blackwater-oblique'):
+          survey=json.loads(Path('rpg-core/run-world-survey/world-survey.json').read_text())
+          frames=[f'{c}-{k}' for c in ('ironhaven','valewood','blackwater') for k in ('top','oblique')]
+          for route in survey['roads']['routes']:
+              if 'showcase' in route:
+                  frames+=[f"road-{route['id']}-bridge-oblique", f"road-{route['id']}-deck"]
+              if 'land_showcase' in route:
+                  frames.append(f"road-{route['id']}-land")
+          assert sum(f.startswith('road-') for f in frames)==6, 'both built roads need a bridge and a ground stretch to photograph'
+          assert not (set(p.name for p in Path('rpg-core/run-world-tour/screenshots').glob('uc-world-*.png'))-{f'uc-world-{f}.png' for f in frames}), 'unexpected frame'
+          for city in frames:
               png=Path(f'rpg-core/run-world-tour/screenshots/uc-world-{city}.png').read_bytes()
               assert png[:8]==b'\x89PNG\r\n\x1a\n'
               assert unpack('>II',png[16:24])==(1920,1080)
@@ -180,7 +208,7 @@ jobs:
               hashes.add(digest)
           assert not failures, failures
           PY
-      - name: Print downscaled copies of the city frames into the job log for review
+      - name: Print downscaled copies of the city and bridge frames into the job log for review
         if: always() && matrix.candidate == 'lostcities'
         run: |
           python scripts/emit_review_images.py --max-width 640 --quality 55 rpg-core/run-world-tour/screenshots/uc-world-*.png || true
