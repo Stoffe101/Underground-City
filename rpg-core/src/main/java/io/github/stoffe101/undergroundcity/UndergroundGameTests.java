@@ -825,7 +825,11 @@ public final class UndergroundGameTests {
     public static void foundersRowBuildsAWorkingLotRefusesToOverwriteContainersAndUndoRestoresTheWorld(GameTestHelper helper) throws Exception {
         net.minecraft.server.level.ServerLevel level = helper.getLevel();
         DistrictCatalog.District district = DistrictCatalog.INSTANCE.find("founders_row");
-        BlockPos origin = helper.absolutePos(new BlockPos(0, 10, 0)).offset(-12, 0, -8);
+        // Build in the sky well above any terrain: the builder rightly refuses a lot that contains a block entity, and
+        // a test world (especially one a screening mod has altered) can hold chests, structure blocks or other machines
+        // at arena height. Open air is also the only place a test is guaranteed not to overwrite its neighbours.
+        BlockPos arena = helper.absolutePos(new BlockPos(0, 0, 0));
+        BlockPos origin = new BlockPos(arena.getX() - 12, level.getMaxBuildHeight() - 40, arena.getZ() - 8);
         BlockPos lo = origin.offset(district.min()), hi = origin.offset(district.max());
         // Keep the lot's chunks loaded for the whole test (a plain getChunk leaves them unticketed, so they may unload
         // and take the clerk entity with them), exactly as a standing operator would.
