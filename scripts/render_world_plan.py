@@ -19,6 +19,7 @@ COLORS = {
 SECURITY = {
     "guarded_highway": "#69bea8",
     "militarized_highway": "#ed9b69",
+    "frontier_highway": "#b48bc9",
     "long_perimeter_route": "#b48bc9",
 }
 

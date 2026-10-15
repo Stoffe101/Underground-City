@@ -11,24 +11,24 @@
       "kind": "guarded_highway",
       "waypoints": [
         [
-          500,
-          190
+          591,
+          88
         ],
         [
-          800,
-          290
+          842,
+          122
         ],
         [
-          1080,
-          390
+          1094,
+          157
         ],
         [
-          1410,
-          470
+          1346,
+          191
         ],
         [
-          1660,
-          840
+          1598,
+          226
         ]
       ],
       "crossings": [
@@ -44,27 +44,28 @@
       ],
       "checkpoints": [
         {
-          "id": "ironhaven_east_gate",
+          "id": "ironhaven_valewood_gate_ironhaven",
           "position": [
-            650,
-            235
+            672,
+            99
           ],
           "faction": "ironhaven",
           "risk": "inspection"
         },
         {
-          "id": "valewood_west_gate",
+          "id": "ironhaven_valewood_gate_valewood",
           "position": [
-            1560,
-            690
+            1516,
+            215
           ],
           "faction": "valewood",
           "risk": "inspection"
         }
       ],
       "travel_modes": [
-        "vehicle",
         "walking",
+        "vehicle",
+        "boat",
         "licensed_convoy"
       ],
       "security": "patrolled",
@@ -77,60 +78,61 @@
       "kind": "militarized_highway",
       "waypoints": [
         [
-          -480,
-          310
+          278,
+          531
         ],
         [
-          -790,
-          440
-        ],
-        [
-          -1070,
-          600
-        ],
-        [
-          -1380,
+          406,
           780
         ],
         [
-          -1620,
-          920
+          535,
+          1029
+        ],
+        [
+          664,
+          1279
+        ],
+        [
+          792,
+          1528
         ]
       ],
       "crossings": [
         {
-          "id": "west_viaduct",
+          "id": "south_viaduct",
           "kind": "proposed_bridge",
           "between_waypoints": [
-            2,
-            3
+            1,
+            2
           ],
           "requires_water_or_ravine_survey": true
         }
       ],
       "checkpoints": [
         {
-          "id": "ironhaven_west_gate",
+          "id": "ironhaven_blackwater_gate_ironhaven",
           "position": [
-            -600,
-            360
+            315,
+            603
           ],
           "faction": "ironhaven",
           "risk": "high"
         },
         {
-          "id": "blackwater_east_gate",
+          "id": "ironhaven_blackwater_gate_blackwater",
           "position": [
-            -1530,
-            860
+            755,
+            1455
           ],
           "faction": "blackwater",
           "risk": "high"
         }
       ],
       "travel_modes": [
-        "vehicle",
         "walking",
+        "vehicle",
+        "boat",
         "licensed_convoy"
       ],
       "security": "contested",
@@ -140,54 +142,65 @@
       "id": "valewood_blackwater",
       "from": "valewood",
       "to": "blackwater",
-      "kind": "long_perimeter_route",
+      "kind": "frontier_highway",
       "waypoints": [
         [
+          1803,
+          630
+        ],
+        [
           1680,
-          920
+          856
         ],
         [
-          900,
-          1630
+          1558,
+          1082
         ],
         [
-          0,
-          2100
+          1436,
+          1307
         ],
         [
-          -900,
-          1850
-        ],
-        [
-          -1670,
-          1280
+          1314,
+          1533
         ]
       ],
-      "crossings": [],
+      "crossings": [
+        {
+          "id": "harbour_span",
+          "kind": "proposed_bridge",
+          "between_waypoints": [
+            1,
+            2
+          ],
+          "requires_water_or_ravine_survey": true
+        }
+      ],
       "checkpoints": [
         {
-          "id": "valewood_north_tradepost",
+          "id": "valewood_blackwater_gate_valewood",
           "position": [
-            1570,
-            1010
+            1764,
+            702
           ],
           "faction": "valewood",
           "risk": "inspection"
         },
         {
-          "id": "blackwater_north_roadblock",
+          "id": "valewood_blackwater_gate_blackwater",
           "position": [
-            -1550,
-            1360
+            1353,
+            1461
           ],
           "faction": "blackwater",
-          "risk": "high"
+          "risk": "low"
         }
       ],
       "travel_modes": [
-        "vehicle",
         "walking",
-        "smuggler_convoy"
+        "vehicle",
+        "boat",
+        "licensed_convoy"
       ],
       "security": "unpredictable",
       "lore": "A remote, longer alternative to the militarized central highways"
@@ -208,11 +221,10 @@
     "new_chunks_only": true,
     "build_route_kinds": [
       "guarded_highway",
-      "militarized_highway"
+      "militarized_highway",
+      "frontier_highway"
     ],
-    "unpaved_route_kinds": [
-      "long_perimeter_route"
-    ],
+    "unpaved_route_kinds": [],
     "reference_seed": 579,
     "water_policy": "bridge decks stay four free blocks above water so boats can pass beneath; rivers and sea straits are crossed by bridge or by boat",
     "stops_at_city_circles": true
@@ -230,12 +242,12 @@
       "maximum_routine_door_to_door_minutes": 10,
       "reserved_city_access_minutes": 2,
       "mandatory_route_must_not_require_vehicle": true,
-      "long_frontier_route_optional_until_viable_ferry_or_convoy": true,
       "intermediate_points_of_interest_spacing_blocks": [
         300,
         450
       ],
-      "design_note": "Walking and sprinting are viable defaults; stops provide optional activities, never mandatory empty-road delay. Estimate is static; benchmark actual 2-player traversal before accepting a release."
+      "design_note": "Walking and sprinting are viable defaults; stops provide optional activities, never mandatory empty-road delay. Estimate is static; benchmark actual 2-player traversal before accepting a release.",
+      "all_three_routes_walkable_within_budget": true
     }
   }
 }

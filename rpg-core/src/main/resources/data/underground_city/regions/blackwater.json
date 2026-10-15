@@ -3,8 +3,8 @@
   "id": "blackwater",
   "dimension": "minecraft:overworld",
   "center_chunk": [
-    -126,
-    67
+    65,
+    126
   ],
   "radius_blocks": 570
 }

@@ -98,11 +98,13 @@ class WorldPrototypeTests(unittest.TestCase):
         built_kinds = set(CORRIDORS["road_generation"]["build_route_kinds"])
         expected = [r for r in CORRIDORS["routes"] if r["kind"] in built_kinds]
         self.assertEqual([r["id"] for r in config["routes"]], [r["id"] for r in expected])
-        self.assertGreaterEqual(len(expected), 2)
+        # Every pair of cities has a built road: three bridges for three corridors.
+        self.assertEqual(len(expected), 3)
+        self.assertEqual({frozenset((r["from"], r["to"])) for r in config["routes"] and expected},
+                         {frozenset(("ironhaven", "valewood")), frozenset(("ironhaven", "blackwater")),
+                          frozenset(("valewood", "blackwater"))})
         for route, source in zip(config["routes"], expected):
             self.assertEqual(route["waypoints"], source["waypoints"])
-        # The long frontier route stays unpaved.
-        self.assertNotIn("valewood_blackwater", {r["id"] for r in config["routes"]})
         # City circles are exactly the Lost Cities predefined cities (centre of the centre chunk).
         by_id = {c["id"]: c for c in config["cities"]}
         for city in WORLD["cities"]:

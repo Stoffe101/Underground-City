@@ -36,12 +36,16 @@ public final class WorldSeedScanHarness {
     private static final double WATER_MAX=0.35,WATER_MIN=0.06;
     private record Anchor(String id,double x,double z,int radius) {}
     private record Cheap(long seed,int wetAnchors,double score,double ocean,int longest) {}
-    private record Accurate(long seed,int wetAnchors,double score,List<double[]> routeStats,List<List<Integer>> runs) {}
+    private record Accurate(long seed,int wetAnchors,double score,List<double[]> routeStats,List<List<Integer>> runs,double[] ring) {}
     private static List<Anchor> anchors;
     private static List<CorridorPlan> routes;
     /** Sample positions: five points per anchor, then the open centreline of each built road every 16 blocks. */
     private static List<double[]> positions;
     private static int[] routeStart,routeEnd;
+    /** Twelve points on a ring this far outside each city circle: an island city has water, not only land, around it. */
+    private static final int RING_POINTS=12,RING_OFFSET=150;
+    private static final double RING_MIN=0.25,RING_MAX=0.75;
+    private static int ringStart;
     private static final List<Cheap> cheap=new ArrayList<>();
     private static final List<Accurate> accurate=new ArrayList<>();
     private static List<Long> finalists;
@@ -81,7 +85,7 @@ public final class WorldSeedScanHarness {
                 finalists=new ArrayList<>();
                 for(int i=0;i<Math.min(finalistCount,cheap.size());i++) finalists.add(cheap.get(i).seed);
                 // The previous reference seed and the first candidate are always re-scored for comparison.
-                for(long reference:new long[]{20261014L,3130L}) if(!finalists.contains(reference)) finalists.add(reference);
+                for(long reference:new long[]{20261014L,3130L,579L}) if(!finalists.contains(reference)) finalists.add(reference);
                 System.out.println("[UC-SEEDS] Stage 1 done: "+cheap.size()+" seeds ranked; re-scoring "+finalists.size()+" with real terrain heights");
                 surface=new int[positions.size()];floor=new int[positions.size()];
             }
@@ -143,6 +147,13 @@ public final class WorldSeedScanHarness {
             for(double s=0;s<=routes.get(r).length();s+=SPACING) if(routes.get(r).openAt(s)) positions.add(routes.get(r).pointAt(s));
             routeEnd[r]=positions.size();
         }
+        ringStart=positions.size();
+        for(Anchor anchor:anchors) {
+            for(int k=0;k<RING_POINTS;k++) {
+                double angle=2*Math.PI*k/RING_POINTS,distance=anchor.radius+RING_OFFSET;
+                positions.add(new double[]{anchor.x+Math.cos(angle)*distance,anchor.z+Math.sin(angle)*distance});
+            }
+        }
     }
 
     private static long continentalness(RandomState random,double x,double z) {
@@ -181,6 +192,14 @@ public final class WorldSeedScanHarness {
             if(water>=2) wet++;
         }
         double score=wet*1_000_000.0;
+        double[] ring=new double[anchors.size()];
+        for(int a=0;a<anchors.size();a++) {
+            int water=0;
+            for(int k=0;k<RING_POINTS;k++) {int i=ringStart+a*RING_POINTS+k;if(surface[i]>floor[i]) water++;}
+            ring[a]=(double)water/RING_POINTS;
+            if(ring[a]<RING_MIN) score+=(RING_MIN-ring[a])*1500;
+            if(ring[a]>RING_MAX) score+=(ring[a]-RING_MAX)*1500;
+        }
         List<double[]> stats=new ArrayList<>();List<List<Integer>> allRuns=new ArrayList<>();
         for(int r=0;r<routes.size();r++) {
             int samples=0,waterSamples=0,run=0,steep=0,deepest=0;
@@ -206,20 +225,20 @@ public final class WorldSeedScanHarness {
             stats.add(new double[]{samples,waterSamples,fraction,steep,deepest,bridgeable});
             allRuns.add(runs);
         }
-        return new Accurate(seed,wet,score,stats,allRuns);
+        return new Accurate(seed,wet,score,stats,allRuns,ring);
     }
 
     private static void report(java.nio.file.Path folder) throws java.io.IOException {
         accurate.sort(Comparator.comparingDouble(Accurate::score));
         JsonObject report=new JsonObject();
         report.addProperty("method","stage 1: climate-sampler continentalness for "+cheap.size()+" seeds; stage 2: chunk-generator surface vs ocean-floor height every "+SPACING+" blocks on the open centreline of each built road, plus five points per city; ranking only, verify with the generation survey");
-        report.addProperty("design_target","dry city sites; per built road "+Math.round(WATER_MIN*100)+"-"+Math.round(WATER_MAX*100)+"% water in bridgeable gaps of "+GAP_MIN+"-"+GAP_MAX+" blocks (large rivers or straits crossed by bridge or boat); land elsewhere");
+        report.addProperty("design_target","dry city sites with "+Math.round(RING_MIN*100)+"-"+Math.round(RING_MAX*100)+"% water on a ring "+RING_OFFSET+" blocks outside each city (island-like); per built road "+Math.round(WATER_MIN*100)+"-"+Math.round(WATER_MAX*100)+"% water in bridgeable gaps of "+GAP_MIN+"-"+GAP_MAX+" blocks (large rivers or straits crossed by bridge or boat); land elsewhere");
         report.addProperty("seeds_ranked",cheap.size());report.addProperty("seeds_rescored",accurate.size());
         JsonArray top=new JsonArray();
         for(int i=0;i<Math.min(15,accurate.size());i++) top.add(describe(accurate.get(i)));
         report.add("best",top);
         JsonObject references=new JsonObject();
-        for(Accurate result:accurate) if(result.seed==20261014L || result.seed==3130L) references.add(Long.toString(result.seed),describe(result));
+        for(Accurate result:accurate) if(result.seed==20261014L || result.seed==3130L || result.seed==579L) references.add(Long.toString(result.seed),describe(result));
         report.add("references",references);
         Files.writeString(folder.resolve("seed-scan.json"),report+"\n");
         System.out.println("[UC-SEEDS] Best: "+(accurate.isEmpty()?"none":accurate.get(0).seed+" score "+accurate.get(0).score));
@@ -238,6 +257,9 @@ public final class WorldSeedScanHarness {
             per.add(stats);
         }
         entry.add("routes",per);
+        JsonObject ring=new JsonObject();
+        for(int a=0;a<anchors.size();a++) ring.addProperty(anchors.get(a).id,Math.round(result.ring[a]*100)/100.0);
+        entry.add("water_on_ring_outside_city",ring);
         return entry;
     }
 }
