@@ -213,13 +213,29 @@
     "unpaved_route_kinds": [
       "long_perimeter_route"
     ],
-    "reference_seed": 3130,
+    "reference_seed": 579,
     "water_policy": "bridge decks stay four free blocks above water so boats can pass beneath; rivers and sea straits are crossed by bridge or by boat",
     "stops_at_city_circles": true
   },
   "transport": {
     "on_foot_viable_before_vehicle_unlock": true,
     "inter_city_fast_travel": "licensed_convoys_after_discovery",
-    "convoys_work_for_noncombat_players": true
+    "convoys_work_for_noncombat_players": true,
+    "routine_travel_budget": {
+      "estimated_walking_blocks_per_second": 4.317,
+      "preferred_between_city_edges_minutes": [
+        3,
+        5
+      ],
+      "maximum_routine_door_to_door_minutes": 10,
+      "reserved_city_access_minutes": 2,
+      "mandatory_route_must_not_require_vehicle": true,
+      "long_frontier_route_optional_until_viable_ferry_or_convoy": true,
+      "intermediate_points_of_interest_spacing_blocks": [
+        300,
+        450
+      ],
+      "design_note": "Walking and sprinting are viable defaults; stops provide optional activities, never mandatory empty-road delay. Estimate is static; benchmark actual 2-player traversal before accepting a release."
+    }
   }
 }

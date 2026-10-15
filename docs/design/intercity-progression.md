@@ -40,6 +40,20 @@ Three corridors form a *connected triangle*: Ironhaven–Valewood (guarded highw
 
 [Corridor plan](../../content/region-blueprints/corridors.json) records block-coordinate polylines, gate locations, modes and security. **The two highways are now real blocks**: Core's `corridor_roads` worldgen feature builds a 7-wide deck with parapets and supports into newly generated chunks, and rides four free blocks above any water so a boat can pass beneath ([measurements](../technical/three-city-prototype.md#roads-and-bridges-original-generated-with-new-chunks)). Water between the cities is deliberate: **a bridge is the safe way over and a boat is the alternative.** In the reference seed the Valewood–Blackwater edge is open sea, so a direct trip needs a boat; the other way round goes through Ironhaven. Checkpoint gate houses, rest stops, patrols and the frontier road are still design only.
 
+### Routine travel time is a gameplay constraint (confirmed October 15)
+
+**Do not turn regional crafting into a walking simulator.** A few minutes of ordinary travel is fine; a **10–15-minute forced walk is unacceptable**. Budget a preferred **3–5 minutes between city outskirts**, around **6–8 minutes door-to-door** for a normal contract, and **never more than 10 minutes of mandatory routine travel**, including approximately two minutes for entering/leaving districts. The budget assumes walking speed around 4.317 blocks/second and must be checked in real multiplayer; it is not an assurance of actual elapsed gameplay.
+
+The surveyed seed-579 paved routes have about **1,252** and **1,117** built centreline blocks. At ordinary walking speed those are approximately **4.8** and **4.3 minutes** of moving, not 10–15, excluding checkpoints, within-city access and detours. They already pass the provisional length budget; **do not change a proven world seed purely to solve coordinate spacing**. Seed changes affect terrain, while city anchors/waypoints govern road length. Choose a new seed only after comparing landscape, bridge placement, performance and architectural quality.
+
+- Make travel interesting through **optional** small settlements, roadside workshops, homes, abandoned service stations, lootable buildings, farms, encounters, transport stops and story hooks, preferably something useful every **300–450 blocks**. Do not create compulsory micro-stops or identical filler buildings.
+- Starter travel must remain viable **on foot**; an optional car, bicycle, horse or boat makes longer trips convenient. Check road width and vehicle movement before committing to a vehicle mod.
+- After first discovery, licensed convoys/limited transport and delivery orders can reduce repeated commuting, subject to price and faction risk.
+- **Valewood–Blackwater:** the unpaved long frontier detour must remain optional until a direct boat/ferry or similarly reasonable passage is actually playable. Never make a 10–15-minute detour a required career bottleneck.
+- Gatehouses and police inspections should offer gameplay choices, but routine administrative waits must not inflate essential trips past the cap.
+
+The data validator checks a crude route-length budget for newly declared paved corridors; a final playtest must time a real trip from working terminal to working terminal with NPCs and normal loading.
+
 ### How roads are built
 
 1. Lost Cities' native highway planner ignores predefined cities (measured), so it is not used.

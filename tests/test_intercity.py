@@ -31,6 +31,21 @@ class InterCityDesignTests(unittest.TestCase):
         x["routes"]["routes"][2]["waypoints"][2] = [0, 0]
         self.assertTrue(any("unrelated city" in err for err in validate(x)))
 
+    def test_short_mandatory_travel_budget_and_nonmandatory_frontier(self):
+        travel = self.base["routes"]["transport"]["routine_travel_budget"]
+        self.assertLessEqual(travel["maximum_routine_door_to_door_minutes"], 10)
+        self.assertTrue(travel["long_frontier_route_optional_until_viable_ferry_or_convoy"])
+        self.assertEqual(self.base["routes"]["road_generation"]["reference_seed"], 579)
+        oversized = copy.deepcopy(self.base)
+        # Deliberately detour an existing mandatory paved road far into the wilderness.
+        oversized["routes"]["routes"][0]["waypoints"].insert(2, [500, 4500])
+        self.assertTrue(any("estimated mandatory walking journey" in err
+                            for err in validate(oversized)))
+        unbounded = copy.deepcopy(self.base)
+        unbounded["routes"]["transport"]["routine_travel_budget"]["maximum_routine_door_to_door_minutes"] = 15
+        self.assertTrue(any("exceeds 10-minute maximum" in err
+                            for err in validate(unbounded)))
+
     def test_bridge_requires_terrain_survey_before_placement(self):
         x = copy.deepcopy(self.base)
         x["routes"]["routes"][0]["crossings"][0]["requires_water_or_ravine_survey"] = False
