@@ -81,8 +81,34 @@ if (worldCandidateId != null && !worldCandidateId.trim().isEmpty()) {
         throw new GradleException("Do not run unrelated onboarding and world candidate tests together")
     }
 }
+// Pinned development-pack sets (content/modpacks/dev-pack.json), e.g. -PucPack=firearms,vehicles.
+// Jars come from the original author's Modrinth release, are SHA-512 verified against the manifest
+// (verifyDevPack) and are runtime-only: never bundled in Core, committed or uploaded.
+def devPackSets = (providers.gradleProperty('ucPack').orNull ?: '').split(',').collect { it.trim() }.findAll { !it.isEmpty() }
+def devPackMods = []
+if (!devPackSets.isEmpty()) {
+    def manifest = new JsonSlurper().parse(file('../content/modpacks/dev-pack.json'))
+    def byId = manifest.mods.collectEntries { [(it.id): it] }
+    def chosen = new LinkedHashMap()
+    def include
+    include = { String id ->
+        def mod = byId[id]
+        if (mod == null) throw new GradleException('Unknown dev-pack mod ' + id)
+        mod.requires.each { include(it) }
+        chosen[id] = mod
+    }
+    manifest.mods.findAll { mod -> mod.sets.any { devPackSets.contains(it) } }.each { include(it.id) }
+    if (chosen.isEmpty()) throw new GradleException('No dev-pack mods in sets ' + devPackSets)
+    devPackMods = chosen.values().toList()
+}
 repositories {
     mavenCentral()
+    if (!devPackMods.isEmpty()) {
+        maven {
+            url = uri('https://api.modrinth.com/maven')
+            content { includeGroup 'maven.modrinth' }
+        }
+    }
     // Official author release. Transient API dependency, never bundled in Core.
     ivy {
         url = uri('https://github.com/QLNPLUS/Q-shop/releases/download')
@@ -111,7 +137,23 @@ dependencies {
         runtimeOnly fg.deobf("curse.maven:uc-world-${worldCandidate.project_id}:${worldCandidate.file_id}")
     }
 }
-configurations { qshopOriginal }
+devPackMods.each { mod -> dependencies.add('runtimeOnly', fg.deobf("maven.modrinth:${mod.slug}:${mod.version_id}")) }
+configurations { qshopOriginal; devPackOriginal }
+devPackMods.each { mod -> dependencies.add('devPackOriginal', "maven.modrinth:${mod.slug}:${mod.version_id}") }
+def verifyDevPack = tasks.register('verifyDevPack') {
+    inputs.files(configurations.devPackOriginal)
+    doLast {
+        def expected = devPackMods.collect { it.sha512 }.toSet()
+        configurations.devPackOriginal.files.each { jar ->
+            def digest = java.security.MessageDigest.getInstance('SHA-512').digest(jar.bytes).encodeHex().toString()
+            if (!expected.contains(digest)) {
+                throw new GradleException('Dev-pack jar differs from the pinned manifest: ' + jar.name)
+            }
+        }
+        logger.lifecycle('Verified {} pinned dev-pack jar(s) against dev-pack.json', configurations.devPackOriginal.files.size())
+    }
+}
+tasks.matching { it.name.startsWith('run') }.configureEach { dependsOn verifyDevPack }
 dependencies { qshopOriginal 'com.qshop:qshop-forge-1.20.1:1.8.4' }
 def verifyQShopRelease = tasks.register('verifyQShopRelease') {
     inputs.files(configurations.qshopOriginal)
