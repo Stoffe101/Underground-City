@@ -848,42 +848,51 @@ public final class UndergroundGameTests {
         BlockState keepsake = Blocks.GOLD_BLOCK.defaultBlockState();
         level.setBlockAndUpdate(marker, keepsake);
         BlockState terrain = level.getBlockState(terminalPos); // whatever the test arena sits in: undo must give exactly this back
-        try {
-            var result = DistrictBuilder.build(level, district, origin);
-            check(result.safes() == 3 && result.secureTerminals() == 1 && result.terminals() == 1 && result.clerkPlaced() && result.insideCity(), "Build summary " + result);
-            check(level.getBlockState(terminalPos).is(UndergroundCity.TERMINAL.get()), "Operations Terminal placed");
-            for (int x : new int[]{8, 9, 10}) {
-                check(level.getBlockEntity(origin.offset(x, 0, 2)) instanceof PropertyCacheBlockEntity cache && cache.registered(), "Safe at " + x + " must be registered");
+        Runnable cleanup = () -> {
+            try {
+                if (DistrictBuilder.isBuilt(level, district.id())) DistrictBuilder.undo(level, district);
+                DistrictBuilder.forgetForTest(level, district.id());
+                SupplierNpc.forgetForTest(level.getServer());
+                level.setBlockAndUpdate(marker, Blocks.AIR.defaultBlockState());
+                for (int cx = lo.getX() >> 4; cx <= hi.getX() >> 4; cx++) for (int cz = lo.getZ() >> 4; cz <= hi.getZ() >> 4; cz++) level.setChunkForced(cx, cz, false);
+                fixture.close();
+            } catch (java.io.IOException error) { throw new IllegalStateException(error); }
+        };
+        // A freshly forced chunk takes a few ticks to become entity-ticking; until then an entity added to it is not yet
+        // visible to getEntity. A standing operator's chunks are long since ticking, so the test waits the same way.
+        helper.runAfterDelay(40, () -> {
+            try {
+                var result = DistrictBuilder.build(level, district, origin);
+                check(result.safes() == 3 && result.secureTerminals() == 1 && result.terminals() == 1 && result.clerkPlaced() && result.insideCity(), "Build summary " + result);
+                check(level.getBlockState(terminalPos).is(UndergroundCity.TERMINAL.get()), "Operations Terminal placed");
+                for (int x : new int[]{8, 9, 10}) {
+                    check(level.getBlockEntity(origin.offset(x, 0, 2)) instanceof PropertyCacheBlockEntity cache && cache.registered(), "Safe at " + x + " must be registered");
+                }
+                check(level.getBlockEntity(origin.offset(15, 0, 2)) instanceof SecureTerminalBlockEntity secure && secure.ledgers(0) == 1, "Secured terminal placed with its drive");
+                check(level.getBlockState(origin.offset(21, -1, 3)).is(Blocks.WATER) && level.getBlockState(origin.offset(20, -1, 2)).is(Blocks.FARMLAND), "Greenhouse soil and water");
+                check(level.getBlockState(marker).isAir(), "The lot is cleared for the build");
+                var clerk = SupplierNpc.state(level.getServer());
+                check(terminalPos.equals(clerk.terminalForTest()), "The clerk is bound to the placed terminal: " + clerk.terminalForTest() + " vs " + terminalPos);
+                var found = level.getEntity(clerk.clerkForTest());
+                check(found instanceof net.minecraft.world.entity.npc.Villager, "The clerk entity exists: " + found + " uuid " + clerk.clerkForTest());
+                check(found.hasCustomName() && found.blockPosition().distManhattan(terminalPos) <= 3, "The clerk is named and stands beside the PC: " + found.blockPosition());
+                rejected(() -> DistrictBuilder.build(level, district, origin)); // one per world
+                DistrictBuilder.undo(level, district);
+                check(level.getBlockState(marker) == keepsake, "Undo must put back what the build replaced");
+                check(level.getBlockState(terminalPos) == terrain, "Undo removes the terminal, found " + level.getBlockState(terminalPos));
+                check(level.getBlockEntity(origin.offset(9, 0, 2)) == null, "Undo removes the safe's block entity");
+                check(!SupplierNpc.hasClerk(level.getServer()), "Undo releases the clerk it placed");
+                // A container anywhere in the lot stops the build before it changes anything.
+                BlockPos chest = origin.offset(20, 0, 12);
+                level.setBlockAndUpdate(chest, Blocks.CHEST.defaultBlockState());
+                rejected(() -> DistrictBuilder.build(level, district, origin));
+                check(level.getBlockState(terminalPos) == terrain && level.getBlockState(chest).is(Blocks.CHEST), "A refused build must not touch the world");
+                level.setBlockAndUpdate(chest, Blocks.AIR.defaultBlockState());
+            } finally {
+                cleanup.run();
             }
-            check(level.getBlockEntity(origin.offset(15, 0, 2)) instanceof SecureTerminalBlockEntity secure && secure.ledgers(0) == 1, "Secured terminal placed with its drive");
-            check(level.getBlockState(origin.offset(21, -1, 3)).is(Blocks.WATER) && level.getBlockState(origin.offset(20, -1, 2)).is(Blocks.FARMLAND), "Greenhouse soil and water");
-            check(level.getBlockState(marker).isAir(), "The lot is cleared for the build");
-            var clerk = SupplierNpc.state(level.getServer());
-            check(terminalPos.equals(clerk.terminalForTest()), "The clerk is bound to the placed terminal: " + clerk.terminalForTest() + " vs " + terminalPos);
-            var found = level.getEntity(clerk.clerkForTest());
-            check(found instanceof net.minecraft.world.entity.npc.Villager, "The clerk entity exists: " + found + " uuid " + clerk.clerkForTest());
-            check(found.hasCustomName() && found.blockPosition().distManhattan(terminalPos) <= 3, "The clerk is named and stands beside the PC: " + found.blockPosition());
-            rejected(() -> DistrictBuilder.build(level, district, origin)); // one per world
-            DistrictBuilder.undo(level, district);
-            check(level.getBlockState(marker) == keepsake, "Undo must put back what the build replaced");
-            check(level.getBlockState(terminalPos) == terrain, "Undo removes the terminal, found " + level.getBlockState(terminalPos));
-            check(level.getBlockEntity(origin.offset(9, 0, 2)) == null, "Undo removes the safe's block entity");
-            check(!SupplierNpc.hasClerk(level.getServer()), "Undo releases the clerk it placed");
-            // A container anywhere in the lot stops the build before it changes anything.
-            BlockPos chest = origin.offset(20, 0, 12);
-            level.setBlockAndUpdate(chest, Blocks.CHEST.defaultBlockState());
-            rejected(() -> DistrictBuilder.build(level, district, origin));
-            check(level.getBlockState(terminalPos) == terrain && level.getBlockState(chest).is(Blocks.CHEST), "A refused build must not touch the world");
-            level.setBlockAndUpdate(chest, Blocks.AIR.defaultBlockState());
-        } finally {
-            if (DistrictBuilder.isBuilt(level, district.id())) DistrictBuilder.undo(level, district);
-            DistrictBuilder.forgetForTest(level, district.id());
-            SupplierNpc.forgetForTest(level.getServer());
-            level.setBlockAndUpdate(marker, Blocks.AIR.defaultBlockState());
-            for (int cx = lo.getX() >> 4; cx <= hi.getX() >> 4; cx++) for (int cz = lo.getZ() >> 4; cz <= hi.getZ() >> 4; cz++) level.setChunkForced(cx, cz, false);
-            fixture.close();
-        }
-        helper.succeed();
+            helper.succeed();
+        });
     }
 
     // ------------------------------------------------------------------------------------------ vehicles (optional pack)
