@@ -35,6 +35,29 @@
       "reviewer": "Codex cloud task",
       "surfaces_per_profile": 3,
       "findings": "Inspected every actual PNG. Rejected all three: uniform cleared sky color, no visible terrain. Gameplay-tick capture preceded world rendering. Moved capture to render END and added variance/duplicate rejection. Native block evidence remains separate and valid."
+    },
+    {
+      "run_id": 38676038148,
+      "head_sha": "1718ee377e11df128f8e6409a8ed64f0479a620d",
+      "artifact_ids": [
+        11946072261,
+        11945543692
+      ],
+      "review_completed": true,
+      "reviewer": "Claude Code cloud session",
+      "surfaces_per_profile": 18,
+      "findings": "Viewed all 18 panel-cropped, 64-colour review copies per viewport that the job logs print from the captured framebuffers (the gallery zips could not be downloaded here: the artifact blob host is blocked). Text fits at 1920x1080 GUI 3 and 3440x1440 GUI 2; teal tab indicator, warning colours, disabled buy/accept states, NEED n MORE, SOLD OUT, visit-locked, outside-city, offline and unregistered states render correctly. At 1440p the panel crop shows installed Q Shop screens only partly (review-copy limit, not a defect). No new defects."
+    },
+    {
+      "run_id": 38676037902,
+      "head_sha": "1718ee377e11df128f8e6409a8ed64f0479a620d",
+      "artifact_ids": [
+        11947630400
+      ],
+      "review_completed": true,
+      "reviewer": "Claude Code cloud session",
+      "surfaces_per_profile": 12,
+      "findings": "Viewed all 12 downscaled review copies printed in the job log (six city frames, two bridge frames, two deck frames and two ground-road frames, seed 579). Both bridges render as stone decks on piers over open water with connected parapets and lanterns; ground roads cut through forest with slab ramps. Known rough edges: stepped diagonal edges, trees overhanging parapets, a rooftop in the Ironhaven oblique foreground. Two earlier runs of this tour were rejected after viewing (unconnected parapet posts; a bridge frame captured before its meshes were built) and fixed. Review copies, not the full-resolution gallery."
     }
   ]
 }
