@@ -97,6 +97,10 @@ Twelve real frames were viewed (six city, six road). What the numbers did not sh
 
 Design intent (user, October 15): ocean or large rivers between the cities make the bridges pivotal, and a boat should be a valid alternative. Seed `20261014` put Ironhaven itself in the sea and the Ironhaven–Blackwater road 100% under water, so it was replaced. `WorldSeedScanHarness` ranks seeds in two stages (a cheap climate-sampler pass, then the chunk generator's real surface and ocean-floor heights along the real road centrelines) for: dry city sites, 6-35% water per built road in gaps of 48-320 blocks, and land elsewhere. Of 10,000 seeds, 302 finalists were re-scored with real heights. Seed `3130` (best of an earlier climate-only scan) was generated first and rejected: about half of its Ironhaven–Valewood road lay on water. Seed `579` (fifth of the real-height ranking) was then generated and measured. It has dry cities, two roads with long bridges over rivers and braided shoals, and an open **sea** on the unpaved Valewood–Blackwater edge (944-block longest water run), so travel there is by boat or around through Ironhaven. This ranking is a tool, not proof of quality: a seed's other terrain was not reviewed.
 
+### Travel time (D-048)
+
+Accepted constraint: routine inter-city travel should take only a few minutes. A static estimate at walking speed (4.317 blocks per second, no sprinting, no obstacles) gives about 4.8 minutes along the Ironhaven–Valewood road (1,251 blocks between city edges) and about 4.3 minutes along Ironhaven–Blackwater (1,116 blocks), inside the 3-5 minute aim. That is arithmetic, not a measurement: a real traversal benchmark (with the slab ramps, doors, a horse or boat, and two players) is still owed before a release. The Valewood–Blackwater edge is open sea in seed 579, so it must stay optional until a ferry or boat service exists.
+
 ### What is still not built
 
 Gate houses at the checkpoints, a built road on the Valewood–Blackwater edge, rest stops, road signs, NPC patrols and vehicle-mod compatibility. The checkpoint, `travel_modes` and `security` fields in `corridors.json` remain design data.
