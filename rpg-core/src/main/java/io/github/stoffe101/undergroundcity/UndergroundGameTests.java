@@ -556,6 +556,13 @@ public final class UndergroundGameTests {
         BlockPos ground = helper.absolutePos(new BlockPos(4, 1, 4));
         level.setBlockAndUpdate(ground, Blocks.FARMLAND.defaultBlockState());
         level.setBlockAndUpdate(ground.east(), Blocks.GLOWSTONE.defaultBlockState());
+        // A crop only survives in light 8 or more and the light engine runs between ticks, so wait for the lamp. A test
+        // world under a roof, or at night, would otherwise refuse the plant for a reason that has nothing to do with the skill.
+        helper.runAfterDelay(40, () -> plantingBody(helper, ground));
+    }
+
+    private static void plantingBody(GameTestHelper helper, BlockPos ground) {
+        var level = helper.getLevel();
         FakePlayer untrained = player(helper, "valewood", "farmer", 10);
         ItemStack cutting = new ItemStack(core("sable_cutting"), 2);
         untrained.setItemInHand(InteractionHand.MAIN_HAND, cutting);
