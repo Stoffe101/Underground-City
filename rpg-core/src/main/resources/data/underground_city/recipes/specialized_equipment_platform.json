@@ -1,0 +1,29 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "group": "underground_city_regional",
+  "ingredients": [
+    {
+      "item": "underground_city:machined_parts"
+    },
+    {
+      "item": "underground_city:machined_parts"
+    },
+    {
+      "item": "underground_city:biopolymer"
+    },
+    {
+      "item": "underground_city:encrypted_design"
+    },
+    {
+      "item": "minecraft:iron_ingot"
+    },
+    {
+      "item": "minecraft:iron_ingot"
+    }
+  ],
+  "result": {
+    "item": "underground_city:specialized_equipment_platform",
+    "count": 1
+  }
+}

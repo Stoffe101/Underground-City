@@ -2,7 +2,7 @@
 
 ## Region structure
 
-A **finite curated region** containing three or four significant rival municipalities, connecting roads, smaller hamlets, rivers/mountains, farmland, industrial districts, resource sites, and disputed corridors. Starting cities are selectable on first join. City names and specific counts are provisional.
+A **finite curated region** containing three starting rival municipalities: Ironhaven, Valewood and Blackwater, connecting roads, smaller hamlets, rivers/mountains, farmland, industrial districts, resource sites, and disputed corridors. Starting cities are selectable on first join. These three starting identities are confirmed product intent; geography remains provisional.
 
 World assembly candidates: (A) customize The Lost Cities and author important districts; (B) adapt one existing connected modern-city map; (C) import permitted schematics/regions into a base world. Selection follows a visual, legal, performance and NPC-pathing spike.
 
@@ -12,10 +12,10 @@ World assembly candidates: (A) customize The Lost Cities and author important di
 | --- | --- | --- | --- |
 | Ironhaven | Industry, metals, factories | Organized municipal guard | Political corruption, contracts |
 | Valewood | Farming, vineyards, food | Modest patrols | Trade dependence and shortages |
-| Blackwater | High-density commerce, grey/black market | Uneven enforcement | Underground factions and smuggling |
+| Blackwater | Electronics, technology, commerce, grey/black market | Uneven enforcement | Underground factions and smuggling |
 | Fourth city (TBD) | Potential reclaimed town | Varies | Tale of Kingdoms-inspired settlement restoration |
 
-These are design placeholders, **not finalized map names or currently existing settlements**.
+The three names/identities are confirmed intent. Physical settlements are still unverified. A reclaimed fourth town is an optional later story idea, not another required starting player/city.
 
 ## Territory and travel
 

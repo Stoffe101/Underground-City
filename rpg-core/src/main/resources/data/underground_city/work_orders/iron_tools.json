@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "title": "Forge tools for the public workshop",
+  "career": "smith",
+  "level": 2,
+  "item": "minecraft:iron_pickaxe",
+  "count": 2,
+  "credits": 80,
+  "xp": 180,
+  "capacity": 4,
+  "refill_ticks": 6000
+}

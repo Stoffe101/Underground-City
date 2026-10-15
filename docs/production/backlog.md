@@ -14,7 +14,9 @@
 - [ ] Custom mod scaffold, smoke-boot CI, co-op dedicated-server test.
 - [ ] First-login UI, player registration, city selection and profession selection.
 - [ ] Career XP/skill tree and one general skill, versioned save data.
-- [ ] Small district/world import, one workshop, one farm, and a safe travel route.
+- [x] A safe travel route: two inter-city roads with bridges generate into new chunks of a fresh seed-579 world (cloud-measured; see [three-city notes](../technical/three-city-prototype.md)).
+- [ ] Small district/world import, one workshop and one farm.
+- [ ] Gate houses at the road checkpoints, rest stops, patrol/NPC presence and a vehicle-mod fit test on the roads; decide whether the Valewood–Blackwater sea edge gets a boat service.
 
 ## First playable: P4–P6
 

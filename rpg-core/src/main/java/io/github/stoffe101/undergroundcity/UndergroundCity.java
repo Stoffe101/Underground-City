@@ -12,6 +12,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
+import net.minecraftforge.event.AddReloadListenerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
@@ -42,24 +43,87 @@ public final class UndergroundCity {
     public static final RegistryObject<Item> TERMINAL_ITEM = ITEMS.register("operations_terminal",
         () -> new BlockItem(TERMINAL.get(), new Item.Properties()));
 
+    private static final DeferredRegister<net.minecraft.world.level.block.entity.BlockEntityType<?>> BLOCK_ENTITIES =
+        DeferredRegister.create(ForgeRegistries.BLOCK_ENTITY_TYPES, MOD_ID);
+    // Unbreakable by survival players: a smash-and-grab would bypass lock, vigilance and restock rules.
+    public static final RegistryObject<Block> PROPERTY_CACHE = BLOCKS.register("property_cache",
+        () -> new PropertyCacheBlock(BlockBehaviour.Properties.of().mapColor(MapColor.METAL)
+            .strength(-1.0f, 3_600_000f).noLootTable()));
+    public static final RegistryObject<Item> PROPERTY_CACHE_ITEM = ITEMS.register("property_cache",
+        () -> new BlockItem(PROPERTY_CACHE.get(), new Item.Properties()));
+    public static final RegistryObject<net.minecraft.world.level.block.entity.BlockEntityType<PropertyCacheBlockEntity>> PROPERTY_CACHE_ENTITY =
+        BLOCK_ENTITIES.register("property_cache", () -> net.minecraft.world.level.block.entity.BlockEntityType.Builder
+            .of(PropertyCacheBlockEntity::new, PROPERTY_CACHE.get()).build(null));
 
-    public UndergroundCity() {
-        BLOCKS.register(FMLJavaModLoadingContext.get().getModEventBus());
-        ITEMS.register(FMLJavaModLoadingContext.get().getModEventBus());
-        FMLJavaModLoadingContext.get().getModEventBus().addListener(this::addCreativeTab);
+    private static final DeferredRegister<net.minecraft.world.level.levelgen.feature.Feature<?>> FEATURES =
+        DeferredRegister.create(ForgeRegistries.FEATURES, MOD_ID);
+    /** Inter-city roads and bridges; only active where the world prototype datapack places it in the Overworld. */
+    public static final RegistryObject<net.minecraft.world.level.levelgen.feature.Feature<?>> CORRIDOR_ROADS =
+        FEATURES.register("corridor_roads", CorridorRoadFeature::new);
+
+    /** Registry lookup of an original Core item by path. */
+    public static Item item(String path) {
+        RegistryObject<Item> registered = CORE_ITEMS.get(path);
+        if (registered == null) throw new IllegalArgumentException("Unknown Core item " + path);
+        return registered.get();
+    }
+
+
+    private static final java.util.Map<String, RegistryObject<Item>> CORE_ITEMS = new java.util.LinkedHashMap<>();
+    private static final java.util.Map<String, String> CORE_ITEM_KINDS = new java.util.LinkedHashMap<>();
+
+    public UndergroundCity(FMLJavaModLoadingContext context) {
+        for (CoreItems.Definition definition : CoreItems.definitions()) {
+            CORE_ITEMS.put(definition.id(), ITEMS.register(definition.id(),
+                () -> new Item(new Item.Properties().stacksTo(definition.stack()))));
+            CORE_ITEM_KINDS.put(definition.id(), definition.kind());
+        }
+        BLOCKS.register(context.getModEventBus());
+        BLOCK_ENTITIES.register(context.getModEventBus());
+        FEATURES.register(context.getModEventBus());
+        LostCitiesLink.register(context.getModEventBus());
+        ITEMS.register(context.getModEventBus());
+        context.getModEventBus().addListener(this::addCreativeTab);
         TerminalNetwork.register();
         MinecraftForge.EVENT_BUS.register(this);
+        MinecraftForge.EVENT_BUS.register(new WorkOrderService());
+        MinecraftForge.EVENT_BUS.register(new SupplierNpc());
+        MinecraftForge.EVENT_BUS.register(new PropertyCommands());
+    }
+
+    @SubscribeEvent
+    public void reload(AddReloadListenerEvent event) {
+        event.addListener(WorkOrderCatalog.INSTANCE);
+        event.addListener(RegionalCatalog.INSTANCE);
+        event.addListener(CityRegions.INSTANCE);
+        event.addListener(PropertyPolicies.INSTANCE);
     }
 
     private void addCreativeTab(BuildCreativeModeTabContentsEvent event) {
         if (event.getTabKey() == CreativeModeTabs.FUNCTIONAL_BLOCKS) {
             event.accept(TERMINAL_ITEM);
         }
+        if (event.getTabKey() == CreativeModeTabs.OP_BLOCKS && event.hasPermissions()) {
+            event.accept(PROPERTY_CACHE_ITEM);
+        }
+        if (event.getTabKey() == CreativeModeTabs.INGREDIENTS) {
+            CORE_ITEMS.forEach((id, item) -> { if (!CORE_ITEM_KINDS.get(id).equals("tool")) event.accept(item); });
+        }
+        if (event.getTabKey() == CreativeModeTabs.TOOLS_AND_UTILITIES) {
+            CORE_ITEMS.forEach((id, item) -> { if (CORE_ITEM_KINDS.get(id).equals("tool")) event.accept(item); });
+        }
     }
 
     @SubscribeEvent
     public void onLogin(PlayerEvent.PlayerLoggedInEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        try {
+            WorkOrderService.recover(player);
+        } catch (RuntimeException error) {
+            com.mojang.logging.LogUtils.getLogger().error("Citizen settlement recovery failed", error);
+            player.connection.disconnect(Component.literal("Work-order recovery failed. Restore provider/storage and reconnect."));
+            return;
+        }
         Optional<CitizenState.Citizen> profile = CitizenState.get(player.server).find(player.getUUID());
         if (profile.isEmpty()) {
             player.sendSystemMessage(Component.literal(

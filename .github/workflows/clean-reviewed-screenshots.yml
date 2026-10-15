@@ -1,6 +1,8 @@
 name: Delete reviewed visual screenshot artifacts
 
 on:
+  push:
+    paths: ["content/qa/reviewed-runs.json"]
   workflow_dispatch:
     inputs:
       reviewed_run_id:
@@ -18,6 +20,7 @@ permissions:
 
 jobs:
   cleanup:
+    if: github.event_name == 'workflow_dispatch'
     name: Remove ONLY reviewed uc-visual-gallery artifacts
     runs-on: ubuntu-latest
     steps:
@@ -46,3 +49,16 @@ jobs:
           done < <(jq -r '.artifacts[] | select(.name | startswith("uc-visual-gallery-")) | .id' <<< "$response")
           echo "Deleted $count reviewed visual-gallery artifacts from run $RUN_ID." >> "$GITHUB_STEP_SUMMARY"
           echo "No mod jars, world builds, CI logs, other runs, or non-screenshot artifacts were deleted." >> "$GITHUB_STEP_SUMMARY"
+
+  recorded-review-cleanup:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Remove only source-matched explicitly reviewed gallery IDs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python scripts/cleanup_reviewed_galleries.py

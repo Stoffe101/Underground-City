@@ -1,0 +1,32 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "group": "underground_city_regional",
+  "ingredients": [
+    {
+      "item": "underground_city:agro_catalyst"
+    },
+    {
+      "item": "underground_city:agro_catalyst"
+    },
+    {
+      "item": "underground_city:machined_parts"
+    },
+    {
+      "item": "underground_city:machined_parts"
+    },
+    {
+      "item": "underground_city:control_circuits"
+    },
+    {
+      "item": "minecraft:glass"
+    },
+    {
+      "item": "minecraft:iron_ingot"
+    }
+  ],
+  "result": {
+    "item": "underground_city:precision_greenhouse_unit",
+    "count": 1
+  }
+}

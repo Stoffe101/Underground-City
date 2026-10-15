@@ -1,6 +1,6 @@
 # One PC for contracts, cargo, criminal commerce and raids
 
-**October 2026 status:** source-validated feature catalog and Python-only transactional simulation. None of these five screens, NPC buyers, crash scenes, dropboxes, or raids has been integrated into a Minecraft client/world yet. The only runnable artifact is the design simulation and its tests.
+**October 2026 status:** source-validated feature catalog and Python-only transactional simulation. The physical PC and five native tabs are now integrated. Starter vanilla work orders and Q Shop civilian trade are real server-backed actions. Advanced imports, crash scenes, black-market buyers/dropboxes and raids remain Python-only design models; see [starter integration](../technical/economy-integration.md).
 
 ## The in-game computer experience
 

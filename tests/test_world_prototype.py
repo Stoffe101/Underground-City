@@ -5,12 +5,15 @@ import sys
 import tempfile
 import unittest
 import zipfile
+import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
-from build_world_prototype import LOOT, package, render, validate
+from build_world_prototype import LOOT, package, render, road_feature, validate
 WORLD = json.loads((ROOT / "content/region-blueprints/cities.json").read_text(encoding="utf-8"))
+CORRIDORS = json.loads((ROOT / "content/region-blueprints/corridors.json").read_text(encoding="utf-8"))
+ROAD = "data/underground_city/worldgen/configured_feature/corridor_roads.json"
 
 
 class WorldPrototypeTests(unittest.TestCase):
@@ -37,6 +40,18 @@ class WorldPrototypeTests(unittest.TestCase):
             self.assertEqual(definition["citystyle"], city["city_style"])
             self.assertEqual(style["inherit"], "lostcities:citystyle_standard")
             self.assertEqual(style["buildingsettings"]["maxfloors"], city["max_floors"])
+
+    def test_world_package_accepts_actual_pinned_forge_mod_version(self):
+        metadata = tomllib.loads(render(WORLD)["META-INF/mods.toml"].decode())
+        dependency = metadata["dependencies"]["underground_city_world"][0]
+        self.assertEqual(dependency["modId"], "lostcities")
+        # The published Forge manifest includes its game-prefix, not plain 7.x.
+        self.assertEqual(dependency["versionRange"], "[1.20-7.5.5]")
+
+    def test_fixed_city_style_does_not_suppress_ocean_anchors(self):
+        style=json.loads(render(WORLD)["data/underground_city/lostcities/worldstyles/three_city.json"])
+        self.assertEqual(style["citybiomemultipliers"], [])
+        self.assertEqual(style["outsidestyle"], "lostcities:outside")
 
     def test_no_unknown_modded_ids_in_prototype_loot(self):
         files = render(WORLD)
@@ -73,6 +88,58 @@ class WorldPrototypeTests(unittest.TestCase):
         bad["profile_requirements"]["random_city_chance"] = 0.01
         with self.assertRaisesRegex(ValueError, "random cities"):
             validate(bad)
+
+    def test_road_feature_is_generated_from_blueprints_only(self):
+        files = render(WORLD)
+        configured = json.loads(files[ROAD])
+        self.assertEqual(configured["type"], "underground_city:corridor_roads")
+        config = configured["config"]
+        self.assertEqual(config["width"], CORRIDORS["construction_policy"]["road_width_blocks"])
+        built_kinds = set(CORRIDORS["road_generation"]["build_route_kinds"])
+        expected = [r for r in CORRIDORS["routes"] if r["kind"] in built_kinds]
+        self.assertEqual([r["id"] for r in config["routes"]], [r["id"] for r in expected])
+        self.assertGreaterEqual(len(expected), 2)
+        for route, source in zip(config["routes"], expected):
+            self.assertEqual(route["waypoints"], source["waypoints"])
+        # The long frontier route stays unpaved.
+        self.assertNotIn("valewood_blackwater", {r["id"] for r in config["routes"]})
+        # City circles are exactly the Lost Cities predefined cities (centre of the centre chunk).
+        by_id = {c["id"]: c for c in config["cities"]}
+        for city in WORLD["cities"]:
+            circle = by_id[city["id"]]
+            self.assertEqual(circle["x"], city["center_chunk"][0] * 16 + 8)
+            self.assertEqual(circle["z"], city["center_chunk"][1] * 16 + 8)
+            self.assertEqual(circle["radius"], city["radius_blocks"])
+        placed = json.loads(files["data/underground_city/worldgen/placed_feature/corridor_roads.json"])
+        self.assertEqual(placed, {"feature": "underground_city:corridor_roads", "placement": []})
+        modifier = json.loads(files["data/underground_city/forge/biome_modifier/corridor_roads.json"])
+        self.assertEqual(modifier["type"], "forge:add_features")
+        self.assertEqual(modifier["step"], "top_layer_modification")
+        self.assertEqual(modifier["biomes"], "#minecraft:is_overworld")
+
+    def test_world_package_requires_the_core_mod_that_registers_the_road_feature(self):
+        metadata = tomllib.loads(render(WORLD)["META-INF/mods.toml"].decode())
+        dependencies = {d["modId"]: d for d in metadata["dependencies"]["underground_city_world"]}
+        self.assertTrue(dependencies["underground_city"]["mandatory"])
+        self.assertTrue(dependencies["lostcities"]["mandatory"])
+
+    def test_road_feature_rejects_unsafe_policies(self):
+        bad = copy.deepcopy(CORRIDORS)
+        bad["construction_policy"]["road_width_blocks"] = 40
+        with self.assertRaisesRegex(ValueError, "road_width_blocks"):
+            road_feature(WORLD, bad)
+        bad = copy.deepcopy(CORRIDORS)
+        bad["road_generation"]["new_chunks_only"] = False
+        with self.assertRaisesRegex(ValueError, "newly generated"):
+            road_feature(WORLD, bad)
+        bad = copy.deepcopy(CORRIDORS)
+        bad["road_generation"]["build_route_kinds"] = ["nothing"]
+        with self.assertRaisesRegex(ValueError, "No buildable"):
+            road_feature(WORLD, bad)
+        bad = copy.deepcopy(CORRIDORS)
+        bad["routes"][0]["waypoints"][0] = [1.5, 2]
+        with self.assertRaisesRegex(ValueError, "integer"):
+            road_feature(WORLD, bad)
 
 
 if __name__ == "__main__":

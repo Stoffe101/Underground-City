@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "title": "Build timing circuits for maintenance",
+  "career": "technician",
+  "level": 2,
+  "item": "minecraft:repeater",
+  "count": 4,
+  "credits": 80,
+  "xp": 180,
+  "capacity": 4,
+  "refill_ticks": 6000
+}

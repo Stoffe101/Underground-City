@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "city": "ironhaven",
+  "item": "underground_city:security_fabric",
+  "unit_price": 22,
+  "initial": 10,
+  "capacity": 24,
+  "units_per_interval": 2,
+  "interval_ticks": 78000,
+  "max_order": 8
+}

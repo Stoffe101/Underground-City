@@ -32,3 +32,7 @@ Full three/four-city deployment, live urban crowd simulation, mass faction wars,
 ## Exit evidence
 
 Version manifest, server/client startup logs, test screenshots, test save backup/reload results, short recorded user journeys, performance samples, known-issues list, and pass/fail table. No 'done' without actual evidence.
+
+## Current implementation evidence
+
+The October 14 pass supplies a starter legal produce/deliver → credits/XP → unlock → buy loop, three vanilla orders per career, one named vanilla supply clerk, and actual provider GameTests/client screenshots. This does not complete the milestone: named district residents, story quests, TaCZ research, skill trees, taxes, connected clients and surveyed terrain remain absent. See [readiness](oct19-test-readiness.md).

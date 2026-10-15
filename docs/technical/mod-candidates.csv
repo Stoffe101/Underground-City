@@ -1,5 +1,5 @@
 id,display_name,project_url,domain,priority,status,release_target,notes
-lost_cities,The Lost Cities,https://www.curseforge.com/minecraft/mc-mods/the-lost-cities,world,critical,candidate,1.20.1 Forge,Profile spike required
+lost_cities,The Lost Cities,https://www.curseforge.com/minecraft/mc-mods/the-lost-cities,world,critical,testing,1.20.1 Forge,1.20-7.5.5 native generation verified at three anchors; MIT; highway planner ignores predefined cities (see world notes)
 custom_npcs,CustomNPCs-Unofficial,https://www.curseforge.com/minecraft/mc-mods/customnpcs-unofficial,npc,critical,candidate,1.20.1 Forge,NPC scripting and server spike
 lootr,Lootr,https://www.curseforge.com/minecraft/mc-mods/lootr,loot,critical,candidate,1.20.1 Forge,Imported chest test
 tacz,Timeless and Classics Zero,https://www.curseforge.com/minecraft/mc-mods/timeless-and-classics-zero,combat,critical,candidate,1.20.1 Forge,Blueprint and NPC interaction
@@ -29,3 +29,4 @@ origins_ui_fixes,Origins QoL UI Fixes,https://www.curseforge.com/minecraft/mc-mo
 locks_reforged,Locks Reforged,https://www.curseforge.com/minecraft/mc-mods/locks-reforged,property,high,candidate,1.20.1 Forge,Lock picking doors and chests; check generated structure integration and shared burglary inventory
 lootchest_refill,[TACZ] Lootchest Refill,https://www.curseforge.com/minecraft/mc-mods/lootchest-refill,property,critical,candidate,1.20.1 Forge,1.1.2 pinned file 7711372; timers min/max items; test shared apartment stock and economics
 faction_friction,Faction Friction,https://www.curseforge.com/minecraft/mc-mods/faction-friction,factions,high,candidate,1.20.1 Forge,1.8.0R pinned file 9042001; territory diplomacy war; test safe civilian crossings and city affiliations
+qshop,Q Shop,https://github.com/QLNPLUS/Q-shop,economy,critical,testing,1.20.1 Forge 1.8.4,Official addon API; real Core buy sell work orders and two-client restart tested; full pack pending

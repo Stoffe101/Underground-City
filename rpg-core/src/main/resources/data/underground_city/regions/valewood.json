@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "id": "valewood",
+  "dimension": "minecraft:overworld",
+  "center_chunk": [
+    126,
+    44
+  ],
+  "radius_blocks": 410
+}

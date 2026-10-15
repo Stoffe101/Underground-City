@@ -40,7 +40,7 @@ public final class CitizenGameTests {
 
     @GameTest(template = "empty")
     public static void terminalAndOptionalQShopCommand(GameTestHelper helper) {
-        check(new ResourceLocation(UndergroundCity.MOD_ID, "operations_terminal")
+        check(ResourceLocation.fromNamespaceAndPath(UndergroundCity.MOD_ID, "operations_terminal")
             .equals(ForgeRegistries.BLOCKS.getKey(UndergroundCity.TERMINAL.get())),
             "Original one-block operations PC missing from block registry");
         if (ModList.get().isLoaded("qshop")) {

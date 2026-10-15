@@ -3,7 +3,7 @@ import groovy.json.JsonSlurper
 plugins {
     id 'eclipse'
     id 'idea'
-    id 'net.minecraftforge.gradle' version '[6.0,6.2)'
+    id 'net.minecraftforge.gradle' version '6.0.54'
 }
 
 version = mod_version
@@ -16,13 +16,21 @@ minecraft {
     copyIdeResources = true
     runs {
         configureEach {
-            workingDirectory project.file('run')
+            workingDirectory project.file(providers.gradleProperty('ucRunDir').orElse('run').get())
             property 'forge.logging.console.level', 'info'
             mods {
                 underground_city { source sourceSets.main }
             }
         }
         client {
+            if (providers.gradleProperty('ucWorldTour').orNull == 'true') {
+                jvmArgs '-Duc.worldTour=true', '-Xmx2G', '-XX:ActiveProcessorCount=2'
+                args '--username', 'UC_WorldSurvey', '--width', '1920', '--height', '1080'
+            }
+            if (providers.gradleProperty('ucJourneyClient').isPresent()) {
+                jvmArgs '-Duc.journey.client=true', '-Xmx1G', '-XX:ActiveProcessorCount=2'
+                args '--username', providers.gradleProperty('ucJourneyClient').get(), '--width', '1920', '--height', '1080'
+            }
             if (providers.gradleProperty('ucVisualCapture').orNull == 'true') {
                 def scale = providers.gradleProperty('ucVisualScale').orElse('3').get()
                 def screenWidth = providers.gradleProperty('ucVisualWidth').orElse('1920').get()
@@ -31,7 +39,18 @@ minecraft {
                 args '--width', screenWidth, '--height', screenHeight
             }
         }
-        server { args '--nogui' }
+        server {
+            args '--nogui'
+            if (providers.gradleProperty('ucWorldSurvey').orNull == 'true') {
+                jvmArgs '-Duc.worldSurvey=true', '-XX:ActiveProcessorCount=2'
+            }
+            if (providers.gradleProperty('ucSeedScan').isPresent()) {
+                jvmArgs "-Duc.seedScan=${providers.gradleProperty('ucSeedScan').get()}", '-XX:ActiveProcessorCount=2'
+            }
+            if (providers.gradleProperty('ucJourneyPhase').isPresent()) {
+                jvmArgs "-Duc.journey.phase=${providers.gradleProperty('ucJourneyPhase').get()}", '-Xmx1G', '-XX:ActiveProcessorCount=2'
+            }
+        }
         gameTestServer {
             property 'forge.enabledGameTestNamespaces', mod_id
         }
@@ -64,6 +83,13 @@ if (worldCandidateId != null && !worldCandidateId.trim().isEmpty()) {
 }
 repositories {
     mavenCentral()
+    // Official author release. Transient API dependency, never bundled in Core.
+    ivy {
+        url = uri('https://github.com/QLNPLUS/Q-shop/releases/download')
+        patternLayout { artifact 'v[revision]-forge-1.20.1/[artifact]-[revision].[ext]' }
+        metadataSources { artifact() }
+        content { includeGroup 'com.qshop' }
+    }
     if (screeningMod != null || worldCandidate != null) {
         maven {
             url = uri('https://cursemaven.com')
@@ -73,6 +99,10 @@ repositories {
 }
 dependencies {
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
+    compileOnly fg.deobf('com.qshop:qshop-forge-1.20.1:1.8.4')
+    if (providers.gradleProperty('ucEconomyTest').orNull == 'true') {
+        runtimeOnly fg.deobf('com.qshop:qshop-forge-1.20.1:1.8.4')
+    }
     if (screeningMod != null) {
         // CurseMaven coordinates are derived solely from pinned reviewed JSON IDs.
         runtimeOnly fg.deobf("curse.maven:uc-onboarding-${screeningMod.project_id}:${screeningMod.file_id}")
@@ -81,6 +111,19 @@ dependencies {
         runtimeOnly fg.deobf("curse.maven:uc-world-${worldCandidate.project_id}:${worldCandidate.file_id}")
     }
 }
+configurations { qshopOriginal }
+dependencies { qshopOriginal 'com.qshop:qshop-forge-1.20.1:1.8.4' }
+def verifyQShopRelease = tasks.register('verifyQShopRelease') {
+    inputs.files(configurations.qshopOriginal)
+    doLast {
+        def digest = java.security.MessageDigest.getInstance('SHA-256')
+            .digest(configurations.qshopOriginal.singleFile.bytes).encodeHex().toString()
+        if (digest != 'ab32e33a7190bbcb7b4b10d9fe6ae4a38f3e65eba5ea1ac9f315d3bd798c5199') {
+            throw new GradleException('Official Q Shop 1.8.4 release checksum mismatch')
+        }
+    }
+}
+tasks.named('compileJava').configure { dependsOn verifyQShopRelease }
 tasks.named('processResources', ProcessResources).configure {
     def props = [
         minecraft_version_range: minecraft_version_range,

@@ -2,7 +2,7 @@
   "currencies": [
     {
       "id": "credits",
-      "name": "Credits",
+      "name": "Cr",
       "color": "#55D3BC"
     }
   ]

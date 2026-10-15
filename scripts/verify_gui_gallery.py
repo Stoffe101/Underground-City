@@ -51,7 +51,9 @@ def inspect(manifest: dict, screenshots: Path, width: int, height: int) -> dict:
             # Sample centre UI so background scenery isn't mistaken for
             # legitimate contrast or changed panel.
             sw, sh = image.size
-            crop = image.crop((int(sw*.31),int(sh*.23),int(sw*.69),int(sh*.78)))
+            # Include the complete centered UI, especially Q Shop's left wallet.
+            # A narrow central grid alone makes funded/empty wallets look equal.
+            crop = image.crop((int(sw*.17),int(sh*.12),int(sw*.83),int(sh*.88)))
             avg = ImageStat.Stat(crop).stddev
             if max(avg) < 5:
                 raise ValueError(f"Blank or nearly flat centre panel: {path.name}")

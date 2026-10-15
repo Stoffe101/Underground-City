@@ -56,3 +56,7 @@ These are **candidate packs for locally installed A/B experiments**, not include
 ## Private-play installation
 
 Use official downloads/launchers locally and preserve creator notices. Git contains only our authored code/configuration and references. No mirrored JARs, pack ZIPs, borrowed city structures or proprietary config sets are committed. If no API credentials or direct-download rights are available, automation should produce a manifest/instructions and clearly label downloads as manual rather than silently scraping a site.
+
+## Current starter-slice ownership
+
+Q Shop 1.8.4 was selected for the live starter wallet/trades after official API/source review and real Forge transaction tests. Core's work orders are narrow world-specific glue for shared bounded employer demand, accepted-order UUIDs, actual-item delivery and coordinated recovery. They reuse vanilla crafting and Q Shop currency APIs rather than building a bank, new crafting framework or a full quest UI. FTB Quests remains a candidate for story/team objectives; its static reward model does not by itself coordinate these three persisted stores. No overlapping quest/role/XP provider was added. Vanilla villager AI supplies the first real named clerk; a larger NPC framework still needs separate evaluation.

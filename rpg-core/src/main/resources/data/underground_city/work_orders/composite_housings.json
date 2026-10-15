@@ -1,0 +1,17 @@
+{
+  "schema_version": 2,
+  "title": "Composite equipment housings",
+  "career": "smith",
+  "level": 5,
+  "foreign_visits": 2,
+  "requirements": [
+    {
+      "item": "underground_city:composite_housing",
+      "count": 2
+    }
+  ],
+  "credits": 225,
+  "xp": 600,
+  "capacity": 2,
+  "refill_ticks": 12000
+}

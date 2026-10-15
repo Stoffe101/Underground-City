@@ -4,8 +4,9 @@ Underground City is a private-play hobby project with original material licensed
 
 ## Working rules
 
-- Make one focused change per feature branch, e.g. `feat/registration-screen`, `docs/professions`, `test/mod-compatibility`.
-- Open a draft PR early. Do not merge untested mods, copied map content, or breaking save changes.
+- Make one focused change per task branch. Use lowercase kebab-case names with the prefixes `feature/`, `fix/`, `docs/`, `test/`, `refactor/`, `chore/`, or `hotfix/` (for example, `feature/registration-screen`, `fix/economy-ledger`, `test/mod-compatibility`). Use `feature/` rather than `feat/` for branches.
+- Open a draft PR early; reuse the active task branch/PR. Never auto-merge or bypass checks without the owner's instruction. Do not merge untested mods, copied map content, or breaking save changes.
+- Use concise conventional commit subjects such as `feat:`, `fix:`, and `docs:`. Do not add automatic AI coauthor trailers or generated-by footers; maintain accurate original Git authorship, which may still be a cloud bot account. See [Claude Code instructions](CLAUDE.md) and [agent workflow](docs/technical/agent-workflow.md).
 - For design decisions, update the relevant doc and [decision log](docs/production/decisions.md). For implementation, include test evidence.
 - Store configs, recipes, quests, and gameplay values in versioned, human-readable data. Do not hardcode map coordinates into feature logic.
 - Add exact dependency versions, source URLs, license information, client/server classifications, and known conflicts to the mod audit.

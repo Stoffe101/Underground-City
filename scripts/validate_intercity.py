@@ -56,6 +56,25 @@ def validate(data: dict[str, dict]) -> list[str]:
     routes = route_info.get("routes", [])
     if len(routes) != 3:
         errors.append("Exactly three paired city corridors expected for a connected triangular network")
+    # Quantitative travel budget: detect accidental continent-scale mandatory highways.
+    # This is a planning-time straight-line polyline estimate, NOT an in-game
+    # travel-time benchmark with doors, mobs, loading, elevation or checkpoints.
+    budget = route_info.get("transport", {}).get("routine_travel_budget", {})
+    speed = budget.get("estimated_walking_blocks_per_second")
+    allowance = budget.get("reserved_city_access_minutes")
+    hard_limit = budget.get("maximum_routine_door_to_door_minutes")
+    preferred = budget.get("preferred_between_city_edges_minutes")
+    if not (type(speed) in (float, int) and 3.5 <= speed <= 6
+            and type(allowance) in (float, int) and 0 <= allowance <= 4
+            and type(hard_limit) in (float, int) and 0 < hard_limit <= 10
+            and type(preferred) is list and len(preferred) == 2
+            and 2 <= preferred[0] < preferred[1] <= 6):
+        errors.append("Routine road travel budget missing or exceeds 10-minute maximum")
+    if budget.get("mandatory_route_must_not_require_vehicle") is not True:
+        errors.append("Mandatory journeys must be possible without owning a car")
+    if budget.get("long_frontier_route_optional_until_viable_ferry_or_convoy") is not True:
+        errors.append("Unpaved frontier travel may not be mandatory until a viable fast alternative exists")
+    build_kinds = set(route_info.get("road_generation", {}).get("build_route_kinds", []))
     routes_by_pair = {}
     crossings = 0
     route_ids = set()
@@ -73,6 +92,12 @@ def validate(data: dict[str, dict]) -> list[str]:
             errors.append(f"Duplicate edge for {frm} and {to}")
         routes_by_pair[pair] = route
         points = route["waypoints"]
+        if route.get("kind") in build_kinds and type(speed) in (float, int) and speed > 0 \
+                and type(allowance) in (float, int) and type(hard_limit) in (float, int):
+            distance_blocks = sum(_distance(a, b) for a, b in zip(points, points[1:]))
+            projected = distance_blocks / speed / 60 + allowance
+            if projected > hard_limit:
+                errors.append(f"{ident}: estimated mandatory walking journey {projected:.1f} min exceeds {hard_limit}-minute maximum")
         if len(points) < 2 or any(len(p) != 2 or any(type(x) is not int for x in p) for p in points):
             errors.append(f"{ident}: waypoints must have integer X,Z coordinates")
             continue

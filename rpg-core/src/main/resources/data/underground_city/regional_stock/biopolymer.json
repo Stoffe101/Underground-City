@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "city": "valewood",
+  "item": "underground_city:biopolymer",
+  "unit_price": 24,
+  "initial": 14,
+  "capacity": 30,
+  "units_per_interval": 3,
+  "interval_ticks": 78000,
+  "max_order": 8
+}

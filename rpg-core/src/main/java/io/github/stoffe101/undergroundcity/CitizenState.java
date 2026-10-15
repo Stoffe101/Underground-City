@@ -85,6 +85,16 @@ public final class CitizenState extends SavedData {
         return updated;
     }
 
+    /** Restore a journaled reward after a crash without awarding it twice. */
+    void restoreCareerXp(UUID uuid, int target) {
+        Citizen citizen = citizens.get(uuid);
+        if (citizen == null || target < 0 || target > ProgressionRules.MAX_XP) {
+            throw new IllegalArgumentException("Invalid career recovery");
+        }
+        citizen.careerXp.put(citizen.career, Math.max(citizen.careerXp(), target));
+        setDirty();
+    }
+
     @Override
     public CompoundTag save(CompoundTag root) {
         root.putInt("schema_version", 1);

@@ -1,0 +1,17 @@
+{
+  "schema_version": 2,
+  "title": "Agricultural sensor repair visits",
+  "career": "technician",
+  "level": 4,
+  "foreign_visits": 1,
+  "requirements": [
+    {
+      "item": "underground_city:agri_sensor_repair",
+      "count": 4
+    }
+  ],
+  "credits": 210,
+  "xp": 330,
+  "capacity": 2,
+  "refill_ticks": 12000
+}

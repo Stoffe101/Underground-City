@@ -1,6 +1,6 @@
 # Progressive property and apartment restocking
 
-**Direction:** houses and apartments should not remain permanently empty after a robbery, but also should not instantly reset to full value on opening, leaving the area, or relogging. **Status: policy, pure simulation, tests; no Minecraft container runtime integration.**
+**Direction:** houses and apartments should not remain permanently empty after a robbery, but also should not instantly reset to full value on opening, leaving the area, or relogging. **Status: policy and pure simulation (tests) plus a first runtime container, the Household Safe (see the end of this document). It is not placed in generated buildings, has no NPC funding and no evidence/police integration.**
 
 ## Core model
 
@@ -46,3 +46,21 @@ The dependency-free code in [validate_intercity.py](../../scripts/validate_inter
 Connect a test house to a chosen inventory/refill mod, pick a real locked door, remove a few items, let active server time elapse, return to see partial stock, verify persistence through restart, and confirm a second player cannot duplicate the items. Add NPC witness/report and actual home property keys, then enforce per-home economic stock and regional visitor heat. Iterate timers based on 30–60-minute real co-op playtests.
 
 Importantly, a household can become attractive again later. You are never forced to abandon an entire city because every building was looted once.
+
+## Implemented prototype: the Household Safe (October 15, 2026)
+
+`underground_city:property_cache` (display name **Household Safe**) is a Core block entity holding **one shared physical inventory** of nine slots. It is the first real "one authoritative inventory per property" implementation, built in Core because neither Lootchest Refill nor Lootr models active-time clocks, shared stock and consequences together (Locks Reforged remains the planned lock UI).
+
+**Using it**
+
+- An operator places the block (creative OP tab) and looks at it: `/uc_property set <policy>` registers it with one of five generated policies (`apartment_common`, `apartment_affluent`, `office`, `industrial`, `illegal_cache`) and places the initial stock; `/uc_property status` and `/uc_property clear` inspect and unregister it. Players cannot craft, place a restocking safe, or break it in survival.
+- A registered citizen right-clicks. A locked safe costs **lockpicks** (craftable: 2 iron nuggets + 1 stick -> 2 lockpicks): 1 for low, 2 medium, 3 high, 4 faction security; a short supply consumes nothing. A forced safe stays open for one active minute for any citizen (the inventory is shared by both players) and then locks again.
+- Opening restocks lazily from the policy's context loot table using elapsed **active** time: one stack per interval (apartment: 40 minutes; affluent: 70; office 60; industrial 55; cache 90), into **empty slots only**, never banking a backlog while full and never overwriting player-placed items. Seeds are deterministic per position and restock number, so reopening cannot re-roll.
+- Each forced entry raises resident **vigilance** (maximum 3), which lengthens the interval by 25% per level; it falls one level per four quiet intervals. Every forced entry posts a Forge `PropertyForcedEntryEvent` for future witness/evidence systems (nothing listens yet) and records the intruder and break-in count in the block entity.
+- No hopper, pipe or item-handler automation can read or write the safe.
+
+**Contextual loot** ([content/property/loot-tables.json](../../content/property/loot-tables.json)): ordinary homes yield only vanilla goods; affluent homes, offices, industrial premises and criminal caches add rare Core regional goods as "imports" (security fabric, control circuits, machined parts/alloy, optics, encrypted designs). The gun-part stand-ins (machined parts, optical components, encrypted designs) never drop in civilian homes. TaCZ parts are not installed, so no firearms or attachments appear.
+
+**Evidence:** six dedicated-server GameTests (loot variety/scarcity sampling, the design's 15/40/120/240-minute table, protection and NBT persistence, lockpick economics and event, vigilance, shared inventory/automation/unbreakability).
+
+**Not implemented:** automatic placement in Lost Cities buildings, ownership or household NPCs, witnesses, evidence/police, alarms, Locks Reforged/Lootr integration, fences, an in-world client capture of the vanilla chest screen, and NPC budgets that fund restocked goods. The five `chests/*` loot tables in the generated world prototype remain unassigned placeholders and are superseded by `property/*`.

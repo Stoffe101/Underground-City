@@ -99,6 +99,16 @@ jobs:
             build/qshop-stage/config/qshop/shops/uc_starter_supply.json
           retention-days: 14
           if-no-files-found: error
+      - name: Stage reproducible original fresh-world profile
+        run: python scripts/install_world_prototype.py --server-root build/world-survey-stage
+      - name: Upload original world profile and setup
+        uses: actions/upload-artifact@v4
+        with:
+          name: uc-fresh-world-profile-${{ github.sha }}
+          path: |
+            build/world-survey-stage/config/
+            build/world-survey-stage/defaultconfigs/
+          retention-days: 7
       - name: Explicit scope
         run: |
           echo "## Three-city experiment" >> "$GITHUB_STEP_SUMMARY"

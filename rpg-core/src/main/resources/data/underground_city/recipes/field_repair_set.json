@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "group": "underground_city_regional",
+  "ingredients": [
+    {
+      "item": "underground_city:machined_parts"
+    },
+    {
+      "item": "underground_city:biopolymer"
+    },
+    {
+      "item": "minecraft:stick"
+    }
+  ],
+  "result": {
+    "item": "underground_city:field_repair_set",
+    "count": 2
+  }
+}

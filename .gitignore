@@ -25,6 +25,7 @@ reports/
 
 # Launcher / server / user instances
 run/
+run-*/
 runs/
 instance/
 instances/

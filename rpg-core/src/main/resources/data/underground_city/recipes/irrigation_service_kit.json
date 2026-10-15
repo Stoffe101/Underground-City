@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "group": "underground_city_regional",
+  "ingredients": [
+    {
+      "item": "underground_city:machined_parts"
+    },
+    {
+      "item": "underground_city:rare_seeds"
+    },
+    {
+      "item": "underground_city:rare_seeds"
+    },
+    {
+      "item": "minecraft:bucket"
+    }
+  ],
+  "result": {
+    "item": "underground_city:irrigation_service_kit",
+    "count": 2
+  }
+}

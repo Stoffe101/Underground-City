@@ -1,6 +1,6 @@
 # Inter-city dependency, frontier travel, and living conflict
 
-**Direction:** the three cities must be connected, hostile enough to make foreign travel risky, and mutually necessary for serious character progression. The player does not spend the campaign permanently inside their starting city. This design is now captured as machine-validated **planning data**, not live quest/combat code.
+**Direction:** the three cities must be connected, hostile enough to make foreign travel risky, and mutually necessary for serious character progression. The player does not spend the campaign permanently inside their starting city. This design is captured as machine-validated **planning data**. One slice is live: recurring tier-2/3 work orders require rival-city visits recorded from a terminal placed inside a city circle (server-side, durable), and regional goods are sold only at that city's exchange. Guarded crossings, checkpoints, convoys, war states and any physical road are **not** implemented, and native Lost Cities highways do not link the fixed cities (see the [world notes](../technical/three-city-prototype.md)).
 
 ## Three genuinely different suppliers
 
@@ -36,17 +36,31 @@ Examples: a gunsmith needs Ironhaven machining and Blackwater optics for advance
 
 ## Roads, bridges, and topology
 
-Three planned corridors form a *connected triangle*: Ironhaven–Valewood (guarded highway, candidate causeway), Ironhaven–Blackwater (militarized highway, candidate viaduct), and Valewood–Blackwater (longer frontier bypass for traders or smugglers).
+Three corridors form a *connected triangle*: Ironhaven–Valewood (guarded highway), Ironhaven–Blackwater (militarized highway), and Valewood–Blackwater (a longer frontier edge for traders or smugglers).
 
-[Corridor plan](../../content/region-blueprints/corridors.json) records provisional block-coordinate polylines, gate locations, modes and security. The CI-rendered SVG is deliberately labeled as schematic. **None of these roads, bridges, mountains, rivers or checkpoints have been generated or surveyed in the world yet.**
+[Corridor plan](../../content/region-blueprints/corridors.json) records block-coordinate polylines, gate locations, modes and security. **The two highways are now real blocks**: Core's `corridor_roads` worldgen feature builds a 7-wide deck with parapets and supports into newly generated chunks, and rides four free blocks above any water so a boat can pass beneath ([measurements](../technical/three-city-prototype.md#roads-and-bridges-original-generated-with-new-chunks)). Water between the cities is deliberate: **a bridge is the safe way over and a boat is the alternative.** In the reference seed the Valewood–Blackwater edge is open sea, so a direct trip needs a boat; the other way round goes through Ironhaven. Checkpoint gate houses, rest stops, patrols and the frontier road are still design only.
 
-### How roads should actually be built
+### Routine travel time is a gameplay constraint (confirmed October 15)
 
-1. Test an exact pinned **Lost Cities 7.5.x** release, which includes newer inter-city highway planning; compare generated city-center connections against our three predetermined centers. The automatic highway algorithm does not promise to connect arbitrary predefined cities.
-2. Generate the world on a disposable seed and capture terrain heightmaps at every planned crossing. A requested bridge may need to be moved if there is no actual water, gorge, river or suitable deck level.
-3. Prefer Lost Cities' native highway/bridge parts and reproducible world editing or structure imports for the gaps, rather than inventing another full world-generation engine.
-4. Add two-sided border checkpoints, roads navigable by the chosen vehicle mod, pedestrian routes, abandoned service stations and risk/reward stops.
-5. Pregen affected chunks, then screenshot-review road alignment, entry/exit, safety rails, terrain seams and city approach landmarks. Preserve backups and never overwrite an existing inhabited save.
+**Do not turn regional crafting into a walking simulator.** A few minutes of ordinary travel is fine; a **10–15-minute forced walk is unacceptable**. Budget a preferred **3–5 minutes between city outskirts**, around **6–8 minutes door-to-door** for a normal contract, and **never more than 10 minutes of mandatory routine travel**, including approximately two minutes for entering/leaving districts. The budget assumes walking speed around 4.317 blocks/second and must be checked in real multiplayer; it is not an assurance of actual elapsed gameplay.
+
+The surveyed seed-579 paved routes have about **1,252** and **1,117** built centreline blocks. At ordinary walking speed those are approximately **4.8** and **4.3 minutes** of moving, not 10–15, excluding checkpoints, within-city access and detours. They already pass the provisional length budget; **do not change a proven world seed purely to solve coordinate spacing**. Seed changes affect terrain, while city anchors/waypoints govern road length. Choose a new seed only after comparing landscape, bridge placement, performance and architectural quality.
+
+- Make travel interesting through **optional** small settlements, roadside workshops, homes, abandoned service stations, lootable buildings, farms, encounters, transport stops and story hooks, preferably something useful every **300–450 blocks**. Do not create compulsory micro-stops or identical filler buildings.
+- Starter travel must remain viable **on foot**; an optional car, bicycle, horse or boat makes longer trips convenient. Check road width and vehicle movement before committing to a vehicle mod.
+- After first discovery, licensed convoys/limited transport and delivery orders can reduce repeated commuting, subject to price and faction risk.
+- **Valewood–Blackwater:** the unpaved long frontier detour must remain optional until a direct boat/ferry or similarly reasonable passage is actually playable. Never make a 10–15-minute detour a required career bottleneck.
+- Gatehouses and police inspections should offer gameplay choices, but routine administrative waits must not inflate essential trips past the cap.
+
+The data validator checks a crude route-length budget for newly declared paved corridors; a final playtest must time a real trip from working terminal to working terminal with NPCs and normal loading.
+
+### How roads are built
+
+1. Lost Cities' native highway planner ignores predefined cities (measured), so it is not used.
+2. A deterministic profile is derived from the chunk generator's own heights for the seed, then slope-limited so walking, riding and vehicles never meet more than a half-block rise per two blocks.
+3. Generation is limited to new chunks of a fresh world; it never edits an existing save.
+4. A native dedicated-server survey reads the real blocks along each road; a native client photographs a bridge from the side and from the deck. Both must be reviewed on every change, because passing numbers can still look wrong.
+5. Still to add: two-sided border checkpoints, vehicle-mod compatibility, abandoned service stations and risk/reward stops.
 
 ## Living cities rather than empty terrain
 

@@ -1,0 +1,17 @@
+{
+  "schema_version": 2,
+  "title": "Licensed security service call",
+  "career": "gunsmith",
+  "level": 4,
+  "foreign_visits": 1,
+  "requirements": [
+    {
+      "item": "underground_city:licensed_service_kit",
+      "count": 2
+    }
+  ],
+  "credits": 200,
+  "xp": 330,
+  "capacity": 2,
+  "refill_ticks": 12000
+}

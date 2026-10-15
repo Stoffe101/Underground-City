@@ -1,6 +1,6 @@
-# Proposed technical architecture
+# Runtime architecture and planned extensions
 
-**Pre-production specification, not implemented software.** Minecraft 1.20.1, Forge 47.x and Java 17 form a working platform hypothesis until tested with exact versions.
+The current starter slice uses Minecraft 1.20.1, Forge 47.4.10 and Java 17. Core identity/progression, the PC, Q Shop-backed work orders and one vanilla supplier are implemented. City populations, taxes, crime, story, regional crafting and other proposed modules below remain future work.
 
 ## Ownership of behavior
 
@@ -12,7 +12,7 @@ Minecraft and existing mods provide blocks, items, rendering, gun handling, terr
 | --- | --- |
 | Identity | Player onboarding, city citizenship, career assignment |
 | Progression | Branch points, career and general skill XP, gates and anti-farming |
-| Economy | Accounts, ledgers, stock, contracts, taxation and projects |
+| Economy | Q Shop owns the wallet/trades; Core journals bounded profession orders. City treasuries, taxes, escrow and projects remain planned |
 | World registry | Cities, named regions, buildings, sites and import anchors |
 | NPC simulation | Named characters, shop stock, schedules, aggregate off-screen workers |
 | Factions & law | Territory, reputation, evidence, licensing, crime and arrest |
@@ -31,4 +31,4 @@ Minecraft and existing mods provide blocks, items, rendering, gun handling, terr
 
 ## Technical gate
 
-Before implementing Forge-specific hooks/persistence, build a clean mod scaffold, run a dedicated server, connect two clients, and record actual API versions. The `rpg-core/`, `pack/`, `data/`, `tools/` directories are future targets, not currently built.
+Before implementing Forge-specific hooks/persistence, build a clean mod scaffold, run a dedicated server, connect two clients, and record actual API versions. `rpg-core/` is built and runtime-tested; source design data lives under `content/` and automation under `scripts/`. Paid work-order persistence and provider boundaries are described in [economy integration](economy-integration.md).

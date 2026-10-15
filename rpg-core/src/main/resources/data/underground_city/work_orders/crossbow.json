@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "title": "Build the licensed range crossbow",
+  "career": "gunsmith",
+  "level": 2,
+  "item": "minecraft:crossbow",
+  "count": 1,
+  "credits": 80,
+  "xp": 180,
+  "capacity": 4,
+  "refill_ticks": 6000
+}

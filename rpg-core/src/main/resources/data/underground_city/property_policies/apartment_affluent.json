@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "capacity": 9,
+  "initial_stock": 7,
+  "interval_ticks": 84000,
+  "items_per_interval": 1,
+  "lockpicks": 3,
+  "loot_table": "underground_city:property/apartment_affluent"
+}

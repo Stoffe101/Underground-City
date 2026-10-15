@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "title": "Harvest for the local bakery",
+  "career": "farmer",
+  "level": 1,
+  "item": "minecraft:wheat",
+  "count": 16,
+  "credits": 24,
+  "xp": 125,
+  "capacity": 4,
+  "refill_ticks": 6000
+}
