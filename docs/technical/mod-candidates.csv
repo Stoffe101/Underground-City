@@ -1,5 +1,5 @@
 id,display_name,project_url,domain,priority,status,release_target,notes
-lost_cities,The Lost Cities,https://www.curseforge.com/minecraft/mc-mods/the-lost-cities,world,critical,candidate,1.20.1 Forge,Profile spike required
+lost_cities,The Lost Cities,https://www.curseforge.com/minecraft/mc-mods/the-lost-cities,world,critical,testing,1.20.1 Forge,1.20-7.5.5 native generation verified at three anchors; MIT; highway planner ignores predefined cities (see world notes)
 custom_npcs,CustomNPCs-Unofficial,https://www.curseforge.com/minecraft/mc-mods/customnpcs-unofficial,npc,critical,candidate,1.20.1 Forge,NPC scripting and server spike
 lootr,Lootr,https://www.curseforge.com/minecraft/mc-mods/lootr,loot,critical,candidate,1.20.1 Forge,Imported chest test
 tacz,Timeless and Classics Zero,https://www.curseforge.com/minecraft/mc-mods/timeless-and-classics-zero,combat,critical,candidate,1.20.1 Forge,Blueprint and NPC interaction

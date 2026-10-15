@@ -44,6 +44,9 @@ minecraft {
             if (providers.gradleProperty('ucWorldSurvey').orNull == 'true') {
                 jvmArgs '-Duc.worldSurvey=true', '-XX:ActiveProcessorCount=2'
             }
+            if (providers.gradleProperty('ucSeedScan').isPresent()) {
+                jvmArgs "-Duc.seedScan=${providers.gradleProperty('ucSeedScan').get()}", '-XX:ActiveProcessorCount=2'
+            }
             if (providers.gradleProperty('ucJourneyPhase').isPresent()) {
                 jvmArgs "-Duc.journey.phase=${providers.gradleProperty('ucJourneyPhase').get()}", '-Xmx1G', '-XX:ActiveProcessorCount=2'
             }

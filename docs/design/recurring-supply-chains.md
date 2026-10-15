@@ -1,6 +1,6 @@
 # Recurring regional supply chains
 
-**Status (October 2026):** original procurement data, reproducible planning model and unit tests, **not installed Minecraft recipes, NPC inventories, actual wallets or in-game travel detection**.
+**Status (October 15, 2026):** the nine commodities, twelve recurring recipes/orders, finite shared supplier stock, city-gated purchases and rival-city visit gates are **implemented in Core as original items and datapack data** and tested on a dedicated server and with two real clients (see [economy integration](../technical/economy-integration.md#regional-exchange-recurring-orders-and-rival-city-gates-october-15-2026)). Supplier NPCs, warehouses, permits, convoys, imports and any physical road travel check are **still design only**. The Python model below remains the planning reference.
 
 ## The key gameplay rule
 
@@ -16,7 +16,7 @@ You can buy more than one recipe's worth at once, bring a vehicle or hire a conv
 | **Valewood** | Rare seeds, biopolymer, agricultural catalysts | Advanced crops, composite materials, ecological engineering |
 | **Blackwater** | Control circuits, optical components, encrypted designs | Security, precision equipment, electronics, research |
 
-The nine items are **provisional logical commodity IDs**, not registered item IDs or final recipe ingredients. Source: [recurring supply data](../../content/progression/recurring-supply.json). Before adding items, we will cross-reference the chosen installed mods and prefer actual existing components where appropriate.
+The nine commodities are now registered original Core items (`underground_city:refined_alloy` and so on) whose registry IDs can be rebound by datapack to compatible mod items later; their numbers are still provisional. Source: [recurring supply data](../../content/progression/recurring-supply.json). Before adding items, we will cross-reference the chosen installed mods and prefer actual existing components where appropriate.
 
 ## Why all careers repeatedly cross borders
 
@@ -52,13 +52,13 @@ The current model caps each direct order at **8 units**, allows multiple orders 
 - Suppliers and apartments recover instead of becoming permanently empty. Player absence doesn't bankrupt a business or reset a shop's stock; the simulated clock only advances during active play.
 - Difficulty should mostly come from hostile territory, access costs, limited stock, rare sources and good logistics, rather than arbitrary teleport bans or extremely grindy recipes.
 
-## Implemented *model*, not live gameplay
+## Planning model (unit tested) and its live counterpart
 
 [Supply simulation](../../scripts/simulate_regional_supply.py) is dependency-free Python. It models live-clock stock recovery, shared supplier stock, location- and permit-gated purchases, player inventories, credit deductions, atomic ingredient consumption, and durable idempotent transaction IDs. It also groups deficits by originating city.
 
 [Test cases](../../tests/test_regional_supply.py) cover repeated batch crafting, buying in another city, supplier contention between two players, absent offline progression, credit/stock depletion, save/restore and rejection of duplicated transactions.
 
-**Server integration remains entirely to be done.** These calculations will need a Forge/KubeJS or existing mod adapter to enforce actual coordinates, citizenship, NPC budgets, inventories, database/world save durability and game crafting registration. We must inspect existing compatible economy and item mods before choosing the narrowest path. The simulation presently creates starter stock and supplier replenishment without an actual production workforce and therefore must **not** be used to mint live economic currency.
+**The Core implementation now covers** citizenship, placed-terminal geography, shared stock, active-time replenishment, durable idempotent purchases and crafting registration. **Still missing:** NPC budgets/production behind the shelves, real supplier locations and permits, convoys/imports and compatible-mod item mappings. The simulation creates starter stock without a production workforce and must **not** be used to mint live currency.
 
 ## Final acceptance
 

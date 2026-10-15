@@ -21,15 +21,24 @@ import java.util.List;
 public final class WorldTourHarness {
     private static final boolean ENABLED=Boolean.getBoolean("uc.worldTour");
     private static final List<String> CITIES=List.of("ironhaven","valewood","blackwater");
+    /** Two views per city: straight down for layout/streets and an oblique skyline. */
+    private record Shot(String city,String kind) {}
+    private static final List<Shot> SHOTS=CITIES.stream().flatMap(city->java.util.stream.Stream.of(new Shot(city,"top"),new Shot(city,"oblique"))).toList();
     // Software rendering and Lost Cities generation are slow: wait for real terrain, but always capture
     // (and let the hosted checker reject blank frames) before the stage limit.
-    private static final int MIN_LOADED_CHUNKS=60;
+    private static final int MIN_LOADED_CHUNKS=60,MIN_RENDERED_SECTIONS=30,STABLE_TICKS=100;
+    private static int lastSections,stableTicks;
     private static final long READY_WAIT_NANOS=240_000_000_000L,STAGE_LIMIT_NANOS=330_000_000_000L;
     private static boolean opening,positioned,captureRequested,captured,finished;
     private static int current,ticks;
     private static double targetX,targetZ;
     private static long stageStarted=System.nanoTime(),lastReport;
     private WorldTourHarness() {}
+
+    private static int renderedSections(Minecraft mc) {
+        try { return mc.levelRenderer==null?0:mc.levelRenderer.countRenderedChunks(); }
+        catch(NullPointerException notReady) { return 0; }
+    }
 
     /** The chunk mesh dispatcher does not exist until the first level frame; treat that as "not idle yet". */
     private static boolean meshesIdle(Minecraft mc) {
@@ -45,7 +54,7 @@ public final class WorldTourHarness {
         long now=System.nanoTime();
         if(now-lastReport>30_000_000_000L) {
             lastReport=now;
-            String state="city="+CITIES.get(current)+", ticks="+ticks+", positioned="+positioned
+            String state="city="+SHOTS.get(current).city()+"-"+SHOTS.get(current).kind()+", ticks="+ticks+", positioned="+positioned
                 +", captured="+captured+", screen="+(mc.screen==null?"none":mc.screen.getClass().getName())
                 +", player="+(mc.player!=null)+", server="+(mc.getSingleplayerServer()!=null)
                 +", loadedChunks="+(mc.level==null?0:mc.level.getChunkSource().getLoadedChunksCount())
@@ -82,17 +91,17 @@ public final class WorldTourHarness {
             // Client ticks run after the target is cleared but before terrain is
             // rendered. Read the completed framebuffer at render-tick END.
             captureRequested=false;captured=true;
-            Screenshot.grab(mc.gameDirectory,"uc-world-"+CITIES.get(current)+".png",mc.getMainRenderTarget(),
+            Screenshot.grab(mc.gameDirectory,"uc-world-"+SHOTS.get(current).city()+"-"+SHOTS.get(current).kind()+".png",mc.getMainRenderTarget(),
                 response->System.out.println("[UC-WORLD-VISUAL] "+response.getString()));
         }
         if(!captured || mc.screen!=null) return;
-        String name="uc-world-"+CITIES.get(current)+".png";
+        String name="uc-world-"+SHOTS.get(current).city()+"-"+SHOTS.get(current).kind()+".png";
         try {
             var file=folder.resolve("screenshots").resolve(name);
             if(!Files.isRegularFile(file) || Files.size(file)<1024) return;
-            captured=false;positioned=false;ticks=0;stageStarted=now;
-            if(++current==CITIES.size()) {
-                Files.writeString(folder.resolve("world-tour-complete.txt"),"actual_survey_world=true\nviewports=1920x1080_gui3\ncities=3\n");
+            captured=false;positioned=false;ticks=0;stageStarted=now;lastSections=0;stableTicks=0;
+            if(++current==SHOTS.size()) {
+                Files.writeString(folder.resolve("world-tour-complete.txt"),"actual_survey_world=true\nviewports=1920x1080_gui3\ncities=3\nshots=6\n");
                 finished=true;mc.stop();
             }
         } catch(java.io.IOException error) {throw new IllegalStateException("World tour screenshot failed",error);}
@@ -103,30 +112,54 @@ public final class WorldTourHarness {
         Minecraft mc=Minecraft.getInstance();var server=mc.getSingleplayerServer();
         if(mc.player==null || mc.level==null || server==null || mc.screen!=null) return;
         if(!positioned) {
-            String city=CITIES.get(current);
+            Shot shot=SHOTS.get(current);
             // Definitions are server datapack resources, not client assets.
+            double centerX,centerZ;
             try(var reader=server.getResourceManager().getResource(ResourceLocation.fromNamespaceAndPath(
-                UndergroundCity.MOD_ID,"lostcities/predefinedcities/"+city+".json")).orElseThrow().openAsReader()) {
+                UndergroundCity.MOD_ID,"lostcities/predefinedcities/"+shot.city()+".json")).orElseThrow().openAsReader()) {
                 var data=JsonParser.parseReader(reader).getAsJsonObject();
-                targetX=data.get("chunkx").getAsInt()*16+40;targetZ=data.get("chunkz").getAsInt()*16+40;
+                centerX=data.get("chunkx").getAsInt()*16+8;centerZ=data.get("chunkz").getAsInt()*16+8;
             } catch(java.io.IOException error) {throw new IllegalStateException(error);}
-            var playerId=mc.player.getUUID();double x=targetX,z=targetZ;
+            boolean top=shot.kind().equals("top");
+            targetX=top?centerX:centerX-75;targetZ=top?centerZ:centerZ-75;
+            float yaw=top?0:-45,pitch=top?90:32;
+            var playerId=mc.player.getUUID();double x=targetX,z=targetZ,cx=centerX,cz=centerZ;String shotName=shot.city()+"-"+shot.kind();
             server.execute(()->{
                 var player=server.getPlayerList().getPlayer(playerId);
                 if(player==null) throw new IllegalStateException("World-tour player missing");
                 player.setGameMode(GameType.SPECTATOR);server.overworld().setDayTime(6000);
                 server.overworld().setWeatherParameters(6000,0,false,false);
-                // Keep the ground within terrain fog distance from this aerial camera.
-                player.teleportTo(server.overworld(),x,150,z,135,55);
+                // Height is read on the server thread so a not-yet-loaded chunk cannot stall the client.
+                // Tallest real block within 48 blocks of the centre. Lost Cities chunks may carry unprimed heightmaps
+                // (they read -64), so scan the blocks themselves from the sky downward.
+                int ground=server.overworld().getMinBuildHeight();
+                var column=new net.minecraft.core.BlockPos.MutableBlockPos();
+                for(int dx=-48;dx<=48;dx+=24) for(int dz=-48;dz<=48;dz+=24) {
+                    for(int y=server.overworld().getMaxBuildHeight()-1;y>server.overworld().getMinBuildHeight();y--) {
+                        if(!server.overworld().getBlockState(column.set((int)cx+dx,y,(int)cz+dz)).isAir()) {ground=Math.max(ground,y);break;}
+                    }
+                }
+                int cameraY=ground+(top?45:30);
+                var probe=new net.minecraft.core.BlockPos.MutableBlockPos((int)Math.floor(x),cameraY,(int)Math.floor(z));
+                while(cameraY<server.overworld().getMaxBuildHeight()-2 && !server.overworld().getBlockState(probe.setY(cameraY)).isAir()) cameraY++;
+                System.out.println("[UC-WORLD-VISUAL] camera for "+shotName+": ground="+ground+" y="+cameraY);
+                player.teleportTo(server.overworld(),x,cameraY,z,yaw,pitch);
             });
             positioned=true;ticks=0;return;
         }
         if(Math.abs(mc.player.getX()-targetX)>2 || Math.abs(mc.player.getZ()-targetZ)>2) return;
         if(++ticks<160 || !mc.level.getChunkSource().hasChunk((int)Math.floor(targetX/16),(int)Math.floor(targetZ/16))) return;
-        boolean terrainReady=mc.level.getChunkSource().getLoadedChunksCount()>=MIN_LOADED_CHUNKS && meshesIdle(mc);
+        // A queue-idle flag alone is unreliable: meshes may not even be scheduled yet. Require a minimum number of
+        // chunks in the frustum whose count has stopped changing for several seconds of client ticks.
+        int sections=renderedSections(mc);
+        stableTicks=sections==lastSections?stableTicks+1:0;lastSections=sections;
+        boolean terrainReady=mc.level.getChunkSource().getLoadedChunksCount()>=MIN_LOADED_CHUNKS && meshesIdle(mc)
+            && sections>=MIN_RENDERED_SECTIONS && stableTicks>=STABLE_TICKS;
         if(!terrainReady && System.nanoTime()-stageStarted<READY_WAIT_NANOS) return;
-        System.out.println("[UC-WORLD-VISUAL] Capturing "+CITIES.get(current)+": loadedChunks="
-            +mc.level.getChunkSource().getLoadedChunksCount()+", terrainReady="+terrainReady);
+        System.out.println("[UC-WORLD-VISUAL] Capturing "+SHOTS.get(current).city()+"-"+SHOTS.get(current).kind()+": loadedChunks="
+            +mc.level.getChunkSource().getLoadedChunksCount()+", renderedSections="+sections+", stableTicks="+stableTicks
+            +", camera="+String.format(java.util.Locale.ROOT,"%.1f,%.1f,%.1f",mc.player.getX(),mc.player.getY(),mc.player.getZ())
+            +", terrainReady="+terrainReady);
         captureRequested=true;
     }
 }

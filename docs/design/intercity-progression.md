@@ -1,6 +1,6 @@
 # Inter-city dependency, frontier travel, and living conflict
 
-**Direction:** the three cities must be connected, hostile enough to make foreign travel risky, and mutually necessary for serious character progression. The player does not spend the campaign permanently inside their starting city. This design is now captured as machine-validated **planning data**, not live quest/combat code.
+**Direction:** the three cities must be connected, hostile enough to make foreign travel risky, and mutually necessary for serious character progression. The player does not spend the campaign permanently inside their starting city. This design is captured as machine-validated **planning data**. One slice is live: recurring tier-2/3 work orders require rival-city visits recorded from a terminal placed inside a city circle (server-side, durable), and regional goods are sold only at that city's exchange. Guarded crossings, checkpoints, convoys, war states and any physical road are **not** implemented, and native Lost Cities highways do not link the fixed cities (see the [world notes](../technical/three-city-prototype.md)).
 
 ## Three genuinely different suppliers
 

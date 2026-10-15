@@ -1,6 +1,6 @@
 # Burglary, property, and multi-path progression
 
-**Accepted design direction requested by player:** peaceful professions and optional burglary are equally interesting paths through the same living economy. **Not implemented.**
+**Accepted design direction requested by player:** peaceful professions and optional burglary are equally interesting paths through the same living economy. **Mostly not implemented; one shared-stock, lockpick-forced Household Safe exists (see [restocking](gradual-property-restock.md#implemented-prototype-the-household-safe-october-15-2026)).**
 
 ## Property archetypes
 

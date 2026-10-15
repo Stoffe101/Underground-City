@@ -2,7 +2,7 @@
 
 You are developing **Underground City**, an original, private-play, two-player-first, semi-modern Minecraft living-world RPG. Act as a careful engineer, technical researcher, and game designer, not a code generator chasing feature counts.
 
-**Status:** Pre-production. The repository has an experimental Forge RPG Core and CI, **not** a playable modpack or an approved complete third-party mod set. Do not describe planned, speculative, or headless-tested functionality as playable or verified.
+**Status:** Pre-production. The repository has a Forge RPG Core, hosted CI and a **tested starter slice** (registration, a placeable terminal, Q Shop 1.8.4 credits, twelve starter and twelve recurring regional work orders, a shared-stock regional exchange, a Household Safe, one named supplier, native GUI captures and a two-client journey). It is **not** a finished or approved complete modpack: no inhabited districts, no TaCZ, no roads between the cities, no police/raids/black market. Do not describe planned, speculative, simulation-only or headless-tested functionality as playable or verified. Hosted evidence and its limits are in `docs/production/oct19-test-readiness.md`.
 
 ## Mandatory orientation and sources of truth
 
@@ -33,7 +33,7 @@ The full vision lives under `docs/design/`. Do not reduce it to this synopsis or
 
 - **First playable:** `docs/production/mvp-v0.1.md` is the milestone contract: one urban district and outskirts, a handful of meaningful NPCs, onboarding, **early Farmer and Gunsmith loops**, player-specific progression and loot, a small money/tax loop, a blueprint, quests, and tested save/rejoin. Do **not** attempt all four careers, all cities, or full warfare before the slice works.
 - **Reuse first:** audit a mod's exact version, config capabilities, APIs, licence, dependencies, client/server behavior, and maintenance before creating a replacement. Prefer configuration/datapacks/scripts, then a narrow adapter, then licensed forks or new systems where justified. See `docs/technical/reuse-first.md`.
-- **Candidate platform only:** Minecraft 1.20.1, Forge 47.x, and Java 17 are under validation; do not silently present them as a finalized stack.
+- **Platform:** Minecraft 1.20.1, Forge 47.4.10 and Java 17 are accepted for the current starter slice (D-007) and are what CI builds and tests; they are not declared final for the whole project, and every other mod is a candidate until its own exact-version evidence exists.
 - **Single authority:** select one responsible provider for onboarding, wallets, progression, NPC behavior, and other overlapping mechanics. Do not combine competing mods with duplicate ownership.
 - **Integrity:** server-authoritative financial and gameplay state, versioned durable saves, idempotent rewards/transactions, per-player separation, stable namespaced IDs, migrations, and no hardcoded geography in business logic.
 - **Performance:** bound active NPC/pathfinding work, reconcile off-screen simulation, keep world loading and dedicated-server performance measurable.
@@ -52,7 +52,7 @@ Do not claim success simply because CI compiled. Record what still requires a re
 
 ## Git, branches, pull requests, and authorship
 
-- Branch names must use short, predictable prefixes: `feature/<slug>`, `fix/<slug>`, `docs/<slug>`, `test/<slug>`, `refactor/<slug>`, `chore/<slug>`, or `hotfix/<slug>`. Slugs are lowercase kebab-case. **Use `feature/`, not `feat/`, for branch names.** Reuse the active task branch and PR rather than creating duplicates.
+- Branch names must use short, predictable prefixes: `feature/<slug>`, `fix/<slug>`, `docs/<slug>`, `test/<slug>`, `refactor/<slug>`, `chore/<slug>`, or `hotfix/<slug>`. Slugs are lowercase kebab-case. **Use `feature/`, not `feat/`, for branch names.** Reuse the active task branch and PR rather than creating duplicates. The long-lived branches `integration` (PR #17) and `feat/three-city-world-prototype` predate this convention and keep their names; new branches follow it.
 - Commit messages should describe outcomes, using readable conventional prefixes such as `feat:`, `fix:`, `docs:`, `test:`, `refactor:`, and `chore:`. No automated empty/noise commits, destructive history rewriting, or unrelated changes in one commit.
 - Open a focused PR (draft while incomplete). Include scope, why, tests and limitations, documentation, risks/rollback, and any required manual tests. Do not auto-merge, bypass checks, force-push, or write directly to `main` without explicit direction.
 - **Do not append `Co-Authored-By: Claude...`, `Generated with Claude`, or similar AI credit footers to commit messages or PR text.** Keep commits clean, and check the final commit message. Shared project settings disable optional attribution where supported.
@@ -65,3 +65,7 @@ Do not claim success simply because CI compiled. Record what still requires a re
 - Track mod candidates as **unverified** until exact versions, licensing, and real compatibility evidence exist. ModLens, Modrinth, Context7, and other MCP tools support research; they cannot prove a working dedicated-server/client combination.
 - Never publish mods, modpacks, code, third-party material, or generated assets to external services without explicit authorization.
 - Follow the existing UX design and screenshot review principles in `docs/design/ui-ux.md`; screenshots require actual visual inspection before a screen is called polished.
+
+## Reconciliation record (October 15, 2026)
+
+This file was brought from `main` into the `integration` branch. Where it conflicted with newer accepted facts it was updated rather than ignored: the status line (a tested starter slice exists), the platform line (D-007 accepted for the slice) and the branch note above. Nothing in the vision, delivery priority, rights, attribution or documentation rules was changed. `AGENTS.md` remains canonical for repository-wide rules, and unresolved items stay open in `docs/production/decisions.md`.

@@ -85,6 +85,7 @@ jobs:
           python scripts/install_world_prototype.py --server-root rpg-core/run-world-survey
           python scripts/install_qshop_templates.py --server-root rpg-core/run-world-survey
           printf 'eula=true\n' > rpg-core/run-world-survey/eula.txt
+          cp content/region-blueprints/corridors.json rpg-core/run-world-survey/corridors.json
           printf 'level-seed=20261014\nserver-ip=127.0.0.1\nonline-mode=false\nview-distance=3\nsimulation-distance=3\n' > rpg-core/run-world-survey/server.properties
           timeout 900s gradle -p rpg-core runServer -PucWorldCandidate=lostcities -PucEconomyTest=true -PucRunDir=run-world-survey -PucWorldSurvey=true --no-daemon --stacktrace
           python - <<'PY'
@@ -166,7 +167,7 @@ jobs:
           from PIL import Image, ImageStat
           import hashlib
           hashes=set(); failures=[]
-          for city in ('ironhaven','valewood','blackwater'):
+          for city in ('ironhaven-top','ironhaven-oblique','valewood-top','valewood-oblique','blackwater-top','blackwater-oblique'):
               png=Path(f'rpg-core/run-world-tour/screenshots/uc-world-{city}.png').read_bytes()
               assert png[:8]==b'\x89PNG\r\n\x1a\n'
               assert unpack('>II',png[16:24])==(1920,1080)

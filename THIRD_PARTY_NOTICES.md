@@ -11,3 +11,6 @@ Original Underground City material: Copyright © 2026 Stoffe101. All rights rese
 For the decision procedure, see [third-party policy](docs/legal/third-party-policy.md).
 
 The starter slice uses the official **Q Shop 1.8.4** addon API by **QLNPLUS**. Q Shop is All Rights Reserved and must be obtained separately from its author. Our JAR ships only original integration code/configuration and compact text overrides; no Q Shop code, textures or binaries are redistributed. Lost Cities profile semantics were reviewed against McJty's 7.5.5 source; original generated city definitions do not include its assets.
+
+**The Lost Cities** (McJty, MIT License) is used at runtime for the experimental three-city world and read by research tools. No Lost Cities source, assets or binaries are committed or uploaded. Its Modrinth artifact was fetched into the cloud development container only to reproduce survey results. The Underground City item and Household Safe textures are original generated art (see the asset register).
+
