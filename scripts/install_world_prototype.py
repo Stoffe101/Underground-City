@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """Stage original city data and a source-checked Lost Cities 7.5.5 profile in a NEW instance.
 
-Does not install Lost Cities, generate terrain, survey roads, or overwrite saves.
+Does not install Lost Cities, generate terrain, survey roads, or overwrite saves. The staged package also
+carries the configuration of the road/bridge worldgen feature, which only affects chunks generated after the
+world is created (use seed 579 to reproduce the documented measurements).
 """
 from __future__ import annotations
 import argparse
