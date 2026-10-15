@@ -92,7 +92,7 @@ def validate(data: dict[str, dict]) -> list[str]:
             errors.append(f"Duplicate edge for {frm} and {to}")
         routes_by_pair[pair] = route
         points = route["waypoints"]
-        if (route.get("kind") in build_kinds and type(speed) in (float, int) and speed > 0 \
+        if route.get("kind") in build_kinds and type(speed) in (float, int) and speed > 0 \
                 and type(allowance) in (float, int) and type(hard_limit) in (float, int):
             distance_blocks = sum(_distance(a, b) for a, b in zip(points, points[1:]))
             projected = distance_blocks / speed / 60 + allowance
