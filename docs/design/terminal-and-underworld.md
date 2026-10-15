@@ -82,3 +82,15 @@ These are **candidates**, not installed combinations. A headless mod boot isn't 
 `scripts/simulate_terminal_operations.py` and its tests cover a single-source catalog, secure price ranges, optional rare safe loot, shipment state/time, legal insurance versus illegal seizure, shared supplier reservations, buyer budget escrow, exact item-instance deposits, idempotent settlements, player-offline recovery clocks and raid tier/gear/objective gates.
 
 Everything is a **logical simulation**. The actual game needs verified coordinates, inventory NBT, physically spawned containers, real NPC buyers/guards, quest progress, controller UI, saved state and multi-user server locks. All of this remains tracked on [the integration issue](https://github.com/Stoffe101/Underground-City/issues/14) and [the property issue](https://github.com/Stoffe101/Underground-City/issues/13).
+
+## Implementation status (October 15, 2026)
+
+The terminal now has six native tabs (**Contracts, Skills, Imports, Delivery, Market, Raids**). Implemented against the
+real server: the **Contracts** page (legal and underground filters, requirements, rewards, buyer and trust gates),
+the **Skills** page (three columns - legal, foundation, underground - with an unlock button validated on the
+server), and the **Market** page (the city's law, contacts and heat). **Imports** still opens only the hardcoded
+`uc_starter_supply` shop. **Delivery** and **Raids** remain honest placeholders.
+
+The Technician's underground job is *not* a tab: it is the interactive trace at a placed Secured Data Terminal
+(`ChallengeScreen`), described in [legal and underground careers](legal-and-underground-careers.md#the-technicians-trace-d-054).
+Physical dropboxes, shipment timers and raid targets are still the Python prototype only.

@@ -8,11 +8,11 @@ The world uses The Lost Cities' [1.20.1 predefined-city registry](https://mcjty.
 
 | City | Center (block X, Z) | Radius | Generated massing / intention |
 | --- | --- | --- | --- |
-| Ironhaven | 0, 0 | 600 blocks | Dense industrial skyline, 9-floor cap |
-| Valewood | 2016, 704 | 410 blocks | Lower-rise, more parks, 3-floor cap |
-| Blackwater | -2016, 1072 | 570 blocks | Dense commercial towers, 11-floor cap |
+| Ironhaven | 8, 8 (chunk 0, 0) | 600 blocks | Dense industrial skyline, 9-floor cap |
+| Valewood | 1992, 280 (chunk 124, 17) | 410 blocks | Lower-rise, more parks, 3-floor cap |
+| Blackwater | 1048, 2024 (chunk 65, 126) | 570 blocks | Dense commercial towers, 11-floor cap |
 
-These starting locations, skyline caps, terrain seed, and styles are **test values**, not approved canonical geography. No city actually has its own hand-made factory, vineyard, residence interior or functioning NPC population yet. Lost Cities' own highway planner never connects these fixed centers (measured, see below); Core's corridor road feature does, for the two main roads. Furnished interiors and NPC homes still require asset work.
+These locations (a **close triangle**, see [the rework below](#october-15-rework-a-close-triangle-with-a-road-on-every-edge)), skyline caps, terrain seed, and styles are **test values**, not approved canonical geography. No city actually has its own hand-made factory, vineyard, residence interior or functioning NPC population yet. Lost Cities' own highway planner never connects these fixed centers (measured, see below); Core's corridor road feature does, for the two main roads. Furnished interiors and NPC homes still require asset work.
 
 All three styles inherit the mod's standard city style instead of copying third-party structures. A unique city style primarily changes **building density, floor cap and park frequency**. Proper unique architecture, landmarks, NPC home/job markers, civic services and apartment interiors follow after the preliminary world is viewed in-engine.
 

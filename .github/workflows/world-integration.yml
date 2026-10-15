@@ -90,7 +90,9 @@ jobs:
           python scripts/install_qshop_templates.py --server-root rpg-core/run-world-survey
           printf 'eula=true\n' > rpg-core/run-world-survey/eula.txt
           cp content/region-blueprints/corridors.json rpg-core/run-world-survey/corridors.json
-          printf 'level-seed=579\nserver-ip=127.0.0.1\nonline-mode=false\nview-distance=3\nsimulation-distance=3\n' > rpg-core/run-world-survey/server.properties
+          # One source of truth: the reference seed lives in the blueprint, chosen by the two-stage seed scan.
+          seed=$(jq -r '.road_generation.reference_seed' content/region-blueprints/corridors.json)
+          printf 'level-seed=%s\nserver-ip=127.0.0.1\nonline-mode=false\nview-distance=3\nsimulation-distance=3\n' "$seed" > rpg-core/run-world-survey/server.properties
           timeout 1700s gradle -p rpg-core runServer -PucWorldCandidate=lostcities -PucEconomyTest=true -PucRunDir=run-world-survey -PucWorldSurvey=true --no-daemon --stacktrace
           python - <<'PY'
           import json
@@ -100,7 +102,7 @@ jobs:
           assert len(report['observations'])==3
           assert report['qshop_credits_ready'] is True, report
           roads=report['roads']['routes']
-          assert [r['id'] for r in roads]==['ironhaven_valewood','ironhaven_blackwater'], roads
+          assert [r['id'] for r in roads]==['ironhaven_valewood','ironhaven_blackwater','valewood_blackwater'], roads
           for road in roads:
               # Real blocks read along the whole centreline (one sample per block).
               assert road['continuous'] is True, road
@@ -193,7 +195,7 @@ jobs:
                   frames+=[f"road-{route['id']}-bridge-oblique", f"road-{route['id']}-deck"]
               if 'land_showcase' in route:
                   frames.append(f"road-{route['id']}-land")
-          assert sum(f.startswith('road-') for f in frames)==6, 'both built roads need a bridge and a ground stretch to photograph'
+          assert sum(f.startswith('road-') for f in frames)==9, 'all three built roads need a bridge, a deck and a ground stretch to photograph'
           assert not (set(p.name for p in Path('rpg-core/run-world-tour/screenshots').glob('uc-world-*.png'))-{f'uc-world-{f}.png' for f in frames}), 'unexpected frame'
           for city in frames:
               png=Path(f'rpg-core/run-world-tour/screenshots/uc-world-{city}.png').read_bytes()

@@ -64,3 +64,10 @@ Importantly, a household can become attractive again later. You are never forced
 **Evidence:** six dedicated-server GameTests (loot variety/scarcity sampling, the design's 15/40/120/240-minute table, protection and NBT persistence, lockpick economics and event, vigilance, shared inventory/automation/unbreakability).
 
 **Not implemented:** automatic placement in Lost Cities buildings, ownership or household NPCs, witnesses, evidence/police, alarms, Locks Reforged/Lootr integration, fences, an in-world client capture of the vanilla chest screen, and NPC budgets that fund restocked goods. The five `chests/*` loot tables in the generated world prototype remain unassigned placeholders and are superseded by `property/*`.
+
+## Update: exceptional finds (October 15, 2026)
+
+Registering a safe now also rolls its one-time exceptional find (see [exploration and loot](exploration-and-loot.md));
+`/uc_property status` prints `exceptional_find`. Safes placed by `/uc_district build founders_row` register at
+build time. The restock itself is unchanged and is still lazy, active-time and into empty slots only; it is still
+**not** a refilling of arbitrary world containers.

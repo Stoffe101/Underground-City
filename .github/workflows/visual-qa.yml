@@ -29,7 +29,7 @@ jobs:
   screenshot:
     name: Minecraft ${{ matrix.profile }} (real framebuffer)
     runs-on: ubuntu-latest
-    timeout-minutes: 18
+    timeout-minutes: 24
     strategy:
       fail-fast: false
       max-parallel: 1
@@ -73,8 +73,8 @@ jobs:
           from pathlib import Path
           d=json.loads(Path('content/qa/gui-coverage.json').read_text())
           assert d['schema_version']==1
-          assert len(d['integrated_surfaces'])==18
-          assert len({s['expected_file'] for s in d['integrated_surfaces']})==18
+          assert len(d['integrated_surfaces'])==30
+          assert len({s['expected_file'] for s in d['integrated_surfaces']})==30
           assert d['screenshots_real_framebuffer']
           PY
       - name: Launch real Forge client under software OpenGL, capture every integrated tab
@@ -94,13 +94,13 @@ jobs:
           mkdir -p rpg-core/run/screenshots
           rm -f rpg-core/run/screenshots/uc-*.png
           setsid xvfb-run -a -s "-screen 0 ${UC_W}x${UC_H}x24" \
-            timeout 510s gradle -p rpg-core runClient \
+            timeout 750s gradle -p rpg-core runClient \
               -PucEconomyTest=true -PucVisualCapture=true -PucVisualScale="$UC_SCALE" \
               -PucVisualWidth="$UC_W" -PucVisualHeight="$UC_H" \
               --no-daemon --stacktrace > /tmp/uc-visual-client.log 2>&1 &
           game_pid=$!
           completed=0
-          for step in $(seq 1 170); do
+          for step in $(seq 1 250); do
             if test -s rpg-core/run/visual-capture-complete.txt; then
               completed=1
               break

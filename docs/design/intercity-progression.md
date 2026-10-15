@@ -69,3 +69,9 @@ World generation is just physical scaffolding. Each city needs at least one func
 ## Proof of completion
 
 Three actual road-connected, traversable urban areas; different-looking functional markets; two-player crossing demonstrations including a civilian contract and a risky route; tier 2 and tier 3 profession unlocks using genuine installed items; route-specific loot; persistent faction/visitor response. **The current code only validates the plan and an isolated stock-recovery model.**
+
+## Update: close triangle (October 15, 2026)
+
+The three cities now form a close triangle (see [three-city notes](../technical/three-city-prototype.md)): every pair
+has a built road and bridge, so the earlier "optional frontier detour" for Valewood-Blackwater is gone. Underground
+deliveries cross these real corridors and their checkpoint gates, which is what gives their risk meaning.
