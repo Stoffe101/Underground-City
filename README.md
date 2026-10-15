@@ -42,6 +42,10 @@ Our custom **RPG Core** will make the authoritative decisions about players, pro
 
 **Development status:** The repository now includes an experimental Forge RPG Core source module and automated short-lived CI build artifacts, including local launcher-import starter archives. It is **not** a finished modpack and contains no selected city world, NPC population, third-party mod set or complete gameplay.
 
+## October 15 sprint: legal and underground careers, a closer triangle, real guns and vehicles in the dev pack
+
+Every career now has a **legal path and an underground path on the same character** (no alignment, no lockout): data-driven skill trees, 19 contracts, city laws, contraband classified by item and NBT, checkpoint searches with a seeded no-reroll die, heat and buyer trust, finite rare loot, a restricted fictional crop, and the Technician's interactive trace ([design and honest status](docs/design/legal-and-underground-careers.md), decisions D-049 to D-057). The three cities are laid out as a **close triangle with a built road and bridge on every edge** (about 4 minutes on foot between city edges). A hash-pinned [development pack](docs/technical/dev-pack.md) adds real TaCZ firearms and blueprints, a motorboat with a persistent hold and Immersive Vehicles as **runtime-only** test dependencies; nothing third-party is committed. Not done: guard NPCs, vehicle driving tests, a populated district, a playtested economy. See the sprint report in [docs/production](docs/production/sprint-2026-10-15.md).
+
 ## Ownership and license
 
 **Copyright © 2026 Stoffe101. All rights reserved.** See [LICENSE](LICENSE). The license governs **original Underground City material only**. Minecraft, third-party mods, map downloads, artworks, and their trademarks remain subject to their respective owners' terms. Public repository visibility does **not** mean the project is open source. This project is intended for private play, not for sale or public modpack publication.
