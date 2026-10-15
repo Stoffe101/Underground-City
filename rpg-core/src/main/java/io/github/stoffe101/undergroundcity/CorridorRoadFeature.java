@@ -144,7 +144,7 @@ public final class CorridorRoadFeature extends Feature<CorridorRoadConfig> {
         }
         if (u >= deckEdge + 1.6) return onDeck || onRail;
         int clearFrom = onRail ? deckY + (bridge ? 3 : 2) : deckY + 1;
-        // Headroom for walkers, riders and boats' masts beneath nothing: four free blocks above the deck.
+        // Four free blocks of headroom above the deck for walkers and riders.
         for (int y = clearFrom; y <= deckY + 4; y++) clear(level, p.set(x, y, z));
         // Open cutting: remove anything standing above the headroom until two free blocks are met.
         int free = 0;
