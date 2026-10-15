@@ -28,7 +28,7 @@ The docs here distinguish **confirmed product direction**, **design proposals**,
 - [Mod and loader audit](technical/mod-audit.md)
 - [Compare candidate modpacks and installed JARs](technical/modpack-comparison.md)
 - [Map creation and imports](technical/world-pipeline.md)
-- [Experimental three-city generator and loot](technical/three-city-prototype.md)
+- [Experimental three-city generator, generated roads and bridges, seed choice, and loot](technical/three-city-prototype.md)
 - [Reuse-first mod and modpack policy](technical/reuse-first.md)
 - [First-join class and city selection candidates](technical/onboarding-reuse-spike.md)
 - [Pinned first-login test profiles and automation](technical/onboarding-screening-packs.md)

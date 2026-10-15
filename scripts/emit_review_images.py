@@ -15,6 +15,10 @@ from pathlib import Path
 from PIL import Image, ImageStat
 
 
+# Few long lines instead of many short ones: job-log readers that return only the last N lines then still get every image.
+LINE = 3000
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("paths", nargs="+")
@@ -48,8 +52,8 @@ def main() -> int:
         print(f"UC-REVIEW-IMAGE-BEGIN name={path.name} format={args.format} w={image.width} h={image.height} "
               f"bytes={len(data)} sha256={digest}")
         encoded = base64.b64encode(data).decode()
-        for index in range(0, len(encoded), 120):
-            print("UC-B64 " + encoded[index:index + 120])
+        for index in range(0, len(encoded), LINE):
+            print("UC-B64 " + encoded[index:index + LINE])
         print(f"UC-REVIEW-IMAGE-END name={path.name}")
     return 0
 
