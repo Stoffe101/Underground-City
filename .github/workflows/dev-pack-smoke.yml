@@ -10,6 +10,7 @@ on:
       - 'content/gameplay/contracts.json'
       - 'scripts/resolve_dev_pack.py'
       - 'scripts/fetch_dev_pack.py'
+      - 'scripts/run_prod_boot_check.py'
       - 'scripts/install_qshop_templates.py'
       - '.github/workflows/dev-pack-smoke.yml'
   workflow_dispatch:
@@ -55,23 +56,55 @@ jobs:
         run: python scripts/install_qshop_templates.py --server-root rpg-core/run-pack-${{ matrix.pack }}
       - name: Run the Core GameTests with the ${{ matrix.pack }} mods loaded
         run: gradle -p rpg-core runGameTestServer -PucPack=${{ matrix.pack }} -PucEconomyTest=true -PucRunDir=run-pack-${{ matrix.pack }} --no-daemon --stacktrace
-      - name: Confirm the optional cases ran against the real mods and were not skipped
+      - name: Confirm the mods really loaded and the tests ran (a server that failed to start still exits 0)
         run: |
           set -euo pipefail
           log=rpg-core/run-pack-${{ matrix.pack }}/logs/latest.log
           test -s "$log"
           if [ "${{ matrix.pack }}" = "firearms" ]; then
-            grep -E "Loading .*(tacz|taczblueprints)|tacz" "$log" | head -5
-            grep -q "firearmContractsExistExactlyWhenTheirModsAreInstalledAndPayRealBlueprints" "$log" || grep -q "All [0-9]* required tests passed" "$log"
+            grep -q "TaCZ Blueprints mod initializing" "$log"
+            grep -q "Registered synced data key tacz:" "$log"
           else
-            grep -E "modernlife|mtsofficialpack|mts" "$log" | head -5
+            grep -q "Welcome to MTS VERSION" "$log"
           fi
-          grep -E "All [0-9]* required tests passed" "$log"
+          grep -E "All [0-9]+ required tests passed" "$log"
       - name: Preserve diagnostics without third-party binaries or world saves
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: uc-dev-pack-${{ matrix.pack }}-diagnostics-${{ github.sha }}
           path: rpg-core/run-pack-${{ matrix.pack }}/logs/*.log
+          retention-days: 3
+          if-no-files-found: warn
+  production-boot:
+    name: Production-style dedicated server with every pinned mod
+    needs: pins
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.8'
+      - name: Build the reobfuscated Core jar
+        run: gradle -p rpg-core build --no-daemon --stacktrace
+      - name: Install Forge, stage the hash-verified mods and boot a real server
+        run: python scripts/run_prod_boot_check.py --sets firearms vehicles boats --work build/prod-boot
+      - name: Preserve the report and server log without jars or world saves
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: uc-prod-boot-${{ github.sha }}
+          path: |
+            build/prod-boot/prod-boot-report.json
+            build/prod-boot/server/boot-stdout.log
+            build/prod-boot/server/logs/latest.log
           retention-days: 3
           if-no-files-found: warn

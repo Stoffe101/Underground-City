@@ -103,7 +103,7 @@
       "mod_id": "modernlife",
       "role": "motorboat with a 27-slot persistent hold and fuel",
       "sets": [
-        "vehicles"
+        "boats"
       ],
       "requires": [],
       "side": {
@@ -112,7 +112,7 @@
       },
       "source_url": "https://modrinth.com/mod/modern-life/version/lI7HnN1T",
       "distribution": "download from the author's page; never commit the binary",
-      "notes": "All rights reserved. MotorboatEntity implements Container (27 slots) and saves its items through ContainerHelper (read from the jar bytecode, not yet exercised at runtime). Crafting is enabled by default (enableMotorboat)."
+      "notes": "All rights reserved. MotorboatEntity implements Container (27 slots) and saves its items through ContainerHelper (read from the jar bytecode). It reads its config in the mod constructor, which Forge throws on in the *development* environment only, so it cannot boot under ForgeGradle; it is exercised by the production-style boot check (scripts/run_prod_boot_check.py), not by -PucPack. Crafting is enabled by default (enableMotorboat)."
     },
     {
       "id": "immersive_vehicles",

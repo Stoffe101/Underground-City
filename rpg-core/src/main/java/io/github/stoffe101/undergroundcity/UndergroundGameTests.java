@@ -877,29 +877,12 @@ public final class UndergroundGameTests {
 
     // ------------------------------------------------------------------------------------------ vehicles (optional pack)
 
-    /** Runs only with {@code -PucPack=vehicles}: Core keeps no compile-time dependency on the vehicle mods. */
+    /** Runs only where Modern Life can load (it cannot under the ForgeGradle dev environment; see scripts/run_prod_boot_check.py). */
     @GameTest(template = "empty")
     public static void theMotorboatKeepsItsTwentySevenSlotCargoThroughASaveAndLoad(GameTestHelper helper) {
         if (!ModList.get().isLoaded("modernlife")) { helper.succeed(); return; }
-        net.minecraft.world.entity.EntityType<?> type = ForgeRegistries.ENTITY_TYPES.getValue(ResourceLocation.fromNamespaceAndPath("modernlife", "motorboat"));
-        check(type != null && type != net.minecraft.world.entity.EntityType.PIG, "modernlife:motorboat must be registered");
-        net.minecraft.world.entity.Entity boat = type.create(helper.getLevel());
-        check(boat instanceof net.minecraft.world.Container, "The motorboat must expose a Container");
-        net.minecraft.world.Container cargo = (net.minecraft.world.Container) boat;
-        check(cargo.getContainerSize() == 27, "Cargo hold size " + cargo.getContainerSize());
-        ItemStack named = new ItemStack(Items.IRON_SWORD);
-        named.setHoverName(net.minecraft.network.chat.Component.literal("Dray's crate"));
-        named.setDamageValue(37);
-        ItemStack contract = new ItemStack(core("unstamped_plate"), 5);
-        cargo.setItem(0, named); cargo.setItem(13, contract); cargo.setItem(26, new ItemStack(Items.WHEAT, 64));
-        CompoundTag saved = boat.saveWithoutId(new CompoundTag());
-        net.minecraft.world.entity.Entity restored = type.create(helper.getLevel());
-        restored.load(saved);
-        net.minecraft.world.Container again = (net.minecraft.world.Container) restored;
-        for (int slot = 0; slot < 27; slot++) {
-            check(ItemStack.matches(cargo.getItem(slot), again.getItem(slot)), "Cargo slot " + slot + " changed over a save and load");
-        }
-        check(again.getItem(0).hasCustomHoverName() && again.getItem(0).getDamageValue() == 37, "Named and damaged cargo must survive exactly");
+        List<String> problems = OptionalModProbes.boatCargoRoundTrip(helper.getLevel());
+        check(problems.isEmpty(), "Motorboat cargo: " + problems);
         helper.succeed();
     }
 
