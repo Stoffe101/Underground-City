@@ -1,0 +1,21 @@
+{
+  "schema_version": 3,
+  "title": "Quiet bale delivery",
+  "career": "farmer",
+  "level": 9,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "underground_city:sable_leaf_bale",
+      "count": 6
+    }
+  ],
+  "credits": 220,
+  "xp": 380,
+  "capacity": 2,
+  "refill_ticks": 18000,
+  "legality": "underground",
+  "requires_skill": "farmer.underground_trade",
+  "buyer": "marrow",
+  "trust_gain": 1
+}

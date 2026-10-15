@@ -1,0 +1,29 @@
+{
+  "schema_version": 3,
+  "title": "Commercial automation install",
+  "career": "technician",
+  "level": 5,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "minecraft:piston",
+      "count": 6
+    },
+    {
+      "item": "minecraft:observer",
+      "count": 6
+    }
+  ],
+  "credits": 190,
+  "xp": 340,
+  "capacity": 2,
+  "refill_ticks": 12000,
+  "legality": "legal",
+  "requires_skill": "technician.automation_install",
+  "rewards": [
+    {
+      "item": "underground_city:circuit_prototype",
+      "count": 1
+    }
+  ]
+}

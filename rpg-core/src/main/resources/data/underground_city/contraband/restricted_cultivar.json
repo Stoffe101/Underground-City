@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "category": "restricted_cultivar",
+  "title": "Controlled crops",
+  "entries": [
+    {
+      "item": "underground_city:sable_leaf_bale"
+    },
+    {
+      "item": "underground_city:sable_cutting"
+    }
+  ]
+}

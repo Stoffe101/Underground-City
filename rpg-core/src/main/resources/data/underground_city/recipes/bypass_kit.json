@@ -1,0 +1,26 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "group": "underground_city_restricted",
+  "ingredients": [
+    {
+      "item": "underground_city:control_circuits"
+    },
+    {
+      "item": "underground_city:control_circuits"
+    },
+    {
+      "item": "underground_city:optical_components"
+    },
+    {
+      "item": "minecraft:redstone"
+    },
+    {
+      "item": "minecraft:redstone"
+    }
+  ],
+  "result": {
+    "item": "underground_city:bypass_kit",
+    "count": 1
+  }
+}

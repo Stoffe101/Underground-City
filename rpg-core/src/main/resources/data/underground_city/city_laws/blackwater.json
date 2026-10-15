@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "city": "blackwater",
+  "categories": {
+    "restricted_cultivar": "permit",
+    "restricted_components": "legal",
+    "restricted_electronics": "legal",
+    "firearms_licensed": "legal",
+    "firearms_restricted": "permit"
+  },
+  "fines": {
+    "permit": 20,
+    "prohibited": 40
+  },
+  "inspection": {
+    "low": 0.05,
+    "inspection": 0.16,
+    "high": 0.34,
+    "heat_step": 0.05,
+    "max": 0.9
+  },
+  "witness_chance": 0.1,
+  "summary": "Uneven enforcement. Most trade is tolerated if you hold the right licence; the buyers here pay for discretion."
+}

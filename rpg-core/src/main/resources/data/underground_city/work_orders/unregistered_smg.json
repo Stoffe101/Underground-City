@@ -1,0 +1,28 @@
+{
+  "schema_version": 3,
+  "title": "An unregistered SMG for Dray",
+  "career": "gunsmith",
+  "level": 8,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "tacz:modern_kinetic_gun",
+      "count": 1,
+      "gun_ids": [
+        "tacz:uzi",
+        "tacz:hk_mp5a5"
+      ],
+      "label": "Restricted SMG"
+    }
+  ],
+  "credits": 500,
+  "xp": 420,
+  "capacity": 2,
+  "refill_ticks": 18000,
+  "legality": "underground",
+  "requires_skill": "gunsmith.unregistered_builds",
+  "buyer": "dray",
+  "min_trust": 1,
+  "trust_gain": 1,
+  "requires_mod": "tacz"
+}

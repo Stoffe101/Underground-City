@@ -1,0 +1,21 @@
+{
+  "schema_version": 3,
+  "title": "Unstamped plate for Hollis",
+  "career": "smith",
+  "level": 7,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "underground_city:unstamped_plate",
+      "count": 4
+    }
+  ],
+  "credits": 300,
+  "xp": 360,
+  "capacity": 2,
+  "refill_ticks": 18000,
+  "legality": "underground",
+  "requires_skill": "smith.unlisted_fabrication",
+  "buyer": "hollis",
+  "trust_gain": 1
+}

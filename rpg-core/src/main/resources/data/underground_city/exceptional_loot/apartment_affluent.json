@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "policy": "underground_city:apartment_affluent",
+  "chance": 0.1,
+  "entries": [
+    {
+      "item": "tacz:modern_kinetic_gun",
+      "nbt": "{GunId:\"tacz:glock_17\",GunFireMode:\"SEMI\"}",
+      "weight": 3,
+      "requires_mod": "tacz"
+    },
+    {
+      "item": "tacz:modern_kinetic_gun",
+      "nbt": "{GunId:\"tacz:cz75\",GunFireMode:\"SEMI\"}",
+      "weight": 3,
+      "requires_mod": "tacz"
+    },
+    {
+      "item": "tacz:modern_kinetic_gun",
+      "nbt": "{GunId:\"tacz:m1911\",GunFireMode:\"SEMI\"}",
+      "weight": 2,
+      "requires_mod": "tacz"
+    },
+    {
+      "item": "tacz:ammo",
+      "nbt": "{AmmoId:\"tacz:9mm\"}",
+      "count": [
+        24,
+        48
+      ],
+      "weight": 4,
+      "requires_mod": "tacz"
+    },
+    {
+      "item": "underground_city:heirloom_seed_packet",
+      "weight": 5
+    },
+    {
+      "item": "underground_city:optics_schematic",
+      "weight": 2
+    }
+  ]
+}

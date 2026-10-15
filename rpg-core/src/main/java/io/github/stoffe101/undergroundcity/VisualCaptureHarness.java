@@ -21,7 +21,11 @@ import java.util.UUID;
 @Mod.EventBusSubscriber(modid=UndergroundCity.MOD_ID,value=Dist.CLIENT)
 public final class VisualCaptureHarness {
     private static final boolean ENABLED=Boolean.getBoolean("uc.visualCapture");
-    private record Case(String name,TerminalScreen.Page page,TerminalData data,int shop) {}
+    private record Case(String name,TerminalScreen.Page page,TerminalData data,int shop,boolean underground,String skill,String challenge) {
+        Case(String name,TerminalScreen.Page page,TerminalData data,int shop,boolean underground,String skill) { this(name,page,data,shop,underground,skill,null); }
+        Case(String name,TerminalScreen.Page page,TerminalData data,int shop) { this(name,page,data,shop,false,null,null); }
+        static Case challenge(String name,String pose) { return new Case(name,null,null,0,false,null,pose); }
+    }
     private static List<Case> cases;
     private static int current,frames;
     private static boolean started,completed;
@@ -46,12 +50,85 @@ public final class VisualCaptureHarness {
             List.of(new TerminalData.Row("underground_city:greenhouse_service","Service the greenhouse irrigation line",3,150,300,2,accepted,1,
                 List.of(new TerminalData.Req("underground_city:irrigation_service_kit",4,held)))),List.of());
     }
+    private static TerminalData.SkillRow node(String id,String branch,String title,String text,int cost,int level,int state,String reason,String... requires) {
+        return new TerminalData.SkillRow("farmer."+id,branch,title,text,cost,level,state,reason,List.of(requires));
+    }
+    /** A level-9 farmer with six of eight points spent: legal and underground branches both partly learned. */
+    private static List<TerminalData.SkillRow> farmerTree() {
+        return List.of(
+            node("greenhouse_management","legal","Greenhouse Management","Run a proper greenhouse. Unlocks wholesale greenhouse supply contracts.",2,3,2,""),
+            node("cultivar_broker","legal","Cultivar Broker","Trade premium cultivars. Unlocks the heirloom seed contract and its seed-packet reward.",2,5,1,"","Greenhouse Management"),
+            node("estate_wholesale","legal","Estate Wholesale","Supply estates and kitchens at contract rates. Unlocks the estate pantry contract.",3,8,0,"Requires Cultivar Broker","Cultivar Broker"),
+            node("controlled_crop_licence","legal","Controlled-Crop Licence","A handler's licence. Where a city issues permits, controlled crops are legal for you to carry.",2,10,0,"Career level 10 required","Restricted Cultivation"),
+            node("fundamentals","core","Field Fundamentals","Soil, seed and season. Opens every other farming skill.",1,2,2,""),
+            node("restricted_cultivation","underground","Restricted Cultivation","Raise controlled cultivars under grow lamps. Needed to plant Sable Leaf cuttings.",3,6,2,"","Greenhouse Management"),
+            node("concealed_stores","underground","Concealed Stores","False-bottomed crates: 12 points off the chance that a checkpoint search finds anything.",2,8,1,"","Restricted Cultivation"),
+            node("underground_trade","underground","Underground Trade","Open a line to a Blackwater buyer. Unlocks quiet bale delivery contracts.",3,9,0,"Needs 3 skill points (2 available)","Restricted Cultivation"),
+            node("grey_market_contacts","underground","Grey Market Contacts","A trusted buyer takes bigger loads. Unlocks the reserve contract (needs trust 2).",3,12,0,"Requires Underground Trade","Underground Trade"),
+            node("field_logistics","utility","Field Logistics","Buy in bulk: 5% off goods at the regional exchange.",1,4,1,"","Field Fundamentals"));
+    }
+    private static final List<TerminalData.LawRow> VALEWOOD_LAW=List.of(
+        new TerminalData.LawRow("restricted_cultivar","Controlled crops","prohibited",false),
+        new TerminalData.LawRow("restricted_components","Unregistered components","prohibited",false),
+        new TerminalData.LawRow("restricted_electronics","Restricted electronics","permit",false),
+        new TerminalData.LawRow("firearms_licensed","Licensed civilian firearms","permit",false),
+        new TerminalData.LawRow("firearms_restricted","Restricted weapons","prohibited",false));
+    private static final List<TerminalData.LawRow> BLACKWATER_LAW=List.of(
+        new TerminalData.LawRow("restricted_cultivar","Controlled crops","permit",true),
+        new TerminalData.LawRow("restricted_components","Unregistered components","legal",false),
+        new TerminalData.LawRow("restricted_electronics","Restricted electronics","legal",false),
+        new TerminalData.LawRow("firearms_licensed","Licensed civilian firearms","legal",false),
+        new TerminalData.LawRow("firearms_restricted","Restricted weapons","permit",false));
+    private static final TerminalData.Extra QUIET_BALES=new TerminalData.Extra(true,"Underground Trade",false,"Marrow, grey-market broker","blackwater",0,1,List.of());
+    private static final TerminalData.Extra RESERVE_LOAD=new TerminalData.Extra(true,"Grey Market Contacts",false,"Marrow, grey-market broker","blackwater",2,1,
+        List.of("2 x Sable Leaf Cutting"));
+    private static TerminalData.Row undergroundRow(String id,String title,int level,int credits,int xp,int count,int held,boolean accepted,TerminalData.Extra extra) {
+        return new TerminalData.Row("underground_city:"+id,title,level,credits,xp,2,accepted,0,
+            List.of(new TerminalData.Req("underground_city:sable_leaf_bale",count,held)),extra);
+    }
+    private static final TerminalData.Row LICENSED_ROW=new TerminalData.Row("underground_city:licensed_cultivar_supply","Licensed controlled-crop supply",10,200,400,2,false,0,
+        List.of(new TerminalData.Req("underground_city:sable_leaf_bale",6,0)),
+        new TerminalData.Extra(false,"Controlled-Crop Licence",false,"Blackwater Licensed Dispensary","blackwater",0,0,List.of()));
+    private static TerminalData rich(String region,boolean accepted,int held,List<TerminalData.LawRow> laws) {
+        boolean blackwater=region.equals("blackwater");
+        List<TerminalData.Contact> contacts=region.isEmpty()?List.of():blackwater
+            ?List.of(new TerminalData.Contact("marrow","Marrow, grey-market broker","blackwater",true,"Pays for Sable Leaf bales, no questions, within limits.",1),
+                new TerminalData.Contact("blackwater_dispensary","Blackwater Licensed Dispensary","blackwater",false,"A permitted handler that buys controlled crops from licensed growers.",0))
+            :List.of(new TerminalData.Contact("hollis","Hollis & Sons Haulage","valewood",true,"Takes unstamped plate and parts that never saw a register.",0),
+                new TerminalData.Contact("valewood_coop","Valewood Hunting Co-op","valewood",false,"Buys licensed shotguns and sidearms from registered dealers.",0));
+        List<TerminalData.Row> jobs=List.of(
+            new TerminalData.Row("underground_city:greenhouse_wholesale","Greenhouse wholesale: carrots and potatoes",3,100,260,4,false,0,
+                List.of(new TerminalData.Req("minecraft:carrot",24,24),new TerminalData.Req("minecraft:potato",24,10)),
+                new TerminalData.Extra(false,"Greenhouse Management",true,"","",0,0,List.of())),
+            new TerminalData.Row("underground_city:heirloom_seeds","Broker heirloom seed stock",5,150,330,2,false,0,
+                List.of(new TerminalData.Req("underground_city:rare_seeds",8,3)),
+                new TerminalData.Extra(false,"Cultivar Broker",false,"","",0,0,List.of("1 x Heirloom Seed Packet"))),
+            LICENSED_ROW,
+            undergroundRow("quiet_bales","Quiet bale delivery",9,330,380,6,accepted?held:0,accepted,QUIET_BALES),
+            undergroundRow("reserve_load","Reserve load for the estate trade",12,700,600,12,0,false,RESERVE_LOAD));
+        return new TerminalData("valewood","farmer",9,10125,230,true,accepted?UUID.fromString("00000000-0000-0000-0000-000000000003"):null,
+            1,region,jobs,List.of(),2,farmerTree(),contacts,laws,region.isEmpty()?0:2,
+            blackwater?"Uneven enforcement. Most trade is tolerated if you hold the right licence; the buyers here pay for discretion."
+                :"Modest patrols. Hunting arms are licensed; controlled crops and unregistered parts are prohibited.");
+    }
     private static void start(Minecraft mc) {
         int scale=Integer.getInteger("uc.visualCapture.scale",3);
         if(scale<1||scale>4) throw new IllegalArgumentException("Bad GUI scale");
         mc.options.guiScale().set(scale); mc.resizeDisplay();
         cases=new ArrayList<>();
-        for(var page:TerminalScreen.Page.values()) cases.add(new Case("uc-terminal-"+page.name().toLowerCase(java.util.Locale.ROOT),page,fixture(2,8,false,true),0));
+        for(var page:TerminalScreen.Page.values()) {
+            boolean rich=page==TerminalScreen.Page.SKILLS || page==TerminalScreen.Page.BLACK_MARKET;
+            cases.add(new Case("uc-terminal-"+page.name().toLowerCase(java.util.Locale.ROOT),page,
+                rich?rich("valewood",false,0,VALEWOOD_LAW):fixture(2,8,false,true),0,false,page==TerminalScreen.Page.SKILLS?"farmer.restricted_cultivation":null));
+        }
+        cases.add(new Case("uc-skills-available",TerminalScreen.Page.SKILLS,rich("valewood",false,0,VALEWOOD_LAW),0,false,"farmer.concealed_stores"));
+        cases.add(new Case("uc-skills-locked",TerminalScreen.Page.SKILLS,rich("valewood",false,0,VALEWOOD_LAW),0,false,"farmer.underground_trade"));
+        cases.add(new Case("uc-skills-legal-locked",TerminalScreen.Page.SKILLS,rich("valewood",false,0,VALEWOOD_LAW),0,false,"farmer.controlled_crop_licence"));
+        cases.add(new Case("uc-contract-underground",TerminalScreen.Page.CONTRACTS,rich("valewood",true,6,VALEWOOD_LAW),0,true,null));
+        cases.add(new Case("uc-contract-underground-locked",TerminalScreen.Page.CONTRACTS,rich("valewood",false,0,VALEWOOD_LAW),0,true,null));
+        cases.add(new Case("uc-contract-legal-rewards",TerminalScreen.Page.CONTRACTS,rich("valewood",false,0,VALEWOOD_LAW),0,false,null));
+        cases.add(new Case("uc-market-blackwater",TerminalScreen.Page.BLACK_MARKET,rich("blackwater",false,0,BLACKWATER_LAW),0,false,null));
+        cases.add(new Case("uc-market-outside-city",TerminalScreen.Page.BLACK_MARKET,rich("",false,0,List.of()),0,false,null));
         cases.add(new Case("uc-contract-accepted",TerminalScreen.Page.CONTRACTS,fixture(2,8,true,true),0));
         cases.add(new Case("uc-contract-missing",TerminalScreen.Page.CONTRACTS,fixture(2,2,true,true),0));
         cases.add(new Case("uc-contract-locked",TerminalScreen.Page.CONTRACTS,fixture(1,0,false,true),0));
@@ -63,6 +140,9 @@ public final class VisualCaptureHarness {
         cases.add(new Case("uc-contract-regional",TerminalScreen.Page.CONTRACTS,regionalContract(true,2,1),0));
         cases.add(new Case("uc-contract-visit-locked",TerminalScreen.Page.CONTRACTS,regionalContract(false,0,0),0));
         if(!QShopEconomy.available()) throw new IllegalStateException("Visual coverage requires installed Q Shop 1.8.4");
+        cases.add(Case.challenge("uc-challenge-show","show"));
+        cases.add(Case.challenge("uc-challenge-input","input"));
+        cases.add(Case.challenge("uc-challenge-urgent","urgent"));
         cases.add(new Case("uc-qshop-main",null,null,1));
         cases.add(new Case("uc-qshop-low-funds",null,null,2));
         cases.add(new Case("uc-qshop-trade-modal",null,null,3));
@@ -74,9 +154,21 @@ public final class VisualCaptureHarness {
             Screen screen=QShopVisualCases.shop(capture.shop==1);
             mc.setScreen(screen);
             if(capture.shop==3) QShopVisualCases.openLowFundsModal(screen);
+        } else if(capture.challenge!=null) {
+            ChallengeScreen screen=ChallengeScreen.forCapture(new byte[]{0,2,1,3,2});
+            mc.setScreen(screen);
+            switch(capture.challenge) {
+                case "show" -> screen.poseShowing(2,true);
+                case "input" -> screen.poseInput(2,0.35);
+                default -> screen.poseInput(4,0.85);
+            }
         } else {
             TerminalScreen screen=new TerminalScreen(BlockPos.ZERO,capture.data);
             mc.setScreen(screen); screen.showPage(capture.page);
+            if(capture.page==TerminalScreen.Page.CONTRACTS && capture.underground) screen.showView(true);
+            if(capture.skill!=null) screen.selectSkill(capture.skill);
+            // The "legal with rewards" case selects the heirloom contract (index 1 of the legal list).
+            if(capture.name.equals("uc-contract-legal-rewards")) screen.selectJob(1);
         }
         frames=0;
     }

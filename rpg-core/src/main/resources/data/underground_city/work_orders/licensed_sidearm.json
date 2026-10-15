@@ -1,0 +1,28 @@
+{
+  "schema_version": 3,
+  "title": "A licensed sidearm for the co-op",
+  "career": "gunsmith",
+  "level": 3,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "tacz:modern_kinetic_gun",
+      "count": 1,
+      "gun_ids": [
+        "tacz:cz75",
+        "tacz:glock_17",
+        "tacz:m1911",
+        "tacz:m9a4"
+      ],
+      "label": "Licensed pistol"
+    }
+  ],
+  "credits": 190,
+  "xp": 340,
+  "capacity": 2,
+  "refill_ticks": 12000,
+  "legality": "legal",
+  "requires_skill": "gunsmith.licensed_repairs",
+  "buyer": "valewood_coop",
+  "requires_mod": "tacz"
+}

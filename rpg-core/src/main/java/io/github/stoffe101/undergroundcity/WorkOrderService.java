@@ -53,7 +53,7 @@ public final class WorkOrderService {
         guarded(player, pos, (ledger, citizen) -> {
             switch (action) {
                 case 0 -> accept(player, ledger, citizen, id);
-                case 1 -> complete(player, nonce);
+                case 1 -> complete(player, ledger, nonce, pos);
                 case 2 -> {
                     ledger.cancel(player.getUUID(), nonce);
                     player.sendSystemMessage(Component.literal("Order cancelled. Employer demand returned."));
@@ -75,20 +75,54 @@ public final class WorkOrderService {
             int more = order.foreignVisits() - visits;
             throw new IllegalStateException("Use a terminal inside " + more + " more rival " + (more == 1 ? "city" : "cities") + " first");
         }
+        WorkOrder.Terms terms = order.terms();
+        if (!terms.requiresSkill().isEmpty() && !SkillService.has(citizen, terms.requiresSkill())) {
+            SkillNode needed = SkillCatalog.INSTANCE.find(terms.requiresSkill());
+            throw new IllegalStateException("Requires the skill " + (needed == null ? terms.requiresSkill() : needed.title()));
+        }
+        if (terms.minTrust() > 0) {
+            int trust = ledger.trust(player.getUUID(), terms.buyer());
+            BuyerCatalog.Buyer buyer = BuyerCatalog.INSTANCE.find(terms.buyer());
+            if (trust < terms.minTrust()) {
+                throw new IllegalStateException((buyer == null ? terms.buyer() : buyer.title()) + " does not trust you with this yet (" + trust + "/" + terms.minTrust() + "). Finish smaller contracts for them first.");
+            }
+        }
         ledger.accept(player.getUUID(), order);
-        player.sendSystemMessage(Component.literal("Accepted: " + order.title() + ". Deliver " + describe(order) + "."));
+        player.sendSystemMessage(Component.literal("Accepted: " + order.title() + ". Deliver " + describe(order) + deliveryNote(order) + "."));
     }
 
     private static String describe(WorkOrder order) {
-        return order.requirements().stream().map(r -> r.count() + " " + r.item()).collect(java.util.stream.Collectors.joining(", "));
+        return order.requirements().stream().map(r -> r.count() + " " + r.display()).collect(java.util.stream.Collectors.joining(", "));
     }
 
-    static void complete(ServerPlayer player, UUID nonce) { complete(player, WorkOrderLedger.get(player.server), nonce); }
+    private static String deliveryNote(WorkOrder order) {
+        BuyerCatalog.Buyer buyer = order.terms().buyer().isEmpty() ? null : BuyerCatalog.INSTANCE.find(order.terms().buyer());
+        return buyer == null ? "" : " to " + buyer.title() + " in " + TerminalScreenText.capitalize(buyer.city());
+    }
 
-    static void complete(ServerPlayer player, WorkOrderLedger ledger, UUID nonce) {
+    static void complete(ServerPlayer player, UUID nonce) { complete(player, WorkOrderLedger.get(player.server), nonce, null); }
+
+    static void complete(ServerPlayer player, WorkOrderLedger ledger, UUID nonce) { complete(player, ledger, nonce, null); }
+
+    /**
+     * Delivers the accepted order. {@code terminal} is the placed terminal the request came from; an order with a
+     * buyer can only be delivered at a terminal inside the buyer's city, so the goods really have to travel (and
+     * pass any checkpoint on the way).
+     */
+    static void complete(ServerPlayer player, WorkOrderLedger ledger, UUID nonce, BlockPos terminal) {
         WorkOrder order = ledger.checkActive(player.getUUID(), nonce);
         CitizenState.Citizen citizen = CitizenState.get(player.server).find(player.getUUID()).orElseThrow();
         if (!order.career().equals(citizen.career)) throw new IllegalStateException("Profession changed");
+        WorkOrder.Terms terms = order.terms();
+        BuyerCatalog.Buyer buyer = null;
+        if (!terms.buyer().isEmpty()) {
+            buyer = BuyerCatalog.INSTANCE.find(terms.buyer());
+            if (buyer == null) throw new IllegalStateException("This buyer no longer exists; cancel the order");
+            String here = terminal == null ? "" : CityRegions.INSTANCE.cityAt(player.level(), terminal).orElse("");
+            if (!here.equals(buyer.city())) {
+                throw new IllegalStateException("Deliver to " + buyer.title() + " in " + TerminalScreenText.capitalize(buyer.city()) + ": use a terminal inside that city.");
+            }
+        }
         // Plan removal on a COPY; incomplete deliveries leave the live inventory untouched.
         Inventory after = new Inventory(player);
         after.load(player.getInventory().save(new ListTag()));
@@ -105,13 +139,37 @@ public final class WorkOrderService {
             if (needed > 0) missing.add(needed + " plain " + requirement.item());
         }
         if (!missing.isEmpty()) throw new IllegalStateException("Missing " + String.join(", ", missing) + ". Named/enchanted goods are protected.");
+        // Reward items are planned on the same copy, so a full inventory refuses the delivery before anything changes.
+        for (WorkOrder.Reward reward : terms.rewards()) {
+            ItemStack stack = reward.stack();
+            after.add(stack);
+            if (!stack.isEmpty()) throw new IllegalStateException("Not enough inventory space for the reward items. Free some slots and deliver again.");
+        }
         double target = QShopEconomy.balance(player) + order.credits();
         if (target > 1_000_000_000) throw new IllegalStateException("Wallet limit reached");
         int xpTarget = ProgressionRules.totalXp(citizen.careerXp(), order.xp());
-        ledger.prepare(player.getUUID(), nonce, after.save(new ListTag()), target, xpTarget);
+        java.util.Map<String, Integer> trustAfter = java.util.Map.of(), heatAfter = java.util.Map.of();
+        boolean witnessed = false;
+        if (buyer != null) {
+            if (terms.trustGain() > 0) trustAfter = java.util.Map.of(buyer.id(), Math.min(BuyerCatalog.MAX_TRUST, ledger.trust(player.getUUID(), buyer.id()) + terms.trustGain()));
+            CityLaws.Law law = CityLaws.INSTANCE.find(buyer.city());
+            if (order.underground() && law != null) {
+                // One roll per accepted order (the nonce is consumed by this settlement), so a retry cannot re-roll it.
+                double chance = LawMath.witnessChance(law, ledger.heat(player.getUUID(), buyer.city()), SkillService.inspectionModifier(citizen));
+                witnessed = LawMath.roll(chance, LawMath.mix(nonce.getMostSignificantBits(), nonce.getLeastSignificantBits(), 0x5717E55L));
+                if (witnessed) heatAfter = java.util.Map.of(buyer.city(), ledger.heatAfter(player.getUUID(), buyer.city(), 1));
+            }
+        }
+        ledger.prepare(player.getUUID(), nonce, after.save(new ListTag()), target, xpTarget, trustAfter, heatAfter);
         recover(player, ledger);
         player.sendSystemMessage(Component.literal("Delivered " + order.title() + ": +" + order.credits()
             + " credits, +" + order.xp() + " career XP. Level " + citizen.careerLevel() + "."));
+        if (!terms.rewards().isEmpty()) {
+            player.sendSystemMessage(Component.literal("Also received: " + terms.rewards().stream().map(r -> r.count() + " x "
+                + net.minecraftforge.registries.ForgeRegistries.ITEMS.getValue(r.item()).getDescription().getString()).collect(java.util.stream.Collectors.joining(", ")) + "."));
+        }
+        if (buyer != null && terms.trustGain() > 0) player.sendSystemMessage(Component.literal(buyer.title() + " trusts you a little more (" + ledger.trust(player.getUUID(), buyer.id()) + "/" + BuyerCatalog.MAX_TRUST + ")."));
+        if (witnessed) player.sendSystemMessage(Component.literal("Someone noticed the hand-off. The " + TerminalScreenText.capitalize(buyer.city()) + " guard will search you more closely for a while."));
     }
 
     /** Prepared absolute targets are replayed BEFORE any post-login interaction. */
@@ -127,7 +185,7 @@ public final class WorkOrderService {
         citizens.restoreCareerXp(player.getUUID(), record.getInt("earned_xp_target"));
         if (!record.contains("pending")) return;
         CompoundTag pending = record.getCompound("pending");
-        QShopEconomy.applyBalance(player, pending.getDouble("balance"));
+        if (pending.contains("balance")) QShopEconomy.applyBalance(player, pending.getDouble("balance"));
         player.getInventory().load(pending.getList("inventory", Tag.TAG_COMPOUND));
         player.getInventory().setChanged(); player.inventoryMenu.broadcastChanges();
         citizens.restoreCareerXp(player.getUUID(), pending.getInt("xp"));

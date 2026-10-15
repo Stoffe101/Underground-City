@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "group": "underground_city_restricted",
+  "ingredients": [
+    {
+      "item": "underground_city:refined_alloy"
+    },
+    {
+      "item": "underground_city:refined_alloy"
+    },
+    {
+      "item": "underground_city:machined_parts"
+    },
+    {
+      "item": "minecraft:iron_ingot"
+    }
+  ],
+  "result": {
+    "item": "underground_city:unstamped_plate",
+    "count": 2
+  }
+}

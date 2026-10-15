@@ -24,7 +24,7 @@ import java.util.function.Supplier;
  * This is NOT a remote city supplier, contraband order, or raid service.
  */
 public final class TerminalNetwork {
-    private static final String VERSION = "4";
+    private static final String VERSION = "5";
     private static final String STARTER_SHOP_ID = "uc_starter_supply";
     private static final double MAX_TERMINAL_DISTANCE_SQUARED = 64.0;
     private static final java.util.Map<ServerPlayer, Integer> REQUEST_TIMES = new java.util.WeakHashMap<>();
@@ -36,6 +36,7 @@ public final class TerminalNetwork {
     private TerminalNetwork() {}
 
     public static void register() {
+        registerChallenge();
         CHANNEL.registerMessage(0, OpenTerminal.class,
             (packet, buffer) -> { buffer.writeBlockPos(packet.pos); packet.data.write(buffer); },
             buffer -> new OpenTerminal(buffer.readBlockPos(), TerminalData.read(buffer)),
@@ -70,6 +71,52 @@ public final class TerminalNetwork {
                 });
                 context.setPacketHandled(true);
             }, Optional.of(NetworkDirection.PLAY_TO_SERVER));
+        CHANNEL.registerMessage(4, SkillAction.class,
+            (packet, buffer) -> { buffer.writeBlockPos(packet.pos); buffer.writeUtf(packet.skill, 64); },
+            buffer -> new SkillAction(buffer.readBlockPos(), buffer.readUtf(64)),
+            (packet, supplier) -> {
+                NetworkEvent.Context context = supplier.get();
+                context.enqueueWork(() -> {
+                    ServerPlayer player = context.getSender();
+                    if (player != null) SkillService.unlock(player, packet.pos, packet.skill);
+                });
+                context.setPacketHandled(true);
+            }, Optional.of(NetworkDirection.PLAY_TO_SERVER));
+    }
+
+    private static void registerChallenge() {
+        CHANNEL.registerMessage(5, OpenChallenge.class,
+            (packet, buffer) -> { buffer.writeBlockPos(packet.pos); buffer.writeByteArray(packet.sequence); },
+            buffer -> new OpenChallenge(buffer.readBlockPos(), buffer.readByteArray(16)),
+            (packet, supplier) -> {
+                NetworkEvent.Context context = supplier.get();
+                if (context.getDirection().getReceptionSide().isClient()) {
+                    context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT,
+                        () -> () -> ClientChallenge.open(packet.pos, packet.sequence)));
+                }
+                context.setPacketHandled(true);
+            }, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+        CHANNEL.registerMessage(6, ChallengeAnswer.class,
+            (packet, buffer) -> { buffer.writeBlockPos(packet.pos); buffer.writeByteArray(packet.answer); },
+            buffer -> new ChallengeAnswer(buffer.readBlockPos(), buffer.readByteArray(16)),
+            (packet, supplier) -> {
+                NetworkEvent.Context context = supplier.get();
+                context.enqueueWork(() -> {
+                    ServerPlayer player = context.getSender();
+                    if (player != null) SecureTerminalService.answer(player, packet.pos, packet.answer, player.server.getTickCount());
+                });
+                context.setPacketHandled(true);
+            }, Optional.of(NetworkDirection.PLAY_TO_SERVER));
+    }
+
+    /** Server to client: the hidden sequence to flash. The client only displays it; the server checks the answer. */
+    public static void openChallenge(ServerPlayer player, BlockPos pos, byte[] sequence) {
+        CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new OpenChallenge(pos.immutable(), sequence.clone()));
+    }
+
+    /** Client to server: the single answer for the open challenge. */
+    public static void sendChallengeAnswer(BlockPos pos, byte[] answer) {
+        CHANNEL.sendToServer(new ChallengeAnswer(pos.immutable(), answer.clone()));
     }
 
     private static void receiveOpen(OpenTerminal packet, Supplier<NetworkEvent.Context> supplier) {
@@ -101,6 +148,11 @@ public final class TerminalNetwork {
     /** Client click on a regional offer; quantity is validated and the price is server-owned. */
     public static void requestRegionalBuy(BlockPos pos, String commodity, int quantity) {
         CHANNEL.sendToServer(new RegionalBuy(pos.immutable(), commodity, quantity, UUID.randomUUID()));
+    }
+
+    /** Client click on a skill node; the server re-checks level, prerequisites and points. */
+    public static void requestSkill(BlockPos pos, String skill) {
+        CHANNEL.sendToServer(new SkillAction(pos.immutable(), skill));
     }
 
     public static void requestWork(BlockPos pos, int action, String id, UUID nonce) {
@@ -166,4 +218,7 @@ public final class TerminalNetwork {
 
     private record WorkAction(BlockPos pos, int action, String id, UUID nonce) {}
     private record RegionalBuy(BlockPos pos, String commodity, int quantity, UUID nonce) {}
+    private record SkillAction(BlockPos pos, String skill) {}
+    private record OpenChallenge(BlockPos pos, byte[] sequence) {}
+    private record ChallengeAnswer(BlockPos pos, byte[] answer) {}
 }

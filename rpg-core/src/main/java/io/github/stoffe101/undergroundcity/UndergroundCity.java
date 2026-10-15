@@ -43,6 +43,17 @@ public final class UndergroundCity {
     public static final RegistryObject<Item> TERMINAL_ITEM = ITEMS.register("operations_terminal",
         () -> new BlockItem(TERMINAL.get(), new Item.Properties()));
 
+    /** The Farmer's controlled crop (a real crop block; its seed item is registered with the other Core items). */
+    public static final RegistryObject<Block> SABLE_CROP = BLOCKS.register("sable_leaf_crop",
+        () -> new RestrictedCropBlock(BlockBehaviour.Properties.copy(net.minecraft.world.level.block.Blocks.WHEAT)));
+
+    /** The Technician's job site: placed by operators or the district builder, never craftable or breakable by survival players. */
+    public static final RegistryObject<Block> SECURE_TERMINAL = BLOCKS.register("secure_data_terminal",
+        () -> new SecureTerminalBlock(BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_BLACK)
+            .strength(-1.0f, 3_600_000f).noLootTable().lightLevel(state -> 6)));
+    public static final RegistryObject<Item> SECURE_TERMINAL_ITEM = ITEMS.register("secure_data_terminal",
+        () -> new BlockItem(SECURE_TERMINAL.get(), new Item.Properties()));
+
     private static final DeferredRegister<net.minecraft.world.level.block.entity.BlockEntityType<?>> BLOCK_ENTITIES =
         DeferredRegister.create(ForgeRegistries.BLOCK_ENTITY_TYPES, MOD_ID);
     // Unbreakable by survival players: a smash-and-grab would bypass lock, vigilance and restock rules.
@@ -54,6 +65,10 @@ public final class UndergroundCity {
     public static final RegistryObject<net.minecraft.world.level.block.entity.BlockEntityType<PropertyCacheBlockEntity>> PROPERTY_CACHE_ENTITY =
         BLOCK_ENTITIES.register("property_cache", () -> net.minecraft.world.level.block.entity.BlockEntityType.Builder
             .of(PropertyCacheBlockEntity::new, PROPERTY_CACHE.get()).build(null));
+
+    public static final RegistryObject<net.minecraft.world.level.block.entity.BlockEntityType<SecureTerminalBlockEntity>> SECURE_TERMINAL_ENTITY =
+        BLOCK_ENTITIES.register("secure_data_terminal", () -> net.minecraft.world.level.block.entity.BlockEntityType.Builder
+            .of(SecureTerminalBlockEntity::new, SECURE_TERMINAL.get()).build(null));
 
     private static final DeferredRegister<net.minecraft.world.level.levelgen.feature.Feature<?>> FEATURES =
         DeferredRegister.create(ForgeRegistries.FEATURES, MOD_ID);
@@ -74,8 +89,9 @@ public final class UndergroundCity {
 
     public UndergroundCity(FMLJavaModLoadingContext context) {
         for (CoreItems.Definition definition : CoreItems.definitions()) {
-            CORE_ITEMS.put(definition.id(), ITEMS.register(definition.id(),
-                () -> new Item(new Item.Properties().stacksTo(definition.stack()))));
+            CORE_ITEMS.put(definition.id(), ITEMS.register(definition.id(), () -> definition.kind().equals("seed")
+                ? new RestrictedCuttingItem(SABLE_CROP.get(), new Item.Properties().stacksTo(definition.stack()))
+                : new Item(new Item.Properties().stacksTo(definition.stack()))));
             CORE_ITEM_KINDS.put(definition.id(), definition.kind());
         }
         BLOCKS.register(context.getModEventBus());
@@ -89,6 +105,9 @@ public final class UndergroundCity {
         MinecraftForge.EVENT_BUS.register(new WorkOrderService());
         MinecraftForge.EVENT_BUS.register(new SupplierNpc());
         MinecraftForge.EVENT_BUS.register(new PropertyCommands());
+        MinecraftForge.EVENT_BUS.register(new DistrictBuilder());
+        MinecraftForge.EVENT_BUS.register(new CheckpointService());
+        MinecraftForge.EVENT_BUS.register(new SecureTerminalService());
     }
 
     @SubscribeEvent
@@ -97,6 +116,13 @@ public final class UndergroundCity {
         event.addListener(RegionalCatalog.INSTANCE);
         event.addListener(CityRegions.INSTANCE);
         event.addListener(PropertyPolicies.INSTANCE);
+        event.addListener(ExceptionalLoot.INSTANCE);
+        event.addListener(SkillCatalog.INSTANCE);
+        event.addListener(ContrabandCatalog.INSTANCE);
+        event.addListener(CityLaws.INSTANCE);
+        event.addListener(BuyerCatalog.INSTANCE);
+        event.addListener(CheckpointCatalog.INSTANCE);
+        event.addListener(DistrictCatalog.INSTANCE);
     }
 
     private void addCreativeTab(BuildCreativeModeTabContentsEvent event) {
@@ -105,6 +131,7 @@ public final class UndergroundCity {
         }
         if (event.getTabKey() == CreativeModeTabs.OP_BLOCKS && event.hasPermissions()) {
             event.accept(PROPERTY_CACHE_ITEM);
+            event.accept(SECURE_TERMINAL_ITEM);
         }
         if (event.getTabKey() == CreativeModeTabs.INGREDIENTS) {
             CORE_ITEMS.forEach((id, item) -> { if (!CORE_ITEM_KINDS.get(id).equals("tool")) event.accept(item); });
@@ -187,6 +214,10 @@ public final class UndergroundCity {
                 ctx.getSource().sendFailure(Component.literal("Not registered."));
                 return 0;
             }
+            CitizenState.Citizen who = profile.get();
+            ctx.getSource().sendSuccess(() -> Component.literal("Career skills: " + SkillService.pointsAvailable(who) + " of "
+                + SkillService.pointsEarned(who) + " points free; unlocked: " + (who.skills().isEmpty() ? "none" : String.join(", ", who.skills()))
+                + ". Spend points at an Operations Terminal (Skills tab)."), false);
             StringBuilder result = new StringBuilder("General skills: ");
             for (String skill : new TreeSet<>(ProgressionRules.GENERAL_SKILLS)) {
                 result.append(skill).append(" L").append(profile.get().generalLevel(skill)).append("  ");

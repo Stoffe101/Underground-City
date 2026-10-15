@@ -1,0 +1,23 @@
+{
+  "schema_version": 3,
+  "title": "Greenhouse wholesale: carrots and potatoes",
+  "career": "farmer",
+  "level": 3,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "minecraft:carrot",
+      "count": 24
+    },
+    {
+      "item": "minecraft:potato",
+      "count": 24
+    }
+  ],
+  "credits": 100,
+  "xp": 260,
+  "capacity": 4,
+  "refill_ticks": 6000,
+  "legality": "legal",
+  "requires_skill": "farmer.greenhouse_management"
+}

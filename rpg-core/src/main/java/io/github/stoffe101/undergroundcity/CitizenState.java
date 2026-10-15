@@ -37,6 +37,11 @@ public final class CitizenState extends SavedData {
             Citizen citizen = new Citizen(city, career);
             readXp(entry.getCompound("career_xp"), citizen.careerXp, ProgressionRules.CAREERS);
             readXp(entry.getCompound("general_xp"), citizen.generalXp, ProgressionRules.GENERAL_SKILLS);
+            ListTag skills = entry.getList("skills", Tag.TAG_STRING);
+            for (int s = 0; s < skills.size() && s < 64; s++) {
+                String id = skills.getString(s);
+                if (id.matches("[a-z]+\\.[a-z_]{2,40}")) citizen.skills.add(id);
+            }
             state.citizens.put(uuid, citizen);
         }
         return state;
@@ -85,6 +90,14 @@ public final class CitizenState extends SavedData {
         return updated;
     }
 
+    /** Records a skill. Prerequisites and points are checked by SkillService before this is called. */
+    void unlockSkill(UUID uuid, String skillId) {
+        Citizen citizen = citizens.get(uuid);
+        if (citizen == null) throw new IllegalArgumentException("Citizen not registered");
+        if (citizen.skills.size() >= 64) throw new IllegalStateException("Skill limit reached");
+        if (citizen.skills.add(skillId)) setDirty();
+    }
+
     /** Restore a journaled reward after a crash without awarding it twice. */
     void restoreCareerXp(UUID uuid, int target) {
         Citizen citizen = citizens.get(uuid);
@@ -97,7 +110,7 @@ public final class CitizenState extends SavedData {
 
     @Override
     public CompoundTag save(CompoundTag root) {
-        root.putInt("schema_version", 1);
+        root.putInt("schema_version", 2);
         ListTag entries = new ListTag();
         for (Map.Entry<UUID, Citizen> element : citizens.entrySet()) {
             Citizen citizen = element.getValue();
@@ -107,6 +120,9 @@ public final class CitizenState extends SavedData {
             record.putString("career", citizen.career);
             record.put("career_xp", writeXp(citizen.careerXp));
             record.put("general_xp", writeXp(citizen.generalXp));
+            ListTag skills = new ListTag();
+            citizen.skills.stream().sorted().forEach(id -> skills.add(net.minecraft.nbt.StringTag.valueOf(id)));
+            record.put("skills", skills);
             entries.add(record);
         }
         root.put("citizens", entries);
@@ -124,12 +140,14 @@ public final class CitizenState extends SavedData {
         public final String career;
         public final Map<String, Integer> careerXp = new HashMap<>();
         public final Map<String, Integer> generalXp = new HashMap<>();
+        private final java.util.Set<String> skills = new java.util.TreeSet<>();
 
         private Citizen(String city, String career) {
             this.city = city;
             this.career = career;
         }
 
+        public java.util.Set<String> skills() { return java.util.Collections.unmodifiableSet(skills); }
         public int careerXp() { return careerXp.getOrDefault(career, 0); }
         public int careerLevel() { return ProgressionRules.levelForXp(careerXp()); }
         public int generalLevel(String skill) {

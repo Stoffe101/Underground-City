@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "category": "firearms_restricted",
+  "title": "Restricted weapons",
+  "entries": [
+    {
+      "item": "tacz:modern_kinetic_gun",
+      "nbt_key": "GunId",
+      "catch_all": true
+    },
+    {
+      "item": "tacz:attachment",
+      "nbt_key": "AttachmentId",
+      "contains": "muzzle_silencer"
+    }
+  ]
+}

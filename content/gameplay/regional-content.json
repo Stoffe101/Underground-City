@@ -50,5 +50,17 @@
     {"id": "sensor_repairs", "title": "Agricultural sensor repair visits", "career": "technician", "level": 4, "foreign_visits": 1, "requirements": {"agri_sensor_repair": 4}, "credits": 210, "xp": 330},
     {"id": "security_array_install", "title": "Municipal security array", "career": "technician", "level": 5, "foreign_visits": 2, "requirements": {"security_array": 1}, "credits": 230, "xp": 600}
   ],
+  "specials": [
+    {"id": "sable_cutting", "name": "Sable Leaf Cutting", "icon": "sprout", "city": "valewood", "kind": "seed", "count": 2, "inputs": {"rare_seeds": 1, "agro_catalyst": 1, "minecraft:wheat_seeds": 1}, "note": "Fictional controlled cultivar. Planted only by a Farmer who has learned Restricted Cultivation; grown under bright light with nutrient."},
+    {"id": "cultivation_nutrient", "name": "Cultivation Nutrient", "icon": "flask", "city": "valewood", "kind": "product", "count": 3, "inputs": {"agro_catalyst": 1, "minecraft:bone_meal": 1, "minecraft:glass_bottle": 1}, "note": "Applied by hand to a growing Sable Leaf plant, one dose per growth stage: a real operating cost."},
+    {"id": "sable_leaf_bale", "name": "Sable Leaf Bale", "icon": "bale", "city": "valewood", "kind": "product", "note": "Harvest only. Contraband in Ironhaven and Valewood; a permitted, licensed trade in Blackwater."},
+    {"id": "unstamped_plate", "name": "Unstamped Plate", "icon": "plate", "city": "ironhaven", "kind": "product", "count": 2, "inputs": {"refined_alloy": 2, "machined_parts": 1, "minecraft:iron_ingot": 1}, "note": "Machined plating that appears on no register."},
+    {"id": "bypass_kit", "name": "Bypass Kit", "icon": "kit", "city": "blackwater", "kind": "tool", "count": 1, "inputs": {"control_circuits": 2, "optical_components": 1, "minecraft:redstone": 2}, "note": "One-use tooling for a secured data terminal."},
+    {"id": "data_ledger", "name": "Encrypted Ledger", "icon": "ledger", "city": "blackwater", "kind": "product", "note": "Recovered from a secured data terminal by solving its challenge."},
+    {"id": "heirloom_seed_packet", "name": "Heirloom Seed Packet", "icon": "seeds", "city": "valewood", "kind": "rare", "shortcut": {"result": "rare_seeds", "count": 6}, "note": "Rare find (abandoned greenhouses, affluent estates, broker contracts). Unpacks into six Rare Seeds: a shortcut worth the exchange price, never a new faucet."},
+    {"id": "prototype_alloy_ingot", "name": "Prototype Alloy Ingot", "icon": "ingot", "city": "ironhaven", "kind": "rare", "shortcut": {"result": "refined_alloy", "count": 3}, "note": "Rare find (industrial safes, guard contracts). Unpacks into three Refined Alloy."},
+    {"id": "circuit_prototype", "name": "Circuit Prototype", "icon": "chip", "city": "blackwater", "kind": "rare", "shortcut": {"result": "control_circuits", "count": 3}, "note": "Rare find (office safes, automation contracts). Unpacks into three Control Circuit Boards."},
+    {"id": "optics_schematic", "name": "Optics Schematic", "icon": "clipboard", "city": "blackwater", "kind": "rare", "shortcut": {"result": "optical_components", "count": 3}, "note": "Rare find (corporate safes, brokerage contracts). Unpacks into three Optical Components."}
+  ],
   "order_defaults": {"capacity": 2, "refill_ticks": 12000}
 }

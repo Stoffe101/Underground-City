@@ -1,0 +1,28 @@
+{
+  "schema_version": 3,
+  "title": "Reserve load for the estate trade",
+  "career": "farmer",
+  "level": 12,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "underground_city:sable_leaf_bale",
+      "count": 12
+    }
+  ],
+  "credits": 440,
+  "xp": 600,
+  "capacity": 1,
+  "refill_ticks": 24000,
+  "legality": "underground",
+  "requires_skill": "farmer.grey_market_contacts",
+  "buyer": "marrow",
+  "min_trust": 2,
+  "trust_gain": 1,
+  "rewards": [
+    {
+      "item": "underground_city:sable_cutting",
+      "count": 2
+    }
+  ]
+}

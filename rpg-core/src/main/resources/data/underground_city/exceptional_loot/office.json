@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "policy": "underground_city:office",
+  "chance": 0.1,
+  "entries": [
+    {
+      "item": "underground_city:circuit_prototype",
+      "weight": 6
+    },
+    {
+      "item": "underground_city:optics_schematic",
+      "weight": 4
+    },
+    {
+      "item": "taczblueprints:blueprint_pistol",
+      "nbt": "{GunId:\"tacz:p320\"}",
+      "weight": 2,
+      "requires_mod": "taczblueprints"
+    }
+  ]
+}

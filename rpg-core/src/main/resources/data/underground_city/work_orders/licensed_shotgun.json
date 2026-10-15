@@ -1,0 +1,33 @@
+{
+  "schema_version": 3,
+  "title": "Hunting shotgun for the co-op",
+  "career": "gunsmith",
+  "level": 8,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "tacz:modern_kinetic_gun",
+      "count": 1,
+      "gun_ids": [
+        "tacz:db_long",
+        "tacz:m870"
+      ],
+      "label": "Hunting shotgun"
+    }
+  ],
+  "credits": 170,
+  "xp": 420,
+  "capacity": 2,
+  "refill_ticks": 12000,
+  "legality": "legal",
+  "requires_skill": "gunsmith.security_contracts",
+  "buyer": "valewood_coop",
+  "requires_mod": "taczblueprints",
+  "rewards": [
+    {
+      "item": "taczblueprints:blueprint_shotgun",
+      "count": 1,
+      "nbt": "{GunId:\"tacz:m870\"}"
+    }
+  ]
+}

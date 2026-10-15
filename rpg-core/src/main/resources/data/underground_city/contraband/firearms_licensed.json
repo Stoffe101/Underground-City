@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "category": "firearms_licensed",
+  "title": "Licensed civilian firearms",
+  "entries": [
+    {
+      "item": "tacz:modern_kinetic_gun",
+      "nbt_key": "GunId",
+      "values": [
+        "tacz:glock_17",
+        "tacz:cz75",
+        "tacz:m1911",
+        "tacz:p320",
+        "tacz:m9a4",
+        "tacz:taurus943",
+        "tacz:rhino357",
+        "tacz:db_short",
+        "tacz:db_long",
+        "tacz:m870"
+      ]
+    }
+  ]
+}

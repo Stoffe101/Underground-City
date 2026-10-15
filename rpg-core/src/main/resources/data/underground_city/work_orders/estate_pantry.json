@@ -1,0 +1,23 @@
+{
+  "schema_version": 3,
+  "title": "Stock an estate pantry",
+  "career": "farmer",
+  "level": 8,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "minecraft:bread",
+      "count": 24
+    },
+    {
+      "item": "minecraft:pumpkin_pie",
+      "count": 4
+    }
+  ],
+  "credits": 260,
+  "xp": 420,
+  "capacity": 2,
+  "refill_ticks": 12000,
+  "legality": "legal",
+  "requires_skill": "farmer.estate_wholesale"
+}

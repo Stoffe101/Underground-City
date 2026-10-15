@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "category": "restricted_components",
+  "title": "Unregistered components",
+  "entries": [
+    {
+      "item": "underground_city:unstamped_plate"
+    }
+  ]
+}

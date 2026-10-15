@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "city": "ironhaven",
+  "categories": {
+    "restricted_cultivar": "prohibited",
+    "restricted_components": "permit",
+    "restricted_electronics": "permit",
+    "firearms_licensed": "permit",
+    "firearms_restricted": "prohibited"
+  },
+  "fines": {
+    "permit": 30,
+    "prohibited": 80
+  },
+  "inspection": {
+    "low": 0.1,
+    "inspection": 0.28,
+    "high": 0.5,
+    "heat_step": 0.05,
+    "max": 0.9
+  },
+  "witness_chance": 0.35,
+  "summary": "Strict: the guard searches often and nearly everything sensitive needs a licence."
+}

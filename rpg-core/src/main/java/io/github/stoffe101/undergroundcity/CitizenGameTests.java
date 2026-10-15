@@ -27,7 +27,7 @@ public final class CitizenGameTests {
         check(state.addGeneralXp(second, "trading", 1200) == 1200, "General XP mismatch");
 
         CompoundTag serialized = state.save(new CompoundTag());
-        check(serialized.getInt("schema_version") == 1, "Schema version mismatch");
+        check(serialized.getInt("schema_version") == 2, "Schema version mismatch");
         CitizenState loaded = CitizenState.load(serialized);
         CitizenState.Citizen farmer = loaded.find(first).orElseThrow();
         CitizenState.Citizen technician = loaded.find(second).orElseThrow();
@@ -35,6 +35,12 @@ public final class CitizenGameTests {
         check(farmer.careerXp() == 350, "Career XP did not survive roundtrip");
         check(technician.generalXp.get("trading") == 1200, "General XP did not survive roundtrip");
         check(loaded.find(UUID.randomUUID()).isEmpty(), "Unregistered player unexpectedly present");
+        // A schema 1 save (written before skills existed) must load with an empty skill set, never be dropped.
+        CompoundTag legacy = serialized.copy();
+        legacy.putInt("schema_version", 1);
+        legacy.getList("citizens", net.minecraft.nbt.Tag.TAG_COMPOUND).forEach(entry -> ((CompoundTag) entry).remove("skills"));
+        CitizenState old = CitizenState.load(legacy);
+        check(old.find(first).orElseThrow().careerXp() == 350 && old.find(first).orElseThrow().skills().isEmpty(), "Schema 1 citizens must survive the update");
         helper.succeed();
     }
 

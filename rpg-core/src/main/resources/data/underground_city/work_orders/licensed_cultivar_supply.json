@@ -1,0 +1,20 @@
+{
+  "schema_version": 3,
+  "title": "Licensed controlled-crop supply",
+  "career": "farmer",
+  "level": 10,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "underground_city:sable_leaf_bale",
+      "count": 6
+    }
+  ],
+  "credits": 200,
+  "xp": 400,
+  "capacity": 2,
+  "refill_ticks": 12000,
+  "legality": "legal",
+  "requires_skill": "farmer.controlled_crop_licence",
+  "buyer": "blackwater_dispensary"
+}

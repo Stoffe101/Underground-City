@@ -225,7 +225,7 @@
       "frontier_highway"
     ],
     "unpaved_route_kinds": [],
-    "reference_seed": 579,
+    "reference_seed": 166,
     "water_policy": "bridge decks stay four free blocks above water so boats can pass beneath; rivers and sea straits are crossed by bridge or by boat",
     "stops_at_city_circles": true
   },

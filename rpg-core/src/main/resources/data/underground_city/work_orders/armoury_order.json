@@ -1,0 +1,22 @@
+{
+  "schema_version": 3,
+  "title": "Armoury order for a trusted buyer",
+  "career": "smith",
+  "level": 11,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "underground_city:unstamped_plate",
+      "count": 8
+    }
+  ],
+  "credits": 600,
+  "xp": 600,
+  "capacity": 1,
+  "refill_ticks": 24000,
+  "legality": "underground",
+  "requires_skill": "smith.contraband_armoury",
+  "buyer": "hollis",
+  "min_trust": 2,
+  "trust_gain": 1
+}

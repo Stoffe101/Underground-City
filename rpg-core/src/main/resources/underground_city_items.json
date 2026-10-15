@@ -110,6 +110,56 @@
       "id": "lockpick",
       "kind": "tool",
       "stack": 16
+    },
+    {
+      "id": "sable_cutting",
+      "kind": "seed",
+      "stack": 64
+    },
+    {
+      "id": "cultivation_nutrient",
+      "kind": "product",
+      "stack": 64
+    },
+    {
+      "id": "sable_leaf_bale",
+      "kind": "product",
+      "stack": 64
+    },
+    {
+      "id": "unstamped_plate",
+      "kind": "product",
+      "stack": 64
+    },
+    {
+      "id": "bypass_kit",
+      "kind": "tool",
+      "stack": 16
+    },
+    {
+      "id": "data_ledger",
+      "kind": "product",
+      "stack": 64
+    },
+    {
+      "id": "heirloom_seed_packet",
+      "kind": "rare",
+      "stack": 16
+    },
+    {
+      "id": "prototype_alloy_ingot",
+      "kind": "rare",
+      "stack": 16
+    },
+    {
+      "id": "circuit_prototype",
+      "kind": "rare",
+      "stack": 16
+    },
+    {
+      "id": "optics_schematic",
+      "kind": "rare",
+      "stack": 16
     }
   ]
 }

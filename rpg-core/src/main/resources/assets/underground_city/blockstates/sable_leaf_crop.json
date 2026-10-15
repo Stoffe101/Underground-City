@@ -1,0 +1,28 @@
+{
+  "variants": {
+    "age=0,nourished=false": {
+      "model": "underground_city:block/sable_leaf_crop_stage0"
+    },
+    "age=0,nourished=true": {
+      "model": "underground_city:block/sable_leaf_crop_stage0"
+    },
+    "age=1,nourished=false": {
+      "model": "underground_city:block/sable_leaf_crop_stage1"
+    },
+    "age=1,nourished=true": {
+      "model": "underground_city:block/sable_leaf_crop_stage1"
+    },
+    "age=2,nourished=false": {
+      "model": "underground_city:block/sable_leaf_crop_stage2"
+    },
+    "age=2,nourished=true": {
+      "model": "underground_city:block/sable_leaf_crop_stage2"
+    },
+    "age=3,nourished=false": {
+      "model": "underground_city:block/sable_leaf_crop_stage3"
+    },
+    "age=3,nourished=true": {
+      "model": "underground_city:block/sable_leaf_crop_stage3"
+    }
+  }
+}

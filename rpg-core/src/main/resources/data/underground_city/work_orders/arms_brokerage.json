@@ -1,0 +1,28 @@
+{
+  "schema_version": 3,
+  "title": "Restricted rifle for a trusted buyer",
+  "career": "gunsmith",
+  "level": 11,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "tacz:modern_kinetic_gun",
+      "count": 1,
+      "gun_ids": [
+        "tacz:ak47",
+        "tacz:m4a1"
+      ],
+      "label": "Restricted rifle"
+    }
+  ],
+  "credits": 640,
+  "xp": 640,
+  "capacity": 1,
+  "refill_ticks": 24000,
+  "legality": "underground",
+  "requires_skill": "gunsmith.arms_brokerage",
+  "buyer": "dray",
+  "min_trust": 2,
+  "trust_gain": 1,
+  "requires_mod": "tacz"
+}

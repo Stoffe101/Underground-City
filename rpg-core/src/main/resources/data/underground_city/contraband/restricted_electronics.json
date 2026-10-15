@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "category": "restricted_electronics",
+  "title": "Restricted electronics",
+  "entries": [
+    {
+      "item": "underground_city:bypass_kit"
+    },
+    {
+      "item": "underground_city:data_ledger"
+    }
+  ]
+}

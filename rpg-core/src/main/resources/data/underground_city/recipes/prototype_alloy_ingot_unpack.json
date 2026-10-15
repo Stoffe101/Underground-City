@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "group": "underground_city_rare_finds",
+  "ingredients": [
+    {
+      "item": "underground_city:prototype_alloy_ingot"
+    }
+  ],
+  "result": {
+    "item": "underground_city:refined_alloy",
+    "count": 3
+  }
+}

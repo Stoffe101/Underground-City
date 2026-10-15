@@ -45,7 +45,7 @@ public final class RegionalMarket {
         ItemStack bought = new ItemStack(stock.registryItem(), quantity);
         after.add(bought);
         if (!bought.isEmpty()) throw new IllegalStateException("Not enough inventory space for that order");
-        long cost = Math.multiplyExact((long) quantity, (long) stock.unitPrice());
+        long cost = Math.multiplyExact((long) quantity, (long) unitPrice(stock, citizen));
         double balance = QShopEconomy.balance(player);
         if (balance < cost) throw new IllegalStateException("This order costs " + cost + " credits");
         ledger.preparePurchase(player.getUUID(), nonce, stock, quantity, after.save(new ListTag()), balance - cost, citizen.careerXp());
@@ -54,10 +54,16 @@ public final class RegionalMarket {
             + " from the " + city + " exchange for " + cost + " credits."));
     }
 
-    /** Offers visible at a terminal. Empty outside every city region. */
-    static List<TerminalData.Offer> offers(WorkOrderLedger ledger, String city) {
+    /** The list price less the citizen's exchange discount from utility skills (at most 10%), never below 1 credit. */
+    static int unitPrice(RegionalStock stock, CitizenState.Citizen citizen) {
+        double discount = citizen == null ? 0 : SkillService.exchangeDiscount(citizen);
+        return (int) Math.max(1, Math.round(stock.unitPrice() * (1.0 - discount)));
+    }
+
+    /** Offers visible at a terminal, priced for this citizen. Empty outside every city region. */
+    static List<TerminalData.Offer> offers(WorkOrderLedger ledger, String city, CitizenState.Citizen citizen) {
         if (city == null || city.isEmpty()) return List.of();
         return RegionalCatalog.INSTANCE.forCity(city).stream().map(stock -> new TerminalData.Offer(stock.id(),
-            stock.item().toString(), stock.unitPrice(), ledger.regionalUnits(stock), stock.capacity(), stock.maxOrder())).toList();
+            stock.item().toString(), unitPrice(stock, citizen), ledger.regionalUnits(stock), stock.capacity(), stock.maxOrder())).toList();
     }
 }

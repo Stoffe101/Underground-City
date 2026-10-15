@@ -1,0 +1,23 @@
+{
+  "schema_version": 3,
+  "title": "Structural steel for the city works",
+  "career": "smith",
+  "level": 3,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "minecraft:iron_ingot",
+      "count": 12
+    },
+    {
+      "item": "minecraft:stone_bricks",
+      "count": 16
+    }
+  ],
+  "credits": 150,
+  "xp": 280,
+  "capacity": 4,
+  "refill_ticks": 6000,
+  "legality": "legal",
+  "requires_skill": "smith.structural_works"
+}

@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/cube_all",
+  "textures": {
+    "all": "underground_city:block/secure_data_terminal"
+  }
+}
