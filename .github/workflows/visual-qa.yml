@@ -135,7 +135,7 @@ jobs:
         shell: bash
         run: |
           python -m pip install --disable-pip-version-check 'Pillow==11.3.0' >/dev/null
-          python scripts/emit_review_images.py --format png --colors 32 \
+          python scripts/emit_review_images.py --format png --colors 64 \
             --max-width ${{ matrix.review_width }} --crop "${{ matrix.crop }}" \
             rpg-core/run/screenshots/uc-*.png || true
       - name: Upload ONLY the actual real-client screenshots for artistic review

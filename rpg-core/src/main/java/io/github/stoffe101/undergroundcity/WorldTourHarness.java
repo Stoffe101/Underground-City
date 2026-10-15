@@ -101,7 +101,7 @@ public final class WorldTourHarness {
         }
         if(!opening && (mc.screen instanceof TitleScreen || mc.screen instanceof AccessibilityOnboardingScreen)) {
             if(!Files.isRegularFile(folder.resolve("saves/world/level.dat"))) throw new IllegalStateException("Native survey-world clone missing");
-            opening=true;stageStarted=now;mc.options.guiScale().set(3);mc.options.renderDistance().set(6);
+            opening=true;stageStarted=now;mc.options.guiScale().set(3);mc.options.renderDistance().set(8);
             mc.options.pauseOnLostFocus=false;mc.options.framerateLimit().set(30);mc.options.hideGui=true;mc.resizeDisplay();
             mc.createWorldOpenFlows().loadLevel(mc.screen,"world");
             return;
@@ -166,9 +166,10 @@ public final class WorldTourHarness {
                 // (they read -64), so scan the blocks themselves from the sky downward.
                 int ground=server.overworld().getMinBuildHeight();
                 var column=new net.minecraft.core.BlockPos.MutableBlockPos();
-                for(int dx=-48;dx<=48;dx+=24) for(int dz=-48;dz<=48;dz+=24) {
+                // Around the centre and around the camera: a tall building beside the camera otherwise fills the oblique frame.
+                for(double[] around:new double[][]{{cx,cz},{x,z}}) for(int dx=-48;dx<=48;dx+=24) for(int dz=-48;dz<=48;dz+=24) {
                     for(int y=server.overworld().getMaxBuildHeight()-1;y>server.overworld().getMinBuildHeight();y--) {
-                        if(!server.overworld().getBlockState(column.set((int)cx+dx,y,(int)cz+dz)).isAir()) {ground=Math.max(ground,y);break;}
+                        if(!server.overworld().getBlockState(column.set((int)around[0]+dx,y,(int)around[1]+dz)).isAir()) {ground=Math.max(ground,y);break;}
                     }
                 }
                 int cameraY=ground+45; // high enough to clear the rooftops beside the camera (a lower oblique view stared at one roof)
@@ -190,7 +191,7 @@ public final class WorldTourHarness {
         int sections=renderedSections(mc);
         stableTicks=sections==lastSections?stableTicks+1:0;lastSections=sections;
         boolean terrainReady=mc.level.getChunkSource().getLoadedChunksCount()>=MIN_LOADED_CHUNKS && meshesIdle(mc)
-            && sections>=MIN_RENDERED_SECTIONS && stableTicks>=STABLE_TICKS;
+            && sections>=(shot.road() && shot.kind().equals("bridge-oblique")?100:MIN_RENDERED_SECTIONS) && stableTicks>=STABLE_TICKS;
         if(!terrainReady && System.nanoTime()-stageStarted<READY_WAIT_NANOS) return;
         System.out.println("[UC-WORLD-VISUAL] Capturing "+shots(mc.gameDirectory.toPath().toAbsolutePath().normalize()).get(current).file()+": loadedChunks="
             +mc.level.getChunkSource().getLoadedChunksCount()+", renderedSections="+sections+", stableTicks="+stableTicks
@@ -233,8 +234,7 @@ public final class WorldTourHarness {
             yaw=(float)Math.toDegrees(Math.atan2(-dx,dz));pitch=(float)Math.toDegrees(Math.atan2(-dy,Math.hypot(dx,dz)));
         }
         targetX=x;targetZ=z;
-        if(mc.options.renderDistance().get()<8) {mc.options.renderDistance().set(8);} // the bridge and its far bank both need to be drawn
-        var playerId=mc.player.getUUID();double fx=x,fy=y,fz=z;float fyaw=yaw,fpitch=pitch;String name=shot.file();
+                var playerId=mc.player.getUUID();double fx=x,fy=y,fz=z;float fyaw=yaw,fpitch=pitch;String name=shot.file();
         server.execute(()->{
             var player=server.getPlayerList().getPlayer(playerId);
             if(player==null) throw new IllegalStateException("World-tour player missing");
