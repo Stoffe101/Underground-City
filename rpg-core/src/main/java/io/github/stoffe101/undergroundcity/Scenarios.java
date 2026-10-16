@@ -301,8 +301,13 @@ final class Scenarios {
                     + v.getBrain().getMemory(net.minecraft.world.entity.ai.memory.MemoryModuleType.WALK_TARGET).map(t -> t.getTarget().currentBlockPosition().toShortString()).orElse("none")
                     + ", navigation done " + v.getNavigation().isDone() + ", time of day " + (v.level().getDayTime() % 24000));
             }
-            return distance < 4.0;
+            // Either she is back at her desk, or the first click already opened her terminal because the player was within its reach.
+            return distance < 4.0 || Minecraft.getInstance().screen instanceof TerminalScreen;
         }, 1500);
+        Playtest.queue("close the terminal if the first click opened it", () -> {
+            if (Minecraft.getInstance().screen instanceof TerminalScreen) Playtest.log("the first click already opened the gunsmith's terminal (the player stood within its reach)");
+            if (Minecraft.getInstance().screen != null) Playtest.tap("escape");
+        }, () -> Minecraft.getInstance().screen == null, 100);
         speakTo("the gunsmith's employer, at her desk", gunsmith, "uc-row-employer-terminal");
         Playtest.queue("the employer's terminal opened", () -> {
             if (!(Minecraft.getInstance().screen instanceof TerminalScreen)) Playtest.fail("the gunsmith employer did not open the terminal, screen=" + Minecraft.getInstance().screen);
