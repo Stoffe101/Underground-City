@@ -842,8 +842,10 @@ final class Scenarios {
             // Two blocks south of the guard, inside the 9 x 9 lot, looking north at the guard with the booth behind.
             standLooking(spot[0].add(0, 0.1, 2.2), spot[0].add(0, 1.4, 0));
         });
+        // The post is far from where the player was: wait for the chunk and the ground under the player to reach the client, then for the meshes, then a little longer.
+        Playtest.queue("wait until the player is there and the ground has arrived", () -> { }, () -> arrivedAt(new double[]{spot[0].x, spot[0].z + 2.2}), 12000);
         waitForMeshes(1500);
-        Playtest.wait("let the guard settle", 60);
+        Playtest.wait("let the guard and the light settle", 200);
         Playtest.queue("clear the chat, screenshot of the guard", () -> Minecraft.getInstance().gui.getChat().clearMessages(true));
         Playtest.wait("one frame", 4);
         Playtest.queue("screenshot of the post", () -> Playtest.screenshot("uc-post-guard"));
