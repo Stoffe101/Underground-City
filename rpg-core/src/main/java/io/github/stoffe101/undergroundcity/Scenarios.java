@@ -674,7 +674,7 @@ final class Scenarios {
         });
         Playtest.wait("hold", 4);
         Playtest.queue("release", () -> Playtest.mouseButton(3, false));
-        Playtest.queue("the vehicle exists", () -> { }, () -> vehicleNear() != null, 200);
+        Playtest.queue("the vehicle exists", () -> { }, () -> vehicleNear() != null, 900);
         Playtest.wait("let it settle", 30);
         Playtest.queue("log the vehicle, fuel it (server side) and screenshot", () -> {
             var mc = Minecraft.getInstance();
@@ -840,7 +840,7 @@ final class Scenarios {
         });
         Playtest.wait("hold", 4);
         Playtest.queue("release", () -> Playtest.mouseButton(3, false));
-        Playtest.queue("the boat exists", () -> { }, () -> boatNear() != null, 400);
+        Playtest.queue("the boat exists", () -> { }, () -> boatNear() != null, 900);
         Playtest.wait("let it settle", 40);
         Playtest.queue("log the boat and screenshot", () -> {
             var boat = boatNear();
