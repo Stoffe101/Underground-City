@@ -29,6 +29,7 @@ The docs here distinguish **confirmed product direction**, **design proposals**,
 - [Compare candidate modpacks and installed JARs](technical/modpack-comparison.md)
 - [Map creation and imports](technical/world-pipeline.md)
 - [Experimental three-city generator, generated roads and bridges, seed choice, and loot](technical/three-city-prototype.md)
+- [Development pack: TaCZ, TaCZ Blueprints, Modern Life and Immersive Vehicles (hash-pinned, runtime-only)](technical/dev-pack.md)
 - [Reuse-first mod and modpack policy](technical/reuse-first.md)
 - [First-join class and city selection candidates](technical/onboarding-reuse-spike.md)
 - [Pinned first-login test profiles and automation](technical/onboarding-screening-packs.md)
@@ -56,6 +57,9 @@ The docs here distinguish **confirmed product direction**, **design proposals**,
 **Update convention:** Proposed mechanics are not described as working. Technical assumptions are not described as verified. Each candidate mod requires its own dedicated-server test and license review.
 
 - [Visual QA and screenshot cleanup](technical/visual-qa.md)
+
+- [Legal and underground career paths (skill trees, contracts, city law, evidence)](design/legal-and-underground-careers.md)
+- [Sprint report, October 15-16, 2026 (sections A to O)](production/sprint-2026-10-15.md)
 
 - [October 19 trial-build and two-player test checklist](production/oct19-test-readiness.md)
 

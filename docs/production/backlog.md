@@ -14,9 +14,35 @@
 - [ ] Custom mod scaffold, smoke-boot CI, co-op dedicated-server test.
 - [ ] First-login UI, player registration, city selection and profession selection.
 - [ ] Career XP/skill tree and one general skill, versioned save data.
-- [x] A safe travel route: two inter-city roads with bridges generate into new chunks of a fresh seed-579 world (cloud-measured; see [three-city notes](../technical/three-city-prototype.md)).
+- [x] A safe travel route: three inter-city roads with bridges (a close triangle) generate into new chunks of a fresh seed-5908 world (cloud-measured; every road continuous, bridges over real water; see [three-city notes](../technical/three-city-prototype.md)). Nobody has walked, driven or sailed them yet.
 - [ ] Small district/world import, one workshop and one farm.
-- [ ] Gate houses at the road checkpoints, rest stops, patrol/NPC presence and a vehicle-mod fit test on the roads; decide whether the Valewood–Blackwater sea edge gets a boat service.
+- [ ] Gate houses at the road checkpoints (the zones exist as data; the buildings and guard NPCs do not), rest stops, patrol/NPC presence and a vehicle-mod fit test on the roads; boat customs for the water routes.
+
+## Sprint 2026-10-15 follow-ups (by priority)
+
+**P0 (blocks calling the starter slice a real first playable)**
+
+- [ ] A human walks Ironhaven to Valewood and to Blackwater on seed 5908 with a stopwatch and reports the time, the bridges and anything that blocks the way (the numbers so far are static estimates and block surveys).
+- [ ] A client-driven test of the Technician's trace (the server rules are GameTested; the screen is only captured, not clicked in CI).
+- [ ] Real balance: a 30-60 minute two-player session on the underground contracts. Today's balance is an arithmetic validator.
+
+**P1**
+
+- [ ] Guard NPCs at the checkpoints and customs on water, so evidence-based detection has a visible actor (today it is a seeded die at a zone).
+- [ ] A TaCZ Blueprints starter configuration (accepted spelling and effect of a starter-gun entry in `taczblueprints-server.toml` were not exercised) and a Gunsmith contract that asks for a specific crafted gun, not only a blueprint or ammunition.
+- [ ] Vehicle fit test: a car and the Motorboat on the real bridges, with persistent cargo through a save (the boat's cargo round trip is tested without a world; driving is not tested at all).
+- [ ] Registration UI (D-019) so a new player picks a home city and profession in one first-login screen instead of a command.
+
+**P2**
+
+- [ ] Founders Row placed by a fixed lot rather than the operator's position, with a populated block around it (named NPC residents).
+- [ ] Roadside settlements and an optional boat taxi so that the 4-minute walk is a choice rather than the only route.
+- [ ] More skill-tree effects beyond the capped inspection modifier, exchange discount and licences.
+
+**P3**
+
+- [ ] Tour camera framing (oblique city shots still spend half the frame on sky) and a faster world-tour job.
+- [ ] Extend the visual manifest to the Household Safe and any future first-login or NPC dialogue screen.
 
 ## First playable: P4–P6
 

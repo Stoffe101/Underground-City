@@ -235,7 +235,7 @@ public final class TerminalScreen extends Screen {
             TerminalData.SkillRow row=data.skills().get(i);
             int column=row.branch().equals("legal")?0:row.branch().equals("underground")?2:1;
             nodes[i].setX(left+18+column*(colW+6)); nodes[i].setY(top+NODE_TOP+used[column]++*NODE_STEP); nodes[i].setWidth(colW);
-            nodes[i].setMessage(Component.literal(fit(row,colW-16)));
+            nodes[i].setMessage(Component.literal(fit(row,colW-22)));
             nodes[i].active=i!=selectedSkill;
             nodes[i].setTooltip(Tooltip.create(Component.literal(row.description()+(row.reason().isEmpty()?"":"  ["+row.reason()+"]"))));
         }

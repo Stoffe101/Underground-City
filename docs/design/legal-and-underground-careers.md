@@ -51,6 +51,7 @@ and replenishes with active play; deliveries are settled through the fsynced `Wo
 | --- | --- | --- | --- | --- | --- |
 | Greenhouse wholesale | Farmer, legal | Greenhouse Management | town exchange | 100 | |
 | Broker heirloom seed stock | Farmer, legal | Cultivar Broker | | 150 | Heirloom Seed Packet |
+| Estate pantry | Farmer, legal | Estate Wholesale | | 260 | |
 | Licensed controlled-crop supply | Farmer, legal | Controlled-Crop Licence | Blackwater dispensary | 200 | |
 | Quiet bale delivery | Farmer, underground | Underground Trade | Marrow (Blackwater) | 220 | buyer trust |
 | Reserve load | Farmer, underground | Grey Market Contacts, trust 2 | Marrow | 440 | 2 cuttings |

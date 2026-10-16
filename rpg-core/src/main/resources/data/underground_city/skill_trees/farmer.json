@@ -108,6 +108,7 @@
       "id": "farmer.grey_market_contacts",
       "branch": "underground",
       "title": "Grey Market Contacts",
+      "short_title": "Market Contacts",
       "description": "A trusted buyer takes bigger loads. Unlocks the reserve contract (needs trust 2).",
       "cost": 3,
       "min_level": 12,

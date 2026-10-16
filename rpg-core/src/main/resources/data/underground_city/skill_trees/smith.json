@@ -82,6 +82,7 @@
       "id": "smith.unstamped_production",
       "branch": "underground",
       "title": "Unstamped Production",
+      "short_title": "Unstamped Output",
       "description": "Rework markings and ship in ordinary crates: 15 points off checkpoint search odds.",
       "cost": 2,
       "min_level": 9,

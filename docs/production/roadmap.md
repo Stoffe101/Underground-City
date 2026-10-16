@@ -15,6 +15,10 @@
 | P8: Expansion | Multiple full cities, connected transport, civics, business growth | World consistency and performance proven; no forced grind |
 | P9: Campaign and polish | Story acts, meaningful city changes, visuals, balance | Player journeys and save migrations tested over long-term co-op sessions |
 
+### Where the work stands (October 16, 2026)
+
+Evidence, not intent. P0 and P1 are met for the starter slice. P2 is **partly** met: three roads and bridges generate and have been surveyed block by block on seed 5908, one operator-built lot exists, but no one has walked the route and there is no populated district. P3 is met for registration and persistence (command-driven). P4 is met in miniature (wallet, stock-bound exchange, contracts) with no tax cycle. P5 has **early loops for all four careers** with a legal and an underground path each and skill trees, not yet a gun-crafting Gunsmith loop. P6 to P9 have not started beyond the rare-loot rule and the evidence-based law model (a seeded die at checkpoint zones). The sprint report lists the details and the limits: [sprint report](sprint-2026-10-15.md).
+
 Phases are **outcome gates, not calendar promises**. The order may change when research uncovers technical constraints.
 
 ## Critical path
