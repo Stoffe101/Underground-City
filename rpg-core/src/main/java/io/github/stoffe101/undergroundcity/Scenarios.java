@@ -611,7 +611,10 @@ final class Scenarios {
             float yaw = (float) Math.toDegrees(Math.atan2(-(ahead[0] - here[0]), ahead[1] - here[1]));
             roadHeading[0] = yaw;
             Playtest.log("on " + road + " at s=" + (int) hit.s() + ", " + String.format("%.1f", hit.distance()) + " from the centreline, bridge=" + plan.bridgeAt(hit.s()) + ", heading " + (int) yaw);
-            mc.player.setYRot(yaw); mc.player.yHeadRot = yaw; mc.player.setXRot(40f);
+            // Immersive Vehicles puts a vehicle down with its front 90 degrees to the right of where the player looks (observed from the rear view in
+            // the first run), so look 90 degrees to the left of the road to leave the Quad pointing along it.
+            float placing = yaw + 90f;
+            mc.player.setYRot(placing); mc.player.yHeadRot = placing; mc.player.setXRot(40f);
             Playtest.focusWindow();
             Playtest.mouseButton(3, true);
         });
