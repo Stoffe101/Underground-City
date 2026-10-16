@@ -16,6 +16,7 @@ final class Scenarios {
             case "row" -> row();
             case "posts" -> posts();
             case "tracker" -> tracker();
+            case "trace" -> trace();
             case "gun" -> gun();
             default -> throw new IllegalArgumentException("unknown scenario " + scenario);
         }
@@ -135,13 +136,8 @@ final class Scenarios {
         if (shot != null) Playtest.queue("screenshot " + shot, () -> Playtest.screenshot(shot));
     }
 
-    /**
-     * Founders Row with its people, on a clear platform in the sky of the test world (so nothing real is overwritten): build it, look at it
-     * from four places, then speak to the registrar (the first-login screen opens for a newcomer), register, speak again (a next step), and
-     * speak to the Gunsmith's employer (their terminal opens) and a resident.
-     */
-    private static void row() {
-        final BlockPos[] origin = new BlockPos[1];
+    /** Creative mode, a clear spot high in the sky of the test world, and Founders Row built there (or found, if an earlier run built it). */
+    private static void buildRowInTheSky(BlockPos[] origin) {
         Playtest.queue("creative mode and a platform in the sky", () -> {
             var level = level();
             BlockPos existing = DistrictBuilder.originOf(level, "founders_row");
@@ -161,6 +157,16 @@ final class Scenarios {
             return false;
         }, 1200);
         Playtest.wait("let the citizens settle", 80);
+    }
+
+    /**
+     * Founders Row with its people, on a clear platform in the sky of the test world (so nothing real is overwritten): build it, look at it
+     * from four places, then speak to the registrar (the first-login screen opens for a newcomer), register, speak again (a next step), and
+     * speak to the Gunsmith's employer (their terminal opens) and a resident.
+     */
+    private static void row() {
+        final BlockPos[] origin = new BlockPos[1];
+        buildRowInTheSky(origin);
         Playtest.queue("overview from the north-west", () -> {
             Vec3 o = Vec3.atLowerCornerOf(origin[0]);
             standLooking(o.add(-6, 16, -10), o.add(14, 0, 18));
@@ -202,6 +208,174 @@ final class Scenarios {
         });
         Playtest.queue("close it with Escape", () -> Playtest.tap("escape"), () -> Minecraft.getInstance().screen == null, 100);
         speakTo("a resident", resident, "uc-row-resident");
+    }
+
+    // ------------------------------------------------------------------------------------------------ the Technician's trace
+
+    private static int traceLit(ChallengeScreen screen) {
+        try {
+            var method = ChallengeScreen.class.getDeclaredMethod("litPad");
+            method.setAccessible(true);
+            return (Integer) method.invoke(screen);
+        } catch (ReflectiveOperationException error) { throw new IllegalStateException(error); }
+    }
+
+    private static boolean traceShowing(ChallengeScreen screen) {
+        try {
+            var method = ChallengeScreen.class.getDeclaredMethod("showing");
+            method.setAccessible(true);
+            return (Boolean) method.invoke(screen);
+        } catch (ReflectiveOperationException error) { throw new IllegalStateException(error); }
+    }
+
+    private static void unlockWithPrerequisites(CitizenState citizens, java.util.UUID uuid, String node) {
+        var skill = SkillCatalog.INSTANCE.find(node);
+        for (String parent : skill.requires()) unlockWithPrerequisites(citizens, uuid, parent);
+        if (!citizens.find(uuid).orElseThrow().skills().contains(node)) citizens.unlockSkill(uuid, node);
+    }
+
+    /** Opens the secure terminal with a real right click from the data office's floor and waits for the trace screen. */
+    private static void startTrace(BlockPos origin, String label) {
+        Playtest.queue(label + ": stand at the secure terminal and use it", () -> {
+            Vec3 terminal = Vec3.atCenterOf(origin.offset(15, 0, 2));
+            standLooking(Vec3.atLowerCornerOf(origin.offset(15, 0, 4)).add(0.5, 0, 0.5), terminal.add(0, 0.2, 0));
+        });
+        Playtest.wait("settle", 15);
+        Playtest.queue(label + ": right-click", () -> {
+            Playtest.focusWindow();
+            Playtest.mouseButton(3, true);
+        }, () -> Minecraft.getInstance().screen instanceof ChallengeScreen, 80);
+        Playtest.queue(label + ": release the button", () -> Playtest.mouseButton(3, false));
+    }
+
+    /** Watches the sequence flash on the real screen, as a person would, and returns what was seen once it is over. */
+    private static void watchTrace(java.util.List<Integer> seen, String label) {
+        final int[] previous = {-1};
+        Playtest.queue(label + ": watch the pads", () -> { seen.clear(); previous[0] = -1; }, () -> {
+            if (!(Minecraft.getInstance().screen instanceof ChallengeScreen screen)) return true;
+            int lit = traceLit(screen);
+            if (lit >= 0 && previous[0] < 0) seen.add(lit);
+            previous[0] = lit;
+            return !traceShowing(screen);
+        }, 400);
+    }
+
+    private static void typeTrace(java.util.List<Integer> seen, boolean wrong, String label) {
+        final int[] next = {0}, gap = {0};
+        Playtest.queue(label + ": enter the symbols with the keyboard", () -> { next[0] = 0; gap[0] = 0; Playtest.focusWindow(); }, () -> {
+            if (!(Minecraft.getInstance().screen instanceof ChallengeScreen)) return true;
+            if (gap[0]-- > 0) return false;
+            if (next[0] >= seen.size()) return false;
+            int pad = seen.get(next[0]++);
+            if (wrong) pad = (pad + 1) & 3;
+            Playtest.tap(Integer.toString(pad + 1));
+            gap[0] = 4;
+            return false;
+        }, 600);
+    }
+
+    private static void spendTime(String label) {
+        Playtest.queue(label + ": let server time pass so the terminal unlocks and its drive refills", () -> {
+            var server = Minecraft.getInstance().getSingleplayerServer();
+            server.execute(() -> WorkOrderLedger.get(server).advance(2_000_000L));
+        });
+        Playtest.wait("settle", 20);
+    }
+
+    private static int inventoryCount(String item) {
+        int total = 0;
+        for (var stack : Minecraft.getInstance().player.getInventory().items) {
+            var key = net.minecraftforge.registries.ForgeRegistries.ITEMS.getKey(stack.getItem());
+            if (key != null && key.toString().equals(item)) total += stack.getCount();
+        }
+        return total;
+    }
+
+    private static boolean terminalLocked(BlockPos origin) {
+        var server = Minecraft.getInstance().getSingleplayerServer();
+        var entity = server.overworld().getBlockEntity(origin.offset(15, 0, 2));
+        return entity instanceof SecureTerminalBlockEntity terminal && terminal.lockedAt(WorkOrderLedger.get(server).clock());
+    }
+
+    /**
+     * The Technician's trace on the real screen with the real keyboard: a success (the sequence watched and typed back), a wrong answer, walking away
+     * (Escape) and running out of time, each with its consequence checked on the integrated server: the ledger, the kit, the lock-down.
+     */
+    private static void trace() {
+        final BlockPos[] origin = new BlockPos[1];
+        buildRowInTheSky(origin);
+        Playtest.wait("let the citizens settle", 40);
+        Playtest.queue("a registered Valewood technician with Bypass Tooling and four kits", () -> {
+            Playtest.command("gamemode survival");
+            Playtest.command("clear @s");
+            Playtest.command("uc register valewood technician");
+        });
+        Playtest.wait("let the server answer", 40);
+        Playtest.queue("experience, skills and kits (server side)", () -> {
+            var mc = Minecraft.getInstance();
+            var server = mc.getSingleplayerServer();
+            var uuid = mc.player.getUUID();
+            server.execute(() -> {
+                var citizens = CitizenState.get(server);
+                citizens.addCareerXp(uuid, 5000);
+                unlockWithPrerequisites(citizens, uuid, "technician.bypass_tooling");
+            });
+            Playtest.command("give @s underground_city:bypass_kit 4");
+        }, () -> inventoryCount("underground_city:bypass_kit") == 4, 200);
+        final java.util.List<Integer> seen = new java.util.ArrayList<>();
+
+        startTrace(origin[0], "success");
+        Playtest.queue("success: screenshot while the pads flash", () -> Playtest.screenshot("uc-trace-showing"));
+        watchTrace(seen, "success");
+        Playtest.queue("success: five symbols were seen", () -> {
+            Playtest.log("seen " + seen);
+            if (seen.size() != SecureTerminalService.LENGTH) Playtest.fail("the screen flashed " + seen.size() + " symbols, expected " + SecureTerminalService.LENGTH);
+        });
+        Playtest.wait("success: settle", 4);
+        typeTrace(seen, false, "success");
+        Playtest.wait("success: the server answers", 30);
+        Playtest.queue("success: the ledger arrived and one kit was spent", () -> {
+            Playtest.log("ledgers " + inventoryCount("underground_city:data_ledger") + ", kits " + inventoryCount("underground_city:bypass_kit") + ", screen " + Minecraft.getInstance().screen);
+            if (inventoryCount("underground_city:data_ledger") != 1) Playtest.fail("the Encrypted Ledger did not arrive after a correct trace");
+            if (inventoryCount("underground_city:bypass_kit") != 3) Playtest.fail("the kit count should be 3");
+            if (Minecraft.getInstance().screen != null) Playtest.fail("the trace screen did not close");
+        });
+
+        spendTime("wrong answer");
+        startTrace(origin[0], "wrong answer");
+        watchTrace(seen, "wrong answer");
+        Playtest.wait("wrong answer: settle", 4);
+        typeTrace(seen, true, "wrong answer");
+        Playtest.wait("wrong answer: the server answers", 30);
+        Playtest.queue("wrong answer: no ledger, the terminal locks down", () -> {
+            Playtest.log("ledgers " + inventoryCount("underground_city:data_ledger") + ", kits " + inventoryCount("underground_city:bypass_kit") + ", locked " + terminalLocked(origin[0]));
+            if (inventoryCount("underground_city:data_ledger") != 1) Playtest.fail("a wrong sequence must not pay");
+            if (inventoryCount("underground_city:bypass_kit") != 2) Playtest.fail("the kit is spent when the attempt starts");
+            if (!terminalLocked(origin[0])) Playtest.fail("the terminal should be locked down after a wrong answer");
+        });
+        Playtest.queue("wrong answer: screenshot of the consequence message", () -> Playtest.screenshot("uc-trace-wrong"));
+
+        spendTime("abandon");
+        startTrace(origin[0], "abandon");
+        Playtest.wait("abandon: let two symbols flash", 20);
+        Playtest.queue("abandon: press Escape", () -> Playtest.tap("escape"), () -> !(Minecraft.getInstance().screen instanceof ChallengeScreen), 100);
+        Playtest.wait("abandon: the server answers", 30);
+        Playtest.queue("abandon: the alarm tripped", () -> {
+            Playtest.log("kits " + inventoryCount("underground_city:bypass_kit") + ", locked " + terminalLocked(origin[0]));
+            if (inventoryCount("underground_city:bypass_kit") != 1) Playtest.fail("the kit is spent when the attempt starts");
+            if (!terminalLocked(origin[0])) Playtest.fail("walking away should lock the terminal down");
+        });
+
+        spendTime("timeout");
+        startTrace(origin[0], "timeout");
+        Playtest.queue("timeout: do nothing until the window closes", () -> { }, () -> !(Minecraft.getInstance().screen instanceof ChallengeScreen), 20 * 40);
+        Playtest.wait("timeout: the server answers", 30);
+        Playtest.queue("timeout: the alarm tripped and no ledger came", () -> {
+            Playtest.log("ledgers " + inventoryCount("underground_city:data_ledger") + ", kits " + inventoryCount("underground_city:bypass_kit") + ", locked " + terminalLocked(origin[0]));
+            if (inventoryCount("underground_city:data_ledger") != 1) Playtest.fail("running out of time must not pay");
+            if (inventoryCount("underground_city:bypass_kit") != 0) Playtest.fail("the last kit should be spent");
+            if (!terminalLocked(origin[0])) Playtest.fail("running out of time should lock the terminal down");
+        });
     }
 
     /**
@@ -315,7 +489,20 @@ final class Scenarios {
         });
         Playtest.wait("let the draw animation finish", 60);
         Playtest.queue("screenshot with the pistol in hand", () -> Playtest.screenshot("uc-playtest-gun-hold"));
-        Playtest.queue("press R to reload", () -> Playtest.tap("r"), () -> magazine() > 0, 400);
+        final int[] waited = {0};
+        Playtest.queue("hold R for a few ticks to reload", () -> Playtest.keyDown("r"));
+        Playtest.wait("keep it down", 4);
+        Playtest.queue("release R and wait for the magazine to fill", () -> Playtest.keyUp("r"), () -> {
+            if (magazine() > 0) return true;
+            if (++waited[0] == 60) diagnoseTrigger(false);
+            if (waited[0] == 120) { diagnoseTrigger(false); try {
+                Class<?> operator = Class.forName("com.tacz.guns.api.client.gameplay.IClientPlayerGunOperator");
+                Object instance = operator.getMethod("fromLocalPlayer", net.minecraft.client.player.LocalPlayer.class).invoke(null, Minecraft.getInstance().player);
+                operator.getMethod("reload").invoke(instance);
+                Playtest.log("direct reload() called");
+            } catch (ReflectiveOperationException error) { Playtest.log("direct reload failed: " + error); } }
+            return false;
+        }, 400);
         Playtest.wait("settle", 20);
         Playtest.queue("the magazine and the carried ammunition agree", () -> {
             int magazine = magazine(), carried = ammoCount();

@@ -69,6 +69,21 @@ final class OptionalModProbes {
         }
     }
 
+    /** The guns TaCZ Blueprints says this player has unlocked (empty when the mod or its capability is absent). */
+    @SuppressWarnings("unchecked")
+    static java.util.Set<String> unlockedGuns(net.minecraft.world.entity.player.Player player) {
+        try {
+            Class<?> provider = Class.forName("com.raiiiden.taczblueprints.capability.GunUnlocksProvider");
+            var optional = (net.minecraftforge.common.util.LazyOptional<?>) provider.getMethod("get", net.minecraft.world.entity.player.Player.class).invoke(null, player);
+            Object capability = optional.resolve().orElse(null);
+            if (capability == null) return java.util.Set.of();
+            Object guns = capability.getClass().getMethod("getUnlockedGuns").invoke(capability);
+            return new java.util.HashSet<>((java.util.Collection<String>) guns);
+        } catch (ReflectiveOperationException | RuntimeException error) {
+            return java.util.Set.of("(error: " + error + ")");
+        }
+    }
+
     /** How many stacks of {@code item} carry the given string tag value (a TaCZ gun is modern_kinetic_gun with GunId, ammo is ammo with AmmoId). */
     static int countTagged(net.minecraft.world.entity.player.Player player, String item, String key, String value) {
         int total = 0;

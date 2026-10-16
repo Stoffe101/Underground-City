@@ -68,6 +68,22 @@ Result in the development environment: all nine mods load; Immersive Vehicles re
 | `gradlew runClient -PucUsername=Alice` | another offline player name (two developers need different names) |
 | `gradlew runClient -PucRunDir=run-other` | another game directory, for example a clean experiment |
 
+## What the first minute looks like
+
+1. The client opens straight into `UC-Dev-5908` (a brand-new world on the first launch). On that first start, and only in a world whose game
+   time is still zero, the launch **builds Founders Row on level, dry ground near the spawn point and moves the spawn to its south gate**
+   ([D-064](../production/decisions.md)); the log says `[UC-DEV] Founders Row built at ...`. An existing world is never touched.
+2. The **first-login screen** opens (home city, then profession, then confirm). Confirm gives the career's welcome pack (a terminal, the
+   starter tools and, for a Gunsmith, the TaCZ gun smith table, a pistol blueprint and the materials for one pistol and its ammunition).
+3. Walk up the lane. The **registrar** is in the building on the east side next to the gate; each career's **employer** has an office on the
+   lane (the Technician's is in the dark-stone data office at the north end). Right-click an employer of your own career to open the terminal
+   bound to their office; take a work order and the **tracker** at the top left shows what is still missing (press **O** to hide it).
+4. The supply clerk, the exchange and the safes are in the stalls along the north wall.
+
+To place the same district by hand in any other world: `/uc_district build founders_row`; remove it again with
+`/uc_district undo founders_row confirm`; `/uc_district repopulate founders_row` puts back a citizen who was removed. Road checkpoint posts:
+`/uc_checkpoints place` (one booth and one guard per zone, beside the road), `/uc_checkpoints remove confirm` for the nearest one.
+
 ## The dev world
 
 * Location: `rpg-core/run-dev/saves/UC-Dev-5908` (a normal save; delete the folder to regenerate it).
@@ -98,6 +114,31 @@ Result in the development environment: all nine mods load; Immersive Vehicles re
   the Core jar from `gradlew build`).
 * Not tested: two real clients on this dev server. The hosted `journey` job tests two clients against a Core-only
   dedicated server, not this pack.
+
+## Scripted-player scenarios (real client, real keys)
+
+Several checks drive an actual Minecraft client with genuine keyboard and mouse events. Minecraft starts the JVM headless, so AWT's `Robot`
+is unavailable; `scripts/xinput_helper.py` injects the events through the X server's XTEST extension instead (it needs `DISPLAY`, libX11 and
+libXtst, both present with Xvfb). They are for the cloud container and for CI; they are not part of a normal launch.
+
+```
+xvfb-run -a -s "-screen 0 1280x720x24" ./gradlew runClient -PucPlaytest=<scenario> -PucPtWorld=UC-PT-<scenario>
+```
+
+| Scenario | What it does |
+| --- | --- |
+| `input` | proves the harness: an injected W key moves the player |
+| `register` | the first-login screen opens by itself; a mouse path through city, profession and confirm creates the citizen and delivers the pack |
+| `walk` | walks each generated road from its first block with the real W key, steering only the heading; reports game time, waits for chunks, time on bridges, jumps and where it got stuck (`-PucPtRoute=<road>`, `-PucPtSprint=true`, `-PucPtLimitseconds=7200`) |
+| `gun` | a TaCZ pistol: select, reload with R, aim with the right button, fire with the left, check the magazine, the carried ammunition and the damage to a target |
+| `row` | builds Founders Row on a platform in the sky, takes pictures, speaks to the registrar, an employer and a resident with real right clicks |
+| `posts` | places the checkpoint posts, stands at one and lets the guard search a pistol-carrying citizen |
+| `tracker` | accepts a two-line order and follows the inventory on the tracker until it says the order is ready |
+
+Options are Gradle properties starting with `ucPt` (`-PucPtRoute=x` becomes `-Duc.playtest.route=x`). Reusing an existing playtest world keeps
+its citizens, so use a world name per scenario. Reopening an existing development world makes Minecraft ask
+"Worlds using Experimental Settings are not supported" (a mod-registered generator is not vanilla-stable); the launcher answers *Proceed*
+for the development world only. A scenario result is one line, `[UC-PLAYTEST] RESULT pass` or the failures.
 
 ## Verification so far
 

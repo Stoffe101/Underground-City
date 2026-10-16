@@ -88,7 +88,17 @@ public final class WorkOrderService {
             }
         }
         ledger.accept(player.getUUID(), order);
-        player.sendSystemMessage(Component.literal("Accepted: " + order.title() + ". Deliver " + describe(order) + deliveryNote(order) + "."));
+        net.minecraft.network.chat.MutableComponent message = Component.literal("Accepted: " + order.title() + ". Deliver ");
+        boolean first = true;
+        for (WorkOrder.Requirement requirement : order.requirements()) {
+            if (!first) message.append(", ");
+            first = false;
+            message.append(requirement.count() + " ");
+            // The player's own language names the item; a labelled requirement (a specific gun) keeps its label.
+            if (requirement.label().isEmpty() && requirement.registryItem() != null) message.append(Component.translatable(requirement.registryItem().getDescriptionId()));
+            else message.append(requirement.display());
+        }
+        player.sendSystemMessage(message.append(deliveryNote(order) + "."));
     }
 
     private static String describe(WorkOrder order) {

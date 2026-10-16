@@ -958,6 +958,36 @@ public final class UndergroundGameTests {
     }
 
     @GameTest(template = "empty")
+    public static void aDistrictSiteIsLevelDryAndClearOfCitiesAndTheNearestOneWins(GameTestHelper helper) {
+        // Flat ground at 70 with a hill (height 80) east of x=40, a pond around (0, 0) and a reserved city circle south of z=100.
+        DistrictSites.Ground ground = new DistrictSites.Ground() {
+            @Override public int height(int x, int z) { return x > 40 ? 80 : 70; }
+            @Override public boolean wet(int x, int z) { return Math.hypot(x, z) < 30; }
+            @Override public boolean reserved(int x, int z) { return z > 100; }
+        };
+        var site = DistrictSites.find(ground, 0, 0, 25, 41, 3, 160).orElseThrow(() -> new IllegalStateException("no site found on open flat ground"));
+        check(site.relief() == 0 && site.y() == 70, "The site is flat ground at 70: " + site);
+        for (int dx : new int[]{0, 25}) for (int dz : new int[]{0, 41}) {
+            int x = site.x() + dx, z = site.z() + dz;
+            check(!ground.wet(x, z) && !ground.reserved(x, z) && x <= 40, "Corner " + x + "," + z + " is dry, unreserved and off the hill");
+        }
+        // A pond or a city centred on the search origin pushes the site out, but never onto them.
+        check(Math.hypot(site.x() + 12, site.z() + 20) >= 30, "The site clears the pond: " + site);
+        // No dry, level ground anywhere: nothing is invented.
+        check(DistrictSites.find(new DistrictSites.Ground() {
+            @Override public int height(int x, int z) { return 60 + ((x / 4 + z / 4) & 7) * 3; }
+            @Override public boolean wet(int x, int z) { return false; }
+            @Override public boolean reserved(int x, int z) { return false; }
+        }, 0, 0, 25, 41, 3, 160).isEmpty(), "Bumpy ground yields no site");
+        check(DistrictSites.find(new DistrictSites.Ground() {
+            @Override public int height(int x, int z) { return 70; }
+            @Override public boolean wet(int x, int z) { return true; }
+            @Override public boolean reserved(int x, int z) { return false; }
+        }, 0, 0, 25, 41, 3, 160).isEmpty(), "Open water yields no site");
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty")
     public static void aCheckpointPostIsPlacedBesideTheRoadNeverOnIt(GameTestHelper helper) {
         var city = List.<CorridorPlan.City>of();
         CorridorPlan straight = new CorridorPlan("straight", new double[]{0, 0}, new double[]{0, 400}, 7, city);
@@ -1069,9 +1099,13 @@ public final class UndergroundGameTests {
             check(OptionalModProbes.countTagged(player, "tacz:modern_kinetic_gun", "GunId", "tacz:glock_17") == 0, "The kit must not hand out the finished gun");
             ItemStack blueprint = player.getInventory().items.stream().filter(s -> String.valueOf(ForgeRegistries.ITEMS.getKey(s.getItem())).equals("taczblueprints:blueprint_pistol")).findFirst().orElse(ItemStack.EMPTY);
             check(!blueprint.isEmpty(), "The kit carries a pistol blueprint");
-            int blueprintsBefore = blueprint.getCount();
-            blueprint.use(helper.getLevel(), player, net.minecraft.world.InteractionHand.MAIN_HAND);
-            check(blueprint.getCount() == blueprintsBefore - 1 || blueprint.isEmpty(), "Using the blueprint unlocks the gun and consumes the paper");
+            // An item's use() acts on the stack in the player's hand, so the blueprint goes into the main hand first.
+            check(!OptionalModProbes.unlockedGuns(player).contains("tacz:glock_17"), "The pistol is not unlocked before the blueprint is used");
+            ItemStack inHand = blueprint.copy();
+            player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, inHand);
+            inHand.getItem().use(helper.getLevel(), player, net.minecraft.world.InteractionHand.MAIN_HAND);
+            check(OptionalModProbes.unlockedGuns(player).contains("tacz:glock_17"), "Using the blueprint unlocks the Glock 17 for this player: " + OptionalModProbes.unlockedGuns(player));
+            player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, ItemStack.EMPTY);
             int iron = player.getInventory().countItem(Items.IRON_INGOT);
             String crafted = OptionalModProbes.craftAtTaczTable(player, "gun", "tacz:glock_17");
             check(crafted == null, "Crafting the Glock 17 at the real table: " + crafted);

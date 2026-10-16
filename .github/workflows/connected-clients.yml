@@ -28,6 +28,14 @@ jobs:
         run: sudo apt-get update -qq && sudo apt-get install -y -qq xvfb xauth libgl1-mesa-dri libgl1
       - name: Exercise two actual clients through UI actions and dedicated-server restart
         run: xvfb-run -a -s '-screen 0 1920x1080x24' python scripts/run_cloud_journey.py
+      - name: Print why a journey process stopped (the logs are also an artifact)
+        if: failure()
+        run: |
+          for log in build/cloud-journey/logs/*.log; do
+            echo "=== ${log}"
+            grep -nE 'Exception in thread|Crash report saved|Failed to start|Exception caught during firing|FAILED|FAILURE|Caused by|Could not|\[UC-JOURNEY\]' -A 4 "${log}" | head -n 60 || true
+            tail -n 25 "${log}"
+          done
       - name: Preserve reports and diagnostics only
         if: always()
         uses: actions/upload-artifact@v4
