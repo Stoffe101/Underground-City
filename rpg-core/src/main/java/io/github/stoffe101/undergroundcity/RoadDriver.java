@@ -82,7 +82,9 @@ final class RoadDriver {
      * a little more every tick"; a controller that holds a key until the heading is right swings from lock to lock. This one steers the yaw rate.
      */
     private java.util.function.Supplier<double[]> velocity;
-    private static final double RATE_GAIN = 0.03, RATE_LIMIT = 0.8, RATE_DEADBAND = 0.25;
+    private static final int TAP_PERIOD = 16;
+    private static final double TAP_THRESHOLD = 5.0;
+    private int tapTicksLeft, tapDirection;
     private double wheel, yawRate;
     /** Which of the vehicle's four local axes is its front, found by comparing each with the direction it actually moves in (the model's own convention is not documented). */
     private final double[] axisScore = new double[4];
@@ -172,9 +174,10 @@ final class RoadDriver {
             }
             double have = sensor != null && frontAxis >= 0 ? sensor[2 + frontAxis] : Double.NaN;
             if (!Double.isNaN(have)) {
-                // Outer loop: the yaw rate that would close the heading error over about a second. Inner loop: hold the key that brings the measured yaw rate to it.
-                // Holding a steering key moves the wheels a little more every tick, which moves the yaw rate a little more every tick, so a rate loop is stable
-                // where holding a key until the heading is right (which is what a person who has not driven this vehicle does) swings from side to side.
+                // Immersive Vehicles sends the keys to the server and shows what the server's physics did, which in this container (software rendering, an overloaded
+                // server) arrives a good half second late, and a quad turns far more than its wheel angle suggests. A controller that reacts to what it sees swings
+                // wildly; one that taps a key for a tick or two and then waits for the effect to show does not. So: every TAP_PERIOD ticks look at the heading error and,
+                // if it is large enough, tap the key that reduces it.
                 double lookAhead = Math.max(10.0, speed * 1.5);
                 double[] target = plan.pointAt(Math.min(plan.length(), progress + lookAhead));
                 double want = Math.toDegrees(Math.atan2(-(target[0] - position.x), target[1] - position.z));
@@ -182,9 +185,13 @@ final class RoadDriver {
                 double raw = Double.isNaN(lastHeading) ? 0 : ((have - lastHeading) % 360 + 540) % 360 - 180;
                 lastHeading = have;
                 yawRate = 0.5 * yawRate + 0.5 * raw;
-                double desired = Math.max(-RATE_LIMIT, Math.min(RATE_LIMIT, error * RATE_GAIN));
-                right = desired - yawRate > RATE_DEADBAND;
-                left = desired - yawRate < -RATE_DEADBAND;
+                if (ticks % TAP_PERIOD == 0) {
+                    tapDirection = error > TAP_THRESHOLD ? 1 : error < -TAP_THRESHOLD ? -1 : 0;
+                    tapTicksLeft = tapDirection == 0 ? 0 : Math.abs(error) > 4 * TAP_THRESHOLD ? 3 : 2;
+                }
+                right = tapTicksLeft > 0 && tapDirection > 0;
+                left = tapTicksLeft > 0 && tapDirection < 0;
+                if (tapTicksLeft > 0) tapTicksLeft--;
                 lastError = error; lastWant = want; lastHave = have;
             } else {
                 // not calibrated yet: keep the wheels straight while the vehicle gets going
