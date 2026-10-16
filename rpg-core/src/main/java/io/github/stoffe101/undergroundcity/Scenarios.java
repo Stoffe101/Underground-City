@@ -128,7 +128,7 @@ final class Scenarios {
 
     /** Moves the player (through the integrated server) to {@code at}, looking at {@code target}. */
     private static void standLooking(Vec3 at, Vec3 target) {
-        Vec3 delta = target.subtract(at);
+        Vec3 delta = target.subtract(at.add(0, 1.62, 0)); // the view starts at the eyes, not the feet
         float yaw = (float) Math.toDegrees(Math.atan2(-delta.x, delta.z));
         float pitch = (float) -Math.toDegrees(Math.atan2(delta.y, Math.hypot(delta.x, delta.z)));
         Playtest.command(String.format(java.util.Locale.ROOT, "tp @s %.2f %.2f %.2f %.1f %.1f", at.x, at.y, at.z, yaw, pitch));
@@ -816,7 +816,12 @@ final class Scenarios {
         Playtest.queue("six posts stand", () -> { }, () -> DistrictBuilder.count(level(), "checkpoint_post") >= CheckpointCatalog.INSTANCE.all().size(), 6000);
         final Vec3[] spot = new Vec3[1];
         Playtest.queue("go to the first post", () -> {
-            var post = CheckpointCatalog.INSTANCE.all().get(0);
+            // The order of the zones is not stable, and a pistol is legal in Blackwater: take the first zone whose law restricts it.
+            var post = CheckpointCatalog.INSTANCE.all().stream().filter(zone -> {
+                var law = CityLaws.INSTANCE.find(zone.jurisdiction());
+                return law != null && !law.status("firearms_licensed").equals(CityLaws.LEGAL);
+            }).findFirst().orElseThrow();
+            Playtest.log("post at " + post.title() + " (" + post.jurisdiction() + ")");
             var guard = CheckpointPosts.guardAt(level(), post);
             if (guard.isEmpty()) { Playtest.fail("no guard stands at " + post.title()); return; }
             spot[0] = guard.get().position();
