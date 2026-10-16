@@ -78,11 +78,12 @@ final class Scenarios {
         var plans = DevCommands.plans(server).stream().filter(plan -> only.isBlank() || plan.id().equals(only)).toList();
         if (plans.isEmpty()) throw new IllegalStateException("no road plan matches '" + only + "'; the dev world needs the world-prototype pack");
         for (CorridorPlan plan : plans) {
-            Playtest.log("road " + plan.id() + " is " + (int) plan.length() + " blocks long");
-            arriveOnRoad(plan.id(), 0, "survival");
-            Playtest.queue("wait for the road plan to be built from the terrain", () -> { }, plan::built, 1200);
-            RoadWalker walker = new RoadWalker(plan, sprint);
-            Playtest.queue("walk " + plan.id() + (sprint ? " (sprinting)" : ""), () -> { }, () -> { walker.tick(); return walker.done(); }, 120_000);
+            String id = plan.id();
+            Playtest.log("road " + id + " is " + (int) plan.length() + " blocks long");
+            arriveOnRoad(id, 0, "survival");
+            Playtest.queue("wait for the road plan to be built from the terrain", () -> { }, () -> roadPlan(id).built(), 1200);
+            final RoadWalker[] walker = new RoadWalker[1];
+            Playtest.queue("walk " + id + (sprint ? " (sprinting)" : ""), () -> walker[0] = new RoadWalker(roadPlan(id), sprint), () -> { walker[0].tick(); return walker[0].done(); }, 120_000);
         }
     }
 
@@ -486,8 +487,11 @@ final class Scenarios {
         }
     }
 
+    /** The road with this id: the plan the generator built from the terrain when one exists (it knows its bridges), else the bare plan from the datapack. */
     private static CorridorPlan roadPlan(String road) {
-        return DevCommands.plans(Minecraft.getInstance().getSingleplayerServer()).stream().filter(p -> p.id().equals(road)).findFirst().orElseThrow();
+        var server = Minecraft.getInstance().getSingleplayerServer();
+        return CorridorRoadFeature.plans(server.overworld()).stream().filter(p -> p.id().equals(road)).findFirst()
+            .orElseGet(() -> DevCommands.plans(server).stream().filter(p -> p.id().equals(road)).findFirst().orElseThrow());
     }
 
     /** The first run of at least {@code minimum} bridge blocks on a road: {start, end} along the road, or null. */
