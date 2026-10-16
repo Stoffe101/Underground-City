@@ -697,10 +697,15 @@ final class Scenarios {
         double[] on = RoadDriver.beside(plan, offset, 8).pointAt(s);
         int x = (int) Math.floor(on[0]), z = (int) Math.floor(on[1]);
         if (!level.hasChunk(x >> 4, z >> 4)) return new double[0];
-        int y = level.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING, x, z) - 1;
-        var fluid = level.getFluidState(new BlockPos(x, y, z));
-        if (!fluid.is(net.minecraft.tags.FluidTags.WATER) || !fluid.isSource()) return new double[0];
-        return new double[]{on[0], on[1], y};
+        // Beside a deck the top block is the deck itself: look down from it for the first water surface (a water source with no water above).
+        int top = level.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING, x, z) - 1;
+        for (int y = top; y > Math.max(level.getMinBuildHeight(), top - 80); y--) {
+            var fluid = level.getFluidState(new BlockPos(x, y, z));
+            if (fluid.is(net.minecraft.tags.FluidTags.WATER) && fluid.isSource() && !level.getFluidState(new BlockPos(x, y + 1, z)).is(net.minecraft.tags.FluidTags.WATER)) {
+                return new double[]{on[0], on[1], y};
+            }
+        }
+        return new double[0];
     }
 
     /**
