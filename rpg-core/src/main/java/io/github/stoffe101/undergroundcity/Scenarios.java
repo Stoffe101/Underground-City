@@ -244,6 +244,18 @@ final class Scenarios {
     private static void row() {
         final BlockPos[] origin = new BlockPos[1];
         buildRowInTheSky(origin);
+        // By day the villagers gather at the bell and walk about, so a click lands on whoever stands in front of the citizen aimed at (seen in earlier runs: the cursor
+        // on the market gardener when the gunsmith was meant). The scripted run switches their AI off so each stands at her post; their walking is checked separately.
+        Playtest.queue("switch the citizens' AI off so a click lands on the citizen aimed at", () -> {
+            var server = Minecraft.getInstance().getSingleplayerServer();
+            server.execute(() -> {
+                var level = server.overworld();
+                var box = new net.minecraft.world.phys.AABB(Vec3.atLowerCornerOf(origin[0]).subtract(32, 16, 32), Vec3.atLowerCornerOf(origin[0]).add(64, 32, 80));
+                int frozen = 0;
+                for (var villager : level.getEntitiesOfClass(net.minecraft.world.entity.npc.Villager.class, box, CityNpcs::isCityNpc)) { villager.setNoAi(true); frozen++; }
+                Playtest.log("citizens with their AI switched off: " + frozen);
+            });
+        });
         screensStayOpenFromNow();
         Playtest.queue("overview from the north-west", () -> {
             Vec3 o = Vec3.atLowerCornerOf(origin[0]);
