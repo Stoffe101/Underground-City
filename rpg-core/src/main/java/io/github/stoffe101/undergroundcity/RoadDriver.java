@@ -82,7 +82,7 @@ final class RoadDriver {
      * a little more every tick"; a controller that holds a key until the heading is right swings from lock to lock. This one steers the yaw rate.
      */
     private java.util.function.Supplier<double[]> velocity;
-    private static final double RATE_GAIN = 0.04, RATE_LIMIT = 1.2, RATE_DEADBAND = 0.18;
+    private static final double RATE_GAIN = 0.03, RATE_LIMIT = 0.8, RATE_DEADBAND = 0.25;
     private double wheel, yawRate;
     /** Which of the vehicle's four local axes is its front, found by comparing each with the direction it actually moves in (the model's own convention is not documented). */
     private final double[] axisScore = new double[4];

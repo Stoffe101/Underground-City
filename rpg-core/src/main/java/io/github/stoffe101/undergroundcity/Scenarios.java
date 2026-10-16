@@ -631,6 +631,7 @@ final class Scenarios {
     private static void car() {
         String road = System.getProperty("uc.playtest.route", "ironhaven_valewood");
         boolean bridge = Boolean.getBoolean("uc.playtest.bridge");
+        lightenClient();
         int[] startMetres = {Integer.getInteger("uc.playtest.metres", 300)};
         int[] driveBlocks = {Integer.getInteger("uc.playtest.drive", 150)};
         if (bridge) {
@@ -755,6 +756,21 @@ final class Scenarios {
     }
 
     /**
+     * The scripted client renders in software and, left alone, draws as many frames as it can, which starves the integrated server of CPU: the server then falls
+     * minutes behind, and a vehicle whose controls go to the server and whose physics come back from it cannot be steered at all. A lower frame-rate cap and a
+     * shorter view distance give the server its share back; they change how far the screenshots see, not what the game does.
+     */
+    private static void lightenClient() {
+        Playtest.queue("cap the frame rate and shorten the view distance so the integrated server keeps up", () -> {
+            var options = Minecraft.getInstance().options;
+            options.framerateLimit().set(30);
+            options.renderDistance().set(6);
+            options.simulationDistance().set(6);
+            Playtest.log("frame rate capped at 30, render distance 6, simulation distance 6");
+        });
+    }
+
+    /**
      * Generates the chunks along a stretch of road before a vehicle drives it. The integrated server shares its CPU with a software-rendered client in
      * the cloud container and can run half a minute behind, and a vehicle stops dead at the edge of a chunk the server has not made yet (the player
      * is not slowed by it because the walker waits for chunks, a vehicle cannot). Two chunks per server task, so the server's watchdog never sees a
@@ -814,6 +830,7 @@ final class Scenarios {
      */
     private static void boat() {
         String road = System.getProperty("uc.playtest.route", "valewood_blackwater");
+        lightenClient();
         final double[] run = new double[2];
         final double[][] spot = new double[1][];
         final double offset = 3.0;
