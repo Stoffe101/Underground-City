@@ -319,6 +319,10 @@ final class Scenarios {
         Playtest.wait("settle", 15);
         Playtest.queue(label + ": right-click", () -> {
             var mc = Minecraft.getInstance();
+            var lvl = level();
+            Playtest.log("row origin " + origin[0].toShortString() + "; terminal cell " + lvl.getBlockState(origin[0].offset(15, 0, 2)).getBlock() + ", above it " + lvl.getBlockState(origin[0].offset(15, 1, 2)).getBlock()
+                + ", below it " + lvl.getBlockState(origin[0].offset(15, -1, 2)).getBlock() + ", floor under the stand point " + lvl.getBlockState(origin[0].offset(15, -1, 4)).getBlock()
+                + ", block at the stand point " + lvl.getBlockState(origin[0].offset(15, 0, 4)).getBlock());
             String aimed = mc.hitResult instanceof net.minecraft.world.phys.BlockHitResult block && block.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK
                 ? block.getBlockPos().toShortString() + " " + mc.level.getBlockState(block.getBlockPos()).getBlock() : String.valueOf(mc.hitResult == null ? null : mc.hitResult.getType());
             Playtest.log("cursor: " + aimed + " from " + mc.player.position() + " looking " + mc.player.getXRot() + "/" + mc.player.getYRot() + ", holding " + mc.player.getMainHandItem());
