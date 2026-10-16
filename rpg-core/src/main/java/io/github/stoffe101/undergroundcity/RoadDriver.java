@@ -76,6 +76,14 @@ final class RoadDriver {
     /** Steer from the vehicle's own yaw instead of its measured movement: right for a boat, which turns as fast as the keys say and would swing wildly on a delayed heading. */
     private boolean steerByYaw;
     private int lowSpeedTicks;
+    /**
+     * For a car: heading from the vehicle's own velocity vector (blocks per tick, x and z; null when unreadable), and a model of the wheel angle. Immersive Vehicles
+     * turns the wheels by a fixed number of degrees for every tick a key is held and straightens them by a larger number for every tick it is not
+     * (config steeringControlRate 2.0 and steeringReturnRate 4.0), so holding a key does not mean "turning" and a controller that treats it so swings from lock to lock.
+     * This one decides a wheel angle from the heading error and holds or releases the key to bring the modelled angle to it.
+     */
+    private java.util.function.Supplier<double[]> velocity;
+    private double wheel, wheelRise = 2.0, wheelReturn = 4.0, wheelMax = 35.0, wheelGain = 0.35, wheelLimit = 25.0;
     private double progress, maxDeviation, topSpeed;
     private boolean w, a, d, done, failed;
     private long startGameTime = -1;
@@ -90,6 +98,9 @@ final class RoadDriver {
     RoadDriver(Route plan, double targetS, String label) { this.plan = plan; this.targetS = targetS; this.label = label; }
 
     RoadDriver steerByYaw() { this.steerByYaw = true; return this; }
+
+    /** Steer a wheeled vehicle from its own velocity and the wheel model (see the field). */
+    RoadDriver steerByWheelModel(java.util.function.Supplier<double[]> velocity) { this.velocity = velocity; return this; }
 
     boolean failed() { return failed; }
     String summary() { return summary; }
@@ -131,7 +142,30 @@ final class RoadDriver {
         }
         boolean right = false, left = false;
         double lastError = Double.NaN, lastWant = Double.NaN, lastHave = Double.NaN;
-        if (steerByYaw || heading != null) {
+        if (velocity != null) {
+            double[] motion = velocity.get();
+            if (motion != null && Math.hypot(motion[0], motion[1]) > 0.004) heading = new Vec3(motion[0], 0, motion[1]);
+            else heading = null;
+        }
+        if (velocity != null) {
+            if (heading != null) {
+                double lookAhead = Math.max(10.0, speed * 1.2);
+                double[] target = plan.pointAt(Math.min(plan.length(), progress + lookAhead));
+                double want = Math.toDegrees(Math.atan2(-(target[0] - position.x), target[1] - position.z));
+                double have = Math.toDegrees(Math.atan2(-heading.x, heading.z));
+                double error = ((want - have) % 360 + 540) % 360 - 180;
+                double wanted = Math.max(-wheelLimit, Math.min(wheelLimit, error * wheelGain));
+                right = wanted - wheel > 1.5;
+                left = wanted - wheel < -1.5;
+                lastError = error; lastWant = want; lastHave = have;
+            } else {
+                // not moving yet: no steering to give
+                right = false; left = false;
+            }
+            if (right) wheel = Math.min(wheelMax, wheel + wheelRise);
+            else if (left) wheel = Math.max(-wheelMax, wheel - wheelRise);
+            else wheel = wheel > 0 ? Math.max(0, wheel - wheelReturn) : Math.min(0, wheel + wheelReturn);
+        } else if (steerByYaw || heading != null) {
             double[] target = plan.pointAt(Math.min(plan.length(), progress + LOOK_AHEAD));
             double want = Math.toDegrees(Math.atan2(-(target[0] - position.x), target[1] - position.z));
             double have = steerByYaw ? ride.getYRot() : Math.toDegrees(Math.atan2(-heading.x, heading.z));
@@ -144,8 +178,8 @@ final class RoadDriver {
         lowSpeedTicks = speed < 1.0 ? lowSpeedTicks + 1 : 0;
         if (lowSpeedTicks == 60) diagnose(mc, position);
         if (ticks <= 600 && ticks % 20 == 0) {
-            Playtest.log(String.format("%s: t=%d s=%.0f speed %.1f, %.1f off, want %.0f have %.0f error %.0f, keys %s%s%s, entity yaw %.0f", label, ticks, progress, speed, hit.distance(), lastWant, lastHave, lastError,
-                "w", right ? "d" : "", left ? "a" : "", ride.getYRot()));
+            Playtest.log(String.format("%s: t=%d s=%.0f speed %.1f, %.1f off, want %.0f have %.0f error %.0f, keys %s%s%s, wheel %.0f, entity yaw %.0f", label, ticks, progress, speed, hit.distance(), lastWant, lastHave, lastError,
+                "w", right ? "d" : "", left ? "a" : "", wheel, ride.getYRot()));
         }
         hold("w", true);
         hold("d", right);

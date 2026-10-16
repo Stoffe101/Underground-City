@@ -548,6 +548,18 @@ final class Scenarios {
         return null;
     }
 
+    /** The vehicle's own velocity vector (blocks per tick, x and z), or null when it cannot be read; the same value the mod integrates into the position. */
+    private static double[] vehicleMotion(net.minecraft.world.entity.Entity entity) {
+        try {
+            Object vehicle = entity == null ? null : ivVehicle(entity);
+            if (vehicle == null) return null;
+            Object motion = vehicle.getClass().getField("motion").get(vehicle);
+            return new double[]{motion.getClass().getField("x").getDouble(motion), motion.getClass().getField("z").getDouble(motion)};
+        } catch (ReflectiveOperationException | RuntimeException error) {
+            return null;
+        }
+    }
+
     private static String describeVehicle(Object vehicle) {
         try {
             Object tank = vehicle.getClass().getField("fuelTank").get(vehicle);
@@ -671,7 +683,7 @@ final class Scenarios {
         Playtest.queue("drive along the road with W, A and D", () -> {
             var plan = roadPlan(road);
             var hit = plan.project(Minecraft.getInstance().player.getX(), Minecraft.getInstance().player.getZ());
-            driver[0] = new RoadDriver(RoadDriver.of(plan), hit.s() + driveBlocks[0], "quad on " + road);
+            driver[0] = new RoadDriver(RoadDriver.of(plan), hit.s() + driveBlocks[0], "quad on " + road).steerByWheelModel(() -> vehicleMotion(vehicleNear()));
             Playtest.log("driving from s=" + (int) hit.s() + " for " + driveBlocks[0] + " blocks; " + describeVehicle(ivVehicle(vehicleNear())));
         }, () -> driver[0].tick(), 6000);
         Playtest.queue("report the drive", () -> {
