@@ -478,6 +478,8 @@ final class Scenarios {
         Playtest.wait("wrong answer: settle", 4);
         typeTrace(seen, true, "wrong answer");
         Playtest.wait("wrong answer: the server answers", 30);
+        // The alarm is the server's doing and the server can be seconds behind the client in this container: wait for it instead of asking once.
+        Playtest.queue("wrong answer: wait for the alarm", () -> { }, () -> terminalLocked(origin[0]), 600);
         Playtest.queue("wrong answer: no ledger, the terminal locks down", () -> {
             Playtest.log("ledgers " + inventoryCount("underground_city:data_ledger") + ", kits " + inventoryCount("underground_city:bypass_kit") + ", locked " + terminalLocked(origin[0]));
             if (inventoryCount("underground_city:data_ledger") != 1) Playtest.fail("a wrong sequence must not pay");
@@ -491,6 +493,7 @@ final class Scenarios {
         Playtest.wait("abandon: let two symbols flash", 20);
         Playtest.queue("abandon: press Escape", () -> Playtest.tap("escape"), () -> !(Minecraft.getInstance().screen instanceof ChallengeScreen), 100);
         Playtest.wait("abandon: the server answers", 30);
+        Playtest.queue("abandon: wait for the alarm", () -> { }, () -> terminalLocked(origin[0]), 600);
         Playtest.queue("abandon: the alarm tripped", () -> {
             Playtest.log("kits " + inventoryCount("underground_city:bypass_kit") + ", locked " + terminalLocked(origin[0]));
             if (inventoryCount("underground_city:bypass_kit") != 1) Playtest.fail("the kit is spent when the attempt starts");
@@ -501,6 +504,7 @@ final class Scenarios {
         startTrace(origin, "timeout");
         Playtest.queue("timeout: do nothing until the window closes", () -> { }, () -> !(Minecraft.getInstance().screen instanceof ChallengeScreen), 20 * 40);
         Playtest.wait("timeout: the server answers", 30);
+        Playtest.queue("timeout: wait for the alarm", () -> { }, () -> terminalLocked(origin[0]), 1200);
         Playtest.queue("timeout: the alarm tripped and no ledger came", () -> {
             Playtest.log("ledgers " + inventoryCount("underground_city:data_ledger") + ", kits " + inventoryCount("underground_city:bypass_kit") + ", locked " + terminalLocked(origin[0]));
             if (inventoryCount("underground_city:data_ledger") != 1) Playtest.fail("running out of time must not pay");
