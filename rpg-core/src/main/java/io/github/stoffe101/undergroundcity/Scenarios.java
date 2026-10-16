@@ -17,6 +17,7 @@ final class Scenarios {
             case "posts" -> posts();
             case "tracker" -> tracker();
             case "trace" -> trace();
+            case "car" -> car();
             case "gun" -> gun();
             default -> throw new IllegalArgumentException("unknown scenario " + scenario);
         }
@@ -117,8 +118,9 @@ final class Scenarios {
         Playtest.queue("go to " + label, () -> {
             var villager = citizen(null, index);
             if (villager == null) { Playtest.fail(label + " is not in the world"); return; }
-            // Two blocks to their east, at eye height of a standing player, looking at their head.
-            Vec3 where = villager.position().add(2.0, 0, 0);
+            // Two blocks toward the lane (the district's middle), so the player stands inside the room or on the street, never in a wall.
+            double laneX = Vec3.atLowerCornerOf(DistrictBuilder.originOf(level(), "founders_row")).x + 12.5;
+            Vec3 where = villager.position().add(Math.signum(laneX - villager.getX()) * 2.0, 0, 0);
             Vec3 head = villager.position().add(0, villager.getBbHeight() * 0.85, 0);
             stand[0] = where;
             standLooking(where, head);
@@ -171,13 +173,15 @@ final class Scenarios {
             Vec3 o = Vec3.atLowerCornerOf(origin[0]);
             standLooking(o.add(-6, 16, -10), o.add(14, 0, 18));
         });
-        Playtest.wait("settle", 40);
+        Playtest.queue("let the chunk meshes finish", () -> { }, () -> Minecraft.getInstance().levelRenderer.hasRenderedAllChunks(), 600);
+        Playtest.wait("settle", 20);
         Playtest.queue("screenshot", () -> Playtest.screenshot("uc-row-overview-nw"));
         Playtest.queue("overview from the south gate", () -> {
             Vec3 o = Vec3.atLowerCornerOf(origin[0]);
             standLooking(o.add(12.5, 6, 52), o.add(12.5, 1, 20));
         });
-        Playtest.wait("settle", 40);
+        Playtest.queue("let the chunk meshes finish", () -> { }, () -> Minecraft.getInstance().levelRenderer.hasRenderedAllChunks(), 600);
+        Playtest.wait("settle", 20);
         Playtest.queue("screenshot", () -> Playtest.screenshot("uc-row-gate-looking-north"));
         Playtest.queue("down the lane at eye level", () -> {
             Vec3 o = Vec3.atLowerCornerOf(origin[0]);
@@ -375,6 +379,68 @@ final class Scenarios {
             if (inventoryCount("underground_city:data_ledger") != 1) Playtest.fail("running out of time must not pay");
             if (inventoryCount("underground_city:bypass_kit") != 0) Playtest.fail("the last kit should be spent");
             if (!terminalLocked(origin[0])) Playtest.fail("running out of time should lock the terminal down");
+        });
+    }
+
+    // ------------------------------------------------------------------------------------------------ a car on the road
+
+    private static net.minecraft.world.entity.Entity vehicleNear() {
+        var mc = Minecraft.getInstance();
+        net.minecraft.world.entity.Entity best = null;
+        for (var entity : mc.level.entitiesForRendering()) {
+            var key = net.minecraftforge.registries.ForgeRegistries.ENTITY_TYPES.getKey(entity.getType());
+            if (key == null || !key.getNamespace().equals("mts") || entity == mc.player) continue;
+            if (best == null || entity.distanceToSqr(mc.player) < best.distanceToSqr(mc.player)) best = entity;
+        }
+        return best;
+    }
+
+    /**
+     * Immersive Vehicles' Quad on the generated road, with real keys: place it from its item, climb in, accelerate, steer and brake. The engine
+     * and fuel handling are IV's own, so the scenario logs what it finds. Options: {@code -PucPtRoute=<road>}, {@code -PucPtMetres=<distance>}.
+     */
+    private static void car() {
+        String road = System.getProperty("uc.playtest.route", "ironhaven_valewood");
+        int metres = Integer.getInteger("uc.playtest.metres", 300);
+        Playtest.queue("creative, onto the road, the quad item in hand", () -> {
+            Playtest.command("gamemode creative");
+            Playtest.command("clear @s");
+            Playtest.command("uc_dev road " + road + " " + metres);
+        });
+        Playtest.wait("let the ground load", 120);
+        Playtest.queue("give the quad", () -> Playtest.command("give @s mts:mtsofficialpack.quad"), () -> inventoryCount("mts:mtsofficialpack.quad") >= 1, 200);
+        Playtest.queue("log what the world knows about the road here", () -> {
+            var mc = Minecraft.getInstance();
+            var plan = DevCommands.plans(mc.getSingleplayerServer()).stream().filter(p -> p.id().equals(road)).findFirst().orElseThrow();
+            var hit = plan.project(mc.player.getX(), mc.player.getZ());
+            Playtest.log("on " + road + " at s=" + (int) hit.s() + ", " + String.format("%.1f", hit.distance()) + " from the centreline, bridge=" + plan.bridgeAt(hit.s()));
+            Playtest.log("hotbar slot " + mc.player.getInventory().selected + " holds " + mc.player.getInventory().getSelected());
+        });
+        final Vec3[] spot = new Vec3[1];
+        Playtest.queue("aim at the road surface four blocks ahead and place the vehicle with a real right click", () -> {
+            var mc = Minecraft.getInstance();
+            int slot = -1;
+            for (int i = 0; i < 9; i++) if (mc.player.getInventory().getItem(i).getItem().toString().contains("quad")) slot = i;
+            if (slot < 0) { Playtest.fail("the quad item is not in the hotbar"); return; }
+            mc.player.getInventory().selected = slot;
+            var hit = DevCommands.plans(mc.getSingleplayerServer()).stream().filter(p -> p.id().equals(road)).findFirst().orElseThrow().project(mc.player.getX(), mc.player.getZ());
+            // Face along the road, pitched down so the cursor lands on the deck a few blocks ahead.
+            var plan = DevCommands.plans(mc.getSingleplayerServer()).stream().filter(p -> p.id().equals(road)).findFirst().orElseThrow();
+            double[] ahead = plan.pointAt(hit.s() + 6), here = plan.pointAt(hit.s());
+            float yaw = (float) Math.toDegrees(Math.atan2(-(ahead[0] - here[0]), ahead[1] - here[1]));
+            spot[0] = mc.player.position();
+            mc.player.setYRot(yaw); mc.player.yHeadRot = yaw; mc.player.setXRot(40f);
+            Playtest.focusWindow();
+            Playtest.mouseButton(3, true);
+        });
+        Playtest.wait("hold", 4);
+        Playtest.queue("release", () -> Playtest.mouseButton(3, false));
+        Playtest.queue("the vehicle exists", () -> { }, () -> vehicleNear() != null, 200);
+        Playtest.wait("let it settle", 30);
+        Playtest.queue("log the vehicle and screenshot", () -> {
+            var vehicle = vehicleNear();
+            Playtest.log("vehicle entity " + vehicle + " type " + vehicle.getType() + " at " + vehicle.position() + " yaw " + vehicle.getYRot());
+            Playtest.screenshot("uc-car-placed");
         });
     }
 

@@ -58,7 +58,9 @@ The docs here distinguish **confirmed product direction**, **design proposals**,
 
 - [Visual QA and screenshot cleanup](technical/visual-qa.md)
 
+- [Development client and server: `gradlew runClient` with the complete pack](technical/dev-client.md)
 - [Legal and underground career paths (skill trees, contracts, city law, evidence)](design/legal-and-underground-careers.md)
+- [Sprint report, October 16, 2026: the first playable experience (sections A to O)](production/sprint-2026-10-16.md)
 - [Sprint report, October 15-16, 2026 (sections A to O)](production/sprint-2026-10-15.md)
 
 - [October 19 trial-build and two-player test checklist](production/oct19-test-readiness.md)

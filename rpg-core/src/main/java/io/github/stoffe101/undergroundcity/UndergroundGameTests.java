@@ -391,6 +391,37 @@ public final class UndergroundGameTests {
     }
 
     @GameTest(template = "empty")
+    public static void aRidersVehicleCargoIsSearchedAtTheCheckpointAndAParkedVehicleIsNot(GameTestHelper helper) throws Exception {
+        if (!QShopEconomy.available()) { helper.succeed(); return; }
+        Fixture fixture = fixture(helper, "valewood");
+        try {
+            CheckpointCatalog.Checkpoint gate = new CheckpointCatalog.Checkpoint("test_gate", "Test gate", "valewood", "minecraft:overworld", 0, 0, 48, "inspection");
+            CityLaws.Law valewood = CityLaws.INSTANCE.find("valewood");
+            FakePlayer driver = player(helper, "valewood", "farmer", 3);
+            QShopEconomy.applyBalance(driver, 100);
+            var level = helper.getLevel();
+            var boat = net.minecraft.world.entity.EntityType.CHEST_BOAT.create(level);
+            boat.moveTo(helper.absolutePos(new BlockPos(2, 2, 2)).getX() + 0.5, helper.absolutePos(new BlockPos(2, 2, 2)).getY(), helper.absolutePos(new BlockPos(2, 2, 2)).getZ() + 0.5);
+            level.addFreshEntity(boat);
+            var hold = (net.minecraft.world.Container) boat;
+            hold.setItem(0, new ItemStack(core("sable_leaf_bale"), 6));
+            hold.setItem(1, new ItemStack(Items.WHEAT, 16));
+            // The boat is parked somewhere else: the driver is searched, the hold is not (nothing is known about what is not here).
+            var parked = CheckpointService.inspect(driver, citizen(driver), gate, valewood, fixture.ledger);
+            check(parked.outcome() == CheckpointService.Outcome.CLEARED && hold.getItem(0).getCount() == 6, "A parked vehicle must not be searched: " + parked);
+            // Riding it into the zone brings the cargo along: the contraband goes, the legal goods stay, the fine is one per category.
+            driver.startRiding(boat, true);
+            check(driver.getVehicle() == boat, "The driver is in the boat");
+            var result = CheckpointService.inspect(driver, citizen(driver), gate, valewood, fixture.ledger);
+            check(result.outcome() == CheckpointService.Outcome.SEIZED && result.stacksSeized() == 1, "The bale in the hold is seized: " + result);
+            check(hold.getItem(0).isEmpty() && hold.getItem(1).getCount() == 16, "Only the forbidden cargo is taken from the hold");
+            check(QShopEconomy.balance(driver) == 100 - valewood.fine(CityLaws.PROHIBITED), "The fine is charged: " + QShopEconomy.balance(driver));
+            boat.discard();
+        } finally { fixture.close(); }
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty")
     public static void aLicenceSatisfiesAPermitButNeverAProhibition(GameTestHelper helper) throws Exception {
         if (!QShopEconomy.available()) { helper.succeed(); return; }
         Fixture fixture = fixture(helper, "blackwater");

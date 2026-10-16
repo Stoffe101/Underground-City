@@ -101,9 +101,6 @@ public final class WorkOrderService {
         player.sendSystemMessage(message.append(deliveryNote(order) + "."));
     }
 
-    private static String describe(WorkOrder order) {
-        return order.requirements().stream().map(r -> r.count() + " " + r.display()).collect(java.util.stream.Collectors.joining(", "));
-    }
 
     private static String deliveryNote(WorkOrder order) {
         BuyerCatalog.Buyer buyer = order.terms().buyer().isEmpty() ? null : BuyerCatalog.INSTANCE.find(order.terms().buyer());

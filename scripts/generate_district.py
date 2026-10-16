@@ -321,6 +321,7 @@ def checkpoint_post() -> dict:
         "A permit makes a restricted load legal here. Without one, I confiscate it and the fine comes out of your wallet.",
         "The post covers the road, not the countryside. Past the last milestone, the hills are nobody's business, and the hills are not kind.",
         "Searches cool off. The more you are caught, the sooner we look again. Keep your bags in order and the gate stays easy.",
+        "Ride in on a boat or a cart and I search its hold along with you. A boat left outside my zone is not my business; what I cannot see, I do not know.",
     ]))
     return {
         "schema_version": 1, "id": "checkpoint_post", "title": "Checkpoint post", "repeatable": True,

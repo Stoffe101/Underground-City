@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.common.util.FakePlayer;
@@ -115,9 +116,16 @@ public final class CheckpointService {
         after.load(player.getInventory().save(new ListTag()));
         List<ItemStack> carried = new ArrayList<>(after.items);
         carried.addAll(after.offhand);
-        Map<String, String> violations = violations(citizen, law, carried);
+        // A traveller who rides a vehicle with a hold (a boat, a cart) brings its cargo into the zone with them, so the guard searches that too.
+        // A vehicle left outside the zone is never searched: nothing is known about what is not here (D-051).
+        Container hold = player.getVehicle() instanceof Container container ? container : null;
+        List<ItemStack> cargo = new ArrayList<>();
+        if (hold != null) for (int slot = 0; slot < hold.getContainerSize(); slot++) cargo.add(hold.getItem(slot));
+        List<ItemStack> everything = new ArrayList<>(carried);
+        everything.addAll(cargo);
+        Map<String, String> violations = violations(citizen, law, everything);
         if (violations.isEmpty()) {
-            player.sendSystemMessage(Component.literal(actor(player, post) + " searches your bags and finds nothing illegal."));
+            player.sendSystemMessage(Component.literal(actor(player, post) + " searches your bags" + (hold != null ? " and your " + player.getVehicle().getName().getString() : "") + " and finds nothing illegal."));
             return new Result(Outcome.CLEARED, 0, 0, "searched, clean");
         }
         int seized = 0;
@@ -128,6 +136,16 @@ public final class CheckpointService {
                 if (category != null && violations.containsKey(category)) { slots.set(slot, ItemStack.EMPTY); seized++; }
             }
         }
+        int fromVehicle = 0;
+        if (hold != null) {
+            for (int slot = 0; slot < hold.getContainerSize(); slot++) {
+                ItemStack stack = hold.getItem(slot);
+                String category = ContrabandCatalog.INSTANCE.classify(stack);
+                if (category != null && violations.containsKey(category)) { hold.setItem(slot, ItemStack.EMPTY); fromVehicle++; }
+            }
+            if (fromVehicle > 0) hold.setChanged();
+        }
+        seized += fromVehicle;
         int fine = violations.values().stream().mapToInt(law::fine).sum();
         boolean economy = QShopEconomy.available() && QShopEconomy.configured(player.server);
         Double balanceAfter = null;
@@ -145,7 +163,7 @@ public final class CheckpointService {
             var entry = ContrabandCatalog.INSTANCE.category(category);
             titles.add((entry == null ? category : entry.title()) + " (" + status + ")");
         });
-        player.sendSystemMessage(Component.literal(actor(player, post) + " searches you and confiscates "
+        player.sendSystemMessage(Component.literal(actor(player, post) + " searches you" + (hold != null ? " and your " + player.getVehicle().getName().getString() : "") + " and confiscates "
             + seized + " stack" + (seized == 1 ? "" : "s") + " of contraband: " + String.join(", ", titles) + ". Fine: " + paid + " credits."));
         player.sendSystemMessage(Component.literal("Heat in " + TerminalScreenText.capitalize(post.jurisdiction()) + " is now " + heatAfter + "; searches here become more likely until it cools."));
         return new Result(Outcome.SEIZED, seized, paid, "seized " + seized);
