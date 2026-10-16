@@ -87,6 +87,12 @@ final class Scenarios {
         }
     }
 
+    /** The first-login screen has been closed by the harness by now; screens the scenario itself provokes are left open so it can look at them. */
+    private static void screensStayOpenFromNow() {
+        Playtest.wait("let the first-login screen come and go", 60);
+        Playtest.queue("from here on, screens stay open", () -> Playtest.keepScreens = true);
+    }
+
     /** Waits for the client to finish meshing the chunks around the player, then carries on either way (software rendering can be very slow; a late frame is better than a failed run). */
     private static void waitForMeshes(int ticks) {
         final int[] left = {ticks};
@@ -217,6 +223,7 @@ final class Scenarios {
     private static void row() {
         final BlockPos[] origin = new BlockPos[1];
         buildRowInTheSky(origin);
+        screensStayOpenFromNow();
         Playtest.queue("overview from the north-west", () -> {
             Vec3 o = Vec3.atLowerCornerOf(origin[0]);
             standLooking(o.add(-6, 16, -10), o.add(14, 0, 18));
@@ -361,6 +368,7 @@ final class Scenarios {
     private static void trace() {
         final BlockPos[] origin = new BlockPos[1];
         buildRowInTheSky(origin);
+        screensStayOpenFromNow();
         Playtest.wait("let the citizens settle", 40);
         Playtest.queue("a registered Valewood technician with Bypass Tooling and four kits", () -> {
             Playtest.command("gamemode survival");

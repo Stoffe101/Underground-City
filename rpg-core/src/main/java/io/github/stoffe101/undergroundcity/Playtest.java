@@ -53,6 +53,9 @@ public final class Playtest {
 
     private Playtest() {}
 
+    /** While false, any screen that opens (the first-login registration screen, above all) is closed so the scenario can move and aim; scenarios that look at screens set it once the world is settled. */
+    static volatile boolean keepScreens;
+
     static boolean enabled() { return SCENARIO != null && !SCENARIO.isBlank(); }
     static void log(String line) { System.out.println("[UC-PLAYTEST] " + line); }
     static void fail(String reason) { failures.append(reason).append("; "); log("FAIL " + reason); }
@@ -149,7 +152,7 @@ public final class Playtest {
             wait("let the world settle", 100);
             try { Scenarios.build(SCENARIO); } catch (RuntimeException error) { fail("scenario " + SCENARIO + " is not available: " + error); finish(); return; }
         }
-        if (mc.screen != null && !"register".equals(SCENARIO) && !SCENARIO.startsWith("trace") && !SCENARIO.startsWith("terminal")) {
+        if (mc.screen != null && !keepScreens && !"register".equals(SCENARIO) && !SCENARIO.startsWith("terminal")) {
             // The first-login registration screen opens by itself for a new player; scenarios that need to move or aim close it.
             log("closing " + mc.screen.getClass().getSimpleName());
             mc.setScreen(null);
