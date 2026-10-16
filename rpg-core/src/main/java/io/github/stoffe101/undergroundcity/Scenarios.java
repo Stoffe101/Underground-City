@@ -282,7 +282,15 @@ final class Scenarios {
         Playtest.wait("let the server answer", 30);
         speakTo("the registrar again", registrar, "uc-row-registrar-next-step");
         speakTo("the farm co-op's employer (not this citizen's trade)", farmer, "uc-row-wrong-employer");
-        speakTo("the gunsmith's employer", gunsmith, "uc-row-employer-terminal");
+        // Villagers gather at the bell by day, so the employer is likely to be in the lane, away from her desk: she says so and walks back, and the player follows.
+        speakTo("the gunsmith's employer", gunsmith, "uc-row-employer-away-from-the-desk");
+        Playtest.queue("wait until the gunsmith is back at her desk", () -> { }, () -> {
+            var villager = citizen(null, gunsmith);
+            if (villager == null) return false;
+            var terminal = Vec3.atLowerCornerOf(origin[0]).add(3.5, 0.5, 10.5);
+            return villager.position().distanceTo(terminal) < 3.5;
+        }, 1500);
+        speakTo("the gunsmith's employer, at her desk", gunsmith, "uc-row-employer-terminal");
         Playtest.queue("the employer's terminal opened", () -> {
             if (!(Minecraft.getInstance().screen instanceof TerminalScreen)) Playtest.fail("the gunsmith employer did not open the terminal, screen=" + Minecraft.getInstance().screen);
         });

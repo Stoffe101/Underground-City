@@ -138,7 +138,10 @@ public final class CityNpcs {
             return;
         }
         if (player.distanceToSqr(terminal.getX() + .5, terminal.getY() + .5, terminal.getZ() + .5) > TERMINAL_REACH_SQUARED) {
-            say(player, npc, "Come into the office and we will go through the orders.");
+            // By day villagers gather at the bell, so the employer may be standing in the lane: say so, and walk back to the desk for the player to follow.
+            villager.getBrain().setMemory(net.minecraft.world.entity.ai.memory.MemoryModuleType.WALK_TARGET,
+                new net.minecraft.world.entity.ai.memory.WalkTarget(terminal, 0.6F, 2));
+            say(player, npc, "Come into the office and we will go through the orders. I will walk back to my desk.");
             return;
         }
         say(player, npc, line);
