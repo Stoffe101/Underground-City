@@ -775,6 +775,12 @@ final class Scenarios {
             };
             server.execute(task[0]);
         }, finished::get, 12000);
+        // Generating that many chunks leaves the server thousands of ticks behind real time (it logs "Can't keep up"); a vehicle placed then is simulated minutes late
+        // and the server's late copy overwrites the client's. Wait until the server has caught up.
+        Playtest.queue("let the server catch up with its ticks", () -> { }, () -> {
+            var server = Minecraft.getInstance().getSingleplayerServer();
+            return server != null && net.minecraft.Util.getMillis() - server.getNextTickTime() < 1500;
+        }, 12000);
     }
 
     /** Where the boat goes in: beside the centreline at road distance {@code s}, on the water surface. Server thread; empty when that spot is not water. */
