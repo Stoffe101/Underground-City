@@ -93,17 +93,26 @@ final class Scenarios {
         return mc.level.hasChunkAt(feet) && !mc.level.getBlockState(feet.below()).isAir();
     }
 
+    /** True once the player is within a few blocks of {@code target} (x, z) and the ground there has arrived (a far teleport can stall the server for a long while). */
+    private static boolean arrivedAt(double[] target) {
+        var mc = Minecraft.getInstance();
+        if (target == null || mc.player == null) return false;
+        return Math.hypot(mc.player.getX() - target[0], mc.player.getZ() - target[1]) < 6 && groundBelowPlayer();
+    }
+
     /**
      * Teleports onto a road in spectator mode (which cannot fall), waits until the ground under the player has arrived on the client, then
      * switches to {@code mode}. A far teleport on a slow machine otherwise drops the player through chunks the client has not received yet.
      */
     private static void arriveOnRoad(String road, int metres, String mode) {
+        final double[][] target = new double[1][];
         Playtest.queue("teleport to " + road + " at " + metres + " in spectator mode", () -> {
+            var at = roadPlan(road).pointAt(metres);
+            target[0] = new double[]{at[0], at[1]};
             Playtest.command("gamemode spectator");
             Playtest.command("uc_dev road " + road + " " + metres);
         });
-        Playtest.wait("let the teleport happen", 30);
-        Playtest.queue("wait for the ground under the player", () -> { }, Scenarios::groundBelowPlayer, 6000);
+        Playtest.queue("wait until the player is there and the ground has arrived", () -> { }, () -> arrivedAt(target[0]), 12000);
         Playtest.queue("switch to " + mode, () -> Playtest.command("gamemode " + mode));
         Playtest.wait("settle", 40);
     }
@@ -494,16 +503,18 @@ final class Scenarios {
                 Playtest.log(road + ": first bridge from " + (int) found[0] + " to " + (int) found[1] + "; starting at " + startMetres[0] + ", driving " + driveBlocks[0]);
             }
         });
+        final double[][] arrival = new double[1][];
         Playtest.queue("an empty inventory, then onto the road in spectator mode (which cannot fall)", () -> {
+            var at = roadPlan(road).pointAt(startMetres[0]);
+            arrival[0] = new double[]{at[0], at[1]};
             Playtest.command("clear @s");
             Playtest.command("gamemode spectator");
             Playtest.command("uc_dev road " + road + " " + startMetres[0]);
         });
-        Playtest.wait("let the teleport happen", 30);
-        Playtest.queue("wait for the ground under the player", () -> { }, Scenarios::groundBelowPlayer, 6000);
+        Playtest.queue("wait until the player is there and the ground has arrived", () -> { }, () -> arrivedAt(arrival[0]), 12000);
         Playtest.queue("creative mode", () -> Playtest.command("gamemode creative"));
         Playtest.wait("settle", 40);
-        Playtest.queue("give the quad", () -> Playtest.command("give @s mts:mtsofficialpack.quad"), () -> inventoryCount("mts:mtsofficialpack.quad") >= 1, 200);
+        Playtest.queue("give the quad", () -> Playtest.command("give @s mts:mtsofficialpack.quad"), () -> inventoryCount("mts:mtsofficialpack.quad") >= 1, 1200);
         final double[] roadHeading = new double[1];
         Playtest.queue("aim along the road, pitched down onto the deck, and place the vehicle with a real right click", () -> {
             var mc = Minecraft.getInstance();
@@ -641,7 +652,7 @@ final class Scenarios {
     private static void boat() {
         String road = System.getProperty("uc.playtest.route", "valewood_blackwater");
         final double[] bridge = new double[2];
-        final double[][] crossing = new double[1][];
+        final double[][] crossing = new double[1][], arrival = new double[1][];
         Playtest.queue("find the first bridge of " + road, () -> {
             double[] found = firstBridge(roadPlan(road), 40);
             if (found == null) { Playtest.fail(road + " has no bridge of 40 blocks"); return; }
@@ -649,10 +660,12 @@ final class Scenarios {
             Playtest.log(road + ": first bridge from " + (int) found[0] + " to " + (int) found[1]);
             Playtest.command("gamemode spectator");
             Playtest.command("clear @s");
-            Playtest.command("uc_dev road " + road + " " + (int) (found[0] + (found[1] - found[0]) / 2));
+            int middle = (int) (found[0] + (found[1] - found[0]) / 2);
+            var at = roadPlan(road).pointAt(middle);
+            arrival[0] = new double[]{at[0], at[1]};
+            Playtest.command("uc_dev road " + road + " " + middle);
         });
-        Playtest.wait("let the teleport happen", 30);
-        Playtest.queue("wait for the ground under the player", () -> { }, Scenarios::groundBelowPlayer, 6000);
+        Playtest.queue("wait until the player is there and the ground has arrived", () -> { }, () -> arrivedAt(arrival[0]), 12000);
         Playtest.queue("creative mode", () -> Playtest.command("gamemode creative"));
         Playtest.wait("settle", 40);
         Playtest.queue("find water on both sides of the deck (server side)", () -> {
@@ -670,7 +683,7 @@ final class Scenarios {
             double yaw = Math.toDegrees(Math.atan2(-(c[2] - c[0]), c[3] - c[1]));
             Playtest.command(String.format(java.util.Locale.ROOT, "tp @s %.2f %.2f %.2f %.1f 35", c[0], c[4] + 1, c[1], yaw));
             Playtest.command("give @s modernlife:motorboat_item");
-        }, () -> inventoryCount("modernlife:motorboat_item") >= 1, 200);
+        }, () -> inventoryCount("modernlife:motorboat_item") >= 1, 1200);
         Playtest.wait("let the chunks and the water settle", 60);
         Playtest.queue("place the boat on the water with a real right click", () -> {
             var mc = Minecraft.getInstance();

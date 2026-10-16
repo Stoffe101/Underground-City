@@ -1039,7 +1039,7 @@ public final class UndergroundGameTests {
         helper.succeed();
     }
 
-    @GameTest(template = "empty", batch = "uc_checkpoint", timeoutTicks = 300)
+    @GameTest(template = "empty", batch = "uc_checkpoint", timeoutTicks = 700)
     public static void checkpointPostsAreRepeatableReversibleAndTheirGuardIsFound(GameTestHelper helper) {
         net.minecraft.server.level.ServerLevel level = helper.getLevel();
         DistrictCatalog.District district = DistrictCatalog.INSTANCE.find("checkpoint_post");
@@ -1062,23 +1062,41 @@ public final class UndergroundGameTests {
                 check(DistrictBuilder.count(level, district.id()) == 2, "Two posts stand in the world");
                 rejected(() -> DistrictBuilder.build(level, district, one)); // the same spot twice
                 rejected(() -> DistrictBuilder.build(level, district, one.offset(4, 0, 4))); // overlapping
-                CheckpointCatalog.Checkpoint zoneOne = new CheckpointCatalog.Checkpoint("p1", "Post one", "ironhaven", level.dimension().location().toString(), one.getX() + 4, one.getZ() + 4, 48, "inspection");
-                var guard = CheckpointPosts.guardAt(level, zoneOne);
-                check(guard.isPresent() && guard.get().hasCustomName() && guard.get().isInvulnerable(), "The zone's guard is found and is a named, protected citizen");
-                check(guard.get().distanceToSqr(one.getX() + 4.5, one.getY(), one.getZ() + 6.5) < 4, "The guard stands at the post: " + guard.get().position());
-                DistrictBuilder.undoNear(level, district, one.offset(4, 0, 4));
-                check(DistrictBuilder.count(level, district.id()) == 1, "Removing one post leaves the other");
-                check(level.getBlockState(one.offset(3, 0, 3)).getBlock() != Blocks.STONE_BRICKS, "The removed post's booth is gone");
-                check(level.getBlockState(two.offset(3, 0, 3)).is(Blocks.STONE_BRICKS), "The other post's booth stands");
-                var remaining = DistrictBuilder.citizensForTest(level, district.id());
-                CheckpointCatalog.Checkpoint zoneTwo = new CheckpointCatalog.Checkpoint("p2", "Post two", "ironhaven", level.dimension().location().toString(), two.getX() + 4, two.getZ() + 4, 48, "inspection");
-                check(remaining.size() == 1 && CheckpointPosts.guardAt(level, zoneTwo).map(g -> g.getUUID().equals(remaining.get(0))).orElse(false), "The other post still has its guard: " + remaining);
-                DistrictBuilder.undoNear(level, district, two.offset(4, 0, 4));
-                check(DistrictBuilder.count(level, district.id()) == 0, "No posts remain");
-            } finally {
+            } catch (RuntimeException error) {
                 cleanup.run();
+                throw error;
             }
-            helper.succeed();
+            // A villager added to a chunk whose entity section has not been promoted yet is invisible to lookups for a few ticks: wait until both guards can be found.
+            waitUntil(helper, () -> DistrictBuilder.citizensForTest(level, district.id()).size() == 2
+                && DistrictBuilder.citizensForTest(level, district.id()).stream().allMatch(id -> level.getEntity(id) != null), 0, () -> {
+                try {
+                    CheckpointCatalog.Checkpoint zoneOne = new CheckpointCatalog.Checkpoint("p1", "Post one", "ironhaven", level.dimension().location().toString(), one.getX() + 4, one.getZ() + 4, 48, "inspection");
+                    var guard = CheckpointPosts.guardAt(level, zoneOne);
+                    check(guard.isPresent() && guard.get().hasCustomName() && guard.get().isInvulnerable(), "The zone's guard is found and is a named, protected citizen");
+                    check(guard.get().distanceToSqr(one.getX() + 4.5, one.getY(), one.getZ() + 6.5) < 4, "The guard stands at the post: " + guard.get().position());
+                    DistrictBuilder.undoNear(level, district, one.offset(4, 0, 4));
+                    check(DistrictBuilder.count(level, district.id()) == 1, "Removing one post leaves the other");
+                    check(level.getBlockState(one.offset(3, 0, 3)).getBlock() != Blocks.STONE_BRICKS, "The removed post's booth is gone");
+                    check(level.getBlockState(two.offset(3, 0, 3)).is(Blocks.STONE_BRICKS), "The other post's booth stands");
+                    var remaining = DistrictBuilder.citizensForTest(level, district.id());
+                    CheckpointCatalog.Checkpoint zoneTwo = new CheckpointCatalog.Checkpoint("p2", "Post two", "ironhaven", level.dimension().location().toString(), two.getX() + 4, two.getZ() + 4, 48, "inspection");
+                    var other = CheckpointPosts.guardAt(level, zoneTwo);
+                    check(remaining.size() == 1 && other.map(g -> g.getUUID().equals(remaining.get(0))).orElse(false), "The other post still has its guard: " + remaining + " (zone lookup " + other.map(g -> g.getUUID().toString()).orElse("none") + ")");
+                    DistrictBuilder.undoNear(level, district, two.offset(4, 0, 4));
+                    check(DistrictBuilder.count(level, district.id()) == 0, "No posts remain");
+                } finally {
+                    cleanup.run();
+                }
+                helper.succeed();
+            });
+        });
+    }
+
+    /** Runs {@code body} once {@code ready} holds: checked every ten ticks, and after 200 ticks regardless so the assertion that follows reports what is missing. */
+    private static void waitUntil(GameTestHelper helper, java.util.function.BooleanSupplier ready, int waited, Runnable body) {
+        helper.runAfterDelay(10, () -> {
+            if (ready.getAsBoolean() || waited >= 200) { body.run(); return; }
+            waitUntil(helper, ready, waited + 10, body);
         });
     }
 

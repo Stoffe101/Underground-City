@@ -38,6 +38,8 @@ import java.util.UUID;
  * restore them, and one district id can exist once per world.
  */
 public final class DistrictBuilder {
+    private static final org.slf4j.Logger LOG = com.mojang.logging.LogUtils.getLogger();
+
     private static final String KEY = "underground_city_districts";
 
     /** {@code npcs} is index-aligned with {@link DistrictCatalog.District#npcOps()}; {@link #NONE} marks a citizen this mod set did not place. */
@@ -237,6 +239,7 @@ public final class DistrictBuilder {
         if (id == null || id.equals(NONE)) return;
         Entity found = level.getEntity(id);
         if (found != null) found.discard();
+        else LOG.warn("Citizen {} is not loaded, so removing the district left them where they stand (an operator can remove them by hand)", id);
     }
 
     /** Where a district's operation sits in the world it was built in, or null when the district is not built (in this dimension). */
