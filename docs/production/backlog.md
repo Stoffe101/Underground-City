@@ -23,14 +23,14 @@
 **P0 (blocks calling the starter slice a real first playable)**
 
 - [ ] A human walks Ironhaven to Valewood and to Blackwater on seed 5908 with a stopwatch and reports the time, the bridges and anything that blocks the way (the numbers so far are static estimates and block surveys).
-- [ ] A client-driven test of the Technician's trace (the server rules are GameTested; the screen is only captured, not clicked in CI).
+- [x] A client-driven test of the Technician's trace: **done October 16** as a scripted-player scenario (success, wrong answer, abandonment and timeout, each with its consequence; the real keyboard and the real screen). Not yet in CI, and the frame that should show the flashing pads still shows the world.
 - [ ] Real balance: a 30-60 minute two-player session on the underground contracts. Today's balance is an arithmetic validator.
 
 **P1**
 
 - [ ] Guard NPCs: **partly done** (October 16, D-062): `/uc_checkpoints place` builds a post with a named guard at each of the six zones and the guard voices the search. Still open: customs on water, patrols, hand-off witnesses, Immersive Vehicles cargo in searches, posts placed at world creation.
 - [ ] Gunsmith loop: **partly done** (October 16): the starter kit's blueprint, the real Gun Smith Table recipe and the legal `licensed_sidearm` contract that buys the crafted Glock 17 run in a GameTest against real TaCZ. Still open: a TaCZ Blueprints starter configuration (not needed while Core grants the blueprint), server-authoritative blueprint gating (TaCZ Blueprints hides recipes in the client only), a contract for a specific crafted gun other than the sidearm.
-- [ ] Vehicle fit test: a car and the Motorboat on the real bridges, with persistent cargo through a save (the boat's cargo round trip is tested without a world; driving is not tested at all).
+- [ ] Vehicle fit test: **partly done** (October 16, scripted player): a Quad drove 200 blocks of road and across the Ironhaven - Valewood bridge, and the Motorboat sailed about 130 blocks under the Valewood - Blackwater bridge. Still open: survival fuel and a fuel source for cars (a creative-mode vehicle is fuel-free), a save and reload of a vehicle with cargo, a passenger, a second player, a crash, a human's driving, a vehicle at a checkpoint (Immersive Vehicles' cargo is not a `Container`).
 - [x] Registration UI: a first-login screen (home city, then profession, then confirm) with server validation and a data-driven welcome pack (D-058, October 16; D-019 stays open for a proven selector mod).
 
 **P2**
@@ -49,7 +49,7 @@
 - [ ] Currency and transaction ledger, NPC buyer/stock and one tax cycle.
 - [ ] Farmer production chain and Gunsmith blueprint/research chain.
 - [ ] Lootr custom per-player chest test and finite shared-resource test.
-- [ ] Eight to twelve named NPCs with basic routines/dialogue.
+- [ ] Eight to twelve named NPCs with basic routines/dialogue (**nine named citizens exist** in Founders Row as of October 16, with dialogue, a bell and an employer who walks back to the desk; no schedules, memory or relationships).
 - [ ] Intro and two connected quests; save/restart and multiplayer verification.
 
 ## Later, only after foundations prove fun
