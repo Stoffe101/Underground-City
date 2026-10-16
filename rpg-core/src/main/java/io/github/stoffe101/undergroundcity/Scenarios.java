@@ -900,7 +900,7 @@ final class Scenarios {
         Playtest.queue("sail along the water under the deck with W, A and D", () -> {
             var plan = roadPlan(road);
             var route = RoadDriver.beside(plan, offset, 8);
-            driver[0] = new RoadDriver(route, run[1] - 10, "motorboat under the bridge of " + road).steerByYaw().faceForward().cruiseAt(9)
+            driver[0] = new RoadDriver(route, run[1] - 20, "motorboat under the bridge of " + road).steerByYaw().faceForward().cruiseAt(9)
                 .at(run[0] + 40, () -> Playtest.screenshotNextFrame("uc-boat-approach"))
                 .at((run[0] + run[1]) / 2, () -> { Playtest.log("under the deck: " + describeBoat(boatNear())); Playtest.screenshotNextFrame("uc-boat-under-bridge"); })
                 .at(run[1] - 40, () -> Playtest.screenshotNextFrame("uc-boat-leaving"));
