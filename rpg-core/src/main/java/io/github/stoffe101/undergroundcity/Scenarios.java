@@ -355,16 +355,18 @@ final class Scenarios {
     /** Opens the secure terminal with a real right click from the data office's floor and waits for the trace screen. */
     private static void startTrace(BlockPos[] origin, String label) {
         Playtest.queue(label + ": stand at the secure terminal and use it", () -> {
-            Vec3 terminal = Vec3.atCenterOf(origin[0].offset(15, 0, 2)); // origin[0] is only known once the row has been built, so read it when the step runs
-            standLooking(Vec3.atLowerCornerOf(origin[0].offset(15, 0, 4)).add(0.5, 0, 0.5), terminal.add(0, 0.2, 0));
+            // The district's own origin (the platform the test built it on is one block lower than the Row's first layer), read when the step runs.
+            BlockPos row = DistrictBuilder.originOf(level(), "founders_row");
+            Vec3 terminal = Vec3.atCenterOf(row.offset(15, 0, 2));
+            standLooking(Vec3.atLowerCornerOf(row.offset(15, 0, 4)).add(0.5, 0, 0.5), terminal.add(0, 0.2, 0));
         });
         Playtest.wait("settle", 15);
         Playtest.queue(label + ": right-click", () -> {
             var mc = Minecraft.getInstance();
             var lvl = level();
-            Playtest.log("row origin " + origin[0].toShortString() + "; terminal cell " + lvl.getBlockState(origin[0].offset(15, 0, 2)).getBlock() + ", above it " + lvl.getBlockState(origin[0].offset(15, 1, 2)).getBlock()
-                + ", below it " + lvl.getBlockState(origin[0].offset(15, -1, 2)).getBlock() + ", floor under the stand point " + lvl.getBlockState(origin[0].offset(15, -1, 4)).getBlock()
-                + ", block at the stand point " + lvl.getBlockState(origin[0].offset(15, 0, 4)).getBlock());
+            BlockPos row = DistrictBuilder.originOf(lvl, "founders_row");
+            Playtest.log("row origin " + row.toShortString() + " (platform " + origin[0].toShortString() + "); terminal cell " + lvl.getBlockState(row.offset(15, 0, 2)).getBlock() + ", below it " + lvl.getBlockState(row.offset(15, -1, 2)).getBlock()
+                + ", block at the stand point " + lvl.getBlockState(row.offset(15, 0, 4)).getBlock());
             String aimed = mc.hitResult instanceof net.minecraft.world.phys.BlockHitResult block && block.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK
                 ? block.getBlockPos().toShortString() + " " + mc.level.getBlockState(block.getBlockPos()).getBlock() : String.valueOf(mc.hitResult == null ? null : mc.hitResult.getType());
             Playtest.log("cursor: " + aimed + " from " + mc.player.position() + " looking " + mc.player.getXRot() + "/" + mc.player.getYRot() + ", holding " + mc.player.getMainHandItem());
