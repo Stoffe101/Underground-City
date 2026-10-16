@@ -34,7 +34,7 @@ public final class CorridorPlan {
     private final double length, deckHalfWidth;
     private final List<City> cities;
     private int[] deckHalf;
-    private boolean[] bridge, open;
+    private boolean[] bridge, open, water;
     private int sampleCount;
 
     public CorridorPlan(String id, double[] xs, double[] zs, int width, List<City> cities) {
@@ -154,6 +154,7 @@ public final class CorridorPlan {
         this.deckHalf = profile;
         this.open = isOpen;
         this.bridge = spans;
+        this.water = water;
     }
 
     /**
@@ -200,6 +201,12 @@ public final class CorridorPlan {
         int centre = (int) Math.round(Math.max(0, Math.min(length, s)) / STEP);
         for (int i = Math.max(0, centre - 1); i <= Math.min(sampleCount - 1, centre + 1); i++) if (bridge[i]) return true;
         return false;
+    }
+
+    /** True where the terrain under the centreline is open water (so a deck there is a bridge over a river or sea, not a viaduct over land). */
+    public boolean waterAt(double s) {
+        int centre = (int) Math.round(Math.max(0, Math.min(length, s)) / STEP);
+        return water != null && centre < sampleCount && water[centre];
     }
 
     public boolean pierAt(double s, double u) {

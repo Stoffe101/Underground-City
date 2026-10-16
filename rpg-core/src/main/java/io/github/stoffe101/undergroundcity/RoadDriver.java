@@ -35,6 +35,26 @@ final class RoadDriver {
         };
     }
 
+    /** The road's own centreline shifted sideways by {@code offset} blocks (to the left of the direction of travel), so a boat can sail under a deck beside its piers. */
+    static Route beside(CorridorPlan plan, double offset, double halfWidth) {
+        return new Route() {
+            private double[] shifted(double s) {
+                double[] at = plan.pointAt(s), ahead = plan.pointAt(Math.min(plan.length(), s + 2)), behind = plan.pointAt(Math.max(0, s - 2));
+                double tx = ahead[0] - behind[0], tz = ahead[1] - behind[1], length = Math.hypot(tx, tz);
+                return length < 1e-6 ? at : new double[]{at[0] - tz / length * offset, at[1] + tx / length * offset};
+            }
+            public CorridorPlan.Hit project(double x, double z) {
+                double s = plan.project(x, z).s();
+                double[] on = shifted(s);
+                return new CorridorPlan.Hit(s, 0, Math.hypot(x - on[0], z - on[1]));
+            }
+            public double[] pointAt(double s) { return shifted(s); }
+            public boolean bridgeAt(double s) { return plan.bridgeAt(s); }
+            public double length() { return plan.length(); }
+            public double reach() { return halfWidth; }
+        };
+    }
+
     /** A straight line from one point to another on the ground plane; {@code halfWidth} is how far from it counts as still on course. */
     static Route line(double x0, double z0, double x1, double z1, double halfWidth) {
         double length = Math.hypot(x1 - x0, z1 - z0), ux = (x1 - x0) / length, uz = (z1 - z0) / length;

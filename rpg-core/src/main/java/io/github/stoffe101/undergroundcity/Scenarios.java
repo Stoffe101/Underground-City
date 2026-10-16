@@ -668,73 +668,59 @@ final class Scenarios {
         }
     }
 
-    /**
-     * A point on the water on each side of the first long bridge of a road, in line across it: {x0, z0, x1, z1, waterY, bridgeS, clearance}, or an empty array.
-     * Runs on the server thread and only looks at chunks that are already loaded.
-     */
-    private static double[] waterAcrossBridge(net.minecraft.server.level.ServerLevel level, CorridorPlan plan, double[] bridge) {
-        for (double s = bridge[0] + 8; s <= bridge[1] - 8; s += 4) {
-            double[] at = plan.pointAt(s), next = plan.pointAt(s + 3);
-            double tx = next[0] - at[0], tz = next[1] - at[1], length = Math.hypot(tx, tz);
-            if (length < 1e-6) continue;
-            double nx = -tz / length, nz = tx / length;
-            boolean ok = true;
-            int waterY = Integer.MIN_VALUE;
-            for (int t = -32; t <= 32 && ok; t += 4) {
-                int x = (int) Math.floor(at[0] + nx * t), z = (int) Math.floor(at[1] + nz * t);
-                if (!level.hasChunk(x >> 4, z >> 4)) { ok = false; break; }
-                int y = level.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING, x, z) - 1;
-                var state = level.getFluidState(new BlockPos(x, y, z));
-                if (!state.is(net.minecraft.tags.FluidTags.WATER) || !state.isSource()) ok = false;
-                else if (waterY == Integer.MIN_VALUE) waterY = y; else if (waterY != y) ok = false;
-            }
-            if (!ok) continue;
-            int deck = CorridorPlan.deckBlockY(plan.deckHalfAt(s));
-            return new double[]{at[0] + nx * -32, at[1] + nz * -32, at[0] + nx * 32, at[1] + nz * 32, waterY, s, deck - waterY};
+    /** The first run of at least {@code minimum} blocks of a road whose deck stands over open water: {start, end} along the road, or null. */
+    private static double[] firstWaterRun(CorridorPlan plan, int minimum) {
+        double start = -1;
+        for (double at = 0; at <= plan.length(); at += 1) {
+            if (plan.waterAt(at)) { if (start < 0) start = at; }
+            else if (start >= 0) { if (at - start >= minimum) return new double[]{start, at}; start = -1; }
         }
-        return new double[0];
+        return start >= 0 && plan.length() - start >= minimum ? new double[]{start, plan.length()} : null;
+    }
+
+    /** Where the boat goes in: beside the centreline at road distance {@code s}, on the water surface. Server thread; empty when that spot is not water. */
+    private static double[] waterBesideRoad(net.minecraft.server.level.ServerLevel level, CorridorPlan plan, double s, double offset) {
+        double[] on = RoadDriver.beside(plan, offset, 8).pointAt(s);
+        int x = (int) Math.floor(on[0]), z = (int) Math.floor(on[1]);
+        if (!level.hasChunk(x >> 4, z >> 4)) return new double[0];
+        int y = level.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING, x, z) - 1;
+        var fluid = level.getFluidState(new BlockPos(x, y, z));
+        if (!fluid.is(net.minecraft.tags.FluidTags.WATER) || !fluid.isSource()) return new double[0];
+        return new double[]{on[0], on[1], y};
     }
 
     /**
-     * Modern Life's Motorboat under a real bridge, with real keys and mouse: place it from its item on the water beside a bridge, climb in with a
-     * right click, hold W and steer with A and D across the water under the deck, and log its fuel and hold. Options: {@code -PucPtRoute=<road>}.
+     * Modern Life's Motorboat under a real bridge, with real keys and mouse: place it from its item on the water beside the deck of the first bridge
+     * that crosses water, climb in with a right click, hold W and steer with A and D along the water under the deck (a little to one side, so the piers
+     * on the centreline are not in the way), and log its fuel and hold. Options: {@code -PucPtRoute=<road>}.
      */
     private static void boat() {
         String road = System.getProperty("uc.playtest.route", "valewood_blackwater");
-        final double[] bridge = new double[2];
-        final double[][] crossing = new double[1][], arrival = new double[1][];
+        final double[] run = new double[2];
+        final double[][] spot = new double[1][];
+        final double offset = 3.0;
         // A road plan only knows its bridges once the terrain has been read, which happens when the first road chunks generate.
         arriveOnRoadLater(road, () -> 0, null);
         Playtest.queue("wait for the road plan to be built from the terrain", () -> { }, () -> roadPlan(road).built(), 1200);
-        Playtest.queue("find the first bridge of " + road, () -> {
-            double[] found = firstBridge(roadPlan(road), 40);
-            if (found == null) { Playtest.fail(road + " has no bridge of 40 blocks"); return; }
-            bridge[0] = found[0]; bridge[1] = found[1];
-            Playtest.log(road + ": first bridge from " + (int) found[0] + " to " + (int) found[1]);
-            Playtest.command("gamemode spectator");
-            Playtest.command("clear @s");
-            int middle = (int) (found[0] + (found[1] - found[0]) / 2);
-            var at = roadPlan(road).pointAt(middle);
-            arrival[0] = new double[]{at[0], at[1]};
-            Playtest.command("uc_dev road " + road + " " + middle);
+        Playtest.queue("find the first stretch of " + road + " that crosses water", () -> {
+            double[] found = firstWaterRun(roadPlan(road), 40);
+            if (found == null) { Playtest.fail(road + " has no stretch of 40 blocks over open water"); return; }
+            run[0] = found[0]; run[1] = found[1];
+            Playtest.log(road + ": open water under the deck from " + (int) found[0] + " to " + (int) found[1]);
         });
-        Playtest.queue("wait until the player is there and the ground has arrived", () -> { }, () -> arrivedAt(arrival[0]), 12000);
-        Playtest.queue("creative mode", () -> Playtest.command("gamemode creative"));
-        Playtest.wait("settle", 40);
-        Playtest.queue("find water on both sides of the deck (server side)", () -> {
+        arriveOnRoadLater(road, () -> (int) (run[0] + 8), "creative");
+        Playtest.queue("find the water beside the deck (server side)", () -> {
             var server = Minecraft.getInstance().getSingleplayerServer();
-            server.execute(() -> crossing[0] = waterAcrossBridge(server.overworld(), roadPlan(road), bridge));
-        }, () -> crossing[0] != null, 600);
-        Playtest.queue("log the crossing", () -> {
-            if (crossing[0].length == 0) { Playtest.fail("no water on both sides of the first bridge of " + road + " in the loaded chunks"); return; }
-            double[] c = crossing[0];
-            Playtest.log(String.format(java.util.Locale.ROOT, "crossing at s=%d: from %.0f,%.0f to %.0f,%.0f, water y=%d, deck %d blocks above the water", (int) c[5], c[0], c[1], c[2], c[3], (int) c[4], (int) c[6]));
-        });
-        Playtest.queue("into the water at the start of the crossing, the boat item in hand", () -> {
-            if (crossing[0].length == 0) return;
-            double[] c = crossing[0];
-            double yaw = Math.toDegrees(Math.atan2(-(c[2] - c[0]), c[3] - c[1]));
-            Playtest.command(String.format(java.util.Locale.ROOT, "tp @s %.2f %.2f %.2f %.1f 35", c[0], c[4] + 1, c[1], yaw));
+            server.execute(() -> spot[0] = waterBesideRoad(server.overworld(), roadPlan(road), run[0] + 8, offset));
+        }, () -> spot[0] != null, 600);
+        Playtest.queue("into the water at the start, the boat item in hand", () -> {
+            if (spot[0].length == 0) { Playtest.fail("no water beside the deck at " + road + " s=" + (int) (run[0] + 8)); return; }
+            var plan = roadPlan(road);
+            double[] a = plan.pointAt(run[0] + 8), b = plan.pointAt(run[0] + 14);
+            double yaw = Math.toDegrees(Math.atan2(-(b[0] - a[0]), b[1] - a[1]));
+            Playtest.log(String.format(java.util.Locale.ROOT, "water at %.1f, %.1f, surface y=%d", spot[0][0], spot[0][1], (int) spot[0][2]));
+            Playtest.command("clear @s");
+            Playtest.command(String.format(java.util.Locale.ROOT, "tp @s %.2f %.2f %.2f %.1f 35", spot[0][0], spot[0][2] + 1, spot[0][1], yaw));
             Playtest.command("give @s modernlife:motorboat_item");
         }, () -> inventoryCount("modernlife:motorboat_item") >= 1, 1200);
         Playtest.wait("let the chunks and the water settle", 60);
@@ -749,7 +735,7 @@ final class Scenarios {
         });
         Playtest.wait("hold", 4);
         Playtest.queue("release", () -> Playtest.mouseButton(3, false));
-        Playtest.queue("the boat exists", () -> { }, () -> boatNear() != null, 200);
+        Playtest.queue("the boat exists", () -> { }, () -> boatNear() != null, 400);
         Playtest.wait("let it settle", 40);
         Playtest.queue("log the boat and screenshot", () -> {
             var boat = boatNear();
@@ -757,14 +743,18 @@ final class Scenarios {
             Playtest.log("boat at " + boat.position() + " " + describeBoat(boat));
             Playtest.screenshot("uc-boat-placed");
         });
-        board(Scenarios::boatNear, () -> { double[] c = crossing[0]; return Math.toDegrees(Math.atan2(-(c[2] - c[0]), c[3] - c[1])); }, "boat");
+        board(Scenarios::boatNear, () -> {
+            var plan = roadPlan(road);
+            double[] a = plan.pointAt(run[0] + 8), b = plan.pointAt(run[0] + 14);
+            return Math.toDegrees(Math.atan2(-(b[0] - a[0]), b[1] - a[1]));
+        }, "boat");
         final RoadDriver[] driver = new RoadDriver[1];
-        Playtest.queue("sail across the water under the deck with W, A and D", () -> {
-            double[] c = crossing[0];
-            var route = RoadDriver.line(c[0], c[1], c[2], c[3], 8);
-            driver[0] = new RoadDriver(route, route.length() - 4, "motorboat under the bridge at s=" + (int) c[5])
-                .at(route.length() / 2, () -> { Playtest.log("under the deck: " + describeBoat(boatNear())); Playtest.screenshot("uc-boat-under-bridge"); });
-        }, () -> driver[0].tick(), 4000);
+        Playtest.queue("sail along the water under the deck with W, A and D", () -> {
+            var plan = roadPlan(road);
+            var route = RoadDriver.beside(plan, offset, 8);
+            driver[0] = new RoadDriver(route, run[1] - 10, "motorboat under the bridge of " + road)
+                .at((run[0] + run[1]) / 2, () -> { Playtest.log("under the deck: " + describeBoat(boatNear())); Playtest.screenshot("uc-boat-under-bridge"); });
+        }, () -> driver[0].tick(), 6000);
         Playtest.queue("report the crossing", () -> {
             Playtest.log("sail: " + driver[0].summary());
             Playtest.screenshot("uc-boat-across");
