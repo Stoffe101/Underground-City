@@ -25,14 +25,24 @@ import java.util.Set;
 public final class DistrictCatalog extends SimpleJsonResourceReloadListener {
     private static final Logger LOGGER = LogUtils.getLogger();
     public static final DistrictCatalog INSTANCE = new DistrictCatalog();
-    static final Set<String> OPS = Set.of("fill", "block", "terminal", "safe", "secure_terminal", "clerk");
+    static final Set<String> OPS = Set.of("fill", "block", "terminal", "safe", "secure_terminal", "clerk", "npc");
+    static final Set<String> ROLES = Set.of("registrar", "employer", "resident", "guard");
+    static final int MAX_NPCS = 16, MAX_LINES = 8, MAX_LINE = 180;
     /** Hard bound so a bad datapack cannot ask the server to rewrite an unbounded volume. */
     static final int MAX_EXTENT = 64, MAX_VOLUME = 40_000, MAX_OPS = 400;
 
     /** {@code a} and {@code b} are relative corners (min/max already ordered); {@code text} is a block state, policy or terminal ref. */
-    public record Op(String kind, BlockPos a, BlockPos b, String text, String facing, BlockPos reference) {}
-    public record District(String id, String title, List<Op> ops, BlockPos min, BlockPos max) {
+    public record Op(String kind, BlockPos a, BlockPos b, String text, String facing, BlockPos reference, Npc npc, String requiresMod) {
+        public Op(String kind, BlockPos a, BlockPos b, String text, String facing, BlockPos reference) { this(kind, a, b, text, facing, reference, null, ""); }
+        /** True when this operation applies in the current mod set (an operation naming an absent mod is skipped, not an error). */
+        public boolean applies() { return requiresMod.isEmpty() || net.minecraftforge.fml.ModList.get().isLoaded(requiresMod); }
+    }
+    /** A named citizen of the district: role, villager profession (look and workstation), the career an employer represents and the lines they say. */
+    public record Npc(String role, String name, String profession, String career, List<String> lines) {}
+    public record District(String id, String title, List<Op> ops, BlockPos min, BlockPos max, boolean repeatable) {
         public int volume() { return (max.getX() - min.getX() + 1) * (max.getY() - min.getY() + 1) * (max.getZ() - min.getZ() + 1); }
+        /** The citizens in file order. A citizen's index here is how a placed villager remembers which entry is theirs. */
+        public List<Op> npcOps() { return ops.stream().filter(op -> op.npc() != null).toList(); }
     }
 
     private volatile Map<String, District> districts = Map.of();
@@ -77,19 +87,40 @@ public final class DistrictCatalog extends SimpleJsonResourceReloadListener {
             };
             String facing = op.has("facing") ? op.get("facing").getAsString() : "north";
             if (!Set.of("north", "south", "east", "west").contains(facing)) throw new IllegalArgumentException("Bad facing " + facing);
-            BlockPos reference = kind.equals("clerk") ? pos(op.getAsJsonArray("terminal")) : null;
-            ops.add(new Op(kind, a, b, text, facing, reference));
+            BlockPos reference = kind.equals("clerk") || (kind.equals("npc") && op.has("terminal")) ? pos(op.getAsJsonArray("terminal")) : null;
+            Npc npc = kind.equals("npc") ? parseNpc(id, op) : null;
+            ops.add(new Op(kind, a, b, text, facing, reference, npc, op.has("requires_mod") ? op.get("requires_mod").getAsString() : ""));
             for (BlockPos corner : reference == null ? new BlockPos[]{a, b} : new BlockPos[]{a, b, reference}) {
                 lo[0] = Math.min(lo[0], corner.getX()); lo[1] = Math.min(lo[1], corner.getY()); lo[2] = Math.min(lo[2], corner.getZ());
                 hi[0] = Math.max(hi[0], corner.getX()); hi[1] = Math.max(hi[1], corner.getY()); hi[2] = Math.max(hi[2], corner.getZ());
             }
         }
+        long npcs = ops.stream().filter(op -> op.kind().equals("npc")).count();
+        if (npcs > MAX_NPCS) throw new IllegalArgumentException("District " + id + " has more than " + MAX_NPCS + " NPCs");
         BlockPos min = new BlockPos(lo[0], lo[1], lo[2]), max = new BlockPos(hi[0], hi[1], hi[2]);
-        District district = new District(id, json.has("title") ? json.get("title").getAsString() : id, List.copyOf(ops), min, max);
+        District district = new District(id, json.has("title") ? json.get("title").getAsString() : id, List.copyOf(ops), min, max,
+            json.has("repeatable") && json.get("repeatable").getAsBoolean());
         if (max.getX() - min.getX() >= MAX_EXTENT || max.getY() - min.getY() >= MAX_EXTENT || max.getZ() - min.getZ() >= MAX_EXTENT || district.volume() > MAX_VOLUME) {
             throw new IllegalArgumentException("District " + id + " is larger than the safe build limit");
         }
         return district;
+    }
+
+    private static Npc parseNpc(String district, JsonObject op) {
+        String role = op.get("role").getAsString();
+        if (!ROLES.contains(role)) throw new IllegalArgumentException("District " + district + ": unknown NPC role " + role);
+        String name = op.get("name").getAsString();
+        if (name.isBlank() || name.length() > 40) throw new IllegalArgumentException("District " + district + ": bad NPC name");
+        String career = op.has("career") ? op.get("career").getAsString() : "";
+        if (role.equals("employer") && (!ProgressionRules.validCareer(career) || !op.has("terminal"))) throw new IllegalArgumentException("District " + district + ": an employer needs a career and a terminal");
+        List<String> lines = new ArrayList<>();
+        if (op.has("lines")) for (JsonElement line : op.getAsJsonArray("lines")) {
+            String text = line.getAsString();
+            if (text.isBlank() || text.length() > MAX_LINE) throw new IllegalArgumentException("District " + district + ": bad dialogue line for " + name);
+            lines.add(text);
+        }
+        if (lines.size() > MAX_LINES) throw new IllegalArgumentException("District " + district + ": too many lines for " + name);
+        return new Npc(role, name, op.has("profession") ? op.get("profession").getAsString() : "none", career, List.copyOf(lines));
     }
 
     private static BlockPos pos(JsonArray array) {

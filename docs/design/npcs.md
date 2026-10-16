@@ -23,6 +23,16 @@ NPCs go between home, workplace, public spaces and safe shelter based on local t
 
 Named buyers issue real demand-driven contracts. Town leaders request aid and provide civic decisions. Guards have patrol ranges and respond to witnessed crime, reports or warrants. Hostile factions control chokepoints and create contested-route risk.
 
+## What exists today (October 16, 2026)
+
+A first, deliberately small citizen layer, built on vanilla villagers rather than a new NPC mod ([D-061](../production/decisions.md)):
+
+- **Founders Row** has nine named citizens: a registrar, an employer for each of the four careers, three residents and a gate guard. Each has a bed or a workstation (or both), so the vanilla routines (sleeping, working at the job site, gathering at the village bell) apply without any code of ours. They are persistent and invulnerable; `/uc_district repopulate founders_row` puts back one that an operator removed.
+- **What they do** is read from the district data when a player speaks to them: the registrar opens the first-login screen for a newcomer and gives a next step to a registered citizen (their employer and a rough direction, then the skills page); an employer opens the Operations Terminal bound to their office for a citizen of their own career and, for anyone else, says what they do and names the player's own employer; residents and the guard talk. Lines are data, not code.
+- **Checkpoint posts** ([D-062](../production/decisions.md)) give each road checkpoint zone a booth and a guard who turns to the traveller and speaks when the existing search triggers.
+- **Not simulated:** no schedules beyond the vanilla ones, no relationships, no memory of the player, no off-screen population, no quest state per NPC, no killing or arrest. Employers do not pay or trade themselves; contracts still go through the terminal and Q Shop.
+- **Known vanilla behaviours to expect:** villagers can still breed when they have beds and food, and wander to the nearest bell; both are left alone on purpose.
+
 ## Spike before implementation
 
 Evaluate CustomNPCs-Unofficial, MineColonies and armed NPC addons **separately** on a clean dedicated server. Record entity sync, persistence, scripting API, pathfinding, combat compatibility, performance, and licensing. Do not assume different AI mods integrate cleanly.

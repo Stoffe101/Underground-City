@@ -24,7 +24,7 @@ import java.util.function.Supplier;
  * This is NOT a remote city supplier, contraband order, or raid service.
  */
 public final class TerminalNetwork {
-    private static final String VERSION = "6";
+    private static final String VERSION = "7";
     private static final String STARTER_SHOP_ID = "uc_starter_supply";
     private static final double MAX_TERMINAL_DISTANCE_SQUARED = 64.0;
     private static final java.util.Map<ServerPlayer, Integer> REQUEST_TIMES = new java.util.WeakHashMap<>();
@@ -38,6 +38,7 @@ public final class TerminalNetwork {
     public static void register() {
         registerChallenge();
         registerRegistration();
+        registerTracker();
         CHANNEL.registerMessage(0, OpenTerminal.class,
             (packet, buffer) -> { buffer.writeBlockPos(packet.pos); packet.data.write(buffer); },
             buffer -> new OpenTerminal(buffer.readBlockPos(), TerminalData.read(buffer)),
@@ -83,6 +84,45 @@ public final class TerminalNetwork {
                 });
                 context.setPacketHandled(true);
             }, Optional.of(NetworkDirection.PLAY_TO_SERVER));
+    }
+
+    private static void registerTracker() {
+        CHANNEL.registerMessage(10, TrackedOrder.class,
+            (packet, buffer) -> {
+                buffer.writeBoolean(packet.tracked != null);
+                if (packet.tracked == null) return;
+                var tracked = packet.tracked;
+                buffer.writeUtf(tracked.title(), 96); buffer.writeVarInt(tracked.credits()); buffer.writeVarInt(tracked.xp());
+                buffer.writeUtf(tracked.deliverIn(), 96); buffer.writeBoolean(tracked.underground());
+                buffer.writeVarInt(tracked.lines().size());
+                for (var line : tracked.lines()) { buffer.writeUtf(line.item(), 96); buffer.writeUtf(line.label(), 64); buffer.writeVarInt(line.held()); buffer.writeVarInt(line.count()); }
+            },
+            buffer -> {
+                if (!buffer.readBoolean()) return new TrackedOrder(null);
+                String title = buffer.readUtf(96); int credits = buffer.readVarInt(), xp = buffer.readVarInt();
+                String deliverIn = buffer.readUtf(96); boolean underground = buffer.readBoolean();
+                int count = Math.min(buffer.readVarInt(), OrderTracker.MAX_LINES);
+                java.util.List<OrderTracker.Line> lines = new java.util.ArrayList<>();
+                for (int i = 0; i < count; i++) lines.add(new OrderTracker.Line(buffer.readUtf(96), buffer.readUtf(64), buffer.readVarInt(), buffer.readVarInt()));
+                return new TrackedOrder(new OrderTracker.Tracked(title, credits, xp, deliverIn, underground, lines));
+            },
+            (packet, supplier) -> {
+                NetworkEvent.Context context = supplier.get();
+                if (context.getDirection().getReceptionSide().isClient()) {
+                    context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> ClientOrderTracker.update(packet.tracked)));
+                }
+                context.setPacketHandled(true);
+            }, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+    }
+
+    /** Server to client: the accepted order with its live progress, or null to clear the tracker. */
+    public static void sendTracked(ServerPlayer player, OrderTracker.Tracked tracked) {
+        CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new TrackedOrder(tracked));
+    }
+
+    public static final class TrackedOrder {
+        final OrderTracker.Tracked tracked;
+        TrackedOrder(OrderTracker.Tracked tracked) { this.tracked = tracked; }
     }
 
     private static void registerRegistration() {

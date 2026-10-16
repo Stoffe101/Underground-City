@@ -89,6 +89,29 @@ public final class DevWorldLauncher {
         }
     }
 
+    /**
+     * Reopening an existing development world makes Minecraft ask "Worlds using Experimental Settings are not supported" (a generator
+     * registered by a mod is not vanilla-stable). It is our own known world, so the launcher answers Proceed instead of leaving a
+     * scripted run, or a developer's second launch, waiting at a dialog. Only that one dialog is answered.
+     */
+    static void acceptExperimentalWarning(Minecraft mc) {
+        if (!(mc.screen instanceof net.minecraft.client.gui.screens.ConfirmScreen confirm)) return;
+        if (!confirm.getTitle().getString().equals(net.minecraft.client.resources.language.I18n.get("selectWorld.warning.experimental.title"))) return;
+        for (var child : confirm.children()) {
+            if (child instanceof net.minecraft.client.gui.components.Button button
+                && button.getMessage().getString().equals(net.minecraft.client.resources.language.I18n.get("gui.proceed"))) {
+                System.out.println("[UC-LAUNCH] accepting the experimental-settings notice for the development world");
+                button.onPress();
+                return;
+            }
+        }
+    }
+
+    @SubscribeEvent
+    public static void warning(TickEvent.ClientTickEvent event) {
+        if (event.phase == TickEvent.Phase.END && opened && (WORLD != null || SMOKE)) acceptExperimentalWarning(Minecraft.getInstance());
+    }
+
     @SubscribeEvent
     public static void tick(TickEvent.ClientTickEvent event) {
         if (!SMOKE || event.phase != TickEvent.Phase.END || stage == Stage.DONE || stage == Stage.TITLE) return;

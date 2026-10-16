@@ -9,8 +9,20 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 public final class ClientRegistration {
     private ClientRegistration() {}
 
+    /**
+     * Scripted clients that drive the world on their own (the world tour, the launch smoke, the journey and visual-capture harnesses) are never
+     * stopped by the first-login prompt: it would sit over every frame they take. The scripted-player harness ({@code uc.playtest}) opts in.
+     */
+    static boolean suppressedByHarness() {
+        for (String property : new String[]{"uc.worldTour", "uc.launchSmoke", "uc.journey.client", "uc.journey.phase", "uc.worldSurvey", "uc.seedScan", "uc.visualCapture"}) {
+            if (System.getProperty(property) != null) return true;
+        }
+        return false;
+    }
+
     public static void open() {
         Minecraft mc = Minecraft.getInstance();
+        if (suppressedByHarness()) return;
         if (!(mc.screen instanceof RegistrationScreen)) mc.setScreen(new RegistrationScreen());
     }
 

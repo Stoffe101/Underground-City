@@ -6,7 +6,7 @@ feature configuration, loot, design metadata) from ``content/region-blueprints``
 ``gradlew runClient`` should not need Python, so this script emits the same files into a committed directory:
 
 * ``content/generated/world-prototype/pack``       contents of the low-code mod jar (Gradle zips it into ``mods``)
-* ``content/generated/world-prototype/run-config`` Lost Cities configuration for a development game directory
+* ``content/generated/world-prototype/game-config`` Lost Cities configuration for a development game directory
 
 Never edit the generated files by hand: change the blueprint and run this script. CI runs it with ``--check``.
 
@@ -29,7 +29,7 @@ OUT = ROOT / "content/generated/world-prototype"
 
 def expected(data: dict) -> dict[str, bytes]:
     files = {f"pack/{name}": content for name, content in render(data).items()}
-    files.update({f"run-config/{name}": text.encode("utf-8") for name, text in config_files(data).items()})
+    files.update({f"game-config/{name}": text.encode("utf-8") for name, text in config_files(data).items()})
     return files
 
 

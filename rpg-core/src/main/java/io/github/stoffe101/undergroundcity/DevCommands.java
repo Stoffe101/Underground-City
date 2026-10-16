@@ -25,6 +25,7 @@ import net.minecraftforge.fml.common.Mod;
  *   <li>{@code /uc_dev tp <city>} teleports to the surface at a city centre (city ids come from the loaded regions).</li>
  *   <li>{@code /uc_dev roads} lists the generated roads; {@code /uc_dev road <id> <metres>} teleports onto one at that distance.</li>
  *   <li>{@code /uc_dev terminal} places an Operations Terminal two blocks in front of the operator.</li>
+ *   <li>{@code /uc_dev search} performs the checkpoint search of the zone the operator stands in, without the die.</li>
  * </ul>
  */
 @Mod.EventBusSubscriber(modid = UndergroundCity.MOD_ID)
@@ -98,6 +99,23 @@ public final class DevCommands {
                     return 0;
                 }
             }))));
+        root.then(Commands.literal("search").executes(ctx -> {
+            // Runs the search itself at the checkpoint zone the operator stands in, skipping the die (testing the wording and the effects).
+            try {
+                ServerPlayer player = ctx.getSource().getPlayerOrException();
+                var post = CheckpointCatalog.INSTANCE.at(player.level().dimension().location().toString(), player.getX(), player.getZ());
+                if (post == null) throw new IllegalStateException("You are not inside a checkpoint zone.");
+                var citizen = CitizenState.get(player.server).find(player.getUUID()).orElseThrow(() -> new IllegalStateException("Register first (/uc start)."));
+                var law = CityLaws.INSTANCE.find(post.jurisdiction());
+                if (law == null) throw new IllegalStateException("No law is loaded for " + post.jurisdiction());
+                var result = CheckpointService.inspect(player, citizen, post, law, WorkOrderLedger.get(player.server));
+                ctx.getSource().sendSuccess(() -> Component.literal("Search result: " + result.summary()), false);
+                return 1;
+            } catch (RuntimeException error) {
+                ctx.getSource().sendFailure(Component.literal(String.valueOf(error.getMessage())));
+                return 0;
+            }
+        }));
         root.then(Commands.literal("terminal").executes(ctx -> {
             try {
                 ServerPlayer player = ctx.getSource().getPlayerOrException();

@@ -813,7 +813,7 @@ public final class UndergroundGameTests {
             for (DistrictCatalog.Op op : district.ops()) {
                 switch (op.kind()) { case "safe" -> safes++; case "terminal" -> terminals++; case "secure_terminal" -> secure++; case "clerk" -> clerks++; default -> { } }
             }
-            check(terminals >= 1 && clerks <= 1 && secure >= 0 && safes >= 0, id + " must have a terminal and at most one clerk");
+            check((terminals >= 1 || district.repeatable()) && clerks <= 1 && secure >= 0 && safes >= 0, id + " must have a terminal (unless it is a repeatable post) and at most one clerk");
         }
         // Bad data is rejected before it can reach the world.
         JsonObject bad = new JsonObject();
@@ -825,7 +825,33 @@ public final class UndergroundGameTests {
         for (int value : new int[]{500, 10, 500}) to.add(value);
         fill.add("from", from); fill.add("to", to); ops.add(fill); bad.add("ops", ops);
         rejected(() -> DistrictCatalog.parse("huge", bad));
+        // A citizen is validated like a block: unknown roles, an employer without a career and terminal, and over-long lines are refused.
+        rejected(() -> DistrictCatalog.parse("npcs", districtWithCitizen("wizard", "Nobody", null, null, "Hello.")));
+        rejected(() -> DistrictCatalog.parse("npcs", districtWithCitizen("employer", "Nobody", null, null, "Hello.")));
+        rejected(() -> DistrictCatalog.parse("npcs", districtWithCitizen("resident", "Nobody", null, null, "x".repeat(DistrictCatalog.MAX_LINE + 1))));
+        rejected(() -> DistrictCatalog.parse("npcs", districtWithCitizen("resident", " ", null, null, "Hello.")));
+        DistrictCatalog.District fine = DistrictCatalog.parse("npcs", districtWithCitizen("employer", "Nobody", "smith", new int[]{0, 0, 0}, "Hello."));
+        check(fine.npcOps().size() == 1 && fine.npcOps().get(0).npc().career().equals("smith"), "A well-formed employer is accepted");
         helper.succeed();
+    }
+
+    private static JsonObject districtWithCitizen(String role, String name, String career, int[] terminal, String line) {
+        JsonObject json = new JsonObject();
+        json.addProperty("schema_version", 1); json.addProperty("id", "npcs");
+        JsonArray ops = new JsonArray();
+        JsonObject block = new JsonObject();
+        block.addProperty("op", "block"); block.addProperty("block", "minecraft:stone");
+        JsonArray origin = new JsonArray(); for (int value : new int[]{0, -1, 0}) origin.add(value);
+        block.add("at", origin); ops.add(block);
+        JsonObject citizen = new JsonObject();
+        citizen.addProperty("op", "npc"); citizen.addProperty("role", role); citizen.addProperty("name", name);
+        JsonArray at = new JsonArray(); for (int value : new int[]{0, 0, 0}) at.add(value);
+        citizen.add("at", at);
+        if (career != null) citizen.addProperty("career", career);
+        if (terminal != null) { JsonArray ref = new JsonArray(); for (int value : terminal) ref.add(value); citizen.add("terminal", ref); }
+        JsonArray lines = new JsonArray(); lines.add(line); citizen.add("lines", lines);
+        ops.add(citizen); json.add("ops", ops);
+        return json;
     }
 
     @GameTest(template = "empty", batch = "uc_district", timeoutTicks = 400)
@@ -844,7 +870,7 @@ public final class UndergroundGameTests {
         SupplierNpc.forgetForTest(level.getServer());
         DistrictBuilder.forgetForTest(level, district.id());
         Fixture fixture = fixture(helper, "valewood");
-        BlockPos terminalPos = origin.offset(3, 0, 2), marker = origin.offset(3, 0, 8);
+        BlockPos terminalPos = origin.offset(3, 0, 2), marker = origin.offset(12, 0, 12);
         BlockState keepsake = Blocks.GOLD_BLOCK.defaultBlockState();
         level.setBlockAndUpdate(marker, keepsake);
         BlockState terrain = level.getBlockState(terminalPos); // whatever the test arena sits in: undo must give exactly this back
@@ -863,7 +889,7 @@ public final class UndergroundGameTests {
         helper.runAfterDelay(40, () -> {
             try {
                 var result = DistrictBuilder.build(level, district, origin);
-                check(result.safes() == 3 && result.secureTerminals() == 1 && result.terminals() == 1 && result.clerkPlaced() && result.insideCity(), "Build summary " + result);
+                check(result.safes() == 8 && result.secureTerminals() == 1 && result.terminals() == 6 && result.clerkPlaced() && result.insideCity() && result.citizens() == 9, "Build summary " + result);
                 check(level.getBlockState(terminalPos).is(UndergroundCity.TERMINAL.get()), "Operations Terminal placed");
                 for (int x : new int[]{8, 9, 10}) {
                     check(level.getBlockEntity(origin.offset(x, 0, 2)) instanceof PropertyCacheBlockEntity cache && cache.registered(), "Safe at " + x + " must be registered");
@@ -876,8 +902,44 @@ public final class UndergroundGameTests {
                 var found = level.getEntity(clerk.clerkForTest());
                 check(found instanceof net.minecraft.world.entity.npc.Villager, "The clerk entity exists: " + found + " uuid " + clerk.clerkForTest());
                 check(found.hasCustomName() && found.blockPosition().distManhattan(terminalPos) <= 3, "The clerk is named and stands beside the PC: " + found.blockPosition());
+                // The people: nine named, persistent villagers placed on the spots the data names, each bound to its own entry.
+                var citizens = DistrictBuilder.citizensForTest(level, district.id());
+                var npcOps = district.npcOps();
+                check(citizens.size() == 9 && npcOps.size() == 9, "Nine citizens are recorded: " + citizens.size());
+                java.util.Set<String> roles = new java.util.HashSet<>();
+                for (int i = 0; i < npcOps.size(); i++) {
+                    var op = npcOps.get(i);
+                    var entity = level.getEntity(citizens.get(i));
+                    check(entity instanceof net.minecraft.world.entity.npc.Villager, "Citizen " + op.npc().name() + " exists: " + entity);
+                    var villager = (net.minecraft.world.entity.npc.Villager) entity;
+                    check(CityNpcs.isCityNpc(villager) && villager.isInvulnerable() && villager.hasCustomName()
+                        && villager.getCustomName().getString().equals(op.npc().name()), op.npc().name() + " is a named, protected district citizen");
+                    check(villager.blockPosition().equals(origin.offset(op.a())), op.npc().name() + " stands where the data says: " + villager.blockPosition());
+                    check(CityNpcs.definition(villager).map(entry -> entry.name().equals(op.npc().name())).orElse(false), "The villager finds its own entry in the data");
+                    roles.add(op.npc().role());
+                    if (op.npc().role().equals("employer")) {
+                        check(level.getBlockState(origin.offset(op.reference())).is(UndergroundCity.TERMINAL.get()), op.npc().name() + " has a real terminal in the office");
+                    }
+                }
+                check(roles.equals(java.util.Set.of("registrar", "employer", "resident", "guard")), "Every role is represented: " + roles);
+                int beds = 0, bells = 0, workstations = 0;
+                for (BlockPos pos : BlockPos.betweenClosed(lo, hi)) {
+                    BlockState seen = level.getBlockState(pos);
+                    if (seen.getBlock() instanceof net.minecraft.world.level.block.BedBlock && seen.getValue(net.minecraft.world.level.block.BedBlock.PART) == net.minecraft.world.level.block.state.properties.BedPart.HEAD) beds++;
+                    if (seen.is(Blocks.BELL)) bells++;
+                    if (seen.is(Blocks.COMPOSTER) || seen.is(Blocks.SMITHING_TABLE) || seen.is(Blocks.GRINDSTONE) || seen.is(Blocks.LECTERN) || seen.is(Blocks.CARTOGRAPHY_TABLE)) workstations++;
+                }
+                check(beds >= 7 && bells == 1 && workstations >= 6, "Homes, a meeting bell and workstations exist: beds " + beds + ", bells " + bells + ", workstations " + workstations);
+                // A lost citizen is put back; a complete district is left alone.
+                var lost = level.getEntity(citizens.get(4));
+                lost.discard();
+                check(DistrictBuilder.repopulate(level, district) == 1, "One missing citizen is placed again");
+                check(DistrictBuilder.repopulate(level, district) == 0, "A complete district has nothing to repopulate");
+                var replacement = DistrictBuilder.citizensForTest(level, district.id());
+                check(!replacement.get(4).equals(citizens.get(4)) && level.getEntity(replacement.get(4)) != null, "The replacement is recorded");
                 rejected(() -> DistrictBuilder.build(level, district, origin)); // one per world
                 DistrictBuilder.undo(level, district);
+                for (java.util.UUID id : replacement) check(level.getEntity(id) == null, "Undo removes the citizens it placed");
                 check(level.getBlockState(marker) == keepsake, "Undo must put back what the build replaced");
                 check(level.getBlockState(terminalPos) == terrain, "Undo removes the terminal, found " + level.getBlockState(terminalPos));
                 check(level.getBlockEntity(origin.offset(9, 0, 2)) == null, "Undo removes the safe's block entity");
@@ -888,6 +950,65 @@ public final class UndergroundGameTests {
                 rejected(() -> DistrictBuilder.build(level, district, origin));
                 check(level.getBlockState(terminalPos) == terrain && level.getBlockState(chest).is(Blocks.CHEST), "A refused build must not touch the world");
                 level.setBlockAndUpdate(chest, Blocks.AIR.defaultBlockState());
+            } finally {
+                cleanup.run();
+            }
+            helper.succeed();
+        });
+    }
+
+    @GameTest(template = "empty")
+    public static void aCheckpointPostIsPlacedBesideTheRoadNeverOnIt(GameTestHelper helper) {
+        var city = List.<CorridorPlan.City>of();
+        CorridorPlan straight = new CorridorPlan("straight", new double[]{0, 0}, new double[]{0, 400}, 7, city);
+        CorridorPlan diagonal = new CorridorPlan("diagonal", new double[]{100, 400}, new double[]{100, 300}, 5, city);
+        CheckpointCatalog.Checkpoint onStraight = new CheckpointCatalog.Checkpoint("t1", "Test gate", "ironhaven", "minecraft:overworld", 0, 200, 48, "inspection");
+        CheckpointCatalog.Checkpoint onDiagonal = new CheckpointCatalog.Checkpoint("t2", "Test gate two", "valewood", "minecraft:overworld", 250, 200, 48, "high");
+        CheckpointCatalog.Checkpoint nowhere = new CheckpointCatalog.Checkpoint("t3", "Test gate three", "blackwater", "minecraft:overworld", 5000, 5000, 48, "low");
+        for (var pair : List.of(java.util.Map.entry(straight, onStraight), java.util.Map.entry(diagonal, onDiagonal))) {
+            var placement = CheckpointPosts.placement(pair.getValue(), List.of(straight, diagonal), 9, 9).orElseThrow(() -> new IllegalStateException("no placement"));
+            for (int dx : new int[]{0, 8}) for (int dz : new int[]{0, 8}) {
+                var corner = pair.getKey().project(placement.origin().getX() + dx, placement.origin().getZ() + dz);
+                check(corner.distance() > pair.getKey().reach() + 1, pair.getValue().id() + ": a corner of the post is " + corner.distance() + " from the road, which reaches " + pair.getKey().reach());
+            }
+        }
+        check(CheckpointPosts.placement(nowhere, List.of(straight, diagonal), 9, 9).isEmpty(), "A zone with no road gets no post");
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty", batch = "uc_checkpoint", timeoutTicks = 300)
+    public static void checkpointPostsAreRepeatableReversibleAndTheirGuardIsFound(GameTestHelper helper) {
+        net.minecraft.server.level.ServerLevel level = helper.getLevel();
+        DistrictCatalog.District district = DistrictCatalog.INSTANCE.find("checkpoint_post");
+        check(district != null && district.repeatable() && district.npcOps().size() == 1 && district.npcOps().get(0).npc().role().equals("guard"), "The post is a repeatable district with one guard");
+        BlockPos arena = helper.absolutePos(new BlockPos(0, 0, 0));
+        BlockPos one = new BlockPos(arena.getX() + 40, level.getMaxBuildHeight() - 40, arena.getZ() - 4), two = one.offset(40, 0, 0);
+        BlockPos lo = one.offset(district.min()), hi = two.offset(district.max());
+        for (int cx = lo.getX() >> 4; cx <= hi.getX() >> 4; cx++) for (int cz = lo.getZ() >> 4; cz <= hi.getZ() >> 4; cz++) level.setChunkForced(cx, cz, true);
+        DistrictBuilder.forgetForTest(level, district.id());
+        Runnable cleanup = () -> {
+            DistrictBuilder.forgetForTest(level, district.id());
+            for (int cx = lo.getX() >> 4; cx <= hi.getX() >> 4; cx++) for (int cz = lo.getZ() >> 4; cz <= hi.getZ() >> 4; cz++) level.setChunkForced(cx, cz, false);
+        };
+        helper.runAfterDelay(40, () -> {
+            try {
+                DistrictBuilder.build(level, district, one);
+                DistrictBuilder.build(level, district, two);
+                check(DistrictBuilder.count(level, district.id()) == 2, "Two posts stand in the world");
+                rejected(() -> DistrictBuilder.build(level, district, one)); // the same spot twice
+                rejected(() -> DistrictBuilder.build(level, district, one.offset(4, 0, 4))); // overlapping
+                CheckpointCatalog.Checkpoint zoneOne = new CheckpointCatalog.Checkpoint("p1", "Post one", "ironhaven", level.dimension().location().toString(), one.getX() + 4, one.getZ() + 4, 48, "inspection");
+                var guard = CheckpointPosts.guardAt(level, zoneOne);
+                check(guard.isPresent() && guard.get().hasCustomName() && guard.get().isInvulnerable(), "The zone's guard is found and is a named, protected citizen");
+                check(guard.get().distanceToSqr(one.getX() + 4.5, one.getY(), one.getZ() + 6.5) < 4, "The guard stands at the post: " + guard.get().position());
+                DistrictBuilder.undoNear(level, district, one.offset(4, 0, 4));
+                check(DistrictBuilder.count(level, district.id()) == 1, "Removing one post leaves the other");
+                check(level.getBlockState(one.offset(3, 0, 3)).getBlock() != Blocks.STONE_BRICKS, "The removed post's booth is gone");
+                check(level.getBlockState(two.offset(3, 0, 3)).is(Blocks.STONE_BRICKS), "The other post's booth stands");
+                var remaining = DistrictBuilder.citizensForTest(level, district.id());
+                check(remaining.size() == 1 && level.getEntity(remaining.get(0)) != null, "The other post still has its guard");
+                DistrictBuilder.undoNear(level, district, two.offset(4, 0, 4));
+                check(DistrictBuilder.count(level, district.id()) == 0, "No posts remain");
             } finally {
                 cleanup.run();
             }
@@ -928,6 +1049,53 @@ public final class UndergroundGameTests {
                 check(!ForgeRegistries.ITEMS.getValue(requirement.item()).equals(Items.AIR), order.id() + " requires an item that does not exist");
             }
         }
+        helper.succeed();
+    }
+
+    /**
+     * The Gunsmith loop on real TaCZ, as far as a server can show it: the starter kit's blueprint unlocks the Glock 17, the real Gun Smith Table
+     * recipe turns the kit's own iron into the gun and its copper and powder into ammunition, and the Valewood co-op buys that crafted gun.
+     * It does not prove the table's screen, firing, or that a client cannot craft without a blueprint (TaCZ Blueprints 0.1.3 hides recipes in
+     * the client screen only).
+     */
+    @GameTest(template = "empty", timeoutTicks = 200)
+    public static void gunsmithKitBlueprintTableAndAmmoCraftARealLicensedSidearmThatTheCoopBuys(GameTestHelper helper) throws Exception {
+        if (!ModList.get().isLoaded("tacz") || !ModList.get().isLoaded("taczblueprints") || !QShopEconomy.available()) { helper.succeed(); return; }
+        Fixture fixture = fixture(helper, "valewood");
+        try {
+            FakePlayer player = player(helper, "valewood", "gunsmith", 4);
+            QShopEconomy.applyBalance(player, 0);
+            StarterKits.INSTANCE.grant(player, "gunsmith");
+            check(OptionalModProbes.countTagged(player, "tacz:modern_kinetic_gun", "GunId", "tacz:glock_17") == 0, "The kit must not hand out the finished gun");
+            ItemStack blueprint = player.getInventory().items.stream().filter(s -> String.valueOf(ForgeRegistries.ITEMS.getKey(s.getItem())).equals("taczblueprints:blueprint_pistol")).findFirst().orElse(ItemStack.EMPTY);
+            check(!blueprint.isEmpty(), "The kit carries a pistol blueprint");
+            int blueprintsBefore = blueprint.getCount();
+            blueprint.use(helper.getLevel(), player, net.minecraft.world.InteractionHand.MAIN_HAND);
+            check(blueprint.getCount() == blueprintsBefore - 1 || blueprint.isEmpty(), "Using the blueprint unlocks the gun and consumes the paper");
+            int iron = player.getInventory().countItem(Items.IRON_INGOT);
+            String crafted = OptionalModProbes.craftAtTaczTable(player, "gun", "tacz:glock_17");
+            check(crafted == null, "Crafting the Glock 17 at the real table: " + crafted);
+            check(OptionalModProbes.countTagged(player, "tacz:modern_kinetic_gun", "GunId", "tacz:glock_17") == 1, "A Glock 17 is in the inventory");
+            check(player.getInventory().countItem(Items.IRON_INGOT) < iron, "The recipe consumed the player's iron");
+            String ammo = OptionalModProbes.craftAtTaczTable(player, "ammo", "tacz:9mm");
+            check(ammo == null, "Crafting 9mm ammunition at the real table: " + ammo);
+            check(OptionalModProbes.countTagged(player, "tacz:ammo", "AmmoId", "tacz:9mm") >= 50, "Fifty rounds of 9mm were made");
+            check(player.getInventory().countItem(Items.COPPER_INGOT) == 0 && player.getInventory().countItem(Items.GUNPOWDER) == 0, "The ammunition recipe consumed copper and powder");
+            // Without the materials the same craft is refused and changes nothing.
+            int guns = OptionalModProbes.countTagged(player, "tacz:modern_kinetic_gun", "GunId", "tacz:glock_17");
+            OptionalModProbes.craftAtTaczTable(player, "gun", "tacz:glock_17");
+            check(OptionalModProbes.countTagged(player, "tacz:modern_kinetic_gun", "GunId", "tacz:glock_17") == guns, "A craft without materials must not create a gun");
+            // The legal contract buys the crafted gun and leaves the ammunition with the smith.
+            learn(player, "gunsmith.fundamentals", "gunsmith.licensed_repairs");
+            WorkOrder order = WorkOrderCatalog.INSTANCE.find("underground_city:licensed_sidearm");
+            check(order != null && !order.underground(), "The licensed sidearm contract is the legal one");
+            WorkOrderService.accept(player, fixture.ledger, citizen(player), order.id());
+            UUID nonce = fixture.ledger.player(player.getUUID()).getUUID("order");
+            WorkOrderService.complete(player, fixture.ledger, nonce, fixture.pos);
+            check(QShopEconomy.balance(player) == order.credits(), "The co-op paid " + QShopEconomy.balance(player) + " for the crafted pistol");
+            check(OptionalModProbes.countTagged(player, "tacz:modern_kinetic_gun", "GunId", "tacz:glock_17") == guns - 1, "The pistol was handed over");
+            check(OptionalModProbes.countTagged(player, "tacz:ammo", "AmmoId", "tacz:9mm") >= 50, "The smith keeps the ammunition");
+        } finally { fixture.close(); }
         helper.succeed();
     }
 }

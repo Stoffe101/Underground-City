@@ -38,5 +38,7 @@
   "item.underground_city.security_array": "Municipal Security Array",
   "item.underground_city.security_fabric": "Security Fabric",
   "item.underground_city.specialized_equipment_platform": "Specialized Equipment Platform",
-  "item.underground_city.unstamped_plate": "Unstamped Plate"
+  "item.underground_city.unstamped_plate": "Unstamped Plate",
+  "key.categories.underground_city": "Underground City",
+  "key.underground_city.tracker": "Show or hide the active order"
 }

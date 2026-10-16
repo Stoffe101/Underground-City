@@ -2,11 +2,11 @@
  "schema_version": 1,
  "id": "founders_row",
  "title": "Founders Row",
- "note": "Operator-built lot for a fresh world; origin is the north-west corner, extending east and south.",
+ "note": "Operator-built lot for a fresh world; origin is the north-west corner, extending east and south. The south end of the lane meets a road.",
  "size": [
   25,
   12,
-  17
+  41
  ],
  "ops": [
   {
@@ -19,7 +19,7 @@
    "to": [
     24,
     -2,
-    16
+    40
    ],
    "block": "minecraft:stone"
   },
@@ -33,7 +33,7 @@
    "to": [
     24,
     -1,
-    16
+    40
    ],
    "block": "minecraft:stone_bricks"
   },
@@ -47,7 +47,7 @@
    "to": [
     24,
     7,
-    16
+    40
    ],
    "block": "minecraft:air"
   },
@@ -61,7 +61,7 @@
    "to": [
     14,
     -1,
-    16
+    40
    ],
    "block": "minecraft:polished_andesite"
   },
@@ -191,75 +191,6 @@
     24,
     3,
     0
-   ],
-   "block": "minecraft:lantern"
-  },
-  {
-   "op": "fill",
-   "from": [
-    0,
-    0,
-    16
-   ],
-   "to": [
-    0,
-    2,
-    16
-   ],
-   "block": "minecraft:stone_brick_wall"
-  },
-  {
-   "op": "block",
-   "at": [
-    0,
-    3,
-    16
-   ],
-   "block": "minecraft:lantern"
-  },
-  {
-   "op": "fill",
-   "from": [
-    24,
-    0,
-    16
-   ],
-   "to": [
-    24,
-    2,
-    16
-   ],
-   "block": "minecraft:stone_brick_wall"
-  },
-  {
-   "op": "block",
-   "at": [
-    24,
-    3,
-    16
-   ],
-   "block": "minecraft:lantern"
-  },
-  {
-   "op": "fill",
-   "from": [
-    12,
-    0,
-    16
-   ],
-   "to": [
-    12,
-    2,
-    16
-   ],
-   "block": "minecraft:stone_brick_wall"
-  },
-  {
-   "op": "block",
-   "at": [
-    12,
-    3,
-    16
    ],
    "block": "minecraft:lantern"
   },
@@ -600,6 +531,46 @@
    ]
   },
   {
+   "op": "terminal",
+   "at": [
+    14,
+    0,
+    3
+   ],
+   "facing": "east"
+  },
+  {
+   "op": "block",
+   "at": [
+    16,
+    0,
+    2
+   ],
+   "block": "minecraft:lectern[facing=south]"
+  },
+  {
+   "op": "npc",
+   "at": [
+    16,
+    0,
+    3
+   ],
+   "role": "employer",
+   "name": "Kit Arden - Network Office",
+   "profession": "librarian",
+   "lines": [
+    "Municipal terminals, sensor repairs, timing circuits: dull work that keeps the lights on. The orders are on the terminal.",
+    "The secured terminal on the wall runs a trace: watch the sequence once, then enter it from memory. The terminal, not you, checks the answer.",
+    "Ledger work for Vesper pays well and leaves tracks. Learn Signal Scrubbing before you try it."
+   ],
+   "career": "technician",
+   "terminal": [
+    14,
+    0,
+    3
+   ]
+  },
+  {
    "op": "fill",
    "from": [
     19,
@@ -746,6 +717,2533 @@
     5
    ],
    "block": "minecraft:lantern[hanging=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    12,
+    0,
+    23
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "block",
+   "at": [
+    12,
+    1,
+    23
+   ],
+   "block": "minecraft:bell[attachment=floor,facing=north]"
+  },
+  {
+   "op": "block",
+   "at": [
+    11,
+    0,
+    23
+   ],
+   "block": "minecraft:lantern"
+  },
+  {
+   "op": "block",
+   "at": [
+    13,
+    0,
+    23
+   ],
+   "block": "minecraft:lantern"
+  },
+  {
+   "op": "fill",
+   "from": [
+    2,
+    -1,
+    8
+   ],
+   "to": [
+    8,
+    -1,
+    14
+   ],
+   "block": "minecraft:smooth_stone"
+  },
+  {
+   "op": "fill",
+   "from": [
+    2,
+    0,
+    8
+   ],
+   "to": [
+    8,
+    2,
+    8
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    2,
+    0,
+    14
+   ],
+   "to": [
+    8,
+    2,
+    14
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    2,
+    0,
+    8
+   ],
+   "to": [
+    2,
+    2,
+    14
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    8,
+    0,
+    8
+   ],
+   "to": [
+    8,
+    2,
+    14
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    2,
+    0,
+    8
+   ],
+   "to": [
+    2,
+    2,
+    8
+   ],
+   "block": "minecraft:stripped_spruce_log"
+  },
+  {
+   "op": "fill",
+   "from": [
+    8,
+    0,
+    8
+   ],
+   "to": [
+    8,
+    2,
+    8
+   ],
+   "block": "minecraft:stripped_spruce_log"
+  },
+  {
+   "op": "fill",
+   "from": [
+    2,
+    0,
+    14
+   ],
+   "to": [
+    2,
+    2,
+    14
+   ],
+   "block": "minecraft:stripped_spruce_log"
+  },
+  {
+   "op": "fill",
+   "from": [
+    8,
+    0,
+    14
+   ],
+   "to": [
+    8,
+    2,
+    14
+   ],
+   "block": "minecraft:stripped_spruce_log"
+  },
+  {
+   "op": "fill",
+   "from": [
+    3,
+    0,
+    9
+   ],
+   "to": [
+    7,
+    2,
+    13
+   ],
+   "block": "minecraft:air"
+  },
+  {
+   "op": "fill",
+   "from": [
+    2,
+    3,
+    8
+   ],
+   "to": [
+    8,
+    3,
+    14
+   ],
+   "block": "minecraft:spruce_planks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    3,
+    4,
+    9
+   ],
+   "to": [
+    7,
+    4,
+    13
+   ],
+   "block": "minecraft:spruce_slab[type=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    8,
+    0,
+    11
+   ],
+   "to": [
+    8,
+    1,
+    11
+   ],
+   "block": "minecraft:air"
+  },
+  {
+   "op": "block",
+   "at": [
+    2,
+    1,
+    10
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    2,
+    1,
+    12
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    5,
+    1,
+    8
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    5,
+    1,
+    14
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    5,
+    2,
+    11
+   ],
+   "block": "minecraft:lantern[hanging=true]"
+  },
+  {
+   "op": "terminal",
+   "at": [
+    3,
+    0,
+    10
+   ],
+   "facing": "east"
+  },
+  {
+   "op": "block",
+   "at": [
+    5,
+    0,
+    9
+   ],
+   "block": "minecraft:grindstone[face=floor,facing=north]"
+  },
+  {
+   "op": "npc",
+   "at": [
+    4,
+    0,
+    10
+   ],
+   "role": "employer",
+   "name": "Ines Calloway - Gunsmith",
+   "profession": "weaponsmith",
+   "lines": [
+    "Licensed sidearms and shotguns for the Valewood co-op, range targets, optic mounts: the orders are on the terminal.",
+    "With the gun smith table in the corner and a blueprint, parts become a real gun. Without the parts, a blueprint is only paper.",
+    "Arms brokerage is not something I offer. Dray in Blackwater might, if you have the trust and the papers."
+   ],
+   "career": "gunsmith",
+   "terminal": [
+    3,
+    0,
+    10
+   ]
+  },
+  {
+   "op": "block",
+   "at": [
+    6,
+    0,
+    9
+   ],
+   "block": "tacz:gun_smith_table",
+   "requires_mod": "tacz"
+  },
+  {
+   "op": "block",
+   "at": [
+    7,
+    0,
+    9
+   ],
+   "block": "minecraft:anvil[facing=north]"
+  },
+  {
+   "op": "block",
+   "at": [
+    3,
+    0,
+    13
+   ],
+   "block": "minecraft:red_bed[facing=north,part=foot]"
+  },
+  {
+   "op": "block",
+   "at": [
+    3,
+    0,
+    12
+   ],
+   "block": "minecraft:red_bed[facing=north,part=head]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    2,
+    -1,
+    16
+   ],
+   "to": [
+    8,
+    -1,
+    22
+   ],
+   "block": "minecraft:smooth_stone"
+  },
+  {
+   "op": "fill",
+   "from": [
+    2,
+    0,
+    16
+   ],
+   "to": [
+    8,
+    2,
+    16
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    2,
+    0,
+    22
+   ],
+   "to": [
+    8,
+    2,
+    22
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    2,
+    0,
+    16
+   ],
+   "to": [
+    2,
+    2,
+    22
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    8,
+    0,
+    16
+   ],
+   "to": [
+    8,
+    2,
+    22
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    2,
+    0,
+    16
+   ],
+   "to": [
+    2,
+    2,
+    16
+   ],
+   "block": "minecraft:stripped_spruce_log"
+  },
+  {
+   "op": "fill",
+   "from": [
+    8,
+    0,
+    16
+   ],
+   "to": [
+    8,
+    2,
+    16
+   ],
+   "block": "minecraft:stripped_spruce_log"
+  },
+  {
+   "op": "fill",
+   "from": [
+    2,
+    0,
+    22
+   ],
+   "to": [
+    2,
+    2,
+    22
+   ],
+   "block": "minecraft:stripped_spruce_log"
+  },
+  {
+   "op": "fill",
+   "from": [
+    8,
+    0,
+    22
+   ],
+   "to": [
+    8,
+    2,
+    22
+   ],
+   "block": "minecraft:stripped_spruce_log"
+  },
+  {
+   "op": "fill",
+   "from": [
+    3,
+    0,
+    17
+   ],
+   "to": [
+    7,
+    2,
+    21
+   ],
+   "block": "minecraft:air"
+  },
+  {
+   "op": "fill",
+   "from": [
+    2,
+    3,
+    16
+   ],
+   "to": [
+    8,
+    3,
+    22
+   ],
+   "block": "minecraft:spruce_planks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    3,
+    4,
+    17
+   ],
+   "to": [
+    7,
+    4,
+    21
+   ],
+   "block": "minecraft:spruce_slab[type=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    8,
+    0,
+    19
+   ],
+   "to": [
+    8,
+    1,
+    19
+   ],
+   "block": "minecraft:air"
+  },
+  {
+   "op": "block",
+   "at": [
+    2,
+    1,
+    18
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    2,
+    1,
+    20
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    5,
+    1,
+    16
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    5,
+    1,
+    22
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    5,
+    2,
+    19
+   ],
+   "block": "minecraft:lantern[hanging=true]"
+  },
+  {
+   "op": "terminal",
+   "at": [
+    3,
+    0,
+    18
+   ],
+   "facing": "east"
+  },
+  {
+   "op": "block",
+   "at": [
+    5,
+    0,
+    17
+   ],
+   "block": "minecraft:smithing_table"
+  },
+  {
+   "op": "npc",
+   "at": [
+    4,
+    0,
+    18
+   ],
+   "role": "employer",
+   "name": "Brannock Voss - Foundry",
+   "profession": "toolsmith",
+   "lines": [
+    "Iron tools for the public workshop, parts for the foundry, plating for the Ironhaven guard. The terminal lists what is open.",
+    "Structural steel and housings pay steady money. Armoury orders for trusted buyers pay more, and ask more of you.",
+    "Unstamped work is a different trade with a different buyer. I do not discuss it where the guard can hear."
+   ],
+   "career": "smith",
+   "terminal": [
+    3,
+    0,
+    18
+   ]
+  },
+  {
+   "op": "block",
+   "at": [
+    6,
+    0,
+    17
+   ],
+   "block": "minecraft:anvil[facing=north]"
+  },
+  {
+   "op": "block",
+   "at": [
+    7,
+    0,
+    17
+   ],
+   "block": "minecraft:furnace[facing=south]"
+  },
+  {
+   "op": "block",
+   "at": [
+    7,
+    0,
+    21
+   ],
+   "block": "minecraft:iron_block"
+  },
+  {
+   "op": "block",
+   "at": [
+    3,
+    0,
+    21
+   ],
+   "block": "minecraft:red_bed[facing=north,part=foot]"
+  },
+  {
+   "op": "block",
+   "at": [
+    3,
+    0,
+    20
+   ],
+   "block": "minecraft:red_bed[facing=north,part=head]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    2,
+    -1,
+    24
+   ],
+   "to": [
+    8,
+    -1,
+    30
+   ],
+   "block": "minecraft:oak_planks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    2,
+    0,
+    24
+   ],
+   "to": [
+    8,
+    2,
+    24
+   ],
+   "block": "minecraft:spruce_planks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    2,
+    0,
+    30
+   ],
+   "to": [
+    8,
+    2,
+    30
+   ],
+   "block": "minecraft:spruce_planks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    2,
+    0,
+    24
+   ],
+   "to": [
+    2,
+    2,
+    30
+   ],
+   "block": "minecraft:spruce_planks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    8,
+    0,
+    24
+   ],
+   "to": [
+    8,
+    2,
+    30
+   ],
+   "block": "minecraft:spruce_planks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    2,
+    0,
+    24
+   ],
+   "to": [
+    2,
+    2,
+    24
+   ],
+   "block": "minecraft:stripped_oak_log"
+  },
+  {
+   "op": "fill",
+   "from": [
+    8,
+    0,
+    24
+   ],
+   "to": [
+    8,
+    2,
+    24
+   ],
+   "block": "minecraft:stripped_oak_log"
+  },
+  {
+   "op": "fill",
+   "from": [
+    2,
+    0,
+    30
+   ],
+   "to": [
+    2,
+    2,
+    30
+   ],
+   "block": "minecraft:stripped_oak_log"
+  },
+  {
+   "op": "fill",
+   "from": [
+    8,
+    0,
+    30
+   ],
+   "to": [
+    8,
+    2,
+    30
+   ],
+   "block": "minecraft:stripped_oak_log"
+  },
+  {
+   "op": "fill",
+   "from": [
+    3,
+    0,
+    25
+   ],
+   "to": [
+    7,
+    2,
+    29
+   ],
+   "block": "minecraft:air"
+  },
+  {
+   "op": "fill",
+   "from": [
+    2,
+    3,
+    24
+   ],
+   "to": [
+    8,
+    3,
+    30
+   ],
+   "block": "minecraft:oak_planks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    3,
+    4,
+    25
+   ],
+   "to": [
+    7,
+    4,
+    29
+   ],
+   "block": "minecraft:oak_slab[type=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    8,
+    0,
+    27
+   ],
+   "to": [
+    8,
+    1,
+    27
+   ],
+   "block": "minecraft:air"
+  },
+  {
+   "op": "block",
+   "at": [
+    2,
+    1,
+    26
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    2,
+    1,
+    28
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    5,
+    1,
+    24
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    5,
+    1,
+    30
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    5,
+    2,
+    27
+   ],
+   "block": "minecraft:lantern[hanging=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    5,
+    0,
+    25
+   ],
+   "block": "minecraft:barrel[facing=up]"
+  },
+  {
+   "op": "safe",
+   "at": [
+    3,
+    0,
+    26
+   ],
+   "policy": "apartment_common"
+  },
+  {
+   "op": "block",
+   "at": [
+    7,
+    0,
+    25
+   ],
+   "block": "minecraft:crafting_table"
+  },
+  {
+   "op": "block",
+   "at": [
+    7,
+    0,
+    29
+   ],
+   "block": "minecraft:bookshelf"
+  },
+  {
+   "op": "npc",
+   "at": [
+    5,
+    0,
+    27
+   ],
+   "role": "resident",
+   "name": "Tomas Reyes - Haulier",
+   "profession": "fisherman",
+   "lines": [
+    "I drive for Hollis and Sons when there is a road worth driving. All three cities are joined now, and every road has its bridge.",
+    "Mind the bridges; the river is wider than it looks from the bank. A car is quick, a boat is stranger, your own legs are free.",
+    "I keep my pay in the safe by the bed. The apartment lock stops a curious neighbour. It does not stop a lockpick."
+   ]
+  },
+  {
+   "op": "block",
+   "at": [
+    3,
+    0,
+    29
+   ],
+   "block": "minecraft:blue_bed[facing=north,part=foot]"
+  },
+  {
+   "op": "block",
+   "at": [
+    3,
+    0,
+    28
+   ],
+   "block": "minecraft:blue_bed[facing=north,part=head]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    2,
+    -1,
+    32
+   ],
+   "to": [
+    8,
+    -1,
+    37
+   ],
+   "block": "minecraft:oak_planks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    2,
+    0,
+    32
+   ],
+   "to": [
+    8,
+    2,
+    32
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    2,
+    0,
+    37
+   ],
+   "to": [
+    8,
+    2,
+    37
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    2,
+    0,
+    32
+   ],
+   "to": [
+    2,
+    2,
+    37
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    8,
+    0,
+    32
+   ],
+   "to": [
+    8,
+    2,
+    37
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    2,
+    0,
+    32
+   ],
+   "to": [
+    2,
+    2,
+    32
+   ],
+   "block": "minecraft:stripped_oak_log"
+  },
+  {
+   "op": "fill",
+   "from": [
+    8,
+    0,
+    32
+   ],
+   "to": [
+    8,
+    2,
+    32
+   ],
+   "block": "minecraft:stripped_oak_log"
+  },
+  {
+   "op": "fill",
+   "from": [
+    2,
+    0,
+    37
+   ],
+   "to": [
+    2,
+    2,
+    37
+   ],
+   "block": "minecraft:stripped_oak_log"
+  },
+  {
+   "op": "fill",
+   "from": [
+    8,
+    0,
+    37
+   ],
+   "to": [
+    8,
+    2,
+    37
+   ],
+   "block": "minecraft:stripped_oak_log"
+  },
+  {
+   "op": "fill",
+   "from": [
+    3,
+    0,
+    33
+   ],
+   "to": [
+    7,
+    2,
+    36
+   ],
+   "block": "minecraft:air"
+  },
+  {
+   "op": "fill",
+   "from": [
+    2,
+    3,
+    32
+   ],
+   "to": [
+    8,
+    3,
+    37
+   ],
+   "block": "minecraft:oak_planks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    3,
+    4,
+    33
+   ],
+   "to": [
+    7,
+    4,
+    36
+   ],
+   "block": "minecraft:oak_slab[type=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    8,
+    0,
+    35
+   ],
+   "to": [
+    8,
+    1,
+    35
+   ],
+   "block": "minecraft:air"
+  },
+  {
+   "op": "block",
+   "at": [
+    2,
+    1,
+    34
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    2,
+    1,
+    35
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    5,
+    1,
+    32
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    5,
+    1,
+    37
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    5,
+    2,
+    35
+   ],
+   "block": "minecraft:lantern[hanging=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    5,
+    0,
+    33
+   ],
+   "block": "minecraft:brewing_stand"
+  },
+  {
+   "op": "safe",
+   "at": [
+    3,
+    0,
+    34
+   ],
+   "policy": "apartment_common"
+  },
+  {
+   "op": "block",
+   "at": [
+    7,
+    0,
+    33
+   ],
+   "block": "minecraft:crafting_table"
+  },
+  {
+   "op": "block",
+   "at": [
+    7,
+    0,
+    36
+   ],
+   "block": "minecraft:bookshelf"
+  },
+  {
+   "op": "npc",
+   "at": [
+    5,
+    0,
+    35
+   ],
+   "role": "resident",
+   "name": "Mira Voss - Retired Courier",
+   "profession": "cleric",
+   "lines": [
+    "Buyers remember. Deliver what you promised and the next order is bigger. Short them and nobody picks up the phone.",
+    "Heat fades if you keep your head down and your hands clean. A fine is cheaper than a reputation.",
+    "Some doors on this row look locked and are not, and some are locked and look open. Learn which before dark."
+   ]
+  },
+  {
+   "op": "block",
+   "at": [
+    3,
+    0,
+    36
+   ],
+   "block": "minecraft:purple_bed[facing=north,part=foot]"
+  },
+  {
+   "op": "block",
+   "at": [
+    3,
+    0,
+    35
+   ],
+   "block": "minecraft:purple_bed[facing=north,part=head]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    22,
+    -1,
+    8
+   ],
+   "to": [
+    16,
+    -1,
+    14
+   ],
+   "block": "minecraft:oak_planks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    22,
+    0,
+    8
+   ],
+   "to": [
+    16,
+    2,
+    8
+   ],
+   "block": "minecraft:spruce_planks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    22,
+    0,
+    14
+   ],
+   "to": [
+    16,
+    2,
+    14
+   ],
+   "block": "minecraft:spruce_planks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    22,
+    0,
+    8
+   ],
+   "to": [
+    22,
+    2,
+    14
+   ],
+   "block": "minecraft:spruce_planks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    16,
+    0,
+    8
+   ],
+   "to": [
+    16,
+    2,
+    14
+   ],
+   "block": "minecraft:spruce_planks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    22,
+    0,
+    8
+   ],
+   "to": [
+    22,
+    2,
+    8
+   ],
+   "block": "minecraft:stripped_spruce_log"
+  },
+  {
+   "op": "fill",
+   "from": [
+    16,
+    0,
+    8
+   ],
+   "to": [
+    16,
+    2,
+    8
+   ],
+   "block": "minecraft:stripped_spruce_log"
+  },
+  {
+   "op": "fill",
+   "from": [
+    22,
+    0,
+    14
+   ],
+   "to": [
+    22,
+    2,
+    14
+   ],
+   "block": "minecraft:stripped_spruce_log"
+  },
+  {
+   "op": "fill",
+   "from": [
+    16,
+    0,
+    14
+   ],
+   "to": [
+    16,
+    2,
+    14
+   ],
+   "block": "minecraft:stripped_spruce_log"
+  },
+  {
+   "op": "fill",
+   "from": [
+    21,
+    0,
+    9
+   ],
+   "to": [
+    17,
+    2,
+    13
+   ],
+   "block": "minecraft:air"
+  },
+  {
+   "op": "fill",
+   "from": [
+    22,
+    3,
+    8
+   ],
+   "to": [
+    16,
+    3,
+    14
+   ],
+   "block": "minecraft:spruce_planks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    21,
+    4,
+    9
+   ],
+   "to": [
+    17,
+    4,
+    13
+   ],
+   "block": "minecraft:spruce_slab[type=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    16,
+    0,
+    11
+   ],
+   "to": [
+    16,
+    1,
+    11
+   ],
+   "block": "minecraft:air"
+  },
+  {
+   "op": "block",
+   "at": [
+    22,
+    1,
+    10
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    22,
+    1,
+    12
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    19,
+    1,
+    8
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    19,
+    1,
+    14
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    19,
+    2,
+    11
+   ],
+   "block": "minecraft:lantern[hanging=true]"
+  },
+  {
+   "op": "terminal",
+   "at": [
+    21,
+    0,
+    10
+   ],
+   "facing": "west"
+  },
+  {
+   "op": "block",
+   "at": [
+    19,
+    0,
+    9
+   ],
+   "block": "minecraft:composter[level=0]"
+  },
+  {
+   "op": "npc",
+   "at": [
+    20,
+    0,
+    10
+   ],
+   "role": "employer",
+   "name": "Odette Marsh - Farm Co-op",
+   "profession": "farmer",
+   "lines": [
+    "Orders go up on the terminal: bread, pies, wholesale carrots and potatoes. The co-op pays by the sack, not the story.",
+    "The greenhouse next door keeps its own soil wet. Seeds are cheap at the supply stall, and what you grow is yours to sell.",
+    "A licence lets you grow the controlled crop for the Blackwater dispensary. Without one, do not carry it through a gate."
+   ],
+   "career": "farmer",
+   "terminal": [
+    21,
+    0,
+    10
+   ]
+  },
+  {
+   "op": "block",
+   "at": [
+    18,
+    0,
+    9
+   ],
+   "block": "minecraft:barrel[facing=up]"
+  },
+  {
+   "op": "block",
+   "at": [
+    17,
+    0,
+    9
+   ],
+   "block": "minecraft:hay_block"
+  },
+  {
+   "op": "block",
+   "at": [
+    17,
+    0,
+    13
+   ],
+   "block": "minecraft:hay_block"
+  },
+  {
+   "op": "block",
+   "at": [
+    21,
+    0,
+    13
+   ],
+   "block": "minecraft:red_bed[facing=north,part=foot]"
+  },
+  {
+   "op": "block",
+   "at": [
+    21,
+    0,
+    12
+   ],
+   "block": "minecraft:red_bed[facing=north,part=head]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    22,
+    -1,
+    16
+   ],
+   "to": [
+    16,
+    -1,
+    22
+   ],
+   "block": "minecraft:oak_planks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    22,
+    0,
+    16
+   ],
+   "to": [
+    16,
+    2,
+    16
+   ],
+   "block": "minecraft:spruce_planks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    22,
+    0,
+    22
+   ],
+   "to": [
+    16,
+    2,
+    22
+   ],
+   "block": "minecraft:spruce_planks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    22,
+    0,
+    16
+   ],
+   "to": [
+    22,
+    2,
+    22
+   ],
+   "block": "minecraft:spruce_planks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    16,
+    0,
+    16
+   ],
+   "to": [
+    16,
+    2,
+    22
+   ],
+   "block": "minecraft:spruce_planks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    22,
+    0,
+    16
+   ],
+   "to": [
+    22,
+    2,
+    16
+   ],
+   "block": "minecraft:stripped_oak_log"
+  },
+  {
+   "op": "fill",
+   "from": [
+    16,
+    0,
+    16
+   ],
+   "to": [
+    16,
+    2,
+    16
+   ],
+   "block": "minecraft:stripped_oak_log"
+  },
+  {
+   "op": "fill",
+   "from": [
+    22,
+    0,
+    22
+   ],
+   "to": [
+    22,
+    2,
+    22
+   ],
+   "block": "minecraft:stripped_oak_log"
+  },
+  {
+   "op": "fill",
+   "from": [
+    16,
+    0,
+    22
+   ],
+   "to": [
+    16,
+    2,
+    22
+   ],
+   "block": "minecraft:stripped_oak_log"
+  },
+  {
+   "op": "fill",
+   "from": [
+    21,
+    0,
+    17
+   ],
+   "to": [
+    17,
+    2,
+    21
+   ],
+   "block": "minecraft:air"
+  },
+  {
+   "op": "fill",
+   "from": [
+    22,
+    3,
+    16
+   ],
+   "to": [
+    16,
+    3,
+    22
+   ],
+   "block": "minecraft:oak_planks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    21,
+    4,
+    17
+   ],
+   "to": [
+    17,
+    4,
+    21
+   ],
+   "block": "minecraft:oak_slab[type=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    16,
+    0,
+    19
+   ],
+   "to": [
+    16,
+    1,
+    19
+   ],
+   "block": "minecraft:air"
+  },
+  {
+   "op": "block",
+   "at": [
+    22,
+    1,
+    18
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    22,
+    1,
+    20
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    19,
+    1,
+    16
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    19,
+    1,
+    22
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    19,
+    2,
+    19
+   ],
+   "block": "minecraft:lantern[hanging=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    19,
+    0,
+    17
+   ],
+   "block": "minecraft:composter[level=0]"
+  },
+  {
+   "op": "safe",
+   "at": [
+    21,
+    0,
+    18
+   ],
+   "policy": "apartment_common"
+  },
+  {
+   "op": "block",
+   "at": [
+    17,
+    0,
+    17
+   ],
+   "block": "minecraft:crafting_table"
+  },
+  {
+   "op": "block",
+   "at": [
+    17,
+    0,
+    21
+   ],
+   "block": "minecraft:bookshelf"
+  },
+  {
+   "op": "npc",
+   "at": [
+    19,
+    0,
+    19
+   ],
+   "role": "resident",
+   "name": "Ada Brightwater - Market Gardener",
+   "profession": "farmer",
+   "lines": [
+    "I sell to the co-op and the bakery. Anyone who says a carrot is not a business has not counted mine.",
+    "There is a safe by my bed. Apartment grade: fine against a neighbour, hopeless against a lockpick. Mind where you keep things.",
+    "The guard at the gate searches on evidence, not on suspicion. Honest cargo has never cost me more than a minute."
+   ]
+  },
+  {
+   "op": "block",
+   "at": [
+    21,
+    0,
+    21
+   ],
+   "block": "minecraft:green_bed[facing=north,part=foot]"
+  },
+  {
+   "op": "block",
+   "at": [
+    21,
+    0,
+    20
+   ],
+   "block": "minecraft:green_bed[facing=north,part=head]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    22,
+    -1,
+    24
+   ],
+   "to": [
+    16,
+    -1,
+    30
+   ],
+   "block": "minecraft:smooth_stone"
+  },
+  {
+   "op": "fill",
+   "from": [
+    22,
+    0,
+    24
+   ],
+   "to": [
+    16,
+    2,
+    24
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    22,
+    0,
+    30
+   ],
+   "to": [
+    16,
+    2,
+    30
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    22,
+    0,
+    24
+   ],
+   "to": [
+    22,
+    2,
+    30
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    16,
+    0,
+    24
+   ],
+   "to": [
+    16,
+    2,
+    30
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    22,
+    0,
+    24
+   ],
+   "to": [
+    22,
+    2,
+    24
+   ],
+   "block": "minecraft:stripped_dark_oak_log"
+  },
+  {
+   "op": "fill",
+   "from": [
+    16,
+    0,
+    24
+   ],
+   "to": [
+    16,
+    2,
+    24
+   ],
+   "block": "minecraft:stripped_dark_oak_log"
+  },
+  {
+   "op": "fill",
+   "from": [
+    22,
+    0,
+    30
+   ],
+   "to": [
+    22,
+    2,
+    30
+   ],
+   "block": "minecraft:stripped_dark_oak_log"
+  },
+  {
+   "op": "fill",
+   "from": [
+    16,
+    0,
+    30
+   ],
+   "to": [
+    16,
+    2,
+    30
+   ],
+   "block": "minecraft:stripped_dark_oak_log"
+  },
+  {
+   "op": "fill",
+   "from": [
+    21,
+    0,
+    25
+   ],
+   "to": [
+    17,
+    2,
+    29
+   ],
+   "block": "minecraft:air"
+  },
+  {
+   "op": "fill",
+   "from": [
+    22,
+    3,
+    24
+   ],
+   "to": [
+    16,
+    3,
+    30
+   ],
+   "block": "minecraft:spruce_planks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    21,
+    4,
+    25
+   ],
+   "to": [
+    17,
+    4,
+    29
+   ],
+   "block": "minecraft:stone_brick_slab[type=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    16,
+    0,
+    27
+   ],
+   "to": [
+    16,
+    1,
+    27
+   ],
+   "block": "minecraft:air"
+  },
+  {
+   "op": "block",
+   "at": [
+    22,
+    1,
+    26
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    22,
+    1,
+    28
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    19,
+    1,
+    24
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    19,
+    1,
+    30
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    19,
+    2,
+    27
+   ],
+   "block": "minecraft:lantern[hanging=true]"
+  },
+  {
+   "op": "safe",
+   "at": [
+    21,
+    0,
+    26
+   ],
+   "policy": "industrial"
+  },
+  {
+   "op": "safe",
+   "at": [
+    21,
+    0,
+    28
+   ],
+   "policy": "office"
+  },
+  {
+   "op": "block",
+   "at": [
+    17,
+    0,
+    25
+   ],
+   "block": "minecraft:barrel[facing=up]"
+  },
+  {
+   "op": "block",
+   "at": [
+    17,
+    0,
+    26
+   ],
+   "block": "minecraft:barrel[facing=up]"
+  },
+  {
+   "op": "block",
+   "at": [
+    17,
+    0,
+    28
+   ],
+   "block": "minecraft:barrel[facing=up]"
+  },
+  {
+   "op": "block",
+   "at": [
+    17,
+    0,
+    29
+   ],
+   "block": "minecraft:barrel[facing=up]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    22,
+    -1,
+    32
+   ],
+   "to": [
+    16,
+    -1,
+    37
+   ],
+   "block": "minecraft:polished_andesite"
+  },
+  {
+   "op": "fill",
+   "from": [
+    22,
+    0,
+    32
+   ],
+   "to": [
+    16,
+    2,
+    32
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    22,
+    0,
+    37
+   ],
+   "to": [
+    16,
+    2,
+    37
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    22,
+    0,
+    32
+   ],
+   "to": [
+    22,
+    2,
+    37
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    16,
+    0,
+    32
+   ],
+   "to": [
+    16,
+    2,
+    37
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    22,
+    0,
+    32
+   ],
+   "to": [
+    22,
+    2,
+    32
+   ],
+   "block": "minecraft:stripped_spruce_log"
+  },
+  {
+   "op": "fill",
+   "from": [
+    16,
+    0,
+    32
+   ],
+   "to": [
+    16,
+    2,
+    32
+   ],
+   "block": "minecraft:stripped_spruce_log"
+  },
+  {
+   "op": "fill",
+   "from": [
+    22,
+    0,
+    37
+   ],
+   "to": [
+    22,
+    2,
+    37
+   ],
+   "block": "minecraft:stripped_spruce_log"
+  },
+  {
+   "op": "fill",
+   "from": [
+    16,
+    0,
+    37
+   ],
+   "to": [
+    16,
+    2,
+    37
+   ],
+   "block": "minecraft:stripped_spruce_log"
+  },
+  {
+   "op": "fill",
+   "from": [
+    21,
+    0,
+    33
+   ],
+   "to": [
+    17,
+    2,
+    36
+   ],
+   "block": "minecraft:air"
+  },
+  {
+   "op": "fill",
+   "from": [
+    22,
+    3,
+    32
+   ],
+   "to": [
+    16,
+    3,
+    37
+   ],
+   "block": "minecraft:spruce_planks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    21,
+    4,
+    33
+   ],
+   "to": [
+    17,
+    4,
+    36
+   ],
+   "block": "minecraft:spruce_slab[type=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    16,
+    0,
+    35
+   ],
+   "to": [
+    16,
+    1,
+    35
+   ],
+   "block": "minecraft:air"
+  },
+  {
+   "op": "block",
+   "at": [
+    22,
+    1,
+    34
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    22,
+    1,
+    35
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    19,
+    1,
+    32
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    19,
+    1,
+    37
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    19,
+    2,
+    35
+   ],
+   "block": "minecraft:lantern[hanging=true]"
+  },
+  {
+   "op": "terminal",
+   "at": [
+    21,
+    0,
+    34
+   ],
+   "facing": "west"
+  },
+  {
+   "op": "block",
+   "at": [
+    19,
+    0,
+    33
+   ],
+   "block": "minecraft:cartography_table"
+  },
+  {
+   "op": "block",
+   "at": [
+    17,
+    0,
+    33
+   ],
+   "block": "minecraft:bookshelf"
+  },
+  {
+   "op": "block",
+   "at": [
+    17,
+    0,
+    36
+   ],
+   "block": "minecraft:bookshelf"
+  },
+  {
+   "op": "npc",
+   "at": [
+    20,
+    0,
+    35
+   ],
+   "role": "registrar",
+   "name": "Imani Okafor - Registrar",
+   "profession": "cartographer",
+   "lines": [
+    "Welcome to the register. Choose a home city and a trade: the clerk gives you a welcome pack and an Operations Terminal.",
+    "The register keeps one entry for each citizen. Your home city is where your name is on file, and your trade decides what you can make.",
+    "Nobody here asks about your past. Do the work, keep your papers straight, and the register has no reason to ask."
+   ]
+  },
+  {
+   "op": "block",
+   "at": [
+    21,
+    0,
+    36
+   ],
+   "block": "minecraft:yellow_bed[facing=north,part=foot]"
+  },
+  {
+   "op": "block",
+   "at": [
+    21,
+    0,
+    35
+   ],
+   "block": "minecraft:yellow_bed[facing=north,part=head]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    9,
+    0,
+    39
+   ],
+   "to": [
+    9,
+    4,
+    39
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    15,
+    0,
+    39
+   ],
+   "to": [
+    15,
+    4,
+    39
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    9,
+    4,
+    39
+   ],
+   "to": [
+    15,
+    4,
+    39
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "block",
+   "at": [
+    10,
+    3,
+    39
+   ],
+   "block": "minecraft:lantern[hanging=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    14,
+    3,
+    39
+   ],
+   "block": "minecraft:lantern[hanging=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    8,
+    0,
+    38
+   ],
+   "block": "minecraft:blast_furnace[facing=east]"
+  },
+  {
+   "op": "block",
+   "at": [
+    8,
+    1,
+    38
+   ],
+   "block": "minecraft:lantern"
+  },
+  {
+   "op": "npc",
+   "at": [
+    9,
+    0,
+    38
+   ],
+   "role": "guard",
+   "name": "Sergeant Halloran - Gate Guard",
+   "profession": "armorer",
+   "lines": [
+    "I keep the lane clear. The real checkpoints are out on the roads between the cities, and they search on evidence, not suspicion.",
+    "Carry what your licence covers and you will never see the same inspector twice. Carry what it does not, and that is your trouble to carry.",
+    "Ironhaven wants plating, Valewood wants guns for the hunt, Blackwater wants quiet. The gates know the difference."
+   ]
   }
  ]
 }

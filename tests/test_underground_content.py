@@ -260,6 +260,7 @@ class DistrictTests(unittest.TestCase):
             self.assertLessEqual(len(district["ops"]), 400)
             xs, ys, zs = [], [], []
             safes = terminals = clerks = secure = 0
+            citizens = []
             for op in district["ops"]:
                 points = [op[k] for k in ("from", "to", "at", "terminal") if k in op]
                 for x, y, z in points:
@@ -268,17 +269,41 @@ class DistrictTests(unittest.TestCase):
                     safes += 1
                     self.assertTrue((DATA / "property_policies" / f"{op['policy']}.json").exists(), op["policy"])
                 if op["op"] in ("fill", "block"):
-                    self.assertRegex(op["block"], r"^minecraft:[a-z_]+(\[[a-z_=0-9,]+\])?$")
+                    # Vanilla blocks only, except an operation that names its mod: it applies only where that mod is installed.
+                    namespace = op.get("requires_mod", "minecraft")
+                    self.assertRegex(op["block"], rf"^{namespace}:[a-z_]+(\[[a-z_=0-9,]+\])?$")
                 terminals += op["op"] == "terminal"; clerks += op["op"] == "clerk"; secure += op["op"] == "secure_terminal"
+                if op["op"] == "npc":
+                    citizens.append(op)
             volume = (max(xs) - min(xs) + 1) * (max(ys) - min(ys) + 1) * (max(zs) - min(zs) + 1)
             self.assertLessEqual(volume, 40000)
             # Offsets are relative to the operator's origin: the lot starts at the origin, never at a world coordinate.
             self.assertEqual((min(xs), min(zs)), (0, 0))
             self.assertLess(max(xs), 64)
-            self.assertGreaterEqual(terminals, 1)
             self.assertLessEqual(clerks, 1)
-            self.assertGreaterEqual(safes, 1)
-            self.assertGreaterEqual(secure, 1)
+            if district["id"] == "founders_row":
+                self.assertGreaterEqual(terminals, 1)
+                self.assertGreaterEqual(safes, 1)
+                self.assertGreaterEqual(secure, 1)
+            if district["id"] == "checkpoint_post":
+                self.assertTrue(district.get("repeatable"), "a checkpoint post is built once per zone")
+                self.assertEqual([npc["role"] for npc in citizens], ["guard"])
+            # Citizens: bounded, named, with a role Core knows, short lines, and each employer bound to a real terminal of the lot.
+            self.assertLessEqual(len(citizens), 16)
+            terminal_spots = [op["at"] for op in district["ops"] if op["op"] == "terminal"]
+            self.assertEqual({npc["role"] for npc in citizens} - {"registrar", "employer", "resident", "guard"}, set())
+            self.assertEqual(len({npc["name"] for npc in citizens}), len(citizens), "citizen names must be unique")
+            for npc in citizens:
+                self.assertTrue(0 < len(npc["name"]) <= 40, npc["name"])
+                self.assertLessEqual(len(npc.get("lines", [])), 8, npc["name"])
+                for line in npc.get("lines", []):
+                    self.assertTrue(0 < len(line) <= 180, f"{npc['name']}: {len(line)} characters")
+                if npc["role"] == "employer":
+                    self.assertIn(npc["career"], ("farmer", "smith", "gunsmith", "technician"))
+                    self.assertIn(npc["terminal"], terminal_spots, npc["name"] + " needs a real terminal in the lot")
+            careers = {npc["career"] for npc in citizens if npc["role"] == "employer"}
+            if district["id"] == "founders_row":
+                self.assertEqual(careers, {"farmer", "smith", "gunsmith", "technician"}, "every career has an employer in Founders Row")
 
 
 if __name__ == "__main__":

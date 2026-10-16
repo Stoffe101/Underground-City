@@ -22,9 +22,9 @@ class DevClientInputs(unittest.TestCase):
         files = expected(CITIES)
         self.assertIn("pack/META-INF/mods.toml", files)
         self.assertIn("pack/data/underground_city/lostcities/worldstyles/three_city.json", files)
-        profile = json.loads(files["run-config/config/lostcities/profiles/uc_three_city.json"])
+        profile = json.loads(files["game-config/config/lostcities/profiles/uc_three_city.json"])
         self.assertEqual(profile["lostcity"]["worldStyle"], "underground_city:three_city")
-        self.assertIn(b"uc_three_city", files["run-config/defaultconfigs/lostcities-server.toml"])
+        self.assertIn(b"uc_three_city", files["game-config/defaultconfigs/lostcities-server.toml"])
         for city in CITIES["cities"]:
             self.assertIn(f"pack/data/underground_city/lostcities/predefinedcities/{city['id']}.json", files)
 

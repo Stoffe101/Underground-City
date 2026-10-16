@@ -93,6 +93,22 @@ public final class CorridorPlan {
         return best;
     }
 
+    /** Nearest point on the polyline to a column, however far away and even inside a city circle (for tools and tests). */
+    public Hit project(double x, double z) {
+        Hit best = null;
+        for (int i = 1; i < xs.length; i++) {
+            double dx = xs[i] - xs[i - 1], dz = zs[i] - zs[i - 1];
+            double span = dx * dx + dz * dz;
+            double t = span == 0 ? 0 : Math.max(0, Math.min(1, ((x - xs[i - 1]) * dx + (z - zs[i - 1]) * dz) / span));
+            double px = xs[i - 1] + dx * t, pz = zs[i - 1] + dz * t;
+            double distance = Math.hypot(x - px, z - pz);
+            if (best != null && distance >= best.distance) continue;
+            double side = Math.signum(dx * (z - pz) - dz * (x - px));
+            best = new Hit(arc[i - 1] + Math.sqrt(span) * t, side * distance, distance);
+        }
+        return best;
+    }
+
     /** Cheap rejection test used for whole chunks. */
     public boolean nearChunk(int minX, int minZ) { return nearChunk(minX, minZ, 0); }
 

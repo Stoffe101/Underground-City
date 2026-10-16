@@ -82,13 +82,17 @@ minecraft {
         client {
             if (userLaunch) {
                 jvmArgs '-Xmx4G'
-                if (autoWorld) jvmArgs "-Duc.devWorld=${devWorldName}"
+                if (autoWorld) jvmArgs "-Duc.devWorld=${devWorldName}", '-Duc.devBootstrap=true'
                 // Two developers testing together need different offline names (the default profile is "Dev").
                 if (providers.gradleProperty('ucUsername').isPresent()) args '--username', providers.gradleProperty('ucUsername').get()
             }
             if (providers.gradleProperty('ucPlaytest').isPresent()) {
                 // Scripted player (Playtest.java): a scenario name such as input, gun, car, boat, walk, trace.
                 jvmArgs "-Duc.playtest=${providers.gradleProperty('ucPlaytest').get()}", "-Duc.xinput=${file('../scripts/xinput_helper.py').absolutePath}", '-XX:ActiveProcessorCount=2', '-Xmx4G'
+                // Scenario options: -PucPtRoute=valewood_blackwater becomes -Duc.playtest.route=..., -PucPtLimitseconds=3600 and so on.
+                project.properties.each { name, value ->
+                    if (name.startsWith('ucPt') && name.length() > 4) jvmArgs "-Duc.playtest.${name.substring(4).toLowerCase()}=${value}"
+                }
                 args '--width', '1280', '--height', '720'
             }
             if (providers.gradleProperty('ucLaunchSmoke').orNull == 'true') {
@@ -114,6 +118,7 @@ minecraft {
         }
         server {
             args '--nogui'
+            if (userLaunch) jvmArgs '-Duc.devBootstrap=true'
             if (providers.gradleProperty('ucBootSmoke').isPresent()) {
                 jvmArgs '-Duc.bootSmoke=true'
             }
@@ -222,6 +227,22 @@ def verifyDevPack = tasks.register('verifyDevPack') {
     }
 }
 
+// Q Shop's currencies and the civilian starter shop (original JSON authored in this repository). Without them the wallet is
+// "unavailable" and every contract reports "Economy offline". Existing files are never overwritten; a world that already exists
+// keeps its own world/serverconfig/qshop. Economy GameTests, the development client and server all need it.
+def stageQShopTemplates = tasks.register('stageQShopTemplates') {
+    onlyIf { economyRuntime }
+    doLast {
+        def runDir = project.file(runDirName)
+        def templates = file('../content/integrations/qshop/config/qshop')
+        fileTree(templates).visit { entry ->
+            if (entry.isDirectory()) return
+            def target = new File(runDir, 'config/qshop/' + entry.relativePath.pathString)
+            if (!target.exists()) { target.parentFile.mkdirs(); entry.file.withInputStream { input -> target.withOutputStream { it << input } } }
+        }
+    }
+}
+
 // Prepares the game directory of a run: content-pack jars, the three-city world package, Lost Cities configuration and
 // first-start options. Files that already exist (options, configuration) are never overwritten, so a developer's own
 // changes and any saved worlds survive; the managed jars are refreshed.
@@ -243,7 +264,7 @@ def prepareDevRun = tasks.register('prepareDevRun') {
         }
         if (devWorldWanted && devPackSets.contains('world')) {
             def pack = file('../content/generated/world-prototype/pack')
-            def runConfig = file('../content/generated/world-prototype/run-config')
+            def runConfig = file('../content/generated/world-prototype/game-config')
             if (!pack.isDirectory() || !runConfig.isDirectory()) {
                 throw new GradleException('content/generated/world-prototype is missing; run python scripts/emit_dev_world_pack.py')
             }
@@ -253,17 +274,6 @@ def prepareDevRun = tasks.register('prepareDevRun') {
             fileTree(runConfig).visit { entry ->
                 if (entry.isDirectory()) return
                 def target = new File(runDir, entry.relativePath.pathString)
-                if (!target.exists()) { target.parentFile.mkdirs(); entry.file.withInputStream { input -> target.withOutputStream { it << input } } }
-            }
-        }
-        if (economyRuntime) {
-            // Q Shop's currencies and the civilian starter shop (original JSON authored in this repository). Without them the
-            // wallet is "unavailable" and every contract reports "Economy offline". Existing files are never overwritten;
-            // a world that already exists keeps its own world/serverconfig/qshop.
-            def templates = file('../content/integrations/qshop/config/qshop')
-            fileTree(templates).visit { entry ->
-                if (entry.isDirectory()) return
-                def target = new File(runDir, 'config/qshop/' + entry.relativePath.pathString)
                 if (!target.exists()) { target.parentFile.mkdirs(); entry.file.withInputStream { input -> target.withOutputStream { it << input } } }
             }
         }
@@ -289,6 +299,7 @@ def prepareDevRun = tasks.register('prepareDevRun') {
 }
 tasks.matching { it.name.startsWith('run') }.configureEach {
     dependsOn verifyDevPack
+    dependsOn stageQShopTemplates
     if (!devPackMods.isEmpty() || devWorldWanted) dependsOn prepareDevRun
 }
 dependencies { qshopOriginal 'com.qshop:qshop-forge-1.20.1:1.8.4' }

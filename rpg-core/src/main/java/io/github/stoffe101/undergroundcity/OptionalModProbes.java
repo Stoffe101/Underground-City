@@ -45,6 +45,40 @@ final class OptionalModProbes {
         return problems;
     }
 
+    /**
+     * Crafts one TaCZ Gun Smith Table recipe the way the server handles a client's craft request (the menu's own {@code doCraft}, which
+     * checks and consumes the materials and hands over the result). {@code kind} is "gun" or "ammo". Returns null on success, else the reason.
+     */
+    static String craftAtTaczTable(net.minecraft.server.level.ServerPlayer player, String kind, String resultId) {
+        try {
+            String key = kind.equals("gun") ? "GunId" : "AmmoId";
+            ResourceLocation recipeId = null;
+            for (net.minecraft.world.item.crafting.Recipe<?> recipe : player.level().getRecipeManager().getRecipes()) {
+                if (!String.valueOf(recipe.getType()).equals("tacz:gun_smith_table_crafting")) continue;
+                CompoundTag tag = recipe.getResultItem(player.level().registryAccess()).getTag();
+                if (tag != null && tag.getString(key).equals(resultId)) { recipeId = recipe.getId(); break; }
+            }
+            if (recipeId == null) return "TaCZ has no table recipe for " + kind + " " + resultId;
+            Class<?> menuClass = Class.forName("com.tacz.guns.inventory.GunSmithTableMenu");
+            Object menu = menuClass.getConstructor(int.class, net.minecraft.world.entity.player.Inventory.class, ResourceLocation.class)
+                .newInstance(1, player.getInventory(), ResourceLocation.fromNamespaceAndPath("tacz", "gun_smith_table"));
+            menuClass.getMethod("doCraft", ResourceLocation.class, net.minecraft.world.entity.player.Player.class).invoke(menu, recipeId, player);
+            return null;
+        } catch (ReflectiveOperationException | RuntimeException error) {
+            return "The table craft failed: " + error;
+        }
+    }
+
+    /** How many stacks of {@code item} carry the given string tag value (a TaCZ gun is modern_kinetic_gun with GunId, ammo is ammo with AmmoId). */
+    static int countTagged(net.minecraft.world.entity.player.Player player, String item, String key, String value) {
+        int total = 0;
+        for (ItemStack stack : player.getInventory().items) {
+            if (stack.isEmpty() || !String.valueOf(ForgeRegistries.ITEMS.getKey(stack.getItem())).equals(item)) continue;
+            if (stack.getTag() != null && stack.getTag().getString(key).equals(value)) total += stack.getCount();
+        }
+        return total;
+    }
+
     /** How many items and entity types a namespace registered; zero means the mod (or its content packs) did not register. */
     static int items(String namespace) { return (int) ForgeRegistries.ITEMS.getKeys().stream().filter(key -> key.getNamespace().equals(namespace)).count(); }
     /** Items of one namespace whose path starts with a prefix (content packs register as mts:<pack>.<name>). */

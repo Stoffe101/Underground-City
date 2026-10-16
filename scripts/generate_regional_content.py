@@ -619,6 +619,8 @@ def build(data: dict, contracts: dict) -> dict[Path, bytes]:
             {"rolls": 1, "conditions": [mature, {"condition": "minecraft:random_chance", "chance": 0.4}],
              "entries": [{"type": "minecraft:item", "name": f"{NAMESPACE}:sable_cutting"}]}]}).encode()
     lang["block.underground_city.sable_leaf_crop"] = "Sable Leaf Plant"
+    lang["key.underground_city.tracker"] = "Show or hide the active order"
+    lang["key.categories.underground_city"] = "Underground City"
     corridors = json.loads(CORRIDORS.read_text(encoding="utf-8"))
     for route in corridors["routes"]:
         for gate in route["checkpoints"]:

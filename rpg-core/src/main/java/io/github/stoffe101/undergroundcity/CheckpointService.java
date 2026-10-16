@@ -67,12 +67,31 @@ public final class CheckpointService {
         long roll = ledger.claimInspectionRoll(player.getUUID(), post.id());
         if (roll < 0) return new Result(Outcome.NOT_CHECKED, 0, 0, "recently searched here");
         player.sendSystemMessage(Component.literal("Checkpoint: " + post.title() + " (" + TerminalScreenText.capitalize(post.jurisdiction()) + " guard)."));
+        guardTurns(player, post);
         int heat = ledger.heat(player.getUUID(), post.jurisdiction());
         double chance = LawMath.inspectionChance(law, post.risk(), heat, SkillService.inspectionModifier(citizen));
         UUID id = player.getUUID();
         boolean searched = LawMath.roll(chance, LawMath.mix(id.getMostSignificantBits(), id.getLeastSignificantBits(), LawMath.hash(post.id()), roll));
         if (!searched) return new Result(Outcome.WAVED_THROUGH, 0, 0, "waved through");
         return inspect(player, citizen, post, law, ledger);
+    }
+
+    /** The post's guard, when the zone has a built post: they turn to the traveller and challenge them, so the search has a face. */
+    private static void guardTurns(ServerPlayer player, CheckpointCatalog.Checkpoint post) {
+        if (!(player.level() instanceof net.minecraft.server.level.ServerLevel level)) return;
+        CheckpointPosts.guardAt(level, post).ifPresent(guard -> {
+            guard.getLookControl().setLookAt(player);
+            player.sendSystemMessage(Component.literal(guard.getCustomName().getString() + ": Stop at the post. Routine inspection.").withStyle(net.minecraft.ChatFormatting.GOLD));
+        });
+    }
+
+    /** Who searches: the post's own guard where one stands, otherwise the city's guard in general. */
+    private static String actor(ServerPlayer player, CheckpointCatalog.Checkpoint post) {
+        if (player.level() instanceof net.minecraft.server.level.ServerLevel level) {
+            var guard = CheckpointPosts.guardAt(level, post);
+            if (guard.isPresent() && guard.get().hasCustomName()) return "The " + TerminalScreenText.capitalize(post.jurisdiction()) + " guard at the post, " + guard.get().getCustomName().getString() + ",";
+        }
+        return "The " + TerminalScreenText.capitalize(post.jurisdiction()) + " guard";
     }
 
     /** What the traveller carries that this city's law forbids them (category to worst status). Pure inspection, no changes. */
@@ -98,7 +117,7 @@ public final class CheckpointService {
         carried.addAll(after.offhand);
         Map<String, String> violations = violations(citizen, law, carried);
         if (violations.isEmpty()) {
-            player.sendSystemMessage(Component.literal("The " + TerminalScreenText.capitalize(post.jurisdiction()) + " guard searches your bags and finds nothing illegal."));
+            player.sendSystemMessage(Component.literal(actor(player, post) + " searches your bags and finds nothing illegal."));
             return new Result(Outcome.CLEARED, 0, 0, "searched, clean");
         }
         int seized = 0;
@@ -126,7 +145,7 @@ public final class CheckpointService {
             var entry = ContrabandCatalog.INSTANCE.category(category);
             titles.add((entry == null ? category : entry.title()) + " (" + status + ")");
         });
-        player.sendSystemMessage(Component.literal("The " + TerminalScreenText.capitalize(post.jurisdiction()) + " guard searches you and confiscates "
+        player.sendSystemMessage(Component.literal(actor(player, post) + " searches you and confiscates "
             + seized + " stack" + (seized == 1 ? "" : "s") + " of contraband: " + String.join(", ", titles) + ". Fine: " + paid + " credits."));
         player.sendSystemMessage(Component.literal("Heat in " + TerminalScreenText.capitalize(post.jurisdiction()) + " is now " + heatAfter + "; searches here become more likely until it cools."));
         return new Result(Outcome.SEIZED, seized, paid, "seized " + seized);

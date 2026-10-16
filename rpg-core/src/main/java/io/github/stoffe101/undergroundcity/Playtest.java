@@ -36,7 +36,7 @@ import java.util.function.BooleanSupplier;
 @Mod.EventBusSubscriber(modid = UndergroundCity.MOD_ID, value = Dist.CLIENT)
 public final class Playtest {
     static final String SCENARIO = System.getProperty("uc.playtest");
-    private static final long LIMIT_NANOS = Long.getLong("uc.playtest.limitSeconds", 1500L) * 1_000_000_000L;
+    private static final long LIMIT_NANOS = Long.getLong("uc.playtest.limitseconds", 1500L) * 1_000_000_000L;
 
     /** One step: runs {@code action} once, then waits until {@code done} is true (or the step's tick budget is spent). */
     record Step(String name, Runnable action, BooleanSupplier done, int budgetTicks) {}
@@ -83,6 +83,7 @@ public final class Playtest {
         try {
             helperIn.write(line + "\n");
             helperIn.flush();
+            if (line.equals("quit")) return; // the helper exits without an answer
             String answer = helperOut.readLine();
             if (answer == null || !answer.startsWith("ok")) fail("input '" + line + "' -> " + answer);
         } catch (java.io.IOException error) {
@@ -140,6 +141,7 @@ public final class Playtest {
     public static void tick(TickEvent.ClientTickEvent event) {
         if (!enabled() || event.phase != TickEvent.Phase.END || finished || !opened) return;
         Minecraft mc = Minecraft.getInstance();
+        DevWorldLauncher.acceptExperimentalWarning(mc);
         if (System.nanoTime() - started > LIMIT_NANOS) { fail("timed out in step " + (current == null ? "(none)" : current.name())); finish(); return; }
         if (mc.player == null || mc.level == null || mc.getSingleplayerServer() == null) return;
         if (!scenarioBuilt) {
@@ -175,6 +177,14 @@ public final class Playtest {
         String result = failures.length() == 0 ? "pass" : "FAIL: " + failures;
         log("RESULT " + result);
         try { Files.writeString(mc().gameDirectory.toPath().resolve("uc-playtest-" + SCENARIO + ".txt"), result + "\n"); } catch (java.io.IOException ignored) { }
+        // A client that does not leave on its own (a mod's shutdown hook that waits on a thread) must not hold a test run for ever.
+        Thread watchdog = new Thread(() -> {
+            try { Thread.sleep(60_000); } catch (InterruptedException ignored) { return; }
+            System.out.println("[UC-PLAYTEST] the client did not exit within 60 s; halting");
+            Runtime.getRuntime().halt(failures.length() == 0 ? 0 : 1);
+        }, "uc-playtest-watchdog");
+        watchdog.setDaemon(true);
+        watchdog.start();
         mc().execute(() -> mc().stop());
     }
 }
