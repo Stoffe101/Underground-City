@@ -87,6 +87,18 @@ final class Scenarios {
         }
     }
 
+    /** What the cursor is on, in words: a block with its position, an entity with its position, or nothing. */
+    private static String describeCursor() {
+        var mc = Minecraft.getInstance();
+        var hit = mc.hitResult;
+        if (hit == null) return "nothing";
+        if (hit instanceof net.minecraft.world.phys.BlockHitResult block && hit.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK) {
+            return block.getBlockPos().toShortString() + " " + mc.level.getBlockState(block.getBlockPos()).getBlock();
+        }
+        if (hit instanceof net.minecraft.world.phys.EntityHitResult entity) return entity.getEntity().getType() + " " + entity.getEntity().getName().getString() + " at " + entity.getEntity().position();
+        return String.valueOf(hit.getType());
+    }
+
     /** The first-login screen has been closed by the harness by now; screens the scenario itself provokes are left open so it can look at them. */
     private static void screensStayOpenFromNow() {
         Playtest.wait("let the first-login screen come and go", 60);
@@ -186,6 +198,9 @@ final class Scenarios {
             var villager = citizen(null, index);
             if (villager != null) standLooking(stand[0], villager.position().add(0, villager.getBbHeight() * 0.85, 0));
             Playtest.focusWindow();
+            var mc = Minecraft.getInstance();
+            Playtest.log(label + ": citizen at " + (villager == null ? "nowhere" : villager.position() + " on " + level().getBlockState(villager.blockPosition().below()).getBlock())
+                + ", player at " + mc.player.position() + ", cursor " + describeCursor());
             Playtest.mouseButton(3, true);
         });
         Playtest.wait("hold", 4);
