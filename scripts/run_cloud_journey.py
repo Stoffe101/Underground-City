@@ -38,10 +38,15 @@ def prepare() -> list[tuple[Path,str]]:
     return clients
 
 
-def start(module: Path, task: str, flags: list[str], logfile: Path):
+def start(module: Path, task: str, flags: list[str], logfile: Path, tmpdir: Path | None = None):
     logfile.parent.mkdir(parents=True,exist_ok=True)
     env=dict(os.environ,LIBGL_ALWAYS_SOFTWARE='1',GALLIUM_DRIVER='llvmpipe',LP_NUM_THREADS='1',
         ALSOFT_DRIVERS='null',SDL_AUDIODRIVER='dummy')
+    if tmpdir is not None:
+        # Both clients start at the same moment and LWJGL unpacks its native libraries into one shared directory under java.io.tmpdir; two JVMs doing that at once
+        # produced "Failed to locate library: liblwjgl_stb.so" and a SIGABRT (exit 134) in hosted runs. A private temporary directory per client removes the race.
+        tmpdir.mkdir(parents=True,exist_ok=True)
+        env['JAVA_TOOL_OPTIONS']=(env.get('JAVA_TOOL_OPTIONS','')+f' -Djava.io.tmpdir={tmpdir}').strip()
     stream=logfile.open('w')
     process=subprocess.Popen(['gradle','-p',str(module),task,'-PucEconomyTest=true',*flags,
         '-Dorg.gradle.jvmargs=-Xmx1G','--no-daemon'],env=env,stdout=stream,stderr=subprocess.STDOUT)
@@ -62,7 +67,7 @@ def phase(number: int, clients: list[tuple[Path,str]]) -> dict:
         for module,role in clients:
             name='UC_Farmer' if role=='farmer' else 'UC_Smith'
             processes.append(start(module,'runClient',[f'-PucRunDir=run-journey-client-{role}',f'-PucJourneyClient={name}'],
-                OUTPUT/'logs'/f'{role}-phase{number}.log'))
+                OUTPUT/'logs'/f'{role}-phase{number}.log',OUTPUT/'tmp'/role))
         marker=SERVER/f'journey-phase{number}.json'
         while time.monotonic()<deadline:
             if marker.exists(): break
