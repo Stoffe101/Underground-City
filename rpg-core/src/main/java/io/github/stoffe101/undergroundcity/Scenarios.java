@@ -474,7 +474,7 @@ final class Scenarios {
      * Climbs into a vehicle the way a person does: an empty hand (a held item would be used instead), standing beside it, looking at it,
      * holding the real right mouse button for a few ticks (Immersive Vehicles polls the button's state). A few aim points are tried in turn.
      */
-    private static void board(java.util.function.Supplier<net.minecraft.world.entity.Entity> vehicle, java.util.function.DoubleSupplier headingDegrees, String label) {
+    private static void board(java.util.function.Supplier<net.minecraft.world.entity.Entity> vehicle, java.util.function.DoubleSupplier headingDegrees, String label, boolean fromBehind) {
         final int[] state = {0, 0, 0}; // attempt, phase, ticks in the phase
         final Vec3[] aims = {new Vec3(0, 0.7, 0), new Vec3(0, 1.1, 0), new Vec3(0, 0.4, 0), new Vec3(0.3, 0.9, -0.3), new Vec3(-0.3, 0.9, 0.3)};
         Playtest.queue(label + ": board with an empty hand", () -> {
@@ -492,9 +492,10 @@ final class Scenarios {
             switch (state[1]) {
                 case 0 -> {
                     double yaw = Math.toRadians(headingDegrees.getAsDouble());
-                    Vec3 side = new Vec3(Math.cos(yaw), 0, Math.sin(yaw));
+                    // Behind the vehicle (along its own forward axis, which is where the first successful boarding was made from), or beside it.
+                    Vec3 offset = fromBehind ? new Vec3(Math.sin(yaw), 0, -Math.cos(yaw)).scale(1.6) : new Vec3(Math.cos(yaw), 0, Math.sin(yaw)).scale(-1.6);
                     Vec3 at = target.position();
-                    standLooking(at.add(side.scale(-1.6)).add(0, 0.1, 0), at.add(aims[state[0] % aims.length]));
+                    standLooking(at.add(offset).add(0, 0.1, 0), at.add(aims[state[0] % aims.length]));
                     state[1] = 1; state[2] = 0;
                 }
                 case 1 -> { if (++state[2] >= 25) { Playtest.mouseButton(3, true); state[1] = 2; state[2] = 0; } }
@@ -665,7 +666,7 @@ final class Scenarios {
         });
         Playtest.wait("let the tank update reach the client", 20);
         Playtest.queue("log the fuel state", () -> Playtest.log("after fuelling: " + describeVehicle(ivVehicle(vehicleNear()))));
-        board(Scenarios::vehicleNear, () -> roadHeading[0], "car");
+        board(Scenarios::vehicleNear, () -> roadHeading[0], "car", true);
         final RoadDriver[] driver = new RoadDriver[1];
         Playtest.queue("drive along the road with W, A and D", () -> {
             var plan = roadPlan(road);
@@ -791,7 +792,7 @@ final class Scenarios {
             var plan = roadPlan(road);
             double[] a = plan.pointAt(run[0] + 8), b = plan.pointAt(run[0] + 14);
             return Math.toDegrees(Math.atan2(-(b[0] - a[0]), b[1] - a[1]));
-        }, "boat");
+        }, "boat", false);
         final RoadDriver[] driver = new RoadDriver[1];
         Playtest.queue("sail along the water under the deck with W, A and D", () -> {
             var plan = roadPlan(road);

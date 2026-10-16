@@ -125,6 +125,7 @@ final class RoadDriver {
             return true;
         }
         boolean right = false, left = false;
+        double lastError = Double.NaN, lastWant = Double.NaN, lastHave = Double.NaN;
         if (heading != null) {
             double[] target = plan.pointAt(Math.min(plan.length(), progress + LOOK_AHEAD));
             double want = Math.toDegrees(Math.atan2(-(target[0] - position.x), target[1] - position.z));
@@ -132,6 +133,11 @@ final class RoadDriver {
             double error = ((want - have) % 360 + 540) % 360 - 180;
             right = error > TURN_THRESHOLD_DEGREES;
             left = error < -TURN_THRESHOLD_DEGREES;
+            lastError = error; lastWant = want; lastHave = have;
+        }
+        if (ticks <= 600 && ticks % 20 == 0) {
+            Playtest.log(String.format("%s: t=%d s=%.0f speed %.1f, %.1f off, want %.0f have %.0f error %.0f, keys %s%s%s, entity yaw %.0f", label, ticks, progress, speed, hit.distance(), lastWant, lastHave, lastError,
+                "w", right ? "d" : "", left ? "a" : "", ride.getYRot()));
         }
         hold("w", true);
         hold("d", right);
