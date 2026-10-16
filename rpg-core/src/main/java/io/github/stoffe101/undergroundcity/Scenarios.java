@@ -514,7 +514,7 @@ final class Scenarios {
         Playtest.queue("wait until the player is there and the ground has arrived", () -> { }, () -> arrivedAt(arrival[0]), 12000);
         Playtest.queue("creative mode", () -> Playtest.command("gamemode creative"));
         Playtest.wait("settle", 40);
-        Playtest.queue("give the quad", () -> Playtest.command("give @s mts:mtsofficialpack.quad"), () -> inventoryCount("mts:mtsofficialpack.quad") >= 1, 1200);
+        Playtest.queue("give the quad", () -> Playtest.command("give @s mts:mtsofficialpack.quad_red"), () -> inventoryCount("mts:mtsofficialpack.quad_red") >= 1, 1200);
         final double[] roadHeading = new double[1];
         Playtest.queue("aim along the road, pitched down onto the deck, and place the vehicle with a real right click", () -> {
             var mc = Minecraft.getInstance();
