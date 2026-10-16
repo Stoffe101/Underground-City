@@ -288,17 +288,20 @@ final class Scenarios {
         Playtest.queue("wait until the gunsmith is back at her desk", () -> { }, () -> {
             var villager = citizen(null, gunsmith);
             if (villager == null) return false;
-            var terminal = Vec3.atLowerCornerOf(origin[0]).add(3.5, 0.5, 10.5);
+            var server = Minecraft.getInstance().getSingleplayerServer();
+            var real = server.overworld().getEntity(villager.getUUID());
+            if (!(real instanceof net.minecraft.world.entity.npc.Villager v)) return false;
+            var tag = v.getPersistentData().getCompound(CityNpcs.TAG);
+            if (!tag.contains("terminal")) return false;
+            var terminal = Vec3.atCenterOf(BlockPos.of(tag.getLong("terminal")));
+            // Horizontal distance: the office floor is not at the terminal's own height.
+            double distance = Math.hypot(v.getX() - terminal.x, v.getZ() - terminal.z);
             if (polls[0]++ % 100 == 0) {
-                var server = Minecraft.getInstance().getSingleplayerServer();
-                var real = server.overworld().getEntity(villager.getUUID());
-                String detail = real instanceof net.minecraft.world.entity.npc.Villager v
-                    ? "server side at " + v.position() + ", walk target " + v.getBrain().getMemory(net.minecraft.world.entity.ai.memory.MemoryModuleType.WALK_TARGET).map(t -> t.getTarget().currentBlockPosition().toShortString()).orElse("none")
-                        + ", navigation done " + v.getNavigation().isDone() + ", activity " + v.getBrain().getActiveActivities() + ", time of day " + (v.level().getDayTime() % 24000)
-                    : "not found on the server";
-                Playtest.log("the gunsmith is " + villager.position().distanceTo(terminal) + " blocks from her desk (" + terminal + "); " + detail);
+                Playtest.log("the gunsmith is " + String.format("%.1f", distance) + " blocks from her desk " + terminal + "; she is at " + v.position() + ", walk target "
+                    + v.getBrain().getMemory(net.minecraft.world.entity.ai.memory.MemoryModuleType.WALK_TARGET).map(t -> t.getTarget().currentBlockPosition().toShortString()).orElse("none")
+                    + ", navigation done " + v.getNavigation().isDone() + ", time of day " + (v.level().getDayTime() % 24000));
             }
-            return villager.position().distanceTo(terminal) < 3.5;
+            return distance < 4.0;
         }, 1500);
         speakTo("the gunsmith's employer, at her desk", gunsmith, "uc-row-employer-terminal");
         Playtest.queue("the employer's terminal opened", () -> {
