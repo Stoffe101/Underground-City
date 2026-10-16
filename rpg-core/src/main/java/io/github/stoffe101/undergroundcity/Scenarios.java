@@ -549,6 +549,7 @@ final class Scenarios {
 
     /** Immersive Vehicles' own vehicle object wrapped by a Minecraft entity, or null. Reflection: the mod is a runtime-only dependency. */
     private static Object ivVehicle(net.minecraft.world.entity.Entity entity) {
+        if (entity == null) return null;
         for (Class<?> type = entity.getClass(); type != null; type = type.getSuperclass()) {
             try {
                 var field = type.getDeclaredField("entity");
@@ -594,6 +595,7 @@ final class Scenarios {
     }
 
     private static String describeVehicle(Object vehicle) {
+        if (vehicle == null) return "(no vehicle in reach)";
         try {
             Object tank = vehicle.getClass().getField("fuelTank").get(vehicle);
             return vehicle.getClass().getSimpleName() + ": fuel " + tank.getClass().getMethod("getFluid").invoke(tank) + " " + tank.getClass().getMethod("getFluidLevel").invoke(tank)
@@ -718,7 +720,7 @@ final class Scenarios {
         Playtest.queue("drive along the road with W, A and D", () -> {
             var plan = roadPlan(road);
             var hit = plan.project(Minecraft.getInstance().player.getX(), Minecraft.getInstance().player.getZ());
-            driver[0] = new RoadDriver(RoadDriver.of(plan), hit.s() + driveBlocks[0], "quad on " + road).steerByWheelModel(() -> vehicleMotion(vehicleNear()));
+            driver[0] = new RoadDriver(RoadDriver.of(plan), hit.s() + driveBlocks[0], "quad on " + road).steerByWheelModel(() -> vehicleMotion(vehicleNear())).cruiseAt(9);
             Playtest.log("driving from s=" + (int) hit.s() + " for " + driveBlocks[0] + " blocks; " + describeVehicle(ivVehicle(vehicleNear())));
         }, () -> driver[0].tick(), 6000);
         Playtest.queue("report the drive", () -> {
@@ -898,7 +900,7 @@ final class Scenarios {
         Playtest.queue("sail along the water under the deck with W, A and D", () -> {
             var plan = roadPlan(road);
             var route = RoadDriver.beside(plan, offset, 8);
-            driver[0] = new RoadDriver(route, run[1] - 10, "motorboat under the bridge of " + road).steerByYaw().faceForward()
+            driver[0] = new RoadDriver(route, run[1] - 10, "motorboat under the bridge of " + road).steerByYaw().faceForward().cruiseAt(9)
                 .at(run[0] + 40, () -> Playtest.screenshotNextFrame("uc-boat-approach"))
                 .at((run[0] + run[1]) / 2, () -> { Playtest.log("under the deck: " + describeBoat(boatNear())); Playtest.screenshotNextFrame("uc-boat-under-bridge"); })
                 .at(run[1] - 40, () -> Playtest.screenshotNextFrame("uc-boat-leaving"));

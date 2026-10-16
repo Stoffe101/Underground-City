@@ -75,6 +75,9 @@ final class RoadDriver {
     private final String label;
     /** Steer from the vehicle's own yaw instead of its measured movement: right for a boat, which turns as fast as the keys say and would swing wildly on a delayed heading. */
     private boolean steerByYaw, faceForward;
+    /** A speed (blocks per second) above which the throttle is released; NaN for none. A scripted vehicle that outruns the chunks the container's server can send stops dead at the edge of the loaded world. */
+    private double cruise = Double.NaN;
+    private boolean throttle = true;
     private int lowSpeedTicks, unseatedTicks;
     /**
      * For a car: the vehicle's own velocity and orientation (the sensors; null when unreadable). Immersive Vehicles turns the wheels by a fixed number of
@@ -104,6 +107,9 @@ final class RoadDriver {
     RoadDriver(Route plan, double targetS, String label) { this.plan = plan; this.targetS = targetS; this.label = label; }
 
     RoadDriver steerByYaw() { this.steerByYaw = true; return this; }
+
+    /** Release the throttle above this speed (blocks per second) and press it again below. */
+    RoadDriver cruiseAt(double blocksPerSecond) { this.cruise = blocksPerSecond; return this; }
 
     /** Keep the player's own view along the vehicle's heading, a little downward, so the frames show what a passenger sees ahead and not the deck overhead. */
     RoadDriver faceForward() { this.faceForward = true; return this; }
@@ -214,7 +220,8 @@ final class RoadDriver {
             Playtest.log(String.format("%s: t=%d s=%.0f speed %.1f, %.1f off, want %.0f have %.0f error %.0f, keys %s%s%s, yaw rate %.2f deg/tick, entity yaw %.0f", label, ticks, progress, speed, hit.distance(), lastWant, lastHave, lastError,
                 "w", right ? "d" : "", left ? "a" : "", wheel, ride.getYRot()));
         }
-        hold("w", true);
+        if (!Double.isNaN(cruise)) throttle = speed < (throttle ? cruise + 1.0 : cruise - 1.0);
+        hold("w", throttle);
         hold("d", right);
         hold("a", left);
         if (ticks >= nextLog) {
