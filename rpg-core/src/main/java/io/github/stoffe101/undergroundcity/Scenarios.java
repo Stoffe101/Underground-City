@@ -420,11 +420,19 @@ final class Scenarios {
         return total;
     }
 
+    private static final java.util.concurrent.atomic.AtomicBoolean TERMINAL_LOCKED = new java.util.concurrent.atomic.AtomicBoolean();
+
+    /**
+     * Whether the secured terminal is locked down. A block entity can only be read on the server thread (Level.getBlockEntity answers null from any other thread, which
+     * made every earlier answer "not locked"), so this asks the server and returns what it said the last time it was asked; polled every tick it is at most a tick or two stale.
+     */
     private static boolean terminalLocked(BlockPos platform) {
         var server = Minecraft.getInstance().getSingleplayerServer();
-        // The district's own origin, not the platform it stands on (one block lower).
-        var entity = server.overworld().getBlockEntity(DistrictBuilder.originOf(server.overworld(), "founders_row").offset(15, 0, 2));
-        return entity instanceof SecureTerminalBlockEntity terminal && terminal.lockedAt(WorkOrderLedger.get(server).clock());
+        server.execute(() -> {
+            var entity = server.overworld().getBlockEntity(DistrictBuilder.originOf(server.overworld(), "founders_row").offset(15, 0, 2));
+            TERMINAL_LOCKED.set(entity instanceof SecureTerminalBlockEntity terminal && terminal.lockedAt(WorkOrderLedger.get(server).clock()));
+        });
+        return TERMINAL_LOCKED.get();
     }
 
     /**
