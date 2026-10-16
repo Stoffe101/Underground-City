@@ -77,13 +77,13 @@ final class RoadDriver {
     private boolean steerByYaw, faceForward;
     private int lowSpeedTicks, unseatedTicks;
     /**
-     * For a car: heading from the vehicle's own velocity vector (blocks per tick, x and z; null when unreadable), and a model of the wheel angle. Immersive Vehicles
-     * turns the wheels by a fixed number of degrees for every tick a key is held and straightens them by a larger number for every tick it is not
-     * (config steeringControlRate 2.0 and steeringReturnRate 4.0), so holding a key does not mean "turning" and a controller that treats it so swings from lock to lock.
-     * This one decides a wheel angle from the heading error and holds or releases the key to bring the modelled angle to it.
+     * For a car: the vehicle's own velocity and orientation (the sensors; null when unreadable). Immersive Vehicles turns the wheels by a fixed number of
+     * degrees for every tick a steering key is held and straightens them for every tick it is not, so holding a key does not mean "turning" but "turning
+     * a little more every tick"; a controller that holds a key until the heading is right swings from lock to lock. This one steers the yaw rate.
      */
     private java.util.function.Supplier<double[]> velocity;
-    private double wheel, wheelRise = 2.0, wheelReturn = 4.0, wheelMax = 35.0, wheelGain = 0.6, wheelDamping = 6.0, wheelLimit = 22.0;
+    private static final double RATE_GAIN = 0.04, RATE_LIMIT = 1.2, RATE_DEADBAND = 0.18;
+    private double wheel, yawRate;
     /** Which of the vehicle's four local axes is its front, found by comparing each with the direction it actually moves in (the model's own convention is not documented). */
     private final double[] axisScore = new double[4];
     private int axisSamples = -1, frontAxis = -1;
@@ -106,7 +106,7 @@ final class RoadDriver {
     /** Keep the player's own view along the vehicle's heading, a little downward, so the frames show what a passenger sees ahead and not the deck overhead. */
     RoadDriver faceForward() { this.faceForward = true; return this; }
 
-    /** Steer a wheeled vehicle from its own velocity and the wheel model (see the field). */
+    /** Steer a wheeled vehicle from its own orientation and yaw rate (see the field). */
     RoadDriver steerByWheelModel(java.util.function.Supplier<double[]> velocity) { this.velocity = velocity; return this; }
 
     boolean failed() { return failed; }
@@ -172,23 +172,25 @@ final class RoadDriver {
             }
             double have = sensor != null && frontAxis >= 0 ? sensor[2 + frontAxis] : Double.NaN;
             if (!Double.isNaN(have)) {
+                // Outer loop: the yaw rate that would close the heading error over about a second. Inner loop: hold the key that brings the measured yaw rate to it.
+                // Holding a steering key moves the wheels a little more every tick, which moves the yaw rate a little more every tick, so a rate loop is stable
+                // where holding a key until the heading is right (which is what a person who has not driven this vehicle does) swings from side to side.
                 double lookAhead = Math.max(10.0, speed * 1.5);
                 double[] target = plan.pointAt(Math.min(plan.length(), progress + lookAhead));
                 double want = Math.toDegrees(Math.atan2(-(target[0] - position.x), target[1] - position.z));
                 double error = ((want - have) % 360 + 540) % 360 - 180;
-                double rate = Double.isNaN(lastHeading) ? 0 : ((have - lastHeading) % 360 + 540) % 360 - 180;
+                double raw = Double.isNaN(lastHeading) ? 0 : ((have - lastHeading) % 360 + 540) % 360 - 180;
                 lastHeading = have;
-                double wanted = Math.max(-wheelLimit, Math.min(wheelLimit, error * wheelGain - rate * wheelDamping));
-                right = wanted - wheel > 1.5;
-                left = wanted - wheel < -1.5;
+                yawRate = 0.5 * yawRate + 0.5 * raw;
+                double desired = Math.max(-RATE_LIMIT, Math.min(RATE_LIMIT, error * RATE_GAIN));
+                right = desired - yawRate > RATE_DEADBAND;
+                left = desired - yawRate < -RATE_DEADBAND;
                 lastError = error; lastWant = want; lastHave = have;
             } else {
                 // not calibrated yet: keep the wheels straight while the vehicle gets going
                 right = false; left = false;
             }
-            if (right) wheel = Math.min(wheelMax, wheel + wheelRise);
-            else if (left) wheel = Math.max(-wheelMax, wheel - wheelRise);
-            else wheel = wheel > 0 ? Math.max(0, wheel - wheelReturn) : Math.min(0, wheel + wheelReturn);
+            wheel = yawRate;
         } else if (steerByYaw || heading != null) {
             double[] target = plan.pointAt(Math.min(plan.length(), progress + LOOK_AHEAD));
             double want = Math.toDegrees(Math.atan2(-(target[0] - position.x), target[1] - position.z));
@@ -202,7 +204,7 @@ final class RoadDriver {
         lowSpeedTicks = speed < 1.0 ? lowSpeedTicks + 1 : 0;
         if (lowSpeedTicks == 60) diagnose(mc, position);
         if (ticks <= 600 && ticks % 20 == 0) {
-            Playtest.log(String.format("%s: t=%d s=%.0f speed %.1f, %.1f off, want %.0f have %.0f error %.0f, keys %s%s%s, wheel %.0f, entity yaw %.0f", label, ticks, progress, speed, hit.distance(), lastWant, lastHave, lastError,
+            Playtest.log(String.format("%s: t=%d s=%.0f speed %.1f, %.1f off, want %.0f have %.0f error %.0f, keys %s%s%s, yaw rate %.2f deg/tick, entity yaw %.0f", label, ticks, progress, speed, hit.distance(), lastWant, lastHave, lastError,
                 "w", right ? "d" : "", left ? "a" : "", wheel, ride.getYRot()));
         }
         hold("w", true);
