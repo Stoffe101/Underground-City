@@ -295,7 +295,10 @@ final class Scenarios {
         Playtest.wait("settle", 15);
         Playtest.queue(label + ": right-click", () -> {
             var mc = Minecraft.getInstance();
-            Playtest.log("cursor: " + mc.hitResult + " from " + mc.player.position() + " looking " + mc.player.getXRot() + "/" + mc.player.getYRot());
+            String aimed = mc.hitResult instanceof net.minecraft.world.phys.BlockHitResult block && block.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK
+                ? block.getBlockPos().toShortString() + " " + mc.level.getBlockState(block.getBlockPos()).getBlock() : String.valueOf(mc.hitResult == null ? null : mc.hitResult.getType());
+            Playtest.log("cursor: " + aimed + " from " + mc.player.position() + " looking " + mc.player.getXRot() + "/" + mc.player.getYRot() + ", holding " + mc.player.getMainHandItem());
+            Playtest.screenshot("uc-" + label.replace(' ', '-') + "-before-click");
             Playtest.focusWindow();
             Playtest.mouseButton(3, true);
         }, () -> Minecraft.getInstance().screen instanceof ChallengeScreen, 600);
