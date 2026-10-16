@@ -131,12 +131,12 @@ xvfb-run -a -s "-screen 0 1280x720x24" ./gradlew runClient -PucPlaytest=<scenari
 | `register` | the first-login screen opens by itself; a mouse path through city, profession and confirm creates the citizen and delivers the pack |
 | `walk` | walks each generated road from its first block with the real W key, steering only the heading; reports game time, waits for chunks, time on bridges, jumps and where it got stuck (`-PucPtRoute=<road>`, `-PucPtSprint=true`, `-PucPtLimitseconds=7200`) |
 | `gun` | a TaCZ pistol: select, reload with R, aim with the right button, fire with the left, check the magazine, the carried ammunition and the damage to a target |
-| `row` | builds Founders Row on a platform in the sky, takes pictures, speaks to the registrar, an employer and a resident with real right clicks |
+| `row` | builds Founders Row on a platform in the sky, switches the citizens' AI off so a click lands on the citizen aimed at, takes pictures, speaks to the registrar, an employer (whose terminal opens) and a resident with real right clicks |
 | `posts` | places the checkpoint posts, stands at one and lets the guard search a pistol-carrying citizen |
 | `tracker` | accepts a two-line order and follows the inventory on the tracker until it says the order is ready |
 | `trace` | the Technician's trace on the real screen with the real keyboard: success, a wrong answer, walking away (Escape) and a timeout, each with its server-side consequence checked (ledger, kit, lock-down) |
-| `car` | an Immersive Vehicles Quad on the generated road: placed from its item with a right click, fuelled through the mod's own tank object on the server, boarded with a right click, driven with W/A/D along the road and braked with S (`-PucPtRoute`, `-PucPtMetres`, `-PucPtDrive`, `-PucPtBridge=true` to start before the road's first bridge and cross it) |
-| `boat` | a Modern Life Motorboat on the water beside the first bridge of a road: placed, boarded, sailed across and under the deck, fuel and hold logged (`-PucPtRoute`) |
+| `car` | an Immersive Vehicles Quad on the generated road: its chunks are generated and held loaded first, then it is placed from its item with a right click, boarded with an empty hand from behind (right click), and driven with W held and A/D tapped (the scripted driver reads the vehicle's own orientation and cruises at 5 to 6 blocks per second) and braked with S (`-PucPtRoute`, `-PucPtMetres`, `-PucPtDrive`, `-PucPtBridge=true` to start before the road's first bridge and cross it). The vehicle is placed in creative mode, which makes it fuel-free |
+| `boat` | a Modern Life Motorboat on the water beside the first bridge over water of a road: the chunks along the water are generated first, the boat is placed on the water beside the deck, boarded, and sailed under the deck steering from its own yaw (fuel and hold logged); the stall rule fails a run that stands still for 20 s (`-PucPtRoute`) |
 
 Options are Gradle properties starting with `ucPt` (`-PucPtRoute=x` becomes `-Duc.playtest.route=x`). Reusing an existing playtest world keeps
 its citizens, so use a world name per scenario. Reopening an existing development world makes Minecraft ask
@@ -152,7 +152,8 @@ for the development world only. A scenario result is one line, `[UC-PLAYTEST] RE
 | `./gradlew runServer -PucBootSmoke=true` boots the pack and the Motorboat's cargo round trip passes | cloud container, `[UC-BOOT]` facts |
 | Hosted repeat of both | workflow `dev-client-smoke.yml` |
 | Windows 11 / IntelliJ | **not tested** |
-| Driving a car, sailing the boat, firing a gun, two players | **not covered by this launch smoke** (see the sprint report for what the gameplay tests prove) |
+| Driving a car, sailing the boat, firing a gun | scripted-player runs in the cloud container, see the scenario table above and the [sprint report](../production/sprint-2026-10-16.md); **not covered by this launch smoke** |
+| Two players on this pack | **not tested** |
 
 ## Verify it on your own PC (five minutes after the first download)
 
