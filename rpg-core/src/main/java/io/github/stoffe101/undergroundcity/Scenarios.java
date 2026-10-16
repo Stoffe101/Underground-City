@@ -97,7 +97,9 @@ final class Scenarios {
     private static void waitForMeshes(int ticks) {
         final int[] left = {ticks};
         Playtest.queue("let the chunk meshes finish", () -> { }, () -> {
-            if (Minecraft.getInstance().levelRenderer.hasRenderedAllChunks()) return true;
+            var renderer = Minecraft.getInstance().levelRenderer;
+            // An empty mesh queue is also what a client that has received no chunk yet reports, so require sections actually on screen as well.
+            if (renderer.hasRenderedAllChunks() && renderer.countRenderedChunks() >= 20) return true;
             if (--left[0] <= 0) { Playtest.log("the chunk meshes were still not finished after " + ticks + " ticks; carrying on"); return true; }
             return false;
         }, ticks + 20);
@@ -861,7 +863,7 @@ final class Scenarios {
         // The post is far from where the player was: wait for the chunk and the ground under the player to reach the client, then for the meshes, then a little longer.
         Playtest.queue("wait until the player is there and the ground has arrived", () -> { }, () -> arrivedAt(new double[]{spot[0].x, spot[0].z + 2.2}), 12000);
         waitForMeshes(1500);
-        Playtest.wait("let the guard and the light settle", 200);
+        Playtest.wait("let the guard and the light settle", 300);
         Playtest.queue("clear the chat, screenshot of the guard", () -> Minecraft.getInstance().gui.getChat().clearMessages(true));
         Playtest.wait("one frame", 4);
         Playtest.queue("screenshot of the post", () -> Playtest.screenshot("uc-post-guard"));
