@@ -73,6 +73,9 @@ final class RoadDriver {
     private final Route plan;
     private final double targetS;
     private final String label;
+    /** Steer from the vehicle's own yaw instead of its measured movement: right for a boat, which turns as fast as the keys say and would swing wildly on a delayed heading. */
+    private boolean steerByYaw;
+    private int lowSpeedTicks;
     private double progress, maxDeviation, topSpeed;
     private boolean w, a, d, done, failed;
     private long startGameTime = -1;
@@ -85,6 +88,8 @@ final class RoadDriver {
     RoadDriver at(double s, Runnable action) { milestones.put(s, action); return this; }
 
     RoadDriver(Route plan, double targetS, String label) { this.plan = plan; this.targetS = targetS; this.label = label; }
+
+    RoadDriver steerByYaw() { this.steerByYaw = true; return this; }
 
     boolean failed() { return failed; }
     String summary() { return summary; }
@@ -126,15 +131,18 @@ final class RoadDriver {
         }
         boolean right = false, left = false;
         double lastError = Double.NaN, lastWant = Double.NaN, lastHave = Double.NaN;
-        if (heading != null) {
+        if (steerByYaw || heading != null) {
             double[] target = plan.pointAt(Math.min(plan.length(), progress + LOOK_AHEAD));
             double want = Math.toDegrees(Math.atan2(-(target[0] - position.x), target[1] - position.z));
-            double have = Math.toDegrees(Math.atan2(-heading.x, heading.z));
+            double have = steerByYaw ? ride.getYRot() : Math.toDegrees(Math.atan2(-heading.x, heading.z));
             double error = ((want - have) % 360 + 540) % 360 - 180;
-            right = error > TURN_THRESHOLD_DEGREES;
-            left = error < -TURN_THRESHOLD_DEGREES;
+            double threshold = steerByYaw ? 4.0 : TURN_THRESHOLD_DEGREES;
+            right = error > threshold;
+            left = error < -threshold;
             lastError = error; lastWant = want; lastHave = have;
         }
+        lowSpeedTicks = speed < 1.0 ? lowSpeedTicks + 1 : 0;
+        if (lowSpeedTicks == 60) diagnose(mc, position);
         if (ticks <= 600 && ticks % 20 == 0) {
             Playtest.log(String.format("%s: t=%d s=%.0f speed %.1f, %.1f off, want %.0f have %.0f error %.0f, keys %s%s%s, entity yaw %.0f", label, ticks, progress, speed, hit.distance(), lastWant, lastHave, lastError,
                 "w", right ? "d" : "", left ? "a" : "", ride.getYRot()));
@@ -148,6 +156,26 @@ final class RoadDriver {
             nextLog += 100;
         }
         return false;
+    }
+
+    /** What is around a vehicle that has stopped moving: the blocks at and around it (water, solid, air) at three heights, so a pier, a shore or a rail shows up. */
+    private void diagnose(Minecraft mc, Vec3 position) {
+        BlockPos centre = BlockPos.containing(position);
+        StringBuilder text = new StringBuilder(label + ": slow at " + centre.toShortString() + " (s=" + (int) progress + "); '~' water, '#' solid, '.' air, 'o' you; rows north to south, y-1 / y / y+1:\n");
+        for (int dy = -1; dy <= 1; dy++) {
+            text.append("  y").append(dy >= 0 ? "+" : "").append(dy).append('\n');
+            for (int dz = -4; dz <= 4; dz++) {
+                text.append("    ");
+                for (int dx = -4; dx <= 4; dx++) {
+                    BlockPos at = centre.offset(dx, dy, dz);
+                    var state = mc.level.getBlockState(at);
+                    text.append(dx == 0 && dz == 0 && dy == 0 ? 'o' : !state.getFluidState().isEmpty() ? '~' : state.getCollisionShape(mc.level, at).isEmpty() ? '.' : '#');
+                }
+                text.append('\n');
+            }
+        }
+        Playtest.log(text.toString());
+        Playtest.screenshot("uc-" + label.split(" ")[0] + "-slow");
     }
 
     void release() { hold("w", false); hold("a", false); hold("d", false); }

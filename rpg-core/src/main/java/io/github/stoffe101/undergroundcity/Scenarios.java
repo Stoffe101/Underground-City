@@ -797,7 +797,7 @@ final class Scenarios {
         Playtest.queue("sail along the water under the deck with W, A and D", () -> {
             var plan = roadPlan(road);
             var route = RoadDriver.beside(plan, offset, 8);
-            driver[0] = new RoadDriver(route, run[1] - 10, "motorboat under the bridge of " + road)
+            driver[0] = new RoadDriver(route, run[1] - 10, "motorboat under the bridge of " + road).steerByYaw()
                 .at((run[0] + run[1]) / 2, () -> { Playtest.log("under the deck: " + describeBoat(boatNear())); Playtest.screenshot("uc-boat-under-bridge"); });
         }, () -> driver[0].tick(), 6000);
         Playtest.queue("report the crossing", () -> {
