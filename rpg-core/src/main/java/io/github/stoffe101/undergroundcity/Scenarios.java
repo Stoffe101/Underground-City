@@ -239,10 +239,10 @@ final class Scenarios {
     }
 
     /** Opens the secure terminal with a real right click from the data office's floor and waits for the trace screen. */
-    private static void startTrace(BlockPos origin, String label) {
+    private static void startTrace(BlockPos[] origin, String label) {
         Playtest.queue(label + ": stand at the secure terminal and use it", () -> {
-            Vec3 terminal = Vec3.atCenterOf(origin.offset(15, 0, 2));
-            standLooking(Vec3.atLowerCornerOf(origin.offset(15, 0, 4)).add(0.5, 0, 0.5), terminal.add(0, 0.2, 0));
+            Vec3 terminal = Vec3.atCenterOf(origin[0].offset(15, 0, 2)); // origin[0] is only known once the row has been built, so read it when the step runs
+            standLooking(Vec3.atLowerCornerOf(origin[0].offset(15, 0, 4)).add(0.5, 0, 0.5), terminal.add(0, 0.2, 0));
         });
         Playtest.wait("settle", 15);
         Playtest.queue(label + ": right-click", () -> {
@@ -328,7 +328,7 @@ final class Scenarios {
         }, () -> inventoryCount("underground_city:bypass_kit") == 4, 200);
         final java.util.List<Integer> seen = new java.util.ArrayList<>();
 
-        startTrace(origin[0], "success");
+        startTrace(origin, "success");
         Playtest.queue("success: screenshot while the pads flash", () -> Playtest.screenshot("uc-trace-showing"));
         watchTrace(seen, "success");
         Playtest.queue("success: five symbols were seen", () -> {
@@ -346,7 +346,7 @@ final class Scenarios {
         });
 
         spendTime("wrong answer");
-        startTrace(origin[0], "wrong answer");
+        startTrace(origin, "wrong answer");
         watchTrace(seen, "wrong answer");
         Playtest.wait("wrong answer: settle", 4);
         typeTrace(seen, true, "wrong answer");
@@ -360,7 +360,7 @@ final class Scenarios {
         Playtest.queue("wrong answer: screenshot of the consequence message", () -> Playtest.screenshot("uc-trace-wrong"));
 
         spendTime("abandon");
-        startTrace(origin[0], "abandon");
+        startTrace(origin, "abandon");
         Playtest.wait("abandon: let two symbols flash", 20);
         Playtest.queue("abandon: press Escape", () -> Playtest.tap("escape"), () -> !(Minecraft.getInstance().screen instanceof ChallengeScreen), 100);
         Playtest.wait("abandon: the server answers", 30);
@@ -371,7 +371,7 @@ final class Scenarios {
         });
 
         spendTime("timeout");
-        startTrace(origin[0], "timeout");
+        startTrace(origin, "timeout");
         Playtest.queue("timeout: do nothing until the window closes", () -> { }, () -> !(Minecraft.getInstance().screen instanceof ChallengeScreen), 20 * 40);
         Playtest.wait("timeout: the server answers", 30);
         Playtest.queue("timeout: the alarm tripped and no ledger came", () -> {

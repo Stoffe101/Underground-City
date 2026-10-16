@@ -598,8 +598,10 @@ public final class UndergroundGameTests {
         ItemStack cutting = new ItemStack(core("sable_cutting"), 2);
         untrained.setItemInHand(InteractionHand.MAIN_HAND, cutting);
         var hit = new BlockHitResult(Vec3.atCenterOf(ground), Direction.UP, ground, false);
-        check(cutting.useOn(new net.minecraft.world.item.context.UseOnContext(untrained, InteractionHand.MAIN_HAND, hit)) == InteractionResult.FAIL, "An untrained farmer planted a controlled cutting");
-        check(level.getBlockState(ground.above()).isAir(), "The plant appeared anyway");
+        InteractionResult refused = cutting.useOn(new net.minecraft.world.item.context.UseOnContext(untrained, InteractionHand.MAIN_HAND, hit));
+        check(refused == InteractionResult.FAIL, "An untrained farmer planted a controlled cutting (result " + refused + ")");
+        check(level.getBlockState(ground.above()).isAir(), "The plant appeared anyway: " + level.getBlockState(ground.above()) + " above " + level.getBlockState(ground)
+            + ", skill held: " + SkillService.has(untrained, RestrictedCuttingItem.SKILL));
         learn(untrained, "farmer.fundamentals", "farmer.greenhouse_management", "farmer.restricted_cultivation");
         check(cutting.useOn(new net.minecraft.world.item.context.UseOnContext(untrained, InteractionHand.MAIN_HAND, hit)).consumesAction(), "A trained farmer could not plant");
         check(level.getBlockState(ground.above()).is(UndergroundCity.SABLE_CROP.get()), "No Sable Leaf plant was placed");
@@ -1051,7 +1053,9 @@ public final class UndergroundGameTests {
             DistrictBuilder.forgetForTest(level, district.id());
             for (int cx = lo.getX() >> 4; cx <= hi.getX() >> 4; cx++) for (int cz = lo.getZ() >> 4; cz <= hi.getZ() >> 4; cz++) level.setChunkForced(cx, cz, false);
         };
-        helper.runAfterDelay(40, () -> {
+        // The lots are far from the test structure: wait until their chunks really tick entities (a slow runner needs longer than a fixed delay).
+        List<BlockPos> corners = List.of(lo, hi, one.offset(4, 0, 4), two.offset(4, 0, 4));
+        whenEntitiesTick(helper, level, corners, 40, () -> {
             try {
                 DistrictBuilder.build(level, district, one);
                 DistrictBuilder.build(level, district, two);
@@ -1067,13 +1071,26 @@ public final class UndergroundGameTests {
                 check(level.getBlockState(one.offset(3, 0, 3)).getBlock() != Blocks.STONE_BRICKS, "The removed post's booth is gone");
                 check(level.getBlockState(two.offset(3, 0, 3)).is(Blocks.STONE_BRICKS), "The other post's booth stands");
                 var remaining = DistrictBuilder.citizensForTest(level, district.id());
-                check(remaining.size() == 1 && level.getEntity(remaining.get(0)) != null, "The other post still has its guard");
+                CheckpointCatalog.Checkpoint zoneTwo = new CheckpointCatalog.Checkpoint("p2", "Post two", "ironhaven", level.dimension().location().toString(), two.getX() + 4, two.getZ() + 4, 48, "inspection");
+                check(remaining.size() == 1 && CheckpointPosts.guardAt(level, zoneTwo).map(g -> g.getUUID().equals(remaining.get(0))).orElse(false), "The other post still has its guard: " + remaining);
                 DistrictBuilder.undoNear(level, district, two.offset(4, 0, 4));
                 check(DistrictBuilder.count(level, district.id()) == 0, "No posts remain");
             } finally {
                 cleanup.run();
             }
             helper.succeed();
+        });
+    }
+
+    /** Runs {@code body} once every position is in an entity-ticking chunk: checked after {@code first} ticks, then every ten, giving up after 200 more. */
+    private static void whenEntitiesTick(GameTestHelper helper, net.minecraft.server.level.ServerLevel level, List<BlockPos> positions, int first, Runnable body) {
+        waitForTicking(helper, level, positions, first, 0, body);
+    }
+
+    private static void waitForTicking(GameTestHelper helper, net.minecraft.server.level.ServerLevel level, List<BlockPos> positions, int delay, int waited, Runnable body) {
+        helper.runAfterDelay(delay, () -> {
+            if (positions.stream().allMatch(level::isPositionEntityTicking) || waited >= 200) { body.run(); return; }
+            waitForTicking(helper, level, positions, 10, waited + 10, body);
         });
     }
 

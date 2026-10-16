@@ -63,6 +63,11 @@ final class OptionalModProbes {
             Object menu = menuClass.getConstructor(int.class, net.minecraft.world.entity.player.Inventory.class, ResourceLocation.class)
                 .newInstance(1, player.getInventory(), ResourceLocation.fromNamespaceAndPath("tacz", "gun_smith_table"));
             menuClass.getMethod("doCraft", ResourceLocation.class, net.minecraft.world.entity.player.Player.class).invoke(menu, recipeId, player);
+            // TaCZ does not insert the result: it drops it at the player's feet with no pickup delay, and a connected player collects it on
+            // the next tick. A test player never ticks, so touch the drops the way the world would.
+            for (net.minecraft.world.entity.item.ItemEntity drop : player.level().getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class, player.getBoundingBox().inflate(2.0))) {
+                drop.playerTouch(player);
+            }
             return null;
         } catch (ReflectiveOperationException | RuntimeException error) {
             return "The table craft failed: " + error;
