@@ -42,7 +42,10 @@ jobs:
       - name: Build mod (reobfuscates jar)
         run: gradle -p rpg-core build --no-daemon --stacktrace
       - name: Run in-engine dedicated GameTestServer checks
-        run: gradle -p rpg-core runGameTestServer --no-daemon --stacktrace
+        run: |
+          gradle -p rpg-core runGameTestServer --no-daemon --stacktrace
+          # A Forge GameTest server that fails to start (a broken datapack, a registry error) still exits 0, so the result line is the evidence.
+          grep -E "All [0-9]+ required tests passed" rpg-core/run/logs/latest.log
       - name: Inspect generated files
         run: |
           ls -lah rpg-core/build/libs

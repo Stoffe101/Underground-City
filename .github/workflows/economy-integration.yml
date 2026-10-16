@@ -27,7 +27,10 @@ jobs:
       - name: Stage original templates in disposable instance
         run: python scripts/install_qshop_templates.py --server-root rpg-core/run-economy
       - name: Build and run actual Q Shop wallet, buy/sell and profession tests
-        run: gradle -p rpg-core build runGameTestServer -PucEconomyTest=true -PucRunDir=run-economy --no-daemon --stacktrace
+        run: |
+          gradle -p rpg-core build runGameTestServer -PucEconomyTest=true -PucRunDir=run-economy --no-daemon --stacktrace
+          # A Forge GameTest server that fails to start (a broken datapack, a registry error) still exits 0, so the result line is the evidence.
+          grep -E "All [0-9]+ required tests passed" rpg-core/run-economy/logs/latest.log
       - name: Preserve diagnostics without third-party binaries or world saves
         if: always()
         uses: actions/upload-artifact@v4

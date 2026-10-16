@@ -85,6 +85,8 @@ jobs:
         run: |
           set -euo pipefail
           gradle -p rpg-core runGameTestServer -PucScreeningMod="$SCREENING_MOD" --no-daemon --stacktrace
+          # A Forge GameTest server that fails to start (a broken datapack, a registry error) still exits 0, so the result line is the evidence.
+          grep -E "All [0-9]+ required tests passed" rpg-core/run/logs/latest.log
       - name: Verify Forge did not revert our supported config settings
         env:
           SCREENING_MOD: ${{ matrix.candidate }}
