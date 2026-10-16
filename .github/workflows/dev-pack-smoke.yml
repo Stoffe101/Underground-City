@@ -56,6 +56,10 @@ jobs:
         run: python scripts/install_qshop_templates.py --server-root rpg-core/run-pack-${{ matrix.pack }}
       - name: Run the Core GameTests with the ${{ matrix.pack }} mods loaded
         run: gradle -p rpg-core runGameTestServer -PucPack=${{ matrix.pack }} -PucEconomyTest=true -PucRunDir=run-pack-${{ matrix.pack }} --no-daemon --stacktrace
+      - name: Print which tests failed (a failing GameTest makes the server exit 1; the reason is in the log)
+        if: failure()
+        run: |
+          grep -E 'failed!|required tests|GAME TESTS COMPLETE|Exception caught|Crash report' rpg-core/run-pack-${{ matrix.pack }}/logs/latest.log | head -n 40 || true
       - name: Confirm the mods really loaded and the tests ran (a server that failed to start still exits 0)
         run: |
           set -euo pipefail
