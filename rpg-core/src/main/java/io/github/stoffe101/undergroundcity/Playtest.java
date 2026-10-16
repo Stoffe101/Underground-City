@@ -117,6 +117,15 @@ public final class Playtest {
         Screenshot.grab(mc().gameDirectory, name + ".png", mc().getMainRenderTarget(), message -> log("screenshot " + name + ".png"));
     }
 
+    private static final java.util.concurrent.ConcurrentLinkedQueue<String> frameShots = new java.util.concurrent.ConcurrentLinkedQueue<>();
+
+    /**
+     * A screenshot of the next frame that is completely drawn. {@link #screenshot} copies whatever the render target holds when it is called, and in a software-rendered
+     * client that can be a frame several seconds old (the game ticks many times between frames), which is how a frame taken "under the bridge" showed the start of the sail.
+     * Use this for anything that moves.
+     */
+    static void screenshotNextFrame(String name) { frameShots.add(name); }
+
     /** The driver whose passenger view is kept ahead of the vehicle; re-applied just before every frame so nothing between ticks can turn the camera. */
     static volatile RoadDriver viewDriver;
 
@@ -124,6 +133,10 @@ public final class Playtest {
     public static void beforeFrame(TickEvent.RenderTickEvent event) {
         RoadDriver driver = viewDriver;
         if (driver != null && event.phase == TickEvent.Phase.START) driver.applyView();
+        if (event.phase == TickEvent.Phase.END) {
+            String name;
+            while ((name = frameShots.poll()) != null) screenshot(name);
+        }
     }
 
     // ------------------------------------------------------------------ lifecycle

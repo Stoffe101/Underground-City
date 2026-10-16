@@ -260,7 +260,7 @@ final class RoadDriver {
             }
         }
         Playtest.log(text.toString());
-        Playtest.screenshot("uc-" + label.split(" ")[0] + "-slow");
+        Playtest.screenshotNextFrame("uc-" + label.split(" ")[0] + "-slow");
     }
 
     void release() { hold("w", false); hold("a", false); hold("d", false); }

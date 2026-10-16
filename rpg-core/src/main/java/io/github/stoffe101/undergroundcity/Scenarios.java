@@ -531,7 +531,7 @@ final class Scenarios {
         Playtest.queue(label + ": log the seat", () -> {
             var ride = Minecraft.getInstance().player.getVehicle();
             Playtest.log("riding " + (ride == null ? "nothing" : ride.getType() + " at " + ride.position()));
-            if (ride != null) Playtest.screenshot("uc-" + label.replace(' ', '-') + "-seated");
+            if (ride != null) Playtest.screenshotNextFrame("uc-" + label.replace(' ', '-') + "-seated");
         });
     }
 
@@ -709,7 +709,7 @@ final class Scenarios {
                 if (serverEntity == null) { Playtest.log("the server cannot see vehicle " + id); return; }
                 fuelVehicle(ivVehicle(serverEntity));
             });
-            Playtest.screenshot("uc-car-placed");
+            Playtest.screenshotNextFrame("uc-car-placed");
         });
         Playtest.wait("let the tank update reach the client", 20);
         Playtest.queue("log the fuel state", () -> Playtest.log("after fuelling: " + describeVehicle(ivVehicle(vehicleNear()))));
@@ -723,14 +723,14 @@ final class Scenarios {
         }, () -> driver[0].tick(), 6000);
         Playtest.queue("report the drive", () -> {
             Playtest.log("drive: " + driver[0].summary());
-            Playtest.screenshot("uc-car-driving");
+            Playtest.screenshotNextFrame("uc-car-driving");
             if (driver[0].summary().isEmpty()) { driver[0].release(); Playtest.fail("the drive did not finish within its time budget at s=" + (int) driver[0].progress()); }
         });
         Playtest.queue("brake with S and look at the stopping distance", () -> {
             Playtest.keyDown("s");
         });
         Playtest.wait("brake", 80);
-        Playtest.queue("release S and screenshot", () -> { Playtest.keyUp("s"); Playtest.log("after braking: " + describeVehicle(ivVehicle(vehicleNear())) + " at " + Minecraft.getInstance().player.position()); Playtest.screenshot("uc-car-braked"); });
+        Playtest.queue("release S and screenshot", () -> { Playtest.keyUp("s"); Playtest.log("after braking: " + describeVehicle(ivVehicle(vehicleNear())) + " at " + Minecraft.getInstance().player.position()); Playtest.screenshotNextFrame("uc-car-braked"); });
     }
 
     /** The Modern Life Motorboat closest to the player. */
@@ -887,7 +887,7 @@ final class Scenarios {
             var boat = boatNear();
             if (boat == null) return;
             Playtest.log("boat at " + boat.position() + " " + describeBoat(boat));
-            Playtest.screenshot("uc-boat-placed");
+            Playtest.screenshotNextFrame("uc-boat-placed");
         });
         board(Scenarios::boatNear, () -> {
             var plan = roadPlan(road);
@@ -899,13 +899,13 @@ final class Scenarios {
             var plan = roadPlan(road);
             var route = RoadDriver.beside(plan, offset, 8);
             driver[0] = new RoadDriver(route, run[1] - 10, "motorboat under the bridge of " + road).steerByYaw().faceForward()
-                .at(run[0] + 40, () -> Playtest.screenshot("uc-boat-approach"))
-                .at((run[0] + run[1]) / 2, () -> { Playtest.log("under the deck: " + describeBoat(boatNear())); Playtest.screenshot("uc-boat-under-bridge"); })
-                .at(run[1] - 40, () -> Playtest.screenshot("uc-boat-leaving"));
+                .at(run[0] + 40, () -> Playtest.screenshotNextFrame("uc-boat-approach"))
+                .at((run[0] + run[1]) / 2, () -> { Playtest.log("under the deck: " + describeBoat(boatNear())); Playtest.screenshotNextFrame("uc-boat-under-bridge"); })
+                .at(run[1] - 40, () -> Playtest.screenshotNextFrame("uc-boat-leaving"));
         }, () -> driver[0].tick(), 6000);
         Playtest.queue("report the crossing", () -> {
             Playtest.log("sail: " + driver[0].summary());
-            Playtest.screenshot("uc-boat-across");
+            Playtest.screenshotNextFrame("uc-boat-across");
             if (driver[0].summary().isEmpty()) { driver[0].release(); Playtest.fail("the crossing did not finish within its time budget at " + (int) driver[0].progress()); }
             var boat = boatNear();
             if (boat != null) Playtest.log("after the crossing: " + describeBoat(boat));
