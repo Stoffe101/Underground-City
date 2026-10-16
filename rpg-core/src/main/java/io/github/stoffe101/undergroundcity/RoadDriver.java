@@ -126,12 +126,7 @@ final class RoadDriver {
             return false;
         }
         unseatedTicks = 0;
-        if (faceForward) {
-            player.setYRot(ride.getYRot());
-            player.yRotO = player.getYRot();
-            player.setXRot(12f);
-            player.xRotO = 12f;
-        }
+        if (faceForward) { Playtest.viewDriver = this; applyView(); }
         if (startGameTime < 0) { startGameTime = mc.level.getGameTime(); Playtest.focusWindow(); }
         ticks++;
         Vec3 position = ride.position();
@@ -221,6 +216,24 @@ final class RoadDriver {
         return false;
     }
 
+    private int viewLogs;
+
+    /** Points the player's own view along the vehicle's heading, a little downward. Called every client tick and again just before every frame. */
+    void applyView() {
+        Minecraft mc = Minecraft.getInstance();
+        var player = mc.player;
+        if (!faceForward || player == null || player.getVehicle() == null) return;
+        if (viewLogs < 3) {
+            viewLogs++;
+            Playtest.log(label + ": view pitch " + String.format("%.0f", player.getXRot()) + ", camera pitch " + String.format("%.0f", mc.gameRenderer.getMainCamera().getXRot())
+                + ", vehicle pitch " + String.format("%.0f", player.getVehicle().getXRot()) + "; setting 12");
+        }
+        player.setYRot(player.getVehicle().getYRot());
+        player.yRotO = player.getYRot();
+        player.setXRot(12f);
+        player.xRotO = 12f;
+    }
+
     /** What is around a vehicle that has stopped moving: the blocks at and around it (water, solid, air) at three heights, so a pier, a shore or a rail shows up. */
     private void diagnose(Minecraft mc, Vec3 position) {
         BlockPos centre = BlockPos.containing(position);
@@ -251,6 +264,7 @@ final class RoadDriver {
     }
 
     private void finish(boolean fail, String reason) {
+        if (Playtest.viewDriver == this) Playtest.viewDriver = null;
         release();
         done = true;
         failed = fail;

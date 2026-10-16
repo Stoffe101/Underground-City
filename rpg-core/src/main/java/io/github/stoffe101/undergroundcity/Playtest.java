@@ -117,6 +117,15 @@ public final class Playtest {
         Screenshot.grab(mc().gameDirectory, name + ".png", mc().getMainRenderTarget(), message -> log("screenshot " + name + ".png"));
     }
 
+    /** The driver whose passenger view is kept ahead of the vehicle; re-applied just before every frame so nothing between ticks can turn the camera. */
+    static volatile RoadDriver viewDriver;
+
+    @SubscribeEvent
+    public static void beforeFrame(TickEvent.RenderTickEvent event) {
+        RoadDriver driver = viewDriver;
+        if (driver != null && event.phase == TickEvent.Phase.START) driver.applyView();
+    }
+
     // ------------------------------------------------------------------ lifecycle
     @SubscribeEvent
     public static void render(TickEvent.RenderTickEvent event) {
