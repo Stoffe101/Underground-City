@@ -639,6 +639,7 @@ final class Scenarios {
                 Playtest.log(road + ": first bridge from " + (int) found[0] + " to " + (int) found[1] + "; starting at " + startMetres[0] + ", driving " + driveBlocks[0]);
             }
         });
+        pregenerate(road, () -> startMetres[0] - 12, () -> startMetres[0] + driveBlocks[0] + 40);
         final double[][] arrival = new double[1][];
         Playtest.queue("an empty inventory, then onto the road in spectator mode (which cannot fall)", () -> {
             var at = roadPlan(road).pointAt(startMetres[0]);
@@ -745,6 +746,37 @@ final class Scenarios {
         return start >= 0 && plan.length() - start >= minimum ? new double[]{start, plan.length()} : null;
     }
 
+    /**
+     * Generates the chunks along a stretch of road before a vehicle drives it. The integrated server shares its CPU with a software-rendered client in
+     * the cloud container and can run half a minute behind, and a vehicle stops dead at the edge of a chunk the server has not made yet (the player
+     * is not slowed by it because the walker waits for chunks, a vehicle cannot). Two chunks per server task, so the server's watchdog never sees a
+     * long tick; the chunks are generated for real and kept on disk, nothing is faked.
+     */
+    private static void pregenerate(String road, java.util.function.DoubleSupplier from, java.util.function.DoubleSupplier to) {
+        final java.util.concurrent.atomic.AtomicBoolean finished = new java.util.concurrent.atomic.AtomicBoolean();
+        Playtest.queue("generate the chunks along " + road + " ahead of the vehicle", () -> {
+            var plan = roadPlan(road);
+            java.util.LinkedHashSet<Long> wanted = new java.util.LinkedHashSet<>();
+            for (double at = Math.max(0, from.getAsDouble()); at <= Math.min(plan.length(), to.getAsDouble()); at += 6) {
+                double[] point = plan.pointAt(at);
+                int cx = (int) Math.floor(point[0]) >> 4, cz = (int) Math.floor(point[1]) >> 4;
+                for (int dx = -1; dx <= 1; dx++) for (int dz = -1; dz <= 1; dz++) wanted.add(net.minecraft.world.level.ChunkPos.asLong(cx + dx, cz + dz));
+            }
+            java.util.ArrayDeque<Long> queue = new java.util.ArrayDeque<>(wanted);
+            Playtest.log("generating " + queue.size() + " chunks along " + road + " from " + (int) from.getAsDouble() + " to " + (int) to.getAsDouble());
+            var server = Minecraft.getInstance().getSingleplayerServer();
+            Runnable[] task = new Runnable[1];
+            task[0] = () -> {
+                for (int i = 0; i < 2 && !queue.isEmpty(); i++) {
+                    long packed = queue.poll();
+                    server.overworld().getChunk(net.minecraft.world.level.ChunkPos.getX(packed), net.minecraft.world.level.ChunkPos.getZ(packed));
+                }
+                if (queue.isEmpty()) finished.set(true); else server.execute(task[0]);
+            };
+            server.execute(task[0]);
+        }, finished::get, 12000);
+    }
+
     /** Where the boat goes in: beside the centreline at road distance {@code s}, on the water surface. Server thread; empty when that spot is not water. */
     private static double[] waterBesideRoad(net.minecraft.server.level.ServerLevel level, CorridorPlan plan, double s, double offset) {
         double[] on = RoadDriver.beside(plan, offset, 8).pointAt(s);
@@ -780,6 +812,7 @@ final class Scenarios {
             run[0] = found[0]; run[1] = found[1];
             Playtest.log(road + ": open water under the deck from " + (int) found[0] + " to " + (int) found[1]);
         });
+        pregenerate(road, () -> run[0] - 20, () -> run[1] + 20);
         arriveOnRoadLater(road, () -> (int) (run[0] + 8), "creative");
         Playtest.queue("find the water beside the deck (server side)", () -> {
             var server = Minecraft.getInstance().getSingleplayerServer();
