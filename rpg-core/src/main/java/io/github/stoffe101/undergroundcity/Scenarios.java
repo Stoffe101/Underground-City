@@ -284,10 +284,20 @@ final class Scenarios {
         speakTo("the farm co-op's employer (not this citizen's trade)", farmer, "uc-row-wrong-employer");
         // Villagers gather at the bell by day, so the employer is likely to be in the lane, away from her desk: she says so and walks back, and the player follows.
         speakTo("the gunsmith's employer", gunsmith, "uc-row-employer-away-from-the-desk");
+        final int[] polls = {0};
         Playtest.queue("wait until the gunsmith is back at her desk", () -> { }, () -> {
             var villager = citizen(null, gunsmith);
             if (villager == null) return false;
             var terminal = Vec3.atLowerCornerOf(origin[0]).add(3.5, 0.5, 10.5);
+            if (polls[0]++ % 100 == 0) {
+                var server = Minecraft.getInstance().getSingleplayerServer();
+                var real = server.overworld().getEntity(villager.getUUID());
+                String detail = real instanceof net.minecraft.world.entity.npc.Villager v
+                    ? "server side at " + v.position() + ", walk target " + v.getBrain().getMemory(net.minecraft.world.entity.ai.memory.MemoryModuleType.WALK_TARGET).map(t -> t.getTarget().currentBlockPosition().toShortString()).orElse("none")
+                        + ", navigation done " + v.getNavigation().isDone() + ", activity " + v.getBrain().getActiveActivities() + ", time of day " + (v.level().getDayTime() % 24000)
+                    : "not found on the server";
+                Playtest.log("the gunsmith is " + villager.position().distanceTo(terminal) + " blocks from her desk (" + terminal + "); " + detail);
+            }
             return villager.position().distanceTo(terminal) < 3.5;
         }, 1500);
         speakTo("the gunsmith's employer, at her desk", gunsmith, "uc-row-employer-terminal");
