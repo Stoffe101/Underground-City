@@ -1,0 +1,33 @@
+{
+  "schema_version": 3,
+  "title": "Source parts for Dray",
+  "career": "gunsmith",
+  "level": 7,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "underground_city:machined_parts",
+      "count": 4
+    },
+    {
+      "item": "underground_city:optical_components",
+      "count": 2
+    }
+  ],
+  "credits": 220,
+  "xp": 300,
+  "capacity": 1,
+  "refill_ticks": 24000,
+  "legality": "underground",
+  "requires_skill": "gunsmith.unregistered_builds",
+  "buyer": "dray",
+  "trust_gain": 1,
+  "requires_mod": "taczblueprints",
+  "rewards": [
+    {
+      "item": "taczblueprints:blueprint_smg",
+      "count": 1,
+      "nbt": "{GunId:\"tacz:uzi\"}"
+    }
+  ]
+}

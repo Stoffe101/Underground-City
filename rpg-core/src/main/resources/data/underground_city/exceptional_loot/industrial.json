@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "policy": "underground_city:industrial",
+  "chance": 0.12,
+  "entries": [
+    {
+      "item": "underground_city:prototype_alloy_ingot",
+      "weight": 6
+    },
+    {
+      "item": "underground_city:circuit_prototype",
+      "weight": 2
+    },
+    {
+      "item": "taczblueprints:blueprint_shotgun",
+      "nbt": "{GunId:\"tacz:m870\"}",
+      "weight": 2,
+      "requires_mod": "taczblueprints"
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "schema_version": 3,
+  "title": "Broker heirloom seed stock",
+  "career": "farmer",
+  "level": 5,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "underground_city:rare_seeds",
+      "count": 8
+    }
+  ],
+  "credits": 150,
+  "xp": 330,
+  "capacity": 2,
+  "refill_ticks": 12000,
+  "legality": "legal",
+  "requires_skill": "farmer.cultivar_broker",
+  "rewards": [
+    {
+      "item": "underground_city:heirloom_seed_packet",
+      "count": 1
+    }
+  ]
+}

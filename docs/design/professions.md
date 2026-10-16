@@ -33,3 +33,11 @@ Players have personal career XP and unlocks. Most economic goods are tradeable; 
 ## First slice
 
 Farmer + Gunsmith through five levels and meaningful early research; defer the two other careers and full tree until UX, duplication, and recipe reachability are tested.
+
+## Implemented skill trees (October 15, 2026)
+
+Skill trees for all four careers are live as Core datapack data with a legal path and an underground path on the
+same character (D-049, D-050). See [legal and underground careers](legal-and-underground-careers.md) for the nodes,
+the contracts they unlock and the balance model. The research/blueprint lifecycle above is implemented for
+firearms only as contract rewards of TaCZ Blueprints items (when that mod is installed); a Core-owned research bench
+is not built.

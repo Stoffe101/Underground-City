@@ -1,6 +1,6 @@
 # Three-city experimental world generator
 
-**Status: original source/profile, native building generation at all three anchors, and original road/bridge generation along two inter-city corridors (measured on a dedicated server and photographed by a native client). No populated, furnished or inhabited city claim.**
+**Status: original source/profile, native building generation at all three anchors, and original road/bridge generation along three inter-city corridors (measured on a dedicated server; frames in the sprint report). No populated, furnished or inhabited city claim.**
 
 The world uses The Lost Cities' [1.20.1 predefined-city registry](https://mcjty.eu/docs/mods/lost-cities/asset_structure), packaged as an original Forge low-code mod. This avoids building thousands of structures by hand. Version-targeted semantics matter: city centers are chunk coordinates, radii are in **blocks**.
 
@@ -8,11 +8,11 @@ The world uses The Lost Cities' [1.20.1 predefined-city registry](https://mcjty.
 
 | City | Center (block X, Z) | Radius | Generated massing / intention |
 | --- | --- | --- | --- |
-| Ironhaven | 0, 0 | 600 blocks | Dense industrial skyline, 9-floor cap |
-| Valewood | 2016, 704 | 410 blocks | Lower-rise, more parks, 3-floor cap |
-| Blackwater | -2016, 1072 | 570 blocks | Dense commercial towers, 11-floor cap |
+| Ironhaven | 8, 8 (chunk 0, 0) | 600 blocks | Dense industrial skyline, 9-floor cap |
+| Valewood | 1992, 280 (chunk 124, 17) | 410 blocks | Lower-rise, more parks, 3-floor cap |
+| Blackwater | 1048, 2024 (chunk 65, 126) | 570 blocks | Dense commercial towers, 11-floor cap |
 
-These starting locations, skyline caps, terrain seed, and styles are **test values**, not approved canonical geography. No city actually has its own hand-made factory, vineyard, residence interior or functioning NPC population yet. Lost Cities' own highway planner never connects these fixed centers (measured, see below); Core's corridor road feature does, for the two main roads. Furnished interiors and NPC homes still require asset work.
+These locations (a **close triangle**, see [the rework below](#october-15-rework-a-close-triangle-with-a-road-on-every-edge)), skyline caps, terrain seed, and styles are **test values**, not approved canonical geography. No city actually has its own hand-made factory, vineyard, residence interior or functioning NPC population yet. Lost Cities' own highway planner never connects these fixed centers (measured, see below); Core's corridor road feature does, for the two main roads. Furnished interiors and NPC homes still require asset work.
 
 All three styles inherit the mod's standard city style instead of copying third-party structures. A unique city style primarily changes **building density, floor cap and park frequency**. Proper unique architecture, landmarks, NPC home/job markers, civic services and apartment interiors follow after the preliminary world is viewed in-engine.
 
@@ -33,7 +33,7 @@ For a **new disposable world** with Minecraft 1.20.1, Forge 47.4.10 and Lost Cit
 1. Obtain the original author mod separately; build/install our original files with `python scripts/install_world_prototype.py --server-root <fresh-instance>`.
 2. The installer selects `uc_three_city` in server defaults and maps the Overworld in `config/lostcities/common.toml`. Its profile disables random city centers, spawners and damage, and scans the largest predefined radius.
 3. Its original `underground_city:three_city` world style omits the standard ocean/river penalties, so fixed city anchors remain eligible across vanilla biomes. Height bounds cover the Overworld. This can produce significant terrain platforms/seams that need actual visual inspection.
-4. Create a fresh world, using seed `579` to reproduce the hosted survey (see [seed choice](#seed-choice-water-between-the-cities-is-a-feature) for why; the earlier `20261014` put Ironhaven in the sea). Confirm all three centers, terrain transitions, safe spawn, roads and chunk performance.
+4. Create a fresh world, using seed `5908`, the reference seed in `corridors.json` (see [the rework](#october-15-rework-a-close-triangle-with-a-road-on-every-edge) for why; the earlier `579` and `20261014` do not suit the new layout). Confirm all three centers, terrain transitions, safe spawn, roads and chunk performance.
 5. Do not move prototype coordinates or apply this profile to an existing save. The installer rejects existing saves/configs/packages; generation changes affect new chunks only.
 
 A passing ZIP/unit test proves **only source validation**. A separate next-stage in-engine Lost Cities test must prove the mod reads all three assets and generates them at the specified centers with no random extra city center. The dedicated native-block survey now provides generation evidence at all three anchors; it does not prove no extra city centers across the entire world.
@@ -78,7 +78,51 @@ Forge **Lost Cities 7.5.5** includes the versioned 7.5 inter-city highway networ
 
 Water between the cities is **a feature, not a defect**: a bridge is the safe way over, and a boat is the alternative (rivers and straits stay open under every bridge).
 
-### Verification (seed 579, native dedicated server in the cloud container)
+## October 15 rework: a close triangle with a road on every edge
+
+The first prototype put the cities on a line (Blackwater - Ironhaven - Valewood): Valewood to Blackwater was about 3,000 blocks (12 minutes on foot) with no road. D-048 and the October 16 brief want a close triangle with three practical bridges, so `scripts/plan_triangle_layout.py` now derives the three city centres and corridors from the radii and the **edge gaps** (the road length between two city circles). Nothing is hand-placed: `cities.json` and `corridors.json` are generated from that plan, and `--check` fails when they drift.
+
+| Edge | Edge gap | Road length | On foot (4.317 blocks/s, static) | City centre to city centre |
+| --- | ---: | ---: | ---: | ---: |
+| Ironhaven - Valewood | 1,000 | 1,016 | 3.9 min | about 7.8 min |
+| Ironhaven - Blackwater | 1,100 | 1,122 | 4.3 min | about 8.8 min |
+| Valewood - Blackwater | 1,000 | 1,027 | 4.0 min | about 7.6 min |
+
+Outskirt to outskirt is inside the accepted 3-5 minutes; centre to centre is 7.6-8.8 minutes, so the Ironhaven - Blackwater leg sits just above the 6-8 minute aim and below the 10-minute hard maximum. This is a walking estimate, not a measured player trip; sprinting and the roadside content that should make the trip worth taking are not built. A gate on each road (`<from>_<to>_gate_<city>`) carries the checkpoint zone used by the underground-career law system.
+
+### Seed choice, re-done
+
+Moving the cities invalidated seed 579 (it now has a city underwater). `WorldSeedScanHarness` ranks seeds in two stages (a cheap climate-sampler pass over 30,000 seeds, then the chunk generator's real surface and ocean-floor heights for the best 503) and now scores: dry city sites, **water on a ring 150 blocks outside each city** (25-75%, so a city reads as an island or peninsula), per-road water in bridgeable gaps of 48-320 blocks, steep steps, and the **height and relief of each city site**. Seed 166 ranked first on water alone; a hosted survey then showed Valewood on `frozen_peaks`, and the scan (`list:` mode) measured its centre at height 219 with 126 blocks of relief, so the metric was added. Re-scored candidates:
+
+| Seed | Score (lower is better) | Ring water I / V / B | Centre height I / V / B | Site relief I / V / B |
+| --- | ---: | --- | --- | --- |
+| **5908** | 222 | 25% / 50% / 50% | 63 / 70 / 65 | 10 / 7 / 21 |
+| 5455 | 295 | 17% / 33% / 33% | 63 / 66 / 63 | 26 / 12 / 5 |
+| 3936 | 490 | 33% / 33% / 17% | 78 / 89 / 88 | 31 / 26 / 28 |
+| 166 | 7,699 | 25% / 33% / 58% | 63 / **219** / 79 | 37 / **126** / 11 |
+| 579 | 1,001,230 (a city underwater) | 25% / 17% / 33% | 68 / 69 / 70 | 13 / 17 / 40 |
+
+### Verification of seed 5908 (native dedicated server, cloud container)
+
+`WorldRoadVerifier` generated the 362 road chunks and read the real blocks along every centreline (the same procedure as before):
+
+| Road | Length | Samples read | Bridge/viaduct deck | Longest bridge | Longest open water | Deck missing | Headroom blocked | Steps > half block | Parapets missing |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Ironhaven - Valewood | 1,016 | 993 | 117 blocks | 45 | 40 | 0 | 0 | 0 | 0 |
+| Ironhaven - Blackwater | 1,122 | 1,098 | 355 blocks | 181 | 85 | 0 | 0 | 0 | 0 |
+| Valewood - Blackwater | 1,027 | 1,003 | 543 blocks | 181 | 151 | 0 | 0 | 0 | 0 |
+
+All three roads report `continuous: true`, with at least 3 free blocks over water. Native city generation at the anchors: Ironhaven (taiga) 789 window blocks, Valewood (old-growth birch forest) 1,535, Blackwater (plains) 1,133. The same procedure on seed 166 gave **identical numbers locally and on the hosted runner**, which is the determinism evidence for this method. Limits: the numbers say the geometry is continuous and over real water; whether it looks good is decided by looking at the frames, and nobody has sailed under or driven along these bridges.
+
+### Hosted reproduction and frame review of seed 5908
+
+The hosted job "Forge smoke / lostcities" ([run 38827928567](https://github.com/Stoffe101/Underground-City/actions/runs/38827928567), head `3f4385d`) generated the same world on GitHub's runner and reproduced the local survey **exactly**: 993 / 1,098 / 1,003 centreline samples, bridge decks of 117 / 355 / 543 blocks, longest bridges 45 / 181 / 181, longest open water 40 / 85 / 151, no deck missing, no blocked headroom, no step above half a block, no missing parapet (222, 647 and 1,003 expected), at least 3 free blocks over water, and the window counts of the earlier table (789, 1,535, 1,133). The job asserts all of it, then a native client photographs the generated world.
+
+All 15 downscaled review copies printed in that job's log were decoded (SHA-256 verified) and viewed: a top-down and an oblique frame of each city, and for each road a bridge from the side, a walker's view from the deck and a walker's view along the plain road. What the frames show: real Lost Cities buildings in all three cities (Ironhaven among snow-dusted taiga, Valewood around a fountain park, Blackwater with tall blocks); stone bridges on piers with connected parapets and lanterns over open water on the Ironhaven - Blackwater, Ironhaven - Valewood (over a small lake) and Valewood - Blackwater (over a wide stretch of water, with a beach and birch forest on the shore); and a ground road of stone slabs cut through taiga and birch forest. No floating building appears in the six city frames, which is a sample, not a proof. Known rough edges: the oblique city frames still spend about half the picture on sky, the road is a plain grey strip with raised step edges where the terrain rises, and trees touch the parapets in places.
+
+Worth a human look on foot: the Valewood - Blackwater deck ranges from y 65 to y 122, so that road climbs a ridge somewhere along its length (the steepest step is two half blocks, so it is a slope and not a cliff, but nobody has walked it).
+
+### Verification of the earlier line layout (seed 579; superseded by the rework below)
 
 `WorldRoadVerifier` forces the road chunks to generate on worker threads (a chunk ticket; `ServerLevel.setChunkForced` generates on the server thread and trips the 60 s watchdog), then reads the **real blocks** on the centreline every block: deck present, three free blocks of headroom, no step above half a block between neighbours, a parapet on the bridge sides, and water with free blocks under the deck.
 
@@ -89,21 +133,21 @@ Water between the cities is **a feature, not a defect**: a bridge is the safe wa
 
 The hosted run [38676037902](https://github.com/Stoffe101/Underground-City/actions/runs/38676037902) (head `1718ee3`) reproduced the same numbers on GitHub's runners (1,252 and 1,117 centreline samples, longest bridges 120 and 184 blocks), which also shows the result does not depend on chunk generation order or hardware. Both reports say `continuous: true`; 284 chunks generated in 323 s on two software cores. Plan construction took about 3 s. The smallest measured free height between water and the bridge underside was 3 blocks (at shoreline ramps); the design value over water is 4. This proves the blocks exist and form a gap-free walkable line. It does **not** prove: that vehicles from a vehicle mod fit, that mobs behave on the road, that the roads look good (that is the separate frame review below), or that anything lives along them. Vanilla structures generated on top of the road centreline are repaired by the neighbour pass but a rare conflict could still appear; it would show as `deck_missing` in the next survey.
 
-### Frame review (native client in the cloud container, seed 579)
+### Frame review of the earlier line layout (seed 579; superseded)
 
 Twelve real frames were viewed (six city, six road). What the numbers did not show and the frames did: the parapet walls were unconnected posts (fixed: a second pass joins them), and one oblique bridge frame was nearly all sky or aimed at a few unmeshed blocks because the camera was high and steep or the deck was not loaded yet (fixed: a low, farther camera and a wait until the client holds the deck block). After the fixes the bridge frames show a long stone deck on piers over open water and over a river, connected parapets with lanterns, 4 free blocks under the deck for a boat, and a ground road cut through taiga and birch forest with slab ramps. Known rough edges: slab ramps and diagonal edges look stepped, trees overhang the parapet in places, and the Ironhaven oblique city frame still has a nearby rooftop in the foreground (the camera is higher and the render distance is now 8, which shows a much wider skyline). These are local container frames, not hosted artifacts, so nothing is recorded in `content/qa/reviewed-runs.json` for them.
 
-### Seed choice: water between the cities is a feature
+### Seed choice for the earlier layout: water between the cities is a feature
 
 Design intent (user, October 15): ocean or large rivers between the cities make the bridges pivotal, and a boat should be a valid alternative. Seed `20261014` put Ironhaven itself in the sea and the Ironhaven–Blackwater road 100% under water, so it was replaced. `WorldSeedScanHarness` ranks seeds in two stages (a cheap climate-sampler pass, then the chunk generator's real surface and ocean-floor heights along the real road centrelines) for: dry city sites, 6-35% water per built road in gaps of 48-320 blocks, and land elsewhere. Of 10,000 seeds, 302 finalists were re-scored with real heights. Seed `3130` (best of an earlier climate-only scan) was generated first and rejected: about half of its Ironhaven–Valewood road lay on water. Seed `579` (fifth of the real-height ranking) was then generated and measured. It has dry cities, two roads with long bridges over rivers and braided shoals, and an open **sea** on the unpaved Valewood–Blackwater edge (944-block longest water run), so travel there is by boat or around through Ironhaven. This ranking is a tool, not proof of quality: a seed's other terrain was not reviewed.
 
-### Travel time (D-048)
+### Travel time for the earlier layout (D-048; see the rework for the current numbers)
 
 Accepted constraint: routine inter-city travel should take only a few minutes. A static estimate at walking speed (4.317 blocks per second, no sprinting, no obstacles) gives about 4.8 minutes along the Ironhaven–Valewood road (1,251 blocks between city edges) and about 4.3 minutes along Ironhaven–Blackwater (1,116 blocks), inside the 3-5 minute aim. That is arithmetic, not a measurement: a real traversal benchmark (with the slab ramps, doors, a horse or boat, and two players) is still owed before a release. The Valewood–Blackwater edge is open sea in seed 579, so it must stay optional until a ferry or boat service exists.
 
 ### What is still not built
 
-Gate houses at the checkpoints, a built road on the Valewood–Blackwater edge, rest stops, road signs, NPC patrols and vehicle-mod compatibility. The checkpoint, `travel_modes` and `security` fields in `corridors.json` remain design data.
+Gate houses at the checkpoints (checkpoints are search zones, see [legal and underground careers](../design/legal-and-underground-careers.md)), rest stops, road signs, NPC patrols and vehicle-mod compatibility. The checkpoint, `travel_modes` and `security` fields in `corridors.json` remain design data.
 
 ## Source-checked fresh-instance setup
 

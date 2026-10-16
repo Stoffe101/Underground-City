@@ -27,3 +27,18 @@ Examples: border convoy ambush, guard-post defense, smuggler crackdown, neighbor
 ## Required tests
 
 No false positive arrests; contraband-only confiscation; consistent fine and wanted-level persistence; safe-zone protection; no unavoidable two-player death-loop; guard vs bandit discrimination; performance while NPCs use weapons.
+
+## Implementation status (October 15, 2026)
+
+A first, deliberately narrow slice of this design is live in Core and described in
+[legal and underground careers](legal-and-underground-careers.md):
+
+- **Implemented:** data-driven city laws (legal / permit / prohibited per contraband category, fines, search chances by
+  gate risk), contraband classified by registry id and NBT, checkpoint zones at the corridor gates with a seeded,
+  no-reroll search, contraband-only seizure with one capped fine per category, licences that satisfy "permit" but
+  never "prohibited", per-city heat that decays with active play, hand-off witnesses, and buyer trust.
+- **Not implemented:** guard NPCs, pursuit, arrest and holding, warrants, patrol routes, boat customs, safe zones,
+  faction warfare. A "search" is a server event with a chat message, not a visible guard. Checkpoint zones can be
+  walked around on foot (a longer, rougher route that is the deliberate smuggler's trail).
+- The required tests above that apply to this slice (contraband-only confiscation, fine and heat persistence, no
+  reroll by relogging) are GameTests in `UndergroundGameTests`.

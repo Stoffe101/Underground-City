@@ -1,0 +1,75 @@
+{
+  "crossing_contracts": [
+    {
+      "corridor": "ironhaven_valewood",
+      "neutral_pass_through": true,
+      "options": [
+        "escort",
+        "trade_manifest",
+        "infiltrate"
+      ]
+    },
+    {
+      "corridor": "ironhaven_blackwater",
+      "neutral_pass_through": false,
+      "options": [
+        "authorized_convoy",
+        "high_risk_crossing",
+        "black_market_courier"
+      ]
+    },
+    {
+      "corridor": "valewood_blackwater",
+      "neutral_pass_through": true,
+      "options": [
+        "licensed_broker",
+        "backroad_smuggler",
+        "reputation_access"
+      ]
+    }
+  ],
+  "initial_relations": [
+    {
+      "cities": [
+        "ironhaven",
+        "valewood"
+      ],
+      "civilian_access": "convoy_pass_or_limited_trade_permit",
+      "risk": "medium",
+      "status": "armed_standoff"
+    },
+    {
+      "cities": [
+        "ironhaven",
+        "blackwater"
+      ],
+      "civilian_access": "document_check_and_escort",
+      "risk": "high",
+      "status": "active_border_conflict"
+    },
+    {
+      "cities": [
+        "valewood",
+        "blackwater"
+      ],
+      "civilian_access": "neutral_contract_or_remote_trade",
+      "risk": "high",
+      "status": "trade_embargo"
+    }
+  ],
+  "prototype_only": true,
+  "schema_version": 1,
+  "visitor_rules": {
+    "black_market_routes": "higher_profit_higher_heat",
+    "contested_military_zone": "hostile_patrols_and_warning_before_engagement_where_feasible",
+    "death_or_capture": "recoverable_within_session",
+    "faction_war_evolves_with_story": true,
+    "foreign_citizen_at_public_gate": "warn_and_inspect_without_instant_death",
+    "illegal_border_crossing": "trespass_evidence_and_local_heat",
+    "legitimate_supply_obtainable_without_pvp": true,
+    "no_passive_offline_raids": true,
+    "player_versus_player": "disabled_by_default",
+    "safe_starters_and_registration_offices": true,
+    "valid_trade_pass": "civilian_access_to_designated_market_and_contractors"
+  }
+}

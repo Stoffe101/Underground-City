@@ -24,7 +24,7 @@ import java.util.function.Supplier;
  * This is NOT a remote city supplier, contraband order, or raid service.
  */
 public final class TerminalNetwork {
-    private static final String VERSION = "4";
+    private static final String VERSION = "7";
     private static final String STARTER_SHOP_ID = "uc_starter_supply";
     private static final double MAX_TERMINAL_DISTANCE_SQUARED = 64.0;
     private static final java.util.Map<ServerPlayer, Integer> REQUEST_TIMES = new java.util.WeakHashMap<>();
@@ -36,6 +36,9 @@ public final class TerminalNetwork {
     private TerminalNetwork() {}
 
     public static void register() {
+        registerChallenge();
+        registerRegistration();
+        registerTracker();
         CHANNEL.registerMessage(0, OpenTerminal.class,
             (packet, buffer) -> { buffer.writeBlockPos(packet.pos); packet.data.write(buffer); },
             buffer -> new OpenTerminal(buffer.readBlockPos(), TerminalData.read(buffer)),
@@ -70,6 +73,140 @@ public final class TerminalNetwork {
                 });
                 context.setPacketHandled(true);
             }, Optional.of(NetworkDirection.PLAY_TO_SERVER));
+        CHANNEL.registerMessage(4, SkillAction.class,
+            (packet, buffer) -> { buffer.writeBlockPos(packet.pos); buffer.writeUtf(packet.skill, 64); },
+            buffer -> new SkillAction(buffer.readBlockPos(), buffer.readUtf(64)),
+            (packet, supplier) -> {
+                NetworkEvent.Context context = supplier.get();
+                context.enqueueWork(() -> {
+                    ServerPlayer player = context.getSender();
+                    if (player != null) SkillService.unlock(player, packet.pos, packet.skill);
+                });
+                context.setPacketHandled(true);
+            }, Optional.of(NetworkDirection.PLAY_TO_SERVER));
+    }
+
+    private static void registerTracker() {
+        CHANNEL.registerMessage(10, TrackedOrder.class,
+            (packet, buffer) -> {
+                buffer.writeBoolean(packet.tracked != null);
+                if (packet.tracked == null) return;
+                var tracked = packet.tracked;
+                buffer.writeUtf(tracked.title(), 96); buffer.writeVarInt(tracked.credits()); buffer.writeVarInt(tracked.xp());
+                buffer.writeUtf(tracked.deliverIn(), 96); buffer.writeBoolean(tracked.underground());
+                buffer.writeVarInt(tracked.lines().size());
+                for (var line : tracked.lines()) { buffer.writeUtf(line.item(), 96); buffer.writeUtf(line.label(), 64); buffer.writeVarInt(line.held()); buffer.writeVarInt(line.count()); }
+            },
+            buffer -> {
+                if (!buffer.readBoolean()) return new TrackedOrder(null);
+                String title = buffer.readUtf(96); int credits = buffer.readVarInt(), xp = buffer.readVarInt();
+                String deliverIn = buffer.readUtf(96); boolean underground = buffer.readBoolean();
+                int count = Math.min(buffer.readVarInt(), OrderTracker.MAX_LINES);
+                java.util.List<OrderTracker.Line> lines = new java.util.ArrayList<>();
+                for (int i = 0; i < count; i++) lines.add(new OrderTracker.Line(buffer.readUtf(96), buffer.readUtf(64), buffer.readVarInt(), buffer.readVarInt()));
+                return new TrackedOrder(new OrderTracker.Tracked(title, credits, xp, deliverIn, underground, lines));
+            },
+            (packet, supplier) -> {
+                NetworkEvent.Context context = supplier.get();
+                if (context.getDirection().getReceptionSide().isClient()) {
+                    context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> ClientOrderTracker.update(packet.tracked)));
+                }
+                context.setPacketHandled(true);
+            }, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+    }
+
+    /** Server to client: the accepted order with its live progress, or null to clear the tracker. */
+    public static void sendTracked(ServerPlayer player, OrderTracker.Tracked tracked) {
+        CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new TrackedOrder(tracked));
+    }
+
+    public static final class TrackedOrder {
+        final OrderTracker.Tracked tracked;
+        TrackedOrder(OrderTracker.Tracked tracked) { this.tracked = tracked; }
+    }
+
+    private static void registerRegistration() {
+        CHANNEL.registerMessage(7, OpenRegistration.class,
+            (packet, buffer) -> { },
+            buffer -> new OpenRegistration(),
+            (packet, supplier) -> {
+                NetworkEvent.Context context = supplier.get();
+                if (context.getDirection().getReceptionSide().isClient()) {
+                    context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> ClientRegistration::open));
+                }
+                context.setPacketHandled(true);
+            }, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+        CHANNEL.registerMessage(8, RegisterChoice.class,
+            (packet, buffer) -> { buffer.writeUtf(packet.city, 16); buffer.writeUtf(packet.career, 16); },
+            buffer -> new RegisterChoice(buffer.readUtf(16), buffer.readUtf(16)),
+            (packet, supplier) -> {
+                NetworkEvent.Context context = supplier.get();
+                context.enqueueWork(() -> {
+                    ServerPlayer player = context.getSender();
+                    if (player != null && requestSlot(player)) RegistrationService.handleChoice(player, packet.city, packet.career);
+                });
+                context.setPacketHandled(true);
+            }, Optional.of(NetworkDirection.PLAY_TO_SERVER));
+        CHANNEL.registerMessage(9, RegistrationResult.class,
+            (packet, buffer) -> { buffer.writeBoolean(packet.ok); buffer.writeUtf(packet.message, 120); },
+            buffer -> new RegistrationResult(buffer.readBoolean(), buffer.readUtf(120)),
+            (packet, supplier) -> {
+                NetworkEvent.Context context = supplier.get();
+                if (context.getDirection().getReceptionSide().isClient()) {
+                    context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> ClientRegistration.result(packet.ok, packet.message)));
+                }
+                context.setPacketHandled(true);
+            }, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+    }
+
+    private static void registerChallenge() {
+        CHANNEL.registerMessage(5, OpenChallenge.class,
+            (packet, buffer) -> { buffer.writeBlockPos(packet.pos); buffer.writeByteArray(packet.sequence); },
+            buffer -> new OpenChallenge(buffer.readBlockPos(), buffer.readByteArray(16)),
+            (packet, supplier) -> {
+                NetworkEvent.Context context = supplier.get();
+                if (context.getDirection().getReceptionSide().isClient()) {
+                    context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT,
+                        () -> () -> ClientChallenge.open(packet.pos, packet.sequence)));
+                }
+                context.setPacketHandled(true);
+            }, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+        CHANNEL.registerMessage(6, ChallengeAnswer.class,
+            (packet, buffer) -> { buffer.writeBlockPos(packet.pos); buffer.writeByteArray(packet.answer); },
+            buffer -> new ChallengeAnswer(buffer.readBlockPos(), buffer.readByteArray(16)),
+            (packet, supplier) -> {
+                NetworkEvent.Context context = supplier.get();
+                context.enqueueWork(() -> {
+                    ServerPlayer player = context.getSender();
+                    if (player != null) SecureTerminalService.answer(player, packet.pos, packet.answer, player.server.getTickCount());
+                });
+                context.setPacketHandled(true);
+            }, Optional.of(NetworkDirection.PLAY_TO_SERVER));
+    }
+
+    /** Server to client: show the first-login registration screen. */
+    public static void openRegistration(ServerPlayer player) {
+        CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new OpenRegistration());
+    }
+
+    /** Server to client: the outcome of a registration request. */
+    public static void registrationResult(ServerPlayer player, boolean ok, String message) {
+        CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new RegistrationResult(ok, message));
+    }
+
+    /** Client to server: the player's choice. The server validates both identifiers and registers once. */
+    public static void sendRegistration(String city, String career) {
+        CHANNEL.sendToServer(new RegisterChoice(city, career));
+    }
+
+    /** Server to client: the hidden sequence to flash. The client only displays it; the server checks the answer. */
+    public static void openChallenge(ServerPlayer player, BlockPos pos, byte[] sequence) {
+        CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new OpenChallenge(pos.immutable(), sequence.clone()));
+    }
+
+    /** Client to server: the single answer for the open challenge. */
+    public static void sendChallengeAnswer(BlockPos pos, byte[] answer) {
+        CHANNEL.sendToServer(new ChallengeAnswer(pos.immutable(), answer.clone()));
     }
 
     private static void receiveOpen(OpenTerminal packet, Supplier<NetworkEvent.Context> supplier) {
@@ -101,6 +238,11 @@ public final class TerminalNetwork {
     /** Client click on a regional offer; quantity is validated and the price is server-owned. */
     public static void requestRegionalBuy(BlockPos pos, String commodity, int quantity) {
         CHANNEL.sendToServer(new RegionalBuy(pos.immutable(), commodity, quantity, UUID.randomUUID()));
+    }
+
+    /** Client click on a skill node; the server re-checks level, prerequisites and points. */
+    public static void requestSkill(BlockPos pos, String skill) {
+        CHANNEL.sendToServer(new SkillAction(pos.immutable(), skill));
     }
 
     public static void requestWork(BlockPos pos, int action, String id, UUID nonce) {
@@ -166,4 +308,10 @@ public final class TerminalNetwork {
 
     private record WorkAction(BlockPos pos, int action, String id, UUID nonce) {}
     private record RegionalBuy(BlockPos pos, String commodity, int quantity, UUID nonce) {}
+    private record SkillAction(BlockPos pos, String skill) {}
+    private record OpenRegistration() {}
+    private record RegisterChoice(String city, String career) {}
+    private record RegistrationResult(boolean ok, String message) {}
+    private record OpenChallenge(BlockPos pos, byte[] sequence) {}
+    private record ChallengeAnswer(BlockPos pos, byte[] answer) {}
 }

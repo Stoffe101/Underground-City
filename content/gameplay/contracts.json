@@ -1,0 +1,527 @@
+{
+  "schema_version": 1,
+  "status": "implemented_in_core_data",
+  "disclaimer": "Source of truth for the legal and underground career contracts (D-049..D-053). scripts/generate_regional_content.py turns it into schema-3 work orders. A skill id must exist in rpg-core/src/main/resources/data/underground_city/skill_trees, a buyer id in .../buyers. Underground contracts need an underground buyer; legal contracts never carry trust or heat. Mod IDs are optional: an order that needs a missing mod is skipped at load, never an error.",
+  "economy_rules": {
+    "legal_margin": [
+      1.3,
+      2.1
+    ],
+    "underground_nominal_margin": [
+      1.9,
+      2.2
+    ],
+    "note": "Margins apply where every requirement is priced: credits / purchase cost of the consumed goods. Underground work pays more on paper (1.9-2.2x against 1.3-2.1x, and far larger absolute sums) because the goods must cross checkpoints, the buyer's demand is tiny and a seizure loses the goods and pays a fine. An errand (no contraband carried, the risk is only the buyer's trust) uses the legal band. scripts/validate_underground_balance.py computes the risk-adjusted result along the real corridor gates: careless smuggling must lose to legal work, a trained smuggler may beat it modestly, and nothing, not even a fully licensed carrier, may exceed twice the legal return."
+  },
+  "defaults": {
+    "capacity": 2,
+    "refill_ticks": 12000
+  },
+  "contracts": [
+    {
+      "id": "greenhouse_wholesale",
+      "title": "Greenhouse wholesale: carrots and potatoes",
+      "career": "farmer",
+      "level": 3,
+      "legality": "legal",
+      "requires_skill": "farmer.greenhouse_management",
+      "capacity": 4,
+      "refill_ticks": 6000,
+      "credits": 100,
+      "xp": 260,
+      "requirements": [
+        {
+          "item": "minecraft:carrot",
+          "count": 24
+        },
+        {
+          "item": "minecraft:potato",
+          "count": 24
+        }
+      ]
+    },
+    {
+      "id": "heirloom_seeds",
+      "title": "Broker heirloom seed stock",
+      "career": "farmer",
+      "level": 5,
+      "legality": "legal",
+      "requires_skill": "farmer.cultivar_broker",
+      "credits": 150,
+      "xp": 330,
+      "requirements": [
+        {
+          "item": "underground_city:rare_seeds",
+          "count": 8
+        }
+      ],
+      "rewards": [
+        {
+          "item": "underground_city:heirloom_seed_packet",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "id": "estate_pantry",
+      "title": "Stock an estate pantry",
+      "career": "farmer",
+      "level": 8,
+      "legality": "legal",
+      "requires_skill": "farmer.estate_wholesale",
+      "credits": 260,
+      "xp": 420,
+      "requirements": [
+        {
+          "item": "minecraft:bread",
+          "count": 24
+        },
+        {
+          "item": "minecraft:pumpkin_pie",
+          "count": 4
+        }
+      ]
+    },
+    {
+      "id": "licensed_cultivar_supply",
+      "title": "Licensed controlled-crop supply",
+      "career": "farmer",
+      "level": 10,
+      "legality": "legal",
+      "requires_skill": "farmer.controlled_crop_licence",
+      "buyer": "blackwater_dispensary",
+      "credits": 200,
+      "xp": 400,
+      "requirements": [
+        {
+          "item": "underground_city:sable_leaf_bale",
+          "count": 6
+        }
+      ]
+    },
+    {
+      "id": "quiet_bales",
+      "title": "Quiet bale delivery",
+      "career": "farmer",
+      "level": 9,
+      "legality": "underground",
+      "requires_skill": "farmer.underground_trade",
+      "buyer": "marrow",
+      "trust_gain": 1,
+      "capacity": 2,
+      "refill_ticks": 18000,
+      "credits": 220,
+      "xp": 380,
+      "requirements": [
+        {
+          "item": "underground_city:sable_leaf_bale",
+          "count": 6
+        }
+      ],
+      "origin": "valewood"
+    },
+    {
+      "id": "reserve_load",
+      "title": "Reserve load for the estate trade",
+      "career": "farmer",
+      "level": 12,
+      "legality": "underground",
+      "requires_skill": "farmer.grey_market_contacts",
+      "buyer": "marrow",
+      "min_trust": 2,
+      "trust_gain": 1,
+      "capacity": 1,
+      "refill_ticks": 24000,
+      "credits": 440,
+      "xp": 600,
+      "requirements": [
+        {
+          "item": "underground_city:sable_leaf_bale",
+          "count": 12
+        }
+      ],
+      "rewards": [
+        {
+          "item": "underground_city:sable_cutting",
+          "count": 2
+        }
+      ],
+      "origin": "valewood"
+    },
+    {
+      "id": "municipal_structural",
+      "title": "Structural steel for the city works",
+      "career": "smith",
+      "level": 3,
+      "legality": "legal",
+      "requires_skill": "smith.structural_works",
+      "capacity": 4,
+      "refill_ticks": 6000,
+      "credits": 150,
+      "xp": 280,
+      "requirements": [
+        {
+          "item": "minecraft:iron_ingot",
+          "count": 12
+        },
+        {
+          "item": "minecraft:stone_bricks",
+          "count": 16
+        }
+      ]
+    },
+    {
+      "id": "guard_plating",
+      "title": "Plating for the Ironhaven guard",
+      "career": "smith",
+      "level": 5,
+      "legality": "legal",
+      "requires_skill": "smith.armoury_contracts",
+      "buyer": "ironhaven_guard",
+      "credits": 270,
+      "xp": 340,
+      "requirements": [
+        {
+          "item": "minecraft:iron_chestplate",
+          "count": 2
+        },
+        {
+          "item": "minecraft:iron_helmet",
+          "count": 2
+        }
+      ],
+      "rewards": [
+        {
+          "item": "underground_city:prototype_alloy_ingot",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "id": "unstamped_plate_run",
+      "title": "Unstamped plate for Hollis",
+      "career": "smith",
+      "level": 7,
+      "legality": "underground",
+      "requires_skill": "smith.unlisted_fabrication",
+      "buyer": "hollis",
+      "trust_gain": 1,
+      "capacity": 2,
+      "refill_ticks": 18000,
+      "credits": 300,
+      "xp": 360,
+      "requirements": [
+        {
+          "item": "underground_city:unstamped_plate",
+          "count": 4
+        }
+      ],
+      "origin": "ironhaven"
+    },
+    {
+      "id": "armoury_order",
+      "title": "Armoury order for a trusted buyer",
+      "career": "smith",
+      "level": 11,
+      "legality": "underground",
+      "requires_skill": "smith.contraband_armoury",
+      "buyer": "hollis",
+      "min_trust": 2,
+      "trust_gain": 1,
+      "capacity": 1,
+      "refill_ticks": 24000,
+      "credits": 600,
+      "xp": 600,
+      "requirements": [
+        {
+          "item": "underground_city:unstamped_plate",
+          "count": 8
+        }
+      ],
+      "origin": "ironhaven"
+    },
+    {
+      "id": "licensed_sidearm",
+      "title": "A licensed sidearm for the co-op",
+      "career": "gunsmith",
+      "level": 3,
+      "legality": "legal",
+      "requires_skill": "gunsmith.licensed_repairs",
+      "buyer": "valewood_coop",
+      "requires_mod": "tacz",
+      "credits": 190,
+      "xp": 340,
+      "requirements": [
+        {
+          "item": "tacz:modern_kinetic_gun",
+          "count": 1,
+          "label": "Licensed pistol",
+          "gun_ids": [
+            "tacz:cz75",
+            "tacz:glock_17",
+            "tacz:m1911",
+            "tacz:m9a4"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "licensed_shotgun",
+      "title": "Hunting shotgun for the co-op",
+      "career": "gunsmith",
+      "level": 8,
+      "legality": "legal",
+      "requires_skill": "gunsmith.security_contracts",
+      "buyer": "valewood_coop",
+      "requires_mod": "taczblueprints",
+      "credits": 170,
+      "xp": 420,
+      "requirements": [
+        {
+          "item": "tacz:modern_kinetic_gun",
+          "count": 1,
+          "label": "Hunting shotgun",
+          "gun_ids": [
+            "tacz:db_long",
+            "tacz:m870"
+          ]
+        }
+      ],
+      "rewards": [
+        {
+          "item": "taczblueprints:blueprint_shotgun",
+          "count": 1,
+          "nbt": "{GunId:\"tacz:m870\"}"
+        }
+      ]
+    },
+    {
+      "id": "dray_parts_run",
+      "title": "Source parts for Dray",
+      "career": "gunsmith",
+      "level": 7,
+      "legality": "underground",
+      "requires_skill": "gunsmith.unregistered_builds",
+      "buyer": "dray",
+      "requires_mod": "taczblueprints",
+      "trust_gain": 1,
+      "capacity": 1,
+      "refill_ticks": 24000,
+      "credits": 220,
+      "xp": 300,
+      "requirements": [
+        {
+          "item": "underground_city:machined_parts",
+          "count": 4
+        },
+        {
+          "item": "underground_city:optical_components",
+          "count": 2
+        }
+      ],
+      "rewards": [
+        {
+          "item": "taczblueprints:blueprint_smg",
+          "count": 1,
+          "nbt": "{GunId:\"tacz:uzi\"}"
+        }
+      ],
+      "errand": true
+    },
+    {
+      "id": "unregistered_smg",
+      "title": "An unregistered SMG for Dray",
+      "career": "gunsmith",
+      "level": 8,
+      "legality": "underground",
+      "requires_skill": "gunsmith.unregistered_builds",
+      "buyer": "dray",
+      "requires_mod": "tacz",
+      "min_trust": 1,
+      "trust_gain": 1,
+      "capacity": 2,
+      "refill_ticks": 18000,
+      "credits": 500,
+      "xp": 420,
+      "requirements": [
+        {
+          "item": "tacz:modern_kinetic_gun",
+          "count": 1,
+          "label": "Restricted SMG",
+          "gun_ids": [
+            "tacz:uzi",
+            "tacz:hk_mp5a5"
+          ]
+        }
+      ],
+      "origin": "valewood"
+    },
+    {
+      "id": "arms_brokerage",
+      "title": "Restricted rifle for a trusted buyer",
+      "career": "gunsmith",
+      "level": 11,
+      "legality": "underground",
+      "requires_skill": "gunsmith.arms_brokerage",
+      "buyer": "dray",
+      "requires_mod": "tacz",
+      "min_trust": 2,
+      "trust_gain": 1,
+      "capacity": 1,
+      "refill_ticks": 24000,
+      "credits": 640,
+      "xp": 640,
+      "requirements": [
+        {
+          "item": "tacz:modern_kinetic_gun",
+          "count": 1,
+          "label": "Restricted rifle",
+          "gun_ids": [
+            "tacz:ak47",
+            "tacz:m4a1"
+          ]
+        }
+      ],
+      "origin": "valewood"
+    },
+    {
+      "id": "municipal_terminals",
+      "title": "Repair municipal terminals",
+      "career": "technician",
+      "level": 3,
+      "legality": "legal",
+      "requires_skill": "technician.municipal_repairs",
+      "capacity": 4,
+      "refill_ticks": 6000,
+      "credits": 160,
+      "xp": 280,
+      "requirements": [
+        {
+          "item": "minecraft:comparator",
+          "count": 4
+        },
+        {
+          "item": "minecraft:repeater",
+          "count": 8
+        }
+      ]
+    },
+    {
+      "id": "commercial_automation",
+      "title": "Commercial automation install",
+      "career": "technician",
+      "level": 5,
+      "legality": "legal",
+      "requires_skill": "technician.automation_install",
+      "credits": 190,
+      "xp": 340,
+      "requirements": [
+        {
+          "item": "minecraft:piston",
+          "count": 6
+        },
+        {
+          "item": "minecraft:observer",
+          "count": 6
+        }
+      ],
+      "rewards": [
+        {
+          "item": "underground_city:circuit_prototype",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "id": "ledger_recovery",
+      "title": "Recover a ledger for Vesper",
+      "career": "technician",
+      "level": 7,
+      "legality": "underground",
+      "requires_skill": "technician.bypass_tooling",
+      "buyer": "vesper",
+      "trust_gain": 1,
+      "capacity": 2,
+      "refill_ticks": 18000,
+      "credits": 270,
+      "xp": 360,
+      "requirements": [
+        {
+          "item": "underground_city:data_ledger",
+          "count": 1
+        }
+      ],
+      "origin": "blackwater"
+    },
+    {
+      "id": "ledger_brokerage",
+      "title": "Ledger brokerage for a trusted buyer",
+      "career": "technician",
+      "level": 11,
+      "legality": "underground",
+      "requires_skill": "technician.data_brokerage",
+      "buyer": "vesper",
+      "min_trust": 2,
+      "trust_gain": 1,
+      "capacity": 1,
+      "refill_ticks": 24000,
+      "credits": 800,
+      "xp": 620,
+      "requirements": [
+        {
+          "item": "underground_city:data_ledger",
+          "count": 3
+        }
+      ],
+      "rewards": [
+        {
+          "item": "underground_city:optics_schematic",
+          "count": 1
+        }
+      ],
+      "origin": "blackwater"
+    }
+  ],
+  "reference_values": {
+    "note": "Credit value of goods that the regional exchange does not price. Vanilla values sit near the starter shop (wheat sells at 1.5, bread buys at 5); iron ingot 7.7 is the unit used for TaCZ recipe costs. Guns use the cheapest recipe among the accepted GunIds. Harvest-only Core goods carry their operating cost per unit. Reward values bound what a contract can give besides credits (at most 90% of the credits).",
+    "vanilla": {
+      "minecraft:carrot": 1.5,
+      "minecraft:potato": 1.5,
+      "minecraft:bread": 5,
+      "minecraft:pumpkin_pie": 12,
+      "minecraft:iron_ingot": 7.7,
+      "minecraft:stone_bricks": 0.8,
+      "minecraft:iron_chestplate": 61.6,
+      "minecraft:iron_helmet": 38.5,
+      "minecraft:comparator": 12,
+      "minecraft:repeater": 6,
+      "minecraft:piston": 8,
+      "minecraft:observer": 10
+    },
+    "guns": {
+      "tacz:cz75": 131,
+      "tacz:glock_17": 123,
+      "tacz:m1911": 128,
+      "tacz:m9a4": 123,
+      "tacz:db_long": 118,
+      "tacz:m870": 204,
+      "tacz:uzi": 246,
+      "tacz:hk_mp5a5": 285,
+      "tacz:ak47": 315,
+      "tacz:m4a1": 313
+    },
+    "harvest_units": {
+      "underground_city:sable_leaf_bale": 18,
+      "underground_city:data_ledger": 130
+    },
+    "rewards": {
+      "underground_city:heirloom_seed_packet": 84,
+      "underground_city:prototype_alloy_ingot": 84,
+      "underground_city:circuit_prototype": 96,
+      "underground_city:optics_schematic": 102,
+      "underground_city:sable_cutting": 22.5,
+      "taczblueprints:blueprint_shotgun": 150,
+      "taczblueprints:blueprint_smg": 150
+    }
+  }
+}

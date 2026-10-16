@@ -15,6 +15,10 @@
 | P8: Expansion | Multiple full cities, connected transport, civics, business growth | World consistency and performance proven; no forced grind |
 | P9: Campaign and polish | Story acts, meaningful city changes, visuals, balance | Player journeys and save migrations tested over long-term co-op sessions |
 
+### Where the work stands (October 16, 2026)
+
+Evidence, not intent. P0 and P1 are met for the starter slice. P2 is **partly** met: three roads and bridges generate, have been surveyed block by block on seed 5908, and **a scripted player has walked one of them (Valewood - Blackwater, 3.75 minutes of walking) and driven and sailed others**; Founders Row is a populated lot (nine named citizens) built by an operator or by the dev launch, not a district of a city, and nobody human has walked any of it. P3 is met for registration and persistence (a first-login screen, command-driven persistence). P4 is met in miniature (wallet, stock-bound exchange, contracts) with no tax cycle. P5 has **early loops for all four careers** with a legal and an underground path each, skill trees, a blueprint-to-gun Gunsmith loop and the Technician's trace. P6 to P9 have not started beyond the rare-loot rule, the evidence-based law model (a seeded die at checkpoint zones, now with posts and a guard) and vehicles that a script can drive. The sprint reports list the details and the limits: [October 15](sprint-2026-10-15.md) and [October 16](sprint-2026-10-16.md).
+
 Phases are **outcome gates, not calendar promises**. The order may change when research uncovers technical constraints.
 
 ## Critical path

@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "group": "underground_city_rare_finds",
+  "ingredients": [
+    {
+      "item": "underground_city:circuit_prototype"
+    }
+  ],
+  "result": {
+    "item": "underground_city:control_circuits",
+    "count": 3
+  }
+}

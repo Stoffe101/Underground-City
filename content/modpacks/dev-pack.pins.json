@@ -1,0 +1,115 @@
+{
+ "schema_version": 1,
+ "minecraft": "1.20.1",
+ "forge": "47.4.10",
+ "policy": "Metadata only. Binaries are fetched by the owner from the original author's page (scripts/fetch_dev_pack.py verifies size and SHA-512) into an untracked directory and are never committed, uploaded as artifacts or redistributed. Every entry is an exact pin chosen after reading the release metadata and, where noted in docs/technical/mod-audit.md, the jar contents. A pin is not a certification of combined gameplay.",
+ "mods": [
+  {
+   "id": "lostcities",
+   "slug": "the-lost-cities",
+   "version_id": "Ec9sXB06",
+   "mod_id": "lostcities",
+   "role": "world generation: predefined cities",
+   "sets": [
+    "world"
+   ],
+   "notes": "MIT. Pinned at 1.20-7.5.5 (the version the road and city surveys were measured on); newer 7.5.6 and 7.5.7 exist and are NOT adopted without a re-run of the world survey."
+  },
+  {
+   "id": "tacz",
+   "slug": "timeless-and-classics-zero",
+   "version_id": "AzCBJlex",
+   "mod_id": "tacz",
+   "role": "firearms, ammunition, attachments and gun smith tables",
+   "sets": [
+    "firearms"
+   ],
+   "notes": "GPL-3.0-only code; default gun pack assets are CC BY-NC-ND 4.0 (private use only, no redistribution of modified assets). The jar was opened: 54 guns, 24 ammo types and 95 attachments in the default pack, items tacz:modern_kinetic_gun / tacz:ammo / tacz:attachment, gun smith table recipes of type tacz:gun_smith_table_crafting."
+  },
+  {
+   "id": "tacz_blueprints",
+   "slug": "tacz-blueprints",
+   "version_id": "EXBvXtvo",
+   "mod_id": "taczblueprints",
+   "role": "research addon: every gun is gated behind a blueprint item learned per player",
+   "sets": [
+    "firearms"
+   ],
+   "requires": [
+    "tacz"
+   ],
+   "notes": "All rights reserved (source published). Per-gun blueprint items, a per-player unlock capability, /blueprints commands and a chest loot injector configurable by table. Early release 0.1.3: no research bench yet. Selected over the CurseForge-only 'TaCZ Weapon Research & Blueprints' because that file could not be located and verified from the cloud container."
+  },
+  {
+   "id": "modern_life",
+   "slug": "modern-life",
+   "version_id": "lI7HnN1T",
+   "mod_id": "modernlife",
+   "role": "motorboat with a 27-slot persistent hold and fuel",
+   "sets": [
+    "boats"
+   ],
+   "notes": "All rights reserved. MotorboatEntity implements Container (27 slots) and saves its items through ContainerHelper (read from the jar bytecode). It reads its config in the mod constructor, which Forge throws on in the *development* environment only, so it cannot boot under ForgeGradle; it is exercised by the production-style boot check (scripts/run_prod_boot_check.py), not by -PucPack. Crafting is enabled by default (enableMotorboat)."
+  },
+  {
+   "id": "immersive_vehicles",
+   "slug": "immersive-vehicles",
+   "version_id": "xBHmZvmC",
+   "mod_id": "mts",
+   "role": "car, truck and bike engine (content packs required)",
+   "sets": [
+    "vehicles"
+   ],
+   "notes": "All rights reserved. Ships no vehicles by itself."
+  },
+  {
+   "id": "immersive_vehicles_ocp",
+   "slug": "immersive-vehicles-official-content-pack",
+   "version_id": "PNN5h914",
+   "mod_id": "mtsofficialpack",
+   "role": "official content: pickup/flatbed trucks, a jeep, a quad bike, crates and barrels as cargo parts",
+   "sets": [
+    "vehicles"
+   ],
+   "requires": [
+    "immersive_vehicles"
+   ],
+   "placement": "mods_folder",
+   "notes": "All rights reserved. Eighteen vehicles (cars, trucks, aircraft); no boats."
+  },
+  {
+   "id": "immersive_vehicles_oamp",
+   "slug": "immersive-vehicles-official-automobile-pack",
+   "version_id": "Er1webCv",
+   "mod_id": "oamp",
+   "role": "vanilla-styled civilian cars",
+   "sets": [
+    "vehicles"
+   ],
+   "requires": [
+    "immersive_vehicles",
+    "immersive_vehicles_ocp"
+   ],
+   "placement": "mods_folder",
+   "notes": "All rights reserved. Mod ID is checked against the jar when the pack is first booted."
+  }
+ ],
+ "external": [
+  {
+   "id": "qshop",
+   "name": "Q Shop",
+   "version_number": "1.8.4",
+   "mod_id": "qshop",
+   "role": "the single wallet and civilian shop provider (D-037, D-039)",
+   "sets": [
+    "economy",
+    "core"
+   ],
+   "source_url": "https://github.com/QLNPLUS/Q-shop/releases/tag/v1.8.4-forge-1.20.1",
+   "filename": "qshop-forge-1.20.1-1.8.4.jar",
+   "sha256": "ab32e33a7190bbcb7b4b10d9fe6ae4a38f3e65eba5ea1ac9f315d3bd798c5199",
+   "license": "All rights reserved",
+   "notes": "Resolved by Gradle from the author's GitHub release with checksum verification; not available on Modrinth."
+  }
+ ]
+}

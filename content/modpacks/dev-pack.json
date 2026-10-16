@@ -1,0 +1,229 @@
+{
+  "schema_version": 1,
+  "minecraft": "1.20.1",
+  "forge": "47.4.10",
+  "policy": "Metadata only. Binaries are fetched by the owner from the original author's page (scripts/fetch_dev_pack.py verifies size and SHA-512) into an untracked directory and are never committed, uploaded as artifacts or redistributed. Every entry is an exact pin chosen after reading the release metadata and, where noted in docs/technical/mod-audit.md, the jar contents. A pin is not a certification of combined gameplay.",
+  "mods": [
+    {
+      "id": "lostcities",
+      "name": "The Lost Cities",
+      "slug": "the-lost-cities",
+      "project_id": "8VDCUS3b",
+      "version_id": "Ec9sXB06",
+      "version_number": "1.20-7.5.5",
+      "published": "2026-09-12",
+      "filename": "lostcities-1.20-7.5.5.jar",
+      "size": 1420565,
+      "sha1": "7119a9e3b1b83037e618eb98e0331684a19e2b4a",
+      "sha512": "16050cd7f5a437f3dbf29f948d85ecbbd8abe29ab3c887747ed595017770227752a810fc51edbdd48b469a9f6fff62ebce6f5897d76c1ba31b7a15fd93c022ff",
+      "license": "MIT",
+      "mod_id": "lostcities",
+      "role": "world generation: predefined cities",
+      "sets": [
+        "world"
+      ],
+      "requires": [],
+      "placement": "classpath",
+      "side": {
+        "client": "unsupported",
+        "server": "required"
+      },
+      "source_url": "https://modrinth.com/mod/the-lost-cities/version/Ec9sXB06",
+      "distribution": "download from the author's page; never commit the binary",
+      "notes": "MIT. Pinned at 1.20-7.5.5 (the version the road and city surveys were measured on); newer 7.5.6 and 7.5.7 exist and are NOT adopted without a re-run of the world survey."
+    },
+    {
+      "id": "tacz",
+      "name": "[TaCZ] Timeless and Classics Zero",
+      "slug": "timeless-and-classics-zero",
+      "project_id": "SzzJttH8",
+      "version_id": "AzCBJlex",
+      "version_number": "1.1.8-hotfix2",
+      "published": "2026-10-02",
+      "filename": "tacz-1.20.1-1.1.8-hotfix2.jar",
+      "size": 57472579,
+      "sha1": "5c2f72dfe8125ffa863e3b5feafa27d86d7e56ea",
+      "sha512": "fa8b4bd4a7a0835092bccbb28a18461642d4e7a2f6fdb762ac4978d4dbc31d1f0f61c685343a61607dce3d1cd89f4314b61a9f8811960b9d0604692ac3fff96d",
+      "license": "GPL-3.0-only",
+      "mod_id": "tacz",
+      "role": "firearms, ammunition, attachments and gun smith tables",
+      "sets": [
+        "firearms"
+      ],
+      "requires": [],
+      "placement": "classpath",
+      "side": {
+        "client": "required",
+        "server": "required"
+      },
+      "source_url": "https://modrinth.com/mod/timeless-and-classics-zero/version/AzCBJlex",
+      "distribution": "download from the author's page; never commit the binary",
+      "notes": "GPL-3.0-only code; default gun pack assets are CC BY-NC-ND 4.0 (private use only, no redistribution of modified assets). The jar was opened: 54 guns, 24 ammo types and 95 attachments in the default pack, items tacz:modern_kinetic_gun / tacz:ammo / tacz:attachment, gun smith table recipes of type tacz:gun_smith_table_crafting."
+    },
+    {
+      "id": "tacz_blueprints",
+      "name": "TaCZ Blueprints",
+      "slug": "tacz-blueprints",
+      "project_id": "OLmBLBVj",
+      "version_id": "EXBvXtvo",
+      "version_number": "0.1.3",
+      "published": "2026-04-24",
+      "filename": "taczblueprints-1.20.1-0.1.3.jar",
+      "size": 68386,
+      "sha1": "8af0390f52a7efecdc4f059aac58abe8ac2946b1",
+      "sha512": "d3001dffd94700b0b9b774e15c15e8f4d48713c2c6d8351034d20bf07f9562e13e1c01306f6d0bf830f4419d2daf5917ea357afadda501b846195a22a7117c42",
+      "license": "LicenseRef-All-Rights-Reserved",
+      "mod_id": "taczblueprints",
+      "role": "research addon: every gun is gated behind a blueprint item learned per player",
+      "sets": [
+        "firearms"
+      ],
+      "requires": [
+        "tacz"
+      ],
+      "placement": "classpath",
+      "side": {
+        "client": "required",
+        "server": "required"
+      },
+      "source_url": "https://modrinth.com/mod/tacz-blueprints/version/EXBvXtvo",
+      "distribution": "download from the author's page; never commit the binary",
+      "notes": "All rights reserved (source published). Per-gun blueprint items, a per-player unlock capability, /blueprints commands and a chest loot injector configurable by table. Early release 0.1.3: no research bench yet. Selected over the CurseForge-only 'TaCZ Weapon Research & Blueprints' because that file could not be located and verified from the cloud container."
+    },
+    {
+      "id": "modern_life",
+      "name": "Modern Life",
+      "slug": "modern-life",
+      "project_id": "AwQInKYB",
+      "version_id": "lI7HnN1T",
+      "version_number": "1.75",
+      "published": "2025-03-31",
+      "filename": "modernlife-1.20.1-1.75.jar",
+      "size": 4291046,
+      "sha1": "6f321fd122b1d4d8f734c66fd9ac7ad8564f4cc3",
+      "sha512": "e0a5c184c1f033f51138291f7a7fe7c81b5bade48459aadd41fd98e84fb2de130a9b05d04a1388d08c13fe6b5f880d7b88635d1a57240839f73e5caff98c2d16",
+      "license": "LicenseRef-All-Rights-Reserved",
+      "mod_id": "modernlife",
+      "role": "motorboat with a 27-slot persistent hold and fuel",
+      "sets": [
+        "boats"
+      ],
+      "requires": [],
+      "placement": "classpath",
+      "side": {
+        "client": "required",
+        "server": "required"
+      },
+      "source_url": "https://modrinth.com/mod/modern-life/version/lI7HnN1T",
+      "distribution": "download from the author's page; never commit the binary",
+      "notes": "All rights reserved. MotorboatEntity implements Container (27 slots) and saves its items through ContainerHelper (read from the jar bytecode). It reads its config in the mod constructor, which Forge throws on in the *development* environment only, so it cannot boot under ForgeGradle; it is exercised by the production-style boot check (scripts/run_prod_boot_check.py), not by -PucPack. Crafting is enabled by default (enableMotorboat)."
+    },
+    {
+      "id": "immersive_vehicles",
+      "name": "Immersive Vehicles",
+      "slug": "immersive-vehicles",
+      "project_id": "BCzBuhJ5",
+      "version_id": "xBHmZvmC",
+      "version_number": "24.0.0-1.20.1",
+      "published": "2026-04-16",
+      "filename": "Immersive Vehicles-1.20.1-24.0.0.jar",
+      "size": 6254897,
+      "sha1": "efe6962bf0304eb7ac234daa75551bf8e30ef3b7",
+      "sha512": "9f5acbef86883347a9a14f28efdbff29e8817e131bf2ef99897a90842f169dbd4a9428d35480fded1d8a5f0e4931d5711877244782d5cab59b5cbd903a960199",
+      "license": "LicenseRef-All-Rights-Reserved",
+      "mod_id": "mts",
+      "role": "car, truck and bike engine (content packs required)",
+      "sets": [
+        "vehicles"
+      ],
+      "requires": [],
+      "placement": "classpath",
+      "side": {
+        "client": "required",
+        "server": "required"
+      },
+      "source_url": "https://modrinth.com/mod/immersive-vehicles/version/xBHmZvmC",
+      "distribution": "download from the author's page; never commit the binary",
+      "notes": "All rights reserved. Ships no vehicles by itself."
+    },
+    {
+      "id": "immersive_vehicles_ocp",
+      "name": "Immersive Vehicles - Official Content Pack [OCP] - Planes & Cars",
+      "slug": "immersive-vehicles-official-content-pack",
+      "project_id": "C7TiPPJz",
+      "version_id": "PNN5h914",
+      "version_number": "29",
+      "published": "2026-04-18",
+      "filename": "MTS Official Pack-1.20.1-V29.jar",
+      "size": 70997298,
+      "sha1": "9307186fe7f109f0fcc8397bb4457cb956822b88",
+      "sha512": "b7af0f74b3ad2eed9ec8100ec84e27781e43717f470dee5ecdee9cc8c572468179e2f05425315e04cce839f6f324122e83dd092c6d7e7967c03922d56086a700",
+      "license": "LicenseRef-All-Rights-Reserved",
+      "mod_id": "mtsofficialpack",
+      "role": "official content: pickup/flatbed trucks, a jeep, a quad bike, crates and barrels as cargo parts",
+      "sets": [
+        "vehicles"
+      ],
+      "requires": [
+        "immersive_vehicles"
+      ],
+      "placement": "mods_folder",
+      "side": {
+        "client": "required",
+        "server": "required"
+      },
+      "source_url": "https://modrinth.com/mod/immersive-vehicles-official-content-pack/version/PNN5h914",
+      "distribution": "download from the author's page; never commit the binary",
+      "notes": "All rights reserved. Eighteen vehicles (cars, trucks, aircraft); no boats."
+    },
+    {
+      "id": "immersive_vehicles_oamp",
+      "name": "IV - Official Automobile Pack [OAmP] - Cars & Sport Cars",
+      "slug": "immersive-vehicles-official-automobile-pack",
+      "project_id": "OP76SB7W",
+      "version_id": "Er1webCv",
+      "version_number": "OAmP-V3",
+      "published": "2026-04-16",
+      "filename": "OAmP-1.20.1-V3.jar",
+      "size": 24285160,
+      "sha1": "d466e3c54b0ded1b53b408eb3fd9fa840cfff2c6",
+      "sha512": "fac30c08af4f00080a0e263d1855aebdbf7ea474b770ed37eee541abf9e0f8cf3b28ce6845268e402ce752e27e1f2fcd7ce9e14dd1244253cab9f24c7f1e8cb1",
+      "license": "LicenseRef-All-Rights-Reserved",
+      "mod_id": "oamp",
+      "role": "vanilla-styled civilian cars",
+      "sets": [
+        "vehicles"
+      ],
+      "requires": [
+        "immersive_vehicles",
+        "immersive_vehicles_ocp"
+      ],
+      "placement": "mods_folder",
+      "side": {
+        "client": "required",
+        "server": "required"
+      },
+      "source_url": "https://modrinth.com/mod/immersive-vehicles-official-automobile-pack/version/Er1webCv",
+      "distribution": "download from the author's page; never commit the binary",
+      "notes": "All rights reserved. Mod ID is checked against the jar when the pack is first booted."
+    }
+  ],
+  "external": [
+    {
+      "id": "qshop",
+      "name": "Q Shop",
+      "version_number": "1.8.4",
+      "mod_id": "qshop",
+      "role": "the single wallet and civilian shop provider (D-037, D-039)",
+      "sets": [
+        "economy",
+        "core"
+      ],
+      "source_url": "https://github.com/QLNPLUS/Q-shop/releases/tag/v1.8.4-forge-1.20.1",
+      "filename": "qshop-forge-1.20.1-1.8.4.jar",
+      "sha256": "ab32e33a7190bbcb7b4b10d9fe6ae4a38f3e65eba5ea1ac9f315d3bd798c5199",
+      "license": "All rights reserved",
+      "notes": "Resolved by Gradle from the author's GitHub release with checksum verification; not available on Modrinth."
+    }
+  ]
+}

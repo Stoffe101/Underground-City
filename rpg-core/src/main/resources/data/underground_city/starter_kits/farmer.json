@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "career": "farmer",
+  "items": [
+    {"item": "minecraft:wooden_hoe", "count": 1},
+    {"item": "minecraft:wheat_seeds", "count": 12},
+    {"item": "minecraft:bread", "count": 4}
+  ]
+}

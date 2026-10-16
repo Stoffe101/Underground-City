@@ -72,8 +72,11 @@ def validate(data: dict[str, dict]) -> list[str]:
         errors.append("Routine road travel budget missing or exceeds 10-minute maximum")
     if budget.get("mandatory_route_must_not_require_vehicle") is not True:
         errors.append("Mandatory journeys must be possible without owning a car")
-    if budget.get("long_frontier_route_optional_until_viable_ferry_or_convoy") is not True:
-        errors.append("Unpaved frontier travel may not be mandatory until a viable fast alternative exists")
+    if budget.get("all_three_routes_walkable_within_budget") is not True:
+        errors.append("All three inter-city routes must be built and walkable within the travel budget")
+    unpaved = set(route_info.get("road_generation", {}).get("unpaved_route_kinds", []))
+    if unpaved:
+        errors.append("Every corridor must be a built road; unpaved routes would make a mandatory trip too long")
     build_kinds = set(route_info.get("road_generation", {}).get("build_route_kinds", []))
     routes_by_pair = {}
     crossings = 0

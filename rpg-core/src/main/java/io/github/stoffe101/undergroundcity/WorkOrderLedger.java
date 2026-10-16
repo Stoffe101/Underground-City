@@ -25,7 +25,12 @@ import java.util.WeakHashMap;
  * saved. Recovery runs before the player can interact. No second wallet lives here.
  */
 public final class WorkOrderLedger {
-    private static final String PURCHASE = "purchase";
+    private static final String PURCHASE = "purchase", SEIZURE = "seizure";
+    /** One heat step cools every five minutes of active play. */
+    static final long HEAT_DECAY_TICKS = 6000;
+    static final int MAX_HEAT = 8;
+    /** A checkpoint searches the same traveller at most once per ten active minutes. */
+    static final long CHECKPOINT_COOLDOWN_TICKS = 12000;
     private static final Map<MinecraftServer, WorkOrderLedger> INSTANCES = new WeakHashMap<>();
     private final Path path;
     private CompoundTag root;
@@ -122,14 +127,49 @@ public final class WorkOrderLedger {
     }
 
     void prepare(UUID player, UUID nonce, ListTag inventoryAfter, double balanceAfter, int xpAfter) {
+        prepare(player, nonce, inventoryAfter, balanceAfter, xpAfter, Map.of(), Map.of());
+    }
+
+    /**
+     * Delivery settlement with ledger-side consequences. {@code trustAfter} (buyer to absolute trust) and
+     * {@code heatAfter} (city to absolute heat) are written into the same prepared record as the inventory,
+     * wallet and XP targets, so a crash replays all of them once and never twice.
+     */
+    void prepare(UUID player, UUID nonce, ListTag inventoryAfter, double balanceAfter, int xpAfter,
+                 Map<String, Integer> trustAfter, Map<String, Integer> heatAfter) {
         checkActive(player, nonce);
         if (!Double.isFinite(balanceAfter) || balanceAfter < 0 || xpAfter < 0) throw new IllegalArgumentException("Invalid settlement");
         CompoundTag record = player(player);
         CompoundTag pending = new CompoundTag();
         pending.put("inventory", inventoryAfter.copy()); pending.putDouble("balance", balanceAfter);
         pending.putInt("xp", xpAfter);
+        putTargets(pending, trustAfter, heatAfter);
         record.put("pending", pending);
         putPlayer(player, record); persist(); // BEFORE touching inventory or Q Shop
+    }
+
+    private static void putTargets(CompoundTag pending, Map<String, Integer> trustAfter, Map<String, Integer> heatAfter) {
+        CompoundTag trust = new CompoundTag(), heat = new CompoundTag();
+        trustAfter.forEach(trust::putInt);
+        heatAfter.forEach(heat::putInt);
+        if (!trust.isEmpty()) pending.put("trust", trust);
+        if (!heat.isEmpty()) pending.put("heat", heat);
+    }
+
+    /** Applies the absolute trust and heat targets of a prepared record. Part of settle(), never called alone. */
+    private void applyTargets(CompoundTag record, CompoundTag pending) {
+        CompoundTag trust = record.getCompound("trust");
+        CompoundTag target = pending.getCompound("trust");
+        for (String buyer : target.getAllKeys()) trust.putInt(buyer, Math.max(0, Math.min(BuyerCatalog.MAX_TRUST, target.getInt(buyer))));
+        if (!trust.isEmpty()) record.put("trust", trust);
+        CompoundTag heat = record.getCompound("heat");
+        CompoundTag heatTarget = pending.getCompound("heat");
+        for (String city : heatTarget.getAllKeys()) {
+            CompoundTag entry = new CompoundTag();
+            entry.putInt("v", Math.max(0, Math.min(MAX_HEAT, heatTarget.getInt(city)))); entry.putLong("t", clock());
+            heat.put(city, entry);
+        }
+        if (!heat.isEmpty()) record.put("heat", heat);
     }
 
     void settle(UUID player) {
@@ -141,12 +181,85 @@ public final class WorkOrderLedger {
             // A regional purchase never touches an accepted order or career XP.
             record.putInt("purchases", Math.addExact(record.getInt("purchases"), 1));
             record.remove("pending");
+        } else if (SEIZURE.equals(pending.getString("kind"))) {
+            // A seizure never touches an accepted order or career XP either; it only cools or heats a city.
+            record.putInt("seizures", Math.addExact(record.getInt("seizures"), 1));
+            applyTargets(record, pending);
+            record.remove("pending");
         } else {
+            applyTargets(record, pending);
             record.putInt("earned_xp_target", pending.getInt("xp"));
             record.putInt("completed", Math.addExact(record.getInt("completed"), 1));
             record.remove("pending"); record.remove("order"); record.remove("job");
         }
         putPlayer(player, record); persist();
+    }
+
+    // ---------------------------------------------------------------- trust, heat and inspections
+
+    int trust(UUID player, String buyer) {
+        return Math.max(0, Math.min(BuyerCatalog.MAX_TRUST, player(player).getCompound("trust").getInt(buyer)));
+    }
+
+    /** City heat after lazy cooling: one step per {@link #HEAT_DECAY_TICKS} of active play. */
+    int heat(UUID player, String city) {
+        CompoundTag entry = player(player).getCompound("heat").getCompound(city);
+        int value = entry.getInt("v");
+        if (value <= 0) return 0;
+        long steps = Math.max(0, (clock() - entry.getLong("t")) / HEAT_DECAY_TICKS);
+        return (int) Math.max(0, value - steps);
+    }
+
+    int heatAfter(UUID player, String city, int delta) { return Math.max(0, Math.min(MAX_HEAT, heat(player, city) + delta)); }
+
+    /** Heat from an event that changes no inventory or wallet (a tripped alarm): applied and saved immediately. */
+    void addHeat(UUID player, String city, int delta) {
+        checkHealthy();
+        if (!ProgressionRules.validCity(city)) return;
+        int value = heatAfter(player, city, delta);
+        CompoundTag record = player(player);
+        CompoundTag heat = record.getCompound("heat");
+        CompoundTag entry = new CompoundTag();
+        entry.putInt("v", value); entry.putLong("t", clock());
+        heat.put(city, entry);
+        record.put("heat", heat);
+        putPlayer(player, record); persist();
+    }
+
+    /**
+     * Claims the next inspection roll at a checkpoint. Returns the roll number, or -1 while this traveller
+     * is still inside the cooldown from the last search there (relogging cannot re-roll an inspection).
+     */
+    long claimInspectionRoll(UUID player, String checkpoint) {
+        checkHealthy();
+        CompoundTag record = player(player);
+        CompoundTag rolls = record.getCompound("rolls");
+        if (rolls.contains(checkpoint) && clock() - rolls.getLong(checkpoint) < CHECKPOINT_COOLDOWN_TICKS) return -1;
+        rolls.putLong(checkpoint, clock());
+        record.put("rolls", rolls);
+        long number = record.getLong("roll_counter") + 1;
+        record.putLong("roll_counter", number);
+        putPlayer(player, record); persist();
+        return number;
+    }
+
+    /**
+     * Seizure settlement: the inventory without the confiscated stacks, the wallet after the fine (omitted when
+     * there is no provider) and the new city heat, all journaled before any live state changes.
+     */
+    void prepareSeizure(UUID player, ListTag inventoryAfter, Double balanceAfter, int xpNow, String city, int heatAfter) {
+        checkHealthy();
+        CompoundTag record = player(player);
+        if (record.contains("pending")) throw new IllegalStateException("Finish recovery before an inspection");
+        CompoundTag pending = new CompoundTag();
+        pending.putString("kind", SEIZURE); pending.put("inventory", inventoryAfter.copy()); pending.putInt("xp", xpNow);
+        if (balanceAfter != null) {
+            if (!Double.isFinite(balanceAfter) || balanceAfter < 0) throw new IllegalArgumentException("Invalid settlement");
+            pending.putDouble("balance", balanceAfter);
+        }
+        putTargets(pending, Map.of(), Map.of(city, heatAfter));
+        record.put("pending", pending);
+        putPlayer(player, record); persist(); // BEFORE touching inventory or Q Shop
     }
 
     // ---------------------------------------------------------------- regional exchange

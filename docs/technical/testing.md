@@ -1,6 +1,6 @@
 # Testing and evidence strategy
 
-Cloud Forge runtime tests exercise the starter economy, the regional exchange and the Household Safe on a dedicated server (26 GameTests with real Q Shop); real-client screenshot tests cover 18 controlled interface states per viewport. Two actual cloud clients trade, buy from the regional exchange and reconnect after a dedicated restart; native blocks are observed at all three city anchors, a dedicated-server survey reads the real blocks of two generated inter-city roads, and the native client tour renders real city frames plus two views of each bridge. These are not two-human-client or complete modpack acceptance. See [October 19 evidence](../production/oct19-test-readiness.md).
+Cloud Forge runtime tests exercise the starter economy, the regional exchange and the Household Safe on a dedicated server (54 GameTests with real Q Shop as of October 15); real-client screenshot tests cover 18 controlled interface states per viewport. Two actual cloud clients trade, buy from the regional exchange and reconnect after a dedicated restart; native blocks are observed at all three city anchors, a dedicated-server survey reads the real blocks of two generated inter-city roads, and the native client tour renders real city frames plus two views of each bridge. These are not two-human-client or complete modpack acceptance. See [October 19 evidence](../production/oct19-test-readiness.md).
 
 | Level | Evidence required |
 | --- | --- |
@@ -41,3 +41,25 @@ Everything below runs in the Claude Code cloud container or on GitHub-hosted Ubu
 
 - **Hosted run on head 412622f (all green):** forge build, economy GameTests, onboarding smoke matrix, world smoke matrix (Lost Cities native survey and city tour), two-client journey with the regional click, Visual QA at 1920x1080 GUI 3 and 3440x1440 GUI 2, content tooling and world packaging.
 - **Automated checks can pass bad evidence.** The first corrected city tour passed the "not blank, not duplicate" image check, but looking at the frames showed a camera aimed mostly at sky, then (after a heightmap-based fix) a camera placed underground because Lost Cities chunks report unprimed heightmaps. Capture now scans real blocks for camera height and waits for a stable rendered-section count. Treat any automated image check as a floor, never as approval.
+
+## Evidence from the October 15 sprint (legal and underground careers, triangle layout, dev pack)
+
+Recorded on the draft PR [#21](https://github.com/Stoffe101/Underground-City/pull/21); every row names what it does **not** prove.
+
+| Evidence | Result and limit |
+| --- | --- |
+| Core GameTests with real Q Shop 1.8.4 | **54 of 54 required tests passed** on a fresh world, locally and in the hosted `economy` job. New cases cover skill trees and persistence, gated and located deliveries, buyer trust and rewards, gun requirements (plain factory guns only), contraband classification, city differences, checkpoint seizure and fines, licences versus prohibitions, no-reroll inspections, once-only exceptional finds, the Sable Leaf crop, the terminal snapshot wire format, legacy snapshot loading, the Technician's trace (skill, kit, sequence, replay, abandonment, distance, lock-out, stock refill), Founders Row (build, clerk binding, refusal over a container, undo) and the citizen save migration. Gameplay quality is not tested |
+| The same tests with TaCZ and TaCZ Blueprints loaded | **54 of 54**, hosted and local, so the real-gun loot cases (a found gun keeps its `GunId`, a cache holds a real firearm) and the firearm contracts and blueprint rewards actually executed rather than skipped |
+| Immersive Vehicles stack in the development environment | 54 of 54, but its content-pack items do not register in that environment (23 recipe parse errors), so this proves only that the engine loads beside Core |
+| Production-style dedicated server with every pinned mod | **passed on a hosted runner**: all mods loaded, Core's catalogs loaded beside them, the Motorboat's 27-slot cargo round trip returned `ok` (see [development pack](dev-pack.md)). A boot is not driving, a client or two players |
+| Python suite | 121 tests; plus `generate_regional_content.py --check`, `generate_district.py --check`, `plan_triangle_layout.py --check`, `validate_repo.py` and the balance validator |
+| Native world survey, seed 5908 | all three roads continuous over real water (see the [three-city notes](three-city-prototype.md)); the identical numbers were produced locally and on a hosted runner for seed 166, which is the determinism evidence for the method |
+| Real-client UI captures | 30 states per viewport at 1920x1080 GUI 3 and 3440x1440 GUI 2 captured in hosted CI; see [visual QA](visual-qa.md) for what was actually inspected |
+
+### Failures the new tests found in my own work
+
+Worth recording because the automated checks were right every time: the first run failed five tests (a stale citizen-save schema assertion, an off-by-one refill clock that started at world time zero, a secured-terminal answer for another terminal wrongly cancelling the session, a crop test judged before the light engine ran, and a district test written against an assumed-empty arena). Hosted CI then exposed three test assumptions a fast local machine hid: a crop cannot be planted without light, a freshly forced chunk is not yet entity-ticking, and a screening mod's world can hold block entities at arena height. Each was fixed in the test or the code, never by skipping a test.
+
+### A server that fails to start can still exit 0
+
+Forge's GameTest server exits 0 when a mod breaks registry loading (seen with Modern Life in the development environment). The dev-pack workflow therefore greps for "All N required tests passed" instead of trusting the exit code.

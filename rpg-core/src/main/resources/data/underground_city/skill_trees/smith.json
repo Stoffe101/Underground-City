@@ -1,0 +1,109 @@
+{
+  "schema_version": 1,
+  "career": "smith",
+  "nodes": [
+    {
+      "id": "smith.fundamentals",
+      "branch": "core",
+      "title": "Forge Fundamentals",
+      "description": "Heat, hammer and tolerances. Opens every other metalworking skill.",
+      "cost": 1,
+      "min_level": 2,
+      "requires": [],
+      "effects": {}
+    },
+    {
+      "id": "smith.structural_works",
+      "branch": "legal",
+      "title": "Structural Works",
+      "description": "Fabricate structural steel for city works. Unlocks the municipal structural contract.",
+      "cost": 2,
+      "min_level": 3,
+      "requires": [
+        "smith.fundamentals"
+      ],
+      "effects": {}
+    },
+    {
+      "id": "smith.armoury_contracts",
+      "branch": "legal",
+      "title": "Armoury Contracts",
+      "description": "Armour for the guard and the docks. Unlocks the guard plating contract.",
+      "cost": 2,
+      "min_level": 5,
+      "requires": [
+        "smith.structural_works"
+      ],
+      "effects": {}
+    },
+    {
+      "id": "smith.industrial_licence",
+      "branch": "legal",
+      "title": "Industrial Licence",
+      "description": "Licensed industrial fabricator. Components that need a permit are legal for you to carry.",
+      "cost": 2,
+      "min_level": 8,
+      "requires": [
+        "smith.armoury_contracts"
+      ],
+      "effects": {
+        "licences": [
+          "restricted_components"
+        ]
+      }
+    },
+    {
+      "id": "smith.precision_machining",
+      "branch": "utility",
+      "title": "Precision Machining",
+      "description": "Tight tolerances, less waste: 5% off goods at the regional exchange.",
+      "cost": 2,
+      "min_level": 6,
+      "requires": [
+        "smith.fundamentals"
+      ],
+      "effects": {
+        "exchange_discount": 0.05
+      }
+    },
+    {
+      "id": "smith.unlisted_fabrication",
+      "branch": "underground",
+      "title": "Unlisted Fabrication",
+      "description": "Make parts that appear on no register. Unlocks unstamped plate contracts.",
+      "cost": 3,
+      "min_level": 7,
+      "requires": [
+        "smith.structural_works"
+      ],
+      "effects": {}
+    },
+    {
+      "id": "smith.unstamped_production",
+      "branch": "underground",
+      "title": "Unstamped Production",
+      "short_title": "Unstamped Output",
+      "description": "Rework markings and ship in ordinary crates: 15 points off checkpoint search odds.",
+      "cost": 2,
+      "min_level": 9,
+      "requires": [
+        "smith.unlisted_fabrication"
+      ],
+      "effects": {
+        "inspection_modifier": -0.15
+      }
+    },
+    {
+      "id": "smith.contraband_armoury",
+      "branch": "underground",
+      "title": "Contraband Armoury",
+      "description": "Restricted plating for a trusted buyer. Unlocks the armoury contract (needs trust 2).",
+      "cost": 3,
+      "min_level": 11,
+      "requires": [
+        "smith.unlisted_fabrication"
+      ],
+      "effects": {}
+    }
+  ]
+}

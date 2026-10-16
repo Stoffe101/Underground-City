@@ -60,7 +60,7 @@ Windows runtime and full power-loss/process-kill recovery with connected clients
 
 ## Still incomplete
 
-Roads exist between the cities in a fresh seed-579 world but have no gate houses, rest stops or patrols, and the Valewood–Blackwater edge is open sea (boat, or detour through Ironhaven). No populated district, regional suppliers, advanced Create/TaCZ items/recipes, skill trees, city treasuries/taxes, police/factions, burglary/refill containers, imported shipments, crash recovery, black-market escrow/dropboxes or raid locations. The corresponding Python models remain design simulations. Gunsmith starter orders use archery/range equipment, not guns. The clerk is one NPC prototype with no automatic death/replacement recovery; provide a safe room and backup the save.
+Roads exist on all three edges of the triangle in a fresh seed-5908 world (the earlier line layout and seed 579 are superseded) but have no gate houses, rest stops or patrols. No populated district, regional suppliers, advanced Create/TaCZ items/recipes, skill trees, city treasuries/taxes, police/factions, burglary/refill containers, imported shipments, crash recovery, black-market escrow/dropboxes or raid locations. The corresponding Python models remain design simulations. The original twelve Gunsmith starter orders use archery/range equipment; the sprint's TaCZ contracts name real guns but only run when TaCZ is installed. The clerk is one NPC prototype with no automatic death/replacement recovery; provide a safe room and backup the save.
 
 Q Shop editor/search/item-picker states and uninstalled onboarding/FTB/TaCZ/NPC dialogue/safe/faction interfaces remain outside the current capture manifest. Small-window/long-localization and controller/accessibility interaction coverage needs expansion.
 
@@ -74,8 +74,24 @@ Q Shop editor/search/item-picker states and uninstalled onboarding/FTB/TaCZ/NPC 
 6. Try missing materials, duplicate clicks, an unregistered citizen, a broken/fake terminal and distance beyond eight blocks. No reward or item loss should result. Check a partner's same-career reservation reduces shared demand.
 7. Provide a safe floor/room beside a PC, spawn `/uc_clerk` as OP, add a bed/lectern and test its interaction/routines/save persistence. Keep it protected from mobs.
 8. Review all PC tabs/Q Shop modal at normal GUI scale, including compact limit labels and disabled states. Test keyboard focus, practical readability and transaction feedback.
-9. For terrain experimentation only, create a **new** world with seed `579` using `python scripts/install_world_prototype.py --server-root <fresh-instance>` and obtain Lost Cities separately (roads exist only in newly generated chunks). Walk from Ironhaven's edge near (572, 214) to Valewood's edge near (1619, 780) and from Ironhaven's edge near (-505, 320) to Blackwater's edge near (-1489, 843); expect bridges over the water, boats passing underneath, time each walk with a stopwatch (the static estimate is about 4.8 and 4.3 minutes; D-048 allows at most 10 minutes door to door) and report anything that blocks walking, riding or sailing. Try pre-generating with a spectator walk first to avoid long first-time chunk generation.
+9. For terrain experimentation only, create a **new** world with seed `5908` (the current reference; the earlier seed 579 no longer suits the triangle layout) using `python scripts/install_world_prototype.py --server-root <fresh-instance>` and obtain Lost Cities separately (roads exist only in newly generated chunks). The cities now form a close triangle (centres near (8, 8), (1992, 280) and (1048, 2024)). Walk the three roads between the city edges: Ironhaven (591, 88) to Valewood (1598, 226), Ironhaven (278, 531) to Blackwater (792, 1528), and Valewood (1803, 630) to Blackwater (1314, 1533). Time each with a stopwatch (the static estimates are about 3.9, 4.3 and 4.0 minutes; D-048 allows at most 10 minutes door to door) and report anything that blocks walking, riding or sailing. Try pre-generating with a spectator walk first to avoid long first-time chunk generation.
+
 
 ## Next development priorities
 
 Complete terrain/route inspection and build one functional district within the now-tested three-anchor world. Then bind actual local/foreign suppliers to server-verified geography and permits, select verified existing machinery/electronic/agricultural/TaCZ item IDs, and connect repeatable regional consumption to higher-tier jobs. Follow with one properly funded shared locked property, gradual refill and evidence-driven consequences. Add a proven NPC/quest framework and broader UI captures before scaling population, imports or raids.
+
+
+## October 15-16 sprint additions
+
+Full report: [sprint-2026-10-15.md](sprint-2026-10-15.md). This section lists only what changed in the readiness picture, with its limits.
+
+| Evidence | Result and practical limit |
+| --- | --- |
+| Core GameTests | 54 required tests passed in hosted jobs (Core only, with TaCZ and TaCZ Blueprints, with the Immersive Vehicles stack) and locally. Headless server tests: they prove rules, not client play |
+| Skill trees, 19 contracts, city law, checkpoints, heat, trust, exceptional loot, Sable Leaf, the Technician's trace rules, Founders Row | implemented and GameTested |
+| Triangle roads on seed 5908 | native dedicated-server survey: three roads, 362 chunks, 993 / 1,098 / 1,003 centreline samples read, all `continuous`, longest bridges 45 / 181 / 181 blocks over real water; no one has walked them |
+| Production-style boot with Core, Q Shop 1.8.4, TaCZ, TaCZ Blueprints, Modern Life, Immersive Vehicles and two official packs | hosted and local: every mod loaded, the Motorboat's 27-slot cargo round trip passed, content packs registered 470 and 137 items. Not a driving, firing or client test |
+| Real-client UI captures | 33 surfaces at 1920x1080 GUI 3 and 3440x1440 GUI 2, viewed in three rounds; defects found and fixed (clipped skill labels, overflowing detail text, an invisible selected filter, a smudged trace digit) |
+
+Not tested: the Technician's trace through a real click path, any vehicle on the roads, any gun fired, a human walking the triangle, 30 minutes of two-player play, Windows, abrupt process kill with clients connected.

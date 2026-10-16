@@ -1,0 +1,253 @@
+{
+  "construction_policy": {
+    "avoid_player_structures": true,
+    "bridge_width_blocks": 9,
+    "generate_working_crossings": true,
+    "protect_story_regions": true,
+    "require_review_before_paste": false,
+    "requires_in_game_terrain_heightmap": true,
+    "road_width_blocks": 7
+  },
+  "coordinate_units": "overworld_blocks",
+  "prototype_only": true,
+  "road_generation": {
+    "build_route_kinds": [
+      "guarded_highway",
+      "militarized_highway",
+      "frontier_highway"
+    ],
+    "feature": "underground_city:corridor_roads",
+    "mode": "worldgen_feature",
+    "new_chunks_only": true,
+    "reference_seed": 5908,
+    "stops_at_city_circles": true,
+    "unpaved_route_kinds": [],
+    "water_policy": "bridge decks stay four free blocks above water so boats can pass beneath; rivers and sea straits are crossed by bridge or by boat"
+  },
+  "routes": [
+    {
+      "checkpoints": [
+        {
+          "faction": "ironhaven",
+          "id": "ironhaven_valewood_gate_ironhaven",
+          "position": [
+            672,
+            99
+          ],
+          "risk": "inspection"
+        },
+        {
+          "faction": "valewood",
+          "id": "ironhaven_valewood_gate_valewood",
+          "position": [
+            1516,
+            215
+          ],
+          "risk": "inspection"
+        }
+      ],
+      "crossings": [
+        {
+          "between_waypoints": [
+            1,
+            2
+          ],
+          "id": "east_causeway",
+          "kind": "proposed_bridge",
+          "requires_water_or_ravine_survey": true
+        }
+      ],
+      "from": "ironhaven",
+      "id": "ironhaven_valewood",
+      "kind": "guarded_highway",
+      "lore": "Ironhaven manufactured goods reach Valewood's crop-and-vineyard exporters",
+      "security": "patrolled",
+      "to": "valewood",
+      "travel_modes": [
+        "walking",
+        "vehicle",
+        "boat",
+        "licensed_convoy"
+      ],
+      "waypoints": [
+        [
+          591,
+          88
+        ],
+        [
+          842,
+          122
+        ],
+        [
+          1094,
+          157
+        ],
+        [
+          1346,
+          191
+        ],
+        [
+          1598,
+          226
+        ]
+      ]
+    },
+    {
+      "checkpoints": [
+        {
+          "faction": "ironhaven",
+          "id": "ironhaven_blackwater_gate_ironhaven",
+          "position": [
+            315,
+            603
+          ],
+          "risk": "high"
+        },
+        {
+          "faction": "blackwater",
+          "id": "ironhaven_blackwater_gate_blackwater",
+          "position": [
+            755,
+            1455
+          ],
+          "risk": "high"
+        }
+      ],
+      "crossings": [
+        {
+          "between_waypoints": [
+            1,
+            2
+          ],
+          "id": "south_viaduct",
+          "kind": "proposed_bridge",
+          "requires_water_or_ravine_survey": true
+        }
+      ],
+      "from": "ironhaven",
+      "id": "ironhaven_blackwater",
+      "kind": "militarized_highway",
+      "lore": "Electronics and alloys move across a militarized border",
+      "security": "contested",
+      "to": "blackwater",
+      "travel_modes": [
+        "walking",
+        "vehicle",
+        "boat",
+        "licensed_convoy"
+      ],
+      "waypoints": [
+        [
+          278,
+          531
+        ],
+        [
+          406,
+          780
+        ],
+        [
+          535,
+          1029
+        ],
+        [
+          664,
+          1279
+        ],
+        [
+          792,
+          1528
+        ]
+      ]
+    },
+    {
+      "checkpoints": [
+        {
+          "faction": "valewood",
+          "id": "valewood_blackwater_gate_valewood",
+          "position": [
+            1764,
+            702
+          ],
+          "risk": "inspection"
+        },
+        {
+          "faction": "blackwater",
+          "id": "valewood_blackwater_gate_blackwater",
+          "position": [
+            1353,
+            1461
+          ],
+          "risk": "low"
+        }
+      ],
+      "crossings": [
+        {
+          "between_waypoints": [
+            1,
+            2
+          ],
+          "id": "harbour_span",
+          "kind": "proposed_bridge",
+          "requires_water_or_ravine_survey": true
+        }
+      ],
+      "from": "valewood",
+      "id": "valewood_blackwater",
+      "kind": "frontier_highway",
+      "lore": "A remote, longer alternative to the militarized central highways",
+      "security": "unpredictable",
+      "to": "blackwater",
+      "travel_modes": [
+        "walking",
+        "vehicle",
+        "boat",
+        "licensed_convoy"
+      ],
+      "waypoints": [
+        [
+          1803,
+          630
+        ],
+        [
+          1680,
+          856
+        ],
+        [
+          1558,
+          1082
+        ],
+        [
+          1436,
+          1307
+        ],
+        [
+          1314,
+          1533
+        ]
+      ]
+    }
+  ],
+  "schema_version": 1,
+  "terrain_verified": false,
+  "transport": {
+    "convoys_work_for_noncombat_players": true,
+    "inter_city_fast_travel": "licensed_convoys_after_discovery",
+    "on_foot_viable_before_vehicle_unlock": true,
+    "routine_travel_budget": {
+      "all_three_routes_walkable_within_budget": true,
+      "design_note": "Walking and sprinting are viable defaults; stops provide optional activities, never mandatory empty-road delay. Estimate is static; benchmark actual 2-player traversal before accepting a release.",
+      "estimated_walking_blocks_per_second": 4.317,
+      "intermediate_points_of_interest_spacing_blocks": [
+        300,
+        450
+      ],
+      "mandatory_route_must_not_require_vehicle": true,
+      "maximum_routine_door_to_door_minutes": 10,
+      "preferred_between_city_edges_minutes": [
+        3,
+        5
+      ],
+      "reserved_city_access_minutes": 2
+    }
+  }
+}

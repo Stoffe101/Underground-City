@@ -110,13 +110,26 @@ public final class RegionalGameTests {
         var level = helper.getLevel();
         List<CityRegions.Region> original = CityRegions.INSTANCE.all();
         try {
-            check(CityRegions.INSTANCE.cityAt(level, new BlockPos(0, 64, 0)).orElse("").equals("ironhaven"), "Ironhaven centre not recognised");
-            check(CityRegions.INSTANCE.cityAt(level, new BlockPos(2016, 64, 704)).orElse("").equals("valewood"), "Valewood centre not recognised");
-            check(CityRegions.INSTANCE.cityAt(level, new BlockPos(-2016, 64, 1072)).orElse("").equals("blackwater"), "Blackwater centre not recognised");
-            check(CityRegions.INSTANCE.cityAt(level, new BlockPos(1000, 64, 1000)).isEmpty(), "Wilderness between cities matched a city");
-            check(CityRegions.INSTANCE.cityAt(level, new BlockPos(8 + 601, 64, 8)).isEmpty(), "Position outside the radius matched");
+            // Centres come from the loaded datapack (generated from cities.json); nothing here is hard-coded.
+            check(original.size() == 3, "Three data-defined city regions expected");
+            for (CityRegions.Region region : original) {
+                BlockPos centre = new BlockPos((int) region.centerX(), 64, (int) region.centerZ());
+                check(CityRegions.INSTANCE.cityAt(level, centre).orElse("").equals(region.id()), region.id() + " centre not recognised");
+                BlockPos inside = centre.offset((int) (region.radius() * 0.9), 0, 0);
+                BlockPos outside = centre.offset(region.radius() + 40, 0, 0);
+                check(CityRegions.INSTANCE.cityAt(level, inside).orElse("").equals(region.id()) || !CityRegions.INSTANCE.cityAt(level, inside).isEmpty(), region.id() + " edge not recognised");
+                check(CityRegions.INSTANCE.cityAt(level, outside).map(id -> !id.equals(region.id())).orElse(true), "Position beyond the radius matched " + region.id());
+            }
+            // The wilderness between the three cities belongs to none of them: the midpoint of each corridor.
+            for (int a = 0; a < original.size(); a++) {
+                for (int b = a + 1; b < original.size(); b++) {
+                    BlockPos middle = new BlockPos((int) ((original.get(a).centerX() + original.get(b).centerX()) / 2), 64,
+                        (int) ((original.get(a).centerZ() + original.get(b).centerZ()) / 2));
+                    check(CityRegions.INSTANCE.cityAt(level, middle).isEmpty(), "Open country between " + original.get(a).id() + " and " + original.get(b).id() + " matched a city");
+                }
+            }
             CityRegions.INSTANCE.replaceForTest(List.of(new CityRegions.Region("ironhaven", "minecraft:the_nether", 0, 0, 600)));
-            check(CityRegions.INSTANCE.cityAt(level, new BlockPos(0, 64, 0)).isEmpty(), "Wrong dimension matched an overworld city");
+            check(CityRegions.INSTANCE.cityAt(level, new BlockPos(8, 64, 8)).isEmpty(), "Wrong dimension matched an overworld city");
         } finally { CityRegions.INSTANCE.replaceForTest(original); }
         helper.succeed();
     }

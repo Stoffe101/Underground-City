@@ -10,6 +10,13 @@
       "description": "Contract tab, in native Minecraft Screen"
     },
     {
+      "id": "operations_terminal.skills",
+      "expected_file": "uc-terminal-skills.png",
+      "owner": "underground_city",
+      "group": "operations_terminal",
+      "description": "Skills tab: three branch columns (legal, foundation, underground), selected node detail and unlock button"
+    },
+    {
       "id": "operations_terminal.imports",
       "expected_file": "uc-terminal-imports.png",
       "owner": "underground_city",
@@ -28,7 +35,7 @@
       "expected_file": "uc-terminal-black_market.png",
       "owner": "underground_city",
       "group": "operations_terminal",
-      "description": "Black market exchange tab"
+      "description": "Market tab: local law for controlled goods, buyers and trust, heat (replaces the black-market placeholder)"
     },
     {
       "id": "operations_terminal.raids",
@@ -127,6 +134,125 @@
       "owner": "qshop",
       "group": "qshop",
       "description": "Installed Q Shop actual trade modal opened by mouse event"
+    },
+    {
+      "id": "skills.available",
+      "expected_file": "uc-skills-available.png",
+      "owner": "underground_city",
+      "group": "skills",
+      "description": "Skill node that can be unlocked now (enabled UNLOCK button)"
+    },
+    {
+      "id": "skills.locked",
+      "expected_file": "uc-skills-locked.png",
+      "owner": "underground_city",
+      "group": "skills",
+      "description": "Underground node locked by points, with the reason shown"
+    },
+    {
+      "id": "skills.legal-locked",
+      "expected_file": "uc-skills-legal-locked.png",
+      "owner": "underground_city",
+      "group": "skills",
+      "description": "Legal licence node locked by career level, showing the prerequisite"
+    },
+    {
+      "id": "contracts.underground",
+      "expected_file": "uc-contract-underground.png",
+      "owner": "underground_city",
+      "group": "contracts",
+      "description": "Accepted underground contract, goods ready, buyer in another city (delivery disabled with reason)"
+    },
+    {
+      "id": "contracts.underground-locked",
+      "expected_file": "uc-contract-underground-locked.png",
+      "owner": "underground_city",
+      "group": "contracts",
+      "description": "Underground contract locked by a missing skill"
+    },
+    {
+      "id": "contracts.legal-rewards",
+      "expected_file": "uc-contract-legal-rewards.png",
+      "owner": "underground_city",
+      "group": "contracts",
+      "description": "Legal contract with an extra reward item and a skill requirement"
+    },
+    {
+      "id": "market.blackwater",
+      "expected_file": "uc-market-blackwater.png",
+      "owner": "underground_city",
+      "group": "market",
+      "description": "Blackwater law: controlled crops permitted for a licensed grower, buyers with trust"
+    },
+    {
+      "id": "market.outside-city",
+      "expected_file": "uc-market-outside-city.png",
+      "owner": "underground_city",
+      "group": "market",
+      "description": "Market tab outside every city"
+    },
+    {
+      "id": "challenge.show",
+      "expected_file": "uc-challenge-show.png",
+      "owner": "underground_city",
+      "group": "challenge",
+      "description": "Secured terminal trace: the sequence being flashed"
+    },
+    {
+      "id": "challenge.input",
+      "expected_file": "uc-challenge-input.png",
+      "owner": "underground_city",
+      "group": "challenge",
+      "description": "Secured terminal trace: repeating the sequence, mid-way"
+    },
+    {
+      "id": "challenge.urgent",
+      "expected_file": "uc-challenge-urgent.png",
+      "owner": "underground_city",
+      "group": "challenge",
+      "description": "Secured terminal trace: last entry with the timer nearly spent"
+    },
+    {
+      "id": "skills.smith",
+      "expected_file": "uc-skills-smith.png",
+      "owner": "underground_city",
+      "group": "skills",
+      "description": "Skills tab for a level-11 Smith built from the real skill tree"
+    },
+    {
+      "id": "skills.gunsmith",
+      "expected_file": "uc-skills-gunsmith.png",
+      "owner": "underground_city",
+      "group": "skills",
+      "description": "Skills tab for a level-11 Gunsmith built from the real skill tree"
+    },
+    {
+      "id": "skills.technician",
+      "expected_file": "uc-skills-technician.png",
+      "owner": "underground_city",
+      "group": "skills",
+      "description": "Skills tab for a level-11 Technician built from the real skill tree"
+    },
+    {
+      "id": "register.city",
+      "expected_file": "uc-register-city.png",
+      "owner": "underground_city",
+      "group": "registration",
+      "description": "First-login registration, step 1: choose a home city"
+    },
+    {
+      "id": "register.career",
+      "expected_file": "uc-register-career.png",
+      "owner": "underground_city",
+      "group": "registration",
+      "description": "First-login registration, step 2: choose a profession (city chosen)"
+    },
+    {
+      "id": "register.confirm",
+      "expected_file": "uc-register-confirm.png",
+      "owner": "underground_city",
+      "group": "registration",
+      "description": "First-login registration, step 3: confirm the choice and the welcome pack"
     }
   ],
   "unintegrated_future_interfaces": [

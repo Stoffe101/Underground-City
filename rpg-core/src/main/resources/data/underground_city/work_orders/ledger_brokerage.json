@@ -1,0 +1,28 @@
+{
+  "schema_version": 3,
+  "title": "Ledger brokerage for a trusted buyer",
+  "career": "technician",
+  "level": 11,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "underground_city:data_ledger",
+      "count": 3
+    }
+  ],
+  "credits": 800,
+  "xp": 620,
+  "capacity": 1,
+  "refill_ticks": 24000,
+  "legality": "underground",
+  "requires_skill": "technician.data_brokerage",
+  "buyer": "vesper",
+  "min_trust": 2,
+  "trust_gain": 1,
+  "rewards": [
+    {
+      "item": "underground_city:optics_schematic",
+      "count": 1
+    }
+  ]
+}

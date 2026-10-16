@@ -1,0 +1,23 @@
+modLoader="lowcodefml"
+loaderVersion="[47,)"
+license="All Rights Reserved"
+
+[[mods]]
+modId="underground_city_world"
+version="0.1.0"
+displayName="Underground City: World Prototype"
+description="Original three-city world placement and prototype loot."
+
+[[dependencies.underground_city_world]]
+modId="lostcities"
+mandatory=true
+versionRange="[1.20-7.5.5]"
+ordering="AFTER"
+side="BOTH"
+
+[[dependencies.underground_city_world]]
+modId="underground_city"
+mandatory=true
+versionRange="[0.1.0,)"
+ordering="AFTER"
+side="BOTH"

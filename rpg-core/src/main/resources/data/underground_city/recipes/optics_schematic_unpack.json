@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "group": "underground_city_rare_finds",
+  "ingredients": [
+    {
+      "item": "underground_city:optics_schematic"
+    }
+  ],
+  "result": {
+    "item": "underground_city:optical_components",
+    "count": 3
+  }
+}

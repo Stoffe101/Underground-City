@@ -1,0 +1,145 @@
+name: Dev client smoke (gradlew runClient with the full pack)
+
+# The same entry point a developer uses on Windows/IntelliJ: ./gradlew runClient. This job runs it on a Linux runner under a
+# virtual display with software OpenGL and the -PucLaunchSmoke flag, which makes the client create the seed-5908 dev world,
+# print [UC-LAUNCH] facts, use an Operations Terminal and quit. It proves the wrapper, dependency resolution and checksum
+# verification, the production-like development runtime (Modern Life's config read, Immersive Vehicles' content packs),
+# world creation with the Lost Cities profile and one Underground City screen. It does NOT prove Windows, IntelliJ,
+# gameplay, driving, shooting or multiplayer.
+
+on:
+  pull_request:
+    paths:
+      - 'rpg-core/**'
+      - 'content/modpacks/**'
+      - 'content/generated/**'
+      - 'gradle/**'
+      - 'gradlew'
+      - 'gradlew.bat'
+      - 'settings.gradle'
+      - '.run/**'
+      - '.github/workflows/dev-client-smoke.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dev-client-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  wrapper:
+    name: Gradle wrapper is the official one
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: gradle/actions/wrapper-validation@v4
+
+  client:
+    name: runClient launches the complete pack and reaches a terminal
+    needs: wrapper
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Install virtual display
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq xvfb xauth libgl1-mesa-dri libgl1 mesa-utils
+      - name: Launch ./gradlew runClient (complete development pack) and wait for the smoke result
+        shell: bash
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+          GALLIUM_DRIVER: llvmpipe
+          MESA_GL_VERSION_OVERRIDE: '3.3'
+          ALSOFT_DRIVERS: 'null'
+          SDL_AUDIODRIVER: dummy
+        run: |
+          set -uo pipefail
+          chmod +x gradlew
+          code=0
+          timeout 2400s xvfb-run -a -s "-screen 0 1920x1080x24" ./gradlew runClient -PucLaunchSmoke=true --no-daemon --stacktrace > /tmp/uc-dev-client.log 2>&1 || code=$?
+          echo "gradle exit code: ${code}"
+          if [ "${code}" -ne 0 ]; then
+            # The full log is an artifact; the job log carries the reason so a failure is readable without downloading anything.
+            grep -nE 'What went wrong|FAILURE|Caused by|Could not|\[UC-LAUNCH\]' -A 6 /tmp/uc-dev-client.log | head -n 120 || true
+            tail -n 60 /tmp/uc-dev-client.log
+          fi
+      - name: Evaluate the launch result
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -E '^\[UC-LAUNCH\]' /tmp/uc-dev-client.log || true
+          grep -q '^\[UC-LAUNCH\] RESULT pass' /tmp/uc-dev-client.log
+          # Every pinned jar must have been verified against content/modpacks/dev-pack.json.
+          grep -q 'Verified 7 pinned dev-pack jar' /tmp/uc-dev-client.log
+          if grep -E 'Failed to start the minecraft server|Exception caught during firing event|Registry Object not present' /tmp/uc-dev-client.log; then
+            echo 'a mod failed during loading'; exit 1
+          fi
+          test -s rpg-core/run-dev/screenshots/uc-launch-smoke-terminal.png
+      - name: Preserve the log tail and the screenshot (no saves, no mod binaries)
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p /tmp/uc-dev-evidence
+          grep -E '^\[UC-LAUNCH\]|Verified|prepared' /tmp/uc-dev-client.log > /tmp/uc-dev-evidence/launch-facts.txt || true
+          tail -n 400 /tmp/uc-dev-client.log > /tmp/uc-dev-evidence/client-log-tail.txt || true
+          cp rpg-core/run-dev/screenshots/uc-launch-smoke-terminal.png /tmp/uc-dev-evidence/ 2>/dev/null || true
+          cp rpg-core/run-dev/logs/latest.log /tmp/uc-dev-evidence/latest.log 2>/dev/null || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: uc-dev-client-smoke
+          path: /tmp/uc-dev-evidence
+          retention-days: 3
+
+  server:
+    name: runServer boots the complete pack (development runtime)
+    needs: wrapper
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Boot ./gradlew runServer with the boot-smoke harness
+        shell: bash
+        run: |
+          set -uo pipefail
+          chmod +x gradlew
+          code=0
+          timeout 1500s ./gradlew runServer -PucAcceptEula=true -PucBootSmoke=true --no-daemon --stacktrace > /tmp/uc-dev-server.log 2>&1 || code=$?
+          echo "gradle exit code: ${code}"
+          if [ "${code}" -ne 0 ]; then
+            grep -nE 'What went wrong|FAILURE|Caused by|Could not|\[UC-BOOT\]' -A 6 /tmp/uc-dev-server.log | head -n 120 || true
+            tail -n 60 /tmp/uc-dev-server.log
+          fi
+      - name: Evaluate
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -E '^\[UC-BOOT\]' /tmp/uc-dev-server.log || true
+          for id in underground_city qshop lostcities tacz taczblueprints modernlife mts mtsofficialpack oamp; do
+            grep -q "^\[UC-BOOT\] mod ${id}=true" /tmp/uc-dev-server.log
+          done
+          grep -q '^\[UC-BOOT\] boat_cargo=ok' /tmp/uc-dev-server.log
+          for pack in mtsofficialpack oamp; do
+            count=$(grep -oE "^\[UC-BOOT\] mts pack ${pack} items=[0-9]+" /tmp/uc-dev-server.log | grep -oE '[0-9]+$')
+            test "${count:-0}" -ge 1
+          done
+          grep -q '^\[UC-BOOT\] done' /tmp/uc-dev-server.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: uc-dev-server-log
+          path: /tmp/uc-dev-server.log
+          retention-days: 3

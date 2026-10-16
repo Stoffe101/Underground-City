@@ -2,39 +2,60 @@
   "schema_version": 1,
   "prototype_only": true,
   "dimension": "minecraft:overworld",
-  "minimum_city_edge_gap_blocks": 500,
+  "minimum_city_edge_gap_blocks": 800,
   "cities": [
     {
       "id": "ironhaven",
-      "center_chunk": [0, 0],
+      "center_chunk": [
+        0,
+        0
+      ],
       "radius_blocks": 600,
       "city_style": "underground_city:ironhaven",
       "building_chance": 0.75,
       "max_floors": 9,
       "park_chance": 0.06,
-      "economy": ["manufacturing", "security", "metallurgy"],
+      "economy": [
+        "manufacturing",
+        "security",
+        "metallurgy"
+      ],
       "visual_goal": "Dense industrial metropolis and manufacturing districts. Actual factories and factories' interiors require curated landmark assets."
     },
     {
       "id": "valewood",
-      "center_chunk": [126, 44],
+      "center_chunk": [
+        124,
+        17
+      ],
       "radius_blocks": 410,
       "city_style": "underground_city:valewood",
       "building_chance": 0.41,
       "max_floors": 3,
       "park_chance": 0.28,
-      "economy": ["agriculture", "wine", "trade"],
+      "economy": [
+        "agriculture",
+        "wine",
+        "trade"
+      ],
       "visual_goal": "Smaller green low-rise town. Farms, vineyards and homes outside city limits require separately placed assets or terrain editing."
     },
     {
       "id": "blackwater",
-      "center_chunk": [-126, 67],
+      "center_chunk": [
+        65,
+        126
+      ],
       "radius_blocks": 570,
       "city_style": "underground_city:blackwater",
       "building_chance": 0.84,
       "max_floors": 11,
       "park_chance": 0.03,
-      "economy": ["commerce", "technology", "underground_trade"],
+      "economy": [
+        "commerce",
+        "technology",
+        "underground_trade"
+      ],
       "visual_goal": "Dense city with high-rises and commerce; nightlife, neon, gangs, and underground businesses still need curated content."
     }
   ],

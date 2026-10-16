@@ -58,6 +58,15 @@
       "reviewer": "Claude Code cloud session",
       "surfaces_per_profile": 12,
       "findings": "Viewed all 12 downscaled review copies printed in the job log (six city frames, two bridge frames, two deck frames and two ground-road frames, seed 579). Both bridges render as stone decks on piers over open water with connected parapets and lanterns; ground roads cut through forest with slab ramps. Known rough edges: stepped diagonal edges, trees overhanging parapets, a rooftop in the Ironhaven oblique foreground. Two earlier runs of this tour were rejected after viewing (unconnected parapet posts; a bridge frame captured before its meshes were built) and fixed. Review copies, not the full-resolution gallery."
+    },
+    {
+      "run_id": 38827928567,
+      "head_sha": "3f4385dccea49c4374570373f093363064f37efe",
+      "artifact_ids": [],
+      "review_completed": true,
+      "reviewer": "Claude Code cloud session",
+      "surfaces_per_profile": 15,
+      "findings": "Decoded and viewed all 15 downscaled review copies printed in the job log (a top-down and an oblique frame of each city; per road a bridge from the side, a deck view and a plain-road view), seed 5908. Bridges on piers with connected parapets and lanterns over open water, ground roads through forest, real buildings in all three cities, no floating building in the six city frames. Known rough edges: oblique city frames half sky, trees touching parapets, plain grey road. Review copies, not the full-resolution gallery. The full-resolution gallery (artifact 12017446003) was deliberately not listed for cleanup so that the owner can open it before it expires on 2026-10-17."
     }
   ]
 }

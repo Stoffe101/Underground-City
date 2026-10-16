@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "title": "Blackwater gate on the Valewood road",
+  "jurisdiction": "blackwater",
+  "dimension": "minecraft:overworld",
+  "x": 1353,
+  "z": 1461,
+  "radius": 48,
+  "risk": "low",
+  "route": "valewood_blackwater"
+}

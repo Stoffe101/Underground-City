@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "policy": "underground_city:illegal_cache",
+  "chance": 0.35,
+  "entries": [
+    {
+      "item": "tacz:modern_kinetic_gun",
+      "nbt": "{GunId:\"tacz:uzi\",GunFireMode:\"SEMI\"}",
+      "weight": 2,
+      "requires_mod": "tacz"
+    },
+    {
+      "item": "tacz:modern_kinetic_gun",
+      "nbt": "{GunId:\"tacz:hk_mp5a5\",GunFireMode:\"SEMI\"}",
+      "weight": 1,
+      "requires_mod": "tacz"
+    },
+    {
+      "item": "tacz:modern_kinetic_gun",
+      "nbt": "{GunId:\"tacz:ak47\",GunFireMode:\"SEMI\"}",
+      "weight": 1,
+      "requires_mod": "tacz"
+    },
+    {
+      "item": "tacz:attachment",
+      "nbt": "{AttachmentId:\"tacz:muzzle_silencer_mirage\"}",
+      "weight": 3,
+      "requires_mod": "tacz"
+    },
+    {
+      "item": "taczblueprints:blueprint_smg",
+      "nbt": "{GunId:\"tacz:uzi\"}",
+      "weight": 2,
+      "requires_mod": "taczblueprints"
+    },
+    {
+      "item": "tacz:ammo",
+      "nbt": "{AmmoId:\"tacz:9mm\"}",
+      "count": [
+        30,
+        60
+      ],
+      "weight": 3,
+      "requires_mod": "tacz"
+    },
+    {
+      "item": "underground_city:unstamped_plate",
+      "count": [
+        2,
+        4
+      ],
+      "weight": 3
+    },
+    {
+      "item": "underground_city:sable_leaf_bale",
+      "count": [
+        2,
+        4
+      ],
+      "weight": 2
+    },
+    {
+      "item": "underground_city:data_ledger",
+      "weight": 1
+    }
+  ]
+}

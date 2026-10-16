@@ -51,6 +51,8 @@ These are **candidate packs for locally installed A/B experiments**, not include
 
 ## Immediate impact on RPG Core scaffold
 
+**Superseded in part (October 16, 2026):** the paragraph below was written before the starter slice. Core now owns career XP, contracts, skill trees and the evidence-based law model (D-050, D-051), and Q Shop 1.8.4 owns the wallet; see the sprint decisions at the end of this file. It is kept for the reasoning, not as a current instruction.
+
 `rpg-core/` is a **standalone experimental fallback** to prove Java build, simple persistence and multiplayer. **Do not add career trees or an economy implementation** until RoleCraft/Pufferfish/Lightman's Currency have been separately tested. If an existing mod meets the requirements, RPG Core should pivot to a thin integration layer for city/story-specific behavior. The prototype's `/uc register` command is not intended to compete with RoleCraft's first-login UI.
 
 ## Private-play installation
@@ -60,3 +62,19 @@ Use official downloads/launchers locally and preserve creator notices. Git conta
 ## Current starter-slice ownership
 
 Q Shop 1.8.4 was selected for the live starter wallet/trades after official API/source review and real Forge transaction tests. Core's work orders are narrow world-specific glue for shared bounded employer demand, accepted-order UUIDs, actual-item delivery and coordinated recovery. They reuse vanilla crafting and Q Shop currency APIs rather than building a bank, new crafting framework or a full quest UI. FTB Quests remains a candidate for story/team objectives; its static reward model does not by itself coordinate these three persisted stores. No overlapping quest/role/XP provider was added. Vanilla villager AI supplies the first real named clerk; a larger NPC framework still needs separate evaluation.
+
+## Sprint decisions (October 15-16, 2026): what we reused, what we built, what we rejected
+
+| Need | Chosen | Why, and the reuse-first trail |
+| --- | --- | --- |
+| Wallet and civilian shops | Q Shop 1.8.4 (sole provider) | unchanged; no second currency or ledger |
+| Career skill trees | **Core-owned datapack catalog** (D-050) | Core already owns career XP and the journal-backed settlement; Pufferfish's Skills would be a second owner of the same truth. Pufferfish's stays a possible *display* layer if progression data can be synchronised safely. The trees are data (`data/underground_city/skill_trees/<career>.json`), not hard-coded |
+| Firearms | TaCZ 1.1.8-hotfix2 + TaCZ Blueprints 0.1.3 | reuse a real gun mod; Core only names its items and gun ids; hash-pinned runtime-only dependencies, nothing redistributed |
+| TaCZ research addon | **Rejected for now**: "TaCZ Weapon Research & Blueprints" | only a CurseForge file; it could not be located and verified from the cloud container. Select one blueprint addon, never assume two interoperate |
+| Boats | Modern Life 1.75 Motorboat | has a persistent 27-slot hold and fuel; its cargo round trip was tested on a production-style server |
+| Road vehicles | Immersive Vehicles 24.0.0 + Official Content Pack V29 + Official Automobile Pack V3 | engine plus content packs; boots and registers content; driving untested |
+| Law, contraband, buyers, heat, trust | Core (new) | no candidate model fits the city-law and evidence design; the rules are small, data-driven and GameTested |
+| Technician challenge | Core (new) | a hacking mini-game in a candidate mod would not follow our server-owned sequence, kit and lockout rules; the screen is original |
+| Operator district | Core (new, data-defined) | a structure format already exists in vanilla; the builder is a small command, not a schematic mod |
+
+The machine-readable pins live in `content/modpacks/dev-pack.pins.json` and `dev-pack.json`; see [dev pack](dev-pack.md).

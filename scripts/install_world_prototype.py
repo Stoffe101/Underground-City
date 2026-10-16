@@ -36,15 +36,19 @@ def profile(data: dict) -> dict:
     }
 
 
-def install(server_root: Path, data: dict) -> list[str]:
-    settings = profile(data)
-    if list(server_root.glob("**/level.dat")) or list(server_root.glob("**/level.dat_old")):
-        raise ValueError("Existing save found. City profiles only belong in a new disposable instance.")
-    files = {
-        "config/lostcities/profiles/uc_three_city.json": json.dumps(settings, indent=2)+"\n",
+def config_files(data: dict) -> dict[str, str]:
+    """The Lost Cities configuration that selects the three-city profile (relative to a game directory)."""
+    return {
+        "config/lostcities/profiles/uc_three_city.json": json.dumps(profile(data), indent=2)+"\n",
         "config/lostcities/common.toml": '[profiles]\ndimensionsWithProfiles = ["minecraft:overworld=uc_three_city", "lostcities:lostcity=biosphere", "lostworlds:abyss=biosphere_caves"]\n',
         "defaultconfigs/lostcities-server.toml": '[profiles]\nselectedProfile = "uc_three_city"\nselectedCustomJson = ""\n',
     }
+
+
+def install(server_root: Path, data: dict) -> list[str]:
+    if list(server_root.glob("**/level.dat")) or list(server_root.glob("**/level.dat_old")):
+        raise ValueError("Existing save found. City profiles only belong in a new disposable instance.")
+    files = config_files(data)
     jar = server_root/"mods/underground-city-world-prototype.jar"
     targets = [server_root/name for name in files] + [jar]
     if any(path.exists() for path in targets):

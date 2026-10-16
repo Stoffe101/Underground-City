@@ -39,7 +39,8 @@ public final class PropertyCommands {
             try {
                 PropertyCacheBlockEntity cache = target(ctx.getSource().getPlayerOrException());
                 ctx.getSource().sendSuccess(() -> Component.literal("policy=" + (cache.registered() ? cache.policyId() : "none")
-                    + " stock=" + cache.stock() + " vigilance=" + cache.vigilance() + " forced_entries=" + cache.breakins()), false);
+                    + " stock=" + cache.stock() + " vigilance=" + cache.vigilance() + " forced_entries=" + cache.breakins()
+                    + " exceptional_find=" + cache.exceptional()), false);
                 return 1;
             } catch (IllegalStateException error) { ctx.getSource().sendFailure(Component.literal(error.getMessage())); return 0; }
         }));

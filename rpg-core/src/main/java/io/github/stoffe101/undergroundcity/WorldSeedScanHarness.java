@@ -23,7 +23,7 @@ import java.util.List;
  * a few real water gaps (large rivers or straits) that a bridge crosses and a boat can also use, with land elsewhere.
  * Stage 1 is a cheap climate-sampler ranking of many seeds; stage 2 re-scores the best candidates with the chunk
  * generator's own surface and ocean-floor heights along the real road centrelines. It never changes a world. Enable
- * with -Duc.seedScan=start,count[,finalists] in the disposable survey directory.
+ * with -Duc.seedScan=start,count[,finalists] (or list:seed,seed,... to re-score given seeds) in the disposable survey directory.
  */
 @Mod.EventBusSubscriber(modid=UndergroundCity.MOD_ID)
 public final class WorldSeedScanHarness {
@@ -36,12 +36,19 @@ public final class WorldSeedScanHarness {
     private static final double WATER_MAX=0.35,WATER_MIN=0.06;
     private record Anchor(String id,double x,double z,int radius) {}
     private record Cheap(long seed,int wetAnchors,double score,double ocean,int longest) {}
-    private record Accurate(long seed,int wetAnchors,double score,List<double[]> routeStats,List<List<Integer>> runs) {}
+    /** {@code height} is the terrain height at each city centre and {@code relief} the spread over the five sample points of its site. */
+    private record Accurate(long seed,int wetAnchors,double score,List<double[]> routeStats,List<List<Integer>> runs,double[] ring,int[] height,int[] relief) {}
+    /** A city site on a mountain or a cliff would be carved into terraces; keep the centres low and the sites level. */
+    private static final int SITE_HEIGHT_MAX=100,SITE_RELIEF_MAX=24;
     private static List<Anchor> anchors;
     private static List<CorridorPlan> routes;
     /** Sample positions: five points per anchor, then the open centreline of each built road every 16 blocks. */
     private static List<double[]> positions;
     private static int[] routeStart,routeEnd;
+    /** Twelve points on a ring this far outside each city circle: an island city has water, not only land, around it. */
+    private static final int RING_POINTS=12,RING_OFFSET=150;
+    private static final double RING_MIN=0.25,RING_MAX=0.75;
+    private static int ringStart;
     private static final List<Cheap> cheap=new ArrayList<>();
     private static final List<Accurate> accurate=new ArrayList<>();
     private static List<Long> finalists;
@@ -61,10 +68,19 @@ public final class WorldSeedScanHarness {
         try {
             if(!initialised) {
                 initialised=true;
-                String[] parts=SPEC.split(",");
-                next=Long.parseLong(parts[0].trim());end=next+Math.min(Long.parseLong(parts[1].trim()),50000);
-                finalistCount=parts.length>2?Integer.parseInt(parts[2].trim()):300;
-                load(server,folder);
+                if(SPEC.startsWith("list:")) {
+                    // Re-score an explicit list of seeds with the real heights only (no stage 1).
+                    load(server,folder);
+                    finalists=new ArrayList<>();
+                    for(String part:SPEC.substring(5).split(",")) finalists.add(Long.parseLong(part.trim()));
+                    surface=new int[positions.size()];floor=new int[positions.size()];
+                    next=end=0;
+                } else {
+                    String[] parts=SPEC.split(",");
+                    next=Long.parseLong(parts[0].trim());end=next+Math.min(Long.parseLong(parts[1].trim()),50000);
+                    finalistCount=parts.length>2?Integer.parseInt(parts[2].trim()):300;
+                    load(server,folder);
+                }
             }
             long deadline=System.nanoTime()+30_000_000L;
             var level=server.overworld();var generator=level.getChunkSource().getGenerator();
@@ -81,7 +97,7 @@ public final class WorldSeedScanHarness {
                 finalists=new ArrayList<>();
                 for(int i=0;i<Math.min(finalistCount,cheap.size());i++) finalists.add(cheap.get(i).seed);
                 // The previous reference seed and the first candidate are always re-scored for comparison.
-                for(long reference:new long[]{20261014L,3130L}) if(!finalists.contains(reference)) finalists.add(reference);
+                for(long reference:new long[]{20261014L,3130L,579L,166L}) if(!finalists.contains(reference)) finalists.add(reference);
                 System.out.println("[UC-SEEDS] Stage 1 done: "+cheap.size()+" seeds ranked; re-scoring "+finalists.size()+" with real terrain heights");
                 surface=new int[positions.size()];floor=new int[positions.size()];
             }
@@ -143,6 +159,13 @@ public final class WorldSeedScanHarness {
             for(double s=0;s<=routes.get(r).length();s+=SPACING) if(routes.get(r).openAt(s)) positions.add(routes.get(r).pointAt(s));
             routeEnd[r]=positions.size();
         }
+        ringStart=positions.size();
+        for(Anchor anchor:anchors) {
+            for(int k=0;k<RING_POINTS;k++) {
+                double angle=2*Math.PI*k/RING_POINTS,distance=anchor.radius+RING_OFFSET;
+                positions.add(new double[]{anchor.x+Math.cos(angle)*distance,anchor.z+Math.sin(angle)*distance});
+            }
+        }
     }
 
     private static long continentalness(RandomState random,double x,double z) {
@@ -181,6 +204,22 @@ public final class WorldSeedScanHarness {
             if(water>=2) wet++;
         }
         double score=wet*1_000_000.0;
+        int[] height=new int[anchors.size()],relief=new int[anchors.size()];
+        for(int a=0;a<anchors.size();a++) {
+            int low=Integer.MAX_VALUE,high=Integer.MIN_VALUE;
+            for(int k=0;k<5;k++) {low=Math.min(low,surface[a*5+k]);high=Math.max(high,surface[a*5+k]);}
+            height[a]=surface[a*5];relief[a]=high-low;
+            if(height[a]>SITE_HEIGHT_MAX) score+=(height[a]-SITE_HEIGHT_MAX)*40;
+            if(relief[a]>SITE_RELIEF_MAX) score+=(relief[a]-SITE_RELIEF_MAX)*25;
+        }
+        double[] ring=new double[anchors.size()];
+        for(int a=0;a<anchors.size();a++) {
+            int water=0;
+            for(int k=0;k<RING_POINTS;k++) {int i=ringStart+a*RING_POINTS+k;if(surface[i]>floor[i]) water++;}
+            ring[a]=(double)water/RING_POINTS;
+            if(ring[a]<RING_MIN) score+=(RING_MIN-ring[a])*1500;
+            if(ring[a]>RING_MAX) score+=(ring[a]-RING_MAX)*1500;
+        }
         List<double[]> stats=new ArrayList<>();List<List<Integer>> allRuns=new ArrayList<>();
         for(int r=0;r<routes.size();r++) {
             int samples=0,waterSamples=0,run=0,steep=0,deepest=0;
@@ -206,20 +245,20 @@ public final class WorldSeedScanHarness {
             stats.add(new double[]{samples,waterSamples,fraction,steep,deepest,bridgeable});
             allRuns.add(runs);
         }
-        return new Accurate(seed,wet,score,stats,allRuns);
+        return new Accurate(seed,wet,score,stats,allRuns,ring,height,relief);
     }
 
     private static void report(java.nio.file.Path folder) throws java.io.IOException {
         accurate.sort(Comparator.comparingDouble(Accurate::score));
         JsonObject report=new JsonObject();
         report.addProperty("method","stage 1: climate-sampler continentalness for "+cheap.size()+" seeds; stage 2: chunk-generator surface vs ocean-floor height every "+SPACING+" blocks on the open centreline of each built road, plus five points per city; ranking only, verify with the generation survey");
-        report.addProperty("design_target","dry city sites; per built road "+Math.round(WATER_MIN*100)+"-"+Math.round(WATER_MAX*100)+"% water in bridgeable gaps of "+GAP_MIN+"-"+GAP_MAX+" blocks (large rivers or straits crossed by bridge or boat); land elsewhere");
+        report.addProperty("design_target","dry city sites with "+Math.round(RING_MIN*100)+"-"+Math.round(RING_MAX*100)+"% water on a ring "+RING_OFFSET+" blocks outside each city (island-like); per built road "+Math.round(WATER_MIN*100)+"-"+Math.round(WATER_MAX*100)+"% water in bridgeable gaps of "+GAP_MIN+"-"+GAP_MAX+" blocks (large rivers or straits crossed by bridge or boat); land elsewhere");
         report.addProperty("seeds_ranked",cheap.size());report.addProperty("seeds_rescored",accurate.size());
         JsonArray top=new JsonArray();
-        for(int i=0;i<Math.min(15,accurate.size());i++) top.add(describe(accurate.get(i)));
+        for(int i=0;i<Math.min(accurate.size()>40?15:accurate.size(),accurate.size());i++) top.add(describe(accurate.get(i)));
         report.add("best",top);
         JsonObject references=new JsonObject();
-        for(Accurate result:accurate) if(result.seed==20261014L || result.seed==3130L) references.add(Long.toString(result.seed),describe(result));
+        for(Accurate result:accurate) if(result.seed==20261014L || result.seed==3130L || result.seed==579L || result.seed==166L) references.add(Long.toString(result.seed),describe(result));
         report.add("references",references);
         Files.writeString(folder.resolve("seed-scan.json"),report+"\n");
         System.out.println("[UC-SEEDS] Best: "+(accurate.isEmpty()?"none":accurate.get(0).seed+" score "+accurate.get(0).score));
@@ -238,6 +277,15 @@ public final class WorldSeedScanHarness {
             per.add(stats);
         }
         entry.add("routes",per);
+        JsonObject ring=new JsonObject();
+        for(int a=0;a<anchors.size();a++) ring.addProperty(anchors.get(a).id,Math.round(result.ring[a]*100)/100.0);
+        entry.add("water_on_ring_outside_city",ring);
+        JsonObject sites=new JsonObject();
+        for(int a=0;a<anchors.size();a++) {
+            JsonObject site=new JsonObject();site.addProperty("centre_height",result.height[a]);site.addProperty("relief_over_site",result.relief[a]);
+            sites.add(anchors.get(a).id,site);
+        }
+        entry.add("city_sites",sites);
         return entry;
     }
 }

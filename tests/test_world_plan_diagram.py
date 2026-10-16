@@ -18,7 +18,7 @@ class RoutePreviewTests(unittest.TestCase):
         ns = "{http://www.w3.org/2000/svg}"
         self.assertEqual(image.tag, ns+"svg")
         self.assertEqual(len(image.findall(".//"+ns+"polyline")), 6)
-        self.assertEqual(len(image.findall(".//"+ns+"rect")), 3)  # background + 2 bridge diamonds
+        self.assertEqual(len(image.findall(".//"+ns+"rect")), 4)  # background + 3 bridge diamonds
         for city in ("Ironhaven", "Valewood", "Blackwater"):
             self.assertIn(city, preview)
         self.assertIn("Roads built: 0", preview)

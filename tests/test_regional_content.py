@@ -12,17 +12,19 @@ RES = ROOT / "rpg-core/src/main/resources"
 SOURCE = json.loads((ROOT / "content/gameplay/regional-content.json").read_text(encoding="utf-8"))
 SUPPLY = json.loads((ROOT / "content/progression/recurring-supply.json").read_text(encoding="utf-8"))
 CITIES = json.loads((ROOT / "content/region-blueprints/cities.json").read_text(encoding="utf-8"))
+CONTRACTS = json.loads((ROOT / "content/gameplay/contracts.json").read_text(encoding="utf-8"))
 
 
 class RegionalContentTests(unittest.TestCase):
     def test_source_validates_and_generated_resources_are_current(self):
         gen.validate(SOURCE)
-        stale = [str(rel) for rel, content in gen.build(SOURCE).items()
+        gen.validate_contracts(SOURCE, CONTRACTS)
+        stale = [str(rel) for rel, content in gen.build(SOURCE, CONTRACTS).items()
                  if not (ROOT / rel).is_file() or not gen.same_content(ROOT / rel, content)]
         self.assertEqual(stale, [], "run scripts/generate_regional_content.py")
 
     def test_no_orphaned_generated_files(self):
-        expected = {ROOT / rel for rel in gen.build(SOURCE)}
+        expected = {ROOT / rel for rel in gen.build(SOURCE, CONTRACTS)}
         for folder, suffixes in (("data/underground_city/regional_stock", {".json"}),
                                  ("data/underground_city/regions", {".json"}),
                                  ("assets/underground_city/textures/item", {".png"}),
@@ -68,7 +70,8 @@ class RegionalContentTests(unittest.TestCase):
         lang = json.loads((RES / "assets/underground_city/lang/en_us.json").read_text())
         listing = json.loads((RES / "underground_city_items.json").read_text())
         ids = [e["id"] for e in listing["items"]]
-        self.assertEqual(len(ids), 22)
+        self.assertEqual(len(ids), 22 + len(SOURCE["specials"]))
+        self.assertEqual(set(ids), {e["id"] for e in SOURCE["commodities"] + SOURCE["products"] + SOURCE["tools"] + SOURCE["specials"]})
         from PIL import Image
         for item_id in ids:
             self.assertIn(f"item.underground_city.{item_id}", lang)
@@ -89,12 +92,53 @@ class RegionalContentTests(unittest.TestCase):
     def test_generated_item_icons_are_distinct(self):
         from PIL import Image
         seen = {}
-        for entry in SOURCE["commodities"] + SOURCE["products"] + SOURCE["tools"]:
+        for entry in SOURCE["commodities"] + SOURCE["products"] + SOURCE["tools"] + SOURCE["specials"]:
             buf = BytesIO()
             gen.icon(entry["icon"], gen.palette_for(entry)).save(buf, "PNG")
             pixels = Image.open(BytesIO(buf.getvalue())).convert("RGBA").tobytes()
             self.assertNotIn(pixels, seen, f"{entry['id']} duplicates the icon of {seen.get(pixels)}")
             seen[pixels] = entry["id"]
+
+
+class SpecialItemTests(unittest.TestCase):
+    def test_restricted_goods_have_recipes_that_stay_priced_and_ordinary_goods_stay_free(self):
+        for item in SOURCE["specials"]:
+            if not item.get("inputs"):
+                continue
+            recipe = json.loads((RES / f"data/underground_city/recipes/{item['id']}.json").read_text())
+            self.assertLessEqual(len(recipe["ingredients"]), 9)
+            self.assertEqual(recipe["result"]["count"], item["count"])
+
+    def test_rare_finds_only_unpack_into_what_the_exchange_sells(self):
+        commodities = {c["id"]: c for c in SOURCE["commodities"]}
+        for item in SOURCE["specials"]:
+            if "shortcut" not in item:
+                continue
+            target = commodities[item["shortcut"]["result"]]
+            recipe = json.loads((RES / f"data/underground_city/recipes/{item['id']}_unpack.json").read_text())
+            self.assertEqual(recipe["ingredients"], [{"item": f"underground_city:{item['id']}"}])
+            # The shortcut is worth at most the exchange price of what it unpacks into: a saving, never a faucet.
+            value = item["shortcut"]["count"] * target["stock"]["unit_price"]
+            reward = CONTRACTS["reference_values"]["rewards"][f"underground_city:{item['id']}"]
+            self.assertLessEqual(reward, value + 1e-9, item["id"])
+
+    def test_every_gate_in_the_corridor_blueprint_is_an_inspection_post(self):
+        corridors = json.loads((ROOT / "content/region-blueprints/corridors.json").read_text())
+        gates = {g["id"]: g for r in corridors["routes"] for g in r["checkpoints"]}
+        for gate_id, gate in gates.items():
+            post = json.loads((RES / f"data/underground_city/checkpoints/{gate_id}.json").read_text())
+            self.assertEqual((post["x"], post["z"], post["jurisdiction"], post["risk"]), (gate["position"][0], gate["position"][1], gate["faction"], gate["risk"]))
+        posts = {p.stem for p in (RES / "data/underground_city/checkpoints").glob("*.json")}
+        self.assertEqual(posts, set(gates), "orphaned or missing checkpoint")
+
+    def test_sable_leaf_crop_has_four_growth_stages(self):
+        from PIL import Image
+        for age in range(4):
+            image = Image.open(RES / f"assets/underground_city/textures/block/sable_leaf_crop_stage{age}.png")
+            self.assertEqual(image.size, (16, 16))
+            self.assertGreater(image.convert("RGBA").getchannel("A").getextrema()[1], 0)
+        state = json.loads((RES / "assets/underground_city/blockstates/sable_leaf_crop.json").read_text())
+        self.assertEqual(len(state["variants"]), 8)
 
 
 if __name__ == "__main__":

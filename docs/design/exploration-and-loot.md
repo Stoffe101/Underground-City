@@ -33,3 +33,20 @@ City outskirts, mountains, quarries and contested zones expose ores and salvage;
 ## Acceptance
 
 Two players each get eligible personal loot; shared goods cannot double-withdraw; table IDs remain valid after reload; loot respects tier progression; no infinite cash/XP exploit via relog or chunk reload.
+
+## Rare and exceptional loot policy (implemented, D-053)
+
+The rarity rule for **every** profession: a rare find is contextual, rolled once, and not renewable.
+
+- **Rolled once.** A Household Safe decides at registration, from a position-fixed seed, whether it holds an
+  exceptional find (10% apartments, offices and industrial; 35% illegal cache). Restocking, relogging and reloading
+  chunks never roll it again; the operator's `clear` resets it.
+- **Profession-wide.** The datapack tables (`exceptional_loot/*.json`) name heirloom seed packets (Farmer), prototype
+  alloy ingots (Smith), optics schematics (Gunsmith), circuit prototypes (Technician) and, when TaCZ is installed,
+  real guns with their real NBT.
+- **Packed, not currency.** Rare components unpack into ordinary regional goods that the exchange sells; none is a
+  coin, and no rare item is purchasable.
+- **Reliable alternatives.** Legal contracts also pay these items (guard plating pays a prototype alloy ingot; heirloom
+  seed brokering pays a seed packet; a gunsmith contract pays a TaCZ blueprint), so no progression depends on luck.
+- **Not yet:** per-player Lootr-style instancing, wilderness and police-site tables, and any renewal of
+  safe contents beyond the existing slow restock.

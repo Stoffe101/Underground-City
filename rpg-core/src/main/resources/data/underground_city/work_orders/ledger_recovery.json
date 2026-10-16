@@ -1,0 +1,21 @@
+{
+  "schema_version": 3,
+  "title": "Recover a ledger for Vesper",
+  "career": "technician",
+  "level": 7,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "underground_city:data_ledger",
+      "count": 1
+    }
+  ],
+  "credits": 270,
+  "xp": 360,
+  "capacity": 2,
+  "refill_ticks": 18000,
+  "legality": "underground",
+  "requires_skill": "technician.bypass_tooling",
+  "buyer": "vesper",
+  "trust_gain": 1
+}

@@ -1,0 +1,30 @@
+{
+  "schema_version": 3,
+  "title": "Plating for the Ironhaven guard",
+  "career": "smith",
+  "level": 5,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "minecraft:iron_chestplate",
+      "count": 2
+    },
+    {
+      "item": "minecraft:iron_helmet",
+      "count": 2
+    }
+  ],
+  "credits": 270,
+  "xp": 340,
+  "capacity": 2,
+  "refill_ticks": 12000,
+  "legality": "legal",
+  "requires_skill": "smith.armoury_contracts",
+  "buyer": "ironhaven_guard",
+  "rewards": [
+    {
+      "item": "underground_city:prototype_alloy_ingot",
+      "count": 1
+    }
+  ]
+}

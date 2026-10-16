@@ -3,8 +3,8 @@
   "id": "valewood",
   "dimension": "minecraft:overworld",
   "center_chunk": [
-    126,
-    44
+    124,
+    17
   ],
   "radius_blocks": 410
 }

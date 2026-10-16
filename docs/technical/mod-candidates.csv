@@ -2,8 +2,8 @@ id,display_name,project_url,domain,priority,status,release_target,notes
 lost_cities,The Lost Cities,https://www.curseforge.com/minecraft/mc-mods/the-lost-cities,world,critical,testing,1.20.1 Forge,1.20-7.5.5 native generation verified at three anchors; MIT; highway planner ignores predefined cities (see world notes)
 custom_npcs,CustomNPCs-Unofficial,https://www.curseforge.com/minecraft/mc-mods/customnpcs-unofficial,npc,critical,candidate,1.20.1 Forge,NPC scripting and server spike
 lootr,Lootr,https://www.curseforge.com/minecraft/mc-mods/lootr,loot,critical,candidate,1.20.1 Forge,Imported chest test
-tacz,Timeless and Classics Zero,https://www.curseforge.com/minecraft/mc-mods/timeless-and-classics-zero,combat,critical,candidate,1.20.1 Forge,Blueprint and NPC interaction
-tacz_research,TaCZ Weapon Research and Blueprints,https://www.curseforge.com/minecraft/mc-mods/tacz-weapon-research-blueprints,research,high,candidate,1.20.1 Forge,Exact dependency version check
+tacz,Timeless and Classics Zero,https://modrinth.com/mod/timeless-and-classics-zero,combat,critical,testing,1.20.1 Forge,1.1.8-hotfix2 pinned (Modrinth AzCBJlex); real guns in contracts and loot tested in the firearms job; GPL-3.0 code and CC BY-NC-ND default pack
+tacz_research,TaCZ Weapon Research and Blueprints,https://www.curseforge.com/minecraft/mc-mods/tacz-weapon-research-blueprints,research,high,retired,1.20.1 Forge,CurseForge-only file could not be located or hash-verified from the cloud container; TaCZ Blueprints 0.1.3 (Modrinth) selected instead
 puffish,Pufferfish Skills,https://www.curseforge.com/minecraft/mc-mods/puffish-skills,progression,high,candidate,1.20.1 Forge,Custom XP and rewards integration
 currency,Lightmans Currency,https://www.curseforge.com/minecraft/mc-mods/lightmans-currency,economy,high,candidate,1.20.1 Forge,API and duplication check
 kubejs,KubeJS,https://www.curseforge.com/minecraft/mc-mods/kubejs,scripting,high,candidate,1.20.1 Forge,Recipe and data hooks
@@ -30,3 +30,5 @@ locks_reforged,Locks Reforged,https://www.curseforge.com/minecraft/mc-mods/locks
 lootchest_refill,[TACZ] Lootchest Refill,https://www.curseforge.com/minecraft/mc-mods/lootchest-refill,property,critical,candidate,1.20.1 Forge,1.1.2 pinned file 7711372; timers min/max items; test shared apartment stock and economics
 faction_friction,Faction Friction,https://www.curseforge.com/minecraft/mc-mods/faction-friction,factions,high,candidate,1.20.1 Forge,1.8.0R pinned file 9042001; territory diplomacy war; test safe civilian crossings and city affiliations
 qshop,Q Shop,https://github.com/QLNPLUS/Q-shop,economy,critical,testing,1.20.1 Forge 1.8.4,Official addon API; real Core buy sell work orders and two-client restart tested; full pack pending
+tacz_blueprints,TaCZ Blueprints,https://modrinth.com/mod/tacz-blueprints,research,high,testing,1.20.1 Forge,0.1.3 pinned (Modrinth EXBvXtvo); per-gun blueprint items; no research bench yet; all rights reserved
+modern_life,Modern Life (Motorboat),https://modrinth.com/mod/modern-life,vehicles,high,testing,1.20.1 Forge,1.75 pinned; 27-slot persistent boat hold exercised by a GameTest in the vehicles job; all rights reserved

@@ -43,6 +43,8 @@ public final class PropertyCacheBlockEntity extends RandomizableContainerBlockEn
     private String policy = "";
     private long last, vigilanceAnchor, forcedUntil = -1;
     private int vigilance, generation, breakins;
+    /** True when registration placed an exceptional find in this safe (never granted again, see ExceptionalLoot). */
+    private boolean exceptional;
     private UUID lastIntruder;
 
     public PropertyCacheBlockEntity(BlockPos pos, BlockState state) {
@@ -54,6 +56,7 @@ public final class PropertyCacheBlockEntity extends RandomizableContainerBlockEn
     public boolean registered() { return !policy.isEmpty(); }
     public int vigilance() { return vigilance; }
     public int breakins() { return breakins; }
+    public boolean exceptional() { return exceptional; }
     public long last() { return last; }
     public boolean forcedAt(long now) { return now < forcedUntil; }
     public UUID lastIntruder() { return lastIntruder; }
@@ -67,14 +70,19 @@ public final class PropertyCacheBlockEntity extends RandomizableContainerBlockEn
     public void register(ServerLevel level, PropertyPolicy newPolicy, long now) {
         if (registered()) throw new IllegalStateException("Already registered as " + policy);
         policy = newPolicy.id(); last = now; vigilance = 0; vigilanceAnchor = now; forcedUntil = -1; generation = 0; breakins = 0;
-        generate(level, newPolicy, newPolicy.initialStock());
+        // The exceptional find is rolled once, first, from a seed that depends only on the safe's position:
+        // restocking never rolls it and clearing then re-registering the same safe gives the same answer.
+        ItemStack rare = ExceptionalLoot.INSTANCE.roll(newPolicy.id(), seed(worldPosition, 0x45584345));
+        exceptional = !rare.isEmpty() && firstEmptySlot() >= 0;
+        if (exceptional) items.set(firstEmptySlot(), rare);
+        generate(level, newPolicy, Math.max(0, newPolicy.initialStock() - (exceptional ? 1 : 0)));
         setChanged();
     }
 
     /** Operator unregistration: empties the safe so a mistake cannot leave orphan stock. */
     public void clear() {
         items = NonNullList.withSize(SLOTS, ItemStack.EMPTY);
-        policy = ""; last = 0; vigilance = 0; vigilanceAnchor = 0; forcedUntil = -1; generation = 0; breakins = 0; lastIntruder = null;
+        policy = ""; last = 0; vigilance = 0; vigilanceAnchor = 0; forcedUntil = -1; generation = 0; breakins = 0; lastIntruder = null; exceptional = false;
         setChanged();
     }
 
@@ -173,7 +181,7 @@ public final class PropertyCacheBlockEntity extends RandomizableContainerBlockEn
         tag.putInt("schema_version", 1);
         tag.putString("policy", policy); tag.putLong("last", last); tag.putLong("vigilance_anchor", vigilanceAnchor);
         tag.putLong("forced_until", forcedUntil); tag.putInt("vigilance", vigilance); tag.putInt("generation", generation);
-        tag.putInt("breakins", breakins);
+        tag.putInt("breakins", breakins); tag.putBoolean("exceptional", exceptional);
         if (lastIntruder != null) tag.putUUID("last_intruder", lastIntruder);
     }
 
@@ -184,7 +192,7 @@ public final class PropertyCacheBlockEntity extends RandomizableContainerBlockEn
         policy = tag.getString("policy"); last = tag.getLong("last"); vigilanceAnchor = tag.getLong("vigilance_anchor");
         forcedUntil = tag.contains("forced_until") ? tag.getLong("forced_until") : -1;
         vigilance = Math.max(0, Math.min(PropertyRestock.MAX_VIGILANCE, tag.getInt("vigilance")));
-        generation = Math.max(0, tag.getInt("generation")); breakins = Math.max(0, tag.getInt("breakins"));
+        generation = Math.max(0, tag.getInt("generation")); breakins = Math.max(0, tag.getInt("breakins")); exceptional = tag.getBoolean("exceptional");
         lastIntruder = tag.hasUUID("last_intruder") ? tag.getUUID("last_intruder") : null;
     }
 }

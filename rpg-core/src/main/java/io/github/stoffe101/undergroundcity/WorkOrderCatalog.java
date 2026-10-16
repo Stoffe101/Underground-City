@@ -26,14 +26,19 @@ public final class WorkOrderCatalog extends SimpleJsonResourceReloadListener {
         Map<String, WorkOrder> next = new LinkedHashMap<>();
         data.entrySet().stream().sorted(Map.Entry.comparingByKey()).forEach(entry -> {
             WorkOrder order = WorkOrder.fromJson(entry.getKey(), entry.getValue().getAsJsonObject());
+            if (order == null) {
+                LOGGER.info("Skipping work order {}: the mod it needs is not installed", entry.getKey());
+                return;
+            }
             next.put(order.id(), order);
         });
-        if (next.size() > 32) throw new IllegalArgumentException("At most 32 work orders supported");
+        if (next.size() > 64) throw new IllegalArgumentException("At most 64 work orders supported");
         orders = Map.copyOf(next);
         LOGGER.info("Loaded {} Underground City work orders", orders.size());
     }
 
     public WorkOrder find(String id) { return orders.get(id); }
+    public List<WorkOrder> all() { return orders.values().stream().sorted(java.util.Comparator.comparing(WorkOrder::id)).toList(); }
     public List<WorkOrder> forCareer(String career) {
         return orders.values().stream().filter(job -> job.career().equals(career))
             .sorted(java.util.Comparator.comparingInt(WorkOrder::level).thenComparing(WorkOrder::id)).toList();

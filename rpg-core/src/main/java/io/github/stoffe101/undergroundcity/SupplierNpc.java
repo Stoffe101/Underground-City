@@ -28,6 +28,8 @@ public final class SupplierNpc {
         private UUID clerk;
         private String dimension;
         private BlockPos terminal;
+        UUID clerkForTest() { return clerk; }
+        BlockPos terminalForTest() { return terminal; }
         static State load(CompoundTag tag) {
             State state=new State();
             if(tag.hasUUID("clerk")) {
@@ -45,28 +47,35 @@ public final class SupplierNpc {
         }
     }
     static Villager spawn(ServerPlayer operator,BlockPos terminal,BlockPos position) {
-        State state=state(operator.server);
-        if(state.clerk!=null) throw new IllegalStateException("A supply clerk is already registered in this world");
-        if(!operator.serverLevel().getBlockState(terminal).is(UndergroundCity.TERMINAL.get())
-            || operator.distanceToSqr(terminal.getX()+.5,terminal.getY()+.5,terminal.getZ()+.5)>64) {
+        if(operator.distanceToSqr(terminal.getX()+.5,terminal.getY()+.5,terminal.getZ()+.5)>64) {
             throw new IllegalStateException("Look at a nearby placed Operations Terminal");
         }
-        if(!operator.serverLevel().getBlockState(position).isAir()
-            || !operator.serverLevel().getBlockState(position.above()).isAir()
-            || !operator.serverLevel().getBlockState(position.below()).isFaceSturdy(operator.serverLevel(),position.below(),net.minecraft.core.Direction.UP)) {
+        return spawnFor(operator.serverLevel(),terminal,position);
+    }
+    /** Places the one world clerk beside a real Operations Terminal; also used by the district builder. */
+    static Villager spawnFor(net.minecraft.server.level.ServerLevel level,BlockPos terminal,BlockPos position) {
+        State state=state(level.getServer());
+        if(state.clerk!=null) throw new IllegalStateException("A supply clerk is already registered in this world");
+        if(!level.getBlockState(terminal).is(UndergroundCity.TERMINAL.get())) {
+            throw new IllegalStateException("Look at a nearby placed Operations Terminal");
+        }
+        if(!level.getBlockState(position).isAir()
+            || !level.getBlockState(position.above()).isAir()
+            || !level.getBlockState(position.below()).isFaceSturdy(level,position.below(),net.minecraft.core.Direction.UP)) {
             throw new IllegalStateException("Clerk needs two clear blocks above a solid floor beside the PC");
         }
-        Villager clerk=EntityType.VILLAGER.create(operator.serverLevel());
+        Villager clerk=EntityType.VILLAGER.create(level);
         if(clerk==null) throw new IllegalStateException("Villager entity unavailable");
         clerk.setVillagerData(new VillagerData(VillagerType.PLAINS,VillagerProfession.LIBRARIAN,1));
         clerk.setCustomName(Component.literal("Morgan - Supply Clerk"));clerk.setCustomNameVisible(true);
         clerk.setPersistenceRequired();clerk.moveTo(position.getX()+.5,position.getY(),position.getZ()+.5,0,0);
-        if(!operator.serverLevel().addFreshEntity(clerk)) throw new IllegalStateException("Clerk spawn rejected");
-        state.clerk=clerk.getUUID();state.dimension=operator.serverLevel().dimension().location().toString();
+        if(!level.addFreshEntity(clerk)) throw new IllegalStateException("Clerk spawn rejected");
+        state.clerk=clerk.getUUID();state.dimension=level.dimension().location().toString();
         state.terminal=terminal.immutable();state.setDirty();
-        operator.server.overworld().getDataStorage().save();
+        level.getServer().overworld().getDataStorage().save();
         return clerk;
     }
+    static boolean hasClerk(net.minecraft.server.MinecraftServer server) { return state(server).clerk!=null; }
     /** Test seam: forget any registered clerk. */
     static void forgetForTest(net.minecraft.server.MinecraftServer server) {
         State state=state(server);state.clerk=null;state.dimension=null;state.terminal=null;state.setDirty();
