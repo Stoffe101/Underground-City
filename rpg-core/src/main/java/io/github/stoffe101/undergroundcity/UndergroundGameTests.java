@@ -1073,7 +1073,9 @@ public final class UndergroundGameTests {
                     CheckpointCatalog.Checkpoint zoneOne = new CheckpointCatalog.Checkpoint("p1", "Post one", "ironhaven", level.dimension().location().toString(), one.getX() + 4, one.getZ() + 4, 48, "inspection");
                     var guard = CheckpointPosts.guardAt(level, zoneOne);
                     check(guard.isPresent() && guard.get().hasCustomName() && guard.get().isInvulnerable(), "The zone's guard is found and is a named, protected citizen");
-                    check(guard.get().distanceToSqr(one.getX() + 4.5, one.getY(), one.getZ() + 6.5) < 4, "The guard stands at the post: " + guard.get().position());
+                    // A villager keeps its vanilla routine, so by now it may have strolled a little: it must still be inside the post's 9 x 9 lot.
+                    var at = guard.get().position();
+                    check(at.x >= one.getX() && at.x <= one.getX() + 9 && at.z >= one.getZ() && at.z <= one.getZ() + 9 && Math.abs(at.y - one.getY()) < 2, "The guard stands in the post's lot " + one.toShortString() + ": " + at);
                     UUID guardOne = guard.get().getUUID();
                     DistrictBuilder.undoNear(level, district, one.offset(4, 0, 4));
                     check(DistrictBuilder.count(level, district.id()) == 1, "Removing one post leaves the other");
