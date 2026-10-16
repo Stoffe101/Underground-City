@@ -83,7 +83,11 @@ final class RoadDriver {
      * This one decides a wheel angle from the heading error and holds or releases the key to bring the modelled angle to it.
      */
     private java.util.function.Supplier<double[]> velocity;
-    private double wheel, wheelRise = 2.0, wheelReturn = 4.0, wheelMax = 35.0, wheelGain = 0.9, wheelLimit = 35.0;
+    private double wheel, wheelRise = 2.0, wheelReturn = 4.0, wheelMax = 35.0, wheelGain = 0.6, wheelDamping = 6.0, wheelLimit = 22.0;
+    /** Which of the vehicle's four local axes is its front, found by comparing each with the direction it actually moves in (the model's own convention is not documented). */
+    private final double[] axisScore = new double[4];
+    private int axisSamples = -1, frontAxis = -1;
+    private double lastHeading = Double.NaN;
     private double progress, maxDeviation, topSpeed;
     private boolean w, a, d, done, failed;
     private long startGameTime = -1;
@@ -157,23 +161,34 @@ final class RoadDriver {
         boolean right = false, left = false;
         double lastError = Double.NaN, lastWant = Double.NaN, lastHave = Double.NaN;
         if (velocity != null) {
-            double[] motion = velocity.get();
-            if (motion != null && Math.hypot(motion[0], motion[1]) > 0.004) heading = new Vec3(motion[0], 0, motion[1]);
-            else heading = null;
-        }
-        if (velocity != null) {
-            if (heading != null) {
-                double lookAhead = Math.max(14.0, speed * 2.0);
+            // sensors: motion x, motion z (blocks per tick), then the world heading of the vehicle's local +Z, -Z, +X and -X axes, in degrees
+            double[] sensor = velocity.get();
+            double motionHeading = Double.NaN;
+            if (sensor != null && Math.hypot(sensor[0], sensor[1]) > 0.02) motionHeading = Math.toDegrees(Math.atan2(-sensor[0], sensor[1]));
+            if (sensor != null && frontAxis < 0 && !Double.isNaN(motionHeading) && speed > 1.5) {
+                axisSamples = Math.max(0, axisSamples) + 1;
+                for (int axis = 0; axis < 4; axis++) axisScore[axis] += Math.abs(((sensor[2 + axis] - motionHeading) % 360 + 540) % 360 - 180);
+                if (axisSamples >= 12) {
+                    int best = 0;
+                    for (int axis = 1; axis < 4; axis++) if (axisScore[axis] < axisScore[best]) best = axis;
+                    frontAxis = best;
+                    Playtest.log(label + ": the vehicle's front is local axis " + new String[]{"+Z", "-Z", "+X", "-X"}[best] + " (mean difference from its movement " + String.format("%.0f", axisScore[best] / axisSamples) + " degrees over " + axisSamples + " ticks)");
+                }
+            }
+            double have = sensor != null && frontAxis >= 0 ? sensor[2 + frontAxis] : Double.NaN;
+            if (!Double.isNaN(have)) {
+                double lookAhead = Math.max(10.0, speed * 1.5);
                 double[] target = plan.pointAt(Math.min(plan.length(), progress + lookAhead));
                 double want = Math.toDegrees(Math.atan2(-(target[0] - position.x), target[1] - position.z));
-                double have = Math.toDegrees(Math.atan2(-heading.x, heading.z));
                 double error = ((want - have) % 360 + 540) % 360 - 180;
-                double wanted = Math.max(-wheelLimit, Math.min(wheelLimit, error * wheelGain));
+                double rate = Double.isNaN(lastHeading) ? 0 : ((have - lastHeading) % 360 + 540) % 360 - 180;
+                lastHeading = have;
+                double wanted = Math.max(-wheelLimit, Math.min(wheelLimit, error * wheelGain - rate * wheelDamping));
                 right = wanted - wheel > 1.5;
                 left = wanted - wheel < -1.5;
                 lastError = error; lastWant = want; lastHave = have;
             } else {
-                // not moving yet: no steering to give
+                // not calibrated yet: keep the wheels straight while the vehicle gets going
                 right = false; left = false;
             }
             if (right) wheel = Math.min(wheelMax, wheel + wheelRise);

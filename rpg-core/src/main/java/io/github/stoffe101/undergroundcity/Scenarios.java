@@ -548,13 +548,28 @@ final class Scenarios {
         return null;
     }
 
-    /** The vehicle's own velocity vector (blocks per tick, x and z), or null when it cannot be read; the same value the mod integrates into the position. */
+    /**
+     * What the car driver reads from a vehicle: its velocity (blocks per tick, x and z) and the world heading, in Minecraft's yaw convention, of each of its four local
+     * axes (+Z, -Z, +X, -X), computed with the mod's own rotation matrix; null when unreadable. The driver works out which axis is the front.
+     */
     private static double[] vehicleMotion(net.minecraft.world.entity.Entity entity) {
         try {
             Object vehicle = entity == null ? null : ivVehicle(entity);
             if (vehicle == null) return null;
             Object motion = vehicle.getClass().getField("motion").get(vehicle);
-            return new double[]{motion.getClass().getField("x").getDouble(motion), motion.getClass().getField("z").getDouble(motion)};
+            Object orientation = vehicle.getClass().getField("orientation").get(vehicle);
+            Class<?> pointClass = Class.forName("minecrafttransportsimulator.baseclasses.Point3D", true, vehicle.getClass().getClassLoader());
+            double[][] axes = {{0, 0, 1}, {0, 0, -1}, {1, 0, 0}, {-1, 0, 0}};
+            double[] sensor = new double[6];
+            sensor[0] = motion.getClass().getField("x").getDouble(motion);
+            sensor[1] = motion.getClass().getField("z").getDouble(motion);
+            for (int i = 0; i < 4; i++) {
+                Object point = pointClass.getConstructor(double.class, double.class, double.class).newInstance(axes[i][0], axes[i][1], axes[i][2]);
+                Object world = orientation.getClass().getMethod("rotate", pointClass).invoke(orientation, point);
+                double x = world.getClass().getField("x").getDouble(world), z = world.getClass().getField("z").getDouble(world);
+                sensor[2 + i] = Math.toDegrees(Math.atan2(-x, z));
+            }
+            return sensor;
         } catch (ReflectiveOperationException | RuntimeException error) {
             return null;
         }
