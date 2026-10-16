@@ -73,8 +73,8 @@ jobs:
           from pathlib import Path
           d=json.loads(Path('content/qa/gui-coverage.json').read_text())
           assert d['schema_version']==1
-          assert len(d['integrated_surfaces'])==33
-          assert len({s['expected_file'] for s in d['integrated_surfaces']})==33
+          assert len(d['integrated_surfaces'])==36
+          assert len({s['expected_file'] for s in d['integrated_surfaces']})==36
           assert d['screenshots_real_framebuffer']
           PY
       - name: Launch real Forge client under software OpenGL, capture every integrated tab

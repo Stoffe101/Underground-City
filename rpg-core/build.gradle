@@ -88,7 +88,7 @@ minecraft {
             }
             if (providers.gradleProperty('ucPlaytest').isPresent()) {
                 // Scripted player (Playtest.java): a scenario name such as input, gun, car, boat, walk, trace.
-                jvmArgs "-Duc.playtest=${providers.gradleProperty('ucPlaytest').get()}", '-XX:ActiveProcessorCount=2', '-Xmx4G'
+                jvmArgs "-Duc.playtest=${providers.gradleProperty('ucPlaytest').get()}", "-Duc.xinput=${file('../scripts/xinput_helper.py').absolutePath}", '-XX:ActiveProcessorCount=2', '-Xmx4G'
                 args '--width', '1280', '--height', '720'
             }
             if (providers.gradleProperty('ucLaunchSmoke').orNull == 'true') {

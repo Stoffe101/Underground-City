@@ -17,8 +17,6 @@ import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
-import java.awt.Robot;
-import java.awt.event.KeyEvent;
 import java.nio.file.Files;
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -49,7 +47,9 @@ public final class Playtest {
     private static boolean opened, finished, scenarioBuilt;
     private static final long started = System.nanoTime();
     static final StringBuilder failures = new StringBuilder();
-    private static Robot robot;
+    private static Process helper;
+    private static java.io.BufferedWriter helperIn;
+    private static java.io.BufferedReader helperOut;
 
     private Playtest() {}
 
@@ -61,16 +61,51 @@ public final class Playtest {
     static void wait(String name, int ticks) { int[] left = {ticks}; queue(name, () -> { }, () -> --left[0] <= 0, ticks + 5); }
 
     // ------------------------------------------------------------------ input
-    static Robot robot() {
-        if (robot == null) {
-            try { robot = new Robot(); } catch (java.awt.AWTException | RuntimeException error) { fail("cannot create an AWT Robot: " + error); }
+    /**
+     * Real keyboard and mouse input through scripts/xinput_helper.py (X11 XTEST): the JVM is headless (Minecraft sets it), so
+     * java.awt.Robot is unavailable, and mods such as Immersive Vehicles poll GLFW's key state, which only genuine X events change.
+     */
+    private static boolean helper() {
+        if (helper != null && helper.isAlive()) return true;
+        try {
+            java.nio.file.Path script = java.nio.file.Path.of(System.getProperty("uc.xinput", "../scripts/xinput_helper.py")).toAbsolutePath().normalize();
+            helper = new ProcessBuilder(System.getProperty("uc.python", "python3"), script.toString()).redirectErrorStream(true).start();
+            helperIn = new java.io.BufferedWriter(new java.io.OutputStreamWriter(helper.getOutputStream()));
+            helperOut = new java.io.BufferedReader(new java.io.InputStreamReader(helper.getInputStream()));
+            return true;
+        } catch (java.io.IOException | RuntimeException error) {
+            fail("cannot start the X11 input helper: " + error);
+            return false;
         }
-        return robot;
     }
-    static void keyDown(int code) { var r = robot(); if (r != null) r.keyPress(code); }
-    static void keyUp(int code) { var r = robot(); if (r != null) r.keyRelease(code); }
-    static void click(int button) { var r = robot(); if (r != null) r.mousePress(button); }
-    static void release(int button) { var r = robot(); if (r != null) r.mouseRelease(button); }
+    static void input(String line) {
+        if (!helper()) return;
+        try {
+            helperIn.write(line + "\n");
+            helperIn.flush();
+            String answer = helperOut.readLine();
+            if (answer == null || !answer.startsWith("ok")) fail("input '" + line + "' -> " + answer);
+        } catch (java.io.IOException error) {
+            fail("input helper failed on '" + line + "': " + error);
+        }
+    }
+    static void keyDown(String key) { input("down " + key); }
+    static void keyUp(String key) { input("up " + key); }
+    static void tap(String key) { input("tap " + key); }
+    static void mouseButton(int button, boolean down) { input("button " + button + " " + (down ? 1 : 0)); }
+    /** Parks the pointer over the middle of the game window so the (window-manager-less) X keyboard focus is the game. */
+    /** A real left click at a GUI-space position (what a player would do with the mouse). */
+    static void clickGui(int guiX, int guiY) {
+        var window = mc().getWindow();
+        double scale = window.getGuiScale();
+        input("move " + (int) Math.round(guiX * scale) + " " + (int) Math.round(guiY * scale));
+        mouseButton(1, true);
+        mouseButton(1, false);
+    }
+    static void focusWindow() {
+        var window = mc().getWindow();
+        input("move " + (window.getWidth() / 2) + " " + (window.getHeight() / 2));
+    }
     static void command(String text) { Minecraft.getInstance().player.connection.sendCommand(text); }
     static Minecraft mc() { return Minecraft.getInstance(); }
 
@@ -112,6 +147,11 @@ public final class Playtest {
             wait("let the world settle", 100);
             try { Scenarios.build(SCENARIO); } catch (RuntimeException error) { fail("scenario " + SCENARIO + " is not available: " + error); finish(); return; }
         }
+        if (mc.screen != null && !"register".equals(SCENARIO) && !SCENARIO.startsWith("trace") && !SCENARIO.startsWith("terminal")) {
+            // The first-login registration screen opens by itself for a new player; scenarios that need to move or aim close it.
+            log("closing " + mc.screen.getClass().getSimpleName());
+            mc.setScreen(null);
+        }
         if (current == null) {
             current = steps.poll();
             if (current == null) { finish(); return; }
@@ -128,10 +168,10 @@ public final class Playtest {
     static void finish() {
         if (finished) return;
         finished = true;
-        for (int code : List.of(KeyEvent.VK_W, KeyEvent.VK_A, KeyEvent.VK_S, KeyEvent.VK_D, KeyEvent.VK_SPACE, KeyEvent.VK_SHIFT, KeyEvent.VK_R, KeyEvent.VK_CONTROL)) {
-            try { keyUp(code); } catch (RuntimeException ignored) { }
+        for (String key : List.of("w", "a", "s", "d", "space", "shift", "r", "ctrl")) {
+            try { if (helper != null && helper.isAlive()) keyUp(key); } catch (RuntimeException ignored) { }
         }
-        try { release(java.awt.event.InputEvent.BUTTON1_DOWN_MASK); release(java.awt.event.InputEvent.BUTTON3_DOWN_MASK); } catch (RuntimeException ignored) { }
+        try { if (helper != null && helper.isAlive()) { mouseButton(1, false); mouseButton(3, false); input("quit"); } } catch (RuntimeException ignored) { }
         String result = failures.length() == 0 ? "pass" : "FAIL: " + failures;
         log("RESULT " + result);
         try { Files.writeString(mc().gameDirectory.toPath().resolve("uc-playtest-" + SCENARIO + ".txt"), result + "\n"); } catch (java.io.IOException ignored) { }

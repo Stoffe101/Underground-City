@@ -232,6 +232,27 @@
       "owner": "underground_city",
       "group": "skills",
       "description": "Skills tab for a level-11 Technician built from the real skill tree"
+    },
+    {
+      "id": "register.city",
+      "expected_file": "uc-register-city.png",
+      "owner": "underground_city",
+      "group": "registration",
+      "description": "First-login registration, step 1: choose a home city"
+    },
+    {
+      "id": "register.career",
+      "expected_file": "uc-register-career.png",
+      "owner": "underground_city",
+      "group": "registration",
+      "description": "First-login registration, step 2: choose a profession (city chosen)"
+    },
+    {
+      "id": "register.confirm",
+      "expected_file": "uc-register-confirm.png",
+      "owner": "underground_city",
+      "group": "registration",
+      "description": "First-login registration, step 3: confirm the choice and the welcome pack"
     }
   ],
   "unintegrated_future_interfaces": [

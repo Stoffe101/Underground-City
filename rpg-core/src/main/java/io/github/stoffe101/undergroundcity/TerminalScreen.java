@@ -46,7 +46,7 @@ public final class TerminalScreen extends Screen {
     private final BlockPos terminalPosition;
     private final TerminalData data;
     private int selected, selectedSkill, panelW, panelH, left, top;
-    private Button shop, accept, cancel, previous, next, unlock, legalFilter, undergroundFilter;
+    private Button shop, accept, cancel, previous, next, unlock, legalFilter, undergroundFilter, register;
     private final Button[] tabs = new Button[Page.values().length];
     private final Button[] buyOne = new Button[MAX_OFFER_ROWS], buyLot = new Button[MAX_OFFER_ROWS];
     private final Button[] nodes = new Button[MAX_NODES];
@@ -103,6 +103,10 @@ public final class TerminalScreen extends Screen {
             .bounds(left+18,top+75,68,16).build());
         undergroundFilter=addRenderableWidget(Button.builder(Component.literal("UNDERGROUND"),b->setView(true))
             .bounds(left+90,top+75,100,16).build());
+        register=addRenderableWidget(Button.builder(Component.literal("REGISTER: CHOOSE YOUR CITY AND PROFESSION"),b->{
+            // Opens the same screen as first login; the server still validates and creates the citizen.
+            if (minecraft!=null) minecraft.setScreen(new RegistrationScreen());
+        }).bounds(left+18,top+panelH-57,panelW-36,20).build());
         unlock=addRenderableWidget(Button.builder(Component.literal("UNLOCK"),b->{
             if (terminalPosition!=null && selectedSkill<data.skills().size()) { unlock.active=false; TerminalNetwork.requestSkill(terminalPosition,data.skills().get(selectedSkill).id()); }
         }).bounds(left+18,top+panelH-57,panelW-36,20).build());
@@ -195,7 +199,9 @@ public final class TerminalScreen extends Screen {
             applyBuy(buyOne[i],offer,1); applyBuy(buyLot[i],offer,lot);
         }
         boolean contracts=current==Page.CONTRACTS;
-        legalFilter.visible=undergroundFilter.visible=contracts;
+        boolean unregistered=data.city().equals("UNREGISTERED");
+        register.visible=unregistered && (contracts || current==Page.SKILLS);
+        legalFilter.visible=undergroundFilter.visible=contracts && !unregistered;
         legalFilter.setMessage(Component.literal("LEGAL "+count(false)));
         undergroundFilter.setMessage(Component.literal("UNDERGROUND "+count(true)));
         legalFilter.active=undergroundView; undergroundFilter.active=!undergroundView;
@@ -323,10 +329,10 @@ public final class TerminalScreen extends Screen {
     private void renderWork(GuiGraphics g) {
         // The selected filter is also a darker, inactive button; the underline makes the choice unmistakable at a glance.
         Button chosen=undergroundView?undergroundFilter:legalFilter;
-        g.fill(chosen.getX(),chosen.getY()+chosen.getHeight(),chosen.getX()+chosen.getWidth(),chosen.getY()+chosen.getHeight()+2,undergroundView?RED:TEAL);
+        if (chosen.visible) g.fill(chosen.getX(),chosen.getY()+chosen.getHeight(),chosen.getX()+chosen.getWidth(),chosen.getY()+chosen.getHeight()+2,undergroundView?RED:TEAL);
         TerminalData.Row job=row();
         if (job==null) {
-            String message=data.jobs().isEmpty()?"Register with /uc register <city> <career> to see paid profession orders."
+            String message=data.jobs().isEmpty()?"You are not registered yet. Choose a home city and a profession to see paid orders. Both legal and underground work stay open to you."
                 :undergroundView?"No underground contracts yet. Learn an underground skill in the SKILLS tab to open the trade."
                 :"No legal contracts are listed for this profession.";
             wrapped(g,message,left+18,top+104,panelW-36,SOFT);
@@ -375,7 +381,7 @@ public final class TerminalScreen extends Screen {
         String points=data.skillPoints()+" POINT"+(data.skillPoints()==1?"":"S")+" FREE";
         g.drawString(font,points,left+panelW-18-font.width(points),top+76,AMBER,false);
         if (data.skills().isEmpty()) {
-            wrapped(g,"Register with /uc register <city> <career> to learn career skills.",left+18,top+104,panelW-36,SOFT);
+            wrapped(g,"You are not registered yet. Choose a home city and a profession to open your career skill tree.",left+18,top+104,panelW-36,SOFT);
             return;
         }
         int colW=(panelW-36-12)/3;

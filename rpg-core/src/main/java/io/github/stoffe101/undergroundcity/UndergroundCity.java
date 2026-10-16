@@ -123,6 +123,7 @@ public final class UndergroundCity {
         event.addListener(BuyerCatalog.INSTANCE);
         event.addListener(CheckpointCatalog.INSTANCE);
         event.addListener(DistrictCatalog.INSTANCE);
+        event.addListener(StarterKits.INSTANCE);
     }
 
     private void addCreativeTab(BuildCreativeModeTabContentsEvent event) {
@@ -154,11 +155,9 @@ public final class UndergroundCity {
         Optional<CitizenState.Citizen> profile = CitizenState.get(player.server).find(player.getUUID());
         if (profile.isEmpty()) {
             player.sendSystemMessage(Component.literal(
-                "Welcome to Underground City! Register with /uc register <city> <career>."
+                "Welcome to Underground City! Choose your city and profession on the screen that just opened (/uc start opens it again)."
             ));
-            player.sendSystemMessage(Component.literal(
-                "Cities: valewood, ironhaven, blackwater. Careers: farmer, smith, gunsmith, technician."
-            ));
+            RegistrationService.prompt(player);
         } else {
             player.sendSystemMessage(Component.literal("Welcome back to " + profile.get().city +
                 " (" + profile.get().career + ", level " + profile.get().careerLevel() + ")."));
@@ -181,18 +180,24 @@ public final class UndergroundCity {
                             ctx.getSource().sendFailure(Component.literal("Unknown city or profession."));
                             return 0;
                         }
-                        if (!CitizenState.get(player.server).register(player.getUUID(), city, career)) {
+                        if (RegistrationService.choose(player, city, career) != RegistrationService.Outcome.REGISTERED) {
                             ctx.getSource().sendFailure(Component.literal("Already registered. Existing identity unchanged."));
                             return 0;
                         }
-                        ctx.getSource().sendSuccess(() ->
-                            Component.literal("Registered with " + city + " as " + career + "."), false);
                         return 1;
                     })
                 )
             )
         );
 
+        root.then(Commands.literal("start").executes(ctx -> {
+            ServerPlayer player = ctx.getSource().getPlayerOrException();
+            if (!RegistrationService.prompt(player)) {
+                ctx.getSource().sendFailure(Component.literal("You are already registered."));
+                return 0;
+            }
+            return 1;
+        }));
         root.then(Commands.literal("status").executes(ctx -> {
             ServerPlayer player = ctx.getSource().getPlayerOrException();
             Optional<CitizenState.Citizen> profile = CitizenState.get(player.server).find(player.getUUID());

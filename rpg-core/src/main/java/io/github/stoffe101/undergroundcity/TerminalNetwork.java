@@ -24,7 +24,7 @@ import java.util.function.Supplier;
  * This is NOT a remote city supplier, contraband order, or raid service.
  */
 public final class TerminalNetwork {
-    private static final String VERSION = "5";
+    private static final String VERSION = "6";
     private static final String STARTER_SHOP_ID = "uc_starter_supply";
     private static final double MAX_TERMINAL_DISTANCE_SQUARED = 64.0;
     private static final java.util.Map<ServerPlayer, Integer> REQUEST_TIMES = new java.util.WeakHashMap<>();
@@ -37,6 +37,7 @@ public final class TerminalNetwork {
 
     public static void register() {
         registerChallenge();
+        registerRegistration();
         CHANNEL.registerMessage(0, OpenTerminal.class,
             (packet, buffer) -> { buffer.writeBlockPos(packet.pos); packet.data.write(buffer); },
             buffer -> new OpenTerminal(buffer.readBlockPos(), TerminalData.read(buffer)),
@@ -84,6 +85,40 @@ public final class TerminalNetwork {
             }, Optional.of(NetworkDirection.PLAY_TO_SERVER));
     }
 
+    private static void registerRegistration() {
+        CHANNEL.registerMessage(7, OpenRegistration.class,
+            (packet, buffer) -> { },
+            buffer -> new OpenRegistration(),
+            (packet, supplier) -> {
+                NetworkEvent.Context context = supplier.get();
+                if (context.getDirection().getReceptionSide().isClient()) {
+                    context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> ClientRegistration::open));
+                }
+                context.setPacketHandled(true);
+            }, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+        CHANNEL.registerMessage(8, RegisterChoice.class,
+            (packet, buffer) -> { buffer.writeUtf(packet.city, 16); buffer.writeUtf(packet.career, 16); },
+            buffer -> new RegisterChoice(buffer.readUtf(16), buffer.readUtf(16)),
+            (packet, supplier) -> {
+                NetworkEvent.Context context = supplier.get();
+                context.enqueueWork(() -> {
+                    ServerPlayer player = context.getSender();
+                    if (player != null && requestSlot(player)) RegistrationService.handleChoice(player, packet.city, packet.career);
+                });
+                context.setPacketHandled(true);
+            }, Optional.of(NetworkDirection.PLAY_TO_SERVER));
+        CHANNEL.registerMessage(9, RegistrationResult.class,
+            (packet, buffer) -> { buffer.writeBoolean(packet.ok); buffer.writeUtf(packet.message, 120); },
+            buffer -> new RegistrationResult(buffer.readBoolean(), buffer.readUtf(120)),
+            (packet, supplier) -> {
+                NetworkEvent.Context context = supplier.get();
+                if (context.getDirection().getReceptionSide().isClient()) {
+                    context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> ClientRegistration.result(packet.ok, packet.message)));
+                }
+                context.setPacketHandled(true);
+            }, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+    }
+
     private static void registerChallenge() {
         CHANNEL.registerMessage(5, OpenChallenge.class,
             (packet, buffer) -> { buffer.writeBlockPos(packet.pos); buffer.writeByteArray(packet.sequence); },
@@ -107,6 +142,21 @@ public final class TerminalNetwork {
                 });
                 context.setPacketHandled(true);
             }, Optional.of(NetworkDirection.PLAY_TO_SERVER));
+    }
+
+    /** Server to client: show the first-login registration screen. */
+    public static void openRegistration(ServerPlayer player) {
+        CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new OpenRegistration());
+    }
+
+    /** Server to client: the outcome of a registration request. */
+    public static void registrationResult(ServerPlayer player, boolean ok, String message) {
+        CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new RegistrationResult(ok, message));
+    }
+
+    /** Client to server: the player's choice. The server validates both identifiers and registers once. */
+    public static void sendRegistration(String city, String career) {
+        CHANNEL.sendToServer(new RegisterChoice(city, career));
     }
 
     /** Server to client: the hidden sequence to flash. The client only displays it; the server checks the answer. */
@@ -219,6 +269,9 @@ public final class TerminalNetwork {
     private record WorkAction(BlockPos pos, int action, String id, UUID nonce) {}
     private record RegionalBuy(BlockPos pos, String commodity, int quantity, UUID nonce) {}
     private record SkillAction(BlockPos pos, String skill) {}
+    private record OpenRegistration() {}
+    private record RegisterChoice(String city, String career) {}
+    private record RegistrationResult(boolean ok, String message) {}
     private record OpenChallenge(BlockPos pos, byte[] sequence) {}
     private record ChallengeAnswer(BlockPos pos, byte[] answer) {}
 }

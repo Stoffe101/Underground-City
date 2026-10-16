@@ -4,6 +4,7 @@ These read the committed datapack JSON, so they fail when skill trees, laws, con
 dev-pack manifest or the GUI coverage manifest drift apart. They are arithmetic and schema checks, not gameplay tests;
 the Forge GameTests cover behaviour against the real loaded datapack.
 """
+import hashlib
 import json
 import re
 import subprocess
@@ -202,7 +203,14 @@ class DevPackTests(unittest.TestCase):
 
     def test_no_third_party_binary_is_committed(self):
         tracked = subprocess.run(["git", "ls-files"], cwd=ROOT, capture_output=True, text=True).stdout.split("\n")
-        self.assertEqual([p for p in tracked if p.endswith((".jar", ".zip", ".mrpack"))], [])
+        binaries = [p for p in tracked if p.endswith((".jar", ".zip", ".mrpack"))]
+        # The only committed binary is the official Gradle wrapper jar, accepted by the validator only at its pinned hash.
+        wrapper = "gradle/wrapper/gradle-wrapper.jar"
+        if wrapper in binaries:
+            digest = hashlib.sha256((ROOT / wrapper).read_bytes()).hexdigest()
+            self.assertEqual(digest, "7d3a4ac4de1c32b59bc6a4eb8ecb8e612ccd0cf1ae1e99f66902da64df296172")
+            binaries.remove(wrapper)
+        self.assertEqual(binaries, [])
 
     def test_the_policy_says_metadata_only(self):
         self.assertIn("never committed", self.pack["policy"])

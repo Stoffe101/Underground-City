@@ -63,8 +63,14 @@ jobs:
         run: |
           set -uo pipefail
           chmod +x gradlew
-          timeout 2400s xvfb-run -a -s "-screen 0 1920x1080x24" ./gradlew runClient -PucLaunchSmoke=true --no-daemon --stacktrace > /tmp/uc-dev-client.log 2>&1
-          echo "gradle exit code: $?"
+          code=0
+          timeout 2400s xvfb-run -a -s "-screen 0 1920x1080x24" ./gradlew runClient -PucLaunchSmoke=true --no-daemon --stacktrace > /tmp/uc-dev-client.log 2>&1 || code=$?
+          echo "gradle exit code: ${code}"
+          if [ "${code}" -ne 0 ]; then
+            # The full log is an artifact; the job log carries the reason so a failure is readable without downloading anything.
+            grep -nE 'What went wrong|FAILURE|Caused by|Could not|\[UC-LAUNCH\]' -A 6 /tmp/uc-dev-client.log | head -n 120 || true
+            tail -n 60 /tmp/uc-dev-client.log
+          fi
       - name: Evaluate the launch result
         shell: bash
         run: |
@@ -110,8 +116,13 @@ jobs:
         run: |
           set -uo pipefail
           chmod +x gradlew
-          timeout 1500s ./gradlew runServer -PucAcceptEula=true -PucBootSmoke=true --no-daemon --stacktrace > /tmp/uc-dev-server.log 2>&1
-          echo "gradle exit code: $?"
+          code=0
+          timeout 1500s ./gradlew runServer -PucAcceptEula=true -PucBootSmoke=true --no-daemon --stacktrace > /tmp/uc-dev-server.log 2>&1 || code=$?
+          echo "gradle exit code: ${code}"
+          if [ "${code}" -ne 0 ]; then
+            grep -nE 'What went wrong|FAILURE|Caused by|Could not|\[UC-BOOT\]' -A 6 /tmp/uc-dev-server.log | head -n 120 || true
+            tail -n 60 /tmp/uc-dev-server.log
+          fi
       - name: Evaluate
         shell: bash
         run: |

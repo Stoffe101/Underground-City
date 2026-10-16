@@ -1,9 +1,12 @@
 package io.github.stoffe101.undergroundcity;
 
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -20,6 +23,7 @@ import net.minecraftforge.fml.common.Mod;
  *
  * <ul>
  *   <li>{@code /uc_dev tp <city>} teleports to the surface at a city centre (city ids come from the loaded regions).</li>
+ *   <li>{@code /uc_dev roads} lists the generated roads; {@code /uc_dev road <id> <metres>} teleports onto one at that distance.</li>
  *   <li>{@code /uc_dev terminal} places an Operations Terminal two blocks in front of the operator.</li>
  * </ul>
  */
@@ -37,6 +41,14 @@ public final class DevCommands {
             return at.above();
         }
         return new BlockPos(x, level.getSeaLevel(), z);
+    }
+
+    /** The corridor plans (road centrelines) of the loaded datapack; empty when the road feature is absent. */
+    static java.util.List<CorridorPlan> plans(net.minecraft.server.MinecraftServer server) {
+        var feature = server.registryAccess().registryOrThrow(Registries.CONFIGURED_FEATURE)
+            .get(ResourceLocation.fromNamespaceAndPath(UndergroundCity.MOD_ID, "corridor_roads"));
+        if (feature == null || !(feature.config() instanceof CorridorRoadConfig config)) return java.util.List.of();
+        return config.plans();
     }
 
     @SubscribeEvent
@@ -60,6 +72,32 @@ public final class DevCommands {
                     return 0;
                 }
             })));
+        root.then(Commands.literal("roads").executes(ctx -> {
+            var plans = plans(ctx.getSource().getServer());
+            for (CorridorPlan plan : plans) {
+                ctx.getSource().sendSuccess(() -> Component.literal(plan.id() + ": " + (int) plan.length() + " blocks"), false);
+            }
+            return plans.size();
+        }));
+        root.then(Commands.literal("road").then(Commands.argument("route", StringArgumentType.word())
+            .suggests((ctx, builder) -> SharedSuggestionProvider.suggest(plans(ctx.getSource().getServer()).stream().map(CorridorPlan::id), builder))
+            .then(Commands.argument("metres", IntegerArgumentType.integer(0)).executes(ctx -> {
+                try {
+                    ServerPlayer player = ctx.getSource().getPlayerOrException();
+                    String id = StringArgumentType.getString(ctx, "route");
+                    CorridorPlan plan = plans(ctx.getSource().getServer()).stream().filter(p -> p.id().equals(id)).findFirst()
+                        .orElseThrow(() -> new IllegalStateException("Unknown road " + id));
+                    double[] at = plan.pointAt(IntegerArgumentType.getInteger(ctx, "metres"));
+                    ServerLevel level = ctx.getSource().getServer().overworld();
+                    BlockPos target = surface(level, (int) Math.floor(at[0]), (int) Math.floor(at[1]));
+                    player.teleportTo(level, target.getX() + 0.5, target.getY(), target.getZ() + 0.5, player.getYRot(), player.getXRot());
+                    ctx.getSource().sendSuccess(() -> Component.literal("On " + id + " at " + target.toShortString()), false);
+                    return 1;
+                } catch (IllegalStateException | com.mojang.brigadier.exceptions.CommandSyntaxException error) {
+                    ctx.getSource().sendFailure(Component.literal(String.valueOf(error.getMessage())));
+                    return 0;
+                }
+            }))));
         root.then(Commands.literal("terminal").executes(ctx -> {
             try {
                 ServerPlayer player = ctx.getSource().getPlayerOrException();

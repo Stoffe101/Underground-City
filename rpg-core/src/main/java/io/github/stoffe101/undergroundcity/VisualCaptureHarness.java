@@ -25,6 +25,8 @@ public final class VisualCaptureHarness {
         Case(String name,TerminalScreen.Page page,TerminalData data,int shop,boolean underground,String skill) { this(name,page,data,shop,underground,skill,null); }
         Case(String name,TerminalScreen.Page page,TerminalData data,int shop) { this(name,page,data,shop,false,null,null); }
         static Case challenge(String name,String pose) { return new Case(name,null,null,0,false,null,pose); }
+        /** First-login registration screen poses: city, profession (city chosen) and confirm. */
+        static Case registration(String name,String pose) { return new Case(name,null,null,0,false,null,"register-"+pose); }
     }
     private static List<Case> cases;
     private static int current,frames;
@@ -170,6 +172,9 @@ public final class VisualCaptureHarness {
         cases.add(new Case("uc-contract-regional",TerminalScreen.Page.CONTRACTS,regionalContract(true,2,1),0));
         cases.add(new Case("uc-contract-visit-locked",TerminalScreen.Page.CONTRACTS,regionalContract(false,0,0),0));
         if(!QShopEconomy.available()) throw new IllegalStateException("Visual coverage requires installed Q Shop 1.8.4");
+        cases.add(Case.registration("uc-register-city","city"));
+        cases.add(Case.registration("uc-register-career","career"));
+        cases.add(Case.registration("uc-register-confirm","confirm"));
         cases.add(Case.challenge("uc-challenge-show","show"));
         cases.add(Case.challenge("uc-challenge-input","input"));
         cases.add(Case.challenge("uc-challenge-urgent","urgent"));
@@ -184,6 +189,12 @@ public final class VisualCaptureHarness {
             Screen screen=QShopVisualCases.shop(capture.shop==1);
             mc.setScreen(screen);
             if(capture.shop==3) QShopVisualCases.openLowFundsModal(screen);
+        } else if(capture.challenge!=null && capture.challenge.startsWith("register-")) {
+            mc.setScreen(switch(capture.challenge) {
+                case "register-city" -> RegistrationScreen.forCapture(0,-1,-1,"");
+                case "register-career" -> RegistrationScreen.forCapture(1,1,-1,"");
+                default -> RegistrationScreen.forCapture(2,1,0,"");
+            });
         } else if(capture.challenge!=null) {
             ChallengeScreen screen=ChallengeScreen.forCapture(new byte[]{0,2,1,3,2});
             mc.setScreen(screen);
