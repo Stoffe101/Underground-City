@@ -28,7 +28,7 @@ import java.util.Map;
 public final class StarterKits extends SimpleJsonResourceReloadListener {
     private static final Logger LOGGER = LogUtils.getLogger();
     public static final StarterKits INSTANCE = new StarterKits();
-    static final int MAX_STACKS = 8;
+    static final int MAX_STACKS = 12;
 
     /** {@code requiresMod} (may be empty) skips the entry when that mod is absent; {@code nbt} (may be null) is applied to the stack. */
     public record Entry(ResourceLocation item, int count, String requiresMod, net.minecraft.nbt.CompoundTag nbt) {}
