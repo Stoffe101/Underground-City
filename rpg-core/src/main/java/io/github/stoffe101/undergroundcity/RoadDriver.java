@@ -232,22 +232,33 @@ final class RoadDriver {
         return false;
     }
 
-    private int viewLogs;
+    private int viewLogs, framesMeasured;
+    /** How far the camera ends up from where the player's own pitch points (a vehicle's camera can add its own tilt, e.g. under acceleration); measured after each frame. */
+    private volatile double cameraOffset;
 
-    /** Points the player's own view along the vehicle's heading, a little downward. Called every client tick and again just before every frame. */
+    /** Points the player's own view along the vehicle's heading and a little downward, allowing for any tilt the vehicle's camera adds. Called every client tick and again just before every frame. */
     void applyView() {
         Minecraft mc = Minecraft.getInstance();
         var player = mc.player;
         if (!faceForward || player == null || player.getVehicle() == null) return;
-        if (viewLogs < 3) {
-            viewLogs++;
-            Playtest.log(label + ": view pitch " + String.format("%.0f", player.getXRot()) + ", camera pitch " + String.format("%.0f", mc.gameRenderer.getMainCamera().getXRot())
-                + ", vehicle pitch " + String.format("%.0f", player.getVehicle().getXRot()) + "; setting 12");
-        }
+        float pitch = (float) Math.max(-90, Math.min(90, 12.0 - cameraOffset));
         player.setYRot(player.getVehicle().getYRot());
         player.yRotO = player.getYRot();
-        player.setXRot(12f);
-        player.xRotO = 12f;
+        player.setXRot(pitch);
+        player.xRotO = pitch;
+    }
+
+    /** After a frame is drawn: how far the camera's pitch is from the player's. Logged now and then so a view that does not look where it should can be understood. */
+    void measureView() {
+        Minecraft mc = Minecraft.getInstance();
+        var player = mc.player;
+        if (!faceForward || player == null || player.getVehicle() == null) return;
+        double offset = mc.gameRenderer.getMainCamera().getXRot() - player.getXRot();
+        cameraOffset = Double.isNaN(offset) ? 0 : offset;
+        if (++framesMeasured % 120 == 1 && viewLogs++ < 12) {
+            Playtest.log(label + ": player pitch " + String.format("%.0f", player.getXRot()) + ", camera pitch " + String.format("%.0f", mc.gameRenderer.getMainCamera().getXRot())
+                + ", vehicle pitch " + String.format("%.0f", player.getVehicle().getXRot()) + ", camera offset " + String.format("%.0f", cameraOffset));
+        }
     }
 
     /** What is around a vehicle that has stopped moving: the blocks at and around it (water, solid, air) at three heights, so a pier, a shore or a rail shows up. */

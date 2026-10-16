@@ -133,6 +133,7 @@ public final class Playtest {
     public static void beforeFrame(TickEvent.RenderTickEvent event) {
         RoadDriver driver = viewDriver;
         if (driver != null && event.phase == TickEvent.Phase.START) driver.applyView();
+        if (driver != null && event.phase == TickEvent.Phase.END) driver.measureView();
         if (event.phase == TickEvent.Phase.END) {
             String name;
             while ((name = frameShots.poll()) != null) screenshot(name);
