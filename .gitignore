@@ -88,3 +88,6 @@ __pycache__/
 *.pyc
 .pytest_cache/
 .coverage
+
+# Gradle wrapper bootstrap (Apache-2.0, from the official Gradle distribution)
+!gradle/wrapper/gradle-wrapper.jar

@@ -62,6 +62,7 @@ def resolve_entry(pin: dict) -> dict:
         "role": pin["role"],
         "sets": pin["sets"],
         "requires": pin.get("requires", []),
+        "placement": pin.get("placement", "classpath"),
         "side": {"client": project["client_side"], "server": project["server_side"]},
         "source_url": f"https://modrinth.com/mod/{project['slug']}/version/{version['id']}",
         "distribution": pin.get("distribution", "download from the author's page; never commit the binary"),

@@ -1,0 +1,469 @@
+{
+  "balance": {
+    "cheap_remote_imports_must_not_replace_trips": true,
+    "each_direct_procurement_order_max_8_units": true,
+    "golden_path_never_requires_player_vs_player": true,
+    "npc_supplier_credits_and_outputs_must_be_economically_accounted_for": true,
+    "rare_components_replenish_slower_than_common_components": true,
+    "renewable_supplies_in_each_city": true,
+    "shared_city_stock_caps_exploration_loops": true,
+    "travel_requires_navigation_and_trade_or_raid_play": true
+  },
+  "clock": "server_active_minutes",
+  "disclaimer": "Planning economy model: fictional logical commodity IDs; no actual registered Minecraft items, recipes, seller stock, NPC routes or transactions are yet in game.",
+  "prototype_only": true,
+  "recurring_recipes": [
+    {
+      "available_after_tier_unlock": true,
+      "career": "farmer",
+      "id": "greenhouse_service_batch",
+      "inputs": [
+        {
+          "commodity": "machined_parts",
+          "count": 1
+        },
+        {
+          "commodity": "rare_seeds",
+          "count": 2
+        }
+      ],
+      "kind": "maintenance",
+      "output": {
+        "count": 2,
+        "id": "irrigation_service_kit"
+      },
+      "repeatable": true,
+      "tier": 2,
+      "uses": "Consumes real sourced components every batch; outputs are provisional logical goods."
+    },
+    {
+      "available_after_tier_unlock": true,
+      "career": "farmer",
+      "id": "vineyard_climate_module",
+      "inputs": [
+        {
+          "commodity": "agro_catalyst",
+          "count": 2
+        },
+        {
+          "commodity": "control_circuits",
+          "count": 1
+        }
+      ],
+      "kind": "craft",
+      "output": {
+        "count": 1,
+        "id": "climate_module"
+      },
+      "repeatable": true,
+      "tier": 2,
+      "uses": "Consumes real sourced components every batch; outputs are provisional logical goods."
+    },
+    {
+      "available_after_tier_unlock": true,
+      "career": "farmer",
+      "id": "precision_greenhouse_array",
+      "inputs": [
+        {
+          "commodity": "agro_catalyst",
+          "count": 2
+        },
+        {
+          "commodity": "machined_parts",
+          "count": 2
+        },
+        {
+          "commodity": "control_circuits",
+          "count": 1
+        }
+      ],
+      "kind": "craft",
+      "output": {
+        "count": 1,
+        "id": "precision_greenhouse_unit"
+      },
+      "repeatable": true,
+      "tier": 3,
+      "uses": "Consumes real sourced components every batch; outputs are provisional logical goods."
+    },
+    {
+      "available_after_tier_unlock": true,
+      "career": "smith",
+      "id": "calibrated_machine_parts",
+      "inputs": [
+        {
+          "commodity": "refined_alloy",
+          "count": 2
+        },
+        {
+          "commodity": "control_circuits",
+          "count": 1
+        }
+      ],
+      "kind": "craft",
+      "output": {
+        "count": 2,
+        "id": "precision_machinery_parts"
+      },
+      "repeatable": true,
+      "tier": 2,
+      "uses": "Consumes real sourced components every batch; outputs are provisional logical goods."
+    },
+    {
+      "available_after_tier_unlock": true,
+      "career": "smith",
+      "id": "field_repair_set",
+      "inputs": [
+        {
+          "commodity": "machined_parts",
+          "count": 1
+        },
+        {
+          "commodity": "biopolymer",
+          "count": 1
+        }
+      ],
+      "kind": "maintenance",
+      "output": {
+        "count": 2,
+        "id": "field_repair_set"
+      },
+      "repeatable": true,
+      "tier": 2,
+      "uses": "Consumes real sourced components every batch; outputs are provisional logical goods."
+    },
+    {
+      "available_after_tier_unlock": true,
+      "career": "smith",
+      "id": "composite_equipment_housing",
+      "inputs": [
+        {
+          "commodity": "refined_alloy",
+          "count": 2
+        },
+        {
+          "commodity": "biopolymer",
+          "count": 2
+        },
+        {
+          "commodity": "control_circuits",
+          "count": 1
+        }
+      ],
+      "kind": "craft",
+      "output": {
+        "count": 2,
+        "id": "composite_housing"
+      },
+      "repeatable": true,
+      "tier": 3,
+      "uses": "Consumes real sourced components every batch; outputs are provisional logical goods."
+    },
+    {
+      "available_after_tier_unlock": true,
+      "career": "gunsmith",
+      "id": "precision_optic_mounts",
+      "inputs": [
+        {
+          "commodity": "machined_parts",
+          "count": 2
+        },
+        {
+          "commodity": "optical_components",
+          "count": 1
+        }
+      ],
+      "kind": "craft",
+      "output": {
+        "count": 2,
+        "id": "optic_mount_kit"
+      },
+      "repeatable": true,
+      "tier": 2,
+      "uses": "Consumes real sourced components every batch; outputs are provisional logical goods."
+    },
+    {
+      "available_after_tier_unlock": true,
+      "career": "gunsmith",
+      "id": "licensed_security_service",
+      "inputs": [
+        {
+          "commodity": "refined_alloy",
+          "count": 1
+        },
+        {
+          "commodity": "control_circuits",
+          "count": 1
+        }
+      ],
+      "kind": "work_order",
+      "output": {
+        "count": 1,
+        "id": "licensed_service_kit"
+      },
+      "repeatable": true,
+      "tier": 2,
+      "uses": "Consumes real sourced components every batch; outputs are provisional logical goods."
+    },
+    {
+      "available_after_tier_unlock": true,
+      "career": "gunsmith",
+      "id": "specialized_equipment_platform",
+      "inputs": [
+        {
+          "commodity": "machined_parts",
+          "count": 2
+        },
+        {
+          "commodity": "biopolymer",
+          "count": 1
+        },
+        {
+          "commodity": "encrypted_design",
+          "count": 1
+        }
+      ],
+      "kind": "craft",
+      "output": {
+        "count": 1,
+        "id": "specialized_equipment_platform"
+      },
+      "repeatable": true,
+      "tier": 3,
+      "uses": "Consumes real sourced components every batch; outputs are provisional logical goods."
+    },
+    {
+      "available_after_tier_unlock": true,
+      "career": "technician",
+      "id": "industrial_control_unit",
+      "inputs": [
+        {
+          "commodity": "control_circuits",
+          "count": 2
+        },
+        {
+          "commodity": "machined_parts",
+          "count": 1
+        }
+      ],
+      "kind": "craft",
+      "output": {
+        "count": 1,
+        "id": "industrial_controller"
+      },
+      "repeatable": true,
+      "tier": 2,
+      "uses": "Consumes real sourced components every batch; outputs are provisional logical goods."
+    },
+    {
+      "available_after_tier_unlock": true,
+      "career": "technician",
+      "id": "agricultural_sensor_repair",
+      "inputs": [
+        {
+          "commodity": "optical_components",
+          "count": 1
+        },
+        {
+          "commodity": "agro_catalyst",
+          "count": 1
+        }
+      ],
+      "kind": "work_order",
+      "output": {
+        "count": 2,
+        "id": "agri_sensor_repair"
+      },
+      "repeatable": true,
+      "tier": 2,
+      "uses": "Consumes real sourced components every batch; outputs are provisional logical goods."
+    },
+    {
+      "available_after_tier_unlock": true,
+      "career": "technician",
+      "id": "municipal_security_array",
+      "inputs": [
+        {
+          "commodity": "control_circuits",
+          "count": 2
+        },
+        {
+          "commodity": "refined_alloy",
+          "count": 1
+        },
+        {
+          "commodity": "biopolymer",
+          "count": 2
+        }
+      ],
+      "kind": "craft",
+      "output": {
+        "count": 1,
+        "id": "security_array"
+      },
+      "repeatable": true,
+      "tier": 3,
+      "uses": "Consumes real sourced components every batch; outputs are provisional logical goods."
+    }
+  ],
+  "schema_version": 1,
+  "supplier_stock": [
+    {
+      "capacity": 30,
+      "city": "ironhaven",
+      "id": "refined_alloy",
+      "initial_stock": 15,
+      "interval_minutes": 60,
+      "lot_size_hint": 7,
+      "restock_source": "NPC production and trade budget (runtime integration pending)",
+      "source_type": "qualified_licensed_supplier",
+      "unit_price": 28,
+      "units_per_interval": 3
+    },
+    {
+      "capacity": 36,
+      "city": "ironhaven",
+      "id": "machined_parts",
+      "initial_stock": 18,
+      "interval_minutes": 45,
+      "lot_size_hint": 8,
+      "restock_source": "NPC production and trade budget (runtime integration pending)",
+      "source_type": "qualified_licensed_supplier",
+      "unit_price": 18,
+      "units_per_interval": 4
+    },
+    {
+      "capacity": 24,
+      "city": "ironhaven",
+      "id": "security_fabric",
+      "initial_stock": 10,
+      "interval_minutes": 65,
+      "lot_size_hint": 5,
+      "restock_source": "NPC production and trade budget (runtime integration pending)",
+      "source_type": "qualified_licensed_supplier",
+      "unit_price": 22,
+      "units_per_interval": 2
+    },
+    {
+      "capacity": 36,
+      "city": "valewood",
+      "id": "rare_seeds",
+      "initial_stock": 17,
+      "interval_minutes": 50,
+      "lot_size_hint": 8,
+      "restock_source": "NPC production and trade budget (runtime integration pending)",
+      "source_type": "qualified_licensed_supplier",
+      "unit_price": 14,
+      "units_per_interval": 4
+    },
+    {
+      "capacity": 30,
+      "city": "valewood",
+      "id": "biopolymer",
+      "initial_stock": 14,
+      "interval_minutes": 65,
+      "lot_size_hint": 7,
+      "restock_source": "NPC production and trade budget (runtime integration pending)",
+      "source_type": "qualified_licensed_supplier",
+      "unit_price": 24,
+      "units_per_interval": 3
+    },
+    {
+      "capacity": 25,
+      "city": "valewood",
+      "id": "agro_catalyst",
+      "initial_stock": 12,
+      "interval_minutes": 75,
+      "lot_size_hint": 6,
+      "restock_source": "NPC production and trade budget (runtime integration pending)",
+      "source_type": "qualified_licensed_supplier",
+      "unit_price": 30,
+      "units_per_interval": 2
+    },
+    {
+      "capacity": 30,
+      "city": "blackwater",
+      "id": "control_circuits",
+      "initial_stock": 15,
+      "interval_minutes": 60,
+      "lot_size_hint": 7,
+      "restock_source": "NPC production and trade budget (runtime integration pending)",
+      "source_type": "qualified_licensed_supplier",
+      "unit_price": 32,
+      "units_per_interval": 3
+    },
+    {
+      "capacity": 15,
+      "city": "blackwater",
+      "id": "encrypted_design",
+      "initial_stock": 6,
+      "interval_minutes": 100,
+      "lot_size_hint": 3,
+      "restock_source": "NPC production and trade budget (runtime integration pending)",
+      "source_type": "qualified_licensed_supplier",
+      "unit_price": 80,
+      "units_per_interval": 1
+    },
+    {
+      "capacity": 24,
+      "city": "blackwater",
+      "id": "optical_components",
+      "initial_stock": 12,
+      "interval_minutes": 70,
+      "lot_size_hint": 6,
+      "restock_source": "NPC production and trade budget (runtime integration pending)",
+      "source_type": "qualified_licensed_supplier",
+      "unit_price": 34,
+      "units_per_interval": 2
+    }
+  ],
+  "supply_policy": {
+    "allow_batched_materials_and_multiple_crafts_per_expedition": true,
+    "first_tier_two_unlock_requires_foreign_visit": true,
+    "local_basic_minecraft_materials_ungated": true,
+    "never_one_trip_per_single_craft": true,
+    "no_idle_offline_penalty": true,
+    "no_infinite_remote_delivery": true,
+    "peaceful_foreign_market_access_possible_with_permit_or_escort": true,
+    "remote_import_available_only_after_qualifying_foreign_visit": true,
+    "remote_import_more_expensive_and_limited": true,
+    "restock_only_in_response_to_bounded_active_time": true,
+    "riskier_theft_or_smuggling_possible_but_not_implemented": true,
+    "specialty_output_city_exclusive": true,
+    "supplier_stock_shared_by_players": true,
+    "tier_three_requires_visit_all_three": true
+  },
+  "travel_channels": [
+    {
+      "id": "direct_foreign_supplier",
+      "max_quantity_per_order": 8,
+      "price_multiplier_percent": 100,
+      "repeatable": true,
+      "requires_border_permission": true,
+      "requires_player_at_source_city": true
+    },
+    {
+      "delivery_delay_active_minutes": 90,
+      "id": "licensed_convoy_import",
+      "implementation_status": "future",
+      "max_quantity_per_order": 2,
+      "price_multiplier_percent": 225,
+      "repeatable": true,
+      "requires_border_permission": true,
+      "requires_player_at_source_city": false,
+      "requires_prior_city_visit": true
+    },
+    {
+      "consequences": [
+        "witness",
+        "heat",
+        "fence_discount"
+      ],
+      "id": "illegal_acquisition",
+      "implementation_status": "future",
+      "repeatable": true,
+      "requires_border_permission": false,
+      "requires_player_at_source_city": true
+    }
+  ]
+}

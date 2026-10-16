@@ -1,0 +1,303 @@
+{
+  "black_market": {
+    "dropbox_pickup_window_minutes": 30,
+    "dropbox_requires_safe_city_spawn_anchor": true,
+    "escrow_before_dropbox_deposit": true,
+    "illegal_market_risk": {
+      "heat_added_to_seller_after_completed_sale": 1,
+      "high_risk_items_may_draw_sting_operation": true,
+      "police_does_not_detect_every_transaction": true
+    },
+    "item_nbt_identity_must_be_preserved": true,
+    "listing_expiry_active_minutes": 180,
+    "listings_do_not_instantly_sell": true,
+    "meeting_points_generated_from_approved_markers_not_random_air": true,
+    "npc_buyers_have_finite_budget": true,
+    "price_bands": [
+      {
+        "item_tag": "gun_equipment",
+        "market_price": 500,
+        "max_price": 950,
+        "min_price": 250
+      },
+      {
+        "item_tag": "weapon_component",
+        "market_price": 150,
+        "max_price": 340,
+        "min_price": 50
+      },
+      {
+        "item_tag": "technical_equipment",
+        "market_price": 220,
+        "max_price": 500,
+        "min_price": 90
+      }
+    ],
+    "single_use_dropbox_per_transaction": true
+  },
+  "clock": "server_active_minutes",
+  "loot_profiles": [
+    {
+      "id": "apartment_common",
+      "locked_safe_chance_percent": 8,
+      "profession_weights": {
+        "farmer": 20,
+        "general": 32,
+        "gunsmith": 8,
+        "smith": 20,
+        "technician": 20
+      },
+      "rare_item_probability_percent": 6,
+      "replenishment_policy": "apartment_common",
+      "samples": [
+        "rare_seeds",
+        "machined_parts",
+        "small_electronic_parts",
+        "household_trade_goods"
+      ],
+      "slots": 6
+    },
+    {
+      "id": "apartment_affluent",
+      "locked_safe_chance_percent": 48,
+      "profession_weights": {
+        "farmer": 8,
+        "general": 20,
+        "gunsmith": 25,
+        "smith": 17,
+        "technician": 30
+      },
+      "rare_item_probability_percent": 16,
+      "replenishment_policy": "apartment_affluent",
+      "samples": [
+        "optical_components",
+        "machined_parts",
+        "licensed_weapon_component",
+        "control_circuits",
+        "household_trade_goods"
+      ],
+      "slots": 9
+    },
+    {
+      "id": "office",
+      "locked_safe_chance_percent": 30,
+      "profession_weights": {
+        "farmer": 5,
+        "general": 20,
+        "gunsmith": 10,
+        "smith": 15,
+        "technician": 50
+      },
+      "rare_item_probability_percent": 12,
+      "replenishment_policy": "office",
+      "samples": [
+        "encrypted_design",
+        "control_circuits",
+        "paper_records",
+        "household_trade_goods"
+      ],
+      "slots": 7
+    },
+    {
+      "id": "industrial",
+      "locked_safe_chance_percent": 50,
+      "profession_weights": {
+        "farmer": 10,
+        "general": 10,
+        "gunsmith": 25,
+        "smith": 38,
+        "technician": 17
+      },
+      "rare_item_probability_percent": 19,
+      "replenishment_policy": "industrial",
+      "samples": [
+        "refined_alloy",
+        "machined_parts",
+        "security_fabric",
+        "licensed_weapon_component",
+        "household_trade_goods"
+      ],
+      "slots": 8
+    },
+    {
+      "id": "illegal_cache",
+      "locked_safe_chance_percent": 75,
+      "profession_weights": {
+        "farmer": 5,
+        "general": 15,
+        "gunsmith": 48,
+        "smith": 15,
+        "technician": 17
+      },
+      "rare_item_probability_percent": 28,
+      "replenishment_policy": "illegal_cache",
+      "samples": [
+        "weapon_repair_kit",
+        "optical_components",
+        "licensed_weapon_component",
+        "encrypted_design",
+        "household_trade_goods"
+      ],
+      "slots": 5
+    }
+  ],
+  "prototype_only": true,
+  "raid_templates": [
+    {
+      "active_minutes": 30,
+      "cooldown_active_minutes": 180,
+      "entry_modes": [
+        "contract_infiltration",
+        "armed_assault"
+      ],
+      "gear_score": 30,
+      "id": "gang_safehouse",
+      "min_tier": 2,
+      "needs_physical_arrival": true,
+      "rarity": "common",
+      "reward_source": "shared_high_risk_cache",
+      "target": "rival_city_gang_hideout"
+    },
+    {
+      "active_minutes": 35,
+      "cooldown_active_minutes": 240,
+      "entry_modes": [
+        "contract_disguise",
+        "stealth",
+        "armed_assault"
+      ],
+      "gear_score": 50,
+      "id": "warehouse_heist",
+      "min_tier": 2,
+      "needs_physical_arrival": true,
+      "rarity": "uncommon",
+      "reward_source": "bounded_industrial_stock",
+      "target": "rival_city_warehouse"
+    },
+    {
+      "active_minutes": 45,
+      "cooldown_active_minutes": 720,
+      "entry_modes": [
+        "late_game_infiltration",
+        "high_risk_assault"
+      ],
+      "gear_score": 90,
+      "id": "police_station",
+      "min_tier": 3,
+      "needs_physical_arrival": true,
+      "rarity": "very_rare",
+      "reward_source": "bounded_evidence_locker",
+      "target": "rival_police_station"
+    }
+  ],
+  "raids": {
+    "coop_players_can_join": true,
+    "no_spawn_from_terminal_only": true,
+    "no_unlimited_evidence_duplication": true,
+    "one_active_raid_per_player": true,
+    "participant_downed_not_permanently_softlocked": true,
+    "police_station_raids_have_severe_heat_consequences": true,
+    "raid_requires_genuine_world_target_and_existing_npc_guards": true
+  },
+  "schema_version": 1,
+  "shipments": {
+    "active_minutes_to_dispatch": 5,
+    "delivery_security": {
+      "no_automatic_instant_payout": true,
+      "no_spawn_inside_player_property": true,
+      "physical_world_encounter_requires_grounded_location": true
+    },
+    "incident_chance_percent": 20,
+    "incident_consequences": {
+      "checkpoint_seizure": "Contraband held by police; legal permits should avoid arbitrary irreversible seizure",
+      "gang_ambush": "Cargo recoverable at scene guarded by hostile bandits within salvage window",
+      "road_crash": "Cargo recoverable at grounded crash scene within salvage window; expired items recovered by authorities, claim insurance if legal"
+    },
+    "incident_roll_seeded_by_world_and_order": true,
+    "incident_types": [
+      "road_crash",
+      "gang_ambush",
+      "checkpoint_seizure"
+    ],
+    "insurance": {
+      "contraband_no_refund": true,
+      "legal_full_if_valid_claim": true
+    },
+    "per_city_source_required": true,
+    "permit_or_reputation_required_for_legal_orders": true,
+    "salvage_deadline_active_minutes": 25,
+    "time_outcome": {
+      "illegal": "confiscated",
+      "legal": "claim_eligible"
+    },
+    "travel_active_minutes": 45
+  },
+  "special_loot": {
+    "all_professions_can_find_barterable_or_useful_equipment": true,
+    "commodity_origin": {
+      "agro_catalyst": "valewood",
+      "biopolymer": "valewood",
+      "control_circuits": "blackwater",
+      "encrypted_design": "blackwater",
+      "licensed_weapon_component": "ironhaven",
+      "machined_parts": "ironhaven",
+      "optical_components": "blackwater",
+      "rare_seeds": "valewood",
+      "refined_alloy": "ironhaven",
+      "security_fabric": "ironhaven"
+    },
+    "foreign_city_components_only_as_rare_high_security_imports": true,
+    "foreign_import_chance_percent": 10,
+    "high_tier_parts_in_locked_safes_or_high_risk_structures": true,
+    "household_inventory_shared": true,
+    "loot_item_affinities": {
+      "agro_catalyst": "farmer",
+      "biopolymer": "farmer",
+      "control_circuits": "technician",
+      "encrypted_design": "technician",
+      "household_trade_goods": "general",
+      "licensed_weapon_component": "gunsmith",
+      "machined_parts": "smith",
+      "optical_components": "gunsmith",
+      "paper_records": "general",
+      "rare_seeds": "farmer",
+      "refined_alloy": "smith",
+      "security_fabric": "general",
+      "small_electronic_parts": "technician",
+      "weapon_repair_kit": "gunsmith"
+    },
+    "never_unlimited_rare_blueprint_farming": true,
+    "not_all_drops_matches_player_profession": true,
+    "refill_respects_household_budget": true,
+    "specialty_materials_respect_city_origin": true,
+    "weapon_parts_uncommon_in_ordinary_homes": true
+  },
+  "status": "Design and simulation only; no actual Minecraft terminal, chest injection, raids, dropboxes, AI couriers, or currency integration.",
+  "terminal": {
+    "form_factors": [
+      "home_desktop",
+      "portable_laptop"
+    ],
+    "id": "underground_city:municipal_terminal",
+    "interaction_rules": {
+      "locked_terminal_respects_property_ownership": true,
+      "no_remote_teleport_to_raid": true,
+      "portable_laptop_limited_by_reputation_and_access": true,
+      "world_block_interaction_required": true
+    },
+    "reuse_candidates": [
+      "FTB Quests 1.20.1 Forge for contract/task progression",
+      "LootJS + KubeJS 1.20.1 Forge for eventual loot assignment",
+      "Existing selected economy mod for wallets",
+      "Custom Forge menu only if no suitable compatible interface is available"
+    ],
+    "screens": [
+      "contracts",
+      "imports",
+      "raids",
+      "black_market",
+      "deliveries"
+    ],
+    "server_authority_required": true
+  }
+}

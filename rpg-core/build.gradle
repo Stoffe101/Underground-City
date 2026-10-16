@@ -11,24 +11,91 @@ group = mod_group_id
 base { archivesName = mod_id }
 java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 
+// ---------------------------------------------------------------------------------------------------------------
+// Which third-party mods does this run load?
+//
+//   gradlew runClient                    the COMPLETE development pack (Core, Q Shop, Lost Cities, TaCZ, TaCZ
+//                                        Blueprints, Modern Life, Immersive Vehicles and both official packs) in the
+//                                        disposable game directory rpg-core/run-dev, opening the seed-5908 dev world
+//   gradlew runServer                    the same pack as a dedicated server (accept the EULA first, see docs)
+//   gradlew runClient -PucPack=none      Core alone
+//   gradlew runClient -PucPack=firearms,vehicles   chosen sets (world, firearms, vehicles, boats)
+//
+// Every harness flag below (ucVisualCapture, ucWorldTour, ucJourneyClient, ...) keeps its old, narrower meaning, so
+// the hosted workflows are unchanged. Jars always come from the original author's page (Modrinth Maven, or the Q Shop
+// GitHub release), are SHA-512/SHA-256 verified against content/modpacks/dev-pack.json, and are never committed.
+// ---------------------------------------------------------------------------------------------------------------
+def harnessFlags = ['ucPack', 'ucEconomyTest', 'ucScreeningMod', 'ucWorldCandidate', 'ucWorldTour', 'ucJourneyClient',
+                    'ucVisualCapture', 'ucWorldSurvey', 'ucSeedScan', 'ucJourneyPhase']
+def requestedTasks = gradle.startParameter.taskNames.collect { it.tokenize(':').last() }
+def userLaunch = requestedTasks.any { it in ['runClient', 'runServer'] } &&
+        !harnessFlags.any { providers.gradleProperty(it).isPresent() }
+def explicitPack = providers.gradleProperty('ucPack').orNull
+def packSelection = explicitPack != null ? (explicitPack == 'none' ? '' : explicitPack)
+        : (userLaunch ? 'world,firearms,vehicles,boats' : '')
+def devPackSets = packSelection.split(',').collect { it.trim() }.findAll { !it.isEmpty() }
+def devWorldWanted = userLaunch || providers.gradleProperty('ucDevWorld').orNull == 'true'
+def autoWorld = devWorldWanted && providers.gradleProperty('ucAutoWorld').orNull != 'false' && !providers.gradleProperty('ucPlaytest').isPresent()
+def economyRuntime = providers.gradleProperty('ucEconomyTest').orNull == 'true' || userLaunch
+def runDirName = providers.gradleProperty('ucRunDir').orElse(userLaunch ? 'run-dev' : 'run').get()
+def devWorldName = 'UC-Dev-5908'
+
+def devPackMods = []
+if (!devPackSets.isEmpty()) {
+    def manifest = new JsonSlurper().parse(file('../content/modpacks/dev-pack.json'))
+    def byId = manifest.mods.collectEntries { [(it.id): it] }
+    def chosen = new LinkedHashMap()
+    def include
+    include = { String id ->
+        def mod = byId[id]
+        if (mod == null) throw new GradleException('Unknown dev-pack mod ' + id)
+        mod.requires.each { include(it) }
+        chosen[id] = mod
+    }
+    manifest.mods.findAll { mod -> mod.sets.any { devPackSets.contains(it) } }.each { include(it.id) }
+    if (chosen.isEmpty()) throw new GradleException('No dev-pack mods in sets ' + devPackSets + ' (known sets: world, firearms, vehicles, boats)')
+    devPackMods = chosen.values().toList()
+}
+
 minecraft {
     mappings channel: 'official', version: minecraft_version
     copyIdeResources = true
     runs {
         configureEach {
-            workingDirectory project.file(providers.gradleProperty('ucRunDir').orElse('run').get())
+            workingDirectory project.file(runDirName)
             property 'forge.logging.console.level', 'info'
-            if (providers.gradleProperty('ucPack').isPresent()) {
+            if (!devPackMods.isEmpty()) {
                 // Dev-pack mods such as TaCZ are mixin mods whose refmaps use SRG names; this development environment
                 // runs with the official names, so Mixin must remap the refmaps (the documented ForgeGradle 6 recipe).
                 property 'mixin.env.remapRefMap', 'true'
                 property 'mixin.env.refMapRemappingFile', "${projectDir}/build/createSrgToMcp/output.srg"
+                // Forge throws "Cannot get config value before config is loaded" ONLY when FMLEnvironment.production is
+                // false, i.e. only in a development environment. Modern Life reads its config in its constructor (the
+                // read is harmless in a real client or server), and FMLEnvironment also treats the system property
+                // "production" as production. Setting it is the supported way to run such a mod from a ForgeGradle run.
+                if (devPackMods.any { it.mod_id == 'modernlife' }) property 'production', 'true'
             }
             mods {
                 underground_city { source sourceSets.main }
             }
         }
         client {
+            if (userLaunch) {
+                jvmArgs '-Xmx4G'
+                if (autoWorld) jvmArgs "-Duc.devWorld=${devWorldName}"
+                // Two developers testing together need different offline names (the default profile is "Dev").
+                if (providers.gradleProperty('ucUsername').isPresent()) args '--username', providers.gradleProperty('ucUsername').get()
+            }
+            if (providers.gradleProperty('ucPlaytest').isPresent()) {
+                // Scripted player (Playtest.java): a scenario name such as input, gun, car, boat, walk, trace.
+                jvmArgs "-Duc.playtest=${providers.gradleProperty('ucPlaytest').get()}", '-XX:ActiveProcessorCount=2', '-Xmx4G'
+                args '--width', '1280', '--height', '720'
+            }
+            if (providers.gradleProperty('ucLaunchSmoke').orNull == 'true') {
+                // CI / verification: join the dev world, report facts, take a screenshot, quit.
+                jvmArgs '-Duc.launchSmoke=true', '-XX:ActiveProcessorCount=2'
+                args '--width', '1920', '--height', '1080'
+            }
             if (providers.gradleProperty('ucWorldTour').orNull == 'true') {
                 jvmArgs '-Duc.worldTour=true', '-Xmx2G', '-XX:ActiveProcessorCount=2'
                 args '--username', 'UC_WorldSurvey', '--width', '1920', '--height', '1080'
@@ -47,6 +114,9 @@ minecraft {
         }
         server {
             args '--nogui'
+            if (providers.gradleProperty('ucBootSmoke').isPresent()) {
+                jvmArgs '-Duc.bootSmoke=true'
+            }
             if (providers.gradleProperty('ucWorldSurvey').orNull == 'true') {
                 jvmArgs '-Duc.worldSurvey=true', '-XX:ActiveProcessorCount=2'
             }
@@ -87,26 +157,6 @@ if (worldCandidateId != null && !worldCandidateId.trim().isEmpty()) {
         throw new GradleException("Do not run unrelated onboarding and world candidate tests together")
     }
 }
-// Pinned development-pack sets (content/modpacks/dev-pack.json), e.g. -PucPack=firearms,vehicles.
-// Jars come from the original author's Modrinth release, are SHA-512 verified against the manifest
-// (verifyDevPack) and are runtime-only: never bundled in Core, committed or uploaded.
-def devPackSets = (providers.gradleProperty('ucPack').orNull ?: '').split(',').collect { it.trim() }.findAll { !it.isEmpty() }
-def devPackMods = []
-if (!devPackSets.isEmpty()) {
-    def manifest = new JsonSlurper().parse(file('../content/modpacks/dev-pack.json'))
-    def byId = manifest.mods.collectEntries { [(it.id): it] }
-    def chosen = new LinkedHashMap()
-    def include
-    include = { String id ->
-        def mod = byId[id]
-        if (mod == null) throw new GradleException('Unknown dev-pack mod ' + id)
-        mod.requires.each { include(it) }
-        chosen[id] = mod
-    }
-    manifest.mods.findAll { mod -> mod.sets.any { devPackSets.contains(it) } }.each { include(it.id) }
-    if (chosen.isEmpty()) throw new GradleException('No dev-pack mods in sets ' + devPackSets)
-    devPackMods = chosen.values().toList()
-}
 repositories {
     mavenCentral()
     if (!devPackMods.isEmpty()) {
@@ -132,7 +182,7 @@ repositories {
 dependencies {
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
     compileOnly fg.deobf('com.qshop:qshop-forge-1.20.1:1.8.4')
-    if (providers.gradleProperty('ucEconomyTest').orNull == 'true') {
+    if (economyRuntime) {
         runtimeOnly fg.deobf('com.qshop:qshop-forge-1.20.1:1.8.4')
     }
     if (screeningMod != null) {
@@ -146,9 +196,18 @@ dependencies {
 if (!devPackMods.isEmpty()) {
     tasks.matching { it.name.startsWith('prepareRun') }.configureEach { dependsOn 'createSrgToMcp' }
 }
-devPackMods.each { mod -> dependencies.add('runtimeOnly', fg.deobf("maven.modrinth:${mod.slug}:${mod.version_id}")) }
-configurations { qshopOriginal; devPackOriginal }
-devPackMods.each { mod -> dependencies.add('devPackOriginal', "maven.modrinth:${mod.slug}:${mod.version_id}") }
+configurations { qshopOriginal; devPackOriginal; devPackFolder }
+devPackMods.each { mod ->
+    def coordinate = "maven.modrinth:${mod.slug}:${mod.version_id}"
+    dependencies.add('devPackOriginal', coordinate)
+    if (mod.placement == 'mods_folder') {
+        // Immersive Vehicles content packs are plain asset jars that the engine finds by scanning the game directory's
+        // mods folder, so they are copied there unmodified (prepareDevRun), not put on the classpath.
+        dependencies.add('devPackFolder', coordinate)
+    } else {
+        dependencies.add('runtimeOnly', fg.deobf(coordinate))
+    }
+}
 def verifyDevPack = tasks.register('verifyDevPack') {
     inputs.files(configurations.devPackOriginal)
     doLast {
@@ -162,7 +221,76 @@ def verifyDevPack = tasks.register('verifyDevPack') {
         logger.lifecycle('Verified {} pinned dev-pack jar(s) against dev-pack.json', configurations.devPackOriginal.files.size())
     }
 }
-tasks.matching { it.name.startsWith('run') }.configureEach { dependsOn verifyDevPack }
+
+// Prepares the game directory of a run: content-pack jars, the three-city world package, Lost Cities configuration and
+// first-start options. Files that already exist (options, configuration) are never overwritten, so a developer's own
+// changes and any saved worlds survive; the managed jars are refreshed.
+def prepareDevRun = tasks.register('prepareDevRun') {
+    dependsOn verifyDevPack
+    inputs.files(configurations.devPackFolder)
+    doLast {
+        def runDir = project.file(runDirName)
+        def modsDir = new File(runDir, 'mods')
+        modsDir.mkdirs()
+        def marker = new File(modsDir, '.uc-managed.txt')
+        def managed = [] as Set
+        if (marker.exists()) managed.addAll(marker.readLines().findAll { !it.trim().isEmpty() })
+        def wanted = [] as LinkedHashSet
+        configurations.devPackFolder.files.each { jar ->
+            def target = new File(modsDir, jar.name)
+            if (!target.exists() || target.length() != jar.length()) java.nio.file.Files.copy(jar.toPath(), target.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+            wanted << jar.name
+        }
+        if (devWorldWanted && devPackSets.contains('world')) {
+            def pack = file('../content/generated/world-prototype/pack')
+            def runConfig = file('../content/generated/world-prototype/run-config')
+            if (!pack.isDirectory() || !runConfig.isDirectory()) {
+                throw new GradleException('content/generated/world-prototype is missing; run python scripts/emit_dev_world_pack.py')
+            }
+            def worldJar = new File(modsDir, 'underground-city-world-prototype.jar')
+            ant.zip(destfile: worldJar, basedir: pack, whenempty: 'fail', level: 9)
+            wanted << worldJar.name
+            fileTree(runConfig).visit { entry ->
+                if (entry.isDirectory()) return
+                def target = new File(runDir, entry.relativePath.pathString)
+                if (!target.exists()) { target.parentFile.mkdirs(); entry.file.withInputStream { input -> target.withOutputStream { it << input } } }
+            }
+        }
+        if (economyRuntime) {
+            // Q Shop's currencies and the civilian starter shop (original JSON authored in this repository). Without them the
+            // wallet is "unavailable" and every contract reports "Economy offline". Existing files are never overwritten;
+            // a world that already exists keeps its own world/serverconfig/qshop.
+            def templates = file('../content/integrations/qshop/config/qshop')
+            fileTree(templates).visit { entry ->
+                if (entry.isDirectory()) return
+                def target = new File(runDir, 'config/qshop/' + entry.relativePath.pathString)
+                if (!target.exists()) { target.parentFile.mkdirs(); entry.file.withInputStream { input -> target.withOutputStream { it << input } } }
+            }
+        }
+        managed.findAll { !wanted.contains(it) }.each { stale -> new File(modsDir, stale).delete() }
+        marker.text = wanted.join('\n') + '\n'
+        def options = new File(runDir, 'options.txt')
+        if (!options.exists()) {
+            options.text = ['version:3465', 'lang:en_us', 'tutorialStep:none', 'onboardAccessibility:false', 'pauseOnLostFocus:false',
+                            'skipMultiplayerWarning:true', 'joinedFirstServer:true'].join('\n') + '\n'
+        }
+        def serverProperties = new File(runDir, 'server.properties')
+        if (devWorldWanted && !serverProperties.exists()) {
+            // Dedicated dev server: the same seed as the client's dev world. online-mode stays at its default (true).
+            serverProperties.text = ['level-seed=5908', 'motd=Underground City development server', 'view-distance=8',
+                                     'simulation-distance=6', 'difficulty=normal', 'gamemode=survival'].join('\n') + '\n'
+        }
+        def eula = new File(runDir, 'eula.txt')
+        if (providers.gradleProperty('ucAcceptEula').orNull == 'true' && !eula.exists()) {
+            eula.text = 'eula=true\n'
+        }
+        logger.lifecycle('Game directory {} prepared: {} managed jar(s) in mods/', runDir, wanted.size())
+    }
+}
+tasks.matching { it.name.startsWith('run') }.configureEach {
+    dependsOn verifyDevPack
+    if (!devPackMods.isEmpty() || devWorldWanted) dependsOn prepareDevRun
+}
 dependencies { qshopOriginal 'com.qshop:qshop-forge-1.20.1:1.8.4' }
 def verifyQShopRelease = tasks.register('verifyQShopRelease') {
     inputs.files(configurations.qshopOriginal)

@@ -1,0 +1,11 @@
+// Root build of the Underground City repository. The Forge mod is the subproject rpg-core; opening this folder in
+// IntelliJ IDEA (or running ./gradlew / gradlew.bat here) therefore finds its tasks, for example runClient.
+// rpg-core/settings.gradle still exists so the hosted workflows' "gradle -p rpg-core ..." keeps working unchanged.
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        maven { url = 'https://maven.minecraftforge.net/' }
+    }
+}
+rootProject.name = 'underground-city'
+include 'rpg-core'

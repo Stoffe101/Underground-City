@@ -74,6 +74,7 @@
    "requires": [
     "immersive_vehicles"
    ],
+   "placement": "mods_folder",
    "notes": "All rights reserved. Eighteen vehicles (cars, trucks, aircraft); no boats."
   },
   {
@@ -89,6 +90,7 @@
     "immersive_vehicles",
     "immersive_vehicles_ocp"
    ],
+   "placement": "mods_folder",
    "notes": "All rights reserved. Mod ID is checked against the jar when the pack is first booted."
   }
  ],

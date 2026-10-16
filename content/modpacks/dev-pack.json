@@ -23,6 +23,7 @@
         "world"
       ],
       "requires": [],
+      "placement": "classpath",
       "side": {
         "client": "unsupported",
         "server": "required"
@@ -50,6 +51,7 @@
         "firearms"
       ],
       "requires": [],
+      "placement": "classpath",
       "side": {
         "client": "required",
         "server": "required"
@@ -79,6 +81,7 @@
       "requires": [
         "tacz"
       ],
+      "placement": "classpath",
       "side": {
         "client": "required",
         "server": "required"
@@ -106,6 +109,7 @@
         "boats"
       ],
       "requires": [],
+      "placement": "classpath",
       "side": {
         "client": "required",
         "server": "required"
@@ -133,6 +137,7 @@
         "vehicles"
       ],
       "requires": [],
+      "placement": "classpath",
       "side": {
         "client": "required",
         "server": "required"
@@ -162,6 +167,7 @@
       "requires": [
         "immersive_vehicles"
       ],
+      "placement": "mods_folder",
       "side": {
         "client": "required",
         "server": "required"
@@ -192,6 +198,7 @@
         "immersive_vehicles",
         "immersive_vehicles_ocp"
       ],
+      "placement": "mods_folder",
       "side": {
         "client": "required",
         "server": "required"
