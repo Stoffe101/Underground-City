@@ -805,18 +805,22 @@ final class Scenarios {
             task[0] = () -> {
                 for (int i = 0; i < 2 && !queue.isEmpty(); i++) {
                     long packed = queue.poll();
-                    server.overworld().getChunk(net.minecraft.world.level.ChunkPos.getX(packed), net.minecraft.world.level.ChunkPos.getZ(packed));
+                    int cx = net.minecraft.world.level.ChunkPos.getX(packed), cz = net.minecraft.world.level.ChunkPos.getZ(packed);
+                    server.overworld().getChunk(cx, cz);
+                    // Held loaded: left to itself the server would start unloading and saving all of these the moment the last one is made, right while the vehicle drives.
+                    server.overworld().setChunkForced(cx, cz, true);
                 }
                 if (queue.isEmpty()) finished.set(true); else server.execute(task[0]);
             };
             server.execute(task[0]);
         }, finished::get, 12000);
-        // Generating that many chunks leaves the server thousands of ticks behind real time (it logs "Can't keep up"); a vehicle placed then is simulated minutes late
-        // and the server's late copy overwrites the client's. Wait until the server has caught up.
+        // Generating that many chunks occupies the server thread for minutes (it then logs "Can't keep up" and skips ahead), so wait for it to be back to normal pace
+        // before a vehicle is placed: a vehicle simulated by an overloaded server cannot be steered.
         Playtest.queue("let the server catch up with its ticks", () -> { }, () -> {
             var server = Minecraft.getInstance().getSingleplayerServer();
             return server != null && net.minecraft.Util.getMillis() - server.getNextTickTime() < 1500;
         }, 12000);
+        Playtest.wait("let the server settle after generating", 200);
     }
 
     /** Where the boat goes in: beside the centreline at road distance {@code s}, on the water surface. Server thread; empty when that spot is not water. */
