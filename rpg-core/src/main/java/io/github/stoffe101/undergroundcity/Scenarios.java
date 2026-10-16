@@ -80,6 +80,7 @@ final class Scenarios {
         for (CorridorPlan plan : plans) {
             Playtest.log("road " + plan.id() + " is " + (int) plan.length() + " blocks long");
             arriveOnRoad(plan.id(), 0, "survival");
+            Playtest.queue("wait for the road plan to be built from the terrain", () -> { }, plan::built, 1200);
             RoadWalker walker = new RoadWalker(plan, sprint);
             Playtest.queue("walk " + plan.id() + (sprint ? " (sprinting)" : ""), () -> { }, () -> { walker.tick(); return walker.done(); }, 120_000);
         }
@@ -104,16 +105,20 @@ final class Scenarios {
      * Teleports onto a road in spectator mode (which cannot fall), waits until the ground under the player has arrived on the client, then
      * switches to {@code mode}. A far teleport on a slow machine otherwise drops the player through chunks the client has not received yet.
      */
-    private static void arriveOnRoad(String road, int metres, String mode) {
+    private static void arriveOnRoad(String road, int metres, String mode) { arriveOnRoadLater(road, () -> metres, mode); }
+
+    /** As {@link #arriveOnRoad} for a distance only known when the step runs; a null {@code mode} leaves the player in spectator mode. */
+    private static void arriveOnRoadLater(String road, java.util.function.IntSupplier metres, String mode) {
         final double[][] target = new double[1][];
-        Playtest.queue("teleport to " + road + " at " + metres + " in spectator mode", () -> {
-            var at = roadPlan(road).pointAt(metres);
-            target[0] = new double[]{at[0], at[1]};
+        Playtest.queue("teleport onto " + road + " in spectator mode", () -> {
+            int at = metres.getAsInt();
+            var point = roadPlan(road).pointAt(at);
+            target[0] = new double[]{point[0], point[1]};
             Playtest.command("gamemode spectator");
-            Playtest.command("uc_dev road " + road + " " + metres);
+            Playtest.command("uc_dev road " + road + " " + at);
         });
         Playtest.queue("wait until the player is there and the ground has arrived", () -> { }, () -> arrivedAt(target[0]), 12000);
-        Playtest.queue("switch to " + mode, () -> Playtest.command("gamemode " + mode));
+        if (mode != null) Playtest.queue("switch to " + mode, () -> Playtest.command("gamemode " + mode));
         Playtest.wait("settle", 40);
     }
 
@@ -494,6 +499,11 @@ final class Scenarios {
         boolean bridge = Boolean.getBoolean("uc.playtest.bridge");
         int[] startMetres = {Integer.getInteger("uc.playtest.metres", 300)};
         int[] driveBlocks = {Integer.getInteger("uc.playtest.drive", 150)};
+        if (bridge) {
+            // A road plan only knows its bridges once the terrain has been read, which happens when the first road chunks generate.
+            arriveOnRoadLater(road, () -> 0, null);
+            Playtest.queue("wait for the road plan to be built from the terrain", () -> { }, () -> roadPlan(road).built(), 1200);
+        }
         Playtest.queue("choose where to start", () -> {
             if (bridge) {
                 double[] found = firstBridge(roadPlan(road), 40);
@@ -653,6 +663,9 @@ final class Scenarios {
         String road = System.getProperty("uc.playtest.route", "valewood_blackwater");
         final double[] bridge = new double[2];
         final double[][] crossing = new double[1][], arrival = new double[1][];
+        // A road plan only knows its bridges once the terrain has been read, which happens when the first road chunks generate.
+        arriveOnRoadLater(road, () -> 0, null);
+        Playtest.queue("wait for the road plan to be built from the terrain", () -> { }, () -> roadPlan(road).built(), 1200);
         Playtest.queue("find the first bridge of " + road, () -> {
             double[] found = firstBridge(roadPlan(road), 40);
             if (found == null) { Playtest.fail(road + " has no bridge of 40 blocks"); return; }
