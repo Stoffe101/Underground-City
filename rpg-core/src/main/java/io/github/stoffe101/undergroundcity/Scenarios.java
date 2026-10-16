@@ -420,9 +420,10 @@ final class Scenarios {
         return total;
     }
 
-    private static boolean terminalLocked(BlockPos origin) {
+    private static boolean terminalLocked(BlockPos platform) {
         var server = Minecraft.getInstance().getSingleplayerServer();
-        var entity = server.overworld().getBlockEntity(origin.offset(15, 0, 2));
+        // The district's own origin, not the platform it stands on (one block lower).
+        var entity = server.overworld().getBlockEntity(DistrictBuilder.originOf(server.overworld(), "founders_row").offset(15, 0, 2));
         return entity instanceof SecureTerminalBlockEntity terminal && terminal.lockedAt(WorkOrderLedger.get(server).clock());
     }
 
