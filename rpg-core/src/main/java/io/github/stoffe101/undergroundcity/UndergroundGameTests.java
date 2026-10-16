@@ -1147,6 +1147,9 @@ public final class UndergroundGameTests {
             check(OptionalModProbes.countTagged(player, "tacz:modern_kinetic_gun", "GunId", "tacz:glock_17") == 0, "The kit must not hand out the finished gun");
             ItemStack blueprint = player.getInventory().items.stream().filter(s -> String.valueOf(ForgeRegistries.ITEMS.getKey(s.getItem())).equals("taczblueprints:blueprint_pistol")).findFirst().orElse(ItemStack.EMPTY);
             check(!blueprint.isEmpty(), "The kit carries a pistol blueprint");
+            // TaCZ crafts guns at the Gun Smith Table and ammunition at a different workstation, the Ammo Workbench (an item named workbench_a that carries BlockId).
+            check(player.getInventory().items.stream().anyMatch(s -> String.valueOf(ForgeRegistries.ITEMS.getKey(s.getItem())).equals("tacz:gun_smith_table")), "The kit carries a Gun Smith Table");
+            check(player.getInventory().items.stream().anyMatch(s -> String.valueOf(ForgeRegistries.ITEMS.getKey(s.getItem())).equals("tacz:workbench_a") && s.getTag() != null && s.getTag().getString("BlockId").equals("tacz:ammo_workbench")), "The kit carries an Ammo Workbench");
             // An item's use() acts on the stack in the player's hand, so the blueprint goes into the main hand first.
             check(!OptionalModProbes.unlockedGuns(player).contains("tacz:glock_17"), "The pistol is not unlocked before the blueprint is used");
             ItemStack inHand = blueprint.copy();
@@ -1160,8 +1163,8 @@ public final class UndergroundGameTests {
             check(OptionalModProbes.countTagged(player, "tacz:modern_kinetic_gun", "GunId", "tacz:glock_17") == 1, "A Glock 17 is in the inventory");
             check(player.getInventory().countItem(Items.IRON_INGOT) < iron, "The recipe consumed the player's iron");
             String ammo = OptionalModProbes.craftAtTaczTable(player, "ammo", "tacz:9mm");
-            check(ammo == null, "Crafting 9mm ammunition at the real table: " + ammo);
-            check(OptionalModProbes.countTagged(player, "tacz:ammo", "AmmoId", "tacz:9mm") >= 50, "Fifty rounds of 9mm were made");
+            check(ammo == null, "Crafting 9mm ammunition at the real Ammo Workbench: " + ammo);
+            check(OptionalModProbes.countTagged(player, "tacz:ammo", "AmmoId", "tacz:9mm") >= 50, "Fifty rounds of 9mm were made: " + OptionalModProbes.describeInventory(player));
             check(player.getInventory().countItem(Items.COPPER_INGOT) == 0 && player.getInventory().countItem(Items.GUNPOWDER) == 0, "The ammunition recipe consumed copper and powder");
             // Without the materials the same craft is refused and changes nothing.
             int guns = OptionalModProbes.countTagged(player, "tacz:modern_kinetic_gun", "GunId", "tacz:glock_17");

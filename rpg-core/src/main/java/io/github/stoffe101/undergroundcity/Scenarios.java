@@ -18,6 +18,7 @@ final class Scenarios {
             case "tracker" -> tracker();
             case "trace" -> trace();
             case "car" -> car();
+            case "boat" -> boat();
             case "gun" -> gun();
             default -> throw new IllegalArgumentException("unknown scenario " + scenario);
         }
@@ -78,11 +79,33 @@ final class Scenarios {
         if (plans.isEmpty()) throw new IllegalStateException("no road plan matches '" + only + "'; the dev world needs the world-prototype pack");
         for (CorridorPlan plan : plans) {
             Playtest.log("road " + plan.id() + " is " + (int) plan.length() + " blocks long");
-            Playtest.queue("teleport to the start of " + plan.id(), () -> Playtest.command("uc_dev road " + plan.id() + " 0"));
-            Playtest.wait("let the ground load", 120);
+            arriveOnRoad(plan.id(), 0, "survival");
             RoadWalker walker = new RoadWalker(plan, sprint);
             Playtest.queue("walk " + plan.id() + (sprint ? " (sprinting)" : ""), () -> { }, () -> { walker.tick(); return walker.done(); }, 120_000);
         }
+    }
+
+    /** True once the chunk under the player has reached the client and the block below their feet is not air (so a survival player will not fall). */
+    private static boolean groundBelowPlayer() {
+        var mc = Minecraft.getInstance();
+        if (mc.player == null || mc.level == null) return false;
+        BlockPos feet = mc.player.blockPosition();
+        return mc.level.hasChunkAt(feet) && !mc.level.getBlockState(feet.below()).isAir();
+    }
+
+    /**
+     * Teleports onto a road in spectator mode (which cannot fall), waits until the ground under the player has arrived on the client, then
+     * switches to {@code mode}. A far teleport on a slow machine otherwise drops the player through chunks the client has not received yet.
+     */
+    private static void arriveOnRoad(String road, int metres, String mode) {
+        Playtest.queue("teleport to " + road + " at " + metres + " in spectator mode", () -> {
+            Playtest.command("gamemode spectator");
+            Playtest.command("uc_dev road " + road + " " + metres);
+        });
+        Playtest.wait("let the teleport happen", 30);
+        Playtest.queue("wait for the ground under the player", () -> { }, Scenarios::groundBelowPlayer, 6000);
+        Playtest.queue("switch to " + mode, () -> Playtest.command("gamemode " + mode));
+        Playtest.wait("settle", 40);
     }
 
     // ------------------------------------------------------------------------------------------------ Founders Row
@@ -384,51 +407,116 @@ final class Scenarios {
 
     // ------------------------------------------------------------------------------------------------ a car on the road
 
+    /** The Immersive Vehicles vehicle entity closest to the player (the mod registers its entity types under "mts"). */
     private static net.minecraft.world.entity.Entity vehicleNear() {
         var mc = Minecraft.getInstance();
         net.minecraft.world.entity.Entity best = null;
         for (var entity : mc.level.entitiesForRendering()) {
             var key = net.minecraftforge.registries.ForgeRegistries.ENTITY_TYPES.getKey(entity.getType());
-            if (key == null || !key.getNamespace().equals("mts") || entity == mc.player) continue;
+            if (key == null || !key.getNamespace().equals("mts") || entity == mc.player || ivVehicle(entity) == null) continue;
             if (best == null || entity.distanceToSqr(mc.player) < best.distanceToSqr(mc.player)) best = entity;
         }
         return best;
     }
 
+    /** Immersive Vehicles' own vehicle object wrapped by a Minecraft entity, or null. Reflection: the mod is a runtime-only dependency. */
+    private static Object ivVehicle(net.minecraft.world.entity.Entity entity) {
+        for (Class<?> type = entity.getClass(); type != null; type = type.getSuperclass()) {
+            try {
+                var field = type.getDeclaredField("entity");
+                field.setAccessible(true);
+                Object wrapped = field.get(entity);
+                if (wrapped == null) return null;
+                wrapped.getClass().getField("fuelTank");
+                return wrapped;
+            } catch (NoSuchFieldException next) {
+                // not declared here: the wrapped entity lives in a superclass, or this is not a vehicle
+            } catch (ReflectiveOperationException | RuntimeException error) {
+                return null;
+            }
+        }
+        return null;
+    }
+
+    private static String describeVehicle(Object vehicle) {
+        try {
+            Object tank = vehicle.getClass().getField("fuelTank").get(vehicle);
+            return vehicle.getClass().getSimpleName() + ": fuel " + tank.getClass().getMethod("getFluid").invoke(tank) + " " + tank.getClass().getMethod("getFluidLevel").invoke(tank)
+                + "/" + tank.getClass().getMethod("getMaxLevel").invoke(tank) + ", creative " + vehicle.getClass().getField("isCreative").get(vehicle)
+                + ", engines on " + vehicle.getClass().getField("enginesOn").get(vehicle) + " running " + vehicle.getClass().getField("enginesRunning").get(vehicle);
+        } catch (ReflectiveOperationException | RuntimeException error) {
+            return "(unreadable: " + error + ")";
+        }
+    }
+
+    /** Fills the vehicle's tank with gasoline through the mod's own tank object, on the server thread (what a fuel pump would do). */
+    private static void fuelVehicle(Object vehicle) {
+        try {
+            Object tank = vehicle.getClass().getField("fuelTank").get(vehicle);
+            int max = (Integer) tank.getClass().getMethod("getMaxLevel").invoke(tank);
+            tank.getClass().getMethod("manuallySet", String.class, String.class, double.class).invoke(tank, "gasoline", "minecrafttransportsimulator", (double) max);
+        } catch (ReflectiveOperationException | RuntimeException error) {
+            Playtest.log("could not fuel the vehicle: " + error);
+        }
+    }
+
+    private static CorridorPlan roadPlan(String road) {
+        return DevCommands.plans(Minecraft.getInstance().getSingleplayerServer()).stream().filter(p -> p.id().equals(road)).findFirst().orElseThrow();
+    }
+
+    /** The first run of at least {@code minimum} bridge blocks on a road: {start, end} along the road, or null. */
+    private static double[] firstBridge(CorridorPlan plan, int minimum) {
+        double start = -1;
+        for (double at = 0; at <= plan.length(); at += 1) {
+            if (plan.bridgeAt(at)) { if (start < 0) start = at; }
+            else if (start >= 0) { if (at - start >= minimum) return new double[]{start, at}; start = -1; }
+        }
+        return start >= 0 && plan.length() - start >= minimum ? new double[]{start, plan.length()} : null;
+    }
+
     /**
-     * Immersive Vehicles' Quad on the generated road, with real keys: place it from its item, climb in, accelerate, steer and brake. The engine
-     * and fuel handling are IV's own, so the scenario logs what it finds. Options: {@code -PucPtRoute=<road>}, {@code -PucPtMetres=<distance>}.
+     * Immersive Vehicles' Quad on the generated road, with real keys and mouse: place it from its item with a right click, fill its tank, climb in
+     * with a right click, drive it along the road holding W and steering with A and D, brake with S. Options: {@code -PucPtRoute=<road>},
+     * {@code -PucPtMetres=<start>}, {@code -PucPtDrive=<blocks to drive>}, {@code -PucPtBridge=true} (start 60 blocks before the road's first bridge
+     * and drive across it). The engine start, fuel and control flow are the mod's own, so the scenario logs what it finds.
      */
     private static void car() {
         String road = System.getProperty("uc.playtest.route", "ironhaven_valewood");
-        int metres = Integer.getInteger("uc.playtest.metres", 300);
-        Playtest.queue("creative, onto the road, the quad item in hand", () -> {
-            Playtest.command("gamemode creative");
+        boolean bridge = Boolean.getBoolean("uc.playtest.bridge");
+        int[] startMetres = {Integer.getInteger("uc.playtest.metres", 300)};
+        int[] driveBlocks = {Integer.getInteger("uc.playtest.drive", 150)};
+        Playtest.queue("choose where to start", () -> {
+            if (bridge) {
+                double[] found = firstBridge(roadPlan(road), 40);
+                if (found == null) { Playtest.fail(road + " has no bridge of 40 blocks"); return; }
+                startMetres[0] = (int) found[0] - 60;
+                driveBlocks[0] = (int) (found[1] - found[0]) + 120;
+                Playtest.log(road + ": first bridge from " + (int) found[0] + " to " + (int) found[1] + "; starting at " + startMetres[0] + ", driving " + driveBlocks[0]);
+            }
+        });
+        Playtest.queue("an empty inventory, then onto the road in spectator mode (which cannot fall)", () -> {
             Playtest.command("clear @s");
-            Playtest.command("uc_dev road " + road + " " + metres);
+            Playtest.command("gamemode spectator");
+            Playtest.command("uc_dev road " + road + " " + startMetres[0]);
         });
-        Playtest.wait("let the ground load", 120);
+        Playtest.wait("let the teleport happen", 30);
+        Playtest.queue("wait for the ground under the player", () -> { }, Scenarios::groundBelowPlayer, 6000);
+        Playtest.queue("creative mode", () -> Playtest.command("gamemode creative"));
+        Playtest.wait("settle", 40);
         Playtest.queue("give the quad", () -> Playtest.command("give @s mts:mtsofficialpack.quad"), () -> inventoryCount("mts:mtsofficialpack.quad") >= 1, 200);
-        Playtest.queue("log what the world knows about the road here", () -> {
-            var mc = Minecraft.getInstance();
-            var plan = DevCommands.plans(mc.getSingleplayerServer()).stream().filter(p -> p.id().equals(road)).findFirst().orElseThrow();
-            var hit = plan.project(mc.player.getX(), mc.player.getZ());
-            Playtest.log("on " + road + " at s=" + (int) hit.s() + ", " + String.format("%.1f", hit.distance()) + " from the centreline, bridge=" + plan.bridgeAt(hit.s()));
-            Playtest.log("hotbar slot " + mc.player.getInventory().selected + " holds " + mc.player.getInventory().getSelected());
-        });
-        final Vec3[] spot = new Vec3[1];
-        Playtest.queue("aim at the road surface four blocks ahead and place the vehicle with a real right click", () -> {
+        final double[] roadHeading = new double[1];
+        Playtest.queue("aim along the road, pitched down onto the deck, and place the vehicle with a real right click", () -> {
             var mc = Minecraft.getInstance();
             int slot = -1;
             for (int i = 0; i < 9; i++) if (mc.player.getInventory().getItem(i).getItem().toString().contains("quad")) slot = i;
             if (slot < 0) { Playtest.fail("the quad item is not in the hotbar"); return; }
             mc.player.getInventory().selected = slot;
-            var hit = DevCommands.plans(mc.getSingleplayerServer()).stream().filter(p -> p.id().equals(road)).findFirst().orElseThrow().project(mc.player.getX(), mc.player.getZ());
-            // Face along the road, pitched down so the cursor lands on the deck a few blocks ahead.
-            var plan = DevCommands.plans(mc.getSingleplayerServer()).stream().filter(p -> p.id().equals(road)).findFirst().orElseThrow();
+            var plan = roadPlan(road);
+            var hit = plan.project(mc.player.getX(), mc.player.getZ());
             double[] ahead = plan.pointAt(hit.s() + 6), here = plan.pointAt(hit.s());
             float yaw = (float) Math.toDegrees(Math.atan2(-(ahead[0] - here[0]), ahead[1] - here[1]));
-            spot[0] = mc.player.position();
+            roadHeading[0] = yaw;
+            Playtest.log("on " + road + " at s=" + (int) hit.s() + ", " + String.format("%.1f", hit.distance()) + " from the centreline, bridge=" + plan.bridgeAt(hit.s()) + ", heading " + (int) yaw);
             mc.player.setYRot(yaw); mc.player.yHeadRot = yaw; mc.player.setXRot(40f);
             Playtest.focusWindow();
             Playtest.mouseButton(3, true);
@@ -437,10 +525,203 @@ final class Scenarios {
         Playtest.queue("release", () -> Playtest.mouseButton(3, false));
         Playtest.queue("the vehicle exists", () -> { }, () -> vehicleNear() != null, 200);
         Playtest.wait("let it settle", 30);
-        Playtest.queue("log the vehicle and screenshot", () -> {
+        Playtest.queue("log the vehicle, fuel it (server side) and screenshot", () -> {
+            var mc = Minecraft.getInstance();
             var vehicle = vehicleNear();
-            Playtest.log("vehicle entity " + vehicle + " type " + vehicle.getType() + " at " + vehicle.position() + " yaw " + vehicle.getYRot());
+            Playtest.log("vehicle entity " + vehicle.getType() + " at " + vehicle.position() + " yaw " + vehicle.getYRot() + " box " + vehicle.getBoundingBox());
+            Playtest.log("before fuelling: " + describeVehicle(ivVehicle(vehicle)));
+            int id = vehicle.getId();
+            var server = mc.getSingleplayerServer();
+            server.execute(() -> {
+                var serverEntity = server.overworld().getEntity(id);
+                if (serverEntity == null) { Playtest.log("the server cannot see vehicle " + id); return; }
+                fuelVehicle(ivVehicle(serverEntity));
+            });
             Playtest.screenshot("uc-car-placed");
+        });
+        Playtest.wait("let the tank update reach the client", 20);
+        Playtest.queue("log the fuel state", () -> Playtest.log("after fuelling: " + describeVehicle(ivVehicle(vehicleNear()))));
+        // Climb in: stand beside the quad, look at its middle and right click (the mod decides which seat a click reaches).
+        final int[] attempt = {0};
+        final Vec3[][] aims = {{new Vec3(0, 0.7, 0)}, {new Vec3(0, 1.1, 0)}, {new Vec3(0, 0.4, 0)}, {new Vec3(0.2, 0.9, 0.2)}};
+        Playtest.queue("stand beside the quad, look at it and right click to climb in", () -> {
+            var mc = Minecraft.getInstance();
+            var vehicle = vehicleNear();
+            Vec3 at = vehicle.position();
+            double yaw = Math.toRadians(roadHeading[0]);
+            Vec3 side = new Vec3(Math.cos(yaw), 0, Math.sin(yaw)); // to the player's right when facing along the road
+            Vec3 stand = at.add(side.scale(-1.6));
+            Vec3 aim = at.add(aims[attempt[0] % aims.length][0]);
+            standLooking(stand.add(0, 0.1, 0), aim);
+            attempt[0]++;
+        });
+        Playtest.wait("settle", 15);
+        Playtest.queue("right click", () -> { Playtest.focusWindow(); Playtest.mouseButton(3, true); });
+        Playtest.wait("hold", 4);
+        Playtest.queue("release and see whether the player is riding", () -> Playtest.mouseButton(3, false), () -> Minecraft.getInstance().player.getVehicle() != null, 60);
+        Playtest.queue("log the seat", () -> {
+            var mc = Minecraft.getInstance();
+            var ride = mc.player.getVehicle();
+            Playtest.log("riding " + (ride == null ? "nothing" : ride.getType() + " at " + ride.position()));
+            if (ride == null) Playtest.fail("a right click on the quad did not seat the player");
+            else Playtest.screenshot("uc-car-seated");
+        });
+        final RoadDriver[] driver = new RoadDriver[1];
+        Playtest.queue("drive along the road with W, A and D", () -> {
+            var plan = roadPlan(road);
+            var hit = plan.project(Minecraft.getInstance().player.getX(), Minecraft.getInstance().player.getZ());
+            driver[0] = new RoadDriver(RoadDriver.of(plan), hit.s() + driveBlocks[0], "quad on " + road);
+            Playtest.log("driving from s=" + (int) hit.s() + " for " + driveBlocks[0] + " blocks; " + describeVehicle(ivVehicle(vehicleNear())));
+        }, () -> driver[0].tick(), 6000);
+        Playtest.queue("report the drive", () -> {
+            Playtest.log("drive: " + driver[0].summary());
+            Playtest.screenshot("uc-car-driving");
+            if (driver[0].summary().isEmpty()) { driver[0].release(); Playtest.fail("the drive did not finish within its time budget at s=" + (int) driver[0].progress()); }
+        });
+        Playtest.queue("brake with S and look at the stopping distance", () -> {
+            Playtest.keyDown("s");
+        });
+        Playtest.wait("brake", 80);
+        Playtest.queue("release S and screenshot", () -> { Playtest.keyUp("s"); Playtest.log("after braking: " + describeVehicle(ivVehicle(vehicleNear())) + " at " + Minecraft.getInstance().player.position()); Playtest.screenshot("uc-car-braked"); });
+    }
+
+    /** The Modern Life Motorboat closest to the player. */
+    private static net.minecraft.world.entity.Entity boatNear() {
+        var mc = Minecraft.getInstance();
+        net.minecraft.world.entity.Entity best = null;
+        for (var entity : mc.level.entitiesForRendering()) {
+            var key = net.minecraftforge.registries.ForgeRegistries.ENTITY_TYPES.getKey(entity.getType());
+            if (key == null || !key.toString().equals("modernlife:motorboat") || entity == mc.player) continue;
+            if (best == null || entity.distanceToSqr(mc.player) < best.distanceToSqr(mc.player)) best = entity;
+        }
+        return best;
+    }
+
+    private static String describeBoat(net.minecraft.world.entity.Entity boat) {
+        try {
+            return "fuel " + boat.getClass().getMethod("getCurrentFuelLevel").invoke(boat) + ", out of fuel " + boat.getClass().getMethod("isOutOfFuel").invoke(boat)
+                + ", acceleration " + boat.getClass().getMethod("getCurAccel").invoke(boat) + "/" + boat.getClass().getMethod("getMaxAccel").invoke(boat)
+                + ", slots " + ((net.minecraft.world.Container) boat).getContainerSize();
+        } catch (ReflectiveOperationException | RuntimeException error) {
+            return "(unreadable: " + error + ")";
+        }
+    }
+
+    /**
+     * A point on the water on each side of the first long bridge of a road, in line across it: {x0, z0, x1, z1, waterY, bridgeS, clearance}, or an empty array.
+     * Runs on the server thread and only looks at chunks that are already loaded.
+     */
+    private static double[] waterAcrossBridge(net.minecraft.server.level.ServerLevel level, CorridorPlan plan, double[] bridge) {
+        for (double s = bridge[0] + 8; s <= bridge[1] - 8; s += 4) {
+            double[] at = plan.pointAt(s), next = plan.pointAt(s + 3);
+            double tx = next[0] - at[0], tz = next[1] - at[1], length = Math.hypot(tx, tz);
+            if (length < 1e-6) continue;
+            double nx = -tz / length, nz = tx / length;
+            boolean ok = true;
+            int waterY = Integer.MIN_VALUE;
+            for (int t = -32; t <= 32 && ok; t += 4) {
+                int x = (int) Math.floor(at[0] + nx * t), z = (int) Math.floor(at[1] + nz * t);
+                if (!level.hasChunk(x >> 4, z >> 4)) { ok = false; break; }
+                int y = level.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING, x, z) - 1;
+                var state = level.getFluidState(new BlockPos(x, y, z));
+                if (!state.is(net.minecraft.tags.FluidTags.WATER) || !state.isSource()) ok = false;
+                else if (waterY == Integer.MIN_VALUE) waterY = y; else if (waterY != y) ok = false;
+            }
+            if (!ok) continue;
+            int deck = CorridorPlan.deckBlockY(plan.deckHalfAt(s));
+            return new double[]{at[0] + nx * -32, at[1] + nz * -32, at[0] + nx * 32, at[1] + nz * 32, waterY, s, deck - waterY};
+        }
+        return new double[0];
+    }
+
+    /**
+     * Modern Life's Motorboat under a real bridge, with real keys and mouse: place it from its item on the water beside a bridge, climb in with a
+     * right click, hold W and steer with A and D across the water under the deck, and log its fuel and hold. Options: {@code -PucPtRoute=<road>}.
+     */
+    private static void boat() {
+        String road = System.getProperty("uc.playtest.route", "valewood_blackwater");
+        final double[] bridge = new double[2];
+        final double[][] crossing = new double[1][];
+        Playtest.queue("find the first bridge of " + road, () -> {
+            double[] found = firstBridge(roadPlan(road), 40);
+            if (found == null) { Playtest.fail(road + " has no bridge of 40 blocks"); return; }
+            bridge[0] = found[0]; bridge[1] = found[1];
+            Playtest.log(road + ": first bridge from " + (int) found[0] + " to " + (int) found[1]);
+            Playtest.command("gamemode spectator");
+            Playtest.command("clear @s");
+            Playtest.command("uc_dev road " + road + " " + (int) (found[0] + (found[1] - found[0]) / 2));
+        });
+        Playtest.wait("let the teleport happen", 30);
+        Playtest.queue("wait for the ground under the player", () -> { }, Scenarios::groundBelowPlayer, 6000);
+        Playtest.queue("creative mode", () -> Playtest.command("gamemode creative"));
+        Playtest.wait("settle", 40);
+        Playtest.queue("find water on both sides of the deck (server side)", () -> {
+            var server = Minecraft.getInstance().getSingleplayerServer();
+            server.execute(() -> crossing[0] = waterAcrossBridge(server.overworld(), roadPlan(road), bridge));
+        }, () -> crossing[0] != null, 600);
+        Playtest.queue("log the crossing", () -> {
+            if (crossing[0].length == 0) { Playtest.fail("no water on both sides of the first bridge of " + road + " in the loaded chunks"); return; }
+            double[] c = crossing[0];
+            Playtest.log(String.format(java.util.Locale.ROOT, "crossing at s=%d: from %.0f,%.0f to %.0f,%.0f, water y=%d, deck %d blocks above the water", (int) c[5], c[0], c[1], c[2], c[3], (int) c[4], (int) c[6]));
+        });
+        Playtest.queue("into the water at the start of the crossing, the boat item in hand", () -> {
+            if (crossing[0].length == 0) return;
+            double[] c = crossing[0];
+            double yaw = Math.toDegrees(Math.atan2(-(c[2] - c[0]), c[3] - c[1]));
+            Playtest.command(String.format(java.util.Locale.ROOT, "tp @s %.2f %.2f %.2f %.1f 35", c[0], c[4] + 1, c[1], yaw));
+            Playtest.command("give @s modernlife:motorboat_item");
+        }, () -> inventoryCount("modernlife:motorboat_item") >= 1, 200);
+        Playtest.wait("let the chunks and the water settle", 60);
+        Playtest.queue("place the boat on the water with a real right click", () -> {
+            var mc = Minecraft.getInstance();
+            int slot = -1;
+            for (int i = 0; i < 9; i++) if (net.minecraftforge.registries.ForgeRegistries.ITEMS.getKey(mc.player.getInventory().getItem(i).getItem()).toString().equals("modernlife:motorboat_item")) slot = i;
+            if (slot < 0) { Playtest.fail("the boat item is not in the hotbar"); return; }
+            mc.player.getInventory().selected = slot;
+            Playtest.focusWindow();
+            Playtest.mouseButton(3, true);
+        });
+        Playtest.wait("hold", 4);
+        Playtest.queue("release", () -> Playtest.mouseButton(3, false));
+        Playtest.queue("the boat exists", () -> { }, () -> boatNear() != null, 200);
+        Playtest.wait("let it settle", 40);
+        Playtest.queue("log the boat and screenshot", () -> {
+            var boat = boatNear();
+            if (boat == null) return;
+            Playtest.log("boat at " + boat.position() + " " + describeBoat(boat));
+            Playtest.screenshot("uc-boat-placed");
+        });
+        Playtest.queue("beside the boat, look at it, and right click to climb in", () -> {
+            var boat = boatNear();
+            if (boat == null) return;
+            Vec3 at = boat.position();
+            double[] c = crossing[0];
+            double dx = c[2] - c[0], dz = c[3] - c[1], length = Math.hypot(dx, dz);
+            standLooking(new Vec3(at.x - dz / length * 1.5, at.y + 0.2, at.z + dx / length * 1.5), at.add(0, 0.4, 0));
+        });
+        Playtest.wait("settle", 15);
+        Playtest.queue("right click", () -> { Playtest.focusWindow(); Playtest.mouseButton(3, true); });
+        Playtest.wait("hold", 4);
+        Playtest.queue("release and see whether the player is riding", () -> Playtest.mouseButton(3, false), () -> Minecraft.getInstance().player.getVehicle() != null, 60);
+        Playtest.queue("log the seat", () -> {
+            var ride = Minecraft.getInstance().player.getVehicle();
+            Playtest.log("riding " + (ride == null ? "nothing" : ride.getType() + " at " + ride.position()));
+            if (ride == null) Playtest.fail("a right click on the boat did not seat the player");
+            else Playtest.screenshot("uc-boat-seated");
+        });
+        final RoadDriver[] driver = new RoadDriver[1];
+        Playtest.queue("sail across the water under the deck with W, A and D", () -> {
+            double[] c = crossing[0];
+            var route = RoadDriver.line(c[0], c[1], c[2], c[3], 8);
+            driver[0] = new RoadDriver(route, route.length() - 4, "motorboat under the bridge at s=" + (int) c[5])
+                .at(route.length() / 2, () -> { Playtest.log("under the deck: " + describeBoat(boatNear())); Playtest.screenshot("uc-boat-under-bridge"); });
+        }, () -> driver[0].tick(), 4000);
+        Playtest.queue("report the crossing", () -> {
+            Playtest.log("sail: " + driver[0].summary());
+            Playtest.screenshot("uc-boat-across");
+            if (driver[0].summary().isEmpty()) { driver[0].release(); Playtest.fail("the crossing did not finish within its time budget at " + (int) driver[0].progress()); }
+            var boat = boatNear();
+            if (boat != null) Playtest.log("after the crossing: " + describeBoat(boat));
         });
     }
 
@@ -511,17 +792,26 @@ final class Scenarios {
             var guard = CheckpointPosts.guardAt(level(), post);
             if (guard.isEmpty()) { Playtest.fail("no guard stands at " + post.title()); return; }
             spot[0] = guard.get().position();
-            standLooking(spot[0].add(3, 0.2, 5), spot[0].add(0, 1.2, 0));
+            // Two blocks south of the guard, inside the 9 x 9 lot, looking north at the guard with the booth behind.
+            standLooking(spot[0].add(0, 0.1, 2.2), spot[0].add(0, 1.4, 0));
         });
-        Playtest.wait("let the chunks and the guard settle", 100);
+        Playtest.queue("let the chunk meshes finish", () -> { }, () -> Minecraft.getInstance().levelRenderer.hasRenderedAllChunks(), 1200);
+        Playtest.wait("let the guard settle", 60);
+        Playtest.queue("clear the chat, screenshot of the guard", () -> Minecraft.getInstance().gui.getChat().clearMessages(true));
+        Playtest.wait("one frame", 4);
         Playtest.queue("screenshot of the post", () -> Playtest.screenshot("uc-post-guard"));
+        Playtest.queue("the corner of the lot, looking at the booth", () -> standLooking(spot[0].add(3.2, 0.1, 2.2), spot[0].add(-0.5, 1.3, -3.0)));
+        Playtest.wait("let the frame render", 30);
+        Playtest.queue("screenshot of the booth", () -> Playtest.screenshot("uc-post-booth"));
+        Playtest.queue("back in front of the guard", () -> standLooking(spot[0].add(0, 0.1, 2.2), spot[0].add(0, 1.4, 0)));
+        Playtest.wait("settle", 20);
         Playtest.queue("a registered gunsmith with an unlicensed pistol, in survival", () -> {
             Playtest.command("uc register valewood gunsmith");
             Playtest.command("give @s tacz:modern_kinetic_gun{GunId:\"tacz:glock_17\",GunCurrentAmmoCount:0} 1");
             Playtest.command("gamemode survival");
         });
         Playtest.wait("settle", 30);
-        Playtest.queue("a search by the post's guard", () -> Playtest.command("uc_dev search"));
+        Playtest.queue("a search by the post's guard", () -> { Minecraft.getInstance().gui.getChat().clearMessages(true); Playtest.command("uc_dev search"); });
         Playtest.wait("let the messages arrive", 30);
         Playtest.queue("screenshot of the search", () -> Playtest.screenshot("uc-post-search"));
         Playtest.queue("the pistol was confiscated", () -> {

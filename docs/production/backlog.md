@@ -28,14 +28,14 @@
 
 **P1**
 
-- [ ] Guard NPCs at the checkpoints and customs on water, so evidence-based detection has a visible actor (today it is a seeded die at a zone).
-- [ ] A TaCZ Blueprints starter configuration (accepted spelling and effect of a starter-gun entry in `taczblueprints-server.toml` were not exercised) and a Gunsmith contract that asks for a specific crafted gun, not only a blueprint or ammunition.
+- [ ] Guard NPCs: **partly done** (October 16, D-062): `/uc_checkpoints place` builds a post with a named guard at each of the six zones and the guard voices the search. Still open: customs on water, patrols, hand-off witnesses, Immersive Vehicles cargo in searches, posts placed at world creation.
+- [ ] Gunsmith loop: **partly done** (October 16): the starter kit's blueprint, the real Gun Smith Table recipe and the legal `licensed_sidearm` contract that buys the crafted Glock 17 run in a GameTest against real TaCZ. Still open: a TaCZ Blueprints starter configuration (not needed while Core grants the blueprint), server-authoritative blueprint gating (TaCZ Blueprints hides recipes in the client only), a contract for a specific crafted gun other than the sidearm.
 - [ ] Vehicle fit test: a car and the Motorboat on the real bridges, with persistent cargo through a save (the boat's cargo round trip is tested without a world; driving is not tested at all).
-- [ ] Registration UI (D-019) so a new player picks a home city and profession in one first-login screen instead of a command.
+- [x] Registration UI: a first-login screen (home city, then profession, then confirm) with server validation and a data-driven welcome pack (D-058, October 16; D-019 stays open for a proven selector mod).
 
 **P2**
 
-- [ ] Founders Row placed by a fixed lot rather than the operator's position, with a populated block around it (named NPC residents).
+- [ ] Founders Row inside a city by a fixed lot rather than the operator's position. **Populated** since October 16 (nine named citizens, beds, workstations, a bell, eight registered safes); a development world now builds it beside the spawn on first launch (D-064).
 - [ ] Roadside settlements and an optional boat taxi so that the 4-minute walk is a choice rather than the only route.
 - [ ] More skill-tree effects beyond the capped inspection modifier, exchange discount and licences.
 

@@ -61,7 +61,7 @@ final class OptionalModProbes {
             if (recipeId == null) return "TaCZ has no table recipe for " + kind + " " + resultId;
             Class<?> menuClass = Class.forName("com.tacz.guns.inventory.GunSmithTableMenu");
             Object menu = menuClass.getConstructor(int.class, net.minecraft.world.entity.player.Inventory.class, ResourceLocation.class)
-                .newInstance(1, player.getInventory(), ResourceLocation.fromNamespaceAndPath("tacz", "gun_smith_table"));
+                .newInstance(1, player.getInventory(), ResourceLocation.fromNamespaceAndPath("tacz", kind.equals("gun") ? "gun_smith_table" : "ammo_workbench"));
             menuClass.getMethod("doCraft", ResourceLocation.class, net.minecraft.world.entity.player.Player.class).invoke(menu, recipeId, player);
             // TaCZ does not insert the result: it drops it at the player's feet with no pickup delay, and a connected player collects it on
             // the next tick. A test player never ticks, so touch the drops the way the world would.
@@ -97,6 +97,20 @@ final class OptionalModProbes {
             if (stack.getTag() != null && stack.getTag().getString(key).equals(value)) total += stack.getCount();
         }
         return total;
+    }
+
+    /** A one-line summary of what a player carries and what lies on the ground around them, for test failure messages. */
+    static String describeInventory(net.minecraft.world.entity.player.Player player) {
+        StringBuilder text = new StringBuilder("carrying");
+        for (ItemStack stack : player.getInventory().items) {
+            if (!stack.isEmpty()) text.append(' ').append(stack.getCount()).append('x').append(ForgeRegistries.ITEMS.getKey(stack.getItem())).append(stack.getTag() == null ? "" : stack.getTag().toString());
+        }
+        text.append("; on the ground");
+        for (net.minecraft.world.entity.item.ItemEntity drop : player.level().getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class, player.getBoundingBox().inflate(4.0))) {
+            text.append(' ').append(drop.getItem().getCount()).append('x').append(ForgeRegistries.ITEMS.getKey(drop.getItem().getItem())).append(drop.getItem().getTag() == null ? "" : drop.getItem().getTag().toString())
+                .append(" (pickup delay ").append(drop.hasPickUpDelay()).append(')');
+        }
+        return text.toString();
     }
 
     /** How many items and entity types a namespace registered; zero means the mod (or its content packs) did not register. */

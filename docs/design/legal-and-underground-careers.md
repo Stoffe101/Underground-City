@@ -156,11 +156,13 @@ anti-cheat. Pads are numbered and use distinct colours, keys 1-4 work, and ESC c
 | --- | --- |
 | Skill trees, rules and persistence | implemented; pure rules and data tested (Python data tests, GameTests) |
 | Underground and legal contracts with rewards, trust and requirements | implemented; GameTests on the real datapack |
-| City law, contraband classification, checkpoint search, heat, no-reroll | implemented; GameTests; no real guards |
+| City law, contraband classification, checkpoint search, heat, no-reroll | implemented; GameTests. A zone can have a **post with a guard** (`/uc_checkpoints place`, D-062) who voices the search; the die is unchanged. A rider's vehicle hold (a Motorboat, a chest boat or cart) is searched with them and a parked vehicle is not; Immersive Vehicles' cargo is not covered (it is not a `Container`) |
 | Exceptional loot and TaCZ gun NBT preservation | implemented; TaCZ cases run only in the `-PucPack=firearms` job |
 | Sable Leaf crop | implemented; GameTests |
-| Technician trace (server and client screen) | implemented; GameTests for the server rules; the client screen is captured by the visual harness |
+| Technician trace (server and client screen) | implemented; GameTests for the server rules; the client screen is captured by the visual harness; a scripted-player scenario (`trace`) drives the real screen with the real keyboard (see the sprint report for its result) |
 | Skills, contract and market pages in the terminal | implemented; real-client captures are reviewed in `content/qa/reviewed-runs.json` |
 | Balance | arithmetic validator only; **no playtest** |
-| Hand-off witnesses as visible NPCs, patrols, boat customs | planned |
-| In-terminal registration screen | planned (D-019 prefers a proven class selector); `/uc register` works today |
+| Hand-off witnesses as visible NPCs, patrols, dedicated boat customs | planned (a boat that sails through a checkpoint zone is already searched like any rider) |
+| First-login registration screen | implemented (D-058): Core's own screen and server validation; `/uc start` reopens it; D-019 stays open for a proven selector mod |
+| On-screen tracker of the accepted order | implemented (D-063); GameTested wire format, scripted-player screenshots |
+| Citizens of Founders Row (registrar, employers, residents, guard) | implemented (D-061); GameTested; scripted-player screenshots |

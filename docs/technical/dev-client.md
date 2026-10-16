@@ -74,7 +74,7 @@ Result in the development environment: all nine mods load; Immersive Vehicles re
    time is still zero, the launch **builds Founders Row on level, dry ground near the spawn point and moves the spawn to its south gate**
    ([D-064](../production/decisions.md)); the log says `[UC-DEV] Founders Row built at ...`. An existing world is never touched.
 2. The **first-login screen** opens (home city, then profession, then confirm). Confirm gives the career's welcome pack (a terminal, the
-   starter tools and, for a Gunsmith, the TaCZ gun smith table, a pistol blueprint and the materials for one pistol and its ammunition).
+   starter tools and, for a Gunsmith, the TaCZ gun smith table and ammo workbench, a pistol blueprint and the materials for one pistol and its ammunition).
 3. Walk up the lane. The **registrar** is in the building on the east side next to the gate; each career's **employer** has an office on the
    lane (the Technician's is in the dark-stone data office at the north end). Right-click an employer of your own career to open the terminal
    bound to their office; take a work order and the **tracker** at the top left shows what is still missing (press **O** to hide it).
@@ -134,6 +134,9 @@ xvfb-run -a -s "-screen 0 1280x720x24" ./gradlew runClient -PucPlaytest=<scenari
 | `row` | builds Founders Row on a platform in the sky, takes pictures, speaks to the registrar, an employer and a resident with real right clicks |
 | `posts` | places the checkpoint posts, stands at one and lets the guard search a pistol-carrying citizen |
 | `tracker` | accepts a two-line order and follows the inventory on the tracker until it says the order is ready |
+| `trace` | the Technician's trace on the real screen with the real keyboard: success, a wrong answer, walking away (Escape) and a timeout, each with its server-side consequence checked (ledger, kit, lock-down) |
+| `car` | an Immersive Vehicles Quad on the generated road: placed from its item with a right click, fuelled through the mod's own tank object on the server, boarded with a right click, driven with W/A/D along the road and braked with S (`-PucPtRoute`, `-PucPtMetres`, `-PucPtDrive`, `-PucPtBridge=true` to start before the road's first bridge and cross it) |
+| `boat` | a Modern Life Motorboat on the water beside the first bridge of a road: placed, boarded, sailed across and under the deck, fuel and hold logged (`-PucPtRoute`) |
 
 Options are Gradle properties starting with `ucPt` (`-PucPtRoute=x` becomes `-Duc.playtest.route=x`). Reusing an existing playtest world keeps
 its citizens, so use a world name per scenario. Reopening an existing development world makes Minecraft ask
