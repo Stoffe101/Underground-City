@@ -464,7 +464,7 @@ final class Scenarios {
         final java.util.List<Integer> seen = new java.util.ArrayList<>();
 
         startTrace(origin, "success");
-        Playtest.queue("success: screenshot while the pads flash", () -> Playtest.screenshot("uc-trace-showing"));
+        Playtest.queue("success: screenshot while the pads flash", () -> Playtest.screenshotNextFrame("uc-trace-showing"));
         watchTrace(seen, "success");
         Playtest.queue("success: five symbols were seen", () -> {
             Playtest.log("seen " + seen);
