@@ -434,6 +434,52 @@ final class Scenarios {
 
     // ------------------------------------------------------------------------------------------------ a car on the road
 
+    /**
+     * Climbs into a vehicle the way a person does: an empty hand (a held item would be used instead), standing beside it, looking at it,
+     * holding the real right mouse button for a few ticks (Immersive Vehicles polls the button's state). A few aim points are tried in turn.
+     */
+    private static void board(java.util.function.Supplier<net.minecraft.world.entity.Entity> vehicle, java.util.function.DoubleSupplier headingDegrees, String label) {
+        final int[] state = {0, 0, 0}; // attempt, phase, ticks in the phase
+        final Vec3[] aims = {new Vec3(0, 0.7, 0), new Vec3(0, 1.1, 0), new Vec3(0, 0.4, 0), new Vec3(0.3, 0.9, -0.3), new Vec3(-0.3, 0.9, 0.3)};
+        Playtest.queue(label + ": board with an empty hand", () -> {
+            var mc = Minecraft.getInstance();
+            int empty = -1;
+            for (int i = 0; i < 9 && empty < 0; i++) if (mc.player.getInventory().getItem(i).isEmpty()) empty = i;
+            if (empty < 0) { Playtest.fail("no empty hotbar slot to board with"); return; }
+            mc.player.getInventory().selected = empty;
+            Playtest.focusWindow();
+        }, () -> {
+            var mc = Minecraft.getInstance();
+            if (mc.player.getVehicle() != null) { if (state[1] == 2) Playtest.mouseButton(3, false); Playtest.log(label + ": riding " + mc.player.getVehicle().getType() + " after " + (state[0] + 1) + " attempt(s)"); return true; }
+            var target = vehicle.get();
+            if (target == null) return false;
+            switch (state[1]) {
+                case 0 -> {
+                    double yaw = Math.toRadians(headingDegrees.getAsDouble());
+                    Vec3 side = new Vec3(Math.cos(yaw), 0, Math.sin(yaw));
+                    Vec3 at = target.position();
+                    standLooking(at.add(side.scale(-1.6)).add(0, 0.1, 0), at.add(aims[state[0] % aims.length]));
+                    state[1] = 1; state[2] = 0;
+                }
+                case 1 -> { if (++state[2] >= 25) { Playtest.mouseButton(3, true); state[1] = 2; state[2] = 0; } }
+                case 2 -> { if (++state[2] >= 6) { Playtest.mouseButton(3, false); state[1] = 3; state[2] = 0; } }
+                default -> {
+                    if (++state[2] >= 35) {
+                        Playtest.log(label + ": attempt " + (state[0] + 1) + " did not seat the player; cursor " + mc.hitResult);
+                        if (++state[0] >= 3 * aims.length) { Playtest.fail(label + ": no right click seated the player"); return true; }
+                        state[1] = 0;
+                    }
+                }
+            }
+            return false;
+        }, 6000);
+        Playtest.queue(label + ": log the seat", () -> {
+            var ride = Minecraft.getInstance().player.getVehicle();
+            Playtest.log("riding " + (ride == null ? "nothing" : ride.getType() + " at " + ride.position()));
+            if (ride != null) Playtest.screenshot("uc-" + label.replace(' ', '-') + "-seated");
+        });
+    }
+
     /** The Immersive Vehicles vehicle entity closest to the player (the mod registers its entity types under "mts"). */
     private static net.minecraft.world.entity.Entity vehicleNear() {
         var mc = Minecraft.getInstance();
@@ -568,6 +614,8 @@ final class Scenarios {
             Playtest.log("vehicle entity " + vehicle.getType() + " at " + vehicle.position() + " yaw " + vehicle.getYRot() + " box " + vehicle.getBoundingBox());
             Playtest.log("before fuelling: " + describeVehicle(ivVehicle(vehicle)));
             int id = vehicle.getId();
+            // manuallySet changes one side only (no packet): fill the client's copy as well as the server's, as a pump's packet would.
+            fuelVehicle(ivVehicle(vehicle));
             var server = mc.getSingleplayerServer();
             server.execute(() -> {
                 var serverEntity = server.overworld().getEntity(id);
@@ -578,31 +626,7 @@ final class Scenarios {
         });
         Playtest.wait("let the tank update reach the client", 20);
         Playtest.queue("log the fuel state", () -> Playtest.log("after fuelling: " + describeVehicle(ivVehicle(vehicleNear()))));
-        // Climb in: stand beside the quad, look at its middle and right click (the mod decides which seat a click reaches).
-        final int[] attempt = {0};
-        final Vec3[][] aims = {{new Vec3(0, 0.7, 0)}, {new Vec3(0, 1.1, 0)}, {new Vec3(0, 0.4, 0)}, {new Vec3(0.2, 0.9, 0.2)}};
-        Playtest.queue("stand beside the quad, look at it and right click to climb in", () -> {
-            var mc = Minecraft.getInstance();
-            var vehicle = vehicleNear();
-            Vec3 at = vehicle.position();
-            double yaw = Math.toRadians(roadHeading[0]);
-            Vec3 side = new Vec3(Math.cos(yaw), 0, Math.sin(yaw)); // to the player's right when facing along the road
-            Vec3 stand = at.add(side.scale(-1.6));
-            Vec3 aim = at.add(aims[attempt[0] % aims.length][0]);
-            standLooking(stand.add(0, 0.1, 0), aim);
-            attempt[0]++;
-        });
-        Playtest.wait("settle", 15);
-        Playtest.queue("right click", () -> { Playtest.focusWindow(); Playtest.mouseButton(3, true); });
-        Playtest.wait("hold", 4);
-        Playtest.queue("release and see whether the player is riding", () -> Playtest.mouseButton(3, false), () -> Minecraft.getInstance().player.getVehicle() != null, 60);
-        Playtest.queue("log the seat", () -> {
-            var mc = Minecraft.getInstance();
-            var ride = mc.player.getVehicle();
-            Playtest.log("riding " + (ride == null ? "nothing" : ride.getType() + " at " + ride.position()));
-            if (ride == null) Playtest.fail("a right click on the quad did not seat the player");
-            else Playtest.screenshot("uc-car-seated");
-        });
+        board(Scenarios::vehicleNear, () -> roadHeading[0], "car");
         final RoadDriver[] driver = new RoadDriver[1];
         Playtest.queue("drive along the road with W, A and D", () -> {
             var plan = roadPlan(road);
@@ -733,24 +757,7 @@ final class Scenarios {
             Playtest.log("boat at " + boat.position() + " " + describeBoat(boat));
             Playtest.screenshot("uc-boat-placed");
         });
-        Playtest.queue("beside the boat, look at it, and right click to climb in", () -> {
-            var boat = boatNear();
-            if (boat == null) return;
-            Vec3 at = boat.position();
-            double[] c = crossing[0];
-            double dx = c[2] - c[0], dz = c[3] - c[1], length = Math.hypot(dx, dz);
-            standLooking(new Vec3(at.x - dz / length * 1.5, at.y + 0.2, at.z + dx / length * 1.5), at.add(0, 0.4, 0));
-        });
-        Playtest.wait("settle", 15);
-        Playtest.queue("right click", () -> { Playtest.focusWindow(); Playtest.mouseButton(3, true); });
-        Playtest.wait("hold", 4);
-        Playtest.queue("release and see whether the player is riding", () -> Playtest.mouseButton(3, false), () -> Minecraft.getInstance().player.getVehicle() != null, 60);
-        Playtest.queue("log the seat", () -> {
-            var ride = Minecraft.getInstance().player.getVehicle();
-            Playtest.log("riding " + (ride == null ? "nothing" : ride.getType() + " at " + ride.position()));
-            if (ride == null) Playtest.fail("a right click on the boat did not seat the player");
-            else Playtest.screenshot("uc-boat-seated");
-        });
+        board(Scenarios::boatNear, () -> { double[] c = crossing[0]; return Math.toDegrees(Math.atan2(-(c[2] - c[0]), c[3] - c[1])); }, "boat");
         final RoadDriver[] driver = new RoadDriver[1];
         Playtest.queue("sail across the water under the deck with W, A and D", () -> {
             double[] c = crossing[0];
