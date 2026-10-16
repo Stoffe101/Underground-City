@@ -74,8 +74,8 @@ final class RoadDriver {
     private final double targetS;
     private final String label;
     /** Steer from the vehicle's own yaw instead of its measured movement: right for a boat, which turns as fast as the keys say and would swing wildly on a delayed heading. */
-    private boolean steerByYaw;
-    private int lowSpeedTicks;
+    private boolean steerByYaw, faceForward;
+    private int lowSpeedTicks, unseatedTicks;
     /**
      * For a car: heading from the vehicle's own velocity vector (blocks per tick, x and z; null when unreadable), and a model of the wheel angle. Immersive Vehicles
      * turns the wheels by a fixed number of degrees for every tick a key is held and straightens them by a larger number for every tick it is not
@@ -99,6 +99,9 @@ final class RoadDriver {
 
     RoadDriver steerByYaw() { this.steerByYaw = true; return this; }
 
+    /** Keep the player's own view along the vehicle's heading, a little downward, so the frames show what a passenger sees ahead and not the deck overhead. */
+    RoadDriver faceForward() { this.faceForward = true; return this; }
+
     /** Steer a wheeled vehicle from its own velocity and the wheel model (see the field). */
     RoadDriver steerByWheelModel(java.util.function.Supplier<double[]> velocity) { this.velocity = velocity; return this; }
 
@@ -113,7 +116,18 @@ final class RoadDriver {
         if (done) return true;
         if (player == null || mc.level == null) return false;
         var ride = player.getVehicle();
-        if (ride == null) { finish(true, "the player is not riding anything"); return true; }
+        if (ride == null) {
+            // A vehicle that crosses into a chunk the client has just received can be re-created for a moment; give the mount time to come back.
+            if (++unseatedTicks > 100) { finish(true, "the player is not riding anything"); return true; }
+            return false;
+        }
+        unseatedTicks = 0;
+        if (faceForward) {
+            player.setYRot(ride.getYRot());
+            player.yRotO = player.getYRot();
+            player.setXRot(12f);
+            player.xRotO = 12f;
+        }
         if (startGameTime < 0) { startGameTime = mc.level.getGameTime(); Playtest.focusWindow(); }
         ticks++;
         Vec3 position = ride.position();
