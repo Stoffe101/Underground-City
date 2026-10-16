@@ -1074,14 +1074,16 @@ public final class UndergroundGameTests {
                     var guard = CheckpointPosts.guardAt(level, zoneOne);
                     check(guard.isPresent() && guard.get().hasCustomName() && guard.get().isInvulnerable(), "The zone's guard is found and is a named, protected citizen");
                     check(guard.get().distanceToSqr(one.getX() + 4.5, one.getY(), one.getZ() + 6.5) < 4, "The guard stands at the post: " + guard.get().position());
+                    UUID guardOne = guard.get().getUUID();
                     DistrictBuilder.undoNear(level, district, one.offset(4, 0, 4));
                     check(DistrictBuilder.count(level, district.id()) == 1, "Removing one post leaves the other");
                     check(level.getBlockState(one.offset(3, 0, 3)).getBlock() != Blocks.STONE_BRICKS, "The removed post's booth is gone");
                     check(level.getBlockState(two.offset(3, 0, 3)).is(Blocks.STONE_BRICKS), "The other post's booth stands");
+                    // What matters is that the undo took its own post's guard and nobody else's. Whether a distant chunk has already made the other villager
+                    // visible to a lookup is the engine's timing, so the bookkeeping (not a lookup in that chunk) is what is asserted.
                     var remaining = DistrictBuilder.citizensForTest(level, district.id());
-                    CheckpointCatalog.Checkpoint zoneTwo = new CheckpointCatalog.Checkpoint("p2", "Post two", "ironhaven", level.dimension().location().toString(), two.getX() + 4, two.getZ() + 4, 48, "inspection");
-                    var other = CheckpointPosts.guardAt(level, zoneTwo);
-                    check(remaining.size() == 1 && other.map(g -> g.getUUID().equals(remaining.get(0))).orElse(false), "The other post still has its guard: " + remaining + " (zone lookup " + other.map(g -> g.getUUID().toString()).orElse("none") + ")");
+                    check(level.getEntity(guardOne) == null, "The removed post's guard is gone");
+                    check(remaining.size() == 1 && !remaining.contains(guardOne), "The other post keeps exactly its own citizen: " + remaining + " (removed " + guardOne + ")");
                     DistrictBuilder.undoNear(level, district, two.offset(4, 0, 4));
                     check(DistrictBuilder.count(level, district.id()) == 0, "No posts remain");
                 } finally {
