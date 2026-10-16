@@ -126,6 +126,12 @@ def evaluate(lines: list[str], sets: list[str]) -> tuple[dict, list[str]]:
     for mod_id in ("underground_city", "qshop"):
         if facts.get(f"mod {mod_id}", "").lower() != "true":
             problems.append(f"mod {mod_id} did not load")
+    if "vehicles" in sets:
+        # Immersive Vehicles registers each content-pack vehicle and part as an mts:<pack>.<name> item.
+        for pack_name in ("mtsofficialpack", "oamp"):
+            count = facts.get(f"mts pack {pack_name} items", "0")
+            if not count.isdigit() or int(count) < 1:
+                problems.append(f"content pack {pack_name} registered no vehicle items")
     if "boats" in sets and not facts.get("boat_cargo", "").startswith("ok"):
         problems.append("boat cargo round trip: " + facts.get("boat_cargo", "not run"))
     return facts, problems

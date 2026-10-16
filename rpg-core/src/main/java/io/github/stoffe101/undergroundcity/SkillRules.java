@@ -79,7 +79,7 @@ public final class SkillRules {
             if (node.title().isBlank() || node.title().length() > 40 || node.description().isBlank() || node.description().length() > 170) {
                 throw new IllegalArgumentException(node.id() + ": title (<=40) and description (<=170) required");
             }
-            if (node.shortTitle().length() > SkillNode.MAX_SHORT_TITLE) {
+            if (!node.shortTitle().equals(node.title()) && node.shortTitle().length() > SkillNode.MAX_SHORT_TITLE) {
                 throw new IllegalArgumentException(node.id() + ": short_title must be at most " + SkillNode.MAX_SHORT_TITLE + " characters");
             }
             if (node.cost() < 1 || node.cost() > 4 || node.minLevel() < 1 || node.minLevel() > MAX_LEVEL) throw new IllegalArgumentException(node.id() + ": invalid cost or level");

@@ -170,7 +170,7 @@ public record TerminalData(String city, String career, int level, int xp, double
             buf.writeVarInt(row.cost); buf.writeVarInt(row.minLevel); buf.writeVarInt(row.state); buf.writeUtf(row.reason, 96);
             buf.writeVarInt(row.requires.size());
             for (String requirement : row.requires) buf.writeUtf(requirement, 48);
-            buf.writeUtf(row.shortTitle, SkillNode.MAX_SHORT_TITLE + 8);
+            buf.writeUtf(row.shortTitle, 48); // a node without a short title sends its full title (at most 40)
         }
         buf.writeVarInt(contacts.size());
         for (Contact contact : contacts) {
@@ -224,7 +224,7 @@ public record TerminalData(String city, String career, int level, int xp, double
             if (required < 0 || required > 4) throw new IllegalArgumentException("Invalid prerequisite count");
             List<String> requires = new ArrayList<>();
             for (int r = 0; r < required; r++) requires.add(buf.readUtf(48));
-            skills.add(new SkillRow(id, branch, skillTitle, description, cost, minLevel, state, reason, List.copyOf(requires), buf.readUtf(SkillNode.MAX_SHORT_TITLE + 8)));
+            skills.add(new SkillRow(id, branch, skillTitle, description, cost, minLevel, state, reason, List.copyOf(requires), buf.readUtf(48)));
         }
         int contactCount = buf.readVarInt();
         if (contactCount < 0 || contactCount > MAX_CONTACTS) throw new IllegalArgumentException("Invalid contact count");
