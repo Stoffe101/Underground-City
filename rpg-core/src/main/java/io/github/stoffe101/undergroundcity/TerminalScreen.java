@@ -38,7 +38,7 @@ public final class TerminalScreen extends Screen {
     /** What survives a server refresh of an open terminal. */
     public record Carry(Page page, boolean underground, String jobId, String skillId) {}
 
-    private static final int MAX_OFFER_ROWS = 3, LOT = 4, ROW_TOP = 108, ROW_STEP = 26, MAX_NODES = 16;
+    private static final int MAX_OFFER_ROWS = 3, LOT = 4, ROW_TOP = 108, ROW_STEP = 26, MAX_NODES = 16, NODE_TOP = 97, NODE_STEP = 15;
     private static final int TEAL = 0xff55d3bc, AMBER = 0xffe1af6c, RED = 0xffe1736c, GREY = 0xff5b6f82;
     private static final int TEXT = 0xffebf5fb, SOFT = 0xffc0d0df, DIM = 0xff9bb6ca;
     private Page current = Page.CONTRACTS;
@@ -216,6 +216,13 @@ public final class TerminalScreen extends Screen {
         refreshSkills();
     }
 
+    /** The full title when it fits the button, else the data's short title, else an ellipsis (never a silent cut). */
+    private String fit(TerminalData.SkillRow row,int width) {
+        if (font.width(row.title())<=width) return row.title();
+        if (font.width(row.shortTitle())<=width) return row.shortTitle();
+        return font.plainSubstrByWidth(row.shortTitle(),width-font.width("..."))+"...";
+    }
+
     private void refreshSkills() {
         boolean page=current==Page.SKILLS;
         unlock.visible=page && !data.skills().isEmpty();
@@ -227,8 +234,8 @@ public final class TerminalScreen extends Screen {
             if (!present) continue;
             TerminalData.SkillRow row=data.skills().get(i);
             int column=row.branch().equals("legal")?0:row.branch().equals("underground")?2:1;
-            nodes[i].setX(left+18+column*(colW+6)); nodes[i].setY(top+98+used[column]++*16); nodes[i].setWidth(colW);
-            nodes[i].setMessage(Component.literal(font.plainSubstrByWidth(row.title(),colW-16)));
+            nodes[i].setX(left+18+column*(colW+6)); nodes[i].setY(top+NODE_TOP+used[column]++*NODE_STEP); nodes[i].setWidth(colW);
+            nodes[i].setMessage(Component.literal(fit(row,colW-16)));
             nodes[i].active=i!=selectedSkill;
             nodes[i].setTooltip(Tooltip.create(Component.literal(row.description()+(row.reason().isEmpty()?"":"  ["+row.reason()+"]"))));
         }
@@ -314,6 +321,9 @@ public final class TerminalScreen extends Screen {
     }
 
     private void renderWork(GuiGraphics g) {
+        // The selected filter is also a darker, inactive button; the underline makes the choice unmistakable at a glance.
+        Button chosen=undergroundView?undergroundFilter:legalFilter;
+        g.fill(chosen.getX(),chosen.getY()+chosen.getHeight(),chosen.getX()+chosen.getWidth(),chosen.getY()+chosen.getHeight()+2,undergroundView?RED:TEAL);
         TerminalData.Row job=row();
         if (job==null) {
             String message=data.jobs().isEmpty()?"Register with /uc register <city> <career> to see paid profession orders."
@@ -377,14 +387,14 @@ public final class TerminalScreen extends Screen {
         }
         TerminalData.SkillRow row=data.skills().get(Math.min(selectedSkill,data.skills().size()-1));
         int branchColor=row.branch().equals("underground")?RED:row.branch().equals("legal")?TEAL:SOFT;
-        g.fill(left+14,top+161,left+panelW-14,top+162,0xff2a4358);
+        g.fill(left+14,top+158,left+panelW-14,top+159,0xff2a4358);
         String meta=row.state()==2?"UNLOCKED":row.cost()+" point"+(row.cost()==1?"":"s")+"  |  level "+row.minLevel();
-        g.drawString(font,font.plainSubstrByWidth(row.title(),panelW-190),left+18,top+165,branchColor,false);
-        g.drawString(font,meta,left+panelW-18-font.width(meta),top+165,row.state()==2?TEAL:AMBER,false);
+        g.drawString(font,font.plainSubstrByWidth(row.title(),panelW-190),left+18,top+162,branchColor,false);
+        g.drawString(font,meta,left+panelW-18-font.width(meta),top+162,row.state()==2?TEAL:AMBER,false);
         var lines=font.split(Component.literal(row.description()),panelW-36);
-        for (int i=0;i<Math.min(2,lines.size());i++) g.drawString(font,lines.get(i),left+18,top+175+i*10,SOFT,false);
+        for (int i=0;i<Math.min(2,lines.size());i++) g.drawString(font,lines.get(i),left+18,top+172+i*10,SOFT,false);
         String note=row.state()==2?"":!row.reason().isEmpty()?row.reason():"Ready to unlock";
-        if (!note.isEmpty()) g.drawString(font,font.plainSubstrByWidth(note,panelW-36),left+18,top+195,row.state()==1?TEAL:AMBER,false);
+        if (!note.isEmpty()) g.drawString(font,font.plainSubstrByWidth(note,panelW-36),left+18,top+192,row.state()==1?TEAL:AMBER,false);
     }
 
     /** State markers drawn on top of the node buttons: teal unlocked, amber available, grey locked. */

@@ -62,7 +62,8 @@ public final class SkillCatalog extends SimpleJsonResourceReloadListener {
             json.get("title").getAsString(), json.get("description").getAsString(), json.get("cost").getAsInt(),
             json.get("min_level").getAsInt(), requires,
             effects.has("inspection_modifier") ? effects.get("inspection_modifier").getAsDouble() : 0,
-            licences, effects.has("exchange_discount") ? effects.get("exchange_discount").getAsDouble() : 0);
+            licences, effects.has("exchange_discount") ? effects.get("exchange_discount").getAsDouble() : 0,
+            json.has("short_title") ? json.get("short_title").getAsString() : "");
     }
 
     public List<SkillNode> tree(String career) { return trees.getOrDefault(career, List.of()); }

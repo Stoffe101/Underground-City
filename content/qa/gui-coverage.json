@@ -211,6 +211,27 @@
       "owner": "underground_city",
       "group": "challenge",
       "description": "Secured terminal trace: last entry with the timer nearly spent"
+    },
+    {
+      "id": "skills.smith",
+      "expected_file": "uc-skills-smith.png",
+      "owner": "underground_city",
+      "group": "skills",
+      "description": "Skills tab for a level-11 Smith built from the real skill tree"
+    },
+    {
+      "id": "skills.gunsmith",
+      "expected_file": "uc-skills-gunsmith.png",
+      "owner": "underground_city",
+      "group": "skills",
+      "description": "Skills tab for a level-11 Gunsmith built from the real skill tree"
+    },
+    {
+      "id": "skills.technician",
+      "expected_file": "uc-skills-technician.png",
+      "owner": "underground_city",
+      "group": "skills",
+      "description": "Skills tab for a level-11 Technician built from the real skill tree"
     }
   ],
   "unintegrated_future_interfaces": [

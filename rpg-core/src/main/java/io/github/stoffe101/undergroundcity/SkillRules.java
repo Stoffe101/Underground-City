@@ -79,6 +79,9 @@ public final class SkillRules {
             if (node.title().isBlank() || node.title().length() > 40 || node.description().isBlank() || node.description().length() > 170) {
                 throw new IllegalArgumentException(node.id() + ": title (<=40) and description (<=170) required");
             }
+            if (node.shortTitle().length() > SkillNode.MAX_SHORT_TITLE) {
+                throw new IllegalArgumentException(node.id() + ": short_title must be at most " + SkillNode.MAX_SHORT_TITLE + " characters");
+            }
             if (node.cost() < 1 || node.cost() > 4 || node.minLevel() < 1 || node.minLevel() > MAX_LEVEL) throw new IllegalArgumentException(node.id() + ": invalid cost or level");
             if (node.inspectionModifier() < -SkillNode.MAX_INSPECTION_REDUCTION || node.inspectionModifier() > 0) throw new IllegalArgumentException(node.id() + ": inspection modifier out of range");
             if (node.exchangeDiscount() < 0 || node.exchangeDiscount() > SkillNode.MAX_TOTAL_DISCOUNT) throw new IllegalArgumentException(node.id() + ": discount out of range");

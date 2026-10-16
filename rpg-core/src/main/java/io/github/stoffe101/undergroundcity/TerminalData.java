@@ -32,7 +32,12 @@ public record TerminalData(String city, String career, int level, int xp, double
     public record Offer(String id, String item, int price, int stock, int capacity, int maxOrder) {}
     /** One node of the career tree. state: 0 locked, 1 can be unlocked now, 2 unlocked. */
     public record SkillRow(String id, String branch, String title, String description, int cost, int minLevel,
-                           int state, String reason, List<String> requires) {}
+                           int state, String reason, List<String> requires, String shortTitle) {
+        public SkillRow(String id, String branch, String title, String description, int cost, int minLevel,
+                        int state, String reason, List<String> requires) {
+            this(id, branch, title, description, cost, minLevel, state, reason, requires, title);
+        }
+    }
     public record Contact(String id, String title, String city, boolean underground, String blurb, int trust) {}
     /** Status is legal, permit or prohibited; licensed is true when this citizen's skills satisfy a permit. */
     public record LawRow(String category, String title, String status, boolean licensed) {}
@@ -112,7 +117,7 @@ public record TerminalData(String city, String career, int level, int xp, double
                 return parent == null ? id : parent.title();
             }).toList();
             rows.add(new SkillRow(node.id(), node.branch(), node.title(), node.description(), node.cost(), node.minLevel(),
-                state, state == 2 || blocker == null ? "" : blocker, requires));
+                state, state == 2 || blocker == null ? "" : blocker, requires, node.shortTitle()));
         }
         return rows.stream().limit(MAX_SKILLS).toList();
     }
@@ -165,6 +170,7 @@ public record TerminalData(String city, String career, int level, int xp, double
             buf.writeVarInt(row.cost); buf.writeVarInt(row.minLevel); buf.writeVarInt(row.state); buf.writeUtf(row.reason, 96);
             buf.writeVarInt(row.requires.size());
             for (String requirement : row.requires) buf.writeUtf(requirement, 48);
+            buf.writeUtf(row.shortTitle, SkillNode.MAX_SHORT_TITLE + 8);
         }
         buf.writeVarInt(contacts.size());
         for (Contact contact : contacts) {
@@ -218,7 +224,7 @@ public record TerminalData(String city, String career, int level, int xp, double
             if (required < 0 || required > 4) throw new IllegalArgumentException("Invalid prerequisite count");
             List<String> requires = new ArrayList<>();
             for (int r = 0; r < required; r++) requires.add(buf.readUtf(48));
-            skills.add(new SkillRow(id, branch, skillTitle, description, cost, minLevel, state, reason, List.copyOf(requires)));
+            skills.add(new SkillRow(id, branch, skillTitle, description, cost, minLevel, state, reason, List.copyOf(requires), buf.readUtf(SkillNode.MAX_SHORT_TITLE + 8)));
         }
         int contactCount = buf.readVarInt();
         if (contactCount < 0 || contactCount > MAX_CONTACTS) throw new IllegalArgumentException("Invalid contact count");

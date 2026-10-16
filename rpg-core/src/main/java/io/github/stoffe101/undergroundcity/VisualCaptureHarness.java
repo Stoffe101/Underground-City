@@ -50,8 +50,35 @@ public final class VisualCaptureHarness {
             List.of(new TerminalData.Row("underground_city:greenhouse_service","Service the greenhouse irrigation line",3,150,300,2,accepted,1,
                 List.of(new TerminalData.Req("underground_city:irrigation_service_kit",4,held)))),List.of());
     }
+    /** The mod's own skill-tree JSON, read from the classpath, so captures use the real titles and short titles. */
+    private static List<SkillNode> realTree(String career) {
+        try(var reader=new java.io.InputStreamReader(VisualCaptureHarness.class.getResourceAsStream("/data/"+UndergroundCity.MOD_ID+"/skill_trees/"+career+".json"),java.nio.charset.StandardCharsets.UTF_8)) {
+            var json=com.google.gson.JsonParser.parseReader(reader).getAsJsonObject();
+            List<SkillNode> nodes=new ArrayList<>();
+            for(var element:json.getAsJsonArray("nodes")) nodes.add(SkillCatalog.parse(career,element.getAsJsonObject()));
+            return nodes;
+        } catch(java.io.IOException error) { throw new IllegalStateException("Cannot read the "+career+" skill tree",error); }
+    }
+    private static final java.util.Map<String,String> SHORT_TITLES=new java.util.HashMap<>();
+    static { for(SkillNode node:realTree("farmer")) SHORT_TITLES.put(node.id(),node.shortTitle()); }
     private static TerminalData.SkillRow node(String id,String branch,String title,String text,int cost,int level,int state,String reason,String... requires) {
-        return new TerminalData.SkillRow("farmer."+id,branch,title,text,cost,level,state,reason,List.of(requires));
+        return new TerminalData.SkillRow("farmer."+id,branch,title,text,cost,level,state,reason,List.of(requires),SHORT_TITLES.getOrDefault("farmer."+id,title));
+    }
+    /** A whole career page built from the real tree: the states come from the same pure rules the server uses. */
+    private static TerminalData careerSkills(String career,int level,java.util.Set<String> learned) {
+        List<SkillNode> tree=realTree(career);
+        java.util.Map<String,SkillNode> index=new java.util.HashMap<>();
+        for(SkillNode node:tree) index.put(node.id(),node);
+        int free=SkillRules.pointsEarned(level)-SkillRules.pointsSpent(tree,learned);
+        List<TerminalData.SkillRow> rows=new ArrayList<>();
+        for(SkillNode node:SkillRules.displayOrder(tree)) {
+            String blocker=SkillRules.blocker(node,index,level,learned,free);
+            int state=learned.contains(node.id())?2:blocker==null?1:0;
+            List<String> requires=node.requires().stream().map(id->index.get(id).title()).toList();
+            rows.add(new TerminalData.SkillRow(node.id(),node.branch(),node.title(),node.description(),node.cost(),node.minLevel(),
+                state,state==2||blocker==null?"":blocker,requires,node.shortTitle()));
+        }
+        return new TerminalData("valewood",career,level,5200,230,true,null,1,"valewood",List.of(),List.of(),free,rows,List.of(),VALEWOOD_LAW,0,"");
     }
     /** A level-9 farmer with six of eight points spent: legal and underground branches both partly learned. */
     private static List<TerminalData.SkillRow> farmerTree() {
@@ -121,6 +148,9 @@ public final class VisualCaptureHarness {
             cases.add(new Case("uc-terminal-"+page.name().toLowerCase(java.util.Locale.ROOT),page,
                 rich?rich("valewood",false,0,VALEWOOD_LAW):fixture(2,8,false,true),0,false,page==TerminalScreen.Page.SKILLS?"farmer.restricted_cultivation":null));
         }
+        cases.add(new Case("uc-skills-smith",TerminalScreen.Page.SKILLS,careerSkills("smith",11,java.util.Set.of("smith.fundamentals","smith.structural_works","smith.armoury_contracts","smith.unlisted_fabrication")),0,false,"smith.contraband_armoury"));
+        cases.add(new Case("uc-skills-gunsmith",TerminalScreen.Page.SKILLS,careerSkills("gunsmith",11,java.util.Set.of("gunsmith.fundamentals","gunsmith.licensed_repairs","gunsmith.dealer_licence")),0,false,"gunsmith.unregistered_builds"));
+        cases.add(new Case("uc-skills-technician",TerminalScreen.Page.SKILLS,careerSkills("technician",11,java.util.Set.of("technician.fundamentals","technician.municipal_repairs","technician.automation_install")),0,false,"technician.bypass_tooling"));
         cases.add(new Case("uc-skills-available",TerminalScreen.Page.SKILLS,rich("valewood",false,0,VALEWOOD_LAW),0,false,"farmer.concealed_stores"));
         cases.add(new Case("uc-skills-locked",TerminalScreen.Page.SKILLS,rich("valewood",false,0,VALEWOOD_LAW),0,false,"farmer.underground_trade"));
         cases.add(new Case("uc-skills-legal-locked",TerminalScreen.Page.SKILLS,rich("valewood",false,0,VALEWOOD_LAW),0,false,"farmer.controlled_crop_licence"));

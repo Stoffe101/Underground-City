@@ -150,7 +150,8 @@ public final class ChallengeScreen extends Screen {
             g.pose().pushPose();
             g.pose().translate(x + padSize / 2f, padTop + padSize / 2f - 8, 0);
             g.pose().scale(2f, 2f, 1f);
-            g.drawCenteredString(font, PAD_NAME[i], 0, 0, on ? 0xff101c2a : colour);
+            // No drop shadow: a dark digit with a dark shadow on a lit pad smudges into a blob.
+            g.drawString(font, PAD_NAME[i], -font.width(PAD_NAME[i]) / 2, 0, on ? 0xff101c2a : colour, false);
             g.pose().popPose();
         }
 
