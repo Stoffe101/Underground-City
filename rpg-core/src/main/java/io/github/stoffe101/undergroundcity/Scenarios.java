@@ -740,7 +740,7 @@ final class Scenarios {
         Playtest.queue("drive along the road with W, A and D", () -> {
             var plan = roadPlan(road);
             var hit = plan.project(Minecraft.getInstance().player.getX(), Minecraft.getInstance().player.getZ());
-            driver[0] = new RoadDriver(RoadDriver.of(plan), hit.s() + driveBlocks[0], "quad on " + road).steerByWheelModel(() -> vehicleMotion(vehicleNear())).cruiseAt(6);
+            driver[0] = new RoadDriver(RoadDriver.of(plan), hit.s() + driveBlocks[0], "quad on " + road).steerByWheelModel(() -> vehicleMotion(vehicleNear())).cruiseAt(5);
             Playtest.log("driving from s=" + (int) hit.s() + " for " + driveBlocks[0] + " blocks; " + describeVehicle(ivVehicle(vehicleNear())));
         }, () -> driver[0].tick(), 6000);
         Playtest.queue("report the drive", () -> {
