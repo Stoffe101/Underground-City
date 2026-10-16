@@ -168,13 +168,13 @@ public final class RegistrationScreen extends Screen {
                 boolean selected = (step == 0 ? cityIndex : careerIndex) == i;
                 g.fill(b[0] - 1, b[1] - 1, b[0] + b[2] + 1, b[1] + b[3] + 1, hover ? TEAL : selected ? AMBER : 0xff2a4259);
                 g.fill(b[0], b[1], b[0] + b[2], b[1] + b[3], hover ? 0xff1d3650 : 0xff15263a);
-                g.drawString(font, (i + 1) + "  " + card.title(), b[0] + 6, b[1] + 6, hover ? TEXT : TEAL, false);
+                g.drawString(font, (i + 1) + "  " + card.title(), b[0] + 6, b[1] + (step == 0 ? 6 : 4), hover ? TEXT : TEAL, false);
                 if (step == 0) {
                     wrapped(g, card.line1(), b[0] + 6, b[1] + 22, b[2] - 12, SOFT, 5);
                     wrapped(g, card.line2(), b[0] + 6, b[1] + b[3] - 34, b[2] - 12, AMBER, 3);
                 } else {
-                    g.drawString(font, font.plainSubstrByWidth(card.line1(), b[2] - 12), b[0] + 6, b[1] + 17, SOFT, false);
-                    g.drawString(font, font.plainSubstrByWidth(card.line2(), b[2] - 12), b[0] + 6, b[1] + 27, RED, false);
+                    g.drawString(font, font.plainSubstrByWidth(card.line1(), b[2] - 12), b[0] + 6, b[1] + 14, SOFT, false);
+                    g.drawString(font, font.plainSubstrByWidth(card.line2(), b[2] - 12), b[0] + 6, b[1] + 24, RED, false);
                 }
             }
         } else {
