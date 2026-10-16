@@ -83,7 +83,7 @@ final class RoadDriver {
      * This one decides a wheel angle from the heading error and holds or releases the key to bring the modelled angle to it.
      */
     private java.util.function.Supplier<double[]> velocity;
-    private double wheel, wheelRise = 2.0, wheelReturn = 4.0, wheelMax = 35.0, wheelGain = 0.35, wheelLimit = 25.0;
+    private double wheel, wheelRise = 2.0, wheelReturn = 4.0, wheelMax = 35.0, wheelGain = 0.9, wheelLimit = 35.0;
     private double progress, maxDeviation, topSpeed;
     private boolean w, a, d, done, failed;
     private long startGameTime = -1;
@@ -149,7 +149,7 @@ final class RoadDriver {
         }
         if (velocity != null) {
             if (heading != null) {
-                double lookAhead = Math.max(10.0, speed * 1.2);
+                double lookAhead = Math.max(14.0, speed * 2.0);
                 double[] target = plan.pointAt(Math.min(plan.length(), progress + lookAhead));
                 double want = Math.toDegrees(Math.atan2(-(target[0] - position.x), target[1] - position.z));
                 double have = Math.toDegrees(Math.atan2(-heading.x, heading.z));
