@@ -19,6 +19,7 @@ final class RoadWalker {
     private double progress;
     private boolean forward, sprinting;
     private long startGameTime = -1;
+    private int ownTicks;
     private int waitingForChunks, bridgeTicks, jumps, stuckTicks, nextMilestone = 200, walkingTicks, swimTicks;
     private double maxDeviation, lastX = Double.NaN, lastZ = Double.NaN, movedWindow;
     private int windowTicks;
@@ -35,7 +36,8 @@ final class RoadWalker {
         Minecraft mc = Minecraft.getInstance();
         var player = mc.player;
         if (player == null || mc.level == null || done) return;
-        if (startGameTime < 0) { startGameTime = mc.level.getGameTime(); Playtest.focusWindow(); }
+        if (startGameTime < 0) { startGameTime = 0; Playtest.focusWindow(); }
+        ownTicks++;
         Vec3 position = player.position();
         CorridorPlan.Hit hit = plan.project(position.x, position.z);
         progress = Math.max(progress, hit.s());
@@ -68,16 +70,34 @@ final class RoadWalker {
             if (movedWindow < 0.6) stuckTicks += windowTicks; else stuckTicks = 0;
             movedWindow = 0; windowTicks = 0;
             if (stuckTicks >= STUCK_JUMP_TICKS) { Playtest.tap("space"); jumps++; }
+            if (stuckTicks == STUCK_JUMP_TICKS) diagnose(mc, position);
             if (stuckTicks >= STUCK_FAIL_TICKS) {
+                Playtest.screenshot("uc-walk-stuck");
                 finish(true, "stuck for " + stuckTicks / 20 + " s at " + BlockPos.containing(position).toShortString() + " (road s=" + (int) progress + " of " + (int) plan.length()
                     + ", deviation " + String.format("%.1f", hit.distance()) + ")");
                 return;
             }
         }
         if (progress >= nextMilestone) {
-            Playtest.log(plan.id() + ": " + (int) progress + " blocks in " + (mc.level.getGameTime() - startGameTime) / 20 + " s (waited " + waitingForChunks / 20 + " s for chunks)");
+            Playtest.log(plan.id() + ": " + (int) progress + " blocks in " + ownTicks / 20 + " s (waited " + waitingForChunks / 20 + " s for chunks)");
             nextMilestone += 200;
         }
+    }
+
+    /** What is around a walker that has stopped: the blocks at its feet and head, and the four blocks around it, with their collision. */
+    private void diagnose(Minecraft mc, Vec3 position) {
+        BlockPos feet = BlockPos.containing(position);
+        StringBuilder text = new StringBuilder("stuck at " + feet.toShortString() + " (s=" + (int) progress + "): ");
+        for (int dy = -1; dy <= 2; dy++) {
+            text.append("y").append(dy >= 0 ? "+" : "").append(dy).append(" [");
+            for (var offset : new BlockPos[]{BlockPos.ZERO, feet.east().subtract(feet), feet.west().subtract(feet), feet.north().subtract(feet), feet.south().subtract(feet)}) {
+                BlockPos at = feet.offset(offset).above(dy);
+                var state = mc.level.getBlockState(at);
+                text.append(state.getBlock().getDescriptionId().replace("block.minecraft.", "")).append(state.getCollisionShape(mc.level, at).isEmpty() ? "(-)" : "(#)").append(' ');
+            }
+            text.append("] ");
+        }
+        Playtest.log(text.toString());
     }
 
     private void hold(boolean walk) {
@@ -90,7 +110,7 @@ final class RoadWalker {
         hold(false);
         done = true;
         failed = fail;
-        long ticks = Minecraft.getInstance().level.getGameTime() - startGameTime;
+        long ticks = ownTicks;
         long moving = Math.max(1, walkingTicks);
         summary = String.format("%s: %s. %d of %d blocks, %d s in game time (%d s of it waiting for chunks), %.2f blocks/s while moving, %d s on bridges, %d s swimming, %d jumps, at most %.1f blocks off the centreline",
             plan.id(), reason, (int) progress, (int) plan.length(), ticks / 20, waitingForChunks / 20, progress / (moving / 20.0), bridgeTicks / 20, swimTicks / 20, jumps, maxDeviation);
