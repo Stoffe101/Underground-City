@@ -283,9 +283,11 @@ final class Scenarios {
         });
         Playtest.wait("settle", 15);
         Playtest.queue(label + ": right-click", () -> {
+            var mc = Minecraft.getInstance();
+            Playtest.log("cursor: " + mc.hitResult + " from " + mc.player.position() + " looking " + mc.player.getXRot() + "/" + mc.player.getYRot());
             Playtest.focusWindow();
             Playtest.mouseButton(3, true);
-        }, () -> Minecraft.getInstance().screen instanceof ChallengeScreen, 80);
+        }, () -> Minecraft.getInstance().screen instanceof ChallengeScreen, 600);
         Playtest.queue(label + ": release the button", () -> Playtest.mouseButton(3, false));
     }
 
