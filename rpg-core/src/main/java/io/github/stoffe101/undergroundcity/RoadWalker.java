@@ -26,7 +26,10 @@ final class RoadWalker {
     private boolean done, failed;
     private String summary = "";
 
-    RoadWalker(CorridorPlan plan, boolean sprint) { this.plan = plan; this.sprint = sprint; }
+    private final double startS, endS;
+
+    /** Walks from {@code startS} to {@code endS} along the road (the stretch between the two cities: inside a city circle there is no corridor road). */
+    RoadWalker(CorridorPlan plan, boolean sprint, double startS, double endS) { this.plan = plan; this.sprint = sprint; this.startS = startS; this.endS = endS; this.progress = startS; }
 
     boolean done() { return done; }
     String summary() { return summary; }
@@ -42,7 +45,7 @@ final class RoadWalker {
         CorridorPlan.Hit hit = plan.project(position.x, position.z);
         progress = Math.max(progress, hit.s());
         maxDeviation = Math.max(maxDeviation, hit.distance());
-        if (progress >= plan.length() - ARRIVAL) { finish(false, "reached the far end"); return; }
+        if (progress >= endS - ARRIVAL) { finish(false, "reached the far end of the open road"); return; }
         if (position.y < mc.level.getMinBuildHeight() + 2) { finish(true, "fell out of the world near " + BlockPos.containing(position).toShortString()); return; }
         // Face the road ahead; the walking itself is the real key.
         double[] target = plan.pointAt(Math.min(plan.length(), progress + LOOK_AHEAD));
@@ -113,7 +116,7 @@ final class RoadWalker {
         long ticks = ownTicks;
         long moving = Math.max(1, walkingTicks);
         summary = String.format("%s: %s. %d of %d blocks, %d s in game time (%d s of it waiting for chunks), %.2f blocks/s while moving, %d s on bridges, %d s swimming, %d jumps, at most %.1f blocks off the centreline",
-            plan.id(), reason, (int) progress, (int) plan.length(), ticks / 20, waitingForChunks / 20, progress / (moving / 20.0), bridgeTicks / 20, swimTicks / 20, jumps, maxDeviation);
+            plan.id(), reason, (int) (progress - startS), (int) (endS - startS), ticks / 20, waitingForChunks / 20, (progress - startS) / (moving / 20.0), bridgeTicks / 20, swimTicks / 20, jumps, maxDeviation);
         Playtest.log(summary);
         if (fail) Playtest.fail(summary);
     }

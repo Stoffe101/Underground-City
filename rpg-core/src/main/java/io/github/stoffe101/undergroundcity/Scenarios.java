@@ -79,11 +79,15 @@ final class Scenarios {
         if (plans.isEmpty()) throw new IllegalStateException("no road plan matches '" + only + "'; the dev world needs the world-prototype pack");
         for (CorridorPlan plan : plans) {
             String id = plan.id();
-            Playtest.log("road " + id + " is " + (int) plan.length() + " blocks long");
-            arriveOnRoad(id, 0, "survival");
+            // Inside a city circle there is no corridor road (the city's own streets are there), so the walk covers the open stretch between the cities.
+            double first = -1, last = -1;
+            for (double at = 0; at <= plan.length(); at += 1) if (plan.openAt(at)) { if (first < 0) first = at; last = at; }
+            final double from = first + 12, to = last - 12;
+            Playtest.log("road " + id + " is " + (int) plan.length() + " blocks long; the open road runs from " + (int) first + " to " + (int) last + ", walking " + (int) from + " to " + (int) to);
+            arriveOnRoad(id, (int) from, "survival");
             Playtest.queue("wait for the road plan to be built from the terrain", () -> { }, () -> roadPlan(id).built(), 1200);
             final RoadWalker[] walker = new RoadWalker[1];
-            Playtest.queue("walk " + id + (sprint ? " (sprinting)" : ""), () -> walker[0] = new RoadWalker(roadPlan(id), sprint), () -> { walker[0].tick(); return walker[0].done(); }, 120_000);
+            Playtest.queue("walk " + id + (sprint ? " (sprinting)" : ""), () -> walker[0] = new RoadWalker(roadPlan(id), sprint, from, to), () -> { walker[0].tick(); return walker[0].done(); }, 120_000);
         }
     }
 
