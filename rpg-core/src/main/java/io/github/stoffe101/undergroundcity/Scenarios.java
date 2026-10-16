@@ -86,6 +86,16 @@ final class Scenarios {
         }
     }
 
+    /** Waits for the client to finish meshing the chunks around the player, then carries on either way (software rendering can be very slow; a late frame is better than a failed run). */
+    private static void waitForMeshes(int ticks) {
+        final int[] left = {ticks};
+        Playtest.queue("let the chunk meshes finish", () -> { }, () -> {
+            if (Minecraft.getInstance().levelRenderer.hasRenderedAllChunks()) return true;
+            if (--left[0] <= 0) { Playtest.log("the chunk meshes were still not finished after " + ticks + " ticks; carrying on"); return true; }
+            return false;
+        }, ticks + 20);
+    }
+
     /** True once the chunk under the player has reached the client and the block below their feet is not air (so a survival player will not fall). */
     private static boolean groundBelowPlayer() {
         var mc = Minecraft.getInstance();
@@ -210,14 +220,14 @@ final class Scenarios {
             Vec3 o = Vec3.atLowerCornerOf(origin[0]);
             standLooking(o.add(-6, 16, -10), o.add(14, 0, 18));
         });
-        Playtest.queue("let the chunk meshes finish", () -> { }, () -> Minecraft.getInstance().levelRenderer.hasRenderedAllChunks(), 600);
+        waitForMeshes(1500);
         Playtest.wait("settle", 20);
         Playtest.queue("screenshot", () -> Playtest.screenshot("uc-row-overview-nw"));
         Playtest.queue("overview from the south gate", () -> {
             Vec3 o = Vec3.atLowerCornerOf(origin[0]);
             standLooking(o.add(12.5, 6, 52), o.add(12.5, 1, 20));
         });
-        Playtest.queue("let the chunk meshes finish", () -> { }, () -> Minecraft.getInstance().levelRenderer.hasRenderedAllChunks(), 600);
+        waitForMeshes(1500);
         Playtest.wait("settle", 20);
         Playtest.queue("screenshot", () -> Playtest.screenshot("uc-row-gate-looking-north"));
         Playtest.queue("down the lane at eye level", () -> {
@@ -828,7 +838,7 @@ final class Scenarios {
             // Two blocks south of the guard, inside the 9 x 9 lot, looking north at the guard with the booth behind.
             standLooking(spot[0].add(0, 0.1, 2.2), spot[0].add(0, 1.4, 0));
         });
-        Playtest.queue("let the chunk meshes finish", () -> { }, () -> Minecraft.getInstance().levelRenderer.hasRenderedAllChunks(), 1200);
+        waitForMeshes(1500);
         Playtest.wait("let the guard settle", 60);
         Playtest.queue("clear the chat, screenshot of the guard", () -> Minecraft.getInstance().gui.getChat().clearMessages(true));
         Playtest.wait("one frame", 4);
