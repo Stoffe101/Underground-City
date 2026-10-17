@@ -13,7 +13,7 @@ public record TerminalData(String city, String career, int level, int xp, double
                            boolean economy, UUID active, int foreignVisits, String region,
                            List<Row> jobs, List<Offer> offers,
                            int skillPoints, List<SkillRow> skills, List<Contact> contacts, List<LawRow> laws,
-                           int heat, String lawSummary) {
+                           int heat, String lawSummary, List<Step> journey) {
     public record Req(String item, int count, int held, String label) {
         public Req(String item, int count, int held) { this(item, count, held, ""); }
     }
@@ -38,15 +38,23 @@ public record TerminalData(String city, String career, int level, int xp, double
             this(id, branch, title, description, cost, minLevel, state, reason, requires, title);
         }
     }
+    /** One guided-journey milestone: done or not, with the terminal page (a {@link TerminalScreen.Page} name, or empty) that helps. */
+    public record Step(String id, String title, String hint, boolean done, String page) {}
     public record Contact(String id, String title, String city, boolean underground, String blurb, int trust) {}
     /** Status is legal, permit or prohibited; licensed is true when this citizen's skills satisfy a permit. */
     public record LawRow(String category, String title, String status, boolean licensed) {}
 
-    static final int MAX_ROWS = 33, MAX_REQS = 4, MAX_OFFERS = 16, MAX_SKILLS = 16, MAX_CONTACTS = 8, MAX_LAWS = 8, MAX_REWARDS = 3;
+    static final int MAX_STEPS = 12, MAX_ROWS = 33, MAX_REQS = 4, MAX_OFFERS = 16, MAX_SKILLS = 16, MAX_CONTACTS = 8, MAX_LAWS = 8, MAX_REWARDS = 3;
 
     public TerminalData(String city, String career, int level, int xp, double balance, boolean economy, UUID active,
                         int foreignVisits, String region, List<Row> jobs, List<Offer> offers) {
-        this(city, career, level, xp, balance, economy, active, foreignVisits, region, jobs, offers, 0, List.of(), List.of(), List.of(), 0, "");
+        this(city, career, level, xp, balance, economy, active, foreignVisits, region, jobs, offers, 0, List.of(), List.of(), List.of(), 0, "", List.of());
+    }
+
+    public TerminalData(String city, String career, int level, int xp, double balance, boolean economy, UUID active,
+                        int foreignVisits, String region, List<Row> jobs, List<Offer> offers,
+                        int skillPoints, List<SkillRow> skills, List<Contact> contacts, List<LawRow> laws, int heat, String lawSummary) {
+        this(city, career, level, xp, balance, economy, active, foreignVisits, region, jobs, offers, skillPoints, skills, contacts, laws, heat, lawSummary, List.of());
     }
 
     public static TerminalData offline() {
@@ -90,7 +98,8 @@ public record TerminalData(String city, String career, int level, int xp, double
             economy ? QShopEconomy.balance(player) : 0, economy, active, ledger.foreignVisits(player.getUUID(), citizen.city),
             region, rows, RegionalMarket.offers(ledger, region, citizen),
             SkillService.pointsAvailable(citizen), skillRows(citizen), contacts(region, citizen, ledger, player), lawRows(law, citizen),
-            region.isEmpty() ? 0 : ledger.heat(player.getUUID(), region), law == null ? "" : law.summary());
+            region.isEmpty() ? 0 : ledger.heat(player.getUUID(), region), law == null ? "" : law.summary(),
+            Journey.steps(citizen, ledger, player.getUUID()));
     }
 
     private static Extra extra(WorkOrder job, CitizenState.Citizen citizen, WorkOrderLedger ledger, ServerPlayer player) {
@@ -112,10 +121,7 @@ public record TerminalData(String city, String career, int level, int xp, double
         for (SkillNode node : tree) {
             String blocker = SkillService.blocker(citizen, node);
             int state = citizen.skills().contains(node.id()) ? 2 : blocker == null ? 1 : 0;
-            List<String> requires = node.requires().stream().map(id -> {
-                SkillNode parent = SkillCatalog.INSTANCE.find(id);
-                return parent == null ? id : parent.title();
-            }).toList();
+            List<String> requires = node.requires();   // ids; the screen resolves names and draws the links
             rows.add(new SkillRow(node.id(), node.branch(), node.title(), node.description(), node.cost(), node.minLevel(),
                 state, state == 2 || blocker == null ? "" : blocker, requires, node.shortTitle()));
         }
@@ -180,6 +186,8 @@ public record TerminalData(String city, String career, int level, int xp, double
         buf.writeVarInt(laws.size());
         for (LawRow row : laws) { buf.writeUtf(row.category, 48); buf.writeUtf(row.title, 56); buf.writeUtf(row.status, 16); buf.writeBoolean(row.licensed); }
         buf.writeVarInt(heat); buf.writeUtf(lawSummary, 210);
+        buf.writeVarInt(journey.size());
+        for (Step step : journey) { buf.writeUtf(step.id, 24); buf.writeUtf(step.title, 48); buf.writeUtf(step.hint, 160); buf.writeBoolean(step.done); buf.writeUtf(step.page, 16); }
     }
 
     static TerminalData read(FriendlyByteBuf buf) {
@@ -237,7 +245,11 @@ public record TerminalData(String city, String career, int level, int xp, double
         List<LawRow> laws = new ArrayList<>();
         for (int i = 0; i < lawCount; i++) laws.add(new LawRow(buf.readUtf(48), buf.readUtf(56), buf.readUtf(16), buf.readBoolean()));
         int heat = buf.readVarInt(); String lawSummary = buf.readUtf(210);
+        int stepCount = buf.readVarInt();
+        if (stepCount < 0 || stepCount > MAX_STEPS) throw new IllegalArgumentException("Invalid journey count");
+        List<Step> journey = new ArrayList<>();
+        for (int i = 0; i < stepCount; i++) journey.add(new Step(buf.readUtf(24), buf.readUtf(48), buf.readUtf(160), buf.readBoolean(), buf.readUtf(16)));
         return new TerminalData(city, career, level, xp, balance, economy, active, visits, region, List.copyOf(rows), List.copyOf(offers),
-            points, List.copyOf(skills), List.copyOf(contacts), List.copyOf(laws), heat, lawSummary);
+            points, List.copyOf(skills), List.copyOf(contacts), List.copyOf(laws), heat, lawSummary, List.copyOf(journey));
     }
 }

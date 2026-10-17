@@ -24,7 +24,7 @@ import java.util.function.Supplier;
  * This is NOT a remote city supplier, contraband order, or raid service.
  */
 public final class TerminalNetwork {
-    private static final String VERSION = "7";
+    private static final String VERSION = "8";
     private static final String STARTER_SHOP_ID = "uc_starter_supply";
     private static final double MAX_TERMINAL_DISTANCE_SQUARED = 64.0;
     private static final java.util.Map<ServerPlayer, Integer> REQUEST_TIMES = new java.util.WeakHashMap<>();
@@ -39,6 +39,8 @@ public final class TerminalNetwork {
         registerChallenge();
         registerRegistration();
         registerTracker();
+        registerObjective();
+        registerDialogue();
         CHANNEL.registerMessage(0, OpenTerminal.class,
             (packet, buffer) -> { buffer.writeBlockPos(packet.pos); packet.data.write(buffer); },
             buffer -> new OpenTerminal(buffer.readBlockPos(), TerminalData.read(buffer)),
@@ -86,6 +88,100 @@ public final class TerminalNetwork {
             }, Optional.of(NetworkDirection.PLAY_TO_SERVER));
     }
 
+    private static void registerDialogue() {
+        CHANNEL.registerMessage(13, OpenDialogue.class,
+            (packet, buffer) -> {
+                buffer.writeVarInt(packet.entityId); buffer.writeUtf(packet.name, 48); buffer.writeUtf(packet.subtitle, 64);
+                buffer.writeUtf(packet.city, 16); buffer.writeUtf(packet.text, 600);
+                buffer.writeVarInt(packet.choices.size());
+                for (Dialogue.Choice choice : packet.choices) { buffer.writeUtf(choice.id(), 24); buffer.writeUtf(choice.label(), 56); buffer.writeBoolean(choice.enabled()); buffer.writeUtf(choice.hint(), 96); }
+            },
+            buffer -> {
+                int entityId = buffer.readVarInt();
+                String name = buffer.readUtf(48), subtitle = buffer.readUtf(64), city = buffer.readUtf(16), text = buffer.readUtf(600);
+                int count = Math.min(buffer.readVarInt(), 6);
+                java.util.List<Dialogue.Choice> choices = new java.util.ArrayList<>();
+                for (int i = 0; i < count; i++) choices.add(new Dialogue.Choice(buffer.readUtf(24), buffer.readUtf(56), buffer.readBoolean(), buffer.readUtf(96)));
+                return new OpenDialogue(entityId, name, subtitle, city, text, java.util.List.copyOf(choices));
+            },
+            (packet, supplier) -> {
+                NetworkEvent.Context context = supplier.get();
+                if (context.getDirection().getReceptionSide().isClient()) {
+                    context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> ClientDialogue.open(packet.entityId, packet.name, packet.subtitle, packet.city, packet.text, packet.choices)));
+                }
+                context.setPacketHandled(true);
+            }, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+        CHANNEL.registerMessage(14, DialogueChoice.class,
+            (packet, buffer) -> { buffer.writeVarInt(packet.entityId); buffer.writeUtf(packet.choice, 24); },
+            buffer -> new DialogueChoice(buffer.readVarInt(), buffer.readUtf(24)),
+            (packet, supplier) -> {
+                NetworkEvent.Context context = supplier.get();
+                context.enqueueWork(() -> {
+                    ServerPlayer player = context.getSender();
+                    if (player != null) Dialogue.choose(player, packet.entityId, packet.choice);
+                });
+                context.setPacketHandled(true);
+            }, Optional.of(NetworkDirection.PLAY_TO_SERVER));
+        CHANNEL.registerMessage(15, CloseDialogue.class,
+            (packet, buffer) -> { },
+            buffer -> new CloseDialogue(),
+            (packet, supplier) -> {
+                NetworkEvent.Context context = supplier.get();
+                if (context.getDirection().getReceptionSide().isClient()) {
+                    context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> ClientDialogue::close));
+                }
+                context.setPacketHandled(true);
+            }, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+    }
+
+    /** Server to client: show (or refresh) a conversation. */
+    static void sendDialogue(ServerPlayer player, int entityId, String name, String subtitle, String city, String text, java.util.List<Dialogue.Choice> choices) {
+        CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new OpenDialogue(entityId, name, subtitle, city, text, java.util.List.copyOf(choices)));
+    }
+    static void closeDialogue(ServerPlayer player) { CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new CloseDialogue()); }
+    /** Client to server: the player picked an answer; the server re-validates everything. */
+    public static void sendDialogueChoice(int entityId, String choice) { CHANNEL.sendToServer(new DialogueChoice(entityId, choice)); }
+
+    private record OpenDialogue(int entityId, String name, String subtitle, String city, String text, java.util.List<Dialogue.Choice> choices) {}
+    private record DialogueChoice(int entityId, String choice) {}
+    private record CloseDialogue() {}
+
+    private static void registerObjective() {
+        CHANNEL.registerMessage(12, ObjectivePacket.class,
+            (packet, buffer) -> {
+                var o = packet.objective;
+                buffer.writeBoolean(o != null);
+                if (o == null) return;
+                buffer.writeUtf(o.title(), 48); buffer.writeUtf(o.hint(), 160); buffer.writeUtf(o.page(), 16);
+                buffer.writeBoolean(o.target() != null);
+                if (o.target() != null) buffer.writeBlockPos(o.target());
+                buffer.writeUtf(o.targetName(), 48);
+            },
+            buffer -> {
+                if (!buffer.readBoolean()) return new ObjectivePacket(null);
+                String title = buffer.readUtf(48), hint = buffer.readUtf(160), page = buffer.readUtf(16);
+                BlockPos target = buffer.readBoolean() ? buffer.readBlockPos() : null;
+                return new ObjectivePacket(new Journey.Objective(title, hint, page, target, buffer.readUtf(48)));
+            },
+            (packet, supplier) -> {
+                NetworkEvent.Context context = supplier.get();
+                if (context.getDirection().getReceptionSide().isClient()) {
+                    context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> ClientOrderTracker.updateObjective(packet.objective)));
+                }
+                context.setPacketHandled(true);
+            }, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+    }
+
+    /** Server to client: the next guided-journey step (or null when the journey is complete). */
+    public static void sendObjective(ServerPlayer player, Journey.Objective objective) {
+        CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new ObjectivePacket(objective));
+    }
+
+    public static final class ObjectivePacket {
+        final Journey.Objective objective;
+        ObjectivePacket(Journey.Objective objective) { this.objective = objective; }
+    }
+
     private static void registerTracker() {
         CHANNEL.registerMessage(10, TrackedOrder.class,
             (packet, buffer) -> {
@@ -127,15 +223,44 @@ public final class TerminalNetwork {
 
     private static void registerRegistration() {
         CHANNEL.registerMessage(7, OpenRegistration.class,
-            (packet, buffer) -> { },
-            buffer -> new OpenRegistration(),
+            (packet, buffer) -> {
+                buffer.writeVarInt(packet.kits.size());
+                for (var career : packet.kits.entrySet()) {
+                    buffer.writeUtf(career.getKey(), 16);
+                    buffer.writeVarInt(career.getValue().size());
+                    for (String id : career.getValue()) buffer.writeUtf(id, 96);
+                }
+            },
+            buffer -> {
+                java.util.Map<String, java.util.List<String>> kits = new java.util.LinkedHashMap<>();
+                int careers = Math.min(buffer.readVarInt(), 8);
+                for (int i = 0; i < careers; i++) {
+                    String career = buffer.readUtf(16);
+                    int count = Math.min(buffer.readVarInt(), 8);
+                    java.util.List<String> ids = new java.util.ArrayList<>();
+                    for (int k = 0; k < count; k++) ids.add(buffer.readUtf(96));
+                    kits.put(career, java.util.List.copyOf(ids));
+                }
+                return new OpenRegistration(kits);
+            },
             (packet, supplier) -> {
                 NetworkEvent.Context context = supplier.get();
                 if (context.getDirection().getReceptionSide().isClient()) {
-                    context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> ClientRegistration::open));
+                    context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> ClientRegistration.open(packet.kits)));
                 }
                 context.setPacketHandled(true);
             }, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+        CHANNEL.registerMessage(11, AskRegistration.class,
+            (packet, buffer) -> { },
+            buffer -> new AskRegistration(),
+            (packet, supplier) -> {
+                NetworkEvent.Context context = supplier.get();
+                context.enqueueWork(() -> {
+                    ServerPlayer player = context.getSender();
+                    if (player != null && requestSlot(player)) RegistrationService.prompt(player);
+                });
+                context.setPacketHandled(true);
+            }, Optional.of(NetworkDirection.PLAY_TO_SERVER));
         CHANNEL.registerMessage(8, RegisterChoice.class,
             (packet, buffer) -> { buffer.writeUtf(packet.city, 16); buffer.writeUtf(packet.career, 16); },
             buffer -> new RegisterChoice(buffer.readUtf(16), buffer.readUtf(16)),
@@ -186,7 +311,14 @@ public final class TerminalNetwork {
 
     /** Server to client: show the first-login registration screen. */
     public static void openRegistration(ServerPlayer player) {
-        CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new OpenRegistration());
+        java.util.Map<String, java.util.List<String>> kits = new java.util.LinkedHashMap<>();
+        for (String career : java.util.List.of("farmer", "smith", "gunsmith", "technician")) kits.put(career, StarterKits.INSTANCE.displayItems(career, 5));
+        CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new OpenRegistration(kits));
+    }
+
+    /** Client to server: show me the registration screen again (a terminal's REGISTER button). A registered citizen is never asked. */
+    public static void requestRegistrationScreen() {
+        CHANNEL.sendToServer(new AskRegistration());
     }
 
     /** Server to client: the outcome of a registration request. */
@@ -291,6 +423,7 @@ public final class TerminalNetwork {
         // Fixed server-authored ID, never arbitrary strings from a client packet.
         // QShop owns currency, inventory checks, shop stock and actual trades.
         // Only common civilian items are configured in this starter shop.
+        CitizenState.get(player.server).markJourney(player.getUUID(), "bought");
         player.server.getCommands().performPrefixedCommand(
             player.createCommandSourceStack(), "qshop open " + STARTER_SHOP_ID);
     }
@@ -309,7 +442,8 @@ public final class TerminalNetwork {
     private record WorkAction(BlockPos pos, int action, String id, UUID nonce) {}
     private record RegionalBuy(BlockPos pos, String commodity, int quantity, UUID nonce) {}
     private record SkillAction(BlockPos pos, String skill) {}
-    private record OpenRegistration() {}
+    private record OpenRegistration(java.util.Map<String, java.util.List<String>> kits) {}
+    private record AskRegistration() {}
     private record RegisterChoice(String city, String career) {}
     private record RegistrationResult(boolean ok, String message) {}
     private record OpenChallenge(BlockPos pos, byte[] sequence) {}

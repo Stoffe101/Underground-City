@@ -127,8 +127,8 @@ public final class DistrictBuilder {
         Direction facing = Direction.byName(op.facing());
         return switch (op.kind()) {
             case "terminal" -> UndergroundCity.TERMINAL.get().defaultBlockState().setValue(HorizontalDirectionalBlock.FACING, facing);
-            case "safe" -> UndergroundCity.PROPERTY_CACHE.get().defaultBlockState();
-            case "secure_terminal" -> UndergroundCity.SECURE_TERMINAL.get().defaultBlockState();
+            case "safe" -> UndergroundCity.PROPERTY_CACHE.get().defaultBlockState().setValue(PropertyCacheBlock.FACING, facing);
+            case "secure_terminal" -> UndergroundCity.SECURE_TERMINAL.get().defaultBlockState().setValue(SecureTerminalBlock.FACING, facing);
             default -> null;
         };
     }

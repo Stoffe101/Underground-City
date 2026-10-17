@@ -82,6 +82,18 @@ public final class StarterKits extends SimpleJsonResourceReloadListener {
         return stacks;
     }
 
+    /** Up to {@code limit} distinct item ids a citizen of this career would receive (for the registration screen's preview; never granted from here). */
+    public List<String> displayItems(String career, int limit) {
+        List<String> ids = new ArrayList<>();
+        for (ItemStack stack : stacks(career)) {
+            if (stack.is(UndergroundCity.TERMINAL_ITEM.get())) continue;
+            String id = ForgeRegistries.ITEMS.getKey(stack.getItem()).toString();
+            if (!ids.contains(id)) ids.add(id);
+            if (ids.size() >= limit) break;
+        }
+        return ids;
+    }
+
     /** Hands the stacks over; whatever does not fit in the inventory drops at the player's feet. */
     public int grant(ServerPlayer player, String career) {
         int given = 0;

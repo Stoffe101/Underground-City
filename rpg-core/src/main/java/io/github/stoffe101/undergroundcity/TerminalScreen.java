@@ -1,9 +1,6 @@
 package io.github.stoffe101.undergroundcity;
 
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.components.Tooltip;
-import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -13,443 +10,750 @@ import net.minecraft.world.item.Items;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.registries.ForgeRegistries;
+
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 /**
- * Native terminal backed by a read-only server snapshot and bounded requests.
- * Colour language: teal is legal/unlocked, amber is available/needs attention, red is underground/prohibited.
- * Legal and underground work sit side by side on every profession (D-049); nothing here locks a character
- * into one of them.
+ * The Operations Terminal, redesigned as one panel with a navigation rail: WORK (orders, legal and underground side by side), SKILLS (the
+ * career tree), TRADE (the regional exchange and the civilian shop), LAW (the city's law, buyers and your heat) and GUIDE (the first half hour).
+ * It shows a read-only server snapshot ({@link TerminalData}) and sends bounded requests; it decides nothing. Teal is legal or unlocked, red
+ * is underground or prohibited, amber is money and attention, and every state also has an icon or a word. Legal and underground work sit side
+ * by side on every trade (D-049); nothing here locks a character into one of them.
  */
 @OnlyIn(Dist.CLIENT)
-public final class TerminalScreen extends Screen {
+public final class TerminalScreen extends UcScreen {
     public enum Page {
-        CONTRACTS("CONTRACTS", "CAREER WORK ORDERS", List.of()),
-        SKILLS("SKILLS", "CAREER SKILLS", List.of()),
-        IMPORTS("IMPORTS", "CIVILIAN SUPPLY", List.of("Buy ordinary supplies or sell surplus through Q Shop.", "Specialist goods are sold only inside their own city.", "Remote imports and cargo incidents are not available yet.")),
-        DELIVERIES("DELIVERY", "SHIPMENT TRACKING", List.of("No shipments are in transit.", "Cargo ordering and physical recovery scenes are pending.", "Recovery timers will pause while their owner is offline.")),
-        BLACK_MARKET("MARKET", "LAW AND CONTACTS", List.of("Use a terminal inside a city to see its law and buyers.", "Possession is never detected by itself.", "Searches happen at road checkpoints; hand-offs can be seen.")),
-        RAIDS("RAIDS", "TACTICAL CONTRACTS", List.of("No surveyed raid targets are available.", "Raids require real buildings, guards and objectives.", "Progress through civilian work orders while this is developed."));
-        public final String tab, heading;
-        public final List<String> copy;
-        Page(String tab, String heading, List<String> copy) { this.tab=tab; this.heading=heading; this.copy=copy; }
+        CONTRACTS("Work", UcUi.Icon.CRATE), SKILLS("Skills", UcUi.Icon.POINT), IMPORTS("Trade", UcUi.Icon.SHOP),
+        BLACK_MARKET("Law", UcUi.Icon.SCALES), GUIDE("Guide", UcUi.Icon.BOOK);
+        final String label;
+        final UcUi.Icon icon;
+        Page(String label, UcUi.Icon icon) { this.label = label; this.icon = icon; }
     }
 
     /** What survives a server refresh of an open terminal. */
     public record Carry(Page page, boolean underground, String jobId, String skillId) {}
 
-    private static final int MAX_OFFER_ROWS = 3, LOT = 4, ROW_TOP = 108, ROW_STEP = 26, MAX_NODES = 16, NODE_TOP = 97, NODE_STEP = 15;
-    private static final int TEAL = 0xff55d3bc, AMBER = 0xffe1af6c, RED = 0xffe1736c, GREY = 0xff5b6f82;
-    private static final int TEXT = 0xffebf5fb, SOFT = 0xffc0d0df, DIM = 0xff9bb6ca;
+    private static final int LOT = 4, ROW_H = 28, MAX_OFFERS = 16, TIER_MAX = 6;
+
     private Page current = Page.CONTRACTS;
     private boolean undergroundView;
     private final BlockPos terminalPosition;
     private final TerminalData data;
-    private int selected, selectedSkill, panelW, panelH, left, top;
-    private Button shop, accept, cancel, previous, next, unlock, legalFilter, undergroundFilter, register;
-    private final Button[] tabs = new Button[Page.values().length];
-    private final Button[] buyOne = new Button[MAX_OFFER_ROWS], buyLot = new Button[MAX_OFFER_ROWS];
-    private final Button[] nodes = new Button[MAX_NODES];
+    private int selected, jobScroll, selectedSkill, offerScroll;
+    private int railW, cx, cy, cw, ch;
+    private UcButton shop, accept, cancel, unlock, legalChip, undergroundChip, register, showMe;
+    private final UcButton[] rail = new UcButton[Page.values().length];
+    private final UcButton[] buyOne = new UcButton[MAX_OFFERS], buyLot = new UcButton[MAX_OFFERS];
+    // the skill tree, laid out once per snapshot and size: node cards by index
+    private int[] nodeX = new int[0], nodeY = new int[0], nodeTier = new int[0], nodeCol = new int[0];
+    private int nodeW, nodeH = 24;
 
     public TerminalScreen() { this(null, TerminalData.offline(), null); }
     public TerminalScreen(BlockPos position, TerminalData data) { this(position, data, null); }
     public TerminalScreen(BlockPos position, TerminalData data, Carry carry) {
         super(Component.literal("Underground City | Operations"));
-        this.terminalPosition=position; this.data=data;
-        TerminalData.Row accepted=data.jobs().stream().filter(TerminalData.Row::accepted).findFirst().orElse(null);
-        if (carry!=null) { current=carry.page(); undergroundView=carry.underground(); }
-        if (accepted!=null) undergroundView=accepted.extra().underground();
-        List<TerminalData.Row> list=jobs();
-        selected=0;
-        if (accepted!=null) selected=Math.max(0,indexOf(list,accepted.id()));
-        else if (carry!=null && carry.jobId()!=null) selected=Math.max(0,indexOf(list,carry.jobId()));
-        if (carry!=null && carry.skillId()!=null) {
-            for (int i=0;i<data.skills().size();i++) if (data.skills().get(i).id().equals(carry.skillId())) selectedSkill=i;
+        this.terminalPosition = position;
+        this.data = data;
+        TerminalData.Row accepted = data.jobs().stream().filter(TerminalData.Row::accepted).findFirst().orElse(null);
+        if (carry != null) { current = carry.page(); undergroundView = carry.underground(); }
+        if (accepted != null) undergroundView = accepted.extra().underground();
+        List<TerminalData.Row> list = jobs();
+        selected = 0;
+        if (accepted != null) selected = Math.max(0, indexOf(list, accepted.id()));
+        else if (carry != null && carry.jobId() != null) selected = Math.max(0, indexOf(list, carry.jobId()));
+        if (carry != null && carry.skillId() != null) {
+            for (int i = 0; i < data.skills().size(); i++) if (data.skills().get(i).id().equals(carry.skillId())) selectedSkill = i;
         }
     }
-    private static int indexOf(List<TerminalData.Row> list,String id) {
-        for (int i=0;i<list.size();i++) if (list.get(i).id().equals(id)) return i;
+
+    private static int indexOf(List<TerminalData.Row> list, String id) {
+        for (int i = 0; i < list.size(); i++) if (list.get(i).id().equals(id)) return i;
         return -1;
     }
 
     BlockPos position() { return terminalPosition; }
     Carry carry() {
-        String job=row()==null?null:row().id();
-        String skill=data.skills().isEmpty()?null:data.skills().get(Math.min(selectedSkill,data.skills().size()-1)).id();
-        return new Carry(current,undergroundView,job,skill);
+        String job = row() == null ? null : row().id();
+        String skill = data.skills().isEmpty() ? null : data.skills().get(Math.min(selectedSkill, data.skills().size() - 1)).id();
+        return new Carry(current, undergroundView, job, skill);
     }
 
+    // ------------------------------------------------------------------------------------------------ chrome
+    @Override protected int accent() {
+        return current == Page.BLACK_MARKET ? UcUi.AMBER : current == Page.CONTRACTS && undergroundView ? UcUi.UNDERGROUND : UcUi.LEGAL;
+    }
+    @Override protected String titleText() { return "Operations"; }
+    @Override protected UcUi.Icon titleIcon() { return UcUi.Icon.SHOP; }
+    @Override protected boolean showFooter() { return true; }
+
+    @Override protected void renderHeaderRight(GuiGraphics g, int right) {
+        boolean registered = !data.city().equals("UNREGISTERED");
+        int x = right;
+        if (registered) {
+            String career = capitalize(data.career()).toUpperCase(Locale.ROOT);
+            int w = UcUi.displayWidth(font, career) + 22;
+            x -= w;
+            UcUi.chip(g, font, career, x, py + 9, UcUi.careerColor(data.career()), UcUi.careerIcon(data.career()));
+            x -= 4;
+            String city = capitalize(data.city()).toUpperCase(Locale.ROOT);
+            w = UcUi.displayWidth(font, city) + 10;
+            x -= w;
+            UcUi.chip(g, font, city, x, py + 9, UcUi.cityColor(data.city()), null);
+        } else {
+            String text = "Unregistered";
+            int w = UcUi.displayWidth(font, text) + 22;
+            UcUi.chip(g, font, text, right - w, py + 9, UcUi.UNDERGROUND, UcUi.Icon.WARNING);
+        }
+    }
+
+    @Override protected void renderFooter(GuiGraphics g, int y) {
+        int ty = y + 8;
+        boolean registered = !data.city().equals("UNREGISTERED");
+        int x = px + PAD;
+        if (registered) {
+            UcUi.icon(g, UcUi.careerIcon(data.career()), x, y + 4, UcUi.careerColor(data.career()));
+            String level = capitalize(data.career()).toUpperCase(Locale.ROOT) + " L" + data.level();
+            UcUi.display(g, font, level, x + 19, ty, UcUi.TEXT);
+            int bx = x + 19 + UcUi.displayWidth(font, level) + 8;
+            UcUi.bar(g, bx, ty, 64, 7, ProgressionRules.levelProgress(data.xp()), UcUi.LEGAL);
+            String xp = data.xp() + " XP";
+            UcUi.text(g, font, xp, bx + 70, ty, UcUi.DIM);
+            if (data.skillPoints() > 0) {
+                int sx = bx + 70 + font.width(xp) + 10;
+                UcUi.icon(g, UcUi.Icon.POINT, sx, y + 4, UcUi.AMBER);
+                UcUi.text(g, font, data.skillPoints() + (data.skillPoints() == 1 ? " skill point" : " skill points"), sx + 18, ty, UcUi.AMBER);
+            }
+        } else {
+            UcUi.text(g, font, "Register to see orders, skills and trade.", x, ty, UcUi.DIM);
+        }
+        int right = px + pw - PAD;
+        String credits = data.economy() ? String.format(Locale.ROOT, "%.0f", data.balance()) : "OFFLINE";
+        int cw2 = UcUi.displayWidth(font, credits);
+        UcUi.displayRight(g, font, credits, right - 0, ty, data.economy() ? UcUi.AMBER : UcUi.UNDERGROUND_TEXT);
+        UcUi.icon(g, UcUi.Icon.CREDITS, right - cw2 - 19, y + 4, data.economy() ? UcUi.AMBER : UcUi.UNDERGROUND_TEXT);
+        String where = data.region().isEmpty() ? "Outside a city" : "In " + capitalize(data.region());
+        int wx = right - cw2 - 19 - 14 - font.width(where);
+        if (wx > px + pw / 2) {
+            UcUi.text(g, font, where, wx, ty, UcUi.DIM);
+            UcUi.icon(g, UcUi.Icon.PIN, wx - 17, y + 4, UcUi.DIM);
+        }
+    }
+
+    // ------------------------------------------------------------------------------------------------ widgets
     @Override protected void init() {
-        panelW=Math.min(440,width-16); panelH=Math.min(268,height-16);
-        left=(width-panelW)/2; top=(height-panelH)/2;
-        int step=(panelW-16)/tabs.length;
-        for (int i=0;i<tabs.length;i++) {
-            Page page=Page.values()[i];
-            tabs[i]=addRenderableWidget(Button.builder(Component.literal(page.tab), b->showPage(page))
-                .bounds(left+8+i*step,top+41,step-2,20).build());
+        layoutPanel(440, 286, 640, 410);
+        clearWidgets();
+        railW = pw >= 440 ? 86 : 34;
+        cx = px + PAD + railW + 8;
+        cw = px + pw - PAD - cx;
+        cy = bodyY();
+        ch = bodyBottom() - cy;
+        for (int i = 0; i < rail.length; i++) {
+            Page page = Page.values()[i];
+            rail[i] = add(new UcButton(px + PAD, cy + i * 30, railW, 26, page.label, b -> showPage(page)).kind(UcButton.Kind.RAIL).icon(page.icon)
+                .tooltip(railW < 50 ? page.label : ""));
         }
-        shop=addRenderableWidget(Button.builder(Component.literal("OPEN CIVILIAN SHOP"), b->{
-            if (terminalPosition!=null) { shop.active=false; TerminalNetwork.requestStarterShop(terminalPosition); }
-        }).bounds(left+18,top+panelH-57,panelW-36,20).build());
-        accept=addRenderableWidget(Button.builder(Component.literal("ACCEPT ORDER"),b->send(row().accepted()?1:0))
-            .bounds(left+18,top+panelH-57,panelW-132,20).build());
-        cancel=addRenderableWidget(Button.builder(Component.literal("CANCEL"),b->send(2))
-            .bounds(left+panelW-106,top+panelH-57,88,20).build());
-        previous=addRenderableWidget(Button.builder(Component.literal("<"),b->{selected--;refresh();})
-            .bounds(left+panelW-70,top+77,24,20).build());
-        next=addRenderableWidget(Button.builder(Component.literal(">"),b->{selected++;refresh();})
-            .bounds(left+panelW-43,top+77,24,20).build());
-        legalFilter=addRenderableWidget(Button.builder(Component.literal("LEGAL"),b->setView(false))
-            .bounds(left+18,top+75,68,16).build());
-        undergroundFilter=addRenderableWidget(Button.builder(Component.literal("UNDERGROUND"),b->setView(true))
-            .bounds(left+90,top+75,100,16).build());
-        register=addRenderableWidget(Button.builder(Component.literal("REGISTER: CHOOSE YOUR CITY AND PROFESSION"),b->{
-            // Opens the same screen as first login; the server still validates and creates the citizen.
-            if (minecraft!=null) minecraft.setScreen(new RegistrationScreen());
-        }).bounds(left+18,top+panelH-57,panelW-36,20).build());
-        unlock=addRenderableWidget(Button.builder(Component.literal("UNLOCK"),b->{
-            if (terminalPosition!=null && selectedSkill<data.skills().size()) { unlock.active=false; TerminalNetwork.requestSkill(terminalPosition,data.skills().get(selectedSkill).id()); }
-        }).bounds(left+18,top+panelH-57,panelW-36,20).build());
-        for (int i=0;i<MAX_NODES;i++) {
-            int index=i;
-            nodes[i]=addRenderableWidget(Button.builder(Component.literal(""),b->{selectedSkill=index;refresh();})
-                .bounds(left+18,top+98,100,14).build());
+        shop = add(new UcButton(cx, cy, cw, 20, "Open civilian shop", b -> {
+            if (terminalPosition != null) { shop.active = false; TerminalNetwork.requestStarterShop(terminalPosition); }
+        }).icon(UcUi.Icon.SHOP));
+        legalChip = add(new UcButton(cx, cy, 96, 16, "Legal", b -> setView(false)).kind(UcButton.Kind.CHIP).accent(UcUi.LEGAL).icon(UcUi.Icon.LEGAL)
+            .tooltip("Dependable, licensed work. Always available and never a crime."));
+        undergroundChip = add(new UcButton(cx + 100, cy, 128, 16, "Underground", b -> setView(true)).kind(UcButton.Kind.CHIP).accent(UcUi.UNDERGROUND).icon(UcUi.Icon.UNDERGROUND)
+            .tooltip("Higher pay for restricted goods. It needs an underground skill, and carrying the goods past a checkpoint is a risk."));
+        accept = add(new UcButton(0, 0, 100, 20, "Accept order", b -> send(row().accepted() ? 1 : 0)).kind(UcButton.Kind.PRIMARY));
+        cancel = add(new UcButton(0, 0, 70, 20, "Cancel", b -> send(2)).kind(UcButton.Kind.DANGER));
+        register = add(new UcButton(cx, cy + ch - 24, cw, 20, "Register: choose your city and trade", b -> TerminalNetwork.requestRegistrationScreen()).kind(UcButton.Kind.PRIMARY).icon(UcUi.Icon.CITY));
+        unlock = add(new UcButton(0, 0, 120, 20, "Unlock", b -> {
+            if (terminalPosition != null && selectedSkill < data.skills().size()) { unlock.active = false; TerminalNetwork.requestSkill(terminalPosition, data.skills().get(selectedSkill).id()); }
+        }).kind(UcButton.Kind.PRIMARY));
+        showMe = add(new UcButton(0, 0, 100, 18, "Show me", b -> { Page page = pageOf(nextStep() == null ? "" : nextStep().page()); if (page != null) showPage(page); }).icon(UcUi.Icon.ARROW_RIGHT));
+        for (int i = 0; i < MAX_OFFERS; i++) {
+            int index = i;
+            buyOne[i] = add(new UcButton(0, 0, 44, 18, "Buy 1", b -> buy(index, 1)));
+            buyLot[i] = add(new UcButton(0, 0, 50, 18, "Buy " + LOT, b -> buy(index, LOT)));
         }
-        for (int i=0;i<MAX_OFFER_ROWS;i++) {
-            int index=i, y=top+ROW_TOP-2+i*ROW_STEP;
-            buyOne[i]=addRenderableWidget(Button.builder(Component.literal("BUY 1"),b->buy(index,1))
-                .bounds(left+panelW-124,y,48,20).build());
-            buyLot[i]=addRenderableWidget(Button.builder(Component.literal("BUY "+LOT),b->buy(index,LOT))
-                .bounds(left+panelW-70,y,52,20).build());
-        }
+        layoutTree();
         refresh();
     }
 
-    private List<TerminalData.Row> jobs() { return data.jobs().stream().filter(job->job.extra().underground()==undergroundView).toList(); }
-    private TerminalData.Row row() { List<TerminalData.Row> list=jobs(); return list.isEmpty()?null:list.get(Math.max(0,Math.min(selected,list.size()-1))); }
+    // ------------------------------------------------------------------------------------------------ state
+    private List<TerminalData.Row> jobs() { return data.jobs().stream().filter(job -> job.extra().underground() == undergroundView).toList(); }
+    private TerminalData.Row row() { List<TerminalData.Row> list = jobs(); return list.isEmpty() ? null : list.get(Math.max(0, Math.min(selected, list.size() - 1))); }
     private boolean exchangeOpen() { return !data.region().isEmpty() && !data.offers().isEmpty(); }
-    private void setView(boolean underground) { undergroundView=underground; selected=0; refresh(); }
+    private void setView(boolean underground) { undergroundView = underground; selected = 0; jobScroll = 0; refresh(); }
     private void send(int action) {
-        if (terminalPosition==null || row()==null) return;
-        accept.active=false; cancel.active=false;
-        TerminalNetwork.requestWork(terminalPosition,action,row().id(),data.active());
+        if (terminalPosition == null || row() == null) return;
+        accept.active = false; cancel.active = false;
+        TerminalNetwork.requestWork(terminalPosition, action, row().id(), data.active());
     }
-    private void buy(int index,int quantity) {
-        if (terminalPosition==null || index>=data.offers().size()) return;
-        for (Button button:buyOne) button.active=false;
-        for (Button button:buyLot) button.active=false;
-        TerminalNetwork.requestRegionalBuy(terminalPosition,data.offers().get(index).id(),quantity);
+    private void buy(int index, int quantity) {
+        if (terminalPosition == null || index + offerScroll >= data.offers().size()) return;
+        for (UcButton button : buyOne) button.active = false;
+        for (UcButton button : buyLot) button.active = false;
+        TerminalNetwork.requestRegionalBuy(terminalPosition, data.offers().get(index + offerScroll).id(), quantity);
     }
-    public void showPage(Page page) { current=page; refresh(); }
+    public void showPage(Page page) { current = page; refresh(); }
     public Page currentPage() { return current; }
     /** QA hook: choose the legal or the underground contract list. */
     public void showView(boolean underground) { setView(underground); }
     /** QA hook: pick the n-th contract of the current list. */
-    public void selectJob(int index) { selected=index; refresh(); }
+    public void selectJob(int index) { selected = index; ensureVisible(); refresh(); }
     /** QA hook: pick a skill node by id. */
     public void selectSkill(String id) {
-        for (int i=0;i<data.skills().size();i++) if (data.skills().get(i).id().equals(id)) selectedSkill=i;
+        for (int i = 0; i < data.skills().size(); i++) if (data.skills().get(i).id().equals(id)) selectedSkill = i;
         refresh();
     }
     TerminalData snapshot() { return data; }
 
-    private static boolean ready(TerminalData.Row job) {
-        return job.reqs().stream().allMatch(req->req.held()>=req.count());
+    private static Page pageOf(String name) {
+        for (Page page : Page.values()) if (page.name().equals(name)) return page;
+        return null;
     }
-    private static int missing(TerminalData.Row job) {
-        return job.reqs().stream().mapToInt(req->Math.max(0,req.count()-req.held())).sum();
-    }
+    private TerminalData.Step nextStep() { return data.journey().stream().filter(step -> !step.done()).findFirst().orElse(null); }
+
+    private static boolean ready(TerminalData.Row job) { return job.reqs().stream().allMatch(req -> req.held() >= req.count()); }
+    private static int missing(TerminalData.Row job) { return job.reqs().stream().mapToInt(req -> Math.max(0, req.count() - req.held())).sum(); }
+
     private String lockReason(TerminalData.Row job) {
-        TerminalData.Extra extra=job.extra();
+        TerminalData.Extra extra = job.extra();
         if (!data.economy()) return "Q Shop 1.8.4 required";
         if (job.accepted()) {
             if (!ready(job)) return "Obtain the missing goods first";
-            if (!extra.buyerCity().isEmpty() && !extra.buyerCity().equals(data.region())) return "Deliver to "+extra.buyer()+": use a terminal inside "+capitalize(extra.buyerCity());
+            if (!extra.buyerCity().isEmpty() && !extra.buyerCity().equals(data.region())) return "Deliver to " + extra.buyer() + ": use a terminal inside " + capitalize(extra.buyerCity());
             return "";
         }
-        if (data.active()!=null) return "Finish or cancel your accepted order";
-        if (!extra.skillOk()) return "Requires the skill "+extra.skill();
-        if (data.level()<job.level()) return "Career level "+job.level()+" required";
-        if (extra.minTrust()>extra.trust()) return extra.buyer()+" trusts you "+extra.trust()+"/"+extra.minTrust();
-        if (data.foreignVisits()<job.foreignVisits()) return visitText(job);
-        if (job.available()==0) return "Employer demand replenishes during active play";
+        if (data.active() != null) return "Finish or cancel your accepted order";
+        if (!extra.skillOk()) return "Requires the skill " + extra.skill();
+        if (data.level() < job.level()) return "Career level " + job.level() + " required";
+        if (extra.minTrust() > extra.trust()) return extra.buyer() + " trusts you " + extra.trust() + "/" + extra.minTrust();
+        if (data.foreignVisits() < job.foreignVisits()) return visitText(job);
+        if (job.available() == 0) return "Employer demand replenishes during active play";
         return "";
     }
     private String visitText(TerminalData.Row job) {
-        int more=job.foreignVisits()-data.foreignVisits();
-        return "Use a terminal inside "+more+" more rival "+(more==1?"city":"cities")+" first";
+        int more = job.foreignVisits() - data.foreignVisits();
+        return "Use a terminal inside " + more + " more rival " + (more == 1 ? "city" : "cities") + " first";
     }
-
-    private long count(boolean underground) { return data.jobs().stream().filter(job->job.extra().underground()==underground).count(); }
+    private long count(boolean underground) { return data.jobs().stream().filter(job -> job.extra().underground() == underground).count(); }
 
     private void refresh() {
-        if (shop==null) return;
-        for (int i=0;i<tabs.length;i++) tabs[i].active=current!=Page.values()[i];
-        shop.visible=current==Page.IMPORTS;
-        shop.active=terminalPosition!=null && data.economy();
-        shop.setTooltip(Tooltip.create(Component.literal(data.economy()?"Buy and sell common goods using credits":"Q Shop 1.8.4 and citizenship required")));
-        boolean exchange=current==Page.IMPORTS && exchangeOpen();
-        for (int i=0;i<MAX_OFFER_ROWS;i++) {
-            boolean present=exchange && i<data.offers().size();
-            buyOne[i].visible=buyLot[i].visible=present;
-            if (!present) continue;
-            TerminalData.Offer offer=data.offers().get(i);
-            int lot=Math.min(LOT,offer.maxOrder());
-            buyLot[i].setMessage(Component.literal("BUY "+lot));
-            applyBuy(buyOne[i],offer,1); applyBuy(buyLot[i],offer,lot);
+        if (shop == null) return;
+        boolean registered = !data.city().equals("UNREGISTERED");
+        for (int i = 0; i < rail.length; i++) {
+            Page page = Page.values()[i];
+            rail[i].selected(current == page).accent(page == Page.BLACK_MARKET ? UcUi.AMBER : UcUi.LEGAL);
+            rail[i].active = true;
+            if (page == Page.CONTRACTS) rail[i].badge(registered ? (int) data.jobs().stream().filter(job -> job.available() > 0).count() : -1);
+            if (page == Page.SKILLS) rail[i].badge(registered && data.skillPoints() > 0 ? data.skillPoints() : -1);
+            if (page == Page.GUIDE) rail[i].badge(registered ? (int) data.journey().stream().filter(step -> !step.done()).count() : -1);
         }
-        boolean contracts=current==Page.CONTRACTS;
-        boolean unregistered=data.city().equals("UNREGISTERED");
-        register.visible=unregistered && (contracts || current==Page.SKILLS);
-        legalFilter.visible=undergroundFilter.visible=contracts && !unregistered;
-        legalFilter.setMessage(Component.literal("LEGAL "+count(false)));
-        undergroundFilter.setMessage(Component.literal("UNDERGROUND "+count(true)));
-        legalFilter.active=undergroundView; undergroundFilter.active=!undergroundView;
-        undergroundFilter.setTooltip(Tooltip.create(Component.literal("Higher pay for restricted goods. Needs an underground skill, and carrying them through checkpoints is a risk.")));
-        legalFilter.setTooltip(Tooltip.create(Component.literal("Dependable, licensed work. Always available, never a crime.")));
-        boolean work=contracts && row()!=null;
-        accept.visible=cancel.visible=previous.visible=next.visible=work;
+        boolean contracts = current == Page.CONTRACTS, trade = current == Page.IMPORTS;
+        // trade page
+        shop.visible = trade;
+        shop.active = terminalPosition != null && data.economy();
+        shop.tooltip(data.economy() ? "Buy and sell common goods using credits." : "Q Shop 1.8.4 and citizenship are required.");
+        layoutOffers();
+        // work page
+        register.visible = !registered && (contracts || current == Page.SKILLS);
+        legalChip.visible = undergroundChip.visible = contracts && registered;
+        legalChip.label("Legal " + count(false)).selected(!undergroundView);
+        undergroundChip.label("Underground " + count(true)).selected(undergroundView);
+        boolean work = contracts && row() != null;
+        accept.visible = cancel.visible = work;
         if (work) {
-            TerminalData.Row job=row();
-            List<TerminalData.Row> list=jobs();
-            previous.active=selected>0; next.active=selected+1<list.size();
-            accept.setMessage(Component.literal(job.accepted()?"DELIVER & COLLECT":"ACCEPT ORDER"));
-            String reason=lockReason(job);
-            accept.active=terminalPosition!=null && reason.isEmpty();
-            accept.setTooltip(reason.isEmpty()?null:Tooltip.create(Component.literal(reason)));
-            cancel.active=terminalPosition!=null && job.accepted();
+            TerminalData.Row job = row();
+            accept.label(job.accepted() ? "Deliver and collect" : "Accept order");
+            String reason = lockReason(job);
+            accept.active = terminalPosition != null && reason.isEmpty();
+            accept.tooltip(reason);
+            cancel.active = terminalPosition != null && job.accepted();
+            cancel.tooltip(job.accepted() ? "Give the order up. Anything you carried stays with you." : "");
+            int dx = detailX(), dy = listY() + detailH() - 26;
+            boolean cancellable = job.accepted();
+            cancel.visible = cancellable;
+            accept.setX(dx + 8); accept.setY(dy); accept.setWidth(detailW() - 16 - (cancellable ? 76 : 0));
+            cancel.setX(dx + detailW() - 8 - 70); cancel.setY(dy);
         }
-        refreshSkills();
+        // guide page
+        showMe.visible = current == Page.GUIDE && nextStep() != null && !nextStep().page().isEmpty();
+        // skills page
+        boolean skills = current == Page.SKILLS && !data.skills().isEmpty();
+        unlock.visible = skills;
+        if (skills) {
+            selectedSkill = Math.max(0, Math.min(selectedSkill, data.skills().size() - 1));
+            TerminalData.SkillRow row = data.skills().get(selectedSkill);
+            unlock.label(row.state() == 2 ? "Unlocked" : "Unlock: " + row.cost() + (row.cost() == 1 ? " point" : " points")).icon(row.state() == 2 ? UcUi.Icon.CHECK : UcUi.Icon.POINT);
+            unlock.active = terminalPosition != null && row.state() == 1;
+            unlock.tooltip(row.state() == 2 ? "" : row.reason());
+            unlock.setX(cx + cw - 8 - 130); unlock.setY(cy + ch - 28); unlock.setWidth(130);
+        }
     }
 
-    /** The full title when it fits the button, else the data's short title, else an ellipsis (never a silent cut). */
-    private String fit(TerminalData.SkillRow row,int width) {
-        if (font.width(row.title())<=width) return row.title();
-        if (font.width(row.shortTitle())<=width) return row.shortTitle();
-        return font.plainSubstrByWidth(row.shortTitle(),width-font.width("..."))+"...";
+    private int listY() { return cy + 22; }
+    private int listW() { return Math.max(130, Math.min(200, cw * 40 / 100)); }
+    private int detailX() { return cx + listW() + 8; }
+    private int detailW() { return cw - listW() - 8; }
+    private int detailH() { return ch - 22; }
+    private int visibleRows() { return Math.max(1, (ch - 22) / ROW_H); }
+    private void ensureVisible() {
+        int rows = visibleRows();
+        if (selected < jobScroll) jobScroll = selected;
+        if (selected >= jobScroll + rows) jobScroll = selected - rows + 1;
+        jobScroll = Math.max(0, Math.min(jobScroll, Math.max(0, jobs().size() - rows)));
     }
 
-    private void refreshSkills() {
-        boolean page=current==Page.SKILLS;
-        unlock.visible=page && !data.skills().isEmpty();
-        int colW=(panelW-36-12)/3;
-        int[] used=new int[3];
-        for (int i=0;i<MAX_NODES;i++) {
-            boolean present=page && i<data.skills().size();
-            nodes[i].visible=present;
+    // ------------------------------------------------------------------------------------------------ trade rows
+    private int offerRows() { return Math.max(1, (ch - 56) / 26); }
+
+    private void layoutOffers() {
+        boolean exchange = current == Page.IMPORTS && exchangeOpen();
+        int rows = offerRows();
+        offerScroll = Math.max(0, Math.min(offerScroll, Math.max(0, data.offers().size() - rows)));
+        for (int i = 0; i < MAX_OFFERS; i++) {
+            boolean present = exchange && i < rows && i + offerScroll < data.offers().size();
+            buyOne[i].visible = buyLot[i].visible = present;
             if (!present) continue;
-            TerminalData.SkillRow row=data.skills().get(i);
-            int column=row.branch().equals("legal")?0:row.branch().equals("underground")?2:1;
-            nodes[i].setX(left+18+column*(colW+6)); nodes[i].setY(top+NODE_TOP+used[column]++*NODE_STEP); nodes[i].setWidth(colW);
-            nodes[i].setMessage(Component.literal(fit(row,colW-22)));
-            nodes[i].active=i!=selectedSkill;
-            nodes[i].setTooltip(Tooltip.create(Component.literal(row.description()+(row.reason().isEmpty()?"":"  ["+row.reason()+"]"))));
+            TerminalData.Offer offer = data.offers().get(i + offerScroll);
+            int y = cy + 56 + i * 26;
+            buyOne[i].setX(cx + cw - 100); buyOne[i].setY(y + 2);
+            buyLot[i].setX(cx + cw - 52); buyLot[i].setY(y + 2);
+            int lot = Math.min(LOT, offer.maxOrder());
+            buyLot[i].label("Buy " + lot);
+            applyBuy(buyOne[i], offer, 1);
+            applyBuy(buyLot[i], offer, lot);
         }
-        if (!page || data.skills().isEmpty()) return;
-        selectedSkill=Math.max(0,Math.min(selectedSkill,data.skills().size()-1));
-        TerminalData.SkillRow row=data.skills().get(selectedSkill);
-        unlock.setMessage(Component.literal(row.state()==2?"UNLOCKED":"UNLOCK  -  "+row.cost()+" SKILL POINT"+(row.cost()==1?"":"S")));
-        unlock.active=terminalPosition!=null && row.state()==1;
-        unlock.setTooltip(row.state()==2?null:row.reason().isEmpty()?null:Tooltip.create(Component.literal(row.reason())));
     }
 
-    private void applyBuy(Button button,TerminalData.Offer offer,int quantity) {
-        String reason=!data.economy()?"Q Shop 1.8.4 required":offer.stock()<quantity?(offer.stock()==0?"Sold out; stock replenishes during active play":"Only "+offer.stock()+" left")
-            :data.balance()<(double)offer.price()*quantity?"Needs "+(offer.price()*quantity)+" credits":"";
-        button.active=terminalPosition!=null && reason.isEmpty();
-        button.setTooltip(reason.isEmpty()?Tooltip.create(Component.literal(quantity+" x "+itemName(offer.item())+" for "+offer.price()*quantity+" credits")):Tooltip.create(Component.literal(reason)));
+    private void applyBuy(UcButton button, TerminalData.Offer offer, int quantity) {
+        String reason = !data.economy() ? "Q Shop 1.8.4 required" : offer.stock() < quantity ? (offer.stock() == 0 ? "Sold out; stock replenishes during active play" : "Only " + offer.stock() + " left")
+            : data.balance() < (double) offer.price() * quantity ? "Needs " + (offer.price() * quantity) + " credits" : "";
+        button.active = terminalPosition != null && reason.isEmpty();
+        button.tooltip(reason.isEmpty() ? quantity + " x " + itemName(offer.item()) + " for " + offer.price() * quantity + " credits" : reason);
     }
 
     static Item item(String id) {
-        ResourceLocation location=ResourceLocation.tryParse(id);
-        Item value=location==null?null:ForgeRegistries.ITEMS.getValue(location);
-        return value==null?Items.BARRIER:value;
+        ResourceLocation location = ResourceLocation.tryParse(id);
+        Item value = location == null ? null : ForgeRegistries.ITEMS.getValue(location);
+        return value == null ? Items.BARRIER : value;
     }
     static String itemName(String id) { return item(id).getDescription().getString(); }
+    static String capitalize(String id) { return id.isEmpty() ? id : Character.toUpperCase(id.charAt(0)) + id.substring(1); }
 
-    @Override public void render(GuiGraphics g,int mouseX,int mouseY,float partialTick) {
-        renderBackground(g);
-        g.fill(left-2,top-2,left+panelW+2,top+panelH+2,0xff38546b);
-        g.fill(left,top,left+panelW,top+panelH,0xff101c2a);
-        g.fill(left,top,left+panelW,top+33,0xff182d42);
-        g.fill(left+12,top+10,left+16,top+24,TEAL);
-        g.drawString(font,"UNDERGROUND // OPERATIONS",left+24,top+10,TEXT,false);
-        g.fill(left+9,top+70,left+panelW-9,top+panelH-66,0xff172738);
-        boolean exchange=current==Page.IMPORTS && exchangeOpen();
-        int tabStep=(panelW-16)/tabs.length;
-        g.fill(left+8+current.ordinal()*tabStep,top+63,left+8+current.ordinal()*tabStep+tabStep-2,top+65,TEAL);
-        if (current==Page.CONTRACTS) renderWork(g);
-        else if (current==Page.SKILLS) renderSkills(g);
-        else if (current==Page.BLACK_MARKET) renderMarket(g);
-        else {
-            g.drawString(font,exchange?capitalize(data.region()).toUpperCase(java.util.Locale.ROOT)+" EXCHANGE":current.heading,left+18,top+81,TEAL,false);
-            if (exchange) renderExchange(g);
-            else {
-                int y=top+108;
-                for (String line:current.copy) { y=wrapped(g,line,left+18,y,panelW-36,SOFT)+12; }
-                if (current==Page.IMPORTS) {
-                    wrapped(g,data.region().isEmpty()?"This terminal is outside every city exchange.":"No regional stock is listed for this city.",left+18,y,panelW-36,AMBER);
+    /** Journey/QA hook: a real mouse click at the centre of an offer's buy button. */
+    boolean clickBuy(int row, boolean lot) {
+        UcButton button = (lot ? buyLot : buyOne)[row];
+        return mouseClicked(button.getX() + button.getWidth() / 2.0, button.getY() + button.getHeight() / 2.0, 0);
+    }
+
+    // ------------------------------------------------------------------------------------------------ skill tree layout
+    private void layoutTree() {
+        int n = data.skills().size();
+        nodeX = new int[n]; nodeY = new int[n]; nodeTier = new int[n]; nodeCol = new int[n];
+        Map<String, Integer> index = new HashMap<>();
+        for (int i = 0; i < n; i++) index.put(data.skills().get(i).id(), i);
+        int gap = 6;
+        int colW = (cw - 2 * gap) / 3;
+        nodeW = colW;
+        int maxTier = 0;
+        for (int i = 0; i < n; i++) { nodeTier[i] = depth(i, index, 0); maxTier = Math.max(maxTier, nodeTier[i]); }
+        int[] perCell = new int[3 * (TIER_MAX + 2)];
+        int treeTop = cy + 16, treeH = ch - 16 - 68;
+        int step = Math.max(26, Math.min(34, (treeH - nodeH) / Math.max(1, maxTier)));
+        for (int i = 0; i < n; i++) {
+            TerminalData.SkillRow row = data.skills().get(i);
+            int col = row.branch().equals("legal") ? 0 : row.branch().equals("underground") ? 2 : 1;
+            nodeCol[i] = col;
+            int tier = Math.min(TIER_MAX, nodeTier[i]);
+            int slot = perCell[col * (TIER_MAX + 2) + tier]++;
+            nodeX[i] = cx + col * (colW + gap);
+            nodeY[i] = treeTop + tier * step + slot * 0;
+            if (slot > 0) nodeY[i] += slot * 0;
+        }
+    }
+
+    private int depth(int i, Map<String, Integer> index, int guard) {
+        if (guard > 8) return 0;
+        int best = 0;
+        for (String id : data.skills().get(i).requires()) {
+            Integer parent = index.get(id);
+            if (parent != null) best = Math.max(best, 1 + depth(parent, index, guard + 1));
+        }
+        return best;
+    }
+
+    private int branchColor(TerminalData.SkillRow row) { return row.branch().equals("underground") ? UcUi.UNDERGROUND : row.branch().equals("legal") ? UcUi.LEGAL : UcUi.SOFT; }
+
+    private int skillAt(double mouseX, double mouseY) {
+        if (current != Page.SKILLS) return -1;
+        for (int i = 0; i < nodeX.length; i++) {
+            if (mouseX >= nodeX[i] && mouseX < nodeX[i] + nodeW && mouseY >= nodeY[i] && mouseY < nodeY[i] + nodeH) return i;
+        }
+        return -1;
+    }
+
+    private int jobAt(double mouseX, double mouseY) {
+        if (current != Page.CONTRACTS) return -1;
+        int x = cx, y = listY();
+        if (mouseX < x || mouseX >= x + listW() - 6) return -1;
+        int rel = (int) ((mouseY - y) / ROW_H);
+        if (mouseY < y || rel < 0 || rel >= visibleRows()) return -1;
+        int index = jobScroll + rel;
+        return index < jobs().size() ? index : -1;
+    }
+
+    // ------------------------------------------------------------------------------------------------ input
+    @Override public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (button == 0) {
+            int job = jobAt(mouseX, mouseY);
+            if (job >= 0) { selected = job; refresh(); return true; }
+            int skill = skillAt(mouseX, mouseY);
+            if (skill >= 0) { selectedSkill = skill; refresh(); return true; }
+        }
+        return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    @Override public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
+        if (current == Page.CONTRACTS) { jobScroll = Math.max(0, Math.min(jobScroll - (int) Math.signum(delta), Math.max(0, jobs().size() - visibleRows()))); return true; }
+        if (current == Page.IMPORTS) { offerScroll = Math.max(0, offerScroll - (int) Math.signum(delta)); layoutOffers(); return true; }
+        return super.mouseScrolled(mouseX, mouseY, delta);
+    }
+
+    @Override public boolean keyPressed(int key, int scan, int modifiers) {
+        if (key >= 49 && key <= 53) { showPage(Page.values()[key - 49]); return true; }
+        if (current == Page.CONTRACTS && (key == 264 || key == 265)) {
+            int size = jobs().size();
+            if (size > 0) { selected = Math.max(0, Math.min(size - 1, selected + (key == 264 ? 1 : -1))); ensureVisible(); refresh(); }
+            return true;
+        }
+        return super.keyPressed(key, scan, modifiers);
+    }
+
+    // ------------------------------------------------------------------------------------------------ drawing
+    @Override protected void renderBody(GuiGraphics g, int mouseX, int mouseY, float partial) {
+        // the rail's backing well
+        UcUi.well(g, px + PAD - 2, cy - 2, railW + 4, ch + 4);
+        switch (current) {
+            case CONTRACTS -> renderWork(g, mouseX, mouseY);
+            case SKILLS -> renderSkills(g, mouseX, mouseY);
+            case IMPORTS -> renderTrade(g);
+            case BLACK_MARKET -> renderLaw(g);
+            case GUIDE -> renderGuide(g);
+        }
+    }
+
+    private boolean registered() { return !data.city().equals("UNREGISTERED"); }
+
+    private void emptyState(GuiGraphics g, UcUi.Icon icon, String title, String text) {
+        int w = Math.min(cw - 30, 260), x = cx + (cw - w) / 2, y = cy + Math.max(10, ch / 2 - 56);
+        UcUi.icon(g, icon, x + w / 2 - 8, y, UcUi.AMBER);
+        UcUi.displayCentre(g, font, title, x + w / 2, y + 22, UcUi.TEXT);
+        UcUi.wrapped(g, font, text, x, y + 38, w, UcUi.SOFT, 5);
+    }
+
+    // ---- WORK
+    private void renderWork(GuiGraphics g, int mouseX, int mouseY) {
+        if (!registered()) {
+            emptyState(g, UcUi.Icon.CITY, "Welcome, citizen", "Register to see paid orders for your trade. Choose a home city and a profession; both legal and underground work stay open to you.");
+            return;
+        }
+        List<TerminalData.Row> list = jobs();
+        int lx = cx, ly = listY(), lw = listW(), lh = ch - 22;
+        UcUi.well(g, lx, ly, lw, lh);
+        if (list.isEmpty()) {
+            UcUi.wrapped(g, font, undergroundView ? "No underground contracts yet. Learn an underground skill on the SKILLS tab to open the trade."
+                : "No legal contracts are listed for this trade.", lx + 8, ly + 10, lw - 16, UcUi.SOFT, 6);
+            return;
+        }
+        int rows = visibleRows();
+        int hover = jobAt(mouseX, mouseY);
+        for (int r = 0; r < rows && jobScroll + r < list.size(); r++) {
+            int index = jobScroll + r;
+            TerminalData.Row job = list.get(index);
+            int ry = ly + 2 + r * ROW_H;
+            boolean sel = index == selected, over = index == hover;
+            g.fill(lx + 2, ry, lx + lw - 8, ry + ROW_H - 2, sel ? 0xff1f3a52 : over ? UcUi.ROW_HOVER : UcUi.ROW);
+            if (sel) g.fill(lx + 2, ry, lx + 5, ry + ROW_H - 2, accent());
+            TerminalData.Req first = job.reqs().isEmpty() ? null : job.reqs().get(0);
+            if (first != null) g.renderItem(new ItemStack(item(first.item())), lx + 9, ry + 5);
+            g.drawString(font, UcUi.fit(font, job.title(), lw - 70), lx + 30, ry + 4, sel ? UcUi.TEXT : UcUi.SOFT, false);
+            UcUi.icon(g, UcUi.Icon.CREDITS, lx + 28, ry + 11, UcUi.AMBER);
+            g.drawString(font, job.credits() + "   +" + job.xp() + " XP", lx + 44, ry + 15, UcUi.AMBER, false);
+            boolean locked = !job.accepted() && lockReason(job).length() > 0 && data.active() == null;
+            UcUi.Icon status = job.accepted() ? (ready(job) ? UcUi.Icon.CHECK : UcUi.Icon.TRUCK) : locked ? UcUi.Icon.LOCK : null;
+            if (status != null) UcUi.icon(g, status, lx + lw - 26, ry + 5, job.accepted() ? (ready(job) ? UcUi.OK : UcUi.AMBER) : UcUi.FAINT);
+        }
+        if (list.size() > rows) {
+            int track = lh - 4, thumb = Math.max(10, track * rows / list.size());
+            int ty = ly + 2 + (track - thumb) * jobScroll / Math.max(1, list.size() - rows);
+            g.fill(lx + lw - 6, ly + 2, lx + lw - 3, ly + 2 + track, 0xff070b10);
+            g.fill(lx + lw - 6, ty, lx + lw - 3, ty + thumb, UcUi.shade(accent(), 0.8f));
+        }
+        renderDetail(g);
+    }
+
+    private void renderDetail(GuiGraphics g) {
+        TerminalData.Row job = row();
+        if (job == null) return;
+        TerminalData.Extra extra = job.extra();
+        int x = detailX(), y = listY(), w = detailW(), h = detailH();
+        UcUi.paper(g, x, y, w, h);
+        int tx = x + 9, ty = y + 8;
+        UcUi.display(g, font, UcUi.fit(font, job.title().toUpperCase(Locale.ROOT), w - 18), tx, ty, UcUi.INK);
+        g.fill(tx, ty + 11, x + w - 9, ty + 12, 0xff8a7c5e);
+        ty += 18;
+        int darkTeal = 0xff1d7a69, darkRed = 0xff9a2f27, darkAmber = 0xff8a5a10, darkGreen = 0xff2d7a3a;
+        String buyer = extra.buyer().isEmpty() ? "Open order, licensed work" : "Buyer: " + extra.buyer() + " (" + capitalize(extra.buyerCity()) + ")";
+        UcUi.icon(g, extra.underground() ? UcUi.Icon.UNDERGROUND : UcUi.Icon.LEGAL, tx - 2, ty - 4, extra.underground() ? darkRed : darkTeal);
+        g.drawString(font, UcUi.fit(font, buyer, w - 40), tx + 16, ty, extra.underground() ? darkRed : darkTeal, false);
+        if (extra.minTrust() > 0 || extra.underground()) {
+            String trust = "trust " + extra.trust() + (extra.minTrust() > 0 ? "/" + extra.minTrust() : "");
+            g.drawString(font, trust, x + w - 9 - font.width(trust), ty, UcUi.PAPER_DIM, false);
+        }
+        ty += 16;
+        for (TerminalData.Req req : job.reqs()) {
+            boolean enough = req.held() >= req.count();
+            g.renderItem(new ItemStack(item(req.item())), tx, ty - 3);
+            String name = req.label().isEmpty() ? itemName(req.item()) : req.label();
+            g.drawString(font, UcUi.fit(font, req.count() + " x " + name, w - 100), tx + 21, ty, UcUi.INK, false);
+            String have = req.held() + "/" + req.count();
+            g.drawString(font, have, x + w - 9 - font.width(have), ty, enough ? darkGreen : darkRed, false);
+            UcUi.bar(g, tx + 21, ty + 10, w - 40, 3, req.count() == 0 ? 1f : Math.min(1f, (float) req.held() / req.count()), enough ? darkGreen : darkAmber);
+            ty += 20;
+        }
+        ty += 2;
+        UcUi.icon(g, UcUi.Icon.CREDITS, tx - 2, ty - 4, darkAmber);
+        g.drawString(font, "+" + job.credits() + " credits", tx + 16, ty, darkAmber, false);
+        int xx = tx + 16 + font.width("+" + job.credits() + " credits") + 12;
+        UcUi.icon(g, UcUi.Icon.XP, xx - 2, ty - 4, darkTeal);
+        g.drawString(font, "+" + job.xp() + " XP  L" + job.level(), xx + 16, ty, darkTeal, false);
+        ty += 14;
+        if (!extra.rewards().isEmpty()) {
+            g.drawString(font, UcUi.fit(font, "Also: " + String.join(", ", extra.rewards()), w - 20), tx, ty, darkTeal, false);
+            ty += 12;
+        }
+        String state;
+        int stateColor = darkAmber;
+        UcUi.Icon stateIcon = UcUi.Icon.INFO;
+        if (job.accepted()) {
+            boolean elsewhere = ready(job) && !extra.buyerCity().isEmpty() && !extra.buyerCity().equals(data.region());
+            state = elsewhere ? "Ready: carry it to " + extra.buyer() + " in " + capitalize(extra.buyerCity()) + " and deliver at a terminal there"
+                : ready(job) ? "Ready: deliver plain, undamaged goods" : "Missing " + missing(job) + " goods: produce them before delivering";
+            stateColor = ready(job) ? darkGreen : darkAmber;
+            stateIcon = ready(job) ? UcUi.Icon.CHECK : UcUi.Icon.WARNING;
+        } else if (data.active() != null) { state = "Finish your accepted order first"; stateIcon = UcUi.Icon.LOCK; }
+        else if (!extra.skillOk()) { state = "Locked: requires the skill " + extra.skill(); stateColor = darkRed; stateIcon = UcUi.Icon.LOCK; }
+        else if (data.level() < job.level()) { state = "Locked: career level " + job.level() + " required"; stateColor = darkRed; stateIcon = UcUi.Icon.LOCK; }
+        else if (extra.minTrust() > extra.trust()) { state = "Locked: " + extra.buyer() + " trusts you " + extra.trust() + "/" + extra.minTrust(); stateColor = darkRed; stateIcon = UcUi.Icon.LOCK; }
+        else if (data.foreignVisits() < job.foreignVisits()) { state = "Locked: " + visitText(job); stateColor = darkRed; stateIcon = UcUi.Icon.LOCK; }
+        else if (job.available() == 0) { state = "Employer demand is spent; it refills during active play"; stateColor = darkAmber; stateIcon = UcUi.Icon.CLOCK; }
+        else { state = "Employer demand: " + job.available() + (job.available() == 1 ? " order" : " orders") + " left"; stateColor = darkTeal; stateIcon = UcUi.Icon.INFO; }
+        int stateY = y + h - 26 - 6 - UcUi.wrappedHeight(font, state, w - 36, 3);
+        if (stateY < ty) stateY = ty;
+        UcUi.icon(g, stateIcon, tx - 2, stateY - 4, stateColor);
+        UcUi.wrapped(g, font, state, tx + 16, stateY, w - 36, stateColor, 3);
+    }
+
+    // ---- SKILLS
+    private void renderSkills(GuiGraphics g, int mouseX, int mouseY) {
+        if (data.skills().isEmpty()) {
+            emptyState(g, UcUi.Icon.POINT, "No skill tree yet", "Register to open your trade's skill tree: a legal branch, an underground branch and the foundations between them. None locks out another.");
+            return;
+        }
+        // column headings
+        int gap = 6, colW = nodeW;
+        String[] titles = {"Legal", "Foundation", "Underground"};
+        int[] colors = {UcUi.LEGAL, UcUi.SOFT, UcUi.UNDERGROUND};
+        UcUi.Icon[] icons = {UcUi.Icon.LEGAL, null, UcUi.Icon.UNDERGROUND};
+        for (int c = 0; c < 3; c++) {
+            int x = cx + c * (colW + gap);
+            g.fill(x, cy + 12, x + colW, cy + 13, UcUi.shade(colors[c], 0.5f));
+            UcUi.display(g, font, titles[c], x + 2 + (icons[c] != null ? 14 : 0), cy + 2, colors[c]);
+            if (icons[c] != null) UcUi.icon(g, icons[c], x - 2, cy - 2, colors[c]);
+        }
+        // links first, so nodes sit on top: thin and muted, brighter when the parent is owned, amber on the way to the selected skill
+        Map<String, Integer> index = new HashMap<>();
+        for (int i = 0; i < data.skills().size(); i++) index.put(data.skills().get(i).id(), i);
+        for (int pass = 0; pass < 2; pass++) {
+            for (int i = 0; i < data.skills().size(); i++) {
+                boolean selectedLink = i == selectedSkill;
+                if ((pass == 1) != selectedLink) continue;
+                for (String parent : data.skills().get(i).requires()) {
+                    Integer p = index.get(parent);
+                    if (p == null) continue;
+                    boolean lit = data.skills().get(p).state() == 2;
+                    int color = selectedLink ? UcUi.AMBER : lit ? UcUi.shade(branchColor(data.skills().get(i)), 0.7f) : 0xff2c4358;
+                    int t = selectedLink ? 2 : 1;
+                    int x0 = nodeX[p] + nodeW / 2, y0 = nodeY[p] + nodeH, x1 = nodeX[i] + nodeW / 2, y1 = nodeY[i];
+                    int mid = y1 - 5;
+                    g.fill(x0, y0, x0 + t, mid + t, color);
+                    g.fill(Math.min(x0, x1), mid, Math.max(x0, x1) + t, mid + t, color);
+                    g.fill(x1, mid, x1 + t, y1, color);
                 }
             }
         }
-        String points=data.career().equals("NONE")?"":"  |  "+data.skillPoints()+" skill pt"+(data.skillPoints()==1?"":"s");
-        String footer=capitalize(data.career())+" L"+data.level()+points+" | "+(data.economy()?String.format(java.util.Locale.ROOT,"%.0f credits",data.balance()):"Economy offline");
-        g.drawString(font,footer,left+12,top+panelH-28,AMBER,false);
-        g.drawString(font,"ESC TO CLOSE",left+panelW-88,top+panelH-15,DIM,false);
-        g.drawString(font,capitalize(data.city())+(data.region().isEmpty()?"":"  |  at "+capitalize(data.region())),left+12,top+panelH-15,DIM,false);
-        super.render(g,mouseX,mouseY,partialTick);
-        if (current==Page.SKILLS) markNodes(g);
+        int hover = skillAt(mouseX, mouseY);
+        for (int i = 0; i < data.skills().size(); i++) renderNode(g, i, i == selectedSkill, i == hover);
+        renderSkillDetail(g);
     }
 
-    static String capitalize(String id) {
-        return id.isEmpty()?"":Character.toUpperCase(id.charAt(0))+id.substring(1);
+    private void renderNode(GuiGraphics g, int i, boolean sel, boolean over) {
+        TerminalData.SkillRow row = data.skills().get(i);
+        int x = nodeX[i], y = nodeY[i], w = nodeW, h = nodeH;
+        int color = branchColor(row);
+        int fill = row.state() == 2 ? UcUi.mix(0xff0d1620, color, 0.26f) : row.state() == 1 ? 0xff182b3b : 0xff111a24;
+        int border = row.state() == 2 ? UcUi.shade(color, 0.9f) : row.state() == 1 ? color : 0xff22323f;
+        g.fill(x - 1, y - 1, x + w + 1, y + h + 1, sel ? UcUi.AMBER : over ? UcUi.TEXT : 0xff05080c);
+        g.fill(x, y, x + w, y + h, border);
+        g.fill(x + 1, y + 1, x + w - 1, y + h - 1, fill);
+        g.fill(x + 1, y + 1, x + 25, y + h - 1, 0xff0a121a);
+        UcUi.Icon icon = row.branch().equals("underground") ? UcUi.Icon.UNDERGROUND : row.branch().equals("legal") ? UcUi.Icon.LEGAL : UcUi.careerIcon(data.career());
+        UcUi.icon(g, icon, x + 5, y + 4, row.state() == 0 ? UcUi.FAINT : color);
+        String title = fit(row, w - 32);
+        g.drawString(font, title, x + 28, y + 4, row.state() == 0 ? UcUi.DIM : UcUi.TEXT, false);
+        String sub = row.state() == 2 ? "OWNED" : row.state() == 1 ? "READY  " + row.cost() + " pt" : "LOCKED  L" + row.minLevel();
+        UcUi.display(g, font, sub, x + 28, y + 14, row.state() == 2 ? UcUi.OK : row.state() == 1 ? UcUi.AMBER : UcUi.FAINT);
     }
 
-    private void renderExchange(GuiGraphics g) {
-        g.drawString(font,"Shared stock | replenishes during active play",left+18,top+93,DIM,false);
-        for (int i=0;i<Math.min(MAX_OFFER_ROWS,data.offers().size());i++) {
-            TerminalData.Offer offer=data.offers().get(i);
-            int y=top+ROW_TOP+i*ROW_STEP;
-            g.renderItem(new ItemStack(item(offer.item())),left+18,y);
-            g.drawString(font,font.plainSubstrByWidth(itemName(offer.item()),panelW-210),left+40,y,TEXT,false);
-            boolean soldOut=offer.stock()==0, poor=data.economy() && data.balance()<offer.price();
-            String line=offer.price()+" Cr each  |  "+(soldOut?"SOLD OUT":offer.stock()+"/"+offer.capacity()+" in stock");
-            if (!soldOut && poor) line+="  |  NEED "+(int)Math.ceil(offer.price()-data.balance())+" MORE";
-            g.drawString(font,font.plainSubstrByWidth(line,panelW-170),left+40,y+10,soldOut?RED:poor?AMBER:SOFT,false);
+    private String fit(TerminalData.SkillRow row, int width) {
+        if (font.width(row.title()) <= width) return row.title();
+        if (font.width(row.shortTitle()) <= width) return row.shortTitle();
+        return UcUi.fit(font, row.shortTitle(), width);
+    }
+
+    private void renderSkillDetail(GuiGraphics g) {
+        TerminalData.SkillRow row = data.skills().get(Math.min(selectedSkill, data.skills().size() - 1));
+        int y = cy + ch - 64, color = branchColor(row);
+        UcUi.well(g, cx, y, cw, 64);
+        g.fill(cx + 1, y + 1, cx + 4, y + 63, color);
+        UcUi.display(g, font, UcUi.fit(font, row.title(), cw - 160), cx + 10, y + 6, color);
+        String meta = row.state() == 2 ? "Unlocked" : row.cost() + (row.cost() == 1 ? " point" : " points") + "  |  level " + row.minLevel();
+        UcUi.text(g, font, meta, cx + 10, y + 17, row.state() == 2 ? UcUi.OK : UcUi.AMBER);
+        UcUi.wrapped(g, font, row.description(), cx + 10, y + 29, cw - 156, UcUi.SOFT, 3);
+        String note = row.state() == 2 ? "" : !row.reason().isEmpty() ? row.reason() : "Ready to unlock";
+        if (!note.isEmpty()) {
+            int nx = cx + cw - 8 - 130;
+            UcUi.wrapped(g, font, note, nx, y + 6, 130, row.state() == 1 ? UcUi.LEGAL : UcUi.AMBER, 2);
         }
-        if (data.offers().size()>MAX_OFFER_ROWS) g.drawString(font,"+"+(data.offers().size()-MAX_OFFER_ROWS)+" more lines not shown",left+18,top+ROW_TOP+MAX_OFFER_ROWS*ROW_STEP,DIM,false);
     }
 
-    /** Journey/QA hook: a real mouse click at the centre of an offer's buy button. */
-    boolean clickBuy(int row,boolean lot) {
-        Button button=(lot?buyLot:buyOne)[row];
-        return mouseClicked(button.getX()+button.getWidth()/2.0,button.getY()+button.getHeight()/2.0,0);
-    }
-
-    private void renderWork(GuiGraphics g) {
-        // The selected filter is also a darker, inactive button; the underline makes the choice unmistakable at a glance.
-        Button chosen=undergroundView?undergroundFilter:legalFilter;
-        if (chosen.visible) g.fill(chosen.getX(),chosen.getY()+chosen.getHeight(),chosen.getX()+chosen.getWidth(),chosen.getY()+chosen.getHeight()+2,undergroundView?RED:TEAL);
-        TerminalData.Row job=row();
-        if (job==null) {
-            String message=data.jobs().isEmpty()?"You are not registered yet. Choose a home city and a profession to see paid orders. Both legal and underground work stay open to you."
-                :undergroundView?"No underground contracts yet. Learn an underground skill in the SKILLS tab to open the trade."
-                :"No legal contracts are listed for this profession.";
-            wrapped(g,message,left+18,top+104,panelW-36,SOFT);
+    // ---- TRADE
+    private void renderTrade(GuiGraphics g) {
+        boolean exchange = exchangeOpen();
+        int y = cy + 26;
+        String heading = exchange ? capitalize(data.region()).toUpperCase(Locale.ROOT) + " EXCHANGE" : "REGIONAL EXCHANGE";
+        UcUi.display(g, font, heading, cx, y, UcUi.LEGAL);
+        UcUi.text(g, font, "Shared stock, refilled during active play", cx + UcUi.displayWidth(font, heading) + 8, y, UcUi.DIM);
+        UcUi.well(g, cx, cy + 40, cw, ch - 40);
+        if (!exchange) {
+            int ty = cy + 52;
+            UcUi.icon(g, UcUi.Icon.INFO, cx + 8, ty - 4, UcUi.AMBER);
+            UcUi.wrapped(g, font, data.region().isEmpty() ? "This terminal is outside every city exchange. Use one inside Ironhaven, Valewood or Blackwater to see local goods."
+                : "No regional stock is listed for this city.", cx + 28, ty, cw - 40, UcUi.SOFT, 4);
             return;
         }
-        TerminalData.Extra extra=job.extra();
-        int x0=left+18, y=top+94;
-        g.drawString(font,font.plainSubstrByWidth(job.title(),panelW-100),x0,y,TEXT,false);
-        y+=13;
-        if (!extra.buyer().isEmpty()) {
-            String buyer="Buyer: "+extra.buyer()+" ("+capitalize(extra.buyerCity())+")"+(extra.minTrust()>0||extra.underground()?"  |  trust "+extra.trust()+(extra.minTrust()>0?"/"+extra.minTrust():""):"");
-            g.drawString(font,font.plainSubstrByWidth(buyer,panelW-36),x0,y,extra.underground()?RED:SOFT,false);
-            y+=12;
+        int rows = offerRows();
+        for (int i = 0; i < rows && i + offerScroll < data.offers().size(); i++) {
+            TerminalData.Offer offer = data.offers().get(i + offerScroll);
+            int ry = cy + 56 + i * 26;
+            if (i % 2 == 0) g.fill(cx + 2, ry - 2, cx + cw - 2, ry + 22, 0xff111c27);
+            g.renderItem(new ItemStack(item(offer.item())), cx + 8, ry + 1);
+            g.drawString(font, UcUi.fit(font, itemName(offer.item()), cw - 250), cx + 30, ry, UcUi.TEXT, false);
+            boolean soldOut = offer.stock() == 0, poor = data.economy() && data.balance() < offer.price();
+            UcUi.icon(g, UcUi.Icon.CREDITS, cx + 28, ry + 7, poor ? UcUi.UNDERGROUND_TEXT : UcUi.AMBER);
+            g.drawString(font, offer.price() + " each", cx + 44, ry + 11, poor ? UcUi.UNDERGROUND_TEXT : UcUi.AMBER, false);
+            int bx = cx + cw - 250 + 90;
+            UcUi.bar(g, bx, ry + 4, 70, 5, offer.capacity() == 0 ? 0f : (float) offer.stock() / offer.capacity(), soldOut ? UcUi.UNDERGROUND : UcUi.LEGAL);
+            String stock = soldOut ? "SOLD OUT" : offer.stock() + "/" + offer.capacity();
+            g.drawString(font, stock, bx, ry + 11, soldOut ? UcUi.UNDERGROUND_TEXT : UcUi.DIM, false);
+            if (!soldOut && poor) g.drawString(font, "need " + (int) Math.ceil(offer.price() - data.balance()) + " more", bx + 52, ry + 11, UcUi.WARN, false);
         }
-        for (TerminalData.Req req:job.reqs()) {
-            boolean enough=req.held()>=req.count();
-            g.renderItem(new ItemStack(item(req.item())),x0,y-3);
-            String name=req.label().isEmpty()?itemName(req.item()):req.label();
-            g.drawString(font,font.plainSubstrByWidth(req.count()+" x "+name,panelW-150),x0+20,y+1,SOFT,false);
-            String held="have "+req.held()+"/"+req.count();
-            g.drawString(font,held,left+panelW-18-font.width(held),y+1,enough?TEAL:AMBER,false);
-            y+=17;
-        }
-        y+=2;
-        g.drawString(font,"+"+job.credits()+" credits  /  +"+job.xp()+" XP  /  Level "+job.level(),x0,y,extra.underground()?AMBER:TEAL,false);
-        y+=12;
-        if (!extra.rewards().isEmpty()) {
-            g.drawString(font,font.plainSubstrByWidth("Also: "+String.join(", ",extra.rewards()),panelW-36),x0,y,TEAL,false);
-            y+=11;
-        }
-        String state=job.accepted()?(ready(job)?"READY - deliver plain, undamaged goods":"MISSING "+missing(job)+" goods - produce before delivery")
-            :data.active()!=null?"Finish your accepted order first"
-            :!extra.skillOk()?"LOCKED - requires the skill "+extra.skill()
-            :data.level()<job.level()?"LOCKED - career level "+job.level()+" required"
-            :extra.minTrust()>extra.trust()?"LOCKED - "+extra.buyer()+" trusts you "+extra.trust()+"/"+extra.minTrust()
-            :data.foreignVisits()<job.foreignVisits()?"LOCKED - "+visitText(job)
-            :"Employer demand: "+job.available()+" orders";
-        if (job.accepted() && ready(job) && !extra.buyerCity().isEmpty() && !extra.buyerCity().equals(data.region())) {
-            state="READY - carry it to "+extra.buyer()+" in "+capitalize(extra.buyerCity())+" and deliver at a terminal there";
-        }
-        wrapped(g,state,x0,y,panelW-36,AMBER);
+        if (data.offers().size() > rows) UcUi.text(g, font, "Scroll for " + (data.offers().size() - rows) + " more lines", cx + 8, cy + ch - 12, UcUi.DIM);
     }
 
-    private void renderSkills(GuiGraphics g) {
-        g.drawString(font,capitalize(data.career()).toUpperCase(java.util.Locale.ROOT)+" SKILLS",left+18,top+76,TEAL,false);
-        String points=data.skillPoints()+" POINT"+(data.skillPoints()==1?"":"S")+" FREE";
-        g.drawString(font,points,left+panelW-18-font.width(points),top+76,AMBER,false);
-        if (data.skills().isEmpty()) {
-            wrapped(g,"You are not registered yet. Choose a home city and a profession to open your career skill tree.",left+18,top+104,panelW-36,SOFT);
-            return;
-        }
-        int colW=(panelW-36-12)/3;
-        String[] titles={"LEGAL","FOUNDATION","UNDERGROUND"};
-        int[] colors={TEAL,SOFT,RED};
-        for (int i=0;i<3;i++) {
-            int x=left+18+i*(colW+6);
-            g.drawString(font,titles[i],x+(colW-font.width(titles[i]))/2,top+87,colors[i],false);
-        }
-        TerminalData.SkillRow row=data.skills().get(Math.min(selectedSkill,data.skills().size()-1));
-        int branchColor=row.branch().equals("underground")?RED:row.branch().equals("legal")?TEAL:SOFT;
-        g.fill(left+14,top+158,left+panelW-14,top+159,0xff2a4358);
-        String meta=row.state()==2?"UNLOCKED":row.cost()+" point"+(row.cost()==1?"":"s")+"  |  level "+row.minLevel();
-        g.drawString(font,font.plainSubstrByWidth(row.title(),panelW-190),left+18,top+162,branchColor,false);
-        g.drawString(font,meta,left+panelW-18-font.width(meta),top+162,row.state()==2?TEAL:AMBER,false);
-        var lines=font.split(Component.literal(row.description()),panelW-36);
-        for (int i=0;i<Math.min(2,lines.size());i++) g.drawString(font,lines.get(i),left+18,top+172+i*10,SOFT,false);
-        String note=row.state()==2?"":!row.reason().isEmpty()?row.reason():"Ready to unlock";
-        if (!note.isEmpty()) g.drawString(font,font.plainSubstrByWidth(note,panelW-36),left+18,top+192,row.state()==1?TEAL:AMBER,false);
-    }
-
-    /** State markers drawn on top of the node buttons: teal unlocked, amber available, grey locked. */
-    private void markNodes(GuiGraphics g) {
-        for (int i=0;i<Math.min(MAX_NODES,data.skills().size());i++) {
-            TerminalData.SkillRow row=data.skills().get(i);
-            int color=row.state()==2?TEAL:row.state()==1?AMBER:GREY;
-            int x=nodes[i].getX()+4,y=nodes[i].getY()+5;
-            g.fill(x,y,x+4,y+4,color);
-        }
-    }
-
-    private void renderMarket(GuiGraphics g) {
+    // ---- LAW
+    private void renderLaw(GuiGraphics g) {
         if (data.region().isEmpty() || data.laws().isEmpty()) {
-            g.drawString(font,"LAW AND CONTACTS",left+18,top+81,TEAL,false);
-            int y=top+100;
-            for (String line:Page.BLACK_MARKET.copy) y=wrapped(g,line,left+18,y,panelW-36,SOFT)+8;
+            emptyState(g, UcUi.Icon.SCALES, "Law and contacts", "Use a terminal inside a city to see its law, its buyers and how closely you are watched. Possession is never detected by itself; searches happen at road checkpoints and hand-offs can be seen.");
             return;
         }
-        g.drawString(font,capitalize(data.region()).toUpperCase(java.util.Locale.ROOT)+" LAW AND CONTACTS",left+18,top+76,TEAL,false);
-        String heat=data.heat()==0?"HEAT 0 (quiet)":"HEAT "+data.heat()+" - searches likelier";
-        g.drawString(font,heat,left+panelW-18-font.width(heat),top+76,data.heat()==0?DIM:RED,false);
-        int y=wrapped(g,data.lawSummary(),left+18,top+88,panelW-36,SOFT)+3;
-        int half=(panelW-36)/2;
-        g.drawString(font,"CONTROLLED GOODS HERE",left+18,y,DIM,false);
-        g.drawString(font,"BUYERS HERE",left+18+half+8,y,DIM,false);
-        int rowY=y+12;
-        for (TerminalData.LawRow law:data.laws()) {
-            String status=law.status().equals("permit")?(law.licensed()?"LICENSED":"PERMIT"):law.status().toUpperCase(java.util.Locale.ROOT);
-            int color=law.status().equals("legal")||law.licensed()?TEAL:law.status().equals("permit")?AMBER:RED;
-            g.drawString(font,font.plainSubstrByWidth(law.title(),half-62),left+18,rowY,SOFT,false);
-            g.drawString(font,status,left+18+half-font.width(status)-4,rowY,color,false);
-            rowY+=10;
+        int half = (cw - 8) * 58 / 100;
+        UcUi.display(g, font, capitalize(data.region()) + " law", cx, cy + 2, UcUi.AMBER);
+        UcUi.well(g, cx, cy + 16, half, ch - 16);
+        // heat: five pips and what they mean
+        UcUi.icon(g, UcUi.Icon.HEAT, cx + 6, cy + 20, data.heat() == 0 ? UcUi.DIM : UcUi.UNDERGROUND);
+        for (int p = 0; p < 5; p++) {
+            int hx = cx + 26 + p * 11;
+            g.fill(hx, cy + 27, hx + 9, cy + 32, p < data.heat() ? UcUi.UNDERGROUND : 0xff2a1a1a);
+            g.fill(hx, cy + 27, hx + 9, cy + 28, p < data.heat() ? UcUi.UNDERGROUND_TEXT : 0xff3a2424);
         }
-        int contactY=y+12;
+        UcUi.text(g, font, data.heat() == 0 ? "Quiet: no extra attention" : "Heat " + data.heat() + ": searches are likelier for a while", cx + 86, cy + 26, data.heat() == 0 ? UcUi.DIM : UcUi.UNDERGROUND_TEXT);
+        g.fill(cx + 4, cy + 40, cx + half - 4, cy + 41, 0xff1d2f40);
+        int y = UcUi.wrapped(g, font, data.lawSummary(), cx + 8, cy + 46, half - 16, UcUi.SOFT, 4) + 5;
+        UcUi.display(g, font, "Controlled goods here", cx + 8, y, UcUi.DIM);
+        y += 13;
+        for (TerminalData.LawRow law : data.laws()) {
+            if (y + 12 > cy + ch - 4) break;
+            String status = law.status().equals("permit") ? (law.licensed() ? "LICENSED" : "PERMIT") : law.status().toUpperCase(Locale.ROOT);
+            int color = law.status().equals("legal") || law.licensed() ? UcUi.LEGAL : law.status().equals("permit") ? UcUi.AMBER : UcUi.UNDERGROUND;
+            int chipW = UcUi.displayWidth(font, status) + 10;
+            g.drawString(font, UcUi.fit(font, law.title(), half - 24 - chipW), cx + 8, y, UcUi.SOFT, false);
+            UcUi.chip(g, font, status, cx + half - 8 - chipW, y - 3, color, null);
+            y += 15;
+        }
+        int rx = cx + half + 8, rw = cw - half - 8;
+        UcUi.display(g, font, "Buyers and contacts", rx, cy + 2, UcUi.AMBER);
+        UcUi.well(g, rx, cy + 16, rw, ch - 16);
+        int cyy = cy + 24;
         if (data.contacts().isEmpty()) {
-            wrapped(g,"No contacts yet. Learn an underground skill to be introduced.",left+18+half+8,contactY,half-8,DIM);
+            UcUi.wrapped(g, font, "No contacts yet. Learn an underground skill to be introduced.", rx + 8, cyy, rw - 16, UcUi.DIM, 3);
         }
-        for (TerminalData.Contact contact:data.contacts()) {
-            g.drawString(font,font.plainSubstrByWidth(contact.title(),half-14),left+18+half+8,contactY,contact.underground()?RED:TEAL,false);
-            String detail=contact.underground()?"trust "+contact.trust()+"/"+BuyerCatalog.MAX_TRUST:"licensed, no trust needed";
-            g.drawString(font,detail,left+18+half+8,contactY+9,DIM,false);
-            contactY+=21;
+        for (TerminalData.Contact contact : data.contacts()) {
+            if (cyy + 26 > cy + ch - 4) break;
+            int color = contact.underground() ? UcUi.UNDERGROUND_TEXT : UcUi.LEGAL;
+            UcUi.icon(g, contact.underground() ? UcUi.Icon.UNDERGROUND : UcUi.Icon.LEGAL, rx + 6, cyy - 3, contact.underground() ? UcUi.UNDERGROUND : UcUi.LEGAL);
+            g.drawString(font, UcUi.fit(font, contact.title(), rw - 36), rx + 26, cyy, color, false);
+            if (contact.underground()) {
+                for (int p = 0; p < BuyerCatalog.MAX_TRUST; p++) {
+                    int px2 = rx + 26 + p * 10;
+                    g.fill(px2, cyy + 11, px2 + 8, cyy + 16, p < contact.trust() ? UcUi.UNDERGROUND : 0xff2a1a1a);
+                    g.fill(px2, cyy + 11, px2 + 8, cyy + 12, p < contact.trust() ? UcUi.UNDERGROUND_TEXT : 0xff3a2424);
+                }
+                UcUi.text(g, font, "trust " + contact.trust() + "/" + BuyerCatalog.MAX_TRUST, rx + 26 + BuyerCatalog.MAX_TRUST * 10 + 4, cyy + 10, UcUi.DIM);
+            } else {
+                UcUi.text(g, font, "licensed, no trust needed", rx + 26, cyy + 10, UcUi.DIM);
+            }
+            cyy += 26;
         }
     }
 
-    private int wrapped(GuiGraphics g,String text,int x,int y,int wrap,int color) {
-        for (var line:font.split(Component.literal(text),wrap)) { g.drawString(font,line,x,y,color,false);y+=10; }
-        return y;
+    // ---- GUIDE
+    private void renderGuide(GuiGraphics g) {
+        if (!registered() || data.journey().isEmpty()) {
+            emptyState(g, UcUi.Icon.BOOK, "Your first half hour", "Register, meet your employer, take an order, deliver it, learn a skill, buy something, travel. A short signpost, not a tutorial: ignore it whenever you like.");
+            return;
+        }
+        UcUi.display(g, font, "First half hour", cx, cy + 2, UcUi.AMBER);
+        long done = data.journey().stream().filter(TerminalData.Step::done).count();
+        UcUi.displayRight(g, font, done + " of " + data.journey().size(), cx + cw, cy + 2, UcUi.DIM);
+        UcUi.bar(g, cx, cy + 14, cw, 4, (float) done / data.journey().size(), UcUi.LEGAL);
+        TerminalData.Step next = nextStep();
+        int y = cy + 24;
+        int rowH = Math.max(16, Math.min(28, (ch - 28 - 18) / data.journey().size()));
+        for (TerminalData.Step step : data.journey()) {
+            boolean isNext = step == next;
+            int h = isNext ? Math.max(rowH, 42) : rowH;
+            g.fill(cx, y, cx + cw, y + h - 2, isNext ? 0xff22384c : 0xff111c27);
+            if (isNext) g.fill(cx, y, cx + 3, y + h - 2, UcUi.AMBER);
+            UcUi.icon(g, step.done() ? UcUi.Icon.CHECK : isNext ? UcUi.Icon.ARROW_RIGHT : UcUi.Icon.CLOCK, cx + 6, y + (h - 2) / 2 - 8, step.done() ? UcUi.OK : isNext ? UcUi.AMBER : UcUi.FAINT);
+            UcUi.display(g, font, step.title(), cx + 28, y + 4, step.done() ? UcUi.DIM : isNext ? UcUi.TEXT : UcUi.SOFT);
+            if (isNext) {
+                UcUi.wrapped(g, font, step.hint(), cx + 28, y + 15, cw - 150, UcUi.SOFT, 2);
+                showMe.setX(cx + cw - 104); showMe.setY(y + (h - 2) / 2 - 9); showMe.setWidth(98);
+            }
+            y += h;
+        }
     }
-    @Override public boolean isPauseScreen() { return false; }
 }

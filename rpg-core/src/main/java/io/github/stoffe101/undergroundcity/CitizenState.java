@@ -42,6 +42,10 @@ public final class CitizenState extends SavedData {
                 String id = skills.getString(s);
                 if (id.matches("[a-z]+\\.[a-z_]{2,40}")) citizen.skills.add(id);
             }
+            CompoundTag journey = entry.getCompound("journey");
+            for (String key : journey.getAllKeys()) {
+                if (key.matches("[a-z_]{2,24}") && citizen.journey.size() < 32) citizen.journey.put(key, Math.max(0, Math.min(9999, journey.getInt(key))));
+            }
             state.citizens.put(uuid, citizen);
         }
         return state;
@@ -98,6 +102,22 @@ public final class CitizenState extends SavedData {
         if (citizen.skills.add(skillId)) setDirty();
     }
 
+    /** Records that a guided-journey milestone happened (a flag: set once, never undone). */
+    public void markJourney(UUID uuid, String key) {
+        Citizen citizen = citizens.get(uuid);
+        if (citizen == null || citizen.journey.getOrDefault(key, 0) > 0 || citizen.journey.size() >= 32) return;
+        citizen.journey.put(key, 1);
+        setDirty();
+    }
+
+    /** Counts a guided-journey milestone (deliveries made, for instance). */
+    public void bumpJourney(UUID uuid, String key) {
+        Citizen citizen = citizens.get(uuid);
+        if (citizen == null || citizen.journey.size() >= 32 && !citizen.journey.containsKey(key)) return;
+        citizen.journey.merge(key, 1, (a, b) -> Math.min(9999, a + b));
+        setDirty();
+    }
+
     /** Restore a journaled reward after a crash without awarding it twice. */
     void restoreCareerXp(UUID uuid, int target) {
         Citizen citizen = citizens.get(uuid);
@@ -123,6 +143,9 @@ public final class CitizenState extends SavedData {
             ListTag skills = new ListTag();
             citizen.skills.stream().sorted().forEach(id -> skills.add(net.minecraft.nbt.StringTag.valueOf(id)));
             record.put("skills", skills);
+            CompoundTag journey = new CompoundTag();
+            citizen.journey.forEach(journey::putInt);
+            record.put("journey", journey);
             entries.add(record);
         }
         root.put("citizens", entries);
@@ -141,6 +164,7 @@ public final class CitizenState extends SavedData {
         public final Map<String, Integer> careerXp = new HashMap<>();
         public final Map<String, Integer> generalXp = new HashMap<>();
         private final java.util.Set<String> skills = new java.util.TreeSet<>();
+        private final Map<String, Integer> journey = new java.util.TreeMap<>();
 
         private Citizen(String city, String career) {
             this.city = city;
@@ -149,6 +173,7 @@ public final class CitizenState extends SavedData {
 
         public java.util.Set<String> skills() { return java.util.Collections.unmodifiableSet(skills); }
         public int careerXp() { return careerXp.getOrDefault(career, 0); }
+        public int journey(String key) { return journey.getOrDefault(key, 0); }
         public int careerLevel() { return ProgressionRules.levelForXp(careerXp()); }
         public int generalLevel(String skill) {
             return ProgressionRules.levelForXp(generalXp.getOrDefault(skill, 0));

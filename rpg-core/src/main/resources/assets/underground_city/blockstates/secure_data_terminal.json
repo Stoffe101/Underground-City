@@ -1,7 +1,19 @@
 {
-  "variants": {
-    "": {
-      "model": "underground_city:block/secure_data_terminal"
-    }
+ "variants": {
+  "facing=north": {
+   "model": "underground_city:block/secure_data_terminal"
+  },
+  "facing=east": {
+   "model": "underground_city:block/secure_data_terminal",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "underground_city:block/secure_data_terminal",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "underground_city:block/secure_data_terminal",
+   "y": 270
   }
+ }
 }

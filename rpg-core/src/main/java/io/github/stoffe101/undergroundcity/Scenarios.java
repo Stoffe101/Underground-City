@@ -20,6 +20,7 @@ final class Scenarios {
             case "car" -> car();
             case "boat" -> boat();
             case "gun" -> gun();
+            case "gallery" -> Gallery.build();
             default -> throw new IllegalArgumentException("unknown scenario " + scenario);
         }
     }

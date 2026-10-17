@@ -1,204 +1,255 @@
 {
-  "parent": "minecraft:block/block",
-  "textures": {
-    "frame": "minecraft:block/black_concrete",
-    "body": "minecraft:block/gray_concrete",
-    "display": "minecraft:block/cyan_concrete",
-    "key": "minecraft:block/polished_blackstone"
+ "textures": {
+  "case": "underground_city:block/terminal_case",
+  "screen": "underground_city:block/terminal_screen",
+  "keys": "underground_city:block/terminal_keys",
+  "particle": "underground_city:block/terminal_case"
+ },
+ "elements": [
+  {
+   "from": [
+    2,
+    0,
+    2
+   ],
+   "to": [
+    14,
+    1.5,
+    13
+   ],
+   "faces": {
+    "north": {
+     "texture": "#case"
+    },
+    "south": {
+     "texture": "#case"
+    },
+    "east": {
+     "texture": "#case"
+    },
+    "west": {
+     "texture": "#case"
+    },
+    "up": {
+     "texture": "#case"
+    },
+    "down": {
+     "texture": "#case"
+    }
+   }
   },
-  "elements": [
-    {
-      "from": [
-        2,
-        5,
-        9
-      ],
-      "to": [
-        14,
-        16,
-        11
-      ],
-      "faces": {
-        "north": {
-          "texture": "#display"
-        },
-        "south": {
-          "texture": "#frame"
-        },
-        "east": {
-          "texture": "#frame"
-        },
-        "west": {
-          "texture": "#frame"
-        },
-        "up": {
-          "texture": "#frame"
-        },
-        "down": {
-          "texture": "#frame"
-        }
-      }
+  {
+   "from": [
+    3,
+    1.5,
+    2.5
+   ],
+   "to": [
+    13,
+    2.5,
+    7
+   ],
+   "faces": {
+    "north": {
+     "texture": "#case"
     },
-    {
-      "from": [
-        1.5,
-        4.5,
-        8.5
-      ],
-      "to": [
-        14.5,
-        16,
-        9
-      ],
-      "faces": {
-        "north": {
-          "texture": "#frame"
-        },
-        "south": {
-          "texture": "#frame"
-        },
-        "east": {
-          "texture": "#frame"
-        },
-        "west": {
-          "texture": "#frame"
-        },
-        "up": {
-          "texture": "#frame"
-        },
-        "down": {
-          "texture": "#frame"
-        }
-      }
+    "south": {
+     "texture": "#case"
     },
-    {
-      "from": [
-        7,
-        2,
-        9
-      ],
-      "to": [
-        9,
-        5,
-        10
-      ],
-      "faces": {
-        "north": {
-          "texture": "#body"
-        },
-        "south": {
-          "texture": "#body"
-        },
-        "east": {
-          "texture": "#body"
-        },
-        "west": {
-          "texture": "#body"
-        },
-        "up": {
-          "texture": "#body"
-        },
-        "down": {
-          "texture": "#body"
-        }
-      }
+    "east": {
+     "texture": "#case"
     },
-    {
-      "from": [
-        4,
-        1,
-        6
-      ],
-      "to": [
-        12,
-        2,
-        13
-      ],
-      "faces": {
-        "north": {
-          "texture": "#body"
-        },
-        "south": {
-          "texture": "#body"
-        },
-        "east": {
-          "texture": "#body"
-        },
-        "west": {
-          "texture": "#body"
-        },
-        "up": {
-          "texture": "#body"
-        },
-        "down": {
-          "texture": "#body"
-        }
-      }
+    "west": {
+     "texture": "#case"
     },
-    {
-      "from": [
-        2,
-        1,
-        1
-      ],
-      "to": [
-        14,
-        2,
-        7
-      ],
-      "faces": {
-        "north": {
-          "texture": "#frame"
-        },
-        "south": {
-          "texture": "#frame"
-        },
-        "east": {
-          "texture": "#frame"
-        },
-        "west": {
-          "texture": "#frame"
-        },
-        "up": {
-          "texture": "#key"
-        },
-        "down": {
-          "texture": "#frame"
-        }
-      }
+    "up": {
+     "texture": "#keys",
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ]
+    },
+    "down": {
+     "texture": "#case"
     }
-  ],
-  "display": {
-    "gui": {
-      "rotation": [
-        25,
-        135,
-        0
-      ],
-      "translation": [
-        0,
-        0,
-        0
-      ],
-      "scale": [
-        0.8,
-        0.8,
-        0.8
-      ]
+   },
+   "rotation": {
+    "origin": [
+     8,
+     1.5,
+     2.5
+    ],
+    "axis": "x",
+    "angle": 22.5
+   }
+  },
+  {
+   "from": [
+    6.5,
+    1.5,
+    8.5
+   ],
+   "to": [
+    9.5,
+    6,
+    10
+   ],
+   "faces": {
+    "north": {
+     "texture": "#case"
     },
-    "ground": {
-      "scale": [
-        0.5,
-        0.5,
-        0.5
-      ]
+    "south": {
+     "texture": "#case"
     },
-    "fixed": {
-      "scale": [
-        0.75,
-        0.75,
-        0.75
-      ]
+    "east": {
+     "texture": "#case"
+    },
+    "west": {
+     "texture": "#case"
+    },
+    "up": {
+     "texture": "#case"
+    },
+    "down": {
+     "texture": "#case"
     }
+   }
+  },
+  {
+   "from": [
+    2,
+    5.5,
+    8
+   ],
+   "to": [
+    14,
+    15,
+    10.5
+   ],
+   "faces": {
+    "north": {
+     "texture": "#screen",
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ]
+    },
+    "south": {
+     "texture": "#case"
+    },
+    "east": {
+     "texture": "#case"
+    },
+    "west": {
+     "texture": "#case"
+    },
+    "up": {
+     "texture": "#case"
+    },
+    "down": {
+     "texture": "#case"
+    }
+   }
+  },
+  {
+   "from": [
+    4,
+    6.5,
+    10.5
+   ],
+   "to": [
+    12,
+    13.5,
+    13
+   ],
+   "faces": {
+    "north": {
+     "texture": "#case"
+    },
+    "south": {
+     "texture": "#case"
+    },
+    "east": {
+     "texture": "#case"
+    },
+    "west": {
+     "texture": "#case"
+    },
+    "up": {
+     "texture": "#case"
+    },
+    "down": {
+     "texture": "#case"
+    }
+   }
+  },
+  {
+   "from": [
+    12,
+    5.8,
+    7.9
+   ],
+   "to": [
+    13.2,
+    6.4,
+    8.1
+   ],
+   "faces": {
+    "north": {
+     "texture": "#screen",
+     "uv": [
+      14,
+      1,
+      15,
+      2
+     ]
+    }
+   }
   }
+ ],
+ "display": {
+  "gui": {
+   "rotation": [
+    28,
+    215,
+    0
+   ],
+   "translation": [
+    0,
+    -2,
+    0
+   ],
+   "scale": [
+    0.7,
+    0.7,
+    0.7
+   ]
+  },
+  "ground": {
+   "scale": [
+    0.5,
+    0.5,
+    0.5
+   ]
+  },
+  "fixed": {
+   "scale": [
+    0.7,
+    0.7,
+    0.7
+   ]
+  },
+  "thirdperson_righthand": {
+   "scale": [
+    0.4,
+    0.4,
+    0.4
+   ]
+  }
+ },
+ "parent": "minecraft:block/block"
 }

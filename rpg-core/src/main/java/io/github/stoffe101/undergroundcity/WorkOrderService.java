@@ -88,6 +88,7 @@ public final class WorkOrderService {
             }
         }
         ledger.accept(player.getUUID(), order);
+        CitizenState.get(player.server).markJourney(player.getUUID(), "accepted");
         net.minecraft.network.chat.MutableComponent message = Component.literal("Accepted: " + order.title() + ". Deliver ");
         boolean first = true;
         for (WorkOrder.Requirement requirement : order.requirements()) {
@@ -169,6 +170,7 @@ public final class WorkOrderService {
         }
         ledger.prepare(player.getUUID(), nonce, after.save(new ListTag()), target, xpTarget, trustAfter, heatAfter);
         recover(player, ledger);
+        CitizenState.get(player.server).bumpJourney(player.getUUID(), "deliveries");
         player.sendSystemMessage(Component.literal("Delivered " + order.title() + ": +" + order.credits()
             + " credits, +" + order.xp() + " career XP. Level " + citizen.careerLevel() + "."));
         if (!terms.rewards().isEmpty()) {

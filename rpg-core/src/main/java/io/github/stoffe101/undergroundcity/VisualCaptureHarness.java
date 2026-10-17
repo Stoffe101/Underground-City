@@ -27,6 +27,8 @@ public final class VisualCaptureHarness {
         static Case challenge(String name,String pose) { return new Case(name,null,null,0,false,null,pose); }
         /** First-login registration screen poses: city, profession (city chosen) and confirm. */
         static Case registration(String name,String pose) { return new Case(name,null,null,0,false,null,"register-"+pose); }
+        /** Conversation poses: the registrar for a newcomer, an employer and the gate guard. */
+        static Case dialogue(String name,String pose) { return new Case(name,null,null,0,false,null,"dialogue-"+pose); }
     }
     private static List<Case> cases;
     private static int current,frames;
@@ -64,7 +66,9 @@ public final class VisualCaptureHarness {
     private static final java.util.Map<String,String> SHORT_TITLES=new java.util.HashMap<>();
     static { for(SkillNode node:realTree("farmer")) SHORT_TITLES.put(node.id(),node.shortTitle()); }
     private static TerminalData.SkillRow node(String id,String branch,String title,String text,int cost,int level,int state,String reason,String... requires) {
-        return new TerminalData.SkillRow("farmer."+id,branch,title,text,cost,level,state,reason,List.of(requires),SHORT_TITLES.getOrDefault("farmer."+id,title));
+        java.util.Map<String,String> ids=java.util.Map.of("Greenhouse Management","farmer.greenhouse_management","Cultivar Broker","farmer.cultivar_broker",
+            "Restricted Cultivation","farmer.restricted_cultivation","Underground Trade","farmer.underground_trade","Field Fundamentals","farmer.fundamentals");
+        return new TerminalData.SkillRow("farmer."+id,branch,title,text,cost,level,state,reason,java.util.Arrays.stream(requires).map(name->ids.getOrDefault(name,name)).toList(),SHORT_TITLES.getOrDefault("farmer."+id,title));
     }
     /** A whole career page built from the real tree: the states come from the same pure rules the server uses. */
     private static TerminalData careerSkills(String career,int level,java.util.Set<String> learned) {
@@ -76,7 +80,7 @@ public final class VisualCaptureHarness {
         for(SkillNode node:SkillRules.displayOrder(tree)) {
             String blocker=SkillRules.blocker(node,index,level,learned,free);
             int state=learned.contains(node.id())?2:blocker==null?1:0;
-            List<String> requires=node.requires().stream().map(id->index.get(id).title()).toList();
+            List<String> requires=node.requires();
             rows.add(new TerminalData.SkillRow(node.id(),node.branch(),node.title(),node.description(),node.cost(),node.minLevel(),
                 state,state==2||blocker==null?"":blocker,requires,node.shortTitle()));
         }
@@ -118,6 +122,13 @@ public final class VisualCaptureHarness {
     private static final TerminalData.Row LICENSED_ROW=new TerminalData.Row("underground_city:licensed_cultivar_supply","Licensed controlled-crop supply",10,200,400,2,false,0,
         List.of(new TerminalData.Req("underground_city:sable_leaf_bale",6,0)),
         new TerminalData.Extra(false,"Controlled-Crop Licence",false,"Blackwater Licensed Dispensary","blackwater",0,0,List.of()));
+    /** The first half hour part way through: registered, met the employer, accepted an order. */
+    private static List<TerminalData.Step> journeyFixture() {
+        List<TerminalData.Step> steps=new ArrayList<>();
+        int n=0;
+        for(Journey.Def def:Journey.STEPS) steps.add(new TerminalData.Step(def.id(),def.title(),def.hint(),n++<3,def.page()));
+        return steps;
+    }
     private static TerminalData rich(String region,boolean accepted,int held,List<TerminalData.LawRow> laws) {
         boolean blackwater=region.equals("blackwater");
         List<TerminalData.Contact> contacts=region.isEmpty()?List.of():blackwater
@@ -138,7 +149,22 @@ public final class VisualCaptureHarness {
         return new TerminalData("valewood","farmer",9,10125,230,true,accepted?UUID.fromString("00000000-0000-0000-0000-000000000003"):null,
             1,region,jobs,List.of(),2,farmerTree(),contacts,laws,region.isEmpty()?0:2,
             blackwater?"Uneven enforcement. Most trade is tolerated if you hold the right licence; the buyers here pay for discretion."
-                :"Modest patrols. Hunting arms are licensed; controlled crops and unregistered parts are prohibited.");
+                :"Modest patrols. Hunting arms are licensed; controlled crops and unregistered parts are prohibited.",
+            journeyFixture());
+    }
+    private static DialogueScreen dialogueCapture(String pose) {
+        var c=(java.util.function.BiFunction<String,String,DialogueScreen.Choice>)(id,label)->new DialogueScreen.Choice(id,label,true,"");
+        return switch(pose) {
+            case "dialogue-registrar" -> new DialogueScreen(-1,"Imani Okafor","Registrar","valewood",
+                "Welcome to Founders Row. Nobody gets a terminal without a name on the register. Tell me where you want to live and how you mean to earn it, and I will file it.",
+                List.of(c.apply("register","Register me"),c.apply("cities","Tell me about the three cities"),c.apply("bye","Goodbye")),true);
+            case "dialogue-employer" -> new DialogueScreen(-1,"Odette Marsh","Employer: Farmer and vintner","valewood",
+                "The canteen wants bread again, the greenhouses want hands, and the co-op pays on delivery. Come through to the office and we will go over the orders.",
+                List.of(c.apply("orders","Open my orders"),c.apply("demand","How does demand work?"),c.apply("bye","Goodbye")),true);
+            default -> new DialogueScreen(-1,"Sergeant Halloran","Gate guard","valewood",
+                "Modest patrols here. Hunting arms are licensed; controlled crops and unregistered parts are prohibited. Keep your papers where I can see them.",
+                List.of(c.apply("law","What is the law here?"),c.apply("posts","Where are the checkpoints?"),c.apply("search","How do searches work?"),c.apply("bye","Goodbye")),true);
+        };
     }
     private static void start(Minecraft mc) {
         int scale=Integer.getInteger("uc.visualCapture.scale",3);
@@ -146,7 +172,7 @@ public final class VisualCaptureHarness {
         mc.options.guiScale().set(scale); mc.resizeDisplay();
         cases=new ArrayList<>();
         for(var page:TerminalScreen.Page.values()) {
-            boolean rich=page==TerminalScreen.Page.SKILLS || page==TerminalScreen.Page.BLACK_MARKET;
+            boolean rich=page==TerminalScreen.Page.SKILLS || page==TerminalScreen.Page.BLACK_MARKET || page==TerminalScreen.Page.GUIDE;
             cases.add(new Case("uc-terminal-"+page.name().toLowerCase(java.util.Locale.ROOT),page,
                 rich?rich("valewood",false,0,VALEWOOD_LAW):fixture(2,8,false,true),0,false,page==TerminalScreen.Page.SKILLS?"farmer.restricted_cultivation":null));
         }
@@ -178,6 +204,9 @@ public final class VisualCaptureHarness {
         cases.add(Case.challenge("uc-challenge-show","show"));
         cases.add(Case.challenge("uc-challenge-input","input"));
         cases.add(Case.challenge("uc-challenge-urgent","urgent"));
+        cases.add(Case.dialogue("uc-dialogue-registrar","registrar"));
+        cases.add(Case.dialogue("uc-dialogue-employer","employer"));
+        cases.add(Case.dialogue("uc-dialogue-guard","guard"));
         cases.add(new Case("uc-qshop-main",null,null,1));
         cases.add(new Case("uc-qshop-low-funds",null,null,2));
         cases.add(new Case("uc-qshop-trade-modal",null,null,3));
@@ -195,6 +224,8 @@ public final class VisualCaptureHarness {
                 case "register-career" -> RegistrationScreen.forCapture(1,1,-1,"");
                 default -> RegistrationScreen.forCapture(2,1,0,"");
             });
+        } else if(capture.challenge!=null && capture.challenge.startsWith("dialogue-")) {
+            mc.setScreen(dialogueCapture(capture.challenge));
         } else if(capture.challenge!=null) {
             ChallengeScreen screen=ChallengeScreen.forCapture(new byte[]{0,2,1,3,2});
             mc.setScreen(screen);

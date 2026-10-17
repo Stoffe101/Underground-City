@@ -1,6 +1,426 @@
 {
-  "parent": "minecraft:block/crop",
-  "textures": {
-    "crop": "underground_city:block/sable_leaf_crop_stage1"
+ "render_type": "minecraft:cutout",
+ "ambientocclusion": false,
+ "textures": {
+  "leaf3": "underground_city:block/sable_leaf3",
+  "leaf5": "underground_city:block/sable_leaf5",
+  "leaf5_deep": "underground_city:block/sable_leaf5_deep",
+  "leaf7": "underground_city:block/sable_leaf7",
+  "leaf7_deep": "underground_city:block/sable_leaf7_deep",
+  "cola": "underground_city:block/sable_cola",
+  "seedling": "underground_city:block/sable_seedling",
+  "stem": "underground_city:block/sable_stem",
+  "stake": "underground_city:block/sable_stake",
+  "particle": "underground_city:block/sable_leaf5"
+ },
+ "elements": [
+  {
+   "from": [
+    7.6,
+    0,
+    7.6
+   ],
+   "to": [
+    8.4,
+    7,
+    8.4
+   ],
+   "shade": false,
+   "faces": {
+    "north": {
+     "texture": "#stem",
+     "uv": [
+      6.5,
+      9,
+      7.3,
+      16
+     ]
+    },
+    "south": {
+     "texture": "#stem",
+     "uv": [
+      6.5,
+      9,
+      7.3,
+      16
+     ]
+    },
+    "east": {
+     "texture": "#stem",
+     "uv": [
+      6.5,
+      9,
+      7.3,
+      16
+     ]
+    },
+    "west": {
+     "texture": "#stem",
+     "uv": [
+      6.5,
+      9,
+      7.3,
+      16
+     ]
+    },
+    "up": {
+     "texture": "#stem",
+     "uv": [
+      6.5,
+      0,
+      8,
+      1.5
+     ]
+    }
+   }
+  },
+  {
+   "from": [
+    5.5,
+    1.6,
+    3.0
+   ],
+   "to": [
+    10.5,
+    1.6,
+    8
+   ],
+   "shade": false,
+   "faces": {
+    "up": {
+     "texture": "#leaf3",
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ]
+    },
+    "down": {
+     "texture": "#leaf3",
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "rotation": 180
+    }
+   },
+   "rotation": {
+    "origin": [
+     8,
+     1.6,
+     8
+    ],
+    "axis": "x",
+    "angle": -22.5
+   }
+  },
+  {
+   "from": [
+    5.5,
+    1.6,
+    8
+   ],
+   "to": [
+    10.5,
+    1.6,
+    13.0
+   ],
+   "shade": false,
+   "faces": {
+    "up": {
+     "texture": "#leaf3",
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "rotation": 180
+    },
+    "down": {
+     "texture": "#leaf3",
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ]
+    }
+   },
+   "rotation": {
+    "origin": [
+     8,
+     1.6,
+     8
+    ],
+    "axis": "x",
+    "angle": 22.5
+   }
+  },
+  {
+   "from": [
+    8,
+    3.2,
+    5.25
+   ],
+   "to": [
+    13.5,
+    3.2,
+    10.75
+   ],
+   "shade": false,
+   "faces": {
+    "up": {
+     "texture": "#leaf5",
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "rotation": 270
+    },
+    "down": {
+     "texture": "#leaf5",
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "rotation": 270
+    }
+   },
+   "rotation": {
+    "origin": [
+     8,
+     3.2,
+     8
+    ],
+    "axis": "z",
+    "angle": 22.5
+   }
+  },
+  {
+   "from": [
+    2.5,
+    3.2,
+    5.25
+   ],
+   "to": [
+    8,
+    3.2,
+    10.75
+   ],
+   "shade": false,
+   "faces": {
+    "up": {
+     "texture": "#leaf5",
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "rotation": 90
+    },
+    "down": {
+     "texture": "#leaf5",
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "rotation": 90
+    }
+   },
+   "rotation": {
+    "origin": [
+     8,
+     3.2,
+     8
+    ],
+    "axis": "z",
+    "angle": -22.5
+   }
+  },
+  {
+   "from": [
+    5.75,
+    5.0,
+    3.5
+   ],
+   "to": [
+    10.25,
+    5.0,
+    8
+   ],
+   "shade": false,
+   "faces": {
+    "up": {
+     "texture": "#leaf3",
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ]
+    },
+    "down": {
+     "texture": "#leaf3",
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "rotation": 180
+    }
+   },
+   "rotation": {
+    "origin": [
+     8,
+     5.0,
+     8
+    ],
+    "axis": "y",
+    "angle": 22.5
+   }
+  },
+  {
+   "from": [
+    5.75,
+    5.0,
+    8
+   ],
+   "to": [
+    10.25,
+    5.0,
+    12.5
+   ],
+   "shade": false,
+   "faces": {
+    "up": {
+     "texture": "#leaf3",
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "rotation": 180
+    },
+    "down": {
+     "texture": "#leaf3",
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ]
+    }
+   },
+   "rotation": {
+    "origin": [
+     8,
+     5.0,
+     8
+    ],
+    "axis": "y",
+    "angle": 22.5
+   }
+  },
+  {
+   "from": [
+    8,
+    7.0,
+    6.25
+   ],
+   "to": [
+    11.5,
+    7.0,
+    9.75
+   ],
+   "shade": false,
+   "faces": {
+    "up": {
+     "texture": "#leaf3",
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "rotation": 270
+    },
+    "down": {
+     "texture": "#leaf3",
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "rotation": 270
+    }
+   },
+   "rotation": {
+    "origin": [
+     8,
+     7.0,
+     8
+    ],
+    "axis": "z",
+    "angle": 45
+   }
+  },
+  {
+   "from": [
+    4.5,
+    7.0,
+    6.25
+   ],
+   "to": [
+    8,
+    7.0,
+    9.75
+   ],
+   "shade": false,
+   "faces": {
+    "up": {
+     "texture": "#leaf3",
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "rotation": 90
+    },
+    "down": {
+     "texture": "#leaf3",
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ],
+     "rotation": 90
+    }
+   },
+   "rotation": {
+    "origin": [
+     8,
+     7.0,
+     8
+    ],
+    "axis": "z",
+    "angle": -45
+   }
   }
+ ]
 }
