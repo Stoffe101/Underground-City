@@ -35,6 +35,8 @@ public abstract class UcScreen extends Screen {
     protected int bodyX() { return px + PAD; }
     protected int bodyY() { return py + HEADER + 6; }
     protected int bodyW() { return pw - 2 * PAD; }
+    /** The right edge of the panel, for review captures that place something beside it. */
+    int panelRight() { return px + pw; }
     protected int bodyBottom() { return py + ph - (showFooter() ? FOOTER : 0) - 8; }
     protected int bodyH() { return bodyBottom() - bodyY(); }
 

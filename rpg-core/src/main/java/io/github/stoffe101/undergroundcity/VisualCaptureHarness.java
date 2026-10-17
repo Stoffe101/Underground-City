@@ -298,9 +298,11 @@ public final class VisualCaptureHarness {
         if(cases.get(current).challenge!=null && cases.get(current).challenge.startsWith("notices-")) {
             var g=event.getGuiGraphics();
             int y=4;
+            // in the game they sit in the screen's corner; on a very wide screen that is far outside the terminal, so for review they sit beside the panel
+            int x=Math.min(g.guiWidth()-190-2,event.getScreen() instanceof UcScreen ui?ui.panelRight()+6:g.guiWidth());
             for(UcToast toast:noticeCaptures) {
                 g.pose().pushPose();
-                g.pose().translate(g.guiWidth()-toast.width()-2,y,400);
+                g.pose().translate(x,y,400);
                 toast.render(g,mc.getToasts(),1000L);
                 g.pose().popPose();
                 y+=toast.height()+4;

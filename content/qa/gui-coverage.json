@@ -119,7 +119,7 @@
       "expected_file": "uc-notices.png",
       "owner": "underground_city",
       "group": "notices",
-      "description": "Corner notices over the terminal: order accepted, delivered, contraband seized and a rare find, each with its icon, accent and words"
+      "description": "Notice plates stacked beside the terminal (drawn by hand for review, the game draws them in the screen corner): order accepted, delivered, contraband seized and a rare find, each with its icon, accent and words"
     },
     {
       "id": "dialogue.registrar",

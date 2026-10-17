@@ -635,10 +635,10 @@ public final class TerminalScreen extends UcScreen {
         int maxLines = h >= 29 ? 2 : 1;
         if (lines.size() > maxLines) lines = maxLines == 1 ? List.of(UcUi.fit(font, String.join(" ", lines), w - 32))
             : List.of(lines.get(0), UcUi.fit(font, String.join(" ", lines.subList(1, lines.size())), w - 32));
-        int ty = lines.size() == 2 ? y + 2 : y + (h >= 29 ? 6 : 3);
+        int ty = lines.size() == 2 ? y + 1 : y + (h >= 29 ? 6 : 3);
         for (String line : lines) { g.drawString(font, line, x + 28, ty, row.state() == 0 ? UcUi.DIM : UcUi.TEXT, false); ty += 9; }
         String sub = row.state() == 2 ? "OWNED" : row.state() == 1 ? "READY  " + row.cost() + " pt" : "LOCKED  L" + row.minLevel();
-        UcUi.display(g, font, sub, x + 28, y + h - 10, row.state() == 2 ? UcUi.OK : row.state() == 1 ? UcUi.AMBER : UcUi.FAINT);
+        UcUi.display(g, font, sub, x + 28, y + h - (lines.size() == 2 ? 9 : 10), row.state() == 2 ? UcUi.OK : row.state() == 1 ? UcUi.AMBER : UcUi.FAINT);
     }
 
     private void renderSkillDetail(GuiGraphics g) {

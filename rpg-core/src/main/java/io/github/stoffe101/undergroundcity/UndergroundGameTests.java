@@ -359,6 +359,32 @@ public final class UndergroundGameTests {
         helper.succeed();
     }
 
+    /**
+     * The Vintner's contracts ask for bottles the wine and spirits mods make. A contract nobody can fill is a trap, so every item a loaded Vintner order
+     * asks for must be the result of at least one recipe in the loaded recipe manager (Vinery's wine fermentation, Kaleidoscope Tavern's barrel).
+     * This proves a recipe exists, not that the chain was brewed by a person.
+     */
+    @GameTest(template = "empty")
+    public static void everyBottleAVintnerOrderAsksForHasARecipe(GameTestHelper helper) {
+        if (!ModList.get().isLoaded("vinery") && !ModList.get().isLoaded("kaleidoscope_tavern")) { helper.succeed(); return; }
+        var access = helper.getLevel().registryAccess();
+        java.util.Set<net.minecraft.world.item.Item> made = new java.util.HashSet<>();
+        for (var recipe : helper.getLevel().getRecipeManager().getRecipes()) {
+            try { made.add(recipe.getResultItem(access).getItem()); } catch (RuntimeException ignored) { /* a recipe type without a plain result */ }
+        }
+        int checked = 0;
+        for (WorkOrder order : WorkOrderCatalog.INSTANCE.forCareer("vintner")) {
+            for (WorkOrder.Requirement requirement : order.requirements()) {
+                String namespace = requirement.item().getNamespace();
+                if (!namespace.equals("vinery") && !namespace.equals("kaleidoscope_tavern")) continue;
+                check(made.contains(ForgeRegistries.ITEMS.getValue(requirement.item())), order.id() + " asks for " + requirement.item() + ", which no recipe makes");
+                checked++;
+            }
+        }
+        check(checked > 0, "No mod-made bottle was checked");
+        helper.succeed();
+    }
+
     @GameTest(template = "empty")
     public static void citiesGenuinelyDifferAndEveryCategoryHasAStatus(GameTestHelper helper) {
         for (String city : ProgressionRules.CITIES) {
