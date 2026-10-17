@@ -74,7 +74,7 @@
       "cost": 3,
       "min_level": 6,
       "requires": [
-        "farmer.greenhouse_management"
+        "farmer.fundamentals"
       ],
       "effects": {}
     },

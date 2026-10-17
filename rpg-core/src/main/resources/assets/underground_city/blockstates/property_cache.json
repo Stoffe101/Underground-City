@@ -1,7 +1,19 @@
 {
-  "variants": {
-    "": {
-      "model": "underground_city:block/property_cache"
-    }
+ "variants": {
+  "facing=north": {
+   "model": "underground_city:block/property_cache"
+  },
+  "facing=east": {
+   "model": "underground_city:block/property_cache",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "underground_city:block/property_cache",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "underground_city:block/property_cache",
+   "y": 270
   }
+ }
 }

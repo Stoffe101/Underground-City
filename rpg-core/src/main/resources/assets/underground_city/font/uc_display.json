@@ -1,0 +1,22 @@
+{
+ "providers": [
+  {
+   "type": "bitmap",
+   "file": "underground_city:font/uc_display.png",
+   "ascent": 7,
+   "height": 8,
+   "chars": [
+    "ABCDEFGHIJKLMNOP",
+    "QRSTUVWXYZ012345",
+    "6789.,:;-+=/%|!?",
+    "()[]<>#&'*_x\u0000\u0000\u0000\u0000"
+   ]
+  },
+  {
+   "type": "space",
+   "advances": {
+    " ": 4
+   }
+  }
+ ]
+}

@@ -73,7 +73,7 @@ public final class RegionalGameTests {
             && RegionalCatalog.INSTANCE.forCity("blackwater").size() == 3, "Each city must sell three specialist lines");
         check(CityRegions.INSTANCE.all().size() == 3, "Three data-defined city regions expected");
         int regional = 0;
-        for (String career : List.of("farmer", "smith", "gunsmith", "technician")) {
+        for (String career : List.of("farmer", "vintner", "smith", "gunsmith", "technician")) {
             for (WorkOrder order : WorkOrderCatalog.INSTANCE.forCareer(career)) {
                 if (order.foreignVisits() == 0) continue;
                 regional++;
@@ -101,7 +101,7 @@ public final class RegionalGameTests {
                 check(cost > 0 && margin >= 1.3 && margin <= 2.1, order.id() + " margin " + margin + " is outside the balanced band");
             }
         }
-        check(regional == 12, "Twelve recurring regional orders expected, found " + regional);
+        check(regional == 15, "Fifteen recurring regional orders expected, found " + regional);
         helper.succeed();
     }
 

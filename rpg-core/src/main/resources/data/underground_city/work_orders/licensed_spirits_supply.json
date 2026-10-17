@@ -1,0 +1,21 @@
+{
+  "schema_version": 3,
+  "title": "Licensed spirits for the taproom",
+  "career": "vintner",
+  "level": 10,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "kaleidoscope_tavern:vodka",
+      "count": 8
+    }
+  ],
+  "credits": 140,
+  "xp": 400,
+  "capacity": 2,
+  "refill_ticks": 12000,
+  "legality": "legal",
+  "requires_skill": "vintner.distillers_licence",
+  "buyer": "blackwater_taproom",
+  "requires_mod": "kaleidoscope_tavern"
+}

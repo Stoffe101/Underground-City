@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Generate Core regional goods, recipes, supplier stock and recurring work orders.
 
-Source of truth: content/gameplay/regional-content.json. The script is deterministic
-and writes only original data/art (programmatically drawn 16x16 icons). Use --check
-in CI/tests to prove committed resources match the source definition.
+Source of truth: content/gameplay/regional-content.json. The script is deterministic and writes data
+(recipes, stock, orders, policies, loot tables, item models, names). The pixel art is NOT drawn here: every
+texture, block model and blockstate comes from tools/art (see tools/art/build_all.py, which has its own
+--check). Use --check in CI/tests to prove committed resources match the source definition.
 """
 from __future__ import annotations
 
@@ -21,15 +22,6 @@ CHECKPOINT_RADIUS = 48
 RES = ROOT / "rpg-core/src/main/resources"
 NAMESPACE = "underground_city"
 CITIES = ("ironhaven", "valewood", "blackwater")
-
-# (light, mid, dark, accent, outline)
-PALETTES = {
-    "ironhaven": ((190, 201, 212), (126, 139, 153), (78, 89, 103), (232, 143, 62), (28, 33, 40)),
-    "valewood": ((166, 220, 118), (92, 164, 76), (52, 104, 48), (238, 200, 80), (22, 40, 22)),
-    "blackwater": ((150, 140, 232), (94, 84, 176), (52, 46, 116), (62, 222, 214), (18, 16, 44)),
-    "neutral": ((214, 218, 222), (150, 156, 164), (96, 100, 108), (225, 175, 108), (30, 32, 36)),
-}
-
 
 def load_source() -> dict:
     data = json.loads(SOURCE.read_text(encoding="utf-8"))
@@ -80,7 +72,7 @@ def validate(data: dict) -> None:
     lo, hi = data["economy_rules"]["minimum_margin"], data["economy_rules"]["maximum_margin"]
     seen = set()
     for o in data["orders"]:
-        if o["id"] in seen or o["career"] not in ("farmer", "smith", "gunsmith", "technician"):
+        if o["id"] in seen or o["career"] not in ("farmer", "vintner", "smith", "gunsmith", "technician"):
             raise SystemExit(f"Invalid order {o['id']}")
         seen.add(o["id"])
         if not 0 <= o["foreign_visits"] <= 2:
@@ -138,6 +130,7 @@ def unit_costs(data: dict, contracts: dict) -> dict[str, float]:
             costs[f"{NAMESPACE}:{p['id']}"] = total / p["count"]
     costs.update(refs["harvest_units"])
     costs.update(refs["vanilla"])
+    costs.update(refs.get("mods", {}))   # third-party goods a contract names (Vinery wine, Tadacko's spirits)
     return costs
 
 
@@ -175,7 +168,7 @@ def validate_contracts(data: dict, contracts: dict) -> None:
         if cid in seen or cid in existing:
             raise SystemExit(f"Duplicate contract id {cid}")
         seen.add(cid)
-        if c["career"] not in ("farmer", "smith", "gunsmith", "technician") or not 1 <= c["level"] <= 30 or c["legality"] not in ("legal", "underground"):
+        if c["career"] not in ("farmer", "vintner", "smith", "gunsmith", "technician") or not 1 <= c["level"] <= 30 or c["legality"] not in ("legal", "underground"):
             raise SystemExit(f"Invalid contract {cid}")
         underground = c["legality"] == "underground"
         skill = skills.get(c["requires_skill"])
@@ -225,284 +218,6 @@ def validate_contracts(data: dict, contracts: dict) -> None:
             raise SystemExit(f"{cid}: credits and xp are limited to 1000")
 
 
-# ---------------------------------------------------------------- icon drawing
-def _fill(px, boxes, color):
-    for x0, y0, x1, y1 in boxes:
-        for y in range(y0, y1 + 1):
-            for x in range(x0, x1 + 1):
-                if 0 <= x < 16 and 0 <= y < 16:
-                    px[x, y] = color + (255,)
-
-
-def _poly(draw, pts, color):
-    draw.polygon(pts, fill=color + (255,))
-
-
-def icon(kind: str, pal) -> "Image.Image":
-    from PIL import Image, ImageDraw
-
-    light, mid, dark, accent, outline = pal[:5]
-    sparkle = pal[5] if len(pal) > 5 else None
-    img = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
-    d = ImageDraw.Draw(img)
-    px = img.load()
-    if kind == "ingot":
-        _poly(d, [(2, 10), (5, 5), (14, 5), (11, 10)], light)
-        _fill(px, [(2, 10, 11, 12)], mid)
-        _poly(d, [(11, 10), (14, 5), (14, 8), (11, 12)], dark)
-        _fill(px, [(4, 7, 11, 7)], (255, 255, 255))
-    elif kind == "gear":
-        _fill(px, [(7, 1, 8, 14), (1, 7, 14, 8), (3, 3, 12, 12)], mid)
-        _fill(px, [(2, 2, 3, 3), (12, 2, 13, 3), (2, 12, 3, 13), (12, 12, 13, 13)], mid)
-        _fill(px, [(4, 4, 11, 11)], light)
-        _fill(px, [(5, 5, 10, 10)], mid)
-        _fill(px, [(7, 7, 8, 8)], dark)
-        _fill(px, [(4, 4, 6, 4), (4, 4, 4, 6)], (255, 255, 255))
-    elif kind == "fabric":
-        _fill(px, [(2, 3, 13, 12)], mid)
-        for i in range(0, 12, 3):
-            _fill(px, [(2 + i, 3, 3 + i, 12)], light)
-        _fill(px, [(2, 7, 13, 8)], accent)
-        _fill(px, [(2, 12, 13, 12)], dark)
-    elif kind == "seeds":
-        for cx, cy, col in [(4, 4, accent), (9, 3, mid), (12, 7, accent), (6, 9, light), (10, 12, mid), (3, 12, accent)]:
-            _fill(px, [(cx, cy, cx + 1, cy + 2)], col)
-            _fill(px, [(cx, cy, cx, cy)], (255, 255, 255))
-    elif kind == "vial":
-        _fill(px, [(6, 1, 9, 2), (7, 3, 8, 5)], light)
-        _poly(d, [(4, 12), (6, 6), (9, 6), (11, 12)], mid)
-        _fill(px, [(4, 9, 11, 13)], mid)
-        _fill(px, [(5, 10, 10, 12)], accent)
-        _fill(px, [(6, 6, 6, 8)], light)
-    elif kind == "crystal":
-        _poly(d, [(8, 1), (13, 6), (11, 14), (5, 14), (3, 6)], mid)
-        _poly(d, [(8, 1), (3, 6), (8, 8)], light)
-        _poly(d, [(8, 8), (13, 6), (11, 14), (8, 14)], dark)
-        _fill(px, [(7, 4, 7, 5)], (255, 255, 255))
-        _fill(px, [(8, 9, 9, 12)], accent)
-    elif kind == "chip":
-        _fill(px, [(4, 4, 11, 11)], dark)
-        _fill(px, [(5, 5, 10, 10)], mid)
-        _fill(px, [(7, 7, 8, 8)], accent)
-        for t in (5, 7, 9):
-            _fill(px, [(2, t, 3, t), (12, t, 13, t), (t, 2, t, 3), (t, 12, t, 13)], light)
-        _fill(px, [(5, 5, 6, 5)], (255, 255, 255))
-    elif kind == "disc":
-        d.ellipse((1, 1, 14, 14), fill=mid + (255,))
-        d.ellipse((2, 2, 9, 9), fill=light + (255,))
-        d.ellipse((6, 6, 9, 9), fill=(0, 0, 0, 0))
-        _fill(px, [(10, 10, 12, 12)], accent)
-        _fill(px, [(4, 3, 5, 3)], (255, 255, 255))
-    elif kind == "lens":
-        d.ellipse((2, 2, 13, 13), fill=dark + (255,))
-        d.ellipse((3, 3, 12, 12), fill=mid + (255,))
-        d.ellipse((4, 4, 10, 10), fill=accent + (255,))
-        _fill(px, [(5, 5, 6, 6)], (255, 255, 255))
-        _fill(px, [(9, 9, 10, 9)], light)
-    elif kind == "kit":
-        _fill(px, [(2, 5, 13, 13)], mid)
-        _fill(px, [(2, 5, 13, 6)], light)
-        _fill(px, [(6, 3, 9, 4)], dark)
-        _fill(px, [(7, 7, 8, 12), (5, 9, 10, 10)], accent)
-        _fill(px, [(2, 13, 13, 13)], dark)
-    elif kind == "module":
-        _fill(px, [(3, 2, 12, 13)], mid)
-        for y in (4, 7, 10):
-            _fill(px, [(4, y, 11, y)], dark)
-            _fill(px, [(5, y + 1, 5, y + 1), (9, y + 1, 9, y + 1)], accent)
-        _fill(px, [(3, 2, 12, 2)], light)
-    elif kind == "cube":
-        _poly(d, [(8, 1), (14, 4), (8, 7), (2, 4)], light)
-        _poly(d, [(2, 4), (8, 7), (8, 14), (2, 11)], mid)
-        _poly(d, [(8, 7), (14, 4), (14, 11), (8, 14)], dark)
-        _fill(px, [(10, 8, 12, 9)], accent)
-    elif kind == "wrench":
-        _poly(d, [(3, 12), (4, 13), (12, 5), (11, 4)], mid)
-        d.ellipse((9, 1, 14, 6), fill=light + (255,))
-        d.ellipse((11, 2, 12, 3), fill=(0, 0, 0, 0))
-        _fill(px, [(2, 12, 4, 14)], accent)
-    elif kind == "shell":
-        d.pieslice((1, 3, 14, 18), 180, 360, fill=mid + (255,))
-        _fill(px, [(2, 10, 13, 12)], dark)
-        _fill(px, [(4, 6, 6, 7)], light)
-        _fill(px, [(7, 11, 8, 11)], accent)
-    elif kind == "bracket":
-        _fill(px, [(3, 2, 6, 13), (3, 10, 13, 13)], mid)
-        _fill(px, [(3, 2, 3, 13)], light)
-        _fill(px, [(10, 7, 12, 9)], accent)
-        _fill(px, [(4, 11, 4, 11), (8, 11, 8, 11)], dark)
-    elif kind == "clipboard":
-        _fill(px, [(3, 2, 12, 14)], mid)
-        _fill(px, [(4, 4, 11, 13)], light)
-        _fill(px, [(6, 1, 9, 3)], dark)
-        for y in (6, 8, 10):
-            _fill(px, [(5, y, 10, y)], dark)
-        _fill(px, [(5, 12, 7, 12)], accent)
-    elif kind == "plate":
-        _fill(px, [(1, 5, 14, 11)], mid)
-        _fill(px, [(1, 5, 14, 6)], light)
-        _fill(px, [(1, 11, 14, 11)], dark)
-        for x in (3, 7, 11):
-            _fill(px, [(x, 8, x, 8)], accent)
-    elif kind == "box":
-        _fill(px, [(2, 3, 13, 13)], mid)
-        _fill(px, [(2, 3, 13, 4)], light)
-        _fill(px, [(2, 13, 13, 13)], dark)
-        _fill(px, [(4, 7, 11, 9)], dark)
-        _fill(px, [(10, 6, 11, 6)], accent)
-        _fill(px, [(5, 7, 6, 7)], accent)
-    elif kind == "dish":
-        _poly(d, [(1, 3), (14, 3), (11, 9), (4, 9)], mid)
-        _fill(px, [(1, 3, 14, 4)], light)
-        _fill(px, [(7, 9, 8, 12)], dark)
-        _fill(px, [(4, 13, 11, 14)], dark)
-        _fill(px, [(7, 1, 8, 2)], accent)
-        _fill(px, [(5, 6, 6, 6)], dark)
-    elif kind == "bearing":
-        d.ellipse((1, 1, 14, 14), fill=mid + (255,))
-        d.ellipse((4, 4, 11, 11), fill=dark + (255,))
-        d.ellipse((6, 6, 9, 9), fill=light + (255,))
-        for bx, by in ((7, 2), (7, 12), (2, 7), (12, 7)):
-            _fill(px, [(bx, by, bx + 1, by + 1)], light)
-        _fill(px, [(3, 3, 4, 3)], (255, 255, 255))
-        _fill(px, [(11, 11, 12, 12)], accent)
-    elif kind == "panel":
-        _fill(px, [(1, 1, 14, 14)], dark)
-        for x in (2, 8):
-            for y in (2, 8):
-                _fill(px, [(x, y, x + 4, y + 4)], mid)
-                _fill(px, [(x, y, x + 4, y)], light)
-        _fill(px, [(5, 5, 5, 5)], accent)
-    elif kind == "flask":
-        _fill(px, [(6, 1, 9, 2), (7, 3, 8, 6)], light)
-        d.ellipse((2, 6, 13, 14), fill=mid + (255,))
-        d.ellipse((3, 9, 12, 14), fill=accent + (255,))
-        _fill(px, [(4, 8, 5, 9)], (255, 255, 255))
-        _fill(px, [(6, 11, 9, 11)], light)
-    elif kind == "ledger":
-        _fill(px, [(3, 2, 12, 14)], mid)
-        _fill(px, [(3, 2, 4, 14)], dark)
-        _fill(px, [(5, 3, 11, 13)], light)
-        for y in (5, 7, 9):
-            _fill(px, [(6, y, 10, y)], dark)
-        _fill(px, [(9, 11, 11, 12)], accent)
-        _fill(px, [(12, 6, 13, 8)], accent)
-    elif kind == "sprout":
-        _fill(px, [(7, 8, 8, 14)], mid)
-        _poly(d, [(7, 9), (2, 5), (3, 3), (7, 6)], light)
-        _poly(d, [(8, 8), (13, 3), (14, 5), (9, 10)], mid)
-        _fill(px, [(7, 3, 8, 6)], light)
-        _fill(px, [(6, 14, 9, 15)], dark)
-        _fill(px, [(3, 4, 3, 4), (7, 3, 7, 3)], (255, 255, 255))
-        _fill(px, [(8, 5, 8, 5)], accent)
-    elif kind == "bale":
-        _fill(px, [(2, 4, 13, 12)], mid)
-        for x in (3, 6, 9, 12):
-            _fill(px, [(x, 4, x, 12)], light)
-        _fill(px, [(2, 4, 13, 5)], light)
-        _fill(px, [(2, 12, 13, 12)], dark)
-        _fill(px, [(2, 7, 13, 8)], accent)
-        _fill(px, [(7, 7, 8, 8)], dark)
-    elif kind == "lockpick":
-        _poly(d, [(2, 13), (3, 14), (12, 4), (11, 3)], light)
-        _fill(px, [(10, 2, 13, 2), (13, 2, 13, 5)], mid)
-        _fill(px, [(1, 12, 3, 14)], accent)
-    else:
-        raise SystemExit(f"Unknown icon kind {kind}")
-    if sparkle is not None:
-        # Rare finds carry a small gold sparkle in the upper right so they never read as the commodity they unpack into.
-        for x, y in ((13, 1), (12, 2), (13, 2), (14, 2), (13, 3)):
-            px[x, y] = sparkle + (255,)
-    # 1px outline around opaque pixels.
-    alpha = img.getchannel("A")
-    out = img.copy()
-    opx, apx = out.load(), alpha.load()
-    for y in range(16):
-        for x in range(16):
-            if apx[x, y] == 0:
-                for nx, ny in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
-                    if 0 <= nx < 16 and 0 <= ny < 16 and apx[nx, ny] > 0:
-                        opx[x, y] = outline + (255,)
-                        break
-    return out
-
-
-def safe_texture() -> "Image.Image":
-    """Original 16x16 steel safe face: panel, dial and handle (no third-party art)."""
-    from PIL import Image, ImageDraw
-
-    light, mid, dark, accent, outline = PALETTES["neutral"]
-    img = Image.new("RGBA", (16, 16), dark + (255,))
-    d = ImageDraw.Draw(img)
-    d.rectangle((0, 0, 15, 15), outline=outline + (255,))
-    d.rectangle((1, 1, 14, 14), outline=light + (255,))
-    d.rectangle((2, 2, 13, 13), fill=mid + (255,))
-    d.rectangle((2, 2, 13, 3), fill=light + (255,))
-    d.rectangle((2, 13, 13, 13), fill=dark + (255,))
-    d.ellipse((5, 4, 11, 10), fill=dark + (255,))
-    d.ellipse((6, 5, 10, 9), fill=light + (255,))
-    d.ellipse((7, 6, 9, 8), fill=accent + (255,))
-    d.rectangle((6, 11, 10, 12), fill=dark + (255,))
-    for corner in ((3, 3), (12, 3), (3, 12), (12, 12)):
-        d.point(corner, fill=outline + (255,))
-    return img
-
-
-def secure_terminal_texture() -> "Image.Image":
-    """Original 16x16 face of the secured data terminal: dark chassis, signal screen with four pad lights, amber LED."""
-    from PIL import Image, ImageDraw
-
-    shell, rim, screen, glow, amber = (30, 40, 52), (70, 92, 112), (14, 26, 38), (85, 211, 188), (225, 175, 108)
-    pads = ((85, 211, 188), (225, 175, 108), (108, 180, 225), (211, 108, 208))
-    img = Image.new("RGBA", (16, 16), shell + (255,))
-    d = ImageDraw.Draw(img)
-    d.rectangle((0, 0, 15, 15), outline=rim + (255,))
-    d.rectangle((2, 2, 13, 9), fill=screen + (255,))
-    d.rectangle((2, 2, 13, 9), outline=(48, 70, 90, 255))
-    d.line([(3, 4), (6, 4)], fill=glow + (255,))
-    d.line([(3, 6), (9, 6)], fill=glow + (255,))
-    d.point((3, 8), fill=glow + (255,))
-    for index, colour in enumerate(pads):
-        x = 3 + index * 3
-        d.rectangle((x, 11, x + 1, 12), fill=colour + (255,))
-    d.rectangle((12, 11, 13, 12), fill=amber + (255,))
-    d.rectangle((2, 14, 13, 14), fill=(20, 28, 38, 255))
-    return img
-
-
-def crop_texture(stage: int) -> "Image.Image":
-    """Original 16x16 growth stage of the fictional Sable Leaf plant (0 = sprout .. 3 = mature)."""
-    from PIL import Image, ImageDraw
-
-    stem, leaf, leaf_light, leaf_dark, bud = (74, 120, 62), (60, 150, 112), (110, 196, 150), (34, 88, 70), (225, 175, 108)
-    img = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
-    d = ImageDraw.Draw(img)
-    heights = (4, 8, 12, 15)
-    top = 15 - heights[stage]
-    d.rectangle((7, top + 1, 8, 15), fill=stem + (255,))
-    pairs = (1, 2, 3, 4)[stage]
-    for i in range(pairs):
-        y = 14 - i * 3 - (0 if stage else 1)
-        reach = 2 + min(i + stage, 4)
-        d.polygon([(7, y), (7 - reach, y - 2), (7 - reach + 1, y - 3), (7, y - 1)], fill=leaf + (255,))
-        d.polygon([(8, y), (8 + reach, y - 2), (8 + reach - 1, y - 3), (8, y - 1)], fill=leaf + (255,))
-        d.line([(7, y - 1), (7 - reach + 2, y - 2)], fill=leaf_light + (255,))
-        d.line([(8, y - 1), (8 + reach - 2, y - 2)], fill=leaf_dark + (255,))
-    d.rectangle((6, top, 9, top + 1), fill=leaf_light + (255,))
-    if stage == 3:
-        for x, y in ((6, 3), (9, 2), (7, 5), (8, 6)):
-            d.point((x, y), fill=bud + (255,))
-    return img
-
-
-def palette_for(entry: dict):
-    base = PALETTES[entry.get("city", "neutral")]
-    if entry.get("kind") == "rare":
-        light, mid, dark, _accent, outline = base
-        return (light, mid, dark, (255, 205, 80), outline, (255, 236, 150))
-    return base
-
-
 # --------------------------------------------------------------- file emission
 def jdump(obj) -> str:
     return json.dumps(obj, indent=2, ensure_ascii=False) + "\n"
@@ -522,6 +237,8 @@ def build(data: dict, contracts: dict) -> dict[Path, bytes]:
         "container.underground_city.property_cache": "Household Safe",
         "block.underground_city.secure_data_terminal": "Secured Data Terminal",
         "item.underground_city.secure_data_terminal": "Secured Data Terminal",
+        "block.underground_city.public_ledger": "Public Ledger",
+        "item.underground_city.public_ledger": "Public Ledger",
     }
 
     def emit_item(entry, kind, stack):
@@ -530,9 +247,6 @@ def build(data: dict, contracts: dict) -> dict[Path, bytes]:
         lang[f"item.{NAMESPACE}.{iid}"] = entry["name"]
         files[Path(f"rpg-core/src/main/resources/assets/{NAMESPACE}/models/item/{iid}.json")] = jdump(
             {"parent": "minecraft:item/generated", "textures": {"layer0": f"{NAMESPACE}:item/{iid}"}}).encode()
-        buf = BytesIO()
-        icon(entry["icon"], palette_for(entry)).save(buf, "PNG", optimize=True)
-        files[Path(f"rpg-core/src/main/resources/assets/{NAMESPACE}/textures/item/{iid}.png")] = buf.getvalue()
 
     for c in data["commodities"]:
         emit_item(c, "commodity", 64)
@@ -599,15 +313,7 @@ def build(data: dict, contracts: dict) -> dict[Path, bytes]:
         files[Path(f"rpg-core/src/main/resources/data/{NAMESPACE}/work_orders/{c['id']}.json")] = jdump(document).encode()
     crop = f"{NAMESPACE}:sable_leaf_crop"
     variants = {}
-    for age in range(4):
-        buf = BytesIO()
-        crop_texture(age).save(buf, "PNG", optimize=True)
-        files[Path(f"rpg-core/src/main/resources/assets/{NAMESPACE}/textures/block/sable_leaf_crop_stage{age}.png")] = buf.getvalue()
-        files[Path(f"rpg-core/src/main/resources/assets/{NAMESPACE}/models/block/sable_leaf_crop_stage{age}.json")] = jdump(
-            {"parent": "minecraft:block/crop", "textures": {"crop": f"{NAMESPACE}:block/sable_leaf_crop_stage{age}"}}).encode()
-        for nourished in ("false", "true"):
-            variants[f"age={age},nourished={nourished}"] = {"model": f"{NAMESPACE}:block/sable_leaf_crop_stage{age}"}
-    files[Path(f"rpg-core/src/main/resources/assets/{NAMESPACE}/blockstates/sable_leaf_crop.json")] = jdump({"variants": variants}).encode()
+    # the plant's textures, models and blockstate come from tools/art (gen_crop.py)
     mature = {"condition": "minecraft:block_state_property", "block": crop, "properties": {"age": "3"}}
     files[Path(f"rpg-core/src/main/resources/data/{NAMESPACE}/loot_tables/blocks/sable_leaf_crop.json")] = jdump({
         "type": "minecraft:block", "random_sequence": f"{NAMESPACE}:blocks/sable_leaf_crop",
@@ -655,24 +361,13 @@ def build(data: dict, contracts: dict) -> dict[Path, bytes]:
                 {"function": "minecraft:set_count", "count": {"min": entry["min"], "max": entry["max"]}}]})
         files[Path(f"rpg-core/src/main/resources/data/{NAMESPACE}/loot_tables/property/{name}.json")] = jdump(
             {"type": "minecraft:chest", "pools": [{"rolls": 1, "entries": pool}]}).encode()
-    safe_png = BytesIO()
-    safe_texture().save(safe_png, "PNG", optimize=True)
-    files[Path(f"rpg-core/src/main/resources/assets/{NAMESPACE}/textures/block/property_cache.png")] = safe_png.getvalue()
-    files[Path(f"rpg-core/src/main/resources/assets/{NAMESPACE}/models/block/property_cache.json")] = jdump(
-        {"parent": "minecraft:block/cube_all", "textures": {"all": f"{NAMESPACE}:block/property_cache"}}).encode()
+    # block textures, models and blockstates come from tools/art (gen_blocks.py); the block items point at the block models
     files[Path(f"rpg-core/src/main/resources/assets/{NAMESPACE}/models/item/property_cache.json")] = jdump(
         {"parent": f"{NAMESPACE}:block/property_cache"}).encode()
-    files[Path(f"rpg-core/src/main/resources/assets/{NAMESPACE}/blockstates/property_cache.json")] = jdump(
-        {"variants": {"": {"model": f"{NAMESPACE}:block/property_cache"}}}).encode()
-    terminal_png = BytesIO()
-    secure_terminal_texture().save(terminal_png, "PNG", optimize=True)
-    files[Path(f"rpg-core/src/main/resources/assets/{NAMESPACE}/textures/block/secure_data_terminal.png")] = terminal_png.getvalue()
-    files[Path(f"rpg-core/src/main/resources/assets/{NAMESPACE}/models/block/secure_data_terminal.json")] = jdump(
-        {"parent": "minecraft:block/cube_all", "textures": {"all": f"{NAMESPACE}:block/secure_data_terminal"}}).encode()
     files[Path(f"rpg-core/src/main/resources/assets/{NAMESPACE}/models/item/secure_data_terminal.json")] = jdump(
         {"parent": f"{NAMESPACE}:block/secure_data_terminal"}).encode()
-    files[Path(f"rpg-core/src/main/resources/assets/{NAMESPACE}/blockstates/secure_data_terminal.json")] = jdump(
-        {"variants": {"": {"model": f"{NAMESPACE}:block/secure_data_terminal"}}}).encode()
+    files[Path(f"rpg-core/src/main/resources/assets/{NAMESPACE}/models/item/public_ledger.json")] = jdump(
+        {"parent": f"{NAMESPACE}:block/public_ledger"}).encode()
     blueprint = json.loads((ROOT / "content/region-blueprints/cities.json").read_text(encoding="utf-8"))
     for city in blueprint["cities"]:
         files[Path(f"rpg-core/src/main/resources/data/{NAMESPACE}/regions/{city['id']}.json")] = jdump({
@@ -698,21 +393,12 @@ def same_content(target: Path, expected: bytes) -> bool:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--check", action="store_true", help="fail if committed files differ")
-    parser.add_argument("--sheet", help="write an 8x contact sheet PNG for visual review")
     args = parser.parse_args()
     data = load_source()
     validate(data)
     contracts = load_contracts()
     validate_contracts(data, contracts)
     files = build(data, contracts)
-    if args.sheet:
-        from PIL import Image
-        names = [e for e in data["commodities"] + data["products"] + data["tools"] + data.get("specials", [])]
-        sheet = Image.new("RGBA", (8 * 16 * 8, ((len(names) + 7) // 8) * 16 * 8), (60, 64, 72, 255))
-        for i, e in enumerate(names):
-            tile = icon(e["icon"], palette_for(e)).resize((128, 128), Image.NEAREST)
-            sheet.alpha_composite(tile, ((i % 8) * 128, (i // 8) * 128))
-        sheet.save(args.sheet)
     drift = []
     for rel, content in files.items():
         target = ROOT / rel

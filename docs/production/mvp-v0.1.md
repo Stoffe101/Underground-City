@@ -6,7 +6,7 @@
 
 - One urban district, one small farm/outskirts, one resource site, and a safe route between them.
 - Eight to twelve **named** NPCs: registrar, mayor/delegate, two employers/buyers, trader, guard, researcher, courier, and optional narrative contacts. Background people are future work.
-- Two complete **early** careers: Farmer/Vintner and Gunsmith (five early levels each). Smith/Engineer and Hacker/Technician remain designed but deferred.
+- Two complete **early** careers: Farmer (with the Vintner as its sibling, D-067) and Gunsmith (five early levels each). Smith/Engineer and Hacker/Technician remain designed but deferred.
 - Career skill allocation plus basic trading/shooting general-skill progression.
 - Initial currency and goods markets, one citizen tax cycle, NPC contracts and money ledger.
 - One starter blueprint chain, three illustrative weapon categories (final gun and component selection TBD), research/workstation and crafting requirements.

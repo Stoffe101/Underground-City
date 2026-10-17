@@ -75,7 +75,61 @@
           "origin": "ironhaven"
         }
       ],
-      "unlock": "precision_viticulture",
+      "unlock": "precision_agronomy",
+      "legitimate_paths": [
+        "licensed_convoy",
+        "regional_contracts"
+      ],
+      "risky_paths": [
+        "theft",
+        "smuggling"
+      ],
+      "visit_requirement": "personally_visit_all_three_cities"
+    },
+    {
+      "id": "vintner_cellar_2",
+      "career": "vintner",
+      "tier": 2,
+      "requires": [
+        {
+          "commodity": "refined_alloy",
+          "origin": "ironhaven"
+        },
+        {
+          "commodity": "biopolymer",
+          "origin": "valewood"
+        }
+      ],
+      "unlock": "temperature_controlled_cellar",
+      "legitimate_paths": [
+        "regional_trade",
+        "courier_contract",
+        "npc_purchase"
+      ],
+      "risky_paths": [
+        "black_market"
+      ],
+      "visit_requirement": "personally_visit_at_least_one_required_foreign_city"
+    },
+    {
+      "id": "vintner_distillery_3",
+      "career": "vintner",
+      "tier": 3,
+      "requires": [
+        {
+          "commodity": "refined_alloy",
+          "origin": "ironhaven"
+        },
+        {
+          "commodity": "biopolymer",
+          "origin": "valewood"
+        },
+        {
+          "commodity": "control_circuits",
+          "origin": "blackwater"
+        }
+      ],
+      "unlock": "column_still_distillery",
       "legitimate_paths": [
         "licensed_convoy",
         "regional_contracts"

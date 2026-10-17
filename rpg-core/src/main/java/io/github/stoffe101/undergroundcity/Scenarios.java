@@ -20,6 +20,8 @@ final class Scenarios {
             case "car" -> car();
             case "boat" -> boat();
             case "gun" -> gun();
+            case "gallery" -> Gallery.build();
+            case "modgallery" -> Gallery.mods();
             default -> throw new IllegalArgumentException("unknown scenario " + scenario);
         }
     }
@@ -184,33 +186,148 @@ final class Scenarios {
         throw new IllegalStateException("no " + role + " " + career);
     }
 
-    /** Walks up to a citizen (a step away, facing them) and speaks to them with a real right click. */
-    private static void speakTo(String label, int index, String shot) {
+    /** The first operation of a kind in Founders Row's data (an employer's terminal, the secure terminal, the Public Ledger...). */
+    private static DistrictCatalog.Op rowOp(String kind) {
+        return DistrictCatalog.INSTANCE.find("founders_row").ops().stream().filter(op -> op.kind().equals(kind)).findFirst().orElseThrow();
+    }
+
+    private static BlockPos secureCell(BlockPos row) { return row.offset(rowOp("secure_terminal").a()); }
+
+    /**
+     * Where to stand to speak to a citizen: the nearest of a few spots around them (toward the lane first, then every side, near then a little farther)
+     * where there is room for a player and nothing solid between the player's eyes and the citizen's head. A desk, a counter or a wall decides which.
+     */
+    private static Vec3 standingSpot(net.minecraft.world.entity.npc.Villager villager) {
+        double laneX = Vec3.atLowerCornerOf(DistrictBuilder.originOf(level(), "founders_row")).x + 16.5;
+        double toward = Math.signum(laneX - villager.getX()) == 0 ? 1 : Math.signum(laneX - villager.getX());
+        double[][] offsets = {{toward * 1.5, 0}, {-toward * 1.5, 0}, {0, 1.5}, {0, -1.5}, {toward * 2.2, 0}, {-toward * 2.2, 0}, {0, 2.2}, {0, -2.2},
+            {toward * 1.5, 1.5}, {toward * 1.5, -1.5}, {-toward * 1.5, 1.5}, {-toward * 1.5, -1.5}};
+        Vec3 head = villager.position().add(0, villager.getBbHeight() * 0.85, 0);
+        for (double[] offset : offsets) {
+            Vec3 spot = villager.position().add(offset[0], 0, offset[1]);
+            BlockPos feet = BlockPos.containing(spot);
+            boolean room = level().getBlockState(feet).getCollisionShape(level(), feet).isEmpty()
+                && level().getBlockState(feet.above()).getCollisionShape(level(), feet.above()).isEmpty()
+                && !level().getBlockState(feet.below()).getCollisionShape(level(), feet.below()).isEmpty();
+            if (!room) continue;
+            Vec3 eye = spot.add(0, 1.62, 0);
+            var hit = level().clip(new net.minecraft.world.level.ClipContext(eye, head, net.minecraft.world.level.ClipContext.Block.COLLIDER, net.minecraft.world.level.ClipContext.Fluid.NONE, villager));
+            if (hit.getType() == net.minecraft.world.phys.HitResult.Type.MISS) return spot;
+        }
+        return villager.position().add(toward * 1.5, 0, 0);
+    }
+
+    /**
+     * Speaks to a citizen with a real right click while their AI is running: they walk, so each attempt stands a step in front of where they are now,
+     * aims at their head, presses, and looks at what opened. A miss is simply tried again (up to six times) from wherever they have got to.
+     * {@code expect} says what should open: "dialogue", "registration", "terminal" or "ledger".
+     */
+    private static void talkTo(String label, int index, String expect, String shot) {
+        final int[] phase = {0}, tick = {0}, attempts = {0};
         final Vec3[] stand = new Vec3[1];
-        Playtest.queue("go to " + label, () -> {
-            var villager = citizen(null, index);
-            if (villager == null) { Playtest.fail(label + " is not in the world"); return; }
-            // Two blocks toward the lane (the district's middle), so the player stands inside the room or on the street, never in a wall.
-            double laneX = Vec3.atLowerCornerOf(DistrictBuilder.originOf(level(), "founders_row")).x + 12.5;
-            Vec3 where = villager.position().add(Math.signum(laneX - villager.getX()) * 2.0, 0, 0);
-            Vec3 head = villager.position().add(0, villager.getBbHeight() * 0.85, 0);
-            stand[0] = where;
-            standLooking(where, head);
-        });
-        Playtest.wait("settle", 10);
-        Playtest.queue("right-click " + label, () -> {
-            var villager = citizen(null, index);
-            if (villager != null) standLooking(stand[0], villager.position().add(0, villager.getBbHeight() * 0.85, 0));
-            Playtest.focusWindow();
+        Playtest.queue("talk to " + label + " (expecting " + expect + ")", () -> Playtest.focusWindow(), () -> {
             var mc = Minecraft.getInstance();
-            Playtest.log(label + ": citizen at " + (villager == null ? "nowhere" : villager.position() + " on " + level().getBlockState(villager.blockPosition().below()).getBlock())
-                + ", player at " + mc.player.position() + ", cursor " + describeCursor());
-            Playtest.mouseButton(3, true);
+            if (matches(mc.screen, expect)) return true;
+            switch (phase[0]) {
+                case 0 -> {
+                    var villager = citizen(null, index);
+                    if (villager == null) { Playtest.fail(label + " is not in the world"); return true; }
+                    Vec3 where = standingSpot(villager);
+                    stand[0] = where;
+                    standLooking(where, villager.position().add(0, villager.getBbHeight() * 0.85, 0));
+                    tick[0] = 0; phase[0] = 1;
+                }
+                case 1 -> { if (++tick[0] >= 3) { var v = citizen(null, index); if (v != null) standLooking(stand[0], v.position().add(0, v.getBbHeight() * 0.85, 0)); Playtest.mouseButton(3, true); tick[0] = 0; phase[0] = 2; } }
+                case 2 -> { if (++tick[0] >= 3) { Playtest.mouseButton(3, false); tick[0] = 0; phase[0] = 3; } }
+                default -> {
+                    if (++tick[0] >= 14) {
+                        if (++attempts[0] > 6) { Playtest.fail(label + ": nothing opened after six attempts, screen=" + mc.screen + ", cursor " + describeCursor()); return true; }
+                        if (mc.screen != null && !(mc.screen instanceof net.minecraft.client.gui.screens.ChatScreen)) mc.setScreen(null);
+                        phase[0] = 0;
+                    }
+                }
+            }
+            return false;
+        }, 900);
+        Playtest.wait("let the screen draw", 16);
+        if (shot != null) Playtest.queue("screenshot " + shot, () -> Playtest.screenshotNextFrame(shot));
+        Playtest.wait("frame", 8);
+    }
+
+    private static boolean matches(net.minecraft.client.gui.screens.Screen screen, String expect) {
+        return switch (expect) {
+            case "dialogue" -> screen instanceof DialogueScreen;
+            case "registration" -> screen instanceof RegistrationScreen;
+            case "terminal" -> screen instanceof TerminalScreen;
+            case "ledger" -> screen instanceof LedgerScreen;
+            default -> false;
+        };
+    }
+
+    /** Clicks the n-th choice of the open conversation with the mouse, then waits (up to 20 seconds) for what should open, or a short while when nothing should. */
+    private static void chooseOption(String label, int choice, String expectNext, String shot) {
+        Playtest.queue("choose '" + label + "'", () -> {
+            if (!(Minecraft.getInstance().screen instanceof DialogueScreen screen)) { Playtest.fail("choose " + label + ": no conversation is open"); return; }
+            int[] at = screen.choiceCentre(choice);
+            Playtest.log("clicking '" + label + "' at GUI " + at[0] + "," + at[1] + " of " + screen.width + "x" + screen.height);
+            Playtest.moveGui(at[0], at[1]);
         });
-        Playtest.wait("hold", 4);
-        Playtest.queue("release", () -> Playtest.mouseButton(3, false));
-        Playtest.wait("let the answer arrive", 24);
-        if (shot != null) Playtest.queue("screenshot " + shot, () -> Playtest.screenshot(shot));
+        Playtest.wait("the pointer settles on '" + label + "'", 6);
+        Playtest.queue("press '" + label + "'", Playtest::pressLeft);
+        final int[] waited = {0};
+        Playtest.queue("the answer to '" + label + "' arrives", () -> { }, () -> {
+            waited[0]++;
+            if (expectNext != null) return matches(Minecraft.getInstance().screen, expectNext);
+            return waited[0] >= 30;
+        }, 400);
+        Playtest.wait("let it draw", 12);
+        if (shot != null) Playtest.queue("screenshot " + shot, () -> Playtest.screenshotNextFrame(shot));
+        Playtest.wait("frame", 8);
+        if (expectNext != null) Playtest.queue("what opened after '" + label + "'", () -> {
+            if (!matches(Minecraft.getInstance().screen, expectNext)) Playtest.fail("after '" + label + "' expected " + expectNext + " but the screen is " + Minecraft.getInstance().screen);
+        });
+    }
+
+    /** Leaves whatever screen is open with Escape and waits until none is. */
+    private static void closeScreen(String label) {
+        Playtest.queue("close " + label + " with Escape", () -> Playtest.tap("escape"), () -> Minecraft.getInstance().screen == null, 100);
+    }
+
+    /** A camera in the world: the eye at {@code e}, looking at {@code t}, both relative to Founders Row's north-west corner; then a frame is taken. */
+    private static void view(String name, double ex, double ey, double ez, double tx, double ty, double tz) {
+        Playtest.queue("camera for " + name, () -> {
+            Vec3 o = Vec3.atLowerCornerOf(DistrictBuilder.originOf(level(), "founders_row"));
+            standLooking(o.add(ex, ey - 1.62, ez), o.add(tx, ty, tz));
+        });
+        Playtest.wait("settle " + name, 22);
+        Playtest.queue("photograph " + name, () -> Playtest.screenshotNextFrame("uc-row-" + name));
+        Playtest.wait("frame " + name, 8);
+    }
+
+    /** Checks that a citizen being spoken to stands still, and that they are free to walk again once the conversation is over. */
+    private static void checkHold(String label, int index) {
+        final Vec3[] at = new Vec3[1];
+        Playtest.queue(label + ": note where they stand while we talk", () -> { var v = citizen(null, index); at[0] = v == null ? null : v.position(); });
+        Playtest.wait("keep talking", 60);
+        Playtest.queue(label + ": they have not wandered off mid-conversation", () -> {
+            var v = citizen(null, index);
+            if (v == null || at[0] == null) { Playtest.fail(label + " vanished"); return; }
+            double moved = v.position().distanceTo(at[0]);
+            Playtest.log(label + " moved " + String.format("%.2f", moved) + " blocks in three seconds of conversation; trading partner " + level().getEntity(v.getUUID()));
+            if (moved > 1.2) Playtest.fail(label + " walked " + String.format("%.1f", moved) + " blocks away while being spoken to");
+        });
+    }
+
+    private static void checkReleased(String label, int index) {
+        Playtest.wait("let the server hear the screen close", 30);
+        Playtest.queue(label + ": released after the conversation", () -> {
+            var villager = citizen(null, index);
+            if (villager == null) { Playtest.fail(label + " vanished"); return; }
+            var real = level().getEntity(villager.getUUID());
+            boolean held = real instanceof net.minecraft.world.entity.npc.Villager v && v.getTradingPlayer() != null;
+            Playtest.log(label + " still held after the conversation: " + held);
+            if (held) Playtest.fail(label + " is still held after the conversation ended");
+        });
     }
 
     /** Creative mode, a clear spot high in the sky of the test world, and Founders Row built there (or found, if an earlier run built it). */
@@ -233,6 +350,18 @@ final class Scenarios {
             }
             return false;
         }, 1200);
+        Playtest.queue("build the firing range beside it", () -> { }, () -> {
+            if (DistrictBuilder.isBuilt(level(), "firing_range")) return true;
+            if (attempts[0]++ % 40 == 0) {
+                var row = DistrictBuilder.originOf(level(), "founders_row");
+                var range = DistrictCatalog.INSTANCE.find("firing_range");
+                int width = range.max().getX() - range.min().getX() + 1;
+                // the same place the dev launch puts it: the range's north-west corner is one range-width west of the Row's and four blocks south
+                Playtest.command("tp @s " + (row.getX() - width) + " " + row.getY() + " " + (row.getZ() + 4));
+                Playtest.command("uc_district build firing_range");
+            }
+            return false;
+        }, 1200);
         Playtest.wait("let the citizens settle", 80);
     }
 
@@ -244,88 +373,127 @@ final class Scenarios {
     private static void row() {
         final BlockPos[] origin = new BlockPos[1];
         buildRowInTheSky(origin);
-        // By day the villagers gather at the bell and walk about, so a click lands on whoever stands in front of the citizen aimed at (seen in earlier runs: the cursor
-        // on the market gardener when the gunsmith was meant). The scripted run switches their AI off so each stands at her post; their walking is checked separately.
-        Playtest.queue("switch the citizens' AI off so a click lands on the citizen aimed at", () -> {
-            var server = Minecraft.getInstance().getSingleplayerServer();
-            server.execute(() -> {
-                var level = server.overworld();
-                var box = new net.minecraft.world.phys.AABB(Vec3.atLowerCornerOf(origin[0]).subtract(32, 16, 32), Vec3.atLowerCornerOf(origin[0]).add(64, 32, 80));
-                int frozen = 0;
-                for (var villager : level.getEntitiesOfClass(net.minecraft.world.entity.npc.Villager.class, box, CityNpcs::isCityNpc)) { villager.setNoAi(true); frozen++; }
-                Playtest.log("citizens with their AI switched off: " + frozen);
-            });
-        });
         screensStayOpenFromNow();
-        Playtest.queue("overview from the north-west", () -> {
-            Vec3 o = Vec3.atLowerCornerOf(origin[0]);
-            standLooking(o.add(-6, 16, -10), o.add(14, 0, 18));
+        Playtest.queue("log where the Row stands", () -> {
+            var row = DistrictBuilder.originOf(level(), "founders_row");
+            var range = DistrictBuilder.originOf(level(), "firing_range");
+            Playtest.log("Founders Row origin " + row + ", firing range origin " + range);
         });
+        // The citizens keep their AI for the whole run: they walk, work and gather at the bell, and every conversation below is with someone who is moving.
+
+        // ---- A free camera (spectator: no collisions, no hand) over the district: the whole, the street, the buildings and what is inside them.
+        if (!"false".equals(System.getProperty("uc.playtest.views"))) rowViews();
+        rowPeople();
+    }
+
+    private static void rowViews() {
+        Playtest.queue("spectator camera, no HUD", () -> { Playtest.command("gamemode spectator"); Minecraft.getInstance().options.hideGui = true; });
+        Playtest.queue("time of day: noon", () -> { Playtest.command("time set 6000"); Playtest.command("gamerule doDaylightCycle false"); Playtest.command("weather clear"); Playtest.command("gamerule sendCommandFeedback false"); });
         waitForMeshes(1500);
-        Playtest.wait("settle", 20);
-        Playtest.queue("screenshot", () -> Playtest.screenshot("uc-row-overview-nw"));
-        Playtest.queue("overview from the south gate", () -> {
-            Vec3 o = Vec3.atLowerCornerOf(origin[0]);
-            standLooking(o.add(12.5, 6, 52), o.add(12.5, 1, 20));
-        });
-        waitForMeshes(1500);
-        Playtest.wait("settle", 20);
-        Playtest.queue("screenshot", () -> Playtest.screenshot("uc-row-gate-looking-north"));
-        Playtest.queue("down the lane at eye level", () -> {
-            Vec3 o = Vec3.atLowerCornerOf(origin[0]);
-            standLooking(o.add(12.5, 1.1, 38), o.add(12.5, 1.5, 8));
+        view("overview-nw", -9, 24, -16, 16, 0, 22);
+        view("overview-ne", 42, 22, -14, 16, 0, 22);
+        view("gate-north", 16.5, 5, 58, 16.5, 2, 26);
+        view("lane-eye-level", 16.5, 1.7, 45, 16.5, 2.2, 10);
+        view("north-terrace", 16.5, 5, 18, 16.5, 1.5, 2);
+        view("plaza-wide", 16.5, 7, 40, 16.5, 1, 25);
+        view("plaza-bell", 10.5, 1.8, 19, 17, 1.6, 26);
+        view("ledger", 15.5, 1.9, 25.5, 11.5, 1.2, 25.5);
+        view("stall-baker", 17.2, 2.1, 22, 21.5, 1.4, 22.5);
+        view("stall-fish", 17.2, 2.1, 28, 21.5, 1.4, 28.5);
+        view("gunsmith-front", 14.5, 2.6, 12, 8, 2, 11);
+        view("foundry-front", 14.5, 2.6, 20, 8, 3, 19);
+        view("farm-front", 18.5, 2.6, 12, 24, 2, 11);
+        view("registry-front", 18.5, 2.6, 36, 24, 2, 35);
+        view("greenhouse", 27.5, 9, 14, 27.5, 1, 3);
+        view("network-office", 20.5, 2.2, 8.5, 20.5, 1.6, 2);
+        view("gunsmith-inside", 7.2, 2.3, 12.4, 3, 1, 9.5);
+        view("foundry-inside", 7.2, 2.3, 20.4, 3, 1, 17.5);
+        view("farm-inside", 25.2, 2.3, 12.4, 29, 1, 9.5);
+        view("registry-inside", 25.2, 2.3, 36.2, 29, 1, 34);
+        view("cottage-inside", 7.2, 2.3, 28.4, 3, 1, 25);
+        view("cellar-front", 18.5, 2.6, 44, 24, 2, 43);
+        view("cellar-inside", 25.2, 2.3, 44.4, 29, 1, 41.5);
+        view("vineyard", 12, 3.5, 40.5, 5, 0.6, 43);
+        // the firing range, from the line and from above
+        Playtest.queue("camera for the firing range", () -> {
+            Vec3 o = Vec3.atLowerCornerOf(DistrictBuilder.originOf(level(), "firing_range"));
+            standLooking(o.add(38.5, 1.8 - 1.62, 7.5), o.add(5, 1.4, 7.5));
         });
         Playtest.wait("settle", 40);
-        Playtest.queue("screenshot", () -> Playtest.screenshot("uc-row-lane"));
-        Playtest.queue("the north row from the lane", () -> {
-            Vec3 o = Vec3.atLowerCornerOf(origin[0]);
-            standLooking(o.add(12.5, 3, 14), o.add(12.5, 1, 1));
+        Playtest.queue("photograph the range from the line", () -> Playtest.screenshotNextFrame("uc-row-range-line"));
+        Playtest.wait("frame", 8);
+        Playtest.queue("camera over the range", () -> {
+            Vec3 o = Vec3.atLowerCornerOf(DistrictBuilder.originOf(level(), "firing_range"));
+            standLooking(o.add(41, 12 - 1.62, 7.5), o.add(15, 0, 7.5));
         });
         Playtest.wait("settle", 40);
-        Playtest.queue("screenshot", () -> Playtest.screenshot("uc-row-north-row"));
-        // The people.
-        int registrar = citizenIndex("registrar", null), gunsmith = citizenIndex("employer", "gunsmith"), farmer = citizenIndex("employer", "farmer"), resident = citizenIndex("resident", null);
-        speakTo("the registrar", registrar, "uc-row-registrar-first-login");
-        Playtest.queue("the registration screen opened for a newcomer", () -> {
-            if (!(Minecraft.getInstance().screen instanceof RegistrationScreen)) Playtest.fail("speaking to the registrar did not open the registration screen, screen=" + Minecraft.getInstance().screen);
-        });
-        Playtest.queue("close it with Escape", () -> Playtest.tap("escape"), () -> Minecraft.getInstance().screen == null, 100);
+        Playtest.queue("photograph the range from above", () -> Playtest.screenshotNextFrame("uc-row-range-above"));
+        Playtest.wait("frame", 8);
+
+    }
+
+    private static void rowPeople() {
+        // ---- The people, with their AI on. Creative mode so the player can stand anywhere and nothing can hurt them.
+        Playtest.queue("creative mode, HUD back on", () -> { Playtest.command("gamemode creative"); Minecraft.getInstance().options.hideGui = false; });
+        Playtest.wait("settle", 20);
+        int registrar = citizenIndex("registrar", null), gunsmith = citizenIndex("employer", "gunsmith"), farmer = citizenIndex("employer", "farmer"), vintner = citizenIndex("employer", "vintner");
+        int vendor = citizenIndex("vendor", null), guard = citizenIndex("guard", null);
+        talkTo("the registrar (a newcomer)", registrar, "dialogue", "uc-row-dialogue-registrar");
+        checkHold("the registrar", registrar);
+        chooseOption("Register me", 0, "registration", "uc-row-register-opens");
+        closeScreen("the registration screen");
+        checkReleased("the registrar", registrar);
         Playtest.queue("register through the server as a Valewood gunsmith", () -> Playtest.command("uc register valewood gunsmith"));
         Playtest.wait("let the server answer", 30);
-        speakTo("the registrar again", registrar, "uc-row-registrar-next-step");
-        speakTo("the farm co-op's employer (not this citizen's trade)", farmer, "uc-row-wrong-employer");
-        // Villagers gather at the bell by day, so the employer is likely to be in the lane, away from her desk: she says so and walks back, and the player follows.
-        speakTo("the gunsmith's employer", gunsmith, "uc-row-employer-away-from-the-desk");
+        talkTo("the registrar again", registrar, "dialogue", null);
+        chooseOption("What should I do next?", 0, "dialogue", "uc-row-dialogue-next-step");
+        closeScreen("the conversation");
+        talkTo("the farm co-op's employer (not this citizen's trade)", farmer, "dialogue", "uc-row-dialogue-wrong-employer");
+        closeScreen("the conversation");
+        talkTo("the cellar master (not this citizen's trade)", vintner, "dialogue", "uc-row-dialogue-vintner");
+        closeScreen("the conversation");
+        // The gunsmith's employer is probably at the bell: asking for her orders sends her back to her desk, and she is held only while we talk.
+        talkTo("the gunsmith's employer", gunsmith, "dialogue", "uc-row-dialogue-employer");
+        chooseOption("Open my orders", 0, null, "uc-row-dialogue-employer-orders");
+        Playtest.queue("if the terminal opened, close it; otherwise close the conversation", () -> { if (Minecraft.getInstance().screen != null) Playtest.tap("escape"); }, () -> Minecraft.getInstance().screen == null, 100);
         final int[] polls = {0};
-        Playtest.queue("wait until the gunsmith is back at her desk", () -> { }, () -> {
+        Playtest.queue("wait until the gunsmith is at her desk", () -> { }, () -> {
             var villager = citizen(null, gunsmith);
             if (villager == null) return false;
-            var server = Minecraft.getInstance().getSingleplayerServer();
-            var real = server.overworld().getEntity(villager.getUUID());
+            var real = level().getEntity(villager.getUUID());
             if (!(real instanceof net.minecraft.world.entity.npc.Villager v)) return false;
             var tag = v.getPersistentData().getCompound(CityNpcs.TAG);
             if (!tag.contains("terminal")) return false;
             var terminal = Vec3.atCenterOf(BlockPos.of(tag.getLong("terminal")));
-            // Horizontal distance: the office floor is not at the terminal's own height.
             double distance = Math.hypot(v.getX() - terminal.x, v.getZ() - terminal.z);
-            if (polls[0]++ % 100 == 0) {
-                Playtest.log("the gunsmith is " + String.format("%.1f", distance) + " blocks from her desk " + terminal + "; she is at " + v.position() + ", walk target "
-                    + v.getBrain().getMemory(net.minecraft.world.entity.ai.memory.MemoryModuleType.WALK_TARGET).map(t -> t.getTarget().currentBlockPosition().toShortString()).orElse("none")
-                    + ", navigation done " + v.getNavigation().isDone() + ", time of day " + (v.level().getDayTime() % 24000));
-            }
-            // Either she is back at her desk, or the first click already opened her terminal because the player was within its reach.
-            return distance < 4.0 || Minecraft.getInstance().screen instanceof TerminalScreen;
-        }, 1500);
-        Playtest.queue("close the terminal if the first click opened it", () -> {
-            if (Minecraft.getInstance().screen instanceof TerminalScreen) Playtest.log("the first click already opened the gunsmith's terminal (the player stood within its reach)");
-            if (Minecraft.getInstance().screen != null) Playtest.tap("escape");
-        }, () -> Minecraft.getInstance().screen == null, 100);
-        speakTo("the gunsmith's employer, at her desk", gunsmith, "uc-row-employer-terminal");
-        Playtest.queue("the employer's terminal opened", () -> {
-            if (!(Minecraft.getInstance().screen instanceof TerminalScreen)) Playtest.fail("the gunsmith employer did not open the terminal, screen=" + Minecraft.getInstance().screen);
+            if (polls[0]++ % 100 == 0) Playtest.log("the gunsmith is " + String.format("%.1f", distance) + " blocks from her desk; she is at " + v.position() + ", time of day " + (v.level().getDayTime() % 24000));
+            return distance < 6.5;   // inside her office: the desk is at the far wall
+        }, 2400);
+        talkTo("the gunsmith's employer, at her desk", gunsmith, "dialogue", null);
+        chooseOption("Open my orders", 0, "terminal", "uc-row-employer-terminal");
+        closeScreen("the employer's terminal");
+        talkTo("the market vendor", vendor, "dialogue", "uc-row-dialogue-vendor");
+        chooseOption("What is on the exchange today?", 0, "dialogue", "uc-row-dialogue-vendor-stock");
+        closeScreen("the conversation");
+        talkTo("the gate guard", guard, "dialogue", "uc-row-dialogue-guard");
+        chooseOption("What is the law here?", 0, "dialogue", "uc-row-dialogue-guard-law");
+        closeScreen("the conversation");
+        checkReleased("the gate guard", guard);
+        // The Public Ledger: a real right click on the block.
+        Playtest.queue("stand at the Public Ledger and use it", () -> {
+            var row = DistrictBuilder.originOf(level(), "founders_row");
+            BlockPos ledger = row.offset(rowOp("ledger").a());
+            standLooking(Vec3.atCenterOf(ledger).add(2.6, -0.8, 0), Vec3.atCenterOf(ledger).add(0, 0.2, 0));
         });
-        Playtest.queue("close it with Escape", () -> Playtest.tap("escape"), () -> Minecraft.getInstance().screen == null, 100);
-        speakTo("a resident", resident, "uc-row-resident");
+        Playtest.wait("settle", 15);
+        Playtest.queue("right-click the ledger", () -> { Playtest.focusWindow(); Playtest.mouseButton(3, true); });
+        Playtest.wait("hold", 4);
+        Playtest.queue("release", () -> Playtest.mouseButton(3, false), () -> Minecraft.getInstance().screen instanceof LedgerScreen, 120);
+        Playtest.wait("let the screen draw", 20);
+        Playtest.queue("screenshot of the ledger", () -> Playtest.screenshotNextFrame("uc-row-ledger-screen"));
+        Playtest.wait("frame", 8);
+        Playtest.queue("the ledger opened", () -> { if (!(Minecraft.getInstance().screen instanceof LedgerScreen)) Playtest.fail("the Public Ledger did not open, screen=" + Minecraft.getInstance().screen); });
+        closeScreen("the ledger");
     }
 
     // ------------------------------------------------------------------------------------------------ the Technician's trace
@@ -357,16 +525,16 @@ final class Scenarios {
         Playtest.queue(label + ": stand at the secure terminal and use it", () -> {
             // The district's own origin (the platform the test built it on is one block lower than the Row's first layer), read when the step runs.
             BlockPos row = DistrictBuilder.originOf(level(), "founders_row");
-            Vec3 terminal = Vec3.atCenterOf(row.offset(15, 0, 2));
-            standLooking(Vec3.atLowerCornerOf(row.offset(15, 0, 4)).add(0.5, 0, 0.5), terminal.add(0, 0.2, 0));
+            Vec3 terminal = Vec3.atCenterOf(secureCell(row));
+            standLooking(Vec3.atLowerCornerOf(secureCell(row).offset(0, 0, 2)).add(0.5, 0, 0.5), terminal.add(0, 0.2, 0));
         });
         Playtest.wait("settle", 15);
         Playtest.queue(label + ": right-click", () -> {
             var mc = Minecraft.getInstance();
             var lvl = level();
             BlockPos row = DistrictBuilder.originOf(lvl, "founders_row");
-            Playtest.log("row origin " + row.toShortString() + " (platform " + origin[0].toShortString() + "); terminal cell " + lvl.getBlockState(row.offset(15, 0, 2)).getBlock() + ", below it " + lvl.getBlockState(row.offset(15, -1, 2)).getBlock()
-                + ", block at the stand point " + lvl.getBlockState(row.offset(15, 0, 4)).getBlock());
+            Playtest.log("row origin " + row.toShortString() + " (platform " + origin[0].toShortString() + "); terminal cell " + lvl.getBlockState(secureCell(row)).getBlock() + ", below it " + lvl.getBlockState(secureCell(row).below()).getBlock()
+                + ", block at the stand point " + lvl.getBlockState(secureCell(row).offset(0, 0, 2)).getBlock());
             String aimed = mc.hitResult instanceof net.minecraft.world.phys.BlockHitResult block && block.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK
                 ? block.getBlockPos().toShortString() + " " + mc.level.getBlockState(block.getBlockPos()).getBlock() : String.valueOf(mc.hitResult == null ? null : mc.hitResult.getType());
             Playtest.log("cursor: " + aimed + " from " + mc.player.position() + " looking " + mc.player.getXRot() + "/" + mc.player.getYRot() + ", holding " + mc.player.getMainHandItem());
@@ -429,7 +597,7 @@ final class Scenarios {
     private static boolean terminalLocked(BlockPos platform) {
         var server = Minecraft.getInstance().getSingleplayerServer();
         server.execute(() -> {
-            var entity = server.overworld().getBlockEntity(DistrictBuilder.originOf(server.overworld(), "founders_row").offset(15, 0, 2));
+            var entity = server.overworld().getBlockEntity(secureCell(DistrictBuilder.originOf(server.overworld(), "founders_row")));
             TERMINAL_LOCKED.set(entity instanceof SecureTerminalBlockEntity terminal && terminal.lockedAt(WorkOrderLedger.get(server).clock()));
         });
         return TERMINAL_LOCKED.get();

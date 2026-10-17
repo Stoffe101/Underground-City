@@ -19,7 +19,7 @@ class InterCityDesignTests(unittest.TestCase):
     def test_city_graph_border_rules_and_progression_requirements(self):
         self.assertEqual(validate(self.base), [])
         self.assertEqual(len(self.base["routes"]["routes"]), 3)
-        self.assertEqual(len(self.base["supply"]["career_milestones"]), 8)
+        self.assertEqual(len(self.base["supply"]["career_milestones"]), 10)
 
     def test_geometry_rejects_unconnected_and_crossing_third_city(self):
         x = copy.deepcopy(self.base)

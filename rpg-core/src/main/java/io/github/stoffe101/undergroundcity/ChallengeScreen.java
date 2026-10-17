@@ -1,7 +1,6 @@
 package io.github.stoffe101.undergroundcity;
 
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraftforge.api.distmarker.Dist;
@@ -14,18 +13,17 @@ import net.minecraftforge.api.distmarker.OnlyIn;
  * puzzle never relies on colour alone, and the keys 1-4 work as well as the mouse.
  */
 @OnlyIn(Dist.CLIENT)
-public final class ChallengeScreen extends Screen {
+public final class ChallengeScreen extends UcScreen {
     private static final int[] PAD_COLOUR = {0xff55d3bc, 0xffe1af6c, 0xff6cb4e1, 0xffd36cd0};
     private static final String[] PAD_NAME = {"1", "2", "3", "4"};
     private static final int LIT_TICKS = 9;
-    private static final int TEXT = 0xffebf5fb, DIM = 0xff9bb6ca, TEAL = 0xff55d3bc, AMBER = 0xffe1af6c, RED = 0xffe1736c;
 
     private final BlockPos pos;
     private final byte[] sequence;
     private final byte[] entered = new byte[SecureTerminalService.LENGTH];
     private int count, age, flashPad = -1, flashAge;
     private boolean sent, frozen, qa;
-    private int panelW, panelH, left, top, padSize, padGap, padTop;
+    private int padSize, padGap, padTop;
 
     ChallengeScreen(BlockPos pos, byte[] sequence) {
         super(Component.literal("Underground City | Secure terminal"));
@@ -61,17 +59,18 @@ public final class ChallengeScreen extends Screen {
         return age % SecureTerminalService.SHOW_TICKS_PER_SYMBOL < LIT_TICKS ? sequence[step] : -1;
     }
 
-    @Override protected void init() {
-        panelW = Math.min(340, width - 16);
-        panelH = Math.min(236, height - 16);
-        left = (width - panelW) / 2;
-        top = (height - panelH) / 2;
-        padGap = 8;
-        padSize = Math.min(64, (panelW - 36 - 3 * padGap) / 4);
-        padTop = top + 76;
-    }
+    @Override protected int accent() { return UcUi.UNDERGROUND; }
+    @Override protected String titleText() { return "Secured terminal"; }
+    @Override protected UcUi.Icon titleIcon() { return UcUi.Icon.TECHNICIAN; }
+    @Override protected boolean showFooter() { return true; }
 
-    @Override public boolean isPauseScreen() { return false; }
+    @Override protected void init() {
+        clearWidgets();
+        layoutPanel(318, 236, 390, 280);
+        padGap = 8;
+        padSize = Math.max(40, Math.min(68, (pw - 2 * PAD - 3 * padGap - 12) / 4));
+        padTop = py + HEADER + 50;
+    }
 
     @Override public void tick() {
         if (frozen) return;
@@ -83,7 +82,7 @@ public final class ChallengeScreen extends Screen {
 
     private int padX(int index) {
         int row = padSize * 4 + padGap * 3;
-        return left + (panelW - row) / 2 + index * (padSize + padGap);
+        return px + (pw - row) / 2 + index * (padSize + padGap);
     }
 
     private void press(int pad) {
@@ -91,6 +90,7 @@ public final class ChallengeScreen extends Screen {
         entered[count++] = (byte) pad;
         flashPad = pad;
         flashAge = 0;
+        minecraft.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(net.minecraft.sounds.SoundEvents.NOTE_BLOCK_BIT.value(), 0.8f + pad * 0.2f, 0.5f));
         if (count == entered.length) finish(false);
     }
 
@@ -126,27 +126,30 @@ public final class ChallengeScreen extends Screen {
         super.removed();
     }
 
-    @Override public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-        renderBackground(g);
-        g.fill(left - 2, top - 2, left + panelW + 2, top + panelH + 2, 0xff38546b);
-        g.fill(left, top, left + panelW, top + panelH, 0xff101c2a);
-        g.fill(left, top, left + panelW, top + 33, 0xff182d42);
-        g.fill(left + 12, top + 10, left + 16, top + 24, AMBER);
-        g.drawString(font, "UNDERGROUND // SECURED TERMINAL", left + 24, top + 10, TEXT, false);
-        g.drawString(font, "SIGNAL TRACE", left + 24, top + 21, DIM, false);
+    @Override protected void renderHeaderRight(GuiGraphics g, int right) {
+        int w = UcUi.chip(g, font, "Technician", right - UcUi.displayWidth(font, "Technician") - 22, py + 9, UcUi.careerColor("technician"), UcUi.Icon.TECHNICIAN);
+    }
 
+    @Override protected void renderBody(GuiGraphics g, int mouseX, int mouseY, float partial) {
         boolean show = showing();
         int lit = litPad();
-        String status = show ? "WATCH THE SIGNAL" : count >= entered.length ? "SENDING" : "REPEAT THE SEQUENCE";
-        g.drawCenteredString(font, status, left + panelW / 2, top + 44, show ? AMBER : TEAL);
-        g.drawCenteredString(font, show ? "Five signals, four pads. Do not click yet." : "Press the pads in the same order.", left + panelW / 2, top + 58, DIM);
+        int cxm = px + pw / 2, y = py + HEADER + 12;
+        String status = show ? "Watch the signal" : count >= entered.length ? "Sending" : "Repeat the sequence";
+        UcUi.displayCentre(g, font, status, cxm, y, show ? UcUi.AMBER : UcUi.LEGAL);
+        String help = show ? "Five signals, four pads. Do not press yet." : "Press the pads in the same order.";
+        UcUi.text(g, font, help, cxm - font.width(help) / 2, y + 14, UcUi.DIM);
 
         for (int i = 0; i < 4; i++) {
             int x = padX(i), colour = PAD_COLOUR[i];
             boolean on = i == lit || (i == flashPad && !show);
             boolean hover = !show && !sent && mouseX >= x && mouseX < x + padSize && mouseY >= padTop && mouseY < padTop + padSize;
-            g.fill(x - 2, padTop - 2, x + padSize + 2, padTop + padSize + 2, on ? TEXT : hover ? colour : 0xff2a4259);
-            g.fill(x, padTop, x + padSize, padTop + padSize, on ? colour : dim(colour, hover ? 0.45 : 0.22));
+            // a seated key: dark well, a rim in the pad's colour, a face that lights up and a lower edge
+            g.fill(x - 3, padTop - 3, x + padSize + 3, padTop + padSize + 4, 0xff05080c);
+            g.fill(x - 2, padTop - 2, x + padSize + 2, padTop + padSize + 3, on ? 0xffffffff : UcUi.shade(colour, hover ? 0.9f : 0.5f));
+            int face = on ? colour : UcUi.mix(0xff0d1620, colour, hover ? 0.34f : 0.18f);
+            g.fillGradient(x, padTop, x + padSize, padTop + padSize, on ? UcUi.shade(colour, 1.15f) : face, on ? colour : UcUi.shade(face, 0.8f));
+            g.fill(x, padTop + padSize, x + padSize, padTop + padSize + 2, on ? UcUi.shade(colour, 0.7f) : UcUi.shade(face, 0.5f));
+            if (on) { g.fill(x - 6, padTop - 6, x + padSize + 6, padTop - 5, UcUi.shade(colour, 0.6f)); }
             g.pose().pushPose();
             g.pose().translate(x + padSize / 2f, padTop + padSize / 2f - 8, 0);
             g.pose().scale(2f, 2f, 1f);
@@ -155,26 +158,30 @@ public final class ChallengeScreen extends Screen {
             g.pose().popPose();
         }
 
-        int dotsY = padTop + padSize + 14, step = 14, dotsW = entered.length * step - 4;
+        // progress: five lamps, one per signal
+        int lampW = 14, gap = 5, lampsW = entered.length * (lampW + gap) - gap;
+        int lampY = padTop + padSize + 16;
         int shown = show ? Math.min(entered.length, age / SecureTerminalService.SHOW_TICKS_PER_SYMBOL + (lit >= 0 ? 1 : 0)) : count;
         for (int i = 0; i < entered.length; i++) {
-            int x = left + (panelW - dotsW) / 2 + i * step;
-            g.fill(x, dotsY, x + 10, dotsY + 10, i < shown ? (show ? AMBER : TEAL) : 0xff2a4259);
+            int x = cxm - lampsW / 2 + i * (lampW + gap);
+            int color = show ? UcUi.AMBER : UcUi.LEGAL;
+            g.fill(x, lampY, x + lampW, lampY + 8, 0xff05080c);
+            g.fill(x + 1, lampY + 1, x + lampW - 1, lampY + 7, i < shown ? UcUi.shade(color, 0.8f) : 0xff1b2a38);
+            if (i < shown) g.fill(x + 1, lampY + 1, x + lampW - 1, lampY + 2, color);
         }
-        int barW = panelW - 60, barX = left + 30, barY = dotsY + 20;
+        int barW = Math.min(pw - 2 * PAD - 40, 260), barX = cxm - barW / 2, barY = lampY + 18;
         double remaining = show ? 1.0 : Math.max(0, 1.0 - (age - showTicks()) / (double) SecureTerminalService.INPUT_TICKS);
-        g.fill(barX - 1, barY - 1, barX + barW + 1, barY + 7, 0xff2a4259);
-        g.fill(barX, barY, barX + (int) (barW * remaining), barY + 6, remaining > 0.5 ? TEAL : remaining > 0.25 ? AMBER : RED);
-        g.drawString(font, show ? "LOCK RESETS AFTER THE SIGNAL" : String.format("LOCK RESETS IN %.0fs", remaining * SecureTerminalService.INPUT_TICKS / 20.0), barX, barY + 11, DIM, false);
-
-        g.drawString(font, "KEYS 1-4 OR CLICK", left + 12, top + panelH - 15, DIM, false);
-        String abandon = "ESC TRIPS THE ALARM";
-        g.drawString(font, abandon, left + panelW - 12 - font.width(abandon), top + panelH - 15, RED, false);
-        super.render(g, mouseX, mouseY, partialTick);
+        UcUi.bar(g, barX, barY, barW, 7, (float) remaining, remaining > 0.5 ? UcUi.LEGAL : remaining > 0.25 ? UcUi.AMBER : UcUi.UNDERGROUND);
+        String timer = show ? "The lock resets after the signal" : String.format("Lock resets in %.0fs", remaining * SecureTerminalService.INPUT_TICKS / 20.0);
+        UcUi.text(g, font, timer, cxm - font.width(timer) / 2, barY + 11, remaining <= 0.25 && !show ? UcUi.UNDERGROUND_TEXT : UcUi.DIM);
     }
 
-    private static int dim(int colour, double factor) {
-        int r = (int) (((colour >> 16) & 0xff) * factor), gr = (int) (((colour >> 8) & 0xff) * factor), b = (int) ((colour & 0xff) * factor);
-        return 0xff000000 | r << 16 | gr << 8 | b;
+    @Override protected void renderFooter(GuiGraphics g, int y) {
+        UcUi.icon(g, UcUi.Icon.KEY, px + PAD, y + 4, UcUi.DIM);
+        UcUi.text(g, font, "Keys 1-4 or click", px + PAD + 20, y + 9, UcUi.DIM);
+        String abandon = "Esc trips the alarm";
+        int w = font.width(abandon) + 20;
+        UcUi.icon(g, UcUi.Icon.WARNING, px + pw - PAD - w, y + 4, UcUi.UNDERGROUND);
+        UcUi.text(g, font, abandon, px + pw - PAD - w + 20, y + 9, UcUi.UNDERGROUND_TEXT);
     }
 }

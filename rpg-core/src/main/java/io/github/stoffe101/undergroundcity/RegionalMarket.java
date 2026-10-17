@@ -50,6 +50,7 @@ public final class RegionalMarket {
         if (balance < cost) throw new IllegalStateException("This order costs " + cost + " credits");
         ledger.preparePurchase(player.getUUID(), nonce, stock, quantity, after.save(new ListTag()), balance - cost, citizen.careerXp());
         WorkOrderService.recover(player, ledger);
+        CitizenState.get(player.server).markJourney(player.getUUID(), "bought");
         player.sendSystemMessage(Component.literal("Bought " + quantity + " x " + stock.registryItem().getDescription().getString()
             + " from the " + city + " exchange for " + cost + " credits."));
     }

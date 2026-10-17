@@ -92,6 +92,79 @@
    ],
    "placement": "mods_folder",
    "notes": "All rights reserved. Mod ID is checked against the jar when the pack is first booted."
+  },
+  {
+   "id": "architectury",
+   "slug": "architectury-api",
+   "version_id": "1MKTLiiG",
+   "mod_id": "architectury",
+   "role": "shared library the Let's Do mods require",
+   "sets": [
+    "vintner",
+    "farming"
+   ],
+   "notes": "LGPL-3.0-only. Pinned at 9.2.14 (Forge 1.20.1); Vinery needs >= 9.0.8. A library, never an authority."
+  },
+  {
+   "id": "vinery",
+   "slug": "lets-do-vinery",
+   "version_id": "2I4cH49O",
+   "mod_id": "vinery",
+   "role": "candidate legal wine provider (vineyard, grape press, fermenting barrel)",
+   "sets": [
+    "vintner"
+   ],
+   "requires": [
+    "architectury"
+   ],
+   "notes": "[Let's Do] Vinery 1.4.41. Licence is the authors' custom text (not retrievable from the cloud container); treated as: private play only, never redistributed, binary fetched from the author's page. Candidate for the Vintner's legal branch (D-067, proposed): not adopted until a real-client inspection and a dedicated-server boot are recorded."
+  },
+  {
+   "id": "farm_and_charm",
+   "slug": "lets-do-farm-charm",
+   "version_id": "9fzY3YV6",
+   "mod_id": "farm_and_charm",
+   "role": "candidate crop and farmhouse-cooking provider for the Farmer",
+   "sets": [
+    "farming"
+   ],
+   "requires": [
+    "architectury"
+   ],
+   "notes": "[Let's Do] Farm & Charm 1.0.14. Custom licence (see vinery). Candidate for the Farmer's legal crops (D-067, proposed): not adopted until inspected."
+  },
+  {
+   "id": "kaleidoscope_tavern",
+   "slug": "kaleidoscopetavern",
+   "version_id": "mUnU2u9e",
+   "mod_id": "kaleidoscope_tavern",
+   "role": "candidate spirits and cocktail provider (barrel brewing: vodka, whiskey, rum, brandy) for the Vintner's underground path",
+   "sets": [
+    "vintner"
+   ],
+   "notes": "Kaleidoscope Tavern 1.2.0, BSD-3-Clause code and CC BY-NC-SA 4.0 assets (private, non-commercial play; never redistributed). Barrel recipes turn water and potato, wheat or sugar cane into unaged spirits in two minutes (a crude home brew, not a still). Chosen over Tadacko's Drinks, whose pot and column stills are the better fit but whose 1.0.0 to 1.2.0 jars crash a dedicated server at mod construction (a client-only class loaded by an automatic event subscriber). Not adopted until a dedicated-server boot and a real-client inspection of this exact jar are recorded."
+  },
+  {
+   "id": "jei",
+   "slug": "jei",
+   "version_id": "9jqubC9n",
+   "mod_id": "jei",
+   "role": "recipe and usage viewer (candidate quality-of-life interface)",
+   "sets": [
+    "qol"
+   ],
+   "notes": "Just Enough Items 15.56.0.205, the latest non-beta 1.20.1 Forge release (newer builds are betas that need MezzConfig). MIT. Client and server optional. Opt-in set 'qol': it lets a player look up the Vintner's and Farmer's recipes in game; Core does not depend on it."
+  },
+  {
+   "id": "jade",
+   "slug": "jade",
+   "version_id": "xJQHCmWJ",
+   "mod_id": "jade",
+   "role": "look-at tooltips (crop growth, machine state) (candidate quality-of-life interface)",
+   "sets": [
+    "qol"
+   ],
+   "notes": "Jade 11.13.3. CC BY-NC-SA 4.0. Client and server optional. Opt-in set 'qol': shows what a block or plant is and how grown it is; Core does not depend on it."
   }
  ],
  "external": [

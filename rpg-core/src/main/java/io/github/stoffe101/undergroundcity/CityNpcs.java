@@ -85,6 +85,16 @@ public final class CityNpcs {
     // -------------------------------------------------------------------------------------------------- speaking
 
     @SubscribeEvent
+    public void tick(net.minecraftforge.event.TickEvent.ServerTickEvent event) {
+        if (event.phase == net.minecraftforge.event.TickEvent.Phase.END && event.getServer().getTickCount() % 10 == 3) Dialogue.tickHolds(event.getServer());
+    }
+
+    @SubscribeEvent
+    public void loggedOut(net.minecraftforge.event.entity.player.PlayerEvent.PlayerLoggedOutEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) Dialogue.releaseFor(player);
+    }
+
+    @SubscribeEvent
     public void interact(PlayerInteractEvent.EntityInteract event) {
         if (!(event.getTarget() instanceof Villager villager) || !isCityNpc(villager)) return;
         event.setCanceled(true); // never the vanilla trade screen, in either hand
@@ -103,53 +113,74 @@ public final class CityNpcs {
         talk(player, villager, npc.get());
     }
 
+    /** A citizen remembers the people they have spoken to (a short list kept on the villager), and greets a returning one differently. */
+    private static boolean remember(CompoundTag tag, UUID player) {
+        net.minecraft.nbt.ListTag met = tag.getList("met", Tag.TAG_STRING);
+        String id = player.toString();
+        for (Tag entry : met) if (entry.getAsString().equals(id)) return true;
+        met.add(net.minecraft.nbt.StringTag.valueOf(id));
+        while (met.size() > 24) met.remove(0);
+        tag.put("met", met);
+        return false;
+    }
+
+    private static String greeting(DistrictCatalog.Npc npc, CitizenState.Citizen citizen, String playerName) {
+        int delivered = citizen.journey("deliveries"), accepted = citizen.journey("accepted");
+        return switch (npc.role()) {
+            case "employer" -> !citizen.career.equals(npc.career()) ? "Back again, " + playerName + ". Your trade is not mine, but I hear things."
+                : delivered == 0 && accepted == 0 ? "Back again, " + playerName + ". Your first order is waiting on the terminal."
+                : accepted > delivered ? "Back again, " + playerName + ". Your last order is still open: deliver it when the goods are ready."
+                : "Back again, " + playerName + ". " + delivered + (delivered == 1 ? " delivery" : " deliveries") + " so far, and you are level " + citizen.careerLevel() + ". Good.";
+            case "registrar" -> "You are on the register, " + playerName + ".";
+            case "vendor" -> "Back for more, " + playerName + "?";
+            case "guard" -> "Papers in order, " + playerName + "?";
+            case "instructor" -> "Welcome back to the line, " + playerName + ".";
+            default -> "Good to see you again, " + playerName + ".";
+        };
+    }
+
     static void talk(ServerPlayer player, Villager villager, DistrictCatalog.Npc npc) {
         CompoundTag tag = villager.getPersistentData().getCompound(TAG);
         var citizen = CitizenState.get(player.server).find(player.getUUID());
+        boolean knownBefore = remember(tag, player.getUUID());
+        villager.getPersistentData().put(TAG, tag);
         String line = nextLine(npc, tag);
-        switch (npc.role()) {
-            case "registrar" -> {
-                if (citizen.isEmpty()) {
-                    say(player, npc, line);
-                    RegistrationService.prompt(player);
-                } else {
-                    say(player, npc, "You are on the register, " + player.getGameProfile().getName() + ". " + nextStep(player, villager, citizen.get()));
-                }
+        if (knownBefore && citizen.isPresent() && !npc.role().equals("registrar")) line = greeting(npc, citizen.get(), player.getGameProfile().getName()) + " " + line;
+        String text = switch (npc.role()) {
+            case "registrar" -> citizen.isEmpty() ? line : "You are on the register, " + player.getGameProfile().getName() + ". " + nextStep(villager, citizen.get());
+            case "employer" -> {
+                if (citizen.isEmpty()) yield "I only hire registered citizens. Speak to the registrar by the gate, or type /uc start.";
+                if (!citizen.get().career.equals(npc.career())) yield line;
+                CitizenState.get(player.server).markJourney(player.getUUID(), "employer");
+                yield line;
             }
-            case "employer" -> employer(player, villager, npc, tag, citizen.orElse(null), line);
-            default -> say(player, npc, line);
-        }
+            default -> line;
+        };
+        Dialogue.open(player, villager, npc, text);
     }
 
-    private static void employer(ServerPlayer player, Villager villager, DistrictCatalog.Npc npc, CompoundTag tag, CitizenState.Citizen citizen, String line) {
-        if (citizen == null) {
-            say(player, npc, "I only hire registered citizens. Speak to the registrar by the gate, or type /uc start.");
-            return;
-        }
-        if (!citizen.career.equals(npc.career())) {
-            say(player, npc, line);
-            String own = employerOf(villager, citizen.career);
-            if (own != null) player.sendSystemMessage(Component.literal("Your own employer: " + own).withStyle(ChatFormatting.GRAY));
-            return;
-        }
+    /**
+     * An employer's "open my orders": opens the Operations Terminal bound to their office, or, when the player is too far from the desk (by day
+     * villagers gather at the bell), sends the employer back to it. Returns what to say instead, or null when the terminal opened.
+     */
+    static String openOrders(ServerPlayer player, Villager villager, DistrictCatalog.Npc npc, CompoundTag tag, CitizenState.Citizen citizen) {
+        if (citizen == null) return "I only hire registered citizens. Speak to the registrar by the gate, or type /uc start.";
+        if (!citizen.career.equals(npc.career())) return "That is not my trade.";
+        CitizenState.get(player.server).markJourney(player.getUUID(), "employer");
         BlockPos terminal = tag.contains("terminal") ? BlockPos.of(tag.getLong("terminal")) : null;
-        if (terminal == null || !villager.level().getBlockState(terminal).is(UndergroundCity.TERMINAL.get())) {
-            say(player, npc, "My terminal is out of order. Use any Operations Terminal.");
-            return;
-        }
+        if (terminal == null || !villager.level().getBlockState(terminal).is(UndergroundCity.TERMINAL.get())) return "My terminal is out of order. Use any Operations Terminal.";
         if (player.distanceToSqr(terminal.getX() + .5, terminal.getY() + .5, terminal.getZ() + .5) > TERMINAL_REACH_SQUARED) {
             // By day villagers gather at the bell, so the employer may be standing in the lane: say so, and walk back to the desk for the player to follow.
             villager.getBrain().setMemory(net.minecraft.world.entity.ai.memory.MemoryModuleType.WALK_TARGET,
                 new net.minecraft.world.entity.ai.memory.WalkTarget(terminal, 0.6F, 2));
-            say(player, npc, "Come into the office and we will go through the orders. I will walk back to my desk.");
-            return;
+            return "Come into the office and we will go through the orders. I will walk back to my desk.";
         }
-        say(player, npc, line);
         TerminalNetwork.open(player, terminal);
+        return null;
     }
 
     /** The employer of {@code career} in the same district as {@code from}, named with a rough direction. */
-    private static String employerOf(Villager from, String career) {
+    static String employerOf(Villager from, String career) {
         CompoundTag tag = from.getPersistentData().getCompound(TAG);
         DistrictCatalog.District district = DistrictCatalog.INSTANCE.find(tag.getString("district"));
         if (district == null || !(from.level() instanceof ServerLevel level)) return null;
@@ -164,7 +195,7 @@ public final class CityNpcs {
         return null;
     }
 
-    private static String nextStep(ServerPlayer player, Villager registrar, CitizenState.Citizen citizen) {
+    static String nextStep(Villager registrar, CitizenState.Citizen citizen) {
         String employer = employerOf(registrar, citizen.career);
         if (citizen.careerXp() <= 0) {
             return "Your first step: see your employer" + (employer == null ? "" : " - " + employer)

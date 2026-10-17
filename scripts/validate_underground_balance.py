@@ -45,6 +45,15 @@ def inspection_chance(law: dict, risk: str, heat: int, skill_modifier: float) ->
     return max(0.02, min(law["inspection"]["max"], chance))
 
 
+def tag_items(tag: str) -> set[str]:
+    """The item ids an item tag of the Core's own datapack lists (third-party ids included, installed or not)."""
+    namespace, _, name = tag.partition(":")
+    if namespace != "underground_city":
+        raise SystemExit(f"contraband tag {tag}: only Core tags can be checked offline")
+    data = json.loads((DATA / "tags" / "items" / f"{name}.json").read_text(encoding="utf-8"))
+    return {v["id"] if isinstance(v, dict) else v for v in data["values"]}
+
+
 def category_of(contract: dict, contraband: dict[str, dict]) -> str | None:
     """The contraband category of the contract's goods, or None when nothing carried is illegal."""
     found = None
@@ -52,6 +61,10 @@ def category_of(contract: dict, contraband: dict[str, dict]) -> str | None:
         item = req["item"]
         for name, category in contraband.items():
             for entry in category["entries"]:
+                if "tag" in entry:
+                    if item in tag_items(entry["tag"]):
+                        found = name
+                    continue
                 if entry["item"] != item:
                     continue
                 if not req.get("gun_ids") and "nbt_key" not in entry:

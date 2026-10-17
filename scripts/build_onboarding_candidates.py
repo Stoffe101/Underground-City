@@ -90,6 +90,7 @@ def class_enhancement_fragment(catalog: dict) -> str:
     careers = catalog["professions"]
     profession_icons = {
         "farmer": "minecraft:wheat",
+        "vintner": "minecraft:sweet_berries",
         "smith": "minecraft:iron_ingot",
         "gunsmith": "minecraft:crossbow",
         "technician": "minecraft:redstone",

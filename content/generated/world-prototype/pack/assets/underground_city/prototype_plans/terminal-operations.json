@@ -41,11 +41,12 @@
       "id": "apartment_common",
       "locked_safe_chance_percent": 8,
       "profession_weights": {
-        "farmer": 20,
+        "farmer": 12,
         "general": 32,
         "gunsmith": 8,
         "smith": 20,
-        "technician": 20
+        "technician": 20,
+        "vintner": 8
       },
       "rare_item_probability_percent": 6,
       "replenishment_policy": "apartment_common",
@@ -61,11 +62,12 @@
       "id": "apartment_affluent",
       "locked_safe_chance_percent": 48,
       "profession_weights": {
-        "farmer": 8,
+        "farmer": 5,
         "general": 20,
         "gunsmith": 25,
         "smith": 17,
-        "technician": 30
+        "technician": 30,
+        "vintner": 3
       },
       "rare_item_probability_percent": 16,
       "replenishment_policy": "apartment_affluent",
@@ -82,11 +84,12 @@
       "id": "office",
       "locked_safe_chance_percent": 30,
       "profession_weights": {
-        "farmer": 5,
+        "farmer": 3,
         "general": 20,
         "gunsmith": 10,
         "smith": 15,
-        "technician": 50
+        "technician": 50,
+        "vintner": 2
       },
       "rare_item_probability_percent": 12,
       "replenishment_policy": "office",
@@ -102,11 +105,12 @@
       "id": "industrial",
       "locked_safe_chance_percent": 50,
       "profession_weights": {
-        "farmer": 10,
+        "farmer": 6,
         "general": 10,
         "gunsmith": 25,
         "smith": 38,
-        "technician": 17
+        "technician": 17,
+        "vintner": 4
       },
       "rare_item_probability_percent": 19,
       "replenishment_policy": "industrial",
@@ -123,11 +127,12 @@
       "id": "illegal_cache",
       "locked_safe_chance_percent": 75,
       "profession_weights": {
-        "farmer": 5,
+        "farmer": 3,
         "general": 15,
         "gunsmith": 48,
         "smith": 15,
-        "technician": 17
+        "technician": 17,
+        "vintner": 2
       },
       "rare_item_probability_percent": 28,
       "replenishment_policy": "illegal_cache",

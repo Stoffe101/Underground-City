@@ -1,0 +1,29 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "group": "underground_city_regional",
+  "ingredients": [
+    {
+      "item": "underground_city:refined_alloy"
+    },
+    {
+      "item": "underground_city:refined_alloy"
+    },
+    {
+      "item": "underground_city:control_circuits"
+    },
+    {
+      "item": "underground_city:biopolymer"
+    },
+    {
+      "item": "minecraft:copper_ingot"
+    },
+    {
+      "item": "minecraft:copper_ingot"
+    }
+  ],
+  "result": {
+    "item": "underground_city:still_column_kit",
+    "count": 1
+  }
+}

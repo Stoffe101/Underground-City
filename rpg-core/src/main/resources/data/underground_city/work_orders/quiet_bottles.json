@@ -1,0 +1,22 @@
+{
+  "schema_version": 3,
+  "title": "Quiet bottle delivery",
+  "career": "vintner",
+  "level": 9,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "kaleidoscope_tavern:vodka",
+      "count": 8
+    }
+  ],
+  "credits": 206,
+  "xp": 360,
+  "capacity": 2,
+  "refill_ticks": 18000,
+  "legality": "underground",
+  "requires_skill": "vintner.bootleg_trade",
+  "buyer": "ironhaven_backbar",
+  "trust_gain": 1,
+  "requires_mod": "kaleidoscope_tavern"
+}

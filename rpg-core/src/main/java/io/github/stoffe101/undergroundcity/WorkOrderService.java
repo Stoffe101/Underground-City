@@ -88,6 +88,7 @@ public final class WorkOrderService {
             }
         }
         ledger.accept(player.getUUID(), order);
+        CitizenState.get(player.server).markJourney(player.getUUID(), "accepted");
         net.minecraft.network.chat.MutableComponent message = Component.literal("Accepted: " + order.title() + ". Deliver ");
         boolean first = true;
         for (WorkOrder.Requirement requirement : order.requirements()) {
@@ -99,6 +100,7 @@ public final class WorkOrderService {
             else message.append(requirement.display());
         }
         player.sendSystemMessage(message.append(deliveryNote(order) + "."));
+        Notice.send(player, Notice.Kind.ORDER, "Order accepted", order.title() + deliveryNote(order));
     }
 
 
@@ -155,6 +157,7 @@ public final class WorkOrderService {
         double target = QShopEconomy.balance(player) + order.credits();
         if (target > 1_000_000_000) throw new IllegalStateException("Wallet limit reached");
         int xpTarget = ProgressionRules.totalXp(citizen.careerXp(), order.xp());
+        final int levelBefore = citizen.careerLevel();
         java.util.Map<String, Integer> trustAfter = java.util.Map.of(), heatAfter = java.util.Map.of();
         boolean witnessed = false;
         if (buyer != null) {
@@ -169,12 +172,17 @@ public final class WorkOrderService {
         }
         ledger.prepare(player.getUUID(), nonce, after.save(new ListTag()), target, xpTarget, trustAfter, heatAfter);
         recover(player, ledger);
+        CitizenState.get(player.server).bumpJourney(player.getUUID(), "deliveries");
         player.sendSystemMessage(Component.literal("Delivered " + order.title() + ": +" + order.credits()
             + " credits, +" + order.xp() + " career XP. Level " + citizen.careerLevel() + "."));
+        Notice.send(player, Notice.Kind.DELIVERED, "Delivered", order.title() + ": +" + order.credits() + " credits, +" + order.xp() + " XP");
+        if (citizen.careerLevel() > levelBefore) Notice.send(player, Notice.Kind.SKILL, "Level " + citizen.careerLevel(), TerminalScreenText.capitalize(citizen.career) + " level up. A skill point is waiting.");
         if (!terms.rewards().isEmpty()) {
             player.sendSystemMessage(Component.literal("Also received: " + terms.rewards().stream().map(r -> r.count() + " x "
                 + net.minecraftforge.registries.ForgeRegistries.ITEMS.getValue(r.item()).getDescription().getString()).collect(java.util.stream.Collectors.joining(", ")) + "."));
         }
+        if (buyer != null && terms.trustGain() > 0) Notice.send(player, Notice.Kind.TRUST, "Trust grows", buyer.title() + " trusts you a little more.");
+        if (witnessed) Notice.send(player, Notice.Kind.HEAT, "Seen at the hand-off", "The " + TerminalScreenText.capitalize(buyer.city()) + " guard will search you more closely for a while.");
         if (buyer != null && terms.trustGain() > 0) player.sendSystemMessage(Component.literal(buyer.title() + " trusts you a little more (" + ledger.trust(player.getUUID(), buyer.id()) + "/" + BuyerCatalog.MAX_TRUST + ")."));
         if (witnessed) player.sendSystemMessage(Component.literal("Someone noticed the hand-off. The " + TerminalScreenText.capitalize(buyer.city()) + " guard will search you more closely for a while."));
     }

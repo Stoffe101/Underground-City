@@ -5,11 +5,14 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.mojang.logging.LogUtils;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.tags.TagKey;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener;
 import net.minecraft.util.profiling.ProfilerFiller;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.slf4j.Logger;
@@ -25,20 +28,23 @@ import java.util.Set;
  * mod items that share one ID (TaCZ guns and attachments), by one NBT string key. Entries for mods that
  * are not installed simply never match, so this data is safe in a Core-only world. A specific entry
  * ({@code values} or {@code contains}) always beats a {@code catch_all}, so an unknown gun from another
- * gun pack is treated as the restricted class.
+ * gun pack is treated as the restricted class. An entry may instead name an item {@code tag}: a datapack tag can list a whole mod's range
+ * of items with {@code "required": false}, so one entry covers every spirit of a distilling mod without the mod being installed.
  */
 public final class ContrabandCatalog extends SimpleJsonResourceReloadListener {
     private static final Logger LOGGER = LogUtils.getLogger();
     public static final ContrabandCatalog INSTANCE = new ContrabandCatalog();
 
-    public record Entry(ResourceLocation item, String nbtKey, Set<String> values, String contains, boolean catchAll) {
+    public record Entry(ResourceLocation item, String nbtKey, Set<String> values, String contains, boolean catchAll, TagKey<Item> tag) {
+        public Entry(ResourceLocation item, String nbtKey, Set<String> values, String contains, boolean catchAll) { this(item, nbtKey, values, contains, catchAll, null); }
         boolean specific() { return !catchAll; }
         boolean matches(ItemStack stack) {
+            if (tag != null) return stack.is(tag);
             if (!ForgeRegistries.ITEMS.getKey(stack.getItem()).equals(item)) return false;
             if (nbtKey.isEmpty()) return true;
-            CompoundTag tag = stack.getTag();
-            if (tag == null || !tag.contains(nbtKey, Tag.TAG_STRING)) return catchAll && values.isEmpty() && contains.isEmpty();
-            String value = tag.getString(nbtKey);
+            CompoundTag nbt = stack.getTag();
+            if (nbt == null || !nbt.contains(nbtKey, Tag.TAG_STRING)) return catchAll && values.isEmpty() && contains.isEmpty();
+            String value = nbt.getString(nbtKey);
             if (catchAll) return true;
             if (!values.isEmpty() && values.contains(value)) return true;
             return !contains.isEmpty() && value.contains(contains);
@@ -63,6 +69,10 @@ public final class ContrabandCatalog extends SimpleJsonResourceReloadListener {
             List<Entry> entries = new ArrayList<>();
             for (JsonElement element : json.getAsJsonArray("entries")) {
                 JsonObject e = element.getAsJsonObject();
+                if (e.has("tag")) {
+                    entries.add(new Entry(null, "", Set.of(), "", false, TagKey.create(Registries.ITEM, ResourceLocation.parse(e.get("tag").getAsString()))));
+                    continue;
+                }
                 ResourceLocation item = ResourceLocation.parse(e.get("item").getAsString());
                 // Core's own items must exist; third-party IDs may be absent (mod not installed).
                 if (item.getNamespace().equals(UndergroundCity.MOD_ID) && !ForgeRegistries.ITEMS.containsKey(item)) {

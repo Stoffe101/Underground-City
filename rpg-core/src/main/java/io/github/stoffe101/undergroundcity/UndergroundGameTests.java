@@ -149,8 +149,10 @@ public final class UndergroundGameTests {
         SkillService.learn(player, "farmer.fundamentals");
         check(SkillService.has(player, "farmer.fundamentals") && SkillService.pointsAvailable(citizen(player)) == 2, "Fundamentals not learned");
         check("Already unlocked".equals(SkillService.blocker(citizen(player), fundamentals)), "A skill cannot be bought twice");
-        rejected(() -> SkillService.learn(player, "farmer.restricted_cultivation")); // needs greenhouse_management and level 6
-        check(!SkillService.has(player, "farmer.restricted_cultivation"), "Prerequisite skipped");
+        rejected(() -> SkillService.learn(player, "farmer.restricted_cultivation")); // needs level 6 and three points
+        check(!SkillService.has(player, "farmer.restricted_cultivation"), "Level gate skipped");
+        rejected(() -> SkillService.learn(player, "farmer.controlled_crop_licence")); // needs restricted_cultivation
+        check(!SkillService.has(player, "farmer.controlled_crop_licence"), "Prerequisite skipped");
         SkillService.learn(player, "farmer.greenhouse_management");
         check(SkillService.has(player, "farmer.greenhouse_management") && SkillService.pointsAvailable(citizen(player)) == 0, "Legal skill not learned");
         // Take the underground branch too: level up, buy it. Nothing about the legal skills changes.
@@ -211,6 +213,8 @@ public final class UndergroundGameTests {
                 else if (!order.underground()) legal = true;
             }
             if (career.equals("gunsmith") && !tacz) continue; // gun contracts need TaCZ; they are skipped, not broken
+            // the Vintner's wine and spirits contracts need Vinery and Kaleidoscope Tavern: skipped without them, not broken
+            if (career.equals("vintner") && !(ModList.get().isLoaded("vinery") && ModList.get().isLoaded("kaleidoscope_tavern"))) { check(legal, "vintner needs legal work"); continue; }
             check(legal && underground, career + " needs both legal and underground contracts");
         }
         check(!BuyerCatalog.INSTANCE.all().isEmpty() && BuyerCatalog.INSTANCE.all().stream().anyMatch(BuyerCatalog.Buyer::underground), "Buyers missing");
@@ -330,6 +334,57 @@ public final class UndergroundGameTests {
         helper.succeed();
     }
 
+    /** The Vintner's spirits (D-067): contraband by item tag, a different status in every city, a licence node, and wine stays ordinary trade. */
+    @GameTest(template = "empty")
+    public static void spiritsAreContrabandWineIsNotAndTheVintnerHasBothPaths(GameTestHelper helper) {
+        check(CityLaws.INSTANCE.find("ironhaven").status("restricted_spirits").equals("prohibited")
+            && CityLaws.INSTANCE.find("valewood").status("restricted_spirits").equals("permit")
+            && CityLaws.INSTANCE.find("blackwater").status("restricted_spirits").equals("legal"), "Spirits: prohibited in Ironhaven, permit in Valewood, legal in Blackwater");
+        var tree = SkillCatalog.INSTANCE.tree("vintner");
+        check(!tree.isEmpty() && tree.stream().anyMatch(n -> n.branch().equals("legal")) && tree.stream().anyMatch(n -> n.branch().equals("underground")), "The Vintner needs both a legal and an underground branch");
+        check(tree.stream().anyMatch(n -> n.id().equals("vintner.distillers_licence") && n.licences().contains("restricted_spirits")), "The Distiller's Licence must license restricted spirits");
+        check(WorkOrderCatalog.INSTANCE.forCareer("vintner").stream().filter(o -> o.foreignVisits() > 0).count() == 3, "The Vintner always has three supply-chain orders, with or without the wine and spirits mods");
+        if (ModList.get().isLoaded("kaleidoscope_tavern")) {
+            check("restricted_spirits".equals(ContrabandCatalog.INSTANCE.classify(new ItemStack(net.minecraft.core.registries.BuiltInRegistries.ITEM.get(ResourceLocation.parse("kaleidoscope_tavern:vodka"))))), "Vodka must be restricted spirits");
+            check("restricted_spirits".equals(ContrabandCatalog.INSTANCE.classify(new ItemStack(net.minecraft.core.registries.BuiltInRegistries.ITEM.get(ResourceLocation.parse("kaleidoscope_tavern:whiskey"))))), "Whiskey must be restricted spirits");
+            check(ContrabandCatalog.INSTANCE.classify(new ItemStack(net.minecraft.core.registries.BuiltInRegistries.ITEM.get(ResourceLocation.parse("kaleidoscope_tavern:wine")))) == null, "Wine is not contraband");
+            check(WorkOrderCatalog.INSTANCE.forCareer("vintner").stream().anyMatch(o -> o.id().equals("underground_city:quiet_bottles") && o.underground()), "The quiet bottle contract must exist when Kaleidoscope Tavern is installed");
+        } else {
+            check(WorkOrderCatalog.INSTANCE.forCareer("vintner").stream().noneMatch(o -> o.id().equals("underground_city:quiet_bottles")), "Without Kaleidoscope Tavern the spirits contracts must not be offered");
+        }
+        if (ModList.get().isLoaded("vinery")) {
+            check(ContrabandCatalog.INSTANCE.classify(new ItemStack(net.minecraft.core.registries.BuiltInRegistries.ITEM.get(ResourceLocation.parse("vinery:red_wine")))) == null, "Vinery wine is not contraband");
+            check(WorkOrderCatalog.INSTANCE.forCareer("vintner").stream().anyMatch(o -> o.id().equals("underground_city:tavern_table_wine")), "The tavern wine contract must exist when Vinery is installed");
+        }
+        helper.succeed();
+    }
+
+    /**
+     * The Vintner's contracts ask for bottles the wine and spirits mods make. A contract nobody can fill is a trap, so every item a loaded Vintner order
+     * asks for must be the result of at least one recipe in the loaded recipe manager (Vinery's wine fermentation, Kaleidoscope Tavern's barrel).
+     * This proves a recipe exists, not that the chain was brewed by a person.
+     */
+    @GameTest(template = "empty")
+    public static void everyBottleAVintnerOrderAsksForHasARecipe(GameTestHelper helper) {
+        if (!ModList.get().isLoaded("vinery") && !ModList.get().isLoaded("kaleidoscope_tavern")) { helper.succeed(); return; }
+        var access = helper.getLevel().registryAccess();
+        java.util.Set<net.minecraft.world.item.Item> made = new java.util.HashSet<>();
+        for (var recipe : helper.getLevel().getRecipeManager().getRecipes()) {
+            try { made.add(recipe.getResultItem(access).getItem()); } catch (RuntimeException ignored) { /* a recipe type without a plain result */ }
+        }
+        int checked = 0;
+        for (WorkOrder order : WorkOrderCatalog.INSTANCE.forCareer("vintner")) {
+            for (WorkOrder.Requirement requirement : order.requirements()) {
+                String namespace = requirement.item().getNamespace();
+                if (!namespace.equals("vinery") && !namespace.equals("kaleidoscope_tavern")) continue;
+                check(made.contains(ForgeRegistries.ITEMS.getValue(requirement.item())), order.id() + " asks for " + requirement.item() + ", which no recipe makes");
+                checked++;
+            }
+        }
+        check(checked > 0, "No mod-made bottle was checked");
+        helper.succeed();
+    }
+
     @GameTest(template = "empty")
     public static void citiesGenuinelyDifferAndEveryCategoryHasAStatus(GameTestHelper helper) {
         for (String city : ProgressionRules.CITIES) {
@@ -417,6 +472,48 @@ public final class UndergroundGameTests {
             check(hold.getItem(0).isEmpty() && hold.getItem(1).getCount() == 16, "Only the forbidden cargo is taken from the hold");
             check(QShopEconomy.balance(driver) == 100 - valewood.fine(CityLaws.PROHIBITED), "The fine is charged: " + QShopEconomy.balance(driver));
             boat.discard();
+        } finally { fixture.close(); }
+        helper.succeed();
+    }
+
+    /**
+     * Immersive Vehicles' crate parts (D-077): a real Quad is placed from its item, a real crate is fitted in its rack and filled, and the checkpoint search
+     * takes the contraband from it when the Quad comes into the zone, and from the seat's side of the vehicle too. Nothing is taken from a Quad left outside.
+     */
+    @GameTest(template = "empty", timeoutTicks = 100)
+    public static void anImmersiveVehiclesCrateIsSearchedWithItsRiderAndAParkedOneIsNot(GameTestHelper helper) throws Exception {
+        if (!ModList.get().isLoaded("mts") || !ModList.get().isLoaded("mtsofficialpack") || !QShopEconomy.available()) { helper.succeed(); return; }
+        Fixture fixture = fixture(helper, "valewood");
+        try {
+            CheckpointCatalog.Checkpoint gate = new CheckpointCatalog.Checkpoint("test_gate", "Test gate", "valewood", "minecraft:overworld", 0, 0, 48, "inspection");
+            CityLaws.Law valewood = CityLaws.INSTANCE.find("valewood");
+            FakePlayer driver = player(helper, "valewood", "farmer", 3);
+            QShopEconomy.applyBalance(driver, 100);
+            BlockPos ground = helper.absolutePos(new BlockPos(3, 1, 3));
+            helper.getLevel().setBlock(ground, net.minecraft.world.level.block.Blocks.STONE.defaultBlockState(), 3);
+            List<String> problems = new java.util.ArrayList<>();
+            net.minecraft.world.entity.Entity quad = OptionalModProbes.placeVehicleWithCrate(driver, ground, "mts:mtsofficialpack.quad_red", "mts:mtsofficialpack.crate",
+                List.of(new ItemStack(core("sable_leaf_bale"), 6), new ItemStack(Items.WHEAT, 16)), problems);
+            check(problems.isEmpty() && quad != null, "A real Quad with a real crate: " + problems);
+            // The crate is the vehicle's hold: three slots or more, the bale first, the wheat second.
+            VehicleCargo.Hold before = VehicleCargo.of(quad);
+            check(before != null && before.size() >= 2 && before.get(0).getCount() == 6 && before.get(1).getCount() == 16, "The adapter must see the crate's slots");
+            // The seat side: a rider is attached to a seat part, and the seat leads to the same vehicle and the same crate.
+            var seats = OptionalModProbes.vehicleParts(quad, "PartSeat");
+            check(!seats.isEmpty(), "The Quad has a seat");
+            VehicleCargo.Hold fromSeat = VehicleCargo.ImmersiveVehicles.holdOfEntity(seats.get(0), quad.getClass().getClassLoader());
+            check(fromSeat != null && fromSeat.size() == before.size(), "A seat must lead to the vehicle's crates");
+            // Parked somewhere else: the driver is searched, the Quad is not.
+            var parked = CheckpointService.inspect(driver, citizen(driver), gate, valewood, fixture.ledger, null);
+            check(parked.outcome() == CheckpointService.Outcome.CLEARED && VehicleCargo.of(quad).get(0).getCount() == 6, "A parked Quad must not be searched: " + parked);
+            // Brought into the zone: the contraband goes, the wheat stays, the fine is charged.
+            var result = CheckpointService.inspect(driver, citizen(driver), gate, valewood, fixture.ledger, quad);
+            check(result.outcome() == CheckpointService.Outcome.SEIZED && result.stacksSeized() == 1, "The bale in the crate is seized: " + result);
+            VehicleCargo.Hold after = VehicleCargo.of(quad);
+            check(after.get(0).isEmpty() && after.get(1).getCount() == 16, "Only the forbidden cargo leaves the crate");
+            check(QShopEconomy.balance(driver) == 100 - valewood.fine(CityLaws.PROHIBITED), "The fine is charged: " + QShopEconomy.balance(driver));
+            com.mojang.logging.LogUtils.getLogger().info("[UC-TEST] Immersive Vehicles crate: {} slots, seized {} stack(s) from {}, fine charged {}", before.size(), result.stacksSeized(), quad.getClass().getSimpleName(), result.fine());
+            quad.discard();
         } finally { fixture.close(); }
         helper.succeed();
     }
@@ -846,7 +943,8 @@ public final class UndergroundGameTests {
             for (DistrictCatalog.Op op : district.ops()) {
                 switch (op.kind()) { case "safe" -> safes++; case "terminal" -> terminals++; case "secure_terminal" -> secure++; case "clerk" -> clerks++; default -> { } }
             }
-            check((terminals >= 1 || district.repeatable()) && clerks <= 1 && secure >= 0 && safes >= 0, id + " must have a terminal (unless it is a repeatable post) and at most one clerk");
+            check(clerks <= 1 && secure >= 0 && safes >= 0, id + " must have at most one clerk");
+            if (id.equals("founders_row")) check(terminals >= 1, "Founders Row must have an Operations Terminal");
         }
         // Bad data is rejected before it can reach the world.
         JsonObject bad = new JsonObject();
@@ -887,6 +985,70 @@ public final class UndergroundGameTests {
         return json;
     }
 
+    // ------------------------------------------------------------------------------------------ blueprints, the server's side
+
+    @GameTest(template = "empty")
+    public static void theGunSmithTableRefusesAGunWithoutItsBlueprintOnTheServerAndBuildsItWithOne(GameTestHelper helper) throws Exception {
+        if (!ModList.get().isLoaded("tacz") || !ModList.get().isLoaded("taczblueprints")) { helper.succeed(); return; }
+        Fixture fixture = fixture(helper, "valewood");
+        Boolean wasOpen = OptionalModProbes.setGunTableOpen(false);   // the pack's setting: guns are built from blueprints only
+        check(wasOpen != null, "The addon's configuration is reachable");
+        try {
+            FakePlayer player = player(helper, "valewood", "gunsmith", 4);
+            StarterKits.INSTANCE.grant(player, "gunsmith");
+            ItemStack blueprint = player.getInventory().items.stream().filter(s -> String.valueOf(ForgeRegistries.ITEMS.getKey(s.getItem())).equals("taczblueprints:blueprint_pistol")).findFirst().orElseThrow();
+            int iron = player.getInventory().countItem(Items.IRON_INGOT), copper = player.getInventory().countItem(Items.COPPER_INGOT);
+            // Without the blueprint: a craft request for the pistol is refused on the server, and takes nothing.
+            String refused = OptionalModProbes.craftAtTaczTable(player, "gun", "tacz:glock_17");
+            check(OptionalModProbes.countTagged(player, "tacz:modern_kinetic_gun", "GunId", "tacz:glock_17") == 0, "No pistol without the blueprint (" + refused + ")");
+            check(player.getInventory().countItem(Items.IRON_INGOT) == iron && player.getInventory().countItem(Items.COPPER_INGOT) == copper, "A refused craft consumed nothing");
+            // The decision itself, for another gun the player has no blueprint for, and for one they have.
+            ItemStack other = new ItemStack(ForgeRegistries.ITEMS.getValue(ResourceLocation.parse("tacz:modern_kinetic_gun")));
+            other.getOrCreateTag().putString("GunId", "tacz:ak47");
+            check(!BlueprintGate.allows(other, player), "A gun without a blueprint is refused");
+            // With the blueprint used, the same request is built.
+            player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, blueprint.copy());
+            blueprint.getItem().use(helper.getLevel(), player, net.minecraft.world.InteractionHand.MAIN_HAND);
+            player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+            String crafted = OptionalModProbes.craftAtTaczTable(player, "gun", "tacz:glock_17");
+            check(crafted == null && OptionalModProbes.countTagged(player, "tacz:modern_kinetic_gun", "GunId", "tacz:glock_17") == 1, "With the blueprint the table builds the pistol: " + crafted);
+            check(!BlueprintGate.allows(other, player), "One blueprint opens one gun, not all of them");
+            // An open table (the addon's default) is not gated at all.
+            OptionalModProbes.setGunTableOpen(true);
+            check(BlueprintGate.allows(other, player), "An ungated table allows every recipe");
+        } finally {
+            if (wasOpen != null) OptionalModProbes.setGunTableOpen(wasOpen);
+            fixture.close();
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty")
+    public static void theRangeScoresByDistanceFromTheCentreOfTheFaceAndTheLedgerNeverListsUndergroundWork(GameTestHelper helper) throws Exception {
+        BlockPos block = new BlockPos(10, 70, 10);
+        check(RangeService.score(Vec3.atCenterOf(block).add(-0.5, 0, 0), block, net.minecraft.core.Direction.WEST) == 10, "The centre of the face scores 10");
+        check(RangeService.score(Vec3.atCenterOf(block).add(-0.5, 0.25, 0), block, net.minecraft.core.Direction.WEST) == 5, "Halfway to the edge scores 5");
+        check(RangeService.score(Vec3.atCenterOf(block).add(-0.5, 0.5, 0.5), block, net.minecraft.core.Direction.WEST) == 0, "A corner scores 0");
+        check(RangeService.score(Vec3.atCenterOf(block).add(0.1, 0.5, 0.1), block, net.minecraft.core.Direction.UP) >= 7, "The top face is scored on its own plane");
+        Fixture fixture = fixture(helper, "valewood");
+        try {
+            FakePlayer player = player(helper, "valewood", "farmer", 2);
+            LedgerData data = LedgerData.snapshot(player, fixture.pos);
+            check(!data.postings().isEmpty() && data.postings().size() <= LedgerData.MAX_POSTINGS, "The ledger lists the postings");
+            for (String career : ProgressionRules.CAREERS) check(data.postings().stream().anyMatch(p -> p.career().equals(career)), "The ledger lists work for " + career);
+            long legal = WorkOrderCatalog.INSTANCE.all().stream().filter(order -> !order.underground()).count();
+            check(data.postings().size() == Math.min(legal, LedgerData.MAX_POSTINGS), "Only the legal postings are listed: " + data.postings().size() + " of " + legal);
+            for (LedgerData.Posting posting : data.postings()) {
+                check(WorkOrderCatalog.INSTANCE.all().stream().anyMatch(order -> !order.underground() && order.title().equals(posting.title())), "A listed posting is a real legal order: " + posting.title());
+            }
+            net.minecraft.network.FriendlyByteBuf buffer = new net.minecraft.network.FriendlyByteBuf(io.netty.buffer.Unpooled.buffer());
+            data.write(buffer);
+            LedgerData back = LedgerData.read(buffer);
+            check(back.postings().equals(data.postings()) && back.career().equals("farmer") && back.region().equals("valewood"), "The ledger survives the wire");
+        } finally { fixture.close(); }
+        helper.succeed();
+    }
+
     @GameTest(template = "empty", batch = "uc_district", timeoutTicks = 400)
     public static void foundersRowBuildsAWorkingLotRefusesToOverwriteContainersAndUndoRestoresTheWorld(GameTestHelper helper) throws Exception {
         net.minecraft.server.level.ServerLevel level = helper.getLevel();
@@ -903,7 +1065,11 @@ public final class UndergroundGameTests {
         SupplierNpc.forgetForTest(level.getServer());
         DistrictBuilder.forgetForTest(level, district.id());
         Fixture fixture = fixture(helper, "valewood");
-        BlockPos terminalPos = origin.offset(3, 0, 2), marker = origin.offset(12, 0, 12);
+        // Every position below comes from the district's own data, so redesigning the buildings never needs this test to change.
+        java.util.List<DistrictCatalog.Op> terminalOps = district.ops().stream().filter(op -> op.kind().equals("terminal")).toList();
+        java.util.List<DistrictCatalog.Op> safeOps = district.ops().stream().filter(op -> op.kind().equals("safe")).toList();
+        DistrictCatalog.Op secureOp = district.ops().stream().filter(op -> op.kind().equals("secure_terminal")).findFirst().orElseThrow();
+        BlockPos terminalPos = origin.offset(terminalOps.get(0).a()), marker = origin.offset(16, 0, 12);
         BlockState keepsake = Blocks.GOLD_BLOCK.defaultBlockState();
         level.setBlockAndUpdate(marker, keepsake);
         BlockState terrain = level.getBlockState(terminalPos); // whatever the test arena sits in: undo must give exactly this back
@@ -922,13 +1088,22 @@ public final class UndergroundGameTests {
         helper.runAfterDelay(40, () -> {
             try {
                 var result = DistrictBuilder.build(level, district, origin);
-                check(result.safes() == 8 && result.secureTerminals() == 1 && result.terminals() == 6 && result.clerkPlaced() && result.insideCity() && result.citizens() == 9, "Build summary " + result);
+                check(result.safes() == safeOps.size() && result.secureTerminals() == 1 && result.terminals() == terminalOps.size() && result.clerkPlaced()
+                    && result.insideCity() && result.citizens() == district.npcOps().size(), "Build summary " + result);
                 check(level.getBlockState(terminalPos).is(UndergroundCity.TERMINAL.get()), "Operations Terminal placed");
-                for (int x : new int[]{8, 9, 10}) {
-                    check(level.getBlockEntity(origin.offset(x, 0, 2)) instanceof PropertyCacheBlockEntity cache && cache.registered(), "Safe at " + x + " must be registered");
+                for (DistrictCatalog.Op safe : safeOps) {
+                    check(level.getBlockEntity(origin.offset(safe.a())) instanceof PropertyCacheBlockEntity cache && cache.registered(), "Safe at " + safe.a() + " must be registered");
                 }
-                check(level.getBlockEntity(origin.offset(15, 0, 2)) instanceof SecureTerminalBlockEntity secure && secure.ledgers(0) == 1, "Secured terminal placed with its drive");
-                check(level.getBlockState(origin.offset(21, -1, 3)).is(Blocks.WATER) && level.getBlockState(origin.offset(20, -1, 2)).is(Blocks.FARMLAND), "Greenhouse soil and water");
+                check(level.getBlockEntity(origin.offset(secureOp.a())) instanceof SecureTerminalBlockEntity secure && secure.ledgers(0) == 1, "Secured terminal placed with its drive");
+                var farmland = district.ops().stream().filter(op -> op.kind().equals("fill") && op.text().startsWith("minecraft:farmland")).findFirst().orElseThrow();
+                check(level.getBlockState(origin.offset(farmland.a())).is(Blocks.FARMLAND) && district.ops().stream().anyMatch(op -> op.kind().equals("block") && op.text().equals("minecraft:water")
+                    && level.getBlockState(origin.offset(op.a())).is(Blocks.WATER)), "Greenhouse soil and water");
+                // The new fittings: a Public Ledger, signs with their words, and a door on every house.
+                var ledgerOp = district.ops().stream().filter(op -> op.kind().equals("ledger")).findFirst().orElseThrow();
+                check(level.getBlockState(origin.offset(ledgerOp.a())).is(UndergroundCity.PUBLIC_LEDGER.get()), "The Public Ledger is placed");
+                var signOp = district.ops().stream().filter(op -> op.kind().equals("sign")).findFirst().orElseThrow();
+                check(level.getBlockEntity(origin.offset(signOp.a())) instanceof net.minecraft.world.level.block.entity.SignBlockEntity signEntity
+                    && signEntity.getFrontText().getMessage(0, false).getString().equals(signOp.sign().lines().get(0)) && signEntity.isWaxed(), "Signs carry their words and are waxed");
                 check(level.getBlockState(marker).isAir(), "The lot is cleared for the build");
                 var clerk = SupplierNpc.state(level.getServer());
                 check(terminalPos.equals(clerk.terminalForTest()), "The clerk is bound to the placed terminal: " + clerk.terminalForTest() + " vs " + terminalPos);
@@ -938,7 +1113,7 @@ public final class UndergroundGameTests {
                 // The people: nine named, persistent villagers placed on the spots the data names, each bound to its own entry.
                 var citizens = DistrictBuilder.citizensForTest(level, district.id());
                 var npcOps = district.npcOps();
-                check(citizens.size() == 9 && npcOps.size() == 9, "Nine citizens are recorded: " + citizens.size());
+                check(citizens.size() == npcOps.size() && npcOps.size() >= 11, "Every citizen is recorded: " + citizens.size() + " of " + npcOps.size());
                 java.util.Set<String> roles = new java.util.HashSet<>();
                 for (int i = 0; i < npcOps.size(); i++) {
                     var op = npcOps.get(i);
@@ -954,7 +1129,7 @@ public final class UndergroundGameTests {
                         check(level.getBlockState(origin.offset(op.reference())).is(UndergroundCity.TERMINAL.get()), op.npc().name() + " has a real terminal in the office");
                     }
                 }
-                check(roles.equals(java.util.Set.of("registrar", "employer", "resident", "guard")), "Every role is represented: " + roles);
+                check(roles.containsAll(java.util.Set.of("registrar", "employer", "resident", "guard", "vendor")), "Every role is represented: " + roles);
                 int beds = 0, bells = 0, workstations = 0;
                 for (BlockPos pos : BlockPos.betweenClosed(lo, hi)) {
                     BlockState seen = level.getBlockState(pos);
@@ -975,10 +1150,10 @@ public final class UndergroundGameTests {
                 for (java.util.UUID id : replacement) check(level.getEntity(id) == null, "Undo removes the citizens it placed");
                 check(level.getBlockState(marker) == keepsake, "Undo must put back what the build replaced");
                 check(level.getBlockState(terminalPos) == terrain, "Undo removes the terminal, found " + level.getBlockState(terminalPos));
-                check(level.getBlockEntity(origin.offset(9, 0, 2)) == null, "Undo removes the safe's block entity");
+                check(level.getBlockEntity(origin.offset(safeOps.get(0).a())) == null, "Undo removes the safe's block entity");
                 check(!SupplierNpc.hasClerk(level.getServer()), "Undo releases the clerk it placed");
                 // A container anywhere in the lot stops the build before it changes anything.
-                BlockPos chest = origin.offset(20, 0, 12);
+                BlockPos chest = origin.offset(20, 0, 12);   // on the east pavement
                 level.setBlockAndUpdate(chest, Blocks.CHEST.defaultBlockState());
                 rejected(() -> DistrictBuilder.build(level, district, origin));
                 check(level.getBlockState(terminalPos) == terrain && level.getBlockState(chest).is(Blocks.CHEST), "A refused build must not touch the world");

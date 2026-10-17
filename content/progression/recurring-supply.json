@@ -155,7 +155,7 @@
     },
     {
       "id": "vineyard_climate_module",
-      "career": "farmer",
+      "career": "vintner",
       "tier": 2,
       "kind": "craft",
       "repeatable": true,
@@ -197,6 +197,79 @@
         },
         {
           "commodity": "control_circuits",
+          "count": 1
+        }
+      ],
+      "available_after_tier_unlock": true,
+      "uses": "Consumes real sourced components every batch; outputs are provisional logical goods."
+    },
+    {
+      "id": "seed_drill_service",
+      "career": "farmer",
+      "tier": 2,
+      "kind": "maintenance",
+      "repeatable": true,
+      "output": {
+        "id": "seed_drill_kit",
+        "count": 2
+      },
+      "inputs": [
+        {
+          "commodity": "machined_parts",
+          "count": 1
+        },
+        {
+          "commodity": "biopolymer",
+          "count": 1
+        }
+      ],
+      "available_after_tier_unlock": true,
+      "uses": "Consumes real sourced components every batch; outputs are provisional logical goods."
+    },
+    {
+      "id": "cellar_cooperage",
+      "career": "vintner",
+      "tier": 2,
+      "kind": "maintenance",
+      "repeatable": true,
+      "output": {
+        "id": "cooperage_set",
+        "count": 2
+      },
+      "inputs": [
+        {
+          "commodity": "refined_alloy",
+          "count": 1
+        },
+        {
+          "commodity": "biopolymer",
+          "count": 1
+        }
+      ],
+      "available_after_tier_unlock": true,
+      "uses": "Consumes real sourced components every batch; outputs are provisional logical goods."
+    },
+    {
+      "id": "still_column_kit",
+      "career": "vintner",
+      "tier": 3,
+      "kind": "craft",
+      "repeatable": true,
+      "output": {
+        "id": "still_column_kit",
+        "count": 1
+      },
+      "inputs": [
+        {
+          "commodity": "refined_alloy",
+          "count": 2
+        },
+        {
+          "commodity": "control_circuits",
+          "count": 1
+        },
+        {
+          "commodity": "biopolymer",
           "count": 1
         }
       ],

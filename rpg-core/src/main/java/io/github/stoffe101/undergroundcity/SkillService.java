@@ -75,5 +75,6 @@ public final class SkillService {
         state.unlockSkill(player.getUUID(), node.id());
         player.server.overworld().getDataStorage().save();
         player.sendSystemMessage(Component.literal("Learned " + node.title() + ". " + pointsAvailable(citizen) + " skill points left."));
+        Notice.send(player, Notice.Kind.SKILL, "Skill learned", node.title() + ". " + pointsAvailable(citizen) + (pointsAvailable(citizen) == 1 ? " point left." : " points left."));
     }
 }
