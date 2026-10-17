@@ -126,6 +126,7 @@ public final class CheckpointService {
         Map<String, String> violations = violations(citizen, law, everything);
         if (violations.isEmpty()) {
             player.sendSystemMessage(Component.literal(actor(player, post) + " searches your bags" + (hold != null ? " and your " + player.getVehicle().getName().getString() : "") + " and finds nothing illegal."));
+            Notice.send(player, Notice.Kind.SEARCH, "Searched, nothing found", post.title() + ". You may go.");
             return new Result(Outcome.CLEARED, 0, 0, "searched, clean");
         }
         int seized = 0;
@@ -166,6 +167,7 @@ public final class CheckpointService {
         player.sendSystemMessage(Component.literal(actor(player, post) + " searches you" + (hold != null ? " and your " + player.getVehicle().getName().getString() : "") + " and confiscates "
             + seized + " stack" + (seized == 1 ? "" : "s") + " of contraband: " + String.join(", ", titles) + ". Fine: " + paid + " credits."));
         player.sendSystemMessage(Component.literal("Heat in " + TerminalScreenText.capitalize(post.jurisdiction()) + " is now " + heatAfter + "; searches here become more likely until it cools."));
+        Notice.send(player, Notice.Kind.HEAT, "Contraband seized", seized + (seized == 1 ? " stack" : " stacks") + " taken, " + paid + " credits fined. Heat " + heatAfter + " in " + TerminalScreenText.capitalize(post.jurisdiction()) + ".");
         return new Result(Outcome.SEIZED, seized, paid, "seized " + seized);
     }
 }

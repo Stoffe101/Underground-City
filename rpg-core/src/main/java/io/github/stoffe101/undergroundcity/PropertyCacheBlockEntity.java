@@ -45,6 +45,8 @@ public final class PropertyCacheBlockEntity extends RandomizableContainerBlockEn
     private int vigilance, generation, breakins;
     /** True when registration placed an exceptional find in this safe (never granted again, see ExceptionalLoot). */
     private boolean exceptional;
+    /** True once somebody has opened this safe after registration placed an exceptional find: the "something special" cue is spent. */
+    private boolean revealed;
     private UUID lastIntruder;
 
     public PropertyCacheBlockEntity(BlockPos pos, BlockState state) {
@@ -69,6 +71,7 @@ public final class PropertyCacheBlockEntity extends RandomizableContainerBlockEn
     /** Operator registration: assigns the policy and places its initial stock. */
     public void register(ServerLevel level, PropertyPolicy newPolicy, long now) {
         if (registered()) throw new IllegalStateException("Already registered as " + policy);
+        revealed = false;
         policy = newPolicy.id(); last = now; vigilance = 0; vigilanceAnchor = now; forcedUntil = -1; generation = 0; breakins = 0;
         // The exceptional find is rolled once, first, from a seed that depends only on the safe's position:
         // restocking never rolls it and clearing then re-registering the same safe gives the same answer.
@@ -82,7 +85,7 @@ public final class PropertyCacheBlockEntity extends RandomizableContainerBlockEn
     /** Operator unregistration: empties the safe so a mistake cannot leave orphan stock. */
     public void clear() {
         items = NonNullList.withSize(SLOTS, ItemStack.EMPTY);
-        policy = ""; last = 0; vigilance = 0; vigilanceAnchor = 0; forcedUntil = -1; generation = 0; breakins = 0; lastIntruder = null; exceptional = false;
+        policy = ""; last = 0; vigilance = 0; vigilanceAnchor = 0; forcedUntil = -1; generation = 0; breakins = 0; lastIntruder = null; exceptional = false; revealed = false;
         setChanged();
     }
 
@@ -142,7 +145,7 @@ public final class PropertyCacheBlockEntity extends RandomizableContainerBlockEn
         if (active == null) return registered() ? "This safe's profile is unavailable." : "This safe is not part of a property yet. Ask an operator to register it.";
         if (CitizenState.get(player.server).find(player.getUUID()).isEmpty()) return "Register as a citizen first.";
         restock(level, now);
-        if (forcedAt(now)) return null;
+        if (forcedAt(now)) { cue(level, player, false); return null; }
         int have = player.getInventory().countItem(UndergroundCity.item("lockpick"));
         if (have < active.lockpicks()) return "Locked. Forcing this safe needs " + active.lockpicks() + " lockpick" + (active.lockpicks() == 1 ? "" : "s") + ".";
         int remaining = active.lockpicks();
@@ -157,7 +160,27 @@ public final class PropertyCacheBlockEntity extends RandomizableContainerBlockEn
         vigilanceAnchor = now; breakins++; lastIntruder = player.getUUID();
         setChanged();
         MinecraftForge.EVENT_BUS.post(new PropertyForcedEntryEvent(player.getUUID(), worldPosition, policy, vigilance, now));
+        cue(level, player, true);
         return null;
+    }
+
+    /**
+     * Feedback for a burglary: the lock giving way, and, exactly once per safe, the cue that a registered exceptional find is inside. The cue is
+     * a flag on the safe, not a roll, so it changes nothing about how rare the find is or who can take it.
+     */
+    private void cue(ServerLevel level, ServerPlayer player, boolean forced) {
+        if (forced) {
+            level.playSound(null, worldPosition, net.minecraft.sounds.SoundEvents.IRON_TRAPDOOR_OPEN, net.minecraft.sounds.SoundSource.BLOCKS, 0.9f, 0.6f);
+            level.sendParticles(net.minecraft.core.particles.ParticleTypes.CRIT, worldPosition.getX() + 0.5, worldPosition.getY() + 1.0, worldPosition.getZ() + 0.5, 8, 0.25, 0.1, 0.25, 0.1);
+            Notice.send(player, Notice.Kind.WARN, "Lock forced", "The residents grow more watchful. Do not stay long.");
+        }
+        if (exceptional && !revealed) {
+            revealed = true;
+            setChanged();
+            level.playSound(null, worldPosition, net.minecraft.sounds.SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, net.minecraft.sounds.SoundSource.BLOCKS, 0.9f, 1.0f);
+            level.sendParticles(net.minecraft.core.particles.ParticleTypes.END_ROD, worldPosition.getX() + 0.5, worldPosition.getY() + 1.1, worldPosition.getZ() + 0.5, 14, 0.3, 0.2, 0.3, 0.02);
+            Notice.send(player, Notice.Kind.LOOT, "A rare find", "There is something here worth more than the rest. Take it and go.");
+        }
     }
 
     // ------------------------------------------------------------------ container
@@ -181,7 +204,7 @@ public final class PropertyCacheBlockEntity extends RandomizableContainerBlockEn
         tag.putInt("schema_version", 1);
         tag.putString("policy", policy); tag.putLong("last", last); tag.putLong("vigilance_anchor", vigilanceAnchor);
         tag.putLong("forced_until", forcedUntil); tag.putInt("vigilance", vigilance); tag.putInt("generation", generation);
-        tag.putInt("breakins", breakins); tag.putBoolean("exceptional", exceptional);
+        tag.putInt("breakins", breakins); tag.putBoolean("exceptional", exceptional); tag.putBoolean("revealed", revealed);
         if (lastIntruder != null) tag.putUUID("last_intruder", lastIntruder);
     }
 
@@ -192,7 +215,7 @@ public final class PropertyCacheBlockEntity extends RandomizableContainerBlockEn
         policy = tag.getString("policy"); last = tag.getLong("last"); vigilanceAnchor = tag.getLong("vigilance_anchor");
         forcedUntil = tag.contains("forced_until") ? tag.getLong("forced_until") : -1;
         vigilance = Math.max(0, Math.min(PropertyRestock.MAX_VIGILANCE, tag.getInt("vigilance")));
-        generation = Math.max(0, tag.getInt("generation")); breakins = Math.max(0, tag.getInt("breakins")); exceptional = tag.getBoolean("exceptional");
+        generation = Math.max(0, tag.getInt("generation")); breakins = Math.max(0, tag.getInt("breakins")); exceptional = tag.getBoolean("exceptional"); revealed = tag.getBoolean("revealed");
         lastIntruder = tag.hasUUID("last_intruder") ? tag.getUUID("last_intruder") : null;
     }
 }

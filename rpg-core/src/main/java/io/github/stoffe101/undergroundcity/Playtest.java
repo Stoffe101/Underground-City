@@ -106,6 +106,12 @@ public final class Playtest {
         mouseButton(1, true);
         mouseButton(1, false);
     }
+    /** Moves the pointer to a GUI-space position without pressing anything (the game needs a frame to learn where it is before a press). */
+    static void moveGui(int guiX, int guiY) {
+        double scale = mc().getWindow().getGuiScale();
+        input("move " + (int) Math.round(guiX * scale) + " " + (int) Math.round(guiY * scale));
+    }
+    static void pressLeft() { mouseButton(1, true); mouseButton(1, false); }
     static void focusWindow() {
         var window = mc().getWindow();
         input("move " + (window.getWidth() / 2) + " " + (window.getHeight() / 2));

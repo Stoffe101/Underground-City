@@ -269,6 +269,10 @@ def write_models():
     os.makedirs(MODELS, exist_ok=True)
     for name, model in (('operations_terminal', terminal_model()), ('secure_data_terminal', secure_model()), ('property_cache', safe_model()), ('public_ledger', ledger_model())):
         model['parent'] = 'minecraft:block/block'
+        # A bottom face that lies in the support block's top plane is never seen and z-fights with it (a pale ghost under the block).
+        for element in model['elements']:
+            if element['from'][1] <= 0.001 and 'rotation' not in element:
+                element['faces'].pop('down', None)
         with open(os.path.join(MODELS, name + '.json'), 'w') as fh:
             json.dump(model, fh, indent=1)
 
@@ -279,6 +283,7 @@ def facing_states(name):
 
 def write_states():
     sd = os.path.join(ASSETS, 'blockstates')
+    os.makedirs(sd, exist_ok=True)
     for name in ('operations_terminal', 'secure_data_terminal', 'property_cache', 'public_ledger'):
         with open(os.path.join(sd, name + '.json'), 'w') as fh:
             json.dump(facing_states(name), fh, indent=1)

@@ -118,6 +118,17 @@ public final class CitizenState extends SavedData {
         setDirty();
     }
 
+    /** Keeps the highest value seen for a counter (a best score, say). Returns true when the value improved. */
+    public boolean raiseJourney(UUID uuid, String key, int value) {
+        Citizen citizen = citizens.get(uuid);
+        if (citizen == null || citizen.journey.size() >= 32 && !citizen.journey.containsKey(key)) return false;
+        int clamped = Math.max(0, Math.min(9999, value));
+        if (clamped <= citizen.journey.getOrDefault(key, 0)) return false;
+        citizen.journey.put(key, clamped);
+        setDirty();
+        return true;
+    }
+
     /** Restore a journaled reward after a crash without awarding it twice. */
     void restoreCareerXp(UUID uuid, int target) {
         Citizen citizen = citizens.get(uuid);

@@ -39,6 +39,7 @@ public final class DialogueScreen extends UcScreen {
 
     @Override protected void init() {
         clearWidgets();
+        choiceButtons.clear();
         pw = Math.min(520, width - 16);
         int lines = Math.min(7, UcUi.wrapLines(font, text, textW()).size());
         int bodyHeight = Math.max(112, 12 + lines * 10 + 12 + 8 + choices.size() * 21);
@@ -53,13 +54,37 @@ public final class DialogueScreen extends UcScreen {
                 .kind(choice.id().equals("bye") ? UcButton.Kind.PLATE : UcButton.Kind.PLATE).tooltip(choice.hint());
             button.active = choice.enabled();
             add(button);
+            choiceButtons.add(button);
         }
     }
 
+    @Override public void removed() {
+        // however the screen closed (goodbye, Escape, a new screen), tell the server so the citizen can go back to their day
+        if (!qa && !released) { released = true; TerminalNetwork.sendDialogueChoice(entityId, "end"); }
+        super.removed();
+    }
+
+    private boolean released;
+
+    private final java.util.List<UcButton> choiceButtons = new java.util.ArrayList<>();
+
+    /** The centre of the n-th answer in GUI coordinates (scripted-player runs click it with the real mouse). */
+    int[] choiceCentre(int index) {
+        UcButton button = choiceButtons.get(index);
+        return new int[]{button.getX() + button.getWidth() / 2, button.getY() + button.getHeight() / 2};
+    }
+
     private void pick(Choice choice) {
+        if (Playtest.enabled()) Playtest.log("dialogue pick '" + choice.id() + "'");
         if (qa) return;
         if (choice.id().equals("bye")) { onClose(); return; }
         TerminalNetwork.sendDialogueChoice(entityId, choice.id());
+    }
+
+    @Override public boolean mouseClicked(double x, double y, int button) {
+        boolean handled = super.mouseClicked(x, y, button);
+        if (Playtest.enabled()) Playtest.log("dialogue click at " + (int) x + "," + (int) y + " button " + button + " handled=" + handled);
+        return handled;
     }
 
     @Override public boolean keyPressed(int key, int scan, int modifiers) {
@@ -82,7 +107,12 @@ public final class DialogueScreen extends UcScreen {
         UcUi.well(g, px + PAD, top, portraitW(), bottom - top);
         var mc = Minecraft.getInstance();
         if (mc.level != null && mc.level.getEntity(entityId) instanceof LivingEntity entity) {
-            InventoryScreen.renderEntityInInventoryFollowsMouse(g, px + PAD + portraitW() / 2, bottom - 8, 40, (px + PAD + portraitW() / 2) - mouseX, (bottom - 60) - mouseY, entity);
+            // the citizen's floating name tag would be drawn across the portrait well: this screen shows the name in its own header
+            boolean tag = entity.isCustomNameVisible();
+            entity.setCustomNameVisible(false);
+            try {
+                InventoryScreen.renderEntityInInventoryFollowsMouse(g, px + PAD + portraitW() / 2, bottom - 8, 40, (px + PAD + portraitW() / 2) - mouseX, (bottom - 60) - mouseY, entity);
+            } finally { entity.setCustomNameVisible(tag); }
         } else {
             UcUi.icon(g, titleIcon(), px + PAD + portraitW() / 2 - 8, top + 30, accent());
         }
@@ -90,7 +120,7 @@ public final class DialogueScreen extends UcScreen {
         int sx = px + PAD + portraitW() + 10, sw = pw - 2 * PAD - portraitW() - 10;
         int lines = Math.min(7, UcUi.wrapLines(font, text, textW()).size());
         int sheetH = 12 + lines * 10 + 12;
-        UcUi.paper(g, sx, top, sw, sheetH);
+        UcUi.paper(g, sx, top, sw, sheetH, false);
         UcUi.wrapped(g, font, text, sx + 10, top + 10, sw - 20, UcUi.INK, 7);
     }
 }

@@ -202,14 +202,16 @@ public final class UcUi {
     }
 
     /** A sheet of paper (contract sheets, dialogue): warm surface, ruled lines, a soft shadow. */
-    public static void paper(GuiGraphics g, int x, int y, int w, int h) {
+    public static void paper(GuiGraphics g, int x, int y, int w, int h) { paper(g, x, y, w, h, true); }
+
+    public static void paper(GuiGraphics g, int x, int y, int w, int h, boolean ruled) {
         g.fill(x + 2, y + 2, x + w + 2, y + h + 2, 0x66000000);
         g.fill(x, y, x + w, y + h, PAPER);
         g.fill(x, y, x + w, y + 1, 0xfff6efdc);
         g.fill(x, y + h - 1, x + w, y + h, PAPER_SHADE);
         g.fill(x, y, x + 1, y + h, 0xffefe7d0);
         g.fill(x + w - 1, y, x + w, y + h, PAPER_SHADE);
-        for (int ly = y + 22; ly < y + h - 4; ly += 11) g.fill(x + 6, ly, x + w - 6, ly + 1, 0x14000000);
+        if (ruled) for (int ly = y + 22; ly < y + h - 4; ly += 11) g.fill(x + 6, ly, x + w - 6, ly + 1, 0x14000000);
     }
 
     /** The tooltip: a small plate with wrapped soft text, kept on screen. */

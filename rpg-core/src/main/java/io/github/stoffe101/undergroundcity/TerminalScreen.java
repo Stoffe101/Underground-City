@@ -49,7 +49,7 @@ public final class TerminalScreen extends UcScreen {
     private final UcButton[] buyOne = new UcButton[MAX_OFFERS], buyLot = new UcButton[MAX_OFFERS];
     // the skill tree, laid out once per snapshot and size: node cards by index
     private int[] nodeX = new int[0], nodeY = new int[0], nodeTier = new int[0], nodeCol = new int[0];
-    private int nodeW, nodeH = 24;
+    private int nodeW, nodeH = 31;
 
     public TerminalScreen() { this(null, TerminalData.offline(), null); }
     public TerminalScreen(BlockPos position, TerminalData data) { this(position, data, null); }
@@ -342,6 +342,12 @@ public final class TerminalScreen extends UcScreen {
     static String itemName(String id) { return item(id).getDescription().getString(); }
     static String capitalize(String id) { return id.isEmpty() ? id : Character.toUpperCase(id.charAt(0)) + id.substring(1); }
 
+    /** Journey/QA hook: a real mouse click at the centre of the work page's primary button (Accept order, or Deliver once the goods are in hand). */
+    boolean clickPrimary() { return mouseClicked(accept.getX() + accept.getWidth() / 2.0, accept.getY() + accept.getHeight() / 2.0, 0); }
+
+    /** Journey/QA hook: a real mouse click at the centre of the trade page's "Open civilian shop" button. */
+    boolean clickShop() { return mouseClicked(shop.getX() + shop.getWidth() / 2.0, shop.getY() + shop.getHeight() / 2.0, 0); }
+
     /** Journey/QA hook: a real mouse click at the centre of an offer's buy button. */
     boolean clickBuy(int row, boolean lot) {
         UcButton button = (lot ? buyLot : buyOne)[row];
@@ -361,7 +367,7 @@ public final class TerminalScreen extends UcScreen {
         for (int i = 0; i < n; i++) { nodeTier[i] = depth(i, index, 0); maxTier = Math.max(maxTier, nodeTier[i]); }
         int[] perCell = new int[3 * (TIER_MAX + 2)];
         int treeTop = cy + 16, treeH = ch - 16 - 68;
-        int step = Math.max(26, Math.min(34, (treeH - nodeH) / Math.max(1, maxTier)));
+        int step = Math.max(nodeH + 4, Math.min(42, (treeH - nodeH) / Math.max(1, maxTier)));
         for (int i = 0; i < n; i++) {
             TerminalData.SkillRow row = data.skills().get(i);
             int col = row.branch().equals("legal") ? 0 : row.branch().equals("underground") ? 2 : 1;
@@ -478,11 +484,11 @@ public final class TerminalScreen extends UcScreen {
             if (sel) g.fill(lx + 2, ry, lx + 5, ry + ROW_H - 2, accent());
             TerminalData.Req first = job.reqs().isEmpty() ? null : job.reqs().get(0);
             if (first != null) g.renderItem(new ItemStack(item(first.item())), lx + 9, ry + 5);
-            g.drawString(font, UcUi.fit(font, job.title(), lw - 70), lx + 30, ry + 4, sel ? UcUi.TEXT : UcUi.SOFT, false);
-            UcUi.icon(g, UcUi.Icon.CREDITS, lx + 28, ry + 11, UcUi.AMBER);
-            g.drawString(font, job.credits() + "   +" + job.xp() + " XP", lx + 44, ry + 15, UcUi.AMBER, false);
             boolean locked = !job.accepted() && lockReason(job).length() > 0 && data.active() == null;
             UcUi.Icon status = job.accepted() ? (ready(job) ? UcUi.Icon.CHECK : UcUi.Icon.TRUCK) : locked ? UcUi.Icon.LOCK : null;
+            g.drawString(font, UcUi.fit(font, job.title(), lw - 44 - (status != null ? 22 : 0)), lx + 30, ry + 4, sel ? UcUi.TEXT : UcUi.SOFT, false);
+            UcUi.icon(g, UcUi.Icon.CREDITS, lx + 28, ry + 11, UcUi.AMBER);
+            g.drawString(font, job.credits() + "   +" + job.xp() + " XP", lx + 44, ry + 15, UcUi.AMBER, false);
             if (status != null) UcUi.icon(g, status, lx + lw - 26, ry + 5, job.accepted() ? (ready(job) ? UcUi.OK : UcUi.AMBER) : UcUi.FAINT);
         }
         if (list.size() > rows) {
@@ -610,17 +616,14 @@ public final class TerminalScreen extends UcScreen {
         g.fill(x + 1, y + 1, x + w - 1, y + h - 1, fill);
         g.fill(x + 1, y + 1, x + 25, y + h - 1, 0xff0a121a);
         UcUi.Icon icon = row.branch().equals("underground") ? UcUi.Icon.UNDERGROUND : row.branch().equals("legal") ? UcUi.Icon.LEGAL : UcUi.careerIcon(data.career());
-        UcUi.icon(g, icon, x + 5, y + 4, row.state() == 0 ? UcUi.FAINT : color);
-        String title = fit(row, w - 32);
-        g.drawString(font, title, x + 28, y + 4, row.state() == 0 ? UcUi.DIM : UcUi.TEXT, false);
+        UcUi.icon(g, icon, x + 5, y + 7, row.state() == 0 ? UcUi.FAINT : color);
+        // the full name on up to two lines, then the state: never a truncated skill name
+        List<String> lines = UcUi.wrapLines(font, row.title(), w - 32);
+        if (lines.size() > 2) lines = List.of(lines.get(0), UcUi.fit(font, String.join(" ", lines.subList(1, lines.size())), w - 32));
+        int ty = lines.size() == 1 ? y + 6 : y + 3;
+        for (String line : lines) { g.drawString(font, line, x + 28, ty, row.state() == 0 ? UcUi.DIM : UcUi.TEXT, false); ty += 9; }
         String sub = row.state() == 2 ? "OWNED" : row.state() == 1 ? "READY  " + row.cost() + " pt" : "LOCKED  L" + row.minLevel();
-        UcUi.display(g, font, sub, x + 28, y + 14, row.state() == 2 ? UcUi.OK : row.state() == 1 ? UcUi.AMBER : UcUi.FAINT);
-    }
-
-    private String fit(TerminalData.SkillRow row, int width) {
-        if (font.width(row.title()) <= width) return row.title();
-        if (font.width(row.shortTitle()) <= width) return row.shortTitle();
-        return UcUi.fit(font, row.shortTitle(), width);
+        UcUi.display(g, font, sub, x + 28, y + h - 11, row.state() == 2 ? UcUi.OK : row.state() == 1 ? UcUi.AMBER : UcUi.FAINT);
     }
 
     private void renderSkillDetail(GuiGraphics g) {
@@ -679,7 +682,7 @@ public final class TerminalScreen extends UcScreen {
             emptyState(g, UcUi.Icon.SCALES, "Law and contacts", "Use a terminal inside a city to see its law, its buyers and how closely you are watched. Possession is never detected by itself; searches happen at road checkpoints and hand-offs can be seen.");
             return;
         }
-        int half = (cw - 8) * 58 / 100;
+        int half = (cw - 8) * 62 / 100;
         UcUi.display(g, font, capitalize(data.region()) + " law", cx, cy + 2, UcUi.AMBER);
         UcUi.well(g, cx, cy + 16, half, ch - 16);
         // heat: five pips and what they mean
@@ -689,7 +692,7 @@ public final class TerminalScreen extends UcScreen {
             g.fill(hx, cy + 27, hx + 9, cy + 32, p < data.heat() ? UcUi.UNDERGROUND : 0xff2a1a1a);
             g.fill(hx, cy + 27, hx + 9, cy + 28, p < data.heat() ? UcUi.UNDERGROUND_TEXT : 0xff3a2424);
         }
-        UcUi.text(g, font, data.heat() == 0 ? "Quiet: no extra attention" : "Heat " + data.heat() + ": searches are likelier for a while", cx + 86, cy + 26, data.heat() == 0 ? UcUi.DIM : UcUi.UNDERGROUND_TEXT);
+        UcUi.text(g, font, UcUi.fit(font, data.heat() == 0 ? "Quiet: no extra attention" : "Heat " + data.heat() + ": more searches", half - 92), cx + 86, cy + 26, data.heat() == 0 ? UcUi.DIM : UcUi.UNDERGROUND_TEXT);
         g.fill(cx + 4, cy + 40, cx + half - 4, cy + 41, 0xff1d2f40);
         int y = UcUi.wrapped(g, font, data.lawSummary(), cx + 8, cy + 46, half - 16, UcUi.SOFT, 4) + 5;
         UcUi.display(g, font, "Controlled goods here", cx + 8, y, UcUi.DIM);
@@ -721,9 +724,9 @@ public final class TerminalScreen extends UcScreen {
                     g.fill(px2, cyy + 11, px2 + 8, cyy + 16, p < contact.trust() ? UcUi.UNDERGROUND : 0xff2a1a1a);
                     g.fill(px2, cyy + 11, px2 + 8, cyy + 12, p < contact.trust() ? UcUi.UNDERGROUND_TEXT : 0xff3a2424);
                 }
-                UcUi.text(g, font, "trust " + contact.trust() + "/" + BuyerCatalog.MAX_TRUST, rx + 26 + BuyerCatalog.MAX_TRUST * 10 + 4, cyy + 10, UcUi.DIM);
+                UcUi.text(g, font, UcUi.fit(font, "trust " + contact.trust() + "/" + BuyerCatalog.MAX_TRUST, rw - 26 - BuyerCatalog.MAX_TRUST * 10 - 8), rx + 26 + BuyerCatalog.MAX_TRUST * 10 + 4, cyy + 10, UcUi.DIM);
             } else {
-                UcUi.text(g, font, "licensed, no trust needed", rx + 26, cyy + 10, UcUi.DIM);
+                UcUi.text(g, font, UcUi.fit(font, "licensed, open to all", rw - 32), rx + 26, cyy + 10, UcUi.DIM);
             }
             cyy += 26;
         }

@@ -1,0 +1,667 @@
+{
+ "schema_version": 1,
+ "id": "firing_range",
+ "title": "Firing range",
+ "note": "Built west of Founders Row by the dev launch (or by hand); origin is the north-west corner, extending east and south. The firing line is at the east end.",
+ "size": [
+  40,
+  8,
+  15
+ ],
+ "ops": [
+  {
+   "op": "fill",
+   "from": [
+    0,
+    -4,
+    0
+   ],
+   "to": [
+    39,
+    -2,
+    14
+   ],
+   "block": "minecraft:stone"
+  },
+  {
+   "op": "fill",
+   "from": [
+    0,
+    -1,
+    0
+   ],
+   "to": [
+    39,
+    -1,
+    14
+   ],
+   "block": "minecraft:grass_block"
+  },
+  {
+   "op": "fill",
+   "from": [
+    0,
+    0,
+    0
+   ],
+   "to": [
+    39,
+    6,
+    14
+   ],
+   "block": "minecraft:air"
+  },
+  {
+   "op": "fill",
+   "from": [
+    34,
+    -1,
+    0
+   ],
+   "to": [
+    39,
+    -1,
+    14
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    35,
+    -1,
+    6
+   ],
+   "to": [
+    39,
+    -1,
+    8
+   ],
+   "block": "minecraft:polished_andesite"
+  },
+  {
+   "op": "fill",
+   "from": [
+    0,
+    0,
+    0
+   ],
+   "to": [
+    2,
+    4,
+    14
+   ],
+   "block": "minecraft:dirt"
+  },
+  {
+   "op": "fill",
+   "from": [
+    0,
+    5,
+    0
+   ],
+   "to": [
+    2,
+    5,
+    14
+   ],
+   "block": "minecraft:grass_block"
+  },
+  {
+   "op": "fill",
+   "from": [
+    3,
+    0,
+    0
+   ],
+   "to": [
+    33,
+    1,
+    0
+   ],
+   "block": "minecraft:oak_leaves[persistent=true]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    3,
+    0,
+    14
+   ],
+   "to": [
+    33,
+    1,
+    14
+   ],
+   "block": "minecraft:oak_leaves[persistent=true]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    27,
+    0,
+    3
+   ],
+   "to": [
+    27,
+    0,
+    3
+   ],
+   "block": "minecraft:hay_block"
+  },
+  {
+   "op": "block",
+   "at": [
+    27,
+    1,
+    3
+   ],
+   "block": "minecraft:target"
+  },
+  {
+   "op": "block",
+   "at": [
+    27,
+    2,
+    3
+   ],
+   "block": "minecraft:target"
+  },
+  {
+   "op": "fill",
+   "from": [
+    27,
+    0,
+    2
+   ],
+   "to": [
+    27,
+    2,
+    2
+   ],
+   "block": "minecraft:spruce_fence"
+  },
+  {
+   "op": "fill",
+   "from": [
+    27,
+    0,
+    4
+   ],
+   "to": [
+    27,
+    2,
+    4
+   ],
+   "block": "minecraft:spruce_fence"
+  },
+  {
+   "op": "block",
+   "at": [
+    27,
+    3,
+    2
+   ],
+   "block": "minecraft:lantern[hanging=false]"
+  },
+  {
+   "op": "sign",
+   "at": [
+    29,
+    0,
+    4
+   ],
+   "block": "minecraft:spruce_sign[rotation=4]",
+   "lines": [
+    "10 blocks",
+    "Lane 1"
+   ],
+   "color": "black",
+   "glow": false
+  },
+  {
+   "op": "block",
+   "at": [
+    37,
+    0,
+    3
+   ],
+   "block": "minecraft:barrel[facing=west]"
+  },
+  {
+   "op": "block",
+   "at": [
+    37,
+    1,
+    3
+   ],
+   "block": "minecraft:oak_slab[type=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    37,
+    0,
+    2
+   ],
+   "to": [
+    37,
+    2,
+    2
+   ],
+   "block": "minecraft:spruce_fence"
+  },
+  {
+   "op": "fill",
+   "from": [
+    37,
+    0,
+    4
+   ],
+   "to": [
+    37,
+    2,
+    4
+   ],
+   "block": "minecraft:spruce_fence"
+  },
+  {
+   "op": "fill",
+   "from": [
+    37,
+    3,
+    2
+   ],
+   "to": [
+    39,
+    3,
+    4
+   ],
+   "block": "minecraft:spruce_slab[type=bottom]"
+  },
+  {
+   "op": "block",
+   "at": [
+    38,
+    2,
+    3
+   ],
+   "block": "minecraft:lantern[hanging=true]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    17,
+    0,
+    7
+   ],
+   "to": [
+    17,
+    0,
+    7
+   ],
+   "block": "minecraft:hay_block"
+  },
+  {
+   "op": "block",
+   "at": [
+    17,
+    1,
+    7
+   ],
+   "block": "minecraft:target"
+  },
+  {
+   "op": "block",
+   "at": [
+    17,
+    2,
+    7
+   ],
+   "block": "minecraft:target"
+  },
+  {
+   "op": "fill",
+   "from": [
+    17,
+    0,
+    6
+   ],
+   "to": [
+    17,
+    2,
+    6
+   ],
+   "block": "minecraft:spruce_fence"
+  },
+  {
+   "op": "fill",
+   "from": [
+    17,
+    0,
+    8
+   ],
+   "to": [
+    17,
+    2,
+    8
+   ],
+   "block": "minecraft:spruce_fence"
+  },
+  {
+   "op": "block",
+   "at": [
+    17,
+    3,
+    6
+   ],
+   "block": "minecraft:lantern[hanging=false]"
+  },
+  {
+   "op": "sign",
+   "at": [
+    19,
+    0,
+    8
+   ],
+   "block": "minecraft:spruce_sign[rotation=4]",
+   "lines": [
+    "20 blocks",
+    "Lane 2"
+   ],
+   "color": "black",
+   "glow": false
+  },
+  {
+   "op": "block",
+   "at": [
+    37,
+    0,
+    7
+   ],
+   "block": "minecraft:barrel[facing=west]"
+  },
+  {
+   "op": "block",
+   "at": [
+    37,
+    1,
+    7
+   ],
+   "block": "minecraft:oak_slab[type=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    37,
+    0,
+    6
+   ],
+   "to": [
+    37,
+    2,
+    6
+   ],
+   "block": "minecraft:spruce_fence"
+  },
+  {
+   "op": "fill",
+   "from": [
+    37,
+    0,
+    8
+   ],
+   "to": [
+    37,
+    2,
+    8
+   ],
+   "block": "minecraft:spruce_fence"
+  },
+  {
+   "op": "fill",
+   "from": [
+    37,
+    3,
+    6
+   ],
+   "to": [
+    39,
+    3,
+    8
+   ],
+   "block": "minecraft:spruce_slab[type=bottom]"
+  },
+  {
+   "op": "block",
+   "at": [
+    38,
+    2,
+    7
+   ],
+   "block": "minecraft:lantern[hanging=true]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    7,
+    0,
+    11
+   ],
+   "to": [
+    7,
+    0,
+    11
+   ],
+   "block": "minecraft:hay_block"
+  },
+  {
+   "op": "block",
+   "at": [
+    7,
+    1,
+    11
+   ],
+   "block": "minecraft:target"
+  },
+  {
+   "op": "block",
+   "at": [
+    7,
+    2,
+    11
+   ],
+   "block": "minecraft:target"
+  },
+  {
+   "op": "fill",
+   "from": [
+    7,
+    0,
+    10
+   ],
+   "to": [
+    7,
+    2,
+    10
+   ],
+   "block": "minecraft:spruce_fence"
+  },
+  {
+   "op": "fill",
+   "from": [
+    7,
+    0,
+    12
+   ],
+   "to": [
+    7,
+    2,
+    12
+   ],
+   "block": "minecraft:spruce_fence"
+  },
+  {
+   "op": "block",
+   "at": [
+    7,
+    3,
+    10
+   ],
+   "block": "minecraft:lantern[hanging=false]"
+  },
+  {
+   "op": "sign",
+   "at": [
+    9,
+    0,
+    12
+   ],
+   "block": "minecraft:spruce_sign[rotation=4]",
+   "lines": [
+    "30 blocks",
+    "Lane 3"
+   ],
+   "color": "black",
+   "glow": false
+  },
+  {
+   "op": "block",
+   "at": [
+    37,
+    0,
+    11
+   ],
+   "block": "minecraft:barrel[facing=west]"
+  },
+  {
+   "op": "block",
+   "at": [
+    37,
+    1,
+    11
+   ],
+   "block": "minecraft:oak_slab[type=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    37,
+    0,
+    10
+   ],
+   "to": [
+    37,
+    2,
+    10
+   ],
+   "block": "minecraft:spruce_fence"
+  },
+  {
+   "op": "fill",
+   "from": [
+    37,
+    0,
+    12
+   ],
+   "to": [
+    37,
+    2,
+    12
+   ],
+   "block": "minecraft:spruce_fence"
+  },
+  {
+   "op": "fill",
+   "from": [
+    37,
+    3,
+    10
+   ],
+   "to": [
+    39,
+    3,
+    12
+   ],
+   "block": "minecraft:spruce_slab[type=bottom]"
+  },
+  {
+   "op": "block",
+   "at": [
+    38,
+    2,
+    11
+   ],
+   "block": "minecraft:lantern[hanging=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    38,
+    0,
+    5
+   ],
+   "block": "minecraft:spruce_stairs[facing=west,half=bottom]"
+  },
+  {
+   "op": "block",
+   "at": [
+    38,
+    0,
+    9
+   ],
+   "block": "minecraft:spruce_stairs[facing=west,half=bottom]"
+  },
+  {
+   "op": "block",
+   "at": [
+    39,
+    0,
+    5
+   ],
+   "block": "minecraft:barrel[facing=up]"
+  },
+  {
+   "op": "block",
+   "at": [
+    39,
+    0,
+    9
+   ],
+   "block": "minecraft:barrel[facing=up]"
+  },
+  {
+   "op": "sign",
+   "at": [
+    36,
+    0,
+    5
+   ],
+   "block": "minecraft:spruce_sign[rotation=4]",
+   "lines": [
+    "RANGE RULES",
+    "Stand at line",
+    "Hits are scored",
+    "Best is kept"
+   ],
+   "color": "black",
+   "glow": false
+  },
+  {
+   "op": "npc",
+   "at": [
+    38,
+    0,
+    7
+   ],
+   "role": "instructor",
+   "name": "Instructor Vale",
+   "profession": "weaponsmith",
+   "lines": [
+    "Stand at the line, face down the range and fire at the targets: 10, 20 and 30 blocks. Hits are scored by how near the centre they land.",
+    "A steady hand beats a fast one. Take the shot, breathe out, and count the hole.",
+    "Nobody pays for the range. It is practice, and the licence office likes to see that you have had some."
+   ]
+  }
+ ]
+}

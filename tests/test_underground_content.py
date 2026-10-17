@@ -225,7 +225,8 @@ class GuiCoverageTests(unittest.TestCase):
         source = (ROOT / "rpg-core/src/main/java/io/github/stoffe101/undergroundcity/VisualCaptureHarness.java").read_text(encoding="utf-8")
         names = set(re.findall(r'"(uc-[a-z0-9_-]+)"', source))
         screen = (ROOT / "rpg-core/src/main/java/io/github/stoffe101/undergroundcity/TerminalScreen.java").read_text(encoding="utf-8")
-        pages = re.findall(r'^\s{8}([A-Z_]+)\("', screen[screen.index("public enum Page"):], re.M)
+        enum = screen[screen.index("public enum Page"):]
+        pages = re.findall(r'\b([A-Z_]+)\("', enum[:enum.index(";")])
         names |= {"uc-terminal-" + p.lower() for p in pages}
         names.discard("uc-terminal-")
         manifest = json.loads((ROOT / "content/qa/gui-coverage.json").read_text(encoding="utf-8"))
@@ -257,7 +258,7 @@ class DistrictTests(unittest.TestCase):
         for path in (DATA / "districts").glob("*.json"):
             district = json.loads(path.read_text(encoding="utf-8"))
             self.assertEqual(district["id"], path.stem)
-            self.assertLessEqual(len(district["ops"]), 400)
+            self.assertLessEqual(len(district["ops"]), 1000)
             xs, ys, zs = [], [], []
             safes = terminals = clerks = secure = 0
             citizens = []
@@ -268,7 +269,7 @@ class DistrictTests(unittest.TestCase):
                 if op["op"] == "safe":
                     safes += 1
                     self.assertTrue((DATA / "property_policies" / f"{op['policy']}.json").exists(), op["policy"])
-                if op["op"] in ("fill", "block"):
+                if op["op"] in ("fill", "block", "sign"):
                     # Vanilla blocks only, except an operation that names its mod: it applies only where that mod is installed.
                     namespace = op.get("requires_mod", "minecraft")
                     self.assertRegex(op["block"], rf"^{namespace}:[a-z_]+(\[[a-z_=0-9,]+\])?$")
@@ -276,7 +277,7 @@ class DistrictTests(unittest.TestCase):
                 if op["op"] == "npc":
                     citizens.append(op)
             volume = (max(xs) - min(xs) + 1) * (max(ys) - min(ys) + 1) * (max(zs) - min(zs) + 1)
-            self.assertLessEqual(volume, 40000)
+            self.assertLessEqual(volume, 64000)
             # Offsets are relative to the operator's origin: the lot starts at the origin, never at a world coordinate.
             self.assertEqual((min(xs), min(zs)), (0, 0))
             self.assertLess(max(xs), 64)
@@ -289,9 +290,9 @@ class DistrictTests(unittest.TestCase):
                 self.assertTrue(district.get("repeatable"), "a checkpoint post is built once per zone")
                 self.assertEqual([npc["role"] for npc in citizens], ["guard"])
             # Citizens: bounded, named, with a role Core knows, short lines, and each employer bound to a real terminal of the lot.
-            self.assertLessEqual(len(citizens), 16)
+            self.assertLessEqual(len(citizens), 20)
             terminal_spots = [op["at"] for op in district["ops"] if op["op"] == "terminal"]
-            self.assertEqual({npc["role"] for npc in citizens} - {"registrar", "employer", "resident", "guard"}, set())
+            self.assertEqual({npc["role"] for npc in citizens} - {"registrar", "employer", "resident", "guard", "vendor", "instructor"}, set())
             self.assertEqual(len({npc["name"] for npc in citizens}), len(citizens), "citizen names must be unique")
             for npc in citizens:
                 self.assertTrue(0 < len(npc["name"]) <= 40, npc["name"])

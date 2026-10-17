@@ -40,6 +40,7 @@ public final class Journey {
         new Def("second", "Finish a second order", "A second delivery shows how employer demand refills as you play.", "CONTRACTS"));
 
     private static final Map<UUID, Integer> SENT = new HashMap<>();
+    private static final Map<UUID, String> LAST_TITLE = new HashMap<>();
 
     public Journey() {}
 
@@ -111,11 +112,22 @@ public final class Journey {
             Objective now = next(player);
             int hash = Objects.hash(now == null ? null : now.title(), now == null || now.target() == null ? 0L : now.target().asLong() / 8);
             if (Integer.valueOf(hash).equals(SENT.get(player.getUUID()))) continue;
+            boolean known = SENT.containsKey(player.getUUID());
             SENT.put(player.getUUID(), hash);
+            // A milestone just behind us (the next one changed since the last look): mark it, once per step.
+            String last = LAST_TITLE.put(player.getUUID(), now == null ? "" : now.title());
+            if (known && last != null && !last.isEmpty() && (now == null || !now.title().equals(last)) && indexOf(last) >= 0 && (now == null || indexOf(now.title()) > indexOf(last))) {
+                Notice.send(player, Notice.Kind.STEP, "Step done", last + (now == null ? ". You have found your feet." : ". Next: " + now.title() + "."));
+            }
             TerminalNetwork.sendObjective(player, now);
         }
     }
 
-    @SubscribeEvent public void loggedIn(net.minecraftforge.event.entity.player.PlayerEvent.PlayerLoggedInEvent event) { SENT.remove(event.getEntity().getUUID()); }
-    @SubscribeEvent public void loggedOut(net.minecraftforge.event.entity.player.PlayerEvent.PlayerLoggedOutEvent event) { SENT.remove(event.getEntity().getUUID()); }
+    private static int indexOf(String title) {
+        for (int i = 0; i < STEPS.size(); i++) if (STEPS.get(i).title().equals(title)) return i;
+        return -1;
+    }
+
+    @SubscribeEvent public void loggedIn(net.minecraftforge.event.entity.player.PlayerEvent.PlayerLoggedInEvent event) { SENT.remove(event.getEntity().getUUID()); LAST_TITLE.remove(event.getEntity().getUUID()); }
+    @SubscribeEvent public void loggedOut(net.minecraftforge.event.entity.player.PlayerEvent.PlayerLoggedOutEvent event) { SENT.remove(event.getEntity().getUUID()); LAST_TITLE.remove(event.getEntity().getUUID()); }
 }

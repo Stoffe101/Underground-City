@@ -101,6 +101,7 @@ public final class SecureTerminalService {
         terminal.take(clock);
         player.getInventory().add(new ItemStack(UndergroundCity.item("data_ledger")));
         player.sendSystemMessage(Component.literal("Trace complete. You recovered an Encrypted Ledger. Take it to a buyer, and mind the checkpoints."));
+        Notice.send(player, Notice.Kind.LOOT, "Trace complete", "You recovered an Encrypted Ledger. Mind the checkpoints.");
         return true;
     }
 
@@ -109,6 +110,7 @@ public final class SecureTerminalService {
         String where = session.city().isEmpty() ? "" : " in " + TerminalScreenText.capitalize(session.city());
         if (!session.city().isEmpty()) WorkOrderLedger.get(player.server).addHeat(player.getUUID(), session.city(), 1);
         player.sendSystemMessage(Component.literal(why + " The alarm trips" + where + ": the terminal locks down and the guard will be watching for you."));
+        Notice.send(player, Notice.Kind.WARN, "Alarm tripped", "The terminal locked down and the guard will be watching for you.");
     }
 
     /** Server tick: an unanswered session expires with the same consequences as a wrong answer. */

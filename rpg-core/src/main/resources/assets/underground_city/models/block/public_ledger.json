@@ -31,9 +31,6 @@
     },
     "up": {
      "texture": "#wood"
-    },
-    "down": {
-     "texture": "#wood"
     }
    }
   },
@@ -62,9 +59,6 @@
      "texture": "#wood"
     },
     "up": {
-     "texture": "#wood"
-    },
-    "down": {
      "texture": "#wood"
     }
    }

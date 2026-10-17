@@ -25,18 +25,20 @@ import java.util.Set;
 public final class DistrictCatalog extends SimpleJsonResourceReloadListener {
     private static final Logger LOGGER = LogUtils.getLogger();
     public static final DistrictCatalog INSTANCE = new DistrictCatalog();
-    static final Set<String> OPS = Set.of("fill", "block", "terminal", "safe", "secure_terminal", "clerk", "npc");
-    static final Set<String> ROLES = Set.of("registrar", "employer", "resident", "guard");
-    static final int MAX_NPCS = 16, MAX_LINES = 8, MAX_LINE = 180;
+    static final Set<String> OPS = Set.of("fill", "block", "terminal", "safe", "secure_terminal", "ledger", "sign", "clerk", "npc");
+    static final Set<String> ROLES = Set.of("registrar", "employer", "resident", "guard", "vendor", "instructor");
+    static final int MAX_NPCS = 20, MAX_LINES = 8, MAX_LINE = 180;
     /** Hard bound so a bad datapack cannot ask the server to rewrite an unbounded volume. */
-    static final int MAX_EXTENT = 64, MAX_VOLUME = 40_000, MAX_OPS = 400;
+    static final int MAX_EXTENT = 64, MAX_VOLUME = 64_000, MAX_OPS = 1_000;
 
     /** {@code a} and {@code b} are relative corners (min/max already ordered); {@code text} is a block state, policy or terminal ref. */
-    public record Op(String kind, BlockPos a, BlockPos b, String text, String facing, BlockPos reference, Npc npc, String requiresMod) {
-        public Op(String kind, BlockPos a, BlockPos b, String text, String facing, BlockPos reference) { this(kind, a, b, text, facing, reference, null, ""); }
+    public record Op(String kind, BlockPos a, BlockPos b, String text, String facing, BlockPos reference, Npc npc, String requiresMod, Sign sign) {
+        public Op(String kind, BlockPos a, BlockPos b, String text, String facing, BlockPos reference) { this(kind, a, b, text, facing, reference, null, "", null); }
         /** True when this operation applies in the current mod set (an operation naming an absent mod is skipped, not an error). */
         public boolean applies() { return requiresMod.isEmpty() || net.minecraftforge.fml.ModList.get().isLoaded(requiresMod); }
     }
+    /** The words on a sign: up to four short lines, a dye colour and whether the text glows. */
+    public record Sign(List<String> lines, String color, boolean glow) {}
     /** A named citizen of the district: role, villager profession (look and workstation), the career an employer represents and the lines they say. */
     public record Npc(String role, String name, String profession, String career, List<String> lines) {}
     public record District(String id, String title, List<Op> ops, BlockPos min, BlockPos max, boolean repeatable) {
@@ -81,7 +83,7 @@ public final class DistrictCatalog extends SimpleJsonResourceReloadListener {
                 b = new BlockPos(Math.max(from.getX(), to.getX()), Math.max(from.getY(), to.getY()), Math.max(from.getZ(), to.getZ()));
             } else { a = b = pos(op.getAsJsonArray("at")); }
             String text = switch (kind) {
-                case "fill", "block" -> op.get("block").getAsString();
+                case "fill", "block", "sign" -> op.get("block").getAsString();
                 case "safe" -> op.get("policy").getAsString();
                 default -> "";
             };
@@ -89,7 +91,8 @@ public final class DistrictCatalog extends SimpleJsonResourceReloadListener {
             if (!Set.of("north", "south", "east", "west").contains(facing)) throw new IllegalArgumentException("Bad facing " + facing);
             BlockPos reference = kind.equals("clerk") || (kind.equals("npc") && op.has("terminal")) ? pos(op.getAsJsonArray("terminal")) : null;
             Npc npc = kind.equals("npc") ? parseNpc(id, op) : null;
-            ops.add(new Op(kind, a, b, text, facing, reference, npc, op.has("requires_mod") ? op.get("requires_mod").getAsString() : ""));
+            Sign sign = kind.equals("sign") ? parseSign(id, op) : null;
+            ops.add(new Op(kind, a, b, text, facing, reference, npc, op.has("requires_mod") ? op.get("requires_mod").getAsString() : "", sign));
             for (BlockPos corner : reference == null ? new BlockPos[]{a, b} : new BlockPos[]{a, b, reference}) {
                 lo[0] = Math.min(lo[0], corner.getX()); lo[1] = Math.min(lo[1], corner.getY()); lo[2] = Math.min(lo[2], corner.getZ());
                 hi[0] = Math.max(hi[0], corner.getX()); hi[1] = Math.max(hi[1], corner.getY()); hi[2] = Math.max(hi[2], corner.getZ());
@@ -104,6 +107,19 @@ public final class DistrictCatalog extends SimpleJsonResourceReloadListener {
             throw new IllegalArgumentException("District " + id + " is larger than the safe build limit");
         }
         return district;
+    }
+
+    private static Sign parseSign(String district, JsonObject op) {
+        List<String> lines = new ArrayList<>();
+        for (JsonElement line : op.getAsJsonArray("lines")) {
+            String text = line.getAsString();
+            if (text.length() > 15) throw new IllegalArgumentException("District " + district + ": a sign line is longer than 15 characters: " + text);
+            lines.add(text);
+        }
+        if (lines.isEmpty() || lines.size() > 4) throw new IllegalArgumentException("District " + district + ": a sign has one to four lines");
+        String color = op.has("color") ? op.get("color").getAsString() : "black";
+        if (net.minecraft.world.item.DyeColor.byName(color, null) == null) throw new IllegalArgumentException("District " + district + ": unknown sign colour " + color);
+        return new Sign(List.copyOf(lines), color, op.has("glow") && op.get("glow").getAsBoolean());
     }
 
     private static Npc parseNpc(String district, JsonObject op) {

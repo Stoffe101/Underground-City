@@ -74,6 +74,19 @@ final class OptionalModProbes {
         }
     }
 
+    /** Test seam: turns the addon's "gun table is open to everyone" switch (its {@code enableGunTable}) on or off and returns what it was; null when the addon is absent. */
+    static Boolean setGunTableOpen(boolean open) {
+        try {
+            Object server = Class.forName("com.raiiiden.taczblueprints.config.BlueprintConfig").getField("SERVER").get(null);
+            Object value = server.getClass().getField("enableGunTable").get(server);
+            Boolean previous = (Boolean) value.getClass().getMethod("get").invoke(value);
+            value.getClass().getMethod("set", Object.class).invoke(value, open);
+            return previous;
+        } catch (ReflectiveOperationException | RuntimeException error) {
+            return null;
+        }
+    }
+
     /** The guns TaCZ Blueprints says this player has unlocked (empty when the mod or its capability is absent). */
     @SuppressWarnings("unchecked")
     static java.util.Set<String> unlockedGuns(net.minecraft.world.entity.player.Player player) {

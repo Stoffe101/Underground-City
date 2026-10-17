@@ -316,16 +316,23 @@ def security_fabric():
 
 @item
 def composite_housing():
-    """A moulded carbon-fibre equipment shell with a cut-out and four screws."""
+    """A moulded composite equipment shell: a slate-blue weave, a recessed window with an indicator row, a latch and four screws."""
+    slate = ramp('#62728f')
     s = Sprite()
-    s.polygon([(2, 5), (13, 5), (14, 7), (14, 12), (13, 13), (2, 13), (1, 12), (1, 7)], CARBON[2])
-    for y in range(6, 13):
+    s.polygon([(2, 4), (13, 4), (14, 5), (14, 12), (13, 13), (2, 13), (1, 12), (1, 5)], slate[2])
+    for y in range(5, 13):
         for x in range(2, 14):
-            if (x // 2 + y // 2) % 2 == 0:
-                s.put(x, y, CARBON[1])
-    s.line(2, 5, 13, 5, CARBON[4]); s.line(1, 7, 1, 12, CARBON[3]); s.line(2, 13, 13, 13, CARBON[0]); s.line(14, 7, 14, 12, CARBON[0])
-    s.rect(5, 8, 10, 10, INK); s.line(5, 11, 10, 11, CARBON[3])
-    for (x, y) in ((3, 6), (12, 6), (3, 12), (12, 12)):
+            if (x + y) % 3 == 0:
+                s.put(x, y, slate[3])
+            elif (x - y) % 4 == 0:
+                s.put(x, y, slate[1])
+    s.line(2, 4, 13, 4, slate[4]); s.line(1, 5, 1, 12, slate[3]); s.line(2, 13, 13, 13, slate[0]); s.line(14, 5, 14, 12, slate[0])
+    s.rect(4, 6, 11, 10, INK)
+    s.rect(5, 7, 10, 9, slate[0])
+    for x, c in ((5, CYAN[3]), (7, CYAN[4]), (9, AMBER[3])):
+        s.put(x, 8, c)
+    s.rect(6, 11, 9, 11, STEEL[3]); s.put(7, 11, STEEL[4])
+    for (x, y) in ((3, 5), (12, 5), (3, 12), (12, 12)):
         s.put(x, y, STEEL[4])
     return finish(s)
 
@@ -348,13 +355,21 @@ def specialized_equipment_platform():
 
 @item
 def field_repair_set():
-    """A wrench crossed with a screwdriver."""
+    """A canvas-red tool roll with a wrench head and a screwdriver standing out of it."""
     s = Sprite()
-    s.line(3, 13, 12, 3, STEEL[2]); s.line(4, 13, 13, 3, STEEL[1]); s.line(2, 13, 11, 3, STEEL[3])
-    s.polygon([(10, 1), (14, 1), (15, 3), (13, 5), (11, 4)], STEEL[3])
-    s.rect(11, 2, 13, 3, INK); s.put(14, 4, STEEL[1])
-    s.line(2, 2, 12, 12, STEEL[3]); s.put(1, 1, STEEL[4])
-    s.rect(10, 11, 14, 14, RED[2]); s.rect(10, 11, 14, 11, RED[3]); s.line(10, 14, 14, 14, RED[0]); s.put(10, 12, RED[3])
+    # the roll
+    s.rect(2, 7, 13, 13, RED[2]); s.line(2, 7, 13, 7, RED[4]); s.line(2, 13, 13, 13, RED[0]); s.line(2, 7, 2, 13, RED[3]); s.line(13, 7, 13, 13, RED[1])
+    s.line(3, 9, 12, 9, RED[1])                       # the fold
+    for x in range(3, 13, 2):
+        s.put(x, 11, RED[3])                           # stitching
+    s.rect(7, 8, 8, 12, BRASS[3]); s.put(7, 8, BRASS[4]); s.put(8, 12, BRASS[1])   # the buckle strap
+    # a wrench head
+    s.polygon([(3, 2), (6, 2), (7, 4), (6, 6), (4, 6), (3, 4)], STEEL[3])
+    s.rect(4, 3, 5, 4, INK); s.line(4, 2, 6, 2, STEEL[4])
+    s.line(5, 5, 5, 7, STEEL[2])
+    # a screwdriver
+    s.rect(10, 1, 11, 3, AMBER[3]); s.line(10, 1, 11, 1, AMBER[4]); s.line(11, 1, 11, 3, AMBER[1])
+    s.line(10, 4, 10, 7, STEEL[3]); s.line(11, 4, 11, 7, STEEL[1])
     return finish(s)
 
 

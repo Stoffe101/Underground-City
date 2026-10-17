@@ -106,11 +106,17 @@ def cross(tex, size_w, size_h, y0=0, cx=8, cz=8, yaw=45):
 
 
 def stem(h, x=8, z=8, w=1.5):
-    f = [x - w / 2, 0, z - w / 2]
-    t = [x + w / 2, h, z + w / 2]
-    uv = [6.5, 0, 6.5 + w, h]
-    return {'from': f, 'to': t, 'shade': False,
-            'faces': {s: _face('stem', [6.5, 16 - h, 6.5 + w, 16]) for s in ('north', 'south', 'east', 'west')} | {'up': _face('stem', [6.5, 0, 8, 1.5])}}
+    """The main stem as boxes of at most 16 units each: a model UV must stay inside the 16 x 16 sprite, so a taller stem is stacked."""
+    els = []
+    y = 0.0
+    while y < h - 1e-6:
+        seg = min(16.0, h - y)
+        f = [x - w / 2, y, z - w / 2]
+        t = [x + w / 2, y + seg, z + w / 2]
+        els.append({'from': f, 'to': t, 'shade': False,
+                    'faces': {s: _face('stem', [6.5, 16 - seg, 6.5 + w, 16]) for s in ('north', 'south', 'east', 'west')} | {'up': _face('stem', [6.5, 0, 6.5 + w, w])}})
+        y += seg
+    return els
 
 
 def branch(y, direction, length, w=1.0):
@@ -119,7 +125,7 @@ def branch(y, direction, length, w=1.0):
     z0, z1 = (8, 8 + dz * length) if dz else (8 - w / 2, 8 + w / 2)
     f = [min(x0, x1), y, min(z0, z1)]
     t = [max(x0, x1), y + w, max(z0, z1)]
-    return {'from': f, 'to': t, 'shade': False, 'faces': {s: _face('stem', [6.5, 0, 6.5 + w, w]) for s in ('north', 'south', 'east', 'west', 'up', 'down')}}
+    return {'from': f, 'to': t, 'shade': False, 'faces': {s: _face('stem', [9.0, 2.0, 9.0 + w, 2.0 + w]) for s in ('north', 'south', 'east', 'west', 'up', 'down')}}
 
 
 def cola_at(cx, cz, y0, w, h, yaw=45):
@@ -141,14 +147,14 @@ def stage_elements(age: int):
         els += cross('seedling', 11, 11, 0)
         return els
     if age == 1:
-        els.append(stem(7, w=0.8))
+        els += stem(7, w=0.8)
         els += _specs([(1.6, 'N', 5.0, 'leaf3', 'tilt', -22.5), (1.6, 'S', 5.0, 'leaf3', 'tilt', -22.5),
                        (3.2, 'E', 5.5, 'leaf5', 'tilt', 22.5), (3.2, 'W', 5.5, 'leaf5', 'tilt', 22.5),
                        (5.0, 'N', 4.5, 'leaf3', 'yaw', 22.5), (5.0, 'S', 4.5, 'leaf3', 'yaw', 22.5),
                        (7.0, 'E', 3.5, 'leaf3', 'tilt', 45), (7.0, 'W', 3.5, 'leaf3', 'tilt', 45)])
         return els
     if age == 2:
-        els.append(stem(12, w=0.9))
+        els += stem(12, w=0.9)
         els += _specs([(3.0, 'N', 7.0, 'leaf5_deep', 'tilt', -22.5), (3.0, 'S', 7.0, 'leaf5_deep', 'tilt', -22.5),
                        (3.0, 'E', 7.0, 'leaf5_deep', 'tilt', -22.5), (3.0, 'W', 7.0, 'leaf5_deep', 'tilt', -22.5),
                        (6.0, 'N', 6.5, 'leaf7', 'yaw', 22.5), (6.0, 'S', 6.5, 'leaf7', 'yaw', 22.5),
@@ -159,7 +165,7 @@ def stage_elements(age: int):
                        (11.5, 'E', 4.0, 'leaf3', 'tilt', 45), (11.5, 'W', 4.0, 'leaf3', 'tilt', 45)])
         return els
     # age 3: mature and flowering
-    els.append(stem(19, w=1.0))
+    els += stem(19, w=1.0)
     els += _specs([(6.0, 'N', 8.5, 'leaf7_deep', 'tilt', -45), (6.0, 'S', 8.5, 'leaf7_deep', 'tilt', -45),
                    (6.0, 'E', 8.5, 'leaf7_deep', 'tilt', -45), (6.0, 'W', 8.5, 'leaf7_deep', 'tilt', -45),
                    (8.5, 'N', 8.5, 'leaf7', 'yaw', 22.5), (8.5, 'S', 8.5, 'leaf7', 'yaw', 22.5),
@@ -201,6 +207,7 @@ def write_models():
     for age in range(4):
         for fed in (False, True):
             variants[f'age={age},nourished={"true" if fed else "false"}'] = {'model': f'underground_city:block/sable_leaf_crop_stage{age}' + ('_fed' if fed else '')}
+    os.makedirs(os.path.join(ASSETS, 'blockstates'), exist_ok=True)
     with open(os.path.join(ASSETS, 'blockstates', 'sable_leaf_crop.json'), 'w') as fh:
         json.dump({'variants': variants}, fh, indent=1)
 

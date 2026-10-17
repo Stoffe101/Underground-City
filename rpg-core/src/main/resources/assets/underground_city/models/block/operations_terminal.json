@@ -32,9 +32,6 @@
     },
     "up": {
      "texture": "#case"
-    },
-    "down": {
-     "texture": "#case"
     }
    }
   },

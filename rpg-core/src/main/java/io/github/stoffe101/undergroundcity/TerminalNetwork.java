@@ -24,7 +24,7 @@ import java.util.function.Supplier;
  * This is NOT a remote city supplier, contraband order, or raid service.
  */
 public final class TerminalNetwork {
-    private static final String VERSION = "8";
+    private static final String VERSION = "9";
     private static final String STARTER_SHOP_ID = "uc_starter_supply";
     private static final double MAX_TERMINAL_DISTANCE_SQUARED = 64.0;
     private static final java.util.Map<ServerPlayer, Integer> REQUEST_TIMES = new java.util.WeakHashMap<>();
@@ -41,6 +41,8 @@ public final class TerminalNetwork {
         registerTracker();
         registerObjective();
         registerDialogue();
+        registerLedger();
+        registerNotice();
         CHANNEL.registerMessage(0, OpenTerminal.class,
             (packet, buffer) -> { buffer.writeBlockPos(packet.pos); packet.data.write(buffer); },
             buffer -> new OpenTerminal(buffer.readBlockPos(), TerminalData.read(buffer)),
@@ -86,6 +88,41 @@ public final class TerminalNetwork {
                 });
                 context.setPacketHandled(true);
             }, Optional.of(NetworkDirection.PLAY_TO_SERVER));
+    }
+
+    private static void registerNotice() {
+        CHANNEL.registerMessage(17, NoticePacket.class,
+            (packet, buffer) -> { buffer.writeEnum(packet.kind); buffer.writeUtf(packet.title, 48); buffer.writeUtf(packet.body, 120); },
+            buffer -> new NoticePacket(buffer.readEnum(Notice.Kind.class), buffer.readUtf(48), buffer.readUtf(120)),
+            (packet, supplier) -> {
+                NetworkEvent.Context context = supplier.get();
+                if (context.getDirection().getReceptionSide().isClient()) {
+                    context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> ClientNotice.show(packet.kind, packet.title, packet.body)));
+                }
+                context.setPacketHandled(true);
+            }, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+    }
+
+    static void sendNotice(ServerPlayer player, Notice.Kind kind, String title, String body) {
+        CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new NoticePacket(kind, title.length() > 48 ? title.substring(0, 48) : title, body.length() > 120 ? body.substring(0, 120) : body));
+    }
+
+    private static void registerLedger() {
+        CHANNEL.registerMessage(16, OpenLedger.class,
+            (packet, buffer) -> packet.data.write(buffer),
+            buffer -> new OpenLedger(LedgerData.read(buffer)),
+            (packet, supplier) -> {
+                NetworkEvent.Context context = supplier.get();
+                if (context.getDirection().getReceptionSide().isClient()) {
+                    context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> ClientLedger.open(packet.data)));
+                }
+                context.setPacketHandled(true);
+            }, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+    }
+
+    /** Called after a physical right-click on a Public Ledger. */
+    static void openLedger(ServerPlayer player, BlockPos pos) {
+        CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new OpenLedger(LedgerData.snapshot(player, pos)));
     }
 
     private static void registerDialogue() {
@@ -426,6 +463,16 @@ public final class TerminalNetwork {
         CitizenState.get(player.server).markJourney(player.getUUID(), "bought");
         player.server.getCommands().performPrefixedCommand(
             player.createCommandSourceStack(), "qshop open " + STARTER_SHOP_ID);
+    }
+
+    public static final class NoticePacket {
+        final Notice.Kind kind; final String title, body;
+        NoticePacket(Notice.Kind kind, String title, String body) { this.kind = kind; this.title = title; this.body = body; }
+    }
+
+    public static final class OpenLedger {
+        final LedgerData data;
+        OpenLedger(LedgerData data) { this.data = data; }
     }
 
     public static final class OpenTerminal {

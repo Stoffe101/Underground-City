@@ -43,6 +43,12 @@ public final class UndergroundCity {
     public static final RegistryObject<Item> TERMINAL_ITEM = ITEMS.register("operations_terminal",
         () -> new BlockItem(TERMINAL.get(), new Item.Properties()));
 
+    /** A city's public noticeboard of legal work (read-only). Placed by the district builder or operators; unbreakable in survival like the other district fittings. */
+    public static final RegistryObject<Block> PUBLIC_LEDGER = BLOCKS.register("public_ledger",
+        () -> new PublicLedgerBlock(BlockBehaviour.Properties.of().mapColor(MapColor.WOOD).strength(-1.0f, 3_600_000f).noLootTable().noOcclusion()));
+    public static final RegistryObject<Item> PUBLIC_LEDGER_ITEM = ITEMS.register("public_ledger",
+        () -> new BlockItem(PUBLIC_LEDGER.get(), new Item.Properties()));
+
     /** The Farmer's controlled crop (a real crop block; its seed item is registered with the other Core items). */
     public static final RegistryObject<Block> SABLE_CROP = BLOCKS.register("sable_leaf_crop",
         () -> new RestrictedCropBlock(BlockBehaviour.Properties.copy(net.minecraft.world.level.block.Blocks.WHEAT)));
@@ -50,7 +56,7 @@ public final class UndergroundCity {
     /** The Technician's job site: placed by operators or the district builder, never craftable or breakable by survival players. */
     public static final RegistryObject<Block> SECURE_TERMINAL = BLOCKS.register("secure_data_terminal",
         () -> new SecureTerminalBlock(BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_BLACK)
-            .strength(-1.0f, 3_600_000f).noLootTable().lightLevel(state -> 6)));
+            .strength(-1.0f, 3_600_000f).noLootTable().noOcclusion().lightLevel(state -> 6)));
     public static final RegistryObject<Item> SECURE_TERMINAL_ITEM = ITEMS.register("secure_data_terminal",
         () -> new BlockItem(SECURE_TERMINAL.get(), new Item.Properties()));
 
@@ -59,7 +65,7 @@ public final class UndergroundCity {
     // Unbreakable by survival players: a smash-and-grab would bypass lock, vigilance and restock rules.
     public static final RegistryObject<Block> PROPERTY_CACHE = BLOCKS.register("property_cache",
         () -> new PropertyCacheBlock(BlockBehaviour.Properties.of().mapColor(MapColor.METAL)
-            .strength(-1.0f, 3_600_000f).noLootTable()));
+            .strength(-1.0f, 3_600_000f).noLootTable().noOcclusion()));
     public static final RegistryObject<Item> PROPERTY_CACHE_ITEM = ITEMS.register("property_cache",
         () -> new BlockItem(PROPERTY_CACHE.get(), new Item.Properties()));
     public static final RegistryObject<net.minecraft.world.level.block.entity.BlockEntityType<PropertyCacheBlockEntity>> PROPERTY_CACHE_ENTITY =
@@ -113,6 +119,7 @@ public final class UndergroundCity {
         MinecraftForge.EVENT_BUS.register(new DevBootstrap());
         MinecraftForge.EVENT_BUS.register(new CheckpointService());
         MinecraftForge.EVENT_BUS.register(new SecureTerminalService());
+        RangeService.register();
     }
 
     @SubscribeEvent
@@ -134,6 +141,7 @@ public final class UndergroundCity {
     private void addCreativeTab(BuildCreativeModeTabContentsEvent event) {
         if (event.getTabKey() == CreativeModeTabs.FUNCTIONAL_BLOCKS) {
             event.accept(TERMINAL_ITEM);
+            event.accept(PUBLIC_LEDGER_ITEM);
         }
         if (event.getTabKey() == CreativeModeTabs.OP_BLOCKS && event.hasPermissions()) {
             event.accept(PROPERTY_CACHE_ITEM);

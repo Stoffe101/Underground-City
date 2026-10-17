@@ -1,6 +1,7 @@
 {
   "block.underground_city.operations_terminal": "Operations Terminal",
   "block.underground_city.property_cache": "Household Safe",
+  "block.underground_city.public_ledger": "Public Ledger",
   "block.underground_city.sable_leaf_crop": "Sable Leaf Plant",
   "block.underground_city.secure_data_terminal": "Secured Data Terminal",
   "container.underground_city.property_cache": "Household Safe",
@@ -30,6 +31,7 @@
   "item.underground_city.precision_machinery_parts": "Precision Machinery Parts",
   "item.underground_city.property_cache": "Household Safe",
   "item.underground_city.prototype_alloy_ingot": "Prototype Alloy Ingot",
+  "item.underground_city.public_ledger": "Public Ledger",
   "item.underground_city.rare_seeds": "Rare Seed Stock",
   "item.underground_city.refined_alloy": "Refined Alloy Ingot",
   "item.underground_city.sable_cutting": "Sable Leaf Cutting",

@@ -64,9 +64,6 @@
     },
     "up": {
      "texture": "#top"
-    },
-    "down": {
-     "texture": "#top"
     }
    }
   },
@@ -95,9 +92,6 @@
      "texture": "#top"
     },
     "up": {
-     "texture": "#top"
-    },
-    "down": {
      "texture": "#top"
     }
    }
@@ -128,9 +122,6 @@
     },
     "up": {
      "texture": "#top"
-    },
-    "down": {
-     "texture": "#top"
     }
    }
   },
@@ -159,9 +150,6 @@
      "texture": "#top"
     },
     "up": {
-     "texture": "#top"
-    },
-    "down": {
      "texture": "#top"
     }
    }

@@ -29,6 +29,8 @@ public final class VisualCaptureHarness {
         static Case registration(String name,String pose) { return new Case(name,null,null,0,false,null,"register-"+pose); }
         /** Conversation poses: the registrar for a newcomer, an employer and the gate guard. */
         static Case dialogue(String name,String pose) { return new Case(name,null,null,0,false,null,"dialogue-"+pose); }
+        static Case ledger(String name) { return new Case(name,null,null,0,false,null,"ledger-board"); }
+        static Case notices(String name) { return new Case(name,null,null,0,false,null,"notices-stack"); }
     }
     private static List<Case> cases;
     private static int current,frames;
@@ -166,6 +168,20 @@ public final class VisualCaptureHarness {
                 List.of(c.apply("law","What is the law here?"),c.apply("posts","Where are the checkpoints?"),c.apply("search","How do searches work?"),c.apply("bye","Goodbye")),true);
         };
     }
+    private static LedgerData ledgerFixture() {
+        var p=new java.util.ArrayList<LedgerData.Posting>();
+        p.add(new LedgerData.Posting("farmer","Bake the canteen bread order",2,36,180,4,6,false));
+        p.add(new LedgerData.Posting("farmer","Greenhouse wholesale: carrots and potatoes",3,100,260,4,4,false));
+        p.add(new LedgerData.Posting("farmer","Broker heirloom seed stock",5,150,330,2,3,false));
+        p.add(new LedgerData.Posting("farmer","Reserve harvest for the co-op",8,240,500,0,3,true));
+        p.add(new LedgerData.Posting("smith","Structural brackets for the bridge works",2,48,200,6,8,false));
+        p.add(new LedgerData.Posting("smith","Alloy ingots for the foundry",4,90,260,3,4,false));
+        p.add(new LedgerData.Posting("gunsmith","Hunting arrows for the guard post",2,40,190,5,6,false));
+        p.add(new LedgerData.Posting("gunsmith","Licensed sidearm for a dealer",6,310,420,1,2,false));
+        p.add(new LedgerData.Posting("technician","Repair the market's street lamps",2,44,210,3,5,false));
+        p.add(new LedgerData.Posting("technician","Install an automation controller",7,260,480,2,2,true));
+        return new LedgerData("valewood","valewood","farmer",4,java.util.List.copyOf(p));
+    }
     private static void start(Minecraft mc) {
         int scale=Integer.getInteger("uc.visualCapture.scale",3);
         if(scale<1||scale>4) throw new IllegalArgumentException("Bad GUI scale");
@@ -204,6 +220,8 @@ public final class VisualCaptureHarness {
         cases.add(Case.challenge("uc-challenge-show","show"));
         cases.add(Case.challenge("uc-challenge-input","input"));
         cases.add(Case.challenge("uc-challenge-urgent","urgent"));
+        cases.add(Case.ledger("uc-ledger"));
+        cases.add(Case.notices("uc-notices"));
         cases.add(Case.dialogue("uc-dialogue-registrar","registrar"));
         cases.add(Case.dialogue("uc-dialogue-employer","employer"));
         cases.add(Case.dialogue("uc-dialogue-guard","guard"));
@@ -224,6 +242,17 @@ public final class VisualCaptureHarness {
                 case "register-career" -> RegistrationScreen.forCapture(1,1,-1,"");
                 default -> RegistrationScreen.forCapture(2,1,0,"");
             });
+        } else if(capture.challenge!=null && capture.challenge.startsWith("notices-")) {
+            // the corner notices over a terminal: an order taken, a delivery paid with a level-up, a search at a checkpoint and a rare find
+            TerminalScreen screen=new TerminalScreen(BlockPos.ZERO,fixture(2,8,true,true));
+            mc.setScreen(screen); screen.showPage(TerminalScreen.Page.CONTRACTS);
+            var toasts=mc.getToasts();
+            toasts.addToast(new UcToast(Notice.Kind.ORDER,"Order accepted","Bake the canteen bread order"));
+            toasts.addToast(new UcToast(Notice.Kind.DELIVERED,"Delivered","Bake the canteen bread order: +36 credits, +180 XP"));
+            toasts.addToast(new UcToast(Notice.Kind.HEAT,"Contraband seized","1 stack taken, 40 credits fined. Heat 2 in Valewood."));
+            toasts.addToast(new UcToast(Notice.Kind.LOOT,"A rare find","There is something here worth more than the rest. Take it and go."));
+        } else if(capture.challenge!=null && capture.challenge.startsWith("ledger-")) {
+            mc.setScreen(new LedgerScreen(ledgerFixture()));
         } else if(capture.challenge!=null && capture.challenge.startsWith("dialogue-")) {
             mc.setScreen(dialogueCapture(capture.challenge));
         } else if(capture.challenge!=null) {

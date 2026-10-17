@@ -85,6 +85,16 @@ public final class CityNpcs {
     // -------------------------------------------------------------------------------------------------- speaking
 
     @SubscribeEvent
+    public void tick(net.minecraftforge.event.TickEvent.ServerTickEvent event) {
+        if (event.phase == net.minecraftforge.event.TickEvent.Phase.END && event.getServer().getTickCount() % 10 == 3) Dialogue.tickHolds(event.getServer());
+    }
+
+    @SubscribeEvent
+    public void loggedOut(net.minecraftforge.event.entity.player.PlayerEvent.PlayerLoggedOutEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) Dialogue.releaseFor(player);
+    }
+
+    @SubscribeEvent
     public void interact(PlayerInteractEvent.EntityInteract event) {
         if (!(event.getTarget() instanceof Villager villager) || !isCityNpc(villager)) return;
         event.setCanceled(true); // never the vanilla trade screen, in either hand
@@ -103,10 +113,39 @@ public final class CityNpcs {
         talk(player, villager, npc.get());
     }
 
+    /** A citizen remembers the people they have spoken to (a short list kept on the villager), and greets a returning one differently. */
+    private static boolean remember(CompoundTag tag, UUID player) {
+        net.minecraft.nbt.ListTag met = tag.getList("met", Tag.TAG_STRING);
+        String id = player.toString();
+        for (Tag entry : met) if (entry.getAsString().equals(id)) return true;
+        met.add(net.minecraft.nbt.StringTag.valueOf(id));
+        while (met.size() > 24) met.remove(0);
+        tag.put("met", met);
+        return false;
+    }
+
+    private static String greeting(DistrictCatalog.Npc npc, CitizenState.Citizen citizen, String playerName) {
+        int delivered = citizen.journey("deliveries"), accepted = citizen.journey("accepted");
+        return switch (npc.role()) {
+            case "employer" -> !citizen.career.equals(npc.career()) ? "Back again, " + playerName + ". Your trade is not mine, but I hear things."
+                : delivered == 0 && accepted == 0 ? "Back again, " + playerName + ". Your first order is waiting on the terminal."
+                : accepted > delivered ? "Back again, " + playerName + ". Your last order is still open: deliver it when the goods are ready."
+                : "Back again, " + playerName + ". " + delivered + (delivered == 1 ? " delivery" : " deliveries") + " so far, and you are level " + citizen.careerLevel() + ". Good.";
+            case "registrar" -> "You are on the register, " + playerName + ".";
+            case "vendor" -> "Back for more, " + playerName + "?";
+            case "guard" -> "Papers in order, " + playerName + "?";
+            case "instructor" -> "Welcome back to the line, " + playerName + ".";
+            default -> "Good to see you again, " + playerName + ".";
+        };
+    }
+
     static void talk(ServerPlayer player, Villager villager, DistrictCatalog.Npc npc) {
         CompoundTag tag = villager.getPersistentData().getCompound(TAG);
         var citizen = CitizenState.get(player.server).find(player.getUUID());
+        boolean knownBefore = remember(tag, player.getUUID());
+        villager.getPersistentData().put(TAG, tag);
         String line = nextLine(npc, tag);
+        if (knownBefore && citizen.isPresent() && !npc.role().equals("registrar")) line = greeting(npc, citizen.get(), player.getGameProfile().getName()) + " " + line;
         String text = switch (npc.role()) {
             case "registrar" -> citizen.isEmpty() ? line : "You are on the register, " + player.getGameProfile().getName() + ". " + nextStep(villager, citizen.get());
             case "employer" -> {

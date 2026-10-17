@@ -10,16 +10,15 @@ final class QShopJourneyActions {
     static void tick(Minecraft mc) {
         if(mc.player==null || ++ticks%20!=0) return;
         if(mc.screen instanceof TerminalScreen screen) {
-            int top=(screen.height-Math.min(268,screen.height-16))/2;
-            int buttonY=top+Math.min(268,screen.height-16)-47;
             if(stage==0 || stage==1) {
                 if(stage==1 && screen.snapshot().active()==null) return;
-                screen.mouseClicked(screen.width/2,buttonY,0);stage++;
+                screen.showPage(TerminalScreen.Page.CONTRACTS);
+                screen.clickPrimary();stage++;
                 System.out.println("[UC-JOURNEY] clicked terminal action stage="+stage);
             } else if(stage==2) {
                 if(screen.snapshot().active()!=null || screen.snapshot().xp()<125) return;
                 screen.showPage(TerminalScreen.Page.IMPORTS);
-                screen.mouseClicked(screen.width/2,buttonY,0);stage++;
+                screen.clickShop();stage++;
             }
         } else if(mc.screen instanceof com.qshop.client.ShopScreen screen) {
             int left=(screen.width-302)/2+52,top=(screen.height-200)/2;

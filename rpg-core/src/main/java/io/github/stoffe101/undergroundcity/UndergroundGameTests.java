@@ -846,7 +846,8 @@ public final class UndergroundGameTests {
             for (DistrictCatalog.Op op : district.ops()) {
                 switch (op.kind()) { case "safe" -> safes++; case "terminal" -> terminals++; case "secure_terminal" -> secure++; case "clerk" -> clerks++; default -> { } }
             }
-            check((terminals >= 1 || district.repeatable()) && clerks <= 1 && secure >= 0 && safes >= 0, id + " must have a terminal (unless it is a repeatable post) and at most one clerk");
+            check(clerks <= 1 && secure >= 0 && safes >= 0, id + " must have at most one clerk");
+            if (id.equals("founders_row")) check(terminals >= 1, "Founders Row must have an Operations Terminal");
         }
         // Bad data is rejected before it can reach the world.
         JsonObject bad = new JsonObject();
@@ -887,6 +888,70 @@ public final class UndergroundGameTests {
         return json;
     }
 
+    // ------------------------------------------------------------------------------------------ blueprints, the server's side
+
+    @GameTest(template = "empty")
+    public static void theGunSmithTableRefusesAGunWithoutItsBlueprintOnTheServerAndBuildsItWithOne(GameTestHelper helper) throws Exception {
+        if (!ModList.get().isLoaded("tacz") || !ModList.get().isLoaded("taczblueprints")) { helper.succeed(); return; }
+        Fixture fixture = fixture(helper, "valewood");
+        Boolean wasOpen = OptionalModProbes.setGunTableOpen(false);   // the pack's setting: guns are built from blueprints only
+        check(wasOpen != null, "The addon's configuration is reachable");
+        try {
+            FakePlayer player = player(helper, "valewood", "gunsmith", 4);
+            StarterKits.INSTANCE.grant(player, "gunsmith");
+            ItemStack blueprint = player.getInventory().items.stream().filter(s -> String.valueOf(ForgeRegistries.ITEMS.getKey(s.getItem())).equals("taczblueprints:blueprint_pistol")).findFirst().orElseThrow();
+            int iron = player.getInventory().countItem(Items.IRON_INGOT), copper = player.getInventory().countItem(Items.COPPER_INGOT);
+            // Without the blueprint: a craft request for the pistol is refused on the server, and takes nothing.
+            String refused = OptionalModProbes.craftAtTaczTable(player, "gun", "tacz:glock_17");
+            check(OptionalModProbes.countTagged(player, "tacz:modern_kinetic_gun", "GunId", "tacz:glock_17") == 0, "No pistol without the blueprint (" + refused + ")");
+            check(player.getInventory().countItem(Items.IRON_INGOT) == iron && player.getInventory().countItem(Items.COPPER_INGOT) == copper, "A refused craft consumed nothing");
+            // The decision itself, for another gun the player has no blueprint for, and for one they have.
+            ItemStack other = new ItemStack(ForgeRegistries.ITEMS.getValue(ResourceLocation.parse("tacz:modern_kinetic_gun")));
+            other.getOrCreateTag().putString("GunId", "tacz:ak47");
+            check(!BlueprintGate.allows(other, player), "A gun without a blueprint is refused");
+            // With the blueprint used, the same request is built.
+            player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, blueprint.copy());
+            blueprint.getItem().use(helper.getLevel(), player, net.minecraft.world.InteractionHand.MAIN_HAND);
+            player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+            String crafted = OptionalModProbes.craftAtTaczTable(player, "gun", "tacz:glock_17");
+            check(crafted == null && OptionalModProbes.countTagged(player, "tacz:modern_kinetic_gun", "GunId", "tacz:glock_17") == 1, "With the blueprint the table builds the pistol: " + crafted);
+            check(!BlueprintGate.allows(other, player), "One blueprint opens one gun, not all of them");
+            // An open table (the addon's default) is not gated at all.
+            OptionalModProbes.setGunTableOpen(true);
+            check(BlueprintGate.allows(other, player), "An ungated table allows every recipe");
+        } finally {
+            if (wasOpen != null) OptionalModProbes.setGunTableOpen(wasOpen);
+            fixture.close();
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty")
+    public static void theRangeScoresByDistanceFromTheCentreOfTheFaceAndTheLedgerNeverListsUndergroundWork(GameTestHelper helper) throws Exception {
+        BlockPos block = new BlockPos(10, 70, 10);
+        check(RangeService.score(Vec3.atCenterOf(block).add(-0.5, 0, 0), block, net.minecraft.core.Direction.WEST) == 10, "The centre of the face scores 10");
+        check(RangeService.score(Vec3.atCenterOf(block).add(-0.5, 0.25, 0), block, net.minecraft.core.Direction.WEST) == 5, "Halfway to the edge scores 5");
+        check(RangeService.score(Vec3.atCenterOf(block).add(-0.5, 0.5, 0.5), block, net.minecraft.core.Direction.WEST) == 0, "A corner scores 0");
+        check(RangeService.score(Vec3.atCenterOf(block).add(0.1, 0.5, 0.1), block, net.minecraft.core.Direction.UP) >= 7, "The top face is scored on its own plane");
+        Fixture fixture = fixture(helper, "valewood");
+        try {
+            FakePlayer player = player(helper, "valewood", "farmer", 2);
+            LedgerData data = LedgerData.snapshot(player, fixture.pos);
+            check(!data.postings().isEmpty() && data.postings().size() <= LedgerData.MAX_POSTINGS, "The ledger lists the postings");
+            for (String career : ProgressionRules.CAREERS) check(data.postings().stream().anyMatch(p -> p.career().equals(career)), "The ledger lists work for " + career);
+            long legal = WorkOrderCatalog.INSTANCE.all().stream().filter(order -> !order.underground()).count();
+            check(data.postings().size() == Math.min(legal, LedgerData.MAX_POSTINGS), "Only the legal postings are listed: " + data.postings().size() + " of " + legal);
+            for (LedgerData.Posting posting : data.postings()) {
+                check(WorkOrderCatalog.INSTANCE.all().stream().anyMatch(order -> !order.underground() && order.title().equals(posting.title())), "A listed posting is a real legal order: " + posting.title());
+            }
+            net.minecraft.network.FriendlyByteBuf buffer = new net.minecraft.network.FriendlyByteBuf(io.netty.buffer.Unpooled.buffer());
+            data.write(buffer);
+            LedgerData back = LedgerData.read(buffer);
+            check(back.postings().equals(data.postings()) && back.career().equals("farmer") && back.region().equals("valewood"), "The ledger survives the wire");
+        } finally { fixture.close(); }
+        helper.succeed();
+    }
+
     @GameTest(template = "empty", batch = "uc_district", timeoutTicks = 400)
     public static void foundersRowBuildsAWorkingLotRefusesToOverwriteContainersAndUndoRestoresTheWorld(GameTestHelper helper) throws Exception {
         net.minecraft.server.level.ServerLevel level = helper.getLevel();
@@ -903,7 +968,11 @@ public final class UndergroundGameTests {
         SupplierNpc.forgetForTest(level.getServer());
         DistrictBuilder.forgetForTest(level, district.id());
         Fixture fixture = fixture(helper, "valewood");
-        BlockPos terminalPos = origin.offset(3, 0, 2), marker = origin.offset(12, 0, 12);
+        // Every position below comes from the district's own data, so redesigning the buildings never needs this test to change.
+        java.util.List<DistrictCatalog.Op> terminalOps = district.ops().stream().filter(op -> op.kind().equals("terminal")).toList();
+        java.util.List<DistrictCatalog.Op> safeOps = district.ops().stream().filter(op -> op.kind().equals("safe")).toList();
+        DistrictCatalog.Op secureOp = district.ops().stream().filter(op -> op.kind().equals("secure_terminal")).findFirst().orElseThrow();
+        BlockPos terminalPos = origin.offset(terminalOps.get(0).a()), marker = origin.offset(16, 0, 12);
         BlockState keepsake = Blocks.GOLD_BLOCK.defaultBlockState();
         level.setBlockAndUpdate(marker, keepsake);
         BlockState terrain = level.getBlockState(terminalPos); // whatever the test arena sits in: undo must give exactly this back
@@ -922,13 +991,22 @@ public final class UndergroundGameTests {
         helper.runAfterDelay(40, () -> {
             try {
                 var result = DistrictBuilder.build(level, district, origin);
-                check(result.safes() == 8 && result.secureTerminals() == 1 && result.terminals() == 6 && result.clerkPlaced() && result.insideCity() && result.citizens() == 9, "Build summary " + result);
+                check(result.safes() == safeOps.size() && result.secureTerminals() == 1 && result.terminals() == terminalOps.size() && result.clerkPlaced()
+                    && result.insideCity() && result.citizens() == district.npcOps().size(), "Build summary " + result);
                 check(level.getBlockState(terminalPos).is(UndergroundCity.TERMINAL.get()), "Operations Terminal placed");
-                for (int x : new int[]{8, 9, 10}) {
-                    check(level.getBlockEntity(origin.offset(x, 0, 2)) instanceof PropertyCacheBlockEntity cache && cache.registered(), "Safe at " + x + " must be registered");
+                for (DistrictCatalog.Op safe : safeOps) {
+                    check(level.getBlockEntity(origin.offset(safe.a())) instanceof PropertyCacheBlockEntity cache && cache.registered(), "Safe at " + safe.a() + " must be registered");
                 }
-                check(level.getBlockEntity(origin.offset(15, 0, 2)) instanceof SecureTerminalBlockEntity secure && secure.ledgers(0) == 1, "Secured terminal placed with its drive");
-                check(level.getBlockState(origin.offset(21, -1, 3)).is(Blocks.WATER) && level.getBlockState(origin.offset(20, -1, 2)).is(Blocks.FARMLAND), "Greenhouse soil and water");
+                check(level.getBlockEntity(origin.offset(secureOp.a())) instanceof SecureTerminalBlockEntity secure && secure.ledgers(0) == 1, "Secured terminal placed with its drive");
+                var farmland = district.ops().stream().filter(op -> op.kind().equals("fill") && op.text().startsWith("minecraft:farmland")).findFirst().orElseThrow();
+                check(level.getBlockState(origin.offset(farmland.a())).is(Blocks.FARMLAND) && district.ops().stream().anyMatch(op -> op.kind().equals("block") && op.text().equals("minecraft:water")
+                    && level.getBlockState(origin.offset(op.a())).is(Blocks.WATER)), "Greenhouse soil and water");
+                // The new fittings: a Public Ledger, signs with their words, and a door on every house.
+                var ledgerOp = district.ops().stream().filter(op -> op.kind().equals("ledger")).findFirst().orElseThrow();
+                check(level.getBlockState(origin.offset(ledgerOp.a())).is(UndergroundCity.PUBLIC_LEDGER.get()), "The Public Ledger is placed");
+                var signOp = district.ops().stream().filter(op -> op.kind().equals("sign")).findFirst().orElseThrow();
+                check(level.getBlockEntity(origin.offset(signOp.a())) instanceof net.minecraft.world.level.block.entity.SignBlockEntity signEntity
+                    && signEntity.getFrontText().getMessage(0, false).getString().equals(signOp.sign().lines().get(0)) && signEntity.isWaxed(), "Signs carry their words and are waxed");
                 check(level.getBlockState(marker).isAir(), "The lot is cleared for the build");
                 var clerk = SupplierNpc.state(level.getServer());
                 check(terminalPos.equals(clerk.terminalForTest()), "The clerk is bound to the placed terminal: " + clerk.terminalForTest() + " vs " + terminalPos);
@@ -938,7 +1016,7 @@ public final class UndergroundGameTests {
                 // The people: nine named, persistent villagers placed on the spots the data names, each bound to its own entry.
                 var citizens = DistrictBuilder.citizensForTest(level, district.id());
                 var npcOps = district.npcOps();
-                check(citizens.size() == 9 && npcOps.size() == 9, "Nine citizens are recorded: " + citizens.size());
+                check(citizens.size() == npcOps.size() && npcOps.size() >= 11, "Every citizen is recorded: " + citizens.size() + " of " + npcOps.size());
                 java.util.Set<String> roles = new java.util.HashSet<>();
                 for (int i = 0; i < npcOps.size(); i++) {
                     var op = npcOps.get(i);
@@ -954,7 +1032,7 @@ public final class UndergroundGameTests {
                         check(level.getBlockState(origin.offset(op.reference())).is(UndergroundCity.TERMINAL.get()), op.npc().name() + " has a real terminal in the office");
                     }
                 }
-                check(roles.equals(java.util.Set.of("registrar", "employer", "resident", "guard")), "Every role is represented: " + roles);
+                check(roles.containsAll(java.util.Set.of("registrar", "employer", "resident", "guard", "vendor")), "Every role is represented: " + roles);
                 int beds = 0, bells = 0, workstations = 0;
                 for (BlockPos pos : BlockPos.betweenClosed(lo, hi)) {
                     BlockState seen = level.getBlockState(pos);
@@ -975,10 +1053,10 @@ public final class UndergroundGameTests {
                 for (java.util.UUID id : replacement) check(level.getEntity(id) == null, "Undo removes the citizens it placed");
                 check(level.getBlockState(marker) == keepsake, "Undo must put back what the build replaced");
                 check(level.getBlockState(terminalPos) == terrain, "Undo removes the terminal, found " + level.getBlockState(terminalPos));
-                check(level.getBlockEntity(origin.offset(9, 0, 2)) == null, "Undo removes the safe's block entity");
+                check(level.getBlockEntity(origin.offset(safeOps.get(0).a())) == null, "Undo removes the safe's block entity");
                 check(!SupplierNpc.hasClerk(level.getServer()), "Undo releases the clerk it placed");
                 // A container anywhere in the lot stops the build before it changes anything.
-                BlockPos chest = origin.offset(20, 0, 12);
+                BlockPos chest = origin.offset(20, 0, 12);   // on the east pavement
                 level.setBlockAndUpdate(chest, Blocks.CHEST.defaultBlockState());
                 rejected(() -> DistrictBuilder.build(level, district, origin));
                 check(level.getBlockState(terminalPos) == terrain && level.getBlockState(chest).is(Blocks.CHEST), "A refused build must not touch the world");
