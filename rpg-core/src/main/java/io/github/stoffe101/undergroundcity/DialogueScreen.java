@@ -107,12 +107,16 @@ public final class DialogueScreen extends UcScreen {
         UcUi.well(g, px + PAD, top, portraitW(), bottom - top);
         var mc = Minecraft.getInstance();
         if (mc.level != null && mc.level.getEntity(entityId) instanceof LivingEntity entity) {
-            // the citizen's floating name tag would be drawn across the portrait well: this screen shows the name in its own header
+            // the citizen's floating name tag would be drawn across the portrait well (the game shows it for a named entity that is under the
+            // crosshair, which this citizen is when you speak to them): this screen shows the name in its own header
             boolean tag = entity.isCustomNameVisible();
+            var dispatcher = mc.getEntityRenderDispatcher();
+            var looked = dispatcher.crosshairPickEntity;
             entity.setCustomNameVisible(false);
+            dispatcher.crosshairPickEntity = null;
             try {
                 InventoryScreen.renderEntityInInventoryFollowsMouse(g, px + PAD + portraitW() / 2, bottom - 8, 40, (px + PAD + portraitW() / 2) - mouseX, (bottom - 60) - mouseY, entity);
-            } finally { entity.setCustomNameVisible(tag); }
+            } finally { entity.setCustomNameVisible(tag); dispatcher.crosshairPickEntity = looked; }
         } else {
             UcUi.icon(g, titleIcon(), px + PAD + portraitW() / 2 - 8, top + 30, accent());
         }

@@ -88,9 +88,9 @@ Requested by the owner: prefer finished, high-quality mods and art over making o
 | Weeder Continued / original Weeder | NeoForge 1.21.x only / last Forge build 1.19.4 | All rights reserved | - | no 1.20.1 build exists | Not usable |
 | HempFarmer, Liert's CannaCraft, a "Pot Leaves" cannabis mod, Mystical Herbs | unverified | unverified | - | the pages could not be read from the cloud container (hosts refused) | Unverified; not evaluated |
 | Tobacconist | 4.1.0 (2026-10-12) | MIT | optional only | realistic tobacco farming, curing and blending; 6.4 MB | Not cannabis; kept as a possible later "licensed tobacco" idea only |
-| JEI / EMI | 15.71.0.224 beta / 1.1.24 | MIT / MIT | JEI: MezzConfig | recipe viewers; client-optional | Recommended later for any pack with this many recipes; not needed by the slice |
+| JEI / EMI | JEI 1.20.1-forge-15.56.0.205 (pinned) / EMI 1.1.24 | MIT / MIT | none for the pinned JEI | recipe viewers; client-optional | JEI is in the opt-in dev-pack set `qol`; it loads in a real client (its plugins and recipes register, the October 17 gallery run passed with it); EMI not evaluated. Not part of the default pack |
 | Patchouli | 1.20.1-85 | CC BY-NC-SA 3.0 | none | data-driven guide book | Possible later for a Founders' Handbook; our own Guide tab already exists |
-| Jade | 11.13.3 | CC BY-NC-SA 4.0 | none | block tooltips (crop growth, machine state) | Optional quality-of-life; not adopted |
+| Jade | 11.13.3 (pinned) | CC BY-NC-SA 4.0 | none | block tooltips (crop growth, machine state) | In the opt-in dev-pack set `qol`; it loads in a real client (plugins load, config syncs to the player); its tooltip overlay was not photographed. Not part of the default pack |
 | Modern UI | 3.12.0.1 | LGPL-3.0-or-later | client only, 25 MB | replaces the whole game's UI rendering | **Not adopted**: heavy and global; our own toolkit (`UcUi`, D-068) is verified at three resolutions |
 | owo-lib | - | MIT | - | Fabric / Quilt only (no Forge 1.20.1 build) | Not usable |
 

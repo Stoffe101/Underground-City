@@ -37,7 +37,7 @@ Farmer + Gunsmith through five levels and meaningful early research; defer the t
 
 ## Implemented skill trees (October 15, 2026)
 
-Skill trees for all four careers are live as Core datapack data with a legal path and an underground path on the
+Skill trees for all five careers are live as Core datapack data with a legal path and an underground path on the
 same character (D-049, D-050). See [legal and underground careers](legal-and-underground-careers.md) for the nodes,
 the contracts they unlock and the balance model. The research/blueprint lifecycle above is implemented for
 firearms only as contract rewards of TaCZ Blueprints items (when that mod is installed); a Core-owned research bench
