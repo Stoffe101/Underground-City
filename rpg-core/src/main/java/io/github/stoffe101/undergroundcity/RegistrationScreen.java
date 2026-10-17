@@ -31,11 +31,11 @@ public final class RegistrationScreen extends UcScreen {
         new City("blackwater", "BLACKWATER", UcUi.BLACKWATER, "Glass towers, a working harbour and nightlife on the water.",
             "Technicians, shippers, brokers", "Uneven enforcement", "Ironhaven, Valewood: about 4 min"));
     private static final List<Career> CAREERS = List.of(
-        new Career("farmer", "FARMER", UcUi.Icon.FARMER, 0xff86c45a, "Crops, greenhouses and estate supply", "Restricted cultivation, quiet bales"),
-        new Career("vintner", "VINTNER", UcUi.Icon.VINTNER, 0xffc279d6, "Wine, cellars and a licensed still", "An unlicensed still: moonshine"),
-        new Career("smith", "SMITH / ENGINEER", UcUi.Icon.SMITH, 0xffe07b39, "Steel and plating for the guard", "Unstamped plate, contraband armour"),
-        new Career("gunsmith", "GUNSMITH", UcUi.Icon.GUNSMITH, 0xffd9b455, "Licensed repairs and a dealer licence", "Unregistered builds, arms brokerage"),
-        new Career("technician", "TECHNICIAN", UcUi.Icon.TECHNICIAN, 0xff46c9e0, "Municipal repairs and security systems", "Bypass tooling, data recovery"));
+        new Career("farmer", "FARMER", UcUi.Icon.FARMER, 0xff86c45a, "Crops and greenhouses", "Restricted cultivation"),
+        new Career("vintner", "VINTNER", UcUi.Icon.VINTNER, 0xffc279d6, "Wine and cellars", "Moonshine and stills"),
+        new Career("smith", "SMITH/ENGINEER", UcUi.Icon.SMITH, 0xffe07b39, "Steel and plating", "Unstamped plate"),
+        new Career("gunsmith", "GUNSMITH", UcUi.Icon.GUNSMITH, 0xffd9b455, "Licensed repairs", "Unregistered arms"),
+        new Career("technician", "TECHNICIAN", UcUi.Icon.TECHNICIAN, 0xff46c9e0, "Municipal repairs", "Bypass tooling"));
 
     private int step, cityIndex = -1, careerIndex = -1;
     private boolean sending, qa;
@@ -227,13 +227,15 @@ public final class RegistrationScreen extends UcScreen {
         }
     }
 
-    private void renderStarterKit(GuiGraphics g, String career, int x, int y, int maxItems, boolean label) {
-        if (label) UcUi.display(g, font, "Starter kit", x, y + 4, UcUi.FAINT);
-        int ix = x + (label ? UcUi.displayWidth(font, "Starter kit") + 8 : 0);
+    /** The kit's items in a row that never leaves {@code width}: what does not fit is counted ("+2") instead of spilling over the next card. */
+    private void renderStarterKit(GuiGraphics g, String career, int x, int y, int width, boolean label) {
+        if (label) UcUi.display(g, font, "Kit", x, y + 4, UcUi.FAINT);
+        int ix = x + (label ? UcUi.displayWidth(font, "Kit") + 8 : 0);
         List<String> ids = kits.getOrDefault(career, List.of());
-        for (int i = 0; i < Math.min(maxItems, ids.size()); i++) {
-            g.renderItem(new ItemStack(TerminalScreen.item(ids.get(i))), ix + i * 18, y);
-        }
+        int room = Math.max(0, (width - (ix - x)) / 18);
+        int shown = ids.size() <= room ? ids.size() : Math.max(0, room - 1);
+        for (int i = 0; i < shown; i++) g.renderItem(new ItemStack(TerminalScreen.item(ids.get(i))), ix + i * 18, y);
+        if (shown < ids.size()) UcUi.display(g, font, "+" + (ids.size() - shown), ix + shown * 18 + 2, y + 4, UcUi.SOFT);
     }
 
     private void renderCareers(GuiGraphics g, int mouseX, int mouseY) {
@@ -258,7 +260,7 @@ public final class RegistrationScreen extends UcScreen {
             UcUi.wrapped(g, font, career.underground(), b[0] + 56, ty, b[2] - 62, UcUi.UNDERGROUND_TEXT, 2);
             int rule = b[1] + b[3] - 28;
             g.fill(b[0] + 6, rule, b[0] + b[2] - 6, rule + 1, 0xff243a4e);
-            renderStarterKit(g, career.id(), b[0] + 8, b[1] + b[3] - 22, 5, true);
+            renderStarterKit(g, career.id(), b[0] + 8, b[1] + b[3] - 22, b[2] - 16, true);
         }
         // the sixth cell is not a choice: it explains the two kinds of work every card names
         int[] n = cardBounds(CAREERS.size());
@@ -297,7 +299,7 @@ public final class RegistrationScreen extends UcScreen {
         y += 17;
         UcUi.display(g, font, "Pack", x, y, UcUi.PAPER_DIM);
         g.renderItem(new ItemStack(UndergroundCity.TERMINAL_ITEM.get()), x + 52, y - 5);
-        renderStarterKit(g, career.id(), x + 70, y - 5, 4, false);
+        renderStarterKit(g, career.id(), x + 70, y - 5, 5 * 18, false);
         y += 22;
         UcUi.text(g, font, "Filed with the registry of " + capital(city.id()) + ".", x, y, UcUi.PAPER_DIM);
         // a stamp box, because a registry would have one

@@ -179,7 +179,7 @@ public final class PropertyCacheBlockEntity extends RandomizableContainerBlockEn
             setChanged();
             level.playSound(null, worldPosition, net.minecraft.sounds.SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, net.minecraft.sounds.SoundSource.BLOCKS, 0.9f, 1.0f);
             level.sendParticles(net.minecraft.core.particles.ParticleTypes.END_ROD, worldPosition.getX() + 0.5, worldPosition.getY() + 1.1, worldPosition.getZ() + 0.5, 14, 0.3, 0.2, 0.3, 0.02);
-            Notice.send(player, Notice.Kind.LOOT, "A rare find", "There is something here worth more than the rest. Take it and go.");
+            Notice.send(player, Notice.Kind.LOOT, "A rare find", "Worth more than the rest. Take it and go.");
         }
     }
 

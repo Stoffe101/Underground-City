@@ -45,7 +45,18 @@ public final class UcToast implements Toast {
     }
 
     @Override public int width() { return 190; }
-    @Override public int height() { return body.isEmpty() ? 30 : 40; }
+    /** A plate grows with its words, up to three lines of them (still two of the game's 32-pixel toast slots). */
+    @Override public int height() { return body.isEmpty() ? 30 : 22 + 10 * lines().size(); }
+
+    private List<String> lines() {
+        if (lines == null) {
+            List<String> wrapped = UcUi.wrapLines(Minecraft.getInstance().font, body, width() - 32 - 6);
+            lines = wrapped.size() > 3 ? List.of(wrapped.get(0), wrapped.get(1), UcUi.fit(Minecraft.getInstance().font, String.join(" ", wrapped.subList(2, wrapped.size())), width() - 38)) : wrapped;
+        }
+        return lines;
+    }
+
+    private List<String> lines;
 
     @Override public Visibility render(GuiGraphics g, ToastComponent toasts, long visibleMs) {
         Minecraft mc = Minecraft.getInstance();
@@ -61,14 +72,11 @@ public final class UcToast implements Toast {
         g.fill(1, 1, 5, h - 1, accent);
         g.fill(5, 1, 6, h - 1, UcUi.shade(accent, 0.5f));
         UcUi.icon(g, icon(kind), 11, (h - 16) / 2, accent);
-        int tx = 32, tw = w - tx - 6;
+        int tx = 32;
         UcUi.display(g, font, title, tx, body.isEmpty() ? (h - 8) / 2 : 6, UcUi.TEXT);
         if (!body.isEmpty()) {
-            List<String> lines = UcUi.wrapLines(font, body, tw);
-            for (int i = 0; i < Math.min(2, lines.size()); i++) {
-                String line = i == 1 && lines.size() > 2 ? UcUi.fit(font, lines.get(1) + " " + lines.get(2), tw) : lines.get(i);
-                g.drawString(font, line, tx, 18 + i * 10, UcUi.SOFT, false);
-            }
+            List<String> shown = lines();
+            for (int i = 0; i < shown.size(); i++) g.drawString(font, shown.get(i), tx, 18 + i * 10, UcUi.SOFT, false);
         }
         return visibleMs < BASE_MS + (body.length() > 60 ? 1800L : 0L) ? Visibility.SHOW : Visibility.HIDE;
     }

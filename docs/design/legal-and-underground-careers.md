@@ -41,7 +41,8 @@ One skill point per level above 1, so a character at level 30 can afford any who
 | Technician | Bench Electronics | Municipal Repairs, Automation Installer, Security Systems | Signal Analysis (-5% exchange) | Bypass Tooling, Signal Scrubbing (-0.10 search), Data Brokerage |
 
 The trees are `data/underground_city/skill_trees/<career>.json`; `SkillRules` validates them (acyclic, level and
-cost bounds, effect caps, every underground node reachable only through a legal node).
+cost bounds, effect caps, a legal and an underground branch in every tree). The terminal draws a tree in three columns and at most five rows (a node sits one row below its
+lowest parent, never on a row of its own column's), so a deeper tree would hide skills behind the detail panel: `tests/test_skill_tree_layout.py` enforces the limit.
 
 ## Contracts
 
@@ -179,7 +180,7 @@ anti-cheat. Pads are numbered and use distinct colours, keys 1-4 work, and ESC c
 | --- | --- |
 | Skill trees, rules and persistence | implemented; pure rules and data tested (Python data tests, GameTests) |
 | Underground and legal contracts with rewards, trust and requirements | implemented; GameTests on the real datapack |
-| City law, contraband classification, checkpoint search, heat, no-reroll | implemented; GameTests. A zone can have a **post with a guard** (`/uc_checkpoints place`, D-062) who voices the search; the die is unchanged. A rider's vehicle hold (a Motorboat, a chest boat or cart) is searched with them and a parked vehicle is not; Immersive Vehicles' cargo is not covered (it is not a `Container`) |
+| City law, contraband classification, checkpoint search, heat, no-reroll | implemented; GameTests. A zone can have a **post with a guard** (`/uc_checkpoints place`, D-062) who voices the search; the die is unchanged. A rider's vehicle hold (a Motorboat, a chest boat or cart, or the crate parts of an Immersive Vehicles vehicle, D-077) is searched with them and a parked vehicle is not |
 | Exceptional loot and TaCZ gun NBT preservation | implemented; TaCZ cases run only in the `-PucPack=firearms` job |
 | Sable Leaf crop | implemented; GameTests |
 | Technician trace (server and client screen) | implemented; GameTests for the server rules; the client screen is captured by the visual harness; a scripted-player scenario (`trace`) drives the real screen with the real keyboard (see the sprint report for its result) |

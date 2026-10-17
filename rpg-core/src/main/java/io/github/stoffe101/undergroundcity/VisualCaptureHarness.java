@@ -247,11 +247,13 @@ public final class VisualCaptureHarness {
             // the corner notices over a terminal: an order taken, a delivery paid with a level-up, a search at a checkpoint and a rare find
             TerminalScreen screen=new TerminalScreen(BlockPos.ZERO,fixture(2,8,true,true));
             mc.setScreen(screen); screen.showPage(TerminalScreen.Page.CONTRACTS);
-            var toasts=mc.getToasts();
-            toasts.addToast(new UcToast(Notice.Kind.ORDER,"Order accepted","Bake the canteen bread order"));
-            toasts.addToast(new UcToast(Notice.Kind.DELIVERED,"Delivered","Bake the canteen bread order: +36 credits, +180 XP"));
-            toasts.addToast(new UcToast(Notice.Kind.HEAT,"Contraband seized","1 stack taken, 40 credits fined. Heat 2 in Valewood."));
-            toasts.addToast(new UcToast(Notice.Kind.LOOT,"A rare find","There is something here worth more than the rest. Take it and go."));
+            // The game draws toasts after the screen, which is after the event this harness grabs its frame in, and they time out; so the plates are
+            // drawn by hand, stacked, at a fixed moment. (In the game itself at most two of these fit on screen at once and the others wait their turn.)
+            noticeCaptures.clear();
+            noticeCaptures.add(new UcToast(Notice.Kind.ORDER,"Order accepted","Bake the canteen bread order"));
+            noticeCaptures.add(new UcToast(Notice.Kind.DELIVERED,"Delivered","Bake the canteen bread order: +36 credits, +180 XP"));
+            noticeCaptures.add(new UcToast(Notice.Kind.HEAT,"Contraband seized","1 stack taken, 40 credits fined. Heat 2 in Valewood."));
+            noticeCaptures.add(new UcToast(Notice.Kind.LOOT,"A rare find","Worth more than the rest. Take it and go."));
         } else if(capture.challenge!=null && capture.challenge.startsWith("ledger-")) {
             mc.setScreen(new LedgerScreen(ledgerFixture()));
         } else if(capture.challenge!=null && capture.challenge.startsWith("dialogue-")) {
@@ -274,6 +276,7 @@ public final class VisualCaptureHarness {
         }
         frames=0;
     }
+    private static final java.util.List<UcToast> noticeCaptures=new java.util.ArrayList<>();
     @SubscribeEvent public static void tick(TickEvent.RenderTickEvent event) {
         if(!ENABLED||started||completed||event.phase!=TickEvent.Phase.END) return;
         Minecraft mc=Minecraft.getInstance();
@@ -291,6 +294,17 @@ public final class VisualCaptureHarness {
                 completed=true; mc.stop();
             } catch(java.io.IOException error) { throw new IllegalStateException("Visual capture failed",error); }
             return;
+        }
+        if(cases.get(current).challenge!=null && cases.get(current).challenge.startsWith("notices-")) {
+            var g=event.getGuiGraphics();
+            int y=4;
+            for(UcToast toast:noticeCaptures) {
+                g.pose().pushPose();
+                g.pose().translate(g.guiWidth()-toast.width()-2,y,400);
+                toast.render(g,mc.getToasts(),1000L);
+                g.pose().popPose();
+                y+=toast.height()+4;
+            }
         }
         if(++frames<12) return;
         String filename=cases.get(current).name+".png";

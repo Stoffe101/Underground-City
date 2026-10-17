@@ -36,7 +36,7 @@ public final class TerminalScreen extends UcScreen {
     /** What survives a server refresh of an open terminal. */
     public record Carry(Page page, boolean underground, String jobId, String skillId) {}
 
-    private static final int LOT = 4, ROW_H = 28, MAX_OFFERS = 16, TIER_MAX = 6;
+    private static final int LOT = 4, ROW_H = 28, MAX_OFFERS = 16, NODE_H = 33;
 
     private Page current = Page.CONTRACTS;
     private boolean undergroundView;
@@ -49,7 +49,7 @@ public final class TerminalScreen extends UcScreen {
     private final UcButton[] buyOne = new UcButton[MAX_OFFERS], buyLot = new UcButton[MAX_OFFERS];
     // the skill tree, laid out once per snapshot and size: node cards by index
     private int[] nodeX = new int[0], nodeY = new int[0], nodeTier = new int[0], nodeCol = new int[0];
-    private int nodeW, nodeH = 31;
+    private int nodeW, nodeH = NODE_H;
 
     public TerminalScreen() { this(null, TerminalData.offline(), null); }
     public TerminalScreen(BlockPos position, TerminalData data) { this(position, data, null); }
@@ -363,20 +363,33 @@ public final class TerminalScreen extends UcScreen {
         int gap = 6;
         int colW = (cw - 2 * gap) / 3;
         nodeW = colW;
-        int maxTier = 0;
-        for (int i = 0; i < n; i++) { nodeTier[i] = depth(i, index, 0); maxTier = Math.max(maxTier, nodeTier[i]); }
-        int[] perCell = new int[3 * (TIER_MAX + 2)];
-        int treeTop = cy + 16, treeH = ch - 16 - 68;
-        int step = Math.max(nodeH + 4, Math.min(42, (treeH - nodeH) / Math.max(1, maxTier)));
-        for (int i = 0; i < n; i++) {
-            TerminalData.SkillRow row = data.skills().get(i);
-            int col = row.branch().equals("legal") ? 0 : row.branch().equals("underground") ? 2 : 1;
+        for (int i = 0; i < n; i++) nodeTier[i] = depth(i, index, 0);
+        // A node sits one row below its lowest parent and never on the row of another node in its own column, so two skills that follow the same
+        // parent are stacked instead of drawn on top of each other (the second one used to be hidden).
+        int[] row = new int[n];
+        int[] lastInColumn = {-1, -1, -1};
+        Integer[] order = new Integer[n];
+        for (int i = 0; i < n; i++) order[i] = i;
+        java.util.Arrays.sort(order, java.util.Comparator.<Integer>comparingInt(i -> nodeTier[i]).thenComparingInt(i -> i));
+        int maxRow = 0;
+        for (int i : order) {
+            TerminalData.SkillRow skill = data.skills().get(i);
+            int col = skill.branch().equals("legal") ? 0 : skill.branch().equals("underground") ? 2 : 1;
             nodeCol[i] = col;
-            int tier = Math.min(TIER_MAX, nodeTier[i]);
-            int slot = perCell[col * (TIER_MAX + 2) + tier]++;
-            nodeX[i] = cx + col * (colW + gap);
-            nodeY[i] = treeTop + tier * step + slot * 0;
-            if (slot > 0) nodeY[i] += slot * 0;
+            int r = 0;
+            for (String id : skill.requires()) { Integer parent = index.get(id); if (parent != null) r = Math.max(r, row[parent] + 1); }
+            r = Math.max(r, lastInColumn[col] + 1);
+            row[i] = r;
+            lastInColumn[col] = r;
+            maxRow = Math.max(maxRow, r);
+        }
+        int treeTop = cy + 16, treeH = ch - 16 - 68;
+        // Up to five rows keep the full node (two title lines and the state); a deeper tree gets shorter nodes with one title line rather than a scroll.
+        nodeH = Math.max(24, Math.min(NODE_H, (treeH - 3 * maxRow) / (maxRow + 1)));
+        int step = Math.max(nodeH + 3, Math.min(42, (treeH - nodeH) / Math.max(1, maxRow)));
+        for (int i = 0; i < n; i++) {
+            nodeX[i] = cx + nodeCol[i] * (colW + gap);
+            nodeY[i] = treeTop + row[i] * step;
         }
     }
 
@@ -619,11 +632,13 @@ public final class TerminalScreen extends UcScreen {
         UcUi.icon(g, icon, x + 5, y + 7, row.state() == 0 ? UcUi.FAINT : color);
         // the full name on up to two lines, then the state: never a truncated skill name
         List<String> lines = UcUi.wrapLines(font, row.title(), w - 32);
-        if (lines.size() > 2) lines = List.of(lines.get(0), UcUi.fit(font, String.join(" ", lines.subList(1, lines.size())), w - 32));
-        int ty = lines.size() == 1 ? y + 6 : y + 3;
+        int maxLines = h >= 29 ? 2 : 1;
+        if (lines.size() > maxLines) lines = maxLines == 1 ? List.of(UcUi.fit(font, String.join(" ", lines), w - 32))
+            : List.of(lines.get(0), UcUi.fit(font, String.join(" ", lines.subList(1, lines.size())), w - 32));
+        int ty = lines.size() == 2 ? y + 2 : y + (h >= 29 ? 6 : 3);
         for (String line : lines) { g.drawString(font, line, x + 28, ty, row.state() == 0 ? UcUi.DIM : UcUi.TEXT, false); ty += 9; }
         String sub = row.state() == 2 ? "OWNED" : row.state() == 1 ? "READY  " + row.cost() + " pt" : "LOCKED  L" + row.minLevel();
-        UcUi.display(g, font, sub, x + 28, y + h - 11, row.state() == 2 ? UcUi.OK : row.state() == 1 ? UcUi.AMBER : UcUi.FAINT);
+        UcUi.display(g, font, sub, x + 28, y + h - 10, row.state() == 2 ? UcUi.OK : row.state() == 1 ? UcUi.AMBER : UcUi.FAINT);
     }
 
     private void renderSkillDetail(GuiGraphics g) {
