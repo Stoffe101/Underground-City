@@ -21,6 +21,78 @@ import java.util.List;
 final class OptionalModProbes {
     private OptionalModProbes() {}
 
+    /**
+     * Puts a real Immersive Vehicles vehicle into the world the way a player does (its item used on a block), fits a real crate part in the vehicle's
+     * crate slot and fills the crate. Returns the vehicle's Minecraft entity, or null with the reasons in {@code problems}. Everything is reached by
+     * reflection; the stacks are given to the crate through the mod's own item wrapper.
+     */
+    static Entity placeVehicleWithCrate(net.minecraft.server.level.ServerPlayer player, net.minecraft.core.BlockPos ground, String vehicleItem, String crateItem,
+                                        List<ItemStack> contents, List<String> problems) {
+        try {
+            net.minecraft.world.item.Item vehicle = ForgeRegistries.ITEMS.getValue(ResourceLocation.parse(vehicleItem));
+            net.minecraft.world.item.Item crate = ForgeRegistries.ITEMS.getValue(ResourceLocation.parse(crateItem));
+            if (vehicle == null || vehicle == Items.AIR || crate == null || crate == Items.AIR) { problems.add("Item not registered: " + vehicleItem + " / " + crateItem); return null; }
+            player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, new ItemStack(vehicle));
+            var hit = new net.minecraft.world.phys.BlockHitResult(net.minecraft.world.phys.Vec3.atCenterOf(ground), net.minecraft.core.Direction.UP, ground, false);
+            player.getMainHandItem().useOn(new net.minecraft.world.item.context.UseOnContext(player, net.minecraft.world.InteractionHand.MAIN_HAND, hit));
+            Entity placed = null;
+            for (Entity each : player.serverLevel().getEntitiesOfClass(Entity.class, new net.minecraft.world.phys.AABB(ground).inflate(6))) {
+                if (each.getClass().getName().equals("mcinterface1201.BuilderEntityExisting")) { placed = each; break; }
+            }
+            if (placed == null) { problems.add("The vehicle item did not place a vehicle"); return null; }
+            ClassLoader loader = placed.getClass().getClassLoader();
+            Object mts = field(placed.getClass(), "entity").get(placed);
+            Class<?> wrapperItem = Class.forName("mcinterface1201.WrapperItemStack", false, loader);
+            var wrap = wrapperItem.getDeclaredConstructor(ItemStack.class);
+            wrap.setAccessible(true);
+            Object wrapperPlayer = Class.forName("mcinterface1201.WrapperPlayer", false, loader).getMethod("getWrapperFor", net.minecraft.world.entity.player.Player.class).invoke(null, player);
+            // the crate slot: the vehicle's first part slot that takes an interactable_crate
+            Object definition = field(mts.getClass(), "definition").get(mts);
+            List<?> slots = (List<?>) field(definition.getClass(), "parts").get(definition);
+            int index = -1;
+            for (int i = 0; i < slots.size() && index < 0; i++) {
+                Object types = field(slots.get(i).getClass(), "types").get(slots.get(i));
+                if (((List<?>) types).contains("interactable_crate")) index = i;
+            }
+            if (index < 0) { problems.add("The vehicle has no crate slot"); return placed; }
+            Object stack = wrap.newInstance(new ItemStack(crate));
+            Class<?> iStack = Class.forName("minecrafttransportsimulator.mcinterface.IWrapperItemStack", false, loader);
+            Class<?> iPlayer = Class.forName("minecrafttransportsimulator.mcinterface.IWrapperPlayer", false, loader);
+            Object part = null;
+            for (var method : mts.getClass().getMethods()) {
+                if (method.getName().equals("addPartFromStack") && method.getParameterCount() == 5) { part = method.invoke(mts, stack, wrapperPlayer, index, true, false); break; }
+            }
+            if (part == null) { problems.add("The crate part was not accepted by slot " + index); return placed; }
+            Object inventory = field(part.getClass(), "inventory").get(part);
+            if (inventory == null) { problems.add("The crate part has no inventory"); return placed; }
+            var setStack = inventory.getClass().getMethod("setStack", iStack, int.class);
+            for (int i = 0; i < contents.size(); i++) setStack.invoke(inventory, wrap.newInstance(contents.get(i)), i);
+            return placed;
+        } catch (ReflectiveOperationException | RuntimeException error) {
+            problems.add("Immersive Vehicles could not be driven by reflection: " + error);
+            return null;
+        }
+    }
+
+    /** The parts of a placed vehicle (an {@code AEntityF_Multipart}), by simple class name, as the mod's own objects. */
+    static List<Object> vehicleParts(Entity placed, String simpleName) throws ReflectiveOperationException {
+        Object mts = field(placed.getClass(), "entity").get(placed);
+        List<Object> found = new ArrayList<>();
+        for (Object part : (List<?>) field(mts.getClass(), "allParts").get(mts)) if (part.getClass().getSimpleName().equals(simpleName)) found.add(part);
+        return found;
+    }
+
+    private static java.lang.reflect.Field field(Class<?> type, String name) throws NoSuchFieldException {
+        for (Class<?> c = type; c != null; c = c.getSuperclass()) {
+            try {
+                java.lang.reflect.Field found = c.getDeclaredField(name);
+                found.setAccessible(true);
+                return found;
+            } catch (NoSuchFieldException ignored) { /* look in the superclass */ }
+        }
+        throw new NoSuchFieldException(name + " in " + type.getName());
+    }
+
     /** Modern Life's motorboat must keep a 27-slot hold, named/damaged/tagged stacks included, through an NBT round trip. */
     static List<String> boatCargoRoundTrip(ServerLevel level) {
         List<String> problems = new ArrayList<>();

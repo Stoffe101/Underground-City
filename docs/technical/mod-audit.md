@@ -66,7 +66,7 @@ Hash-pinned Modrinth releases used as **runtime-only development dependencies**;
 | TaCZ | 1.1.8-hotfix2 | GPL-3.0-only code; default gun pack CC BY-NC-ND 4.0 | Core GameTests with it pass (hosted); production-style boot | firing a gun in a client; any multiplayer behaviour |
 | TaCZ Blueprints | 0.1.3 | All rights reserved | Core GameTests pass; boot; Core's blueprint rewards name its items | starter-gun configuration was not written; the accepted `enabledGuns` spelling was not exercised |
 | Modern Life | 1.75 | All rights reserved | production-style boot; the Motorboat keeps 27 slots of named, damaged and NBT-tagged items through a save and load | cannot boot under ForgeGradle (reads its config in its constructor); no one drove or sailed it |
-| Immersive Vehicles | 24.0.0 | All rights reserved | boots with Core, Q Shop and the others | dev-environment runs do not register content-pack items (23 recipe parse errors "Unknown item mts:..."); driving untested |
+| Immersive Vehicles | 24.0.0 | All rights reserved | boots with Core, Q Shop and the others | dev-environment runs do not register content-pack items (23 recipe parse errors "Unknown item mts:..."); a scripted-player drive passed (October 16); a vehicle's crate parts are not a `Container` and are read by reflection for checkpoint searches (D-077, GameTested with a real Quad and crate on October 17); no human has driven it |
 | Official Content Pack | V29 | All rights reserved | 470 `mts:mtsofficialpack.*` items registered on the production-style server | no vehicle placed |
 | Official Automobile Pack | V3 | All rights reserved | 137 `mts:oamp.*` items registered | no vehicle placed |
 
