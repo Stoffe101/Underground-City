@@ -237,34 +237,6 @@
       "notes": "LGPL-3.0-only. Pinned at 9.2.14 (Forge 1.20.1); Vinery needs >= 9.0.8. A library, never an authority."
     },
     {
-      "id": "geckolib",
-      "name": "Geckolib",
-      "slug": "geckolib",
-      "project_id": "8BmcQJ2H",
-      "version_id": "aC5KMoNg",
-      "version_number": "4.8.4",
-      "published": "2026-06-20",
-      "filename": "geckolib-forge-1.20.1-4.8.4.jar",
-      "size": 1038209,
-      "sha1": "50e1407869ef0e909e3bdda9328b8bd7db03fdc0",
-      "sha512": "443a321a293e3cb92fbbc3c97a38b179a45d1db703cd7bdb123270a9e04e7b7d67d5b06cd8e77a6d4d9139e033e901b9660cccf53ad5f9beaae6d06eae68febf",
-      "license": "MIT",
-      "mod_id": "geckolib",
-      "role": "animation library Tadacko's Drinks requires",
-      "sets": [
-        "vintner"
-      ],
-      "requires": [],
-      "placement": "classpath",
-      "side": {
-        "client": "required",
-        "server": "optional"
-      },
-      "source_url": "https://modrinth.com/mod/geckolib/version/aC5KMoNg",
-      "distribution": "download from the author's page; never commit the binary",
-      "notes": "MIT. Pinned at 4.8.4; Tadacko's Drinks needs >= 4.7."
-    },
-    {
       "id": "vinery",
       "name": "[Let's Do] Vinery",
       "slug": "lets-do-vinery",
@@ -325,34 +297,32 @@
       "notes": "[Let's Do] Farm & Charm 1.0.14. Custom licence (see vinery). Candidate for the Farmer's legal crops (D-067, proposed): not adopted until inspected."
     },
     {
-      "id": "tadackos_drinks",
-      "name": "Tadacko's Drinks",
-      "slug": "tadackos-drinks",
-      "project_id": "bDMTLPGY",
-      "version_id": "1wlnEn0I",
-      "version_number": "1.2.0+1.20.1-forge",
-      "published": "2026-10-15",
-      "filename": "tadackosdrinks-1.2.0+1.20.1-forge.jar",
-      "size": 1661705,
-      "sha1": "660bae86e844ba95aa143127e3df035e84c59614",
-      "sha512": "7394038357329545aedc9cab60c8d00099ad929d91808187e03456d2aa3a3efe8f87214934e4cc3842ecb8bd229a855819376024b270c09254e060f700c8f620",
-      "license": "MIT",
-      "mod_id": "tadackosdrinks",
-      "role": "candidate distilling provider (pot still, column still, condenser) for the Vintner's underground spirits",
+      "id": "kaleidoscope_tavern",
+      "name": "Kaleidoscope Tavern",
+      "slug": "kaleidoscopetavern",
+      "project_id": "r9RZvhiJ",
+      "version_id": "mUnU2u9e",
+      "version_number": "1.2.0-forge+mc1.20.1",
+      "published": "2026-07-01",
+      "filename": "kaleidoscopetavern-1.2.0-forge+mc1.20.1.jar",
+      "size": 1749797,
+      "sha1": "2e8f6370fb4acae9796705b6e84716c4a398b9c5",
+      "sha512": "485bcee9241e97856bb4bdf52d9752911a12c68d770048bbbb8400a8043ba02b312df94aa98d240abe03a94dc2ad0b627327a0029dd2dfa209d82cd1a6677865",
+      "license": "CC-BY-NC-SA-4.0",
+      "mod_id": "kaleidoscope_tavern",
+      "role": "candidate spirits and cocktail provider (barrel brewing: vodka, whiskey, rum, brandy) for the Vintner's underground path",
       "sets": [
         "vintner"
       ],
-      "requires": [
-        "geckolib"
-      ],
+      "requires": [],
       "placement": "classpath",
       "side": {
         "client": "required",
         "server": "required"
       },
-      "source_url": "https://modrinth.com/mod/tadackos-drinks/version/1wlnEn0I",
+      "source_url": "https://modrinth.com/mod/kaleidoscopetavern/version/mUnU2u9e",
       "distribution": "download from the author's page; never commit the binary",
-      "notes": "Tadacko's Drinks 1.2.0, MIT. Fermented and distilled drinks with the real processes (wash, low wine, high-proof spirit). Also ships its own grapes and wine, which would overlap Vinery: one provider must own wine (D-067, proposed). Very new (published 2026-10-15, ~130 downloads): treated as unproven."
+      "notes": "Kaleidoscope Tavern 1.2.0, BSD-3-Clause code and CC BY-NC-SA 4.0 assets (private, non-commercial play; never redistributed). Barrel recipes turn water and potato, wheat or sugar cane into unaged spirits in two minutes (a crude home brew, not a still). Chosen over Tadacko's Drinks, whose pot and column stills are the better fit but whose 1.0.0 to 1.2.0 jars crash a dedicated server at mod construction (a client-only class loaded by an automatic event subscriber). Not adopted until a dedicated-server boot and a real-client inspection of this exact jar are recorded."
     }
   ],
   "external": [

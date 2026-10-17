@@ -8390,6 +8390,1052 @@
   {
    "op": "fill",
    "from": [
+    30,
+    -1,
+    40
+   ],
+   "to": [
+    24,
+    -1,
+    46
+   ],
+   "block": "minecraft:spruce_planks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    30,
+    0,
+    40
+   ],
+   "to": [
+    24,
+    3,
+    40
+   ],
+   "block": "minecraft:mud_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    30,
+    0,
+    46
+   ],
+   "to": [
+    24,
+    3,
+    46
+   ],
+   "block": "minecraft:mud_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    30,
+    0,
+    40
+   ],
+   "to": [
+    30,
+    3,
+    46
+   ],
+   "block": "minecraft:mud_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    24,
+    0,
+    40
+   ],
+   "to": [
+    24,
+    3,
+    46
+   ],
+   "block": "minecraft:mud_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    30,
+    0,
+    40
+   ],
+   "to": [
+    24,
+    0,
+    40
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    30,
+    0,
+    46
+   ],
+   "to": [
+    24,
+    0,
+    46
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    30,
+    0,
+    40
+   ],
+   "to": [
+    30,
+    0,
+    46
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    24,
+    0,
+    40
+   ],
+   "to": [
+    24,
+    0,
+    46
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    30,
+    0,
+    40
+   ],
+   "to": [
+    30,
+    3,
+    40
+   ],
+   "block": "minecraft:stripped_dark_oak_log"
+  },
+  {
+   "op": "fill",
+   "from": [
+    24,
+    0,
+    40
+   ],
+   "to": [
+    24,
+    3,
+    40
+   ],
+   "block": "minecraft:stripped_dark_oak_log"
+  },
+  {
+   "op": "fill",
+   "from": [
+    30,
+    0,
+    46
+   ],
+   "to": [
+    30,
+    3,
+    46
+   ],
+   "block": "minecraft:stripped_dark_oak_log"
+  },
+  {
+   "op": "fill",
+   "from": [
+    24,
+    0,
+    46
+   ],
+   "to": [
+    24,
+    3,
+    46
+   ],
+   "block": "minecraft:stripped_dark_oak_log"
+  },
+  {
+   "op": "fill",
+   "from": [
+    29,
+    0,
+    41
+   ],
+   "to": [
+    25,
+    3,
+    45
+   ],
+   "block": "minecraft:air"
+  },
+  {
+   "op": "fill",
+   "from": [
+    30,
+    4,
+    40
+   ],
+   "to": [
+    24,
+    4,
+    46
+   ],
+   "block": "minecraft:dark_oak_planks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    30,
+    4,
+    40
+   ],
+   "to": [
+    24,
+    4,
+    40
+   ],
+   "block": "minecraft:mud_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    30,
+    4,
+    46
+   ],
+   "to": [
+    24,
+    4,
+    46
+   ],
+   "block": "minecraft:mud_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    29,
+    5,
+    40
+   ],
+   "to": [
+    25,
+    5,
+    40
+   ],
+   "block": "minecraft:mud_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    29,
+    5,
+    46
+   ],
+   "to": [
+    25,
+    5,
+    46
+   ],
+   "block": "minecraft:mud_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    28,
+    6,
+    40
+   ],
+   "to": [
+    26,
+    6,
+    40
+   ],
+   "block": "minecraft:mud_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    28,
+    6,
+    46
+   ],
+   "to": [
+    26,
+    6,
+    46
+   ],
+   "block": "minecraft:mud_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    27,
+    7,
+    40
+   ],
+   "to": [
+    27,
+    7,
+    40
+   ],
+   "block": "minecraft:mud_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    27,
+    7,
+    46
+   ],
+   "to": [
+    27,
+    7,
+    46
+   ],
+   "block": "minecraft:mud_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    31,
+    4,
+    39
+   ],
+   "to": [
+    31,
+    4,
+    47
+   ],
+   "block": "minecraft:brick_stairs[facing=west,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    23,
+    4,
+    39
+   ],
+   "to": [
+    23,
+    4,
+    47
+   ],
+   "block": "minecraft:brick_stairs[facing=east,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    30,
+    5,
+    39
+   ],
+   "to": [
+    30,
+    5,
+    47
+   ],
+   "block": "minecraft:brick_stairs[facing=west,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    24,
+    5,
+    39
+   ],
+   "to": [
+    24,
+    5,
+    47
+   ],
+   "block": "minecraft:brick_stairs[facing=east,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    29,
+    6,
+    39
+   ],
+   "to": [
+    29,
+    6,
+    47
+   ],
+   "block": "minecraft:brick_stairs[facing=west,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    25,
+    6,
+    39
+   ],
+   "to": [
+    25,
+    6,
+    47
+   ],
+   "block": "minecraft:brick_stairs[facing=east,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    28,
+    7,
+    39
+   ],
+   "to": [
+    28,
+    7,
+    47
+   ],
+   "block": "minecraft:brick_stairs[facing=west,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    26,
+    7,
+    39
+   ],
+   "to": [
+    26,
+    7,
+    47
+   ],
+   "block": "minecraft:brick_stairs[facing=east,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    27,
+    7,
+    39
+   ],
+   "to": [
+    27,
+    7,
+    47
+   ],
+   "block": "minecraft:bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    24,
+    0,
+    43
+   ],
+   "to": [
+    24,
+    1,
+    43
+   ],
+   "block": "minecraft:air"
+  },
+  {
+   "op": "block",
+   "at": [
+    24,
+    0,
+    43
+   ],
+   "block": "minecraft:dark_oak_door[facing=west,half=lower,hinge=left,open=false]"
+  },
+  {
+   "op": "block",
+   "at": [
+    24,
+    1,
+    43
+   ],
+   "block": "minecraft:dark_oak_door[facing=west,half=upper,hinge=left,open=false]"
+  },
+  {
+   "op": "block",
+   "at": [
+    27,
+    3,
+    43
+   ],
+   "block": "minecraft:lantern[hanging=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    23,
+    0,
+    42
+   ],
+   "block": "minecraft:potted_azalea_bush"
+  },
+  {
+   "op": "block",
+   "at": [
+    23,
+    0,
+    44
+   ],
+   "block": "minecraft:potted_fern"
+  },
+  {
+   "op": "block",
+   "at": [
+    24,
+    1,
+    41
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    23,
+    1,
+    40
+   ],
+   "block": "minecraft:dark_oak_trapdoor[facing=west,half=bottom,open=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    23,
+    1,
+    42
+   ],
+   "block": "minecraft:dark_oak_trapdoor[facing=west,half=bottom,open=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    24,
+    1,
+    45
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    23,
+    1,
+    44
+   ],
+   "block": "minecraft:dark_oak_trapdoor[facing=west,half=bottom,open=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    23,
+    1,
+    46
+   ],
+   "block": "minecraft:dark_oak_trapdoor[facing=west,half=bottom,open=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    30,
+    1,
+    42
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    30,
+    1,
+    44
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    28,
+    1,
+    40
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    28,
+    1,
+    46
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    26,
+    1,
+    40
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    26,
+    1,
+    46
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "sign",
+   "at": [
+    23,
+    2,
+    43
+   ],
+   "block": "minecraft:dark_oak_wall_sign[facing=west]",
+   "lines": [
+    "WINE CELLAR",
+    "Lucien Faure",
+    "Orders daily"
+   ],
+   "color": "black",
+   "glow": false
+  },
+  {
+   "op": "terminal",
+   "at": [
+    29,
+    0,
+    42
+   ],
+   "facing": "west"
+  },
+  {
+   "op": "block",
+   "at": [
+    27,
+    0,
+    41
+   ],
+   "block": "minecraft:cauldron[level=0]"
+  },
+  {
+   "op": "npc",
+   "at": [
+    28,
+    0,
+    42
+   ],
+   "role": "employer",
+   "name": "Lucien Faure - Cellar Master",
+   "profession": "leatherworker",
+   "lines": [
+    "Table wine for the tavern, estate cellars, a still column for the co-op: the orders are on the terminal. Wine is patience in a bottle.",
+    "Strong spirit is another matter. Valewood licenses distillers and Ironhaven allows none. A back bar there pays well for bottles with no stamp.",
+    "Keep your head down and the heat fades. A fine is cheaper than a reputation, and a seizure is neither."
+   ],
+   "career": "vintner",
+   "terminal": [
+    29,
+    0,
+    42
+   ]
+  },
+  {
+   "op": "fill",
+   "from": [
+    28,
+    0,
+    43
+   ],
+   "to": [
+    25,
+    0,
+    43
+   ],
+   "block": "minecraft:purple_carpet"
+  },
+  {
+   "op": "fill",
+   "from": [
+    28,
+    0,
+    41
+   ],
+   "to": [
+    28,
+    1,
+    41
+   ],
+   "block": "minecraft:bookshelf"
+  },
+  {
+   "op": "block",
+   "at": [
+    26,
+    0,
+    45
+   ],
+   "block": "minecraft:spruce_fence"
+  },
+  {
+   "op": "block",
+   "at": [
+    26,
+    1,
+    45
+   ],
+   "block": "minecraft:spruce_slab[type=bottom]"
+  },
+  {
+   "op": "block",
+   "at": [
+    27,
+    0,
+    45
+   ],
+   "block": "minecraft:spruce_stairs[facing=west,half=bottom]"
+  },
+  {
+   "op": "block",
+   "at": [
+    25,
+    0,
+    45
+   ],
+   "block": "minecraft:potted_fern"
+  },
+  {
+   "op": "block",
+   "at": [
+    26,
+    0,
+    41
+   ],
+   "block": "vinery:fermentation_barrel[facing=south]",
+   "requires_mod": "vinery"
+  },
+  {
+   "op": "block",
+   "at": [
+    25,
+    0,
+    41
+   ],
+   "block": "vinery:grapevine_pot",
+   "requires_mod": "vinery"
+  },
+  {
+   "op": "block",
+   "at": [
+    26,
+    0,
+    42
+   ],
+   "block": "minecraft:barrel[facing=up]"
+  },
+  {
+   "op": "block",
+   "at": [
+    25,
+    0,
+    42
+   ],
+   "block": "minecraft:barrel[facing=up]"
+  },
+  {
+   "op": "block",
+   "at": [
+    25,
+    0,
+    44
+   ],
+   "block": "vinery:oak_wine_rack_big[facing=west]",
+   "requires_mod": "vinery"
+  },
+  {
+   "op": "block",
+   "at": [
+    25,
+    0,
+    43
+   ],
+   "block": "vinery:basket",
+   "requires_mod": "vinery"
+  },
+  {
+   "op": "block",
+   "at": [
+    25,
+    1,
+    44
+   ],
+   "block": "minecraft:barrel[facing=up]"
+  },
+  {
+   "op": "block",
+   "at": [
+    29,
+    1,
+    45
+   ],
+   "block": "kaleidoscope_tavern:barrel",
+   "requires_mod": "kaleidoscope_tavern"
+  },
+  {
+   "op": "block",
+   "at": [
+    29,
+    0,
+    45
+   ],
+   "block": "minecraft:barrel[facing=up]"
+  },
+  {
+   "op": "block",
+   "at": [
+    29,
+    0,
+    45
+   ],
+   "block": "minecraft:red_bed[facing=north,part=foot]"
+  },
+  {
+   "op": "block",
+   "at": [
+    29,
+    0,
+    44
+   ],
+   "block": "minecraft:red_bed[facing=north,part=head]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    2,
+    -1,
+    40
+   ],
+   "to": [
+    8,
+    -1,
+    45
+   ],
+   "block": "minecraft:grass_block"
+  },
+  {
+   "op": "fill",
+   "from": [
+    3,
+    -1,
+    41
+   ],
+   "to": [
+    7,
+    -1,
+    44
+   ],
+   "block": "minecraft:farmland[moisture=7]"
+  },
+  {
+   "op": "block",
+   "at": [
+    5,
+    -1,
+    42
+   ],
+   "block": "minecraft:water"
+  },
+  {
+   "op": "block",
+   "at": [
+    5,
+    -1,
+    43
+   ],
+   "block": "minecraft:water"
+  },
+  {
+   "op": "fill",
+   "from": [
+    2,
+    0,
+    40
+   ],
+   "to": [
+    8,
+    0,
+    40
+   ],
+   "block": "minecraft:spruce_fence"
+  },
+  {
+   "op": "fill",
+   "from": [
+    2,
+    0,
+    45
+   ],
+   "to": [
+    8,
+    0,
+    45
+   ],
+   "block": "minecraft:spruce_fence"
+  },
+  {
+   "op": "fill",
+   "from": [
+    2,
+    0,
+    41
+   ],
+   "to": [
+    2,
+    0,
+    44
+   ],
+   "block": "minecraft:spruce_fence"
+  },
+  {
+   "op": "fill",
+   "from": [
+    8,
+    0,
+    41
+   ],
+   "to": [
+    8,
+    0,
+    44
+   ],
+   "block": "minecraft:spruce_fence"
+  },
+  {
+   "op": "fill",
+   "from": [
+    8,
+    0,
+    42
+   ],
+   "to": [
+    8,
+    0,
+    42
+   ],
+   "block": "minecraft:air"
+  },
+  {
+   "op": "block",
+   "at": [
+    3,
+    0,
+    41
+   ],
+   "block": "vinery:red_grape_bush[age=3]",
+   "requires_mod": "vinery"
+  },
+  {
+   "op": "block",
+   "at": [
+    3,
+    0,
+    43
+   ],
+   "block": "vinery:red_grape_bush[age=2]",
+   "requires_mod": "vinery"
+  },
+  {
+   "op": "block",
+   "at": [
+    7,
+    0,
+    41
+   ],
+   "block": "vinery:white_grape_bush[age=3]",
+   "requires_mod": "vinery"
+  },
+  {
+   "op": "block",
+   "at": [
+    7,
+    0,
+    43
+   ],
+   "block": "vinery:white_grape_bush[age=1]",
+   "requires_mod": "vinery"
+  },
+  {
+   "op": "block",
+   "at": [
+    4,
+    0,
+    41
+   ],
+   "block": "minecraft:sweet_berry_bush[age=3]"
+  },
+  {
+   "op": "block",
+   "at": [
+    6,
+    0,
+    44
+   ],
+   "block": "minecraft:sweet_berry_bush[age=2]"
+  },
+  {
+   "op": "block",
+   "at": [
+    4,
+    0,
+    44
+   ],
+   "block": "minecraft:potted_fern"
+  },
+  {
+   "op": "block",
+   "at": [
+    6,
+    0,
+    41
+   ],
+   "block": "minecraft:potted_fern"
+  },
+  {
+   "op": "sign",
+   "at": [
+    5,
+    0,
+    39
+   ],
+   "block": "minecraft:dark_oak_sign[rotation=8]",
+   "lines": [
+    "VINEYARD",
+    "Cellar's own"
+   ],
+   "color": "black",
+   "glow": false
+  },
+  {
+   "op": "fill",
+   "from": [
     12,
     0,
     46

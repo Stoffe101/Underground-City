@@ -39,7 +39,7 @@ def validate(data: dict, supply: dict, property_data: dict) -> list[str]:
         if p["slots"] <= 0 or p["replenishment_policy"] != p["id"]:
             issues.append(f"{p['id']}: not connected to existing property category")
         weights = p.get("profession_weights", {})
-        if set(weights) != {"farmer", "smith", "gunsmith", "technician", "general"}:
+        if set(weights) != {"farmer", "vintner", "smith", "gunsmith", "technician", "general"}:
             issues.append(f"{p['id']}: incomplete career loot distribution")
         if sum(weights.values()) != 100 or min(weights.values()) < 0:
             issues.append(f"{p['id']}: career probabilities must total 100")
@@ -71,7 +71,7 @@ def validate(data: dict, supply: dict, property_data: dict) -> list[str]:
         for item in profile["samples"]:
             if item not in affinities:
                 issues.append(f"{profile['id']}: no profession affinity for {item}")
-    if any(v not in {"farmer", "smith", "gunsmith", "technician", "general"}
+    if any(v not in {"farmer", "vintner", "smith", "gunsmith", "technician", "general"}
            for v in affinities.values()):
         issues.append("Invalid profession item affinity")
     timing = data["shipments"]

@@ -72,7 +72,7 @@ def validate(data: dict) -> None:
     lo, hi = data["economy_rules"]["minimum_margin"], data["economy_rules"]["maximum_margin"]
     seen = set()
     for o in data["orders"]:
-        if o["id"] in seen or o["career"] not in ("farmer", "smith", "gunsmith", "technician"):
+        if o["id"] in seen or o["career"] not in ("farmer", "vintner", "smith", "gunsmith", "technician"):
             raise SystemExit(f"Invalid order {o['id']}")
         seen.add(o["id"])
         if not 0 <= o["foreign_visits"] <= 2:
@@ -130,6 +130,7 @@ def unit_costs(data: dict, contracts: dict) -> dict[str, float]:
             costs[f"{NAMESPACE}:{p['id']}"] = total / p["count"]
     costs.update(refs["harvest_units"])
     costs.update(refs["vanilla"])
+    costs.update(refs.get("mods", {}))   # third-party goods a contract names (Vinery wine, Tadacko's spirits)
     return costs
 
 
@@ -167,7 +168,7 @@ def validate_contracts(data: dict, contracts: dict) -> None:
         if cid in seen or cid in existing:
             raise SystemExit(f"Duplicate contract id {cid}")
         seen.add(cid)
-        if c["career"] not in ("farmer", "smith", "gunsmith", "technician") or not 1 <= c["level"] <= 30 or c["legality"] not in ("legal", "underground"):
+        if c["career"] not in ("farmer", "vintner", "smith", "gunsmith", "technician") or not 1 <= c["level"] <= 30 or c["legality"] not in ("legal", "underground"):
             raise SystemExit(f"Invalid contract {cid}")
         underground = c["legality"] == "underground"
         skill = skills.get(c["requires_skill"])

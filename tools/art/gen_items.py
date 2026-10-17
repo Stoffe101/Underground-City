@@ -268,6 +268,53 @@ def climate_module():
 
 
 @item
+def seed_drill_kit():
+    """A seed hopper on a steel frame with a brass feed gear and a trail of seed behind the coulter."""
+    s = Sprite()
+    s.polygon([(3, 2), (12, 2), (10, 8), (5, 8)], GUNMETAL[2])                      # the hopper
+    s.line(3, 2, 12, 2, GUNMETAL[4]); s.line(3, 2, 5, 8, GUNMETAL[3]); s.line(12, 2, 10, 8, GUNMETAL[1])
+    s.rect(5, 3, 10, 4, AMBER[2]); s.line(5, 3, 10, 3, AMBER[4]); s.put(7, 4, AMBER[1]); s.put(9, 3, BURLAP[3])   # seed in the hopper
+    s.rect(6, 9, 9, 10, STEEL[3]); s.line(6, 9, 9, 9, STEEL[4])                      # the feed chute
+    s.polygon([(10, 10), (14, 10), (14, 14), (10, 14)], BRASS[2]); s.line(10, 10, 14, 10, BRASS[4]); s.line(14, 10, 14, 14, BRASS[1])
+    s.put(11, 12, INK); s.put(12, 11, INK); s.put(12, 13, INK); s.put(13, 12, INK)      # the gear's teeth
+    s.line(7, 11, 7, 14, STEEL[2]); s.put(7, 14, STEEL[1])                          # the coulter
+    for (x, y) in ((3, 14), (5, 13), (4, 12)):
+        s.put(x, y, SOIL[3]); 
+    s.put(2, 13, AMBER[3]); s.put(4, 14, AMBER[3])
+    return finish(s)
+
+
+@item
+def cooperage_set():
+    """Two barrel hoops, a driving hoop and a cooper's mallet."""
+    s = Sprite()
+    # the hoops: two iron rings seen on edge, one in front of the other
+    s.polygon([(1, 5), (9, 5), (10, 7), (10, 12), (9, 14), (1, 14), (0, 12), (0, 7)], GUNMETAL[2])
+    s.polygon([(3, 7), (7, 7), (8, 8), (8, 11), (7, 12), (3, 12), (2, 11), (2, 8)], INK)
+    s.line(1, 5, 9, 5, GUNMETAL[4]); s.line(1, 14, 9, 14, GUNMETAL[0]); s.line(0, 7, 0, 12, GUNMETAL[3]); s.line(10, 7, 10, 12, GUNMETAL[1])
+    s.line(3, 3, 12, 3, STEEL[3]); s.line(3, 2, 12, 2, STEEL[4]); s.line(3, 4, 12, 4, STEEL[1])   # the second hoop behind
+    # the mallet
+    s.rect(11, 8, 14, 11, BURLAP[2]); s.rect(11, 8, 14, 8, BURLAP[4]); s.rect(14, 8, 14, 11, BURLAP[0]); s.rect(11, 11, 14, 11, BURLAP[0])
+    s.line(12, 12, 12, 15, BURLAP[1]); s.line(13, 12, 13, 15, BURLAP[3])
+    return finish(s)
+
+
+@item
+def still_column_kit():
+    """A copper column with a pressure gauge, a brass cap and the lyne arm to the condenser."""
+    s = Sprite()
+    s.rect(4, 4, 8, 13, COPPER[2]); s.rect(4, 4, 4, 13, COPPER[4]); s.rect(8, 4, 8, 13, COPPER[0]); s.rect(5, 4, 5, 13, COPPER[3])
+    for y in (6, 9, 12):
+        s.line(4, y, 8, y, COPPER[1])                                               # the plate seams
+    s.polygon([(3, 2), (9, 2), (9, 4), (3, 4)], BRASS[2]); s.line(3, 2, 9, 2, BRASS[4]); s.line(9, 2, 9, 4, BRASS[1])
+    s.rect(5, 0, 7, 1, BRASS[3]); s.put(5, 0, BRASS[4])
+    s.line(9, 3, 13, 3, COPPER[3]); s.line(13, 3, 13, 9, COPPER[2]); s.line(13, 9, 14, 10, COPPER[1])   # the lyne arm
+    s.polygon([(9, 7), (12, 7), (12, 10), (9, 10)], STEEL[3]); s.rect(10, 8, 11, 9, WHITE[3]); s.put(10, 8, RED[3])   # the gauge
+    s.rect(3, 13, 9, 14, GUNMETAL[2]); s.line(3, 14, 9, 14, GUNMETAL[0])
+    return finish(s)
+
+
+@item
 def precision_greenhouse_unit():
     s = Sprite()
     glass = rgb('#bfe8f0e0')

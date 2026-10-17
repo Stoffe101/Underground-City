@@ -65,7 +65,7 @@ class RegionalContentTests(unittest.TestCase):
         by_career = {}
         for order in SOURCE["orders"]:
             by_career.setdefault(order["career"], []).append(order)
-        self.assertEqual({k: len(v) for k, v in by_career.items()}, {"farmer": 3, "smith": 3, "gunsmith": 3, "technician": 3})
+        self.assertEqual({k: len(v) for k, v in by_career.items()}, {"farmer": 3, "vintner": 3, "smith": 3, "gunsmith": 3, "technician": 3})
         for orders in by_career.values():
             tiers = sorted(o["foreign_visits"] for o in orders)
             self.assertEqual(tiers, [1, 1, 2], "two tier-2 orders and one tier-3 order per career")
@@ -74,7 +74,7 @@ class RegionalContentTests(unittest.TestCase):
         lang = json.loads((RES / "assets/underground_city/lang/en_us.json").read_text())
         listing = json.loads((RES / "underground_city_items.json").read_text())
         ids = [e["id"] for e in listing["items"]]
-        self.assertEqual(len(ids), 22 + len(SOURCE["specials"]))
+        self.assertEqual(len(ids), 25 + len(SOURCE["specials"]))
         self.assertEqual(set(ids), {e["id"] for e in SOURCE["commodities"] + SOURCE["products"] + SOURCE["tools"] + SOURCE["specials"]})
         from PIL import Image
         for item_id in ids:

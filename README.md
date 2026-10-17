@@ -10,7 +10,7 @@ Underground City is a handcrafted-feeling, semi-modern Minecraft co-op RPG set a
 
 - **A connected world:** a curated, finite playable region containing living cities, countryside, industrial areas, and contested territory. Existing licensed/permitted maps or configurable city generation may form its physical foundation.
 - **A real civilian life:** farms, vineyards, smithies, factories, shops, property, deliveries, employment contracts, and taxation that contributes to city development.
-- **Specialized careers:** Farmer/Vintner, Smith/Engineer, Gunsmith/Arms Dealer, and Hacker/Technician. Each has levels, branching skills, research/blueprints, workstations, and meaningful contract work.
+- **Specialized careers:** Farmer, Vintner, Smith/Engineer, Gunsmith/Arms Dealer, and Hacker/Technician (Farmer and Vintner are separate careers since D-067). Each has levels, branching skills, research/blueprints, workstations, and meaningful contract work.
 - **General skills:** driving, fitness, shooting, trading, social influence, and related transferable capabilities; separate from career levels.
 - **Consequential factions:** leaders, reputation, police, investigations, smuggling, guarded borders, escalation, and controlled conflicts.
 - **An evolving story:** shared co-op campaign; citizenship and meaningful player choices change the world.

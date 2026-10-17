@@ -5,6 +5,9 @@ Original work.
 """
 from __future__ import annotations
 import os
+import sys
+sys.path.insert(0, os.path.dirname(__file__))
+from uc_art import preview_dir
 from PIL import Image
 
 ASSETS = os.path.join(os.path.dirname(__file__), '..', '..', 'rpg-core', 'src', 'main', 'resources', 'assets', 'underground_city', 'textures', 'gui')
@@ -446,6 +449,23 @@ icon('technician',
  "................",
  "................",
  "................")
+icon('vintner',
+ "................",
+ ".......ww.......",
+ ".......wg.......",
+ "......wggw......",
+ "......wgdw......",
+ "......wgdw......",
+ ".....wggggw.....",
+ "....wgggggdw....",
+ "....wgwwwwdw....",
+ "....wgwggwdw....",
+ "....wgwwwwdw....",
+ "....wgggggdw....",
+ "....wgggggdw....",
+ "....wgdddddw....",
+ ".....wwwwww.....",
+ "................")
 icon('book',
  "................",
  "................",
@@ -566,4 +586,4 @@ if __name__ == '__main__':
     prev2 = Image.new('RGBA', (sheet.width + 8, (sheet.height + 8) * 2), (22, 33, 46, 255))
     prev2.alpha_composite(prev, (0, 0))
     prev2.alpha_composite(tint, (4, sheet.height + 12))
-    prev2.resize((prev2.width * 6, prev2.height * 6), Image.NEAREST).save('/tmp/claude-0/-home-user-Underground-City/85892c3f-5725-536f-8521-6d736810d423/scratchpad/icons1.png')
+    prev2.resize((prev2.width * 6, prev2.height * 6), Image.NEAREST).save(os.path.join(preview_dir(), 'icons1.png'))

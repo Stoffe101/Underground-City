@@ -21,7 +21,10 @@
   ],
   "products": [
     {"id": "irrigation_service_kit", "name": "Irrigation Service Kit", "icon": "kit", "city": "valewood", "count": 2, "inputs": {"machined_parts": 1, "rare_seeds": 2, "minecraft:bucket": 1}},
+    {"id": "seed_drill_kit", "name": "Seed Drill Service Kit", "icon": "kit", "city": "valewood", "count": 2, "inputs": {"machined_parts": 1, "biopolymer": 1, "minecraft:iron_ingot": 1}},
     {"id": "climate_module", "name": "Vineyard Climate Module", "icon": "module", "city": "valewood", "count": 1, "inputs": {"agro_catalyst": 2, "control_circuits": 1, "minecraft:glass": 1}},
+    {"id": "cooperage_set", "name": "Cellar Cooperage Set", "icon": "kit", "city": "valewood", "count": 2, "inputs": {"refined_alloy": 1, "biopolymer": 1, "minecraft:stick": 2}},
+    {"id": "still_column_kit", "name": "Still Column Kit", "icon": "pipe", "city": "valewood", "count": 1, "inputs": {"refined_alloy": 2, "control_circuits": 1, "biopolymer": 1, "minecraft:copper_ingot": 2}},
     {"id": "precision_greenhouse_unit", "name": "Precision Greenhouse Unit", "icon": "cube", "city": "valewood", "count": 1, "inputs": {"agro_catalyst": 2, "machined_parts": 2, "control_circuits": 1, "minecraft:glass": 1, "minecraft:iron_ingot": 1}},
     {"id": "precision_machinery_parts", "name": "Precision Machinery Parts", "icon": "bearing", "city": "ironhaven", "count": 2, "inputs": {"refined_alloy": 2, "control_circuits": 1, "minecraft:iron_ingot": 1}},
     {"id": "field_repair_set", "name": "Field Repair Set", "icon": "wrench", "city": "ironhaven", "count": 2, "inputs": {"machined_parts": 1, "biopolymer": 1, "minecraft:stick": 1}},
@@ -38,7 +41,10 @@
   ],
   "orders": [
     {"id": "greenhouse_service", "title": "Service the greenhouse irrigation line", "career": "farmer", "level": 3, "foreign_visits": 1, "requirements": {"irrigation_service_kit": 4}, "credits": 150, "xp": 300},
-    {"id": "vineyard_climate", "title": "Install a vineyard climate module", "career": "farmer", "level": 4, "foreign_visits": 1, "requirements": {"climate_module": 1}, "credits": 150, "xp": 350},
+    {"id": "seed_drill_service", "title": "Service the co-op seed drills", "career": "farmer", "level": 4, "foreign_visits": 1, "requirements": {"seed_drill_kit": 4}, "credits": 140, "xp": 320},
+    {"id": "vineyard_climate", "title": "Install a vineyard climate module", "career": "vintner", "level": 3, "foreign_visits": 1, "requirements": {"climate_module": 1}, "credits": 150, "xp": 350},
+    {"id": "cellar_cooperage", "title": "Re-hoop the cellar barrels", "career": "vintner", "level": 4, "foreign_visits": 1, "requirements": {"cooperage_set": 4}, "credits": 140, "xp": 330},
+    {"id": "still_column", "title": "Commission a still column", "career": "vintner", "level": 5, "foreign_visits": 2, "requirements": {"still_column_kit": 1}, "credits": 150, "xp": 600},
     {"id": "greenhouse_unit", "title": "Commission a precision greenhouse unit", "career": "farmer", "level": 5, "foreign_visits": 2, "requirements": {"precision_greenhouse_unit": 1}, "credits": 210, "xp": 600},
     {"id": "foundry_parts", "title": "Calibrated machine parts for the foundry", "career": "smith", "level": 3, "foreign_visits": 1, "requirements": {"precision_machinery_parts": 4}, "credits": 290, "xp": 320},
     {"id": "depot_repairs", "title": "Field repair sets for the municipal depot", "career": "smith", "level": 4, "foreign_visits": 1, "requirements": {"field_repair_set": 4}, "credits": 140, "xp": 300},

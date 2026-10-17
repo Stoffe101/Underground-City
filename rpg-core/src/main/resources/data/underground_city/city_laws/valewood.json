@@ -6,7 +6,8 @@
     "restricted_components": "prohibited",
     "restricted_electronics": "permit",
     "firearms_licensed": "permit",
-    "firearms_restricted": "prohibited"
+    "firearms_restricted": "prohibited",
+    "restricted_spirits": "permit"
   },
   "fines": {
     "permit": 25,
@@ -20,5 +21,5 @@
     "max": 0.9
   },
   "witness_chance": 0.25,
-  "summary": "Modest patrols. Hunting arms are licensed; controlled crops and unregistered parts are prohibited."
+  "summary": "Modest patrols. Hunting arms are licensed; controlled crops and unregistered parts are prohibited. Spirits need a distiller's licence."
 }

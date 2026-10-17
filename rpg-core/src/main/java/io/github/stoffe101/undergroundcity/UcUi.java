@@ -36,19 +36,19 @@ public final class UcUi {
     /** Icon indices in icons.png (8 per row, 16 px); the order of tools/art/gen_icons.py. */
     public enum Icon {
         LEGAL, UNDERGROUND, CREDITS, XP, TRUST, HEAT, LOCK, CHECK, WARNING, INFO, ARROW_RIGHT, ARROW_LEFT, CLOSE, CRATE, TRUCK, TAG, PIN,
-        CLOCK, GEAR, POINT, CITY, FARMER, SMITH, GUNSMITH, TECHNICIAN, BOOK, SCALES, SHOP, TARGET, KEY, EMPTY
+        CLOCK, GEAR, POINT, CITY, FARMER, SMITH, GUNSMITH, TECHNICIAN, VINTNER, BOOK, SCALES, SHOP, TARGET, KEY, EMPTY
     }
 
     public static Icon careerIcon(String career) {
         return switch (career == null ? "" : career.toLowerCase(Locale.ROOT)) {
-            case "farmer" -> Icon.FARMER; case "smith" -> Icon.SMITH; case "gunsmith" -> Icon.GUNSMITH; case "technician" -> Icon.TECHNICIAN;
+            case "farmer" -> Icon.FARMER; case "vintner" -> Icon.VINTNER; case "smith" -> Icon.SMITH; case "gunsmith" -> Icon.GUNSMITH; case "technician" -> Icon.TECHNICIAN;
             default -> Icon.CITY;
         };
     }
 
     public static int careerColor(String career) {
         return switch (career == null ? "" : career.toLowerCase(Locale.ROOT)) {
-            case "farmer" -> 0xff86c45a; case "smith" -> 0xffe07b39; case "gunsmith" -> 0xffd9b455; case "technician" -> 0xff46c9e0;
+            case "farmer" -> 0xff86c45a; case "vintner" -> 0xffc279d6; case "smith" -> 0xffe07b39; case "gunsmith" -> 0xffd9b455; case "technician" -> 0xff46c9e0;
             default -> DIM;
         };
     }

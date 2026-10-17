@@ -4,7 +4,7 @@ Public Ledger. 16x16 textures, shaded from the upper left, no placeholder cubes.
 from __future__ import annotations
 import json, os, random, sys
 sys.path.insert(0, os.path.dirname(__file__))
-from uc_art import Sprite, ramp, rgb, noise_fill, contact_sheet
+from uc_art import preview_dir, Sprite, ramp, rgb, noise_fill, contact_sheet
 from palettes import *
 from shapes import bevel_rect, dither
 
@@ -301,11 +301,10 @@ if __name__ == '__main__':
     build()
     import preview
     from PIL import Image
-    S = '/tmp/claude-0/-home-user-Underground-City/85892c3f-5725-536f-8521-6d736810d423/scratchpad'
     root = os.path.abspath(os.path.join(ASSETS, '..'))
     sheet = Image.new('RGBA', (4 * 3 * 260, 260), (0, 0, 0, 0))
     for i, name in enumerate(('operations_terminal', 'secure_data_terminal', 'property_cache', 'public_ledger')):
         m = preview.load_model(os.path.join(MODELS, name + '.json'))
         for j, (yaw, pitch) in enumerate(((-35, 22), (35, 22), (150, 22))):
             sheet.paste(preview.render(m, root, yaw=yaw, pitch=pitch, size=260, zoom=1.05), ((i * 3 + j) * 260, 0))
-    sheet.save(os.path.join(S, 'blocks1.png'))
+    sheet.save(os.path.join(preview_dir(), 'blocks1.png'))

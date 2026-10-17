@@ -455,6 +455,36 @@ def founders_row() -> dict:
     ]
     ops += registry.rug((3, 2), (4, 3), "blue") + registry.bed(1, 4, "yellow")
 
+    # the vintner's cellar office (east side, south of the registry) and a small vineyard opposite it. Vinery and Kaleidoscope Tavern blocks are placed only
+    # when those mods are installed; the vanilla barrels and the cauldron stand in for them so the rooms are furnished either way.
+    vintner = Building(24, 40, mirror=True)
+    ops += office(vintner, career="vintner", name="Lucien Faure - Cellar Master", profession="leatherworker", workstation="minecraft:cauldron[level=0]",
+                  wall="minecraft:mud_bricks", trim="minecraft:stripped_dark_oak_log", base="minecraft:stone_bricks", floor="minecraft:spruce_planks",
+                  roof="minecraft:brick_stairs", ridge="minecraft:bricks", ceiling="minecraft:dark_oak_planks", door="dark_oak",
+                  shutter="dark_oak", sign_wood="dark_oak", title=["WINE CELLAR", "Lucien Faure", "Orders daily"], rug="purple",
+                  extras=[put(vintner.p(4, 0, 1), "vinery:fermentation_barrel[facing=south]", "vinery"), put(vintner.p(5, 0, 1), "vinery:grapevine_pot", "vinery"),
+                          put(vintner.p(4, 0, 2), "minecraft:barrel[facing=up]"), put(vintner.p(5, 0, 2), "minecraft:barrel[facing=up]"),
+                          put(vintner.p(5, 0, 4), "vinery:oak_wine_rack_big[facing=west]", "vinery"), put(vintner.p(5, 0, 3), "vinery:basket", "vinery"),
+                          put(vintner.p(5, 1, 4), "minecraft:barrel[facing=up]"),
+                          put(vintner.p(1, 1, 5), "kaleidoscope_tavern:barrel", "kaleidoscope_tavern"), put(vintner.p(1, 0, 5), "minecraft:barrel[facing=up]")],
+                  lines=[
+                      "Table wine for the tavern, estate cellars, a still column for the co-op: the orders are on the terminal. Wine is patience in a bottle.",
+                      "Strong spirit is another matter. Valewood licenses distillers and Ironhaven allows none. A back bar there pays well for bottles with no stamp.",
+                      "Keep your head down and the heat fades. A fine is cheaper than a reputation, and a seizure is neither.",
+                  ])
+    ops += [
+        fill((2, -1, 40), (8, -1, 45), "minecraft:grass_block"),
+        fill((3, -1, 41), (7, -1, 44), "minecraft:farmland[moisture=7]"), put((5, -1, 42), "minecraft:water"), put((5, -1, 43), "minecraft:water"),
+        fill((2, 0, 40), (8, 0, 40), "minecraft:spruce_fence"), fill((2, 0, 45), (8, 0, 45), "minecraft:spruce_fence"),
+        fill((2, 0, 41), (2, 0, 44), "minecraft:spruce_fence"), fill((8, 0, 41), (8, 0, 44), "minecraft:spruce_fence"),
+        fill((8, 0, 42), (8, 0, 42), "minecraft:air"),
+        put((3, 0, 41), "vinery:red_grape_bush[age=3]", "vinery"), put((3, 0, 43), "vinery:red_grape_bush[age=2]", "vinery"),
+        put((7, 0, 41), "vinery:white_grape_bush[age=3]", "vinery"), put((7, 0, 43), "vinery:white_grape_bush[age=1]", "vinery"),
+        put((4, 0, 41), "minecraft:sweet_berry_bush[age=3]"), put((6, 0, 44), "minecraft:sweet_berry_bush[age=2]"),
+        put((4, 0, 44), "minecraft:potted_fern"), put((6, 0, 41), "minecraft:potted_fern"),
+        standing_sign((5, 0, 39), 8, ["VINEYARD", "Cellar's own"], wood="dark_oak"),
+    ]
+
     # ------------------------------------------------------------------ the gate, its booth and its guard
     gate = DEPTH - 3
     ops += [

@@ -15,7 +15,7 @@ import java.util.Locale;
  */
 @OnlyIn(Dist.CLIENT)
 public final class LedgerScreen extends UcScreen {
-    private static final String[] TRADES = {"", "farmer", "smith", "gunsmith", "technician"};
+    private static final String[] TRADES = {"", "farmer", "vintner", "smith", "gunsmith", "technician"};
     private static final int ROW = 22;
 
     private final LedgerData data;
@@ -39,9 +39,16 @@ public final class LedgerScreen extends UcScreen {
         chips.clear();
         layoutPanel(420, 260, 600, 400);
         int x = bodyX();
+        // six filters must fit the narrowest panel (1280x720 at GUI scale 3): squeeze the chips' padding before they overflow
+        int pad = 30;
+        for (; pad > 20; pad -= 2) {
+            int total = 0;
+            for (String trade : TRADES) total += UcUi.displayWidth(font, trade.isEmpty() ? "All" : capitalize(trade)) + (trade.isEmpty() ? 18 : pad) + 4;
+            if (total <= bodyW() + 4) break;
+        }
         for (String trade : TRADES) {
             String label = trade.isEmpty() ? "All" : capitalize(trade);
-            int w = UcUi.displayWidth(font, label) + (trade.isEmpty() ? 18 : 30);
+            int w = UcUi.displayWidth(font, label) + (trade.isEmpty() ? 18 : pad);
             UcButton chip = new UcButton(x, bodyY() + 2, w, 15, label, b -> { filter = trade; scroll = 0; refresh(); })
                 .kind(UcButton.Kind.CHIP).accent(trade.isEmpty() ? UcUi.AMBER : UcUi.careerColor(trade));
             if (!trade.isEmpty()) chip.icon(UcUi.careerIcon(trade));

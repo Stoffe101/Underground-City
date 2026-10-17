@@ -19,7 +19,7 @@ import generate_regional_content as content  # noqa: E402
 import validate_underground_balance as balance  # noqa: E402
 
 DATA = ROOT / "rpg-core/src/main/resources/data/underground_city"
-CAREERS = ("farmer", "smith", "gunsmith", "technician")
+CAREERS = ("farmer", "vintner", "smith", "gunsmith", "technician")
 CITIES = ("ironhaven", "valewood", "blackwater")
 BRANCHES = {"core", "legal", "underground", "utility"}
 
@@ -107,6 +107,10 @@ class LawTests(unittest.TestCase):
         for name, category in load("contraband").items():
             self.assertEqual(category["category"], name)
             for entry in category["entries"]:
+                if "tag" in entry:          # a tag entry names a datapack tag: its own file must exist
+                    namespace, _, tag = entry["tag"].partition(":")
+                    self.assertTrue((DATA / "tags/items" / f"{tag}.json").is_file(), f"{name}: tag {entry['tag']}")
+                    continue
                 namespace, _, path = entry["item"].partition(":")
                 if namespace == "underground_city":
                     self.assertIn(path, items, f"{name}: {entry['item']}")
@@ -300,11 +304,11 @@ class DistrictTests(unittest.TestCase):
                 for line in npc.get("lines", []):
                     self.assertTrue(0 < len(line) <= 180, f"{npc['name']}: {len(line)} characters")
                 if npc["role"] == "employer":
-                    self.assertIn(npc["career"], ("farmer", "smith", "gunsmith", "technician"))
+                    self.assertIn(npc["career"], ("farmer", "vintner", "smith", "gunsmith", "technician"))
                     self.assertIn(npc["terminal"], terminal_spots, npc["name"] + " needs a real terminal in the lot")
             careers = {npc["career"] for npc in citizens if npc["role"] == "employer"}
             if district["id"] == "founders_row":
-                self.assertEqual(careers, {"farmer", "smith", "gunsmith", "technician"}, "every career has an employer in Founders Row")
+                self.assertEqual(careers, {"farmer", "vintner", "smith", "gunsmith", "technician"}, "every career has an employer in Founders Row")
 
 
 if __name__ == "__main__":

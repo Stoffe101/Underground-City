@@ -10,7 +10,8 @@ Decision records: D-049 (the pillar), D-050 (Core-owned skill trees), D-051 (evi
 
 ## The pillar
 
-Every one of the four careers (Farmer/Vintner, Smith/Engineer, Gunsmith/Arms Dealer, Hacker/Technician) has a
+Every one of the five careers (Farmer, Vintner, Smith/Engineer, Gunsmith/Arms Dealer, Hacker/Technician; the Farmer and
+Vintner were one career until D-067) has a
 **legal path** and an **underground path** that are open to the same character at the same time.
 
 - No alignment, no faction lock, no permanent choice. A Farmer can learn Restricted Cultivation and still sell
@@ -34,6 +35,7 @@ One skill point per level above 1, so a character at level 30 can afford any who
 | Career | Fundamentals | Legal | Utility | Underground |
 | --- | --- | --- | --- | --- |
 | Farmer | Field Fundamentals | Greenhouse Management, Cultivar Broker, Estate Wholesale, Controlled-Crop Licence | Field Logistics (-5% exchange) | Restricted Cultivation, Concealed Stores (-0.12 search), Underground Trade, Grey Market Contacts |
+| Vintner | Vine and Cellar Fundamentals | Cellar Craft, Estate Vintages, Distiller's Licence (spirits legal where a city permits) | Cellar Logistics (-5% exchange) | Home Distilling, Concealed Stores (-0.12 search), Bootleg Trade, Grey Market Contacts |
 | Smith | Forge Fundamentals | Structural Works, Armoury Contracts, Industrial Licence | Precision Machining (-5% exchange) | Unlisted Fabrication, Unstamped Production (-0.15 search), Contraband Armoury |
 | Gunsmith | Bench Fundamentals | Licensed Repairs, Arms Dealer Licence, Security Contracts | Ballistics Lab (-5% exchange) | Unregistered Builds, Filed Serials (-0.10 search), Arms Brokerage |
 | Technician | Bench Electronics | Municipal Repairs, Automation Installer, Security Systems | Signal Analysis (-5% exchange) | Bypass Tooling, Signal Scrubbing (-0.10 search), Data Brokerage |
@@ -55,6 +57,11 @@ and replenishes with active play; deliveries are settled through the fsynced `Wo
 | Licensed controlled-crop supply | Farmer, legal | Controlled-Crop Licence | Blackwater dispensary | 200 | |
 | Quiet bale delivery | Farmer, underground | Underground Trade | Marrow (Blackwater) | 220 | buyer trust |
 | Reserve load | Farmer, underground | Grey Market Contacts, trust 2 | Marrow | 440 | 2 cuttings |
+| Table wine for the tavern | Vintner, legal, **Vinery** | Cellar Craft | town exchange | 185 | |
+| Fill an estate cellar | Vintner, legal, **Vinery** | Estate Vintages | | 220 | |
+| Licensed spirits for the taproom | Vintner, legal, **Kaleidoscope Tavern** | Distiller's Licence | Blackwater Harbour Taproom | 140 | |
+| Quiet bottle delivery | Vintner, underground, **Kaleidoscope Tavern** | Bootleg Trade | Rusk's back bar (Ironhaven) | 206 | buyer trust |
+| Reserve run | Vintner, underground, **Kaleidoscope Tavern** | Grey Market Contacts, trust 2 | Rusk's back bar | 516 | buyer trust |
 | Structural steel | Smith, legal | Structural Works | | 150 | |
 | Plating for the guard | Smith, legal | Armoury Contracts | Ironhaven guard | 270 | Prototype Alloy Ingot |
 | Unstamped plate | Smith, underground | Unlisted Fabrication | Hollis (Valewood) | 300 | trust |
@@ -137,6 +144,22 @@ An abstract mechanic, not a real-world drug: `RestrictedCropBlock` grows in four
 higher and only after the plant has been nourished with a Cultivation Nutrient (right-click). A mature plant
 yields Sable Leaf Bales (2-3) or a cutting. Bone meal does not work. Planting a cutting needs the Restricted
 Cultivation skill (`RestrictedCuttingItem`); the bale is the contraband item that the law categories classify.
+
+## Spirits and the Vintner (D-067)
+
+Wine is ordinary trade. **Spirits** are the Vintner's restricted good, handled exactly like the Farmer's controlled crop: one
+contraband category (`restricted_spirits`, an item tag so a whole mod's bottles count without listing them), a different
+status in each city (Ironhaven prohibited, Valewood permit, Blackwater legal), a licence node (Distiller's Licence) that
+turns a *permit* city's load legal, and an underground buyer in a city where it is prohibited (Rusk's back bar in
+Ironhaven), reached along the real Valewood to Ironhaven corridor with its gates. Carrying a bottle is never detected;
+only a checkpoint search or a witnessed hand-off is. In Ironhaven no licence helps, so the best case is only modestly
+better than the trained one (see the balance table in `validate_underground_balance.py`).
+
+Provider status: wine needs Vinery and spirits need Kaleidoscope Tavern (barrel brewing: water and potato, wheat or sugar
+cane become vodka, whiskey and rum in two minutes). Without those mods the Vintner still has three supply-chain orders
+(the vineyard climate module, cellar cooperage sets and a still column kit); with them it also has the five wine and
+spirits contracts. Neither mod is adopted until it has its own real-client and dedicated-server record ([mod-audit](../technical/mod-audit.md)).
+Tadacko's Drinks models real stills but crashes a dedicated server, so it is not used.
 
 ## The Technician's trace (D-054)
 

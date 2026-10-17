@@ -38,7 +38,7 @@
     },
     {
       "available_after_tier_unlock": true,
-      "career": "farmer",
+      "career": "vintner",
       "id": "vineyard_climate_module",
       "inputs": [
         {
@@ -81,6 +81,79 @@
       "output": {
         "count": 1,
         "id": "precision_greenhouse_unit"
+      },
+      "repeatable": true,
+      "tier": 3,
+      "uses": "Consumes real sourced components every batch; outputs are provisional logical goods."
+    },
+    {
+      "available_after_tier_unlock": true,
+      "career": "farmer",
+      "id": "seed_drill_service",
+      "inputs": [
+        {
+          "commodity": "machined_parts",
+          "count": 1
+        },
+        {
+          "commodity": "biopolymer",
+          "count": 1
+        }
+      ],
+      "kind": "maintenance",
+      "output": {
+        "count": 2,
+        "id": "seed_drill_kit"
+      },
+      "repeatable": true,
+      "tier": 2,
+      "uses": "Consumes real sourced components every batch; outputs are provisional logical goods."
+    },
+    {
+      "available_after_tier_unlock": true,
+      "career": "vintner",
+      "id": "cellar_cooperage",
+      "inputs": [
+        {
+          "commodity": "refined_alloy",
+          "count": 1
+        },
+        {
+          "commodity": "biopolymer",
+          "count": 1
+        }
+      ],
+      "kind": "maintenance",
+      "output": {
+        "count": 2,
+        "id": "cooperage_set"
+      },
+      "repeatable": true,
+      "tier": 2,
+      "uses": "Consumes real sourced components every batch; outputs are provisional logical goods."
+    },
+    {
+      "available_after_tier_unlock": true,
+      "career": "vintner",
+      "id": "still_column_kit",
+      "inputs": [
+        {
+          "commodity": "refined_alloy",
+          "count": 2
+        },
+        {
+          "commodity": "control_circuits",
+          "count": 1
+        },
+        {
+          "commodity": "biopolymer",
+          "count": 1
+        }
+      ],
+      "kind": "craft",
+      "output": {
+        "count": 1,
+        "id": "still_column_kit"
       },
       "repeatable": true,
       "tier": 3,

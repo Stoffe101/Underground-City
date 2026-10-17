@@ -22,8 +22,8 @@ class SupplyDesignTests(unittest.TestCase):
     def test_all_origins_and_professions_have_recurring_regional_sinks(self):
         self.assertEqual(validate(DATA, CITIES, CAREERS, SPECIALTIES), [])
         self.assertEqual(len(DATA["supplier_stock"]), 9)
-        self.assertEqual(len(DATA["recurring_recipes"]), 12)
-        for career in ("farmer", "smith", "gunsmith", "technician"):
+        self.assertEqual(len(DATA["recurring_recipes"]), 15)
+        for career in ("farmer", "vintner", "smith", "gunsmith", "technician"):
             recipes = [r for r in DATA["recurring_recipes"] if r["career"] == career]
             self.assertEqual(len(recipes), 3)
             self.assertEqual({x["tier"] for x in recipes}, {2, 3})

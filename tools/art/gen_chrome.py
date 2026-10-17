@@ -5,6 +5,9 @@ bright top edge; the one accent per state is drawn by the screen code so a singl
 """
 from __future__ import annotations
 import os, random
+import sys
+sys.path.insert(0, os.path.dirname(__file__))
+from uc_art import preview_dir
 from PIL import Image
 
 ASSETS = os.path.join(os.path.dirname(__file__), '..', '..', 'rpg-core', 'src', 'main', 'resources', 'assets', 'underground_city', 'textures', 'gui')
@@ -204,4 +207,4 @@ if __name__ == '__main__':
         prev.alpha_composite(sheet.crop((i * 28, 60, i * 28 + 28, 78)), (190 + i * 30, 140))
     prev.alpha_composite(nine(sheet.crop((0, 80, 24, 96)), 60, 24, 3), (24, 130))
     prev.alpha_composite(nine(sheet.crop((24, 80, 48, 96)), 60, 24, 3), (90, 130))
-    prev.resize((prev.width * 3, prev.height * 3), Image.NEAREST).save('/tmp/claude-0/-home-user-Underground-City/85892c3f-5725-536f-8521-6d736810d423/scratchpad/chrome1.png')
+    prev.resize((prev.width * 3, prev.height * 3), Image.NEAREST).save(os.path.join(preview_dir(), 'chrome1.png'))

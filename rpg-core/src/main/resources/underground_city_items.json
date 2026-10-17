@@ -52,7 +52,22 @@
       "stack": 16
     },
     {
+      "id": "seed_drill_kit",
+      "kind": "product",
+      "stack": 16
+    },
+    {
       "id": "climate_module",
+      "kind": "product",
+      "stack": 16
+    },
+    {
+      "id": "cooperage_set",
+      "kind": "product",
+      "stack": 16
+    },
+    {
+      "id": "still_column_kit",
       "kind": "product",
       "stack": 16
     },

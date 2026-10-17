@@ -13,6 +13,7 @@ from __future__ import annotations
 import colorsys
 import os
 import random
+import tempfile
 from PIL import Image, ImageDraw
 
 Color = tuple  # (r, g, b) or (r, g, b, a)
@@ -186,3 +187,8 @@ def contact_sheet(sprites: dict, scale: int = 6, cols: int = 8, bg=(46, 52, 62, 
         if label:
             d.text((x, y + s.h * scale + 1), name[:20], fill=(215, 222, 232, 255))
     return sheet
+
+
+def preview_dir() -> str:
+    """Where the developer previews (contact sheets, enlarged sprites) are written: UC_ART_PREVIEW_DIR, else the system temp directory."""
+    return os.environ.get("UC_ART_PREVIEW_DIR") or tempfile.gettempdir()

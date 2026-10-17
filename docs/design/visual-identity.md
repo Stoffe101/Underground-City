@@ -23,7 +23,7 @@ Every state colour carries a second signal (an icon, a label or a shape), never 
 | Text | `#eaf2f8` / `#b9cbd9` / `#8aa2b5` / `#5b7083` | primary, soft, dim, faint |
 | Paper | `#e8dfc6`, ink `#2a2118` | forms and dialogue |
 | Ironhaven / Valewood / Blackwater | `#e07b39` / `#86c45a` / `#46a9e0` | city identity (header stripe, banners, chips) |
-| Trades | Farmer `#86c45a`, Smith `#e07b39`, Gunsmith `#d9b455`, Technician `#46c9e0` | badges and trade pages |
+| Trades | Farmer `#86c45a`, Vintner `#c279d6`, Smith `#e07b39`, Gunsmith `#d9b455`, Technician `#46c9e0` | badges and trade pages |
 
 Panels: surface `#1b2b3b` to `#121d2a`, edge `#34506a`, highlight `#4f7088`, well `#0d1620`. These live in `tools/art/gen_chrome.py` (textures) and `UcUi` (code).
 
@@ -43,7 +43,7 @@ Panel anatomy: 30 px header (icon, display title, status chips on the right) + 2
 
 * `panel`, `well`, `card` (normal / hover / selected / disabled), `paper`, `bar`, `chip`, `tooltip`.
 * `UcButton`: PLATE (neutral), PRIMARY (amber, the one action a screen wants), DANGER (red), RAIL (navigation with icon, label and an optional count), CHIP (filters). Hover brightens and shows a teal lit edge; pressed sinks one pixel; disabled is dark and flat and **explains itself in a tooltip**.
-* Icons: 31 white-and-grey 16 x 16 glyphs in `textures/gui/icons.png`, tinted by state colour (`tools/art/gen_icons.py`).
+* Icons: 32 white-and-grey 16 x 16 glyphs in `textures/gui/icons.png`, tinted by state colour (`tools/art/gen_icons.py`).
 * Feedback: a UI click sound on every press, a level-up chime on registration success; toasts for contract, skill, payment and discovery events (see the report for the ones implemented).
 
 ## Item, block and plant art

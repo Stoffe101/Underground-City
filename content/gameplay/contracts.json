@@ -149,6 +149,109 @@
       "origin": "valewood"
     },
     {
+      "id": "tavern_table_wine",
+      "title": "Table wine for the tavern",
+      "career": "vintner",
+      "level": 3,
+      "legality": "legal",
+      "requires_skill": "vintner.cellar_craft",
+      "requires_mod": "vinery",
+      "capacity": 4,
+      "refill_ticks": 6000,
+      "credits": 185,
+      "xp": 280,
+      "requirements": [
+        {
+          "item": "vinery:red_wine",
+          "count": 8
+        }
+      ]
+    },
+    {
+      "id": "estate_cellar",
+      "title": "Fill an estate cellar",
+      "career": "vintner",
+      "level": 6,
+      "legality": "legal",
+      "requires_skill": "vintner.estate_vintages",
+      "requires_mod": "vinery",
+      "credits": 220,
+      "xp": 430,
+      "requirements": [
+        {
+          "item": "vinery:noir_wine",
+          "count": 4
+        },
+        {
+          "item": "vinery:cherry_wine",
+          "count": 4
+        }
+      ]
+    },
+    {
+      "id": "licensed_spirits_supply",
+      "title": "Licensed spirits for the taproom",
+      "career": "vintner",
+      "level": 10,
+      "legality": "legal",
+      "requires_skill": "vintner.distillers_licence",
+      "requires_mod": "kaleidoscope_tavern",
+      "buyer": "blackwater_taproom",
+      "credits": 140,
+      "xp": 400,
+      "requirements": [
+        {
+          "item": "kaleidoscope_tavern:vodka",
+          "count": 8
+        }
+      ]
+    },
+    {
+      "id": "quiet_bottles",
+      "title": "Quiet bottle delivery",
+      "career": "vintner",
+      "level": 9,
+      "legality": "underground",
+      "requires_skill": "vintner.bootleg_trade",
+      "requires_mod": "kaleidoscope_tavern",
+      "buyer": "ironhaven_backbar",
+      "trust_gain": 1,
+      "capacity": 2,
+      "refill_ticks": 18000,
+      "credits": 206,
+      "xp": 360,
+      "requirements": [
+        {
+          "item": "kaleidoscope_tavern:vodka",
+          "count": 8
+        }
+      ],
+      "origin": "valewood"
+    },
+    {
+      "id": "reserve_run",
+      "title": "Reserve run for the foundry bars",
+      "career": "vintner",
+      "level": 12,
+      "legality": "underground",
+      "requires_skill": "vintner.grey_market_contacts",
+      "requires_mod": "kaleidoscope_tavern",
+      "buyer": "ironhaven_backbar",
+      "min_trust": 2,
+      "trust_gain": 1,
+      "capacity": 1,
+      "refill_ticks": 24000,
+      "credits": 516,
+      "xp": 560,
+      "requirements": [
+        {
+          "item": "kaleidoscope_tavern:vodka",
+          "count": 20
+        }
+      ],
+      "origin": "valewood"
+    },
+    {
       "id": "municipal_structural",
       "title": "Structural steel for the city works",
       "career": "smith",
@@ -522,6 +625,13 @@
       "underground_city:sable_cutting": 22.5,
       "taczblueprints:blueprint_shotgun": 150,
       "taczblueprints:blueprint_smg": 150
+    },
+    "mods": {
+      "vinery:red_wine": 16,
+      "vinery:noir_wine": 20,
+      "vinery:cherry_wine": 18,
+      "vinery:apple_cider": 11,
+      "kaleidoscope_tavern:vodka": 12
     }
   }
 }

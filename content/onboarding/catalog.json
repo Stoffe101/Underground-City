@@ -37,12 +37,21 @@
   "professions": [
     {
       "id": "farmer",
-      "name": "Farmer / Vintner",
-      "description": "Cultivate crops, operate vineyards, produce quality beverages and food, negotiate sales, and expand into an agricultural business.",
-      "branches": ["cultivation", "vintner", "agribusiness"],
+      "name": "Farmer",
+      "description": "Grow field crops and kitchen produce, keep a greenhouse and sell to the co-op and the estates; the same fields can quietly raise a restricted cultivar for a Blackwater buyer.",
+      "branches": ["cultivation", "agribusiness", "restricted_cultivation"],
       "starter_objectives": ["Plant and harvest a starter crop", "Deliver a municipal produce order"],
       "legal_path": true,
-      "criminal_path": false
+      "criminal_path": true
+    },
+    {
+      "id": "vintner",
+      "name": "Vintner",
+      "description": "Tend vines, press and age wine, bottle it for the taverns and estates, and learn the licensed still; a still that nobody licensed makes moonshine, and moonshine pays more and costs more.",
+      "branches": ["viticulture", "cellar", "distilling"],
+      "starter_objectives": ["Press a first batch of grapes", "Deliver a bottled wine order"],
+      "legal_path": true,
+      "criminal_path": true
     },
     {
       "id": "smith",

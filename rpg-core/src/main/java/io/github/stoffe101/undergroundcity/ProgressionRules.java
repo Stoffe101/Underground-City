@@ -9,7 +9,7 @@ import java.util.Set;
 public final class ProgressionRules {
     public static final int MAX_XP = 2_000_000;
     public static final Set<String> CITIES = Set.of("valewood", "ironhaven", "blackwater");
-    public static final Set<String> CAREERS = Set.of("farmer", "smith", "gunsmith", "technician");
+    public static final Set<String> CAREERS = Set.of("farmer", "vintner", "smith", "gunsmith", "technician");
     public static final Set<String> GENERAL_SKILLS = Set.of("driving", "fitness", "shooting", "trading", "social");
 
     private ProgressionRules() {}

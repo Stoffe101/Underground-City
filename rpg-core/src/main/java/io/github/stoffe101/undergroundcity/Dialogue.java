@@ -101,7 +101,7 @@ final class Dialogue {
 
     static String careerTitle(String career) {
         return switch (career == null ? "" : career) {
-            case "farmer" -> "Farmer and vintner"; case "smith" -> "Smith and engineer"; case "gunsmith" -> "Gunsmith and arms dealer"; case "technician" -> "Hacker and technician";
+            case "farmer" -> "Farmer"; case "vintner" -> "Vintner"; case "smith" -> "Smith and engineer"; case "gunsmith" -> "Gunsmith and arms dealer"; case "technician" -> "Hacker and technician";
             default -> career == null ? "" : career;
         };
     }

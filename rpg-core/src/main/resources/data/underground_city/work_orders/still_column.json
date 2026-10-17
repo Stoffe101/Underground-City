@@ -1,0 +1,17 @@
+{
+  "schema_version": 2,
+  "title": "Commission a still column",
+  "career": "vintner",
+  "level": 5,
+  "foreign_visits": 2,
+  "requirements": [
+    {
+      "item": "underground_city:still_column_kit",
+      "count": 1
+    }
+  ],
+  "credits": 150,
+  "xp": 600,
+  "capacity": 2,
+  "refill_ticks": 12000
+}

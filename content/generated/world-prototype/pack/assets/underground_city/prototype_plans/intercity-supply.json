@@ -51,7 +51,61 @@
         "smuggling"
       ],
       "tier": 3,
-      "unlock": "precision_viticulture",
+      "unlock": "precision_agronomy",
+      "visit_requirement": "personally_visit_all_three_cities"
+    },
+    {
+      "career": "vintner",
+      "id": "vintner_cellar_2",
+      "legitimate_paths": [
+        "regional_trade",
+        "courier_contract",
+        "npc_purchase"
+      ],
+      "requires": [
+        {
+          "commodity": "refined_alloy",
+          "origin": "ironhaven"
+        },
+        {
+          "commodity": "biopolymer",
+          "origin": "valewood"
+        }
+      ],
+      "risky_paths": [
+        "black_market"
+      ],
+      "tier": 2,
+      "unlock": "temperature_controlled_cellar",
+      "visit_requirement": "personally_visit_at_least_one_required_foreign_city"
+    },
+    {
+      "career": "vintner",
+      "id": "vintner_distillery_3",
+      "legitimate_paths": [
+        "licensed_convoy",
+        "regional_contracts"
+      ],
+      "requires": [
+        {
+          "commodity": "refined_alloy",
+          "origin": "ironhaven"
+        },
+        {
+          "commodity": "biopolymer",
+          "origin": "valewood"
+        },
+        {
+          "commodity": "control_circuits",
+          "origin": "blackwater"
+        }
+      ],
+      "risky_paths": [
+        "theft",
+        "smuggling"
+      ],
+      "tier": 3,
+      "unlock": "column_still_distillery",
       "visit_requirement": "personally_visit_all_three_cities"
     },
     {

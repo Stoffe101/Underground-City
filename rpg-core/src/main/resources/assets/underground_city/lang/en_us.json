@@ -13,6 +13,7 @@
   "item.underground_city.climate_module": "Vineyard Climate Module",
   "item.underground_city.composite_housing": "Composite Equipment Housing",
   "item.underground_city.control_circuits": "Control Circuit Board",
+  "item.underground_city.cooperage_set": "Cellar Cooperage Set",
   "item.underground_city.cultivation_nutrient": "Cultivation Nutrient",
   "item.underground_city.data_ledger": "Encrypted Ledger",
   "item.underground_city.encrypted_design": "Encrypted Design Disc",
@@ -39,7 +40,9 @@
   "item.underground_city.secure_data_terminal": "Secured Data Terminal",
   "item.underground_city.security_array": "Municipal Security Array",
   "item.underground_city.security_fabric": "Security Fabric",
+  "item.underground_city.seed_drill_kit": "Seed Drill Service Kit",
   "item.underground_city.specialized_equipment_platform": "Specialized Equipment Platform",
+  "item.underground_city.still_column_kit": "Still Column Kit",
   "item.underground_city.unstamped_plate": "Unstamped Plate",
   "key.categories.underground_city": "Underground City",
   "key.underground_city.tracker": "Show or hide the active order"

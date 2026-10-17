@@ -4,6 +4,10 @@
   "items": [
     {"item": "minecraft:wooden_hoe", "count": 1},
     {"item": "minecraft:wheat_seeds", "count": 12},
-    {"item": "minecraft:bread", "count": 4}
+    {"item": "minecraft:bread", "count": 4},
+    {"item": "farm_and_charm:barley_seeds", "count": 6, "requires_mod": "farm_and_charm"},
+    {"item": "farm_and_charm:tomato_seeds", "count": 4, "requires_mod": "farm_and_charm"},
+    {"item": "farm_and_charm:strawberry_seeds", "count": 4, "requires_mod": "farm_and_charm"},
+    {"item": "farm_and_charm:scarecrow", "count": 1, "requires_mod": "farm_and_charm"}
   ]
 }

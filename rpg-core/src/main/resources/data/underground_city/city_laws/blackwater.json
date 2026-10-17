@@ -6,7 +6,8 @@
     "restricted_components": "legal",
     "restricted_electronics": "legal",
     "firearms_licensed": "legal",
-    "firearms_restricted": "permit"
+    "firearms_restricted": "permit",
+    "restricted_spirits": "legal"
   },
   "fines": {
     "permit": 20,

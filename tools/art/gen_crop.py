@@ -9,7 +9,7 @@ import json, math, os, sys
 sys.path.insert(0, os.path.dirname(__file__))
 from uc_art import Sprite
 import sable, sable_parts
-from preview import FACE_CORNERS
+from faces import FACE_CORNERS
 
 ASSETS = os.path.join(os.path.dirname(__file__), '..', '..', 'rpg-core', 'src', 'main', 'resources', 'assets', 'underground_city')
 TEX = os.path.join(ASSETS, 'textures', 'block')

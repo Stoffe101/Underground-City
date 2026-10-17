@@ -160,7 +160,6 @@ final class Gallery {
             {"farm_and_charm:tomato_crop", "4", ""}, {"farm_and_charm:strawberry_crop", "5", ""}, {"farm_and_charm:lettuce_crop", "3", ",big=false,giant=false"},
             {"farm_and_charm:onion_crop", "3", ",big=false,giant=false"},
             {"vinery:red_grape_bush", "3", ""}, {"vinery:white_grape_bush", "3", ""},
-            {"tadackosdrinks:barley_crop", "5", ""}, {"tadackosdrinks:hop_crop", "3", ""}, {"tadackosdrinks:agave", "2", ""},
         };
         Playtest.queue("lay the ground, the water and every crop at every age", () -> {
             int ox = origin[0].getX(), oy = origin[0].getY(), oz = origin[0].getZ();
@@ -189,7 +188,7 @@ final class Gallery {
         String[][] machines = {
             {"farm_and_charm:stove[facing=south,lit=false]", "farm_and_charm:cooking_pot[facing=south,lit=false,cooking=false,needs_support=false]", "farm_and_charm:mincer", "farm_and_charm:roaster[facing=south,lit=false,roasting=false,hanging=false]", "farm_and_charm:scarecrow[facing=south]", "farm_and_charm:crafting_bowl"},
             {"vinery:apple_press[facing=south,half=lower]", "vinery:fermentation_barrel[facing=south]", "vinery:oak_wine_rack_big[facing=south]", "vinery:basket", "vinery:wine_box[facing=south,open=false]", "vinery:storage_pot[facing=south,open=false]", "vinery:dark_cherry_barrel[facing=south,open=false]"},
-            {"tadackosdrinks:pot_still[facing=south]", "tadackosdrinks:column_still", "tadackosdrinks:condenser", "tadackosdrinks:copper_pot", "tadackosdrinks:keg[facing=south]", "tadackosdrinks:fermenting_barrel_oak[facing=south]", "tadackosdrinks:manual_crusher_oak", "tadackosdrinks:manual_press_oak"},
+            {"kaleidoscope_tavern:barrel", "kaleidoscope_tavern:pressing_tub", "kaleidoscope_tavern:tap", "kaleidoscope_tavern:shaker", "kaleidoscope_tavern:vodka", "kaleidoscope_tavern:whiskey", "kaleidoscope_tavern:rum", "kaleidoscope_tavern:brandy", "kaleidoscope_tavern:wine"},
         };
         Playtest.queue("lay the machine showroom", () -> {
             int ox = origin[0].getX(), oy = origin[0].getY(), oz = origin[0].getZ();
@@ -204,7 +203,7 @@ final class Gallery {
         Playtest.wait("let the machine meshes build", 80);
         for (int row = 0; row < machines.length; row++) {
             final int r = row;
-            String[] names = {"farm", "vinery", "tadacko"};
+            String[] names = {"farm", "vinery", "kaleidoscope"};
             shot("mod-machines-" + names[r] + "-wide", at(origin, 7.5, 2.6, 40 + r * 6 + 6.0), at(origin, 7.5, 0.6, 40 + r * 6 + 0.5));
             for (int i = 0; i < machines[r].length; i++) {
                 final int idx = i;

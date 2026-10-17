@@ -160,7 +160,7 @@ public final class VisualCaptureHarness {
             case "dialogue-registrar" -> new DialogueScreen(-1,"Imani Okafor","Registrar","valewood",
                 "Welcome to Founders Row. Nobody gets a terminal without a name on the register. Tell me where you want to live and how you mean to earn it, and I will file it.",
                 List.of(c.apply("register","Register me"),c.apply("cities","Tell me about the three cities"),c.apply("bye","Goodbye")),true);
-            case "dialogue-employer" -> new DialogueScreen(-1,"Odette Marsh","Employer: Farmer and vintner","valewood",
+            case "dialogue-employer" -> new DialogueScreen(-1,"Odette Marsh","Employer: Farmer","valewood",
                 "The canteen wants bread again, the greenhouses want hands, and the co-op pays on delivery. Come through to the office and we will go over the orders.",
                 List.of(c.apply("orders","Open my orders"),c.apply("demand","How does demand work?"),c.apply("bye","Goodbye")),true);
             default -> new DialogueScreen(-1,"Sergeant Halloran","Gate guard","valewood",

@@ -6,6 +6,9 @@ All shapes are drawn from rectangles and lines with a seeded random number gener
 """
 from __future__ import annotations
 import os, random
+import sys
+sys.path.insert(0, os.path.dirname(__file__))
+from uc_art import preview_dir
 from PIL import Image
 
 ASSETS = os.path.join(os.path.dirname(__file__), '..', '..', 'rpg-core', 'src', 'main', 'resources', 'assets', 'underground_city', 'textures', 'gui')
@@ -216,4 +219,4 @@ if __name__ == '__main__':
     sheet = Image.new('RGBA', (W * 3 + 16, H + 8), (20, 28, 38, 255))
     for i, n in enumerate(('ironhaven', 'valewood', 'blackwater')):
         sheet.alpha_composite(Image.open(os.path.join(ASSETS, f'skyline_{n}.png')), (4 + i * (W + 4), 4))
-    sheet.resize((sheet.width * 3, sheet.height * 3), Image.NEAREST).save('/tmp/claude-0/-home-user-Underground-City/85892c3f-5725-536f-8521-6d736810d423/scratchpad/skylines1.png')
+    sheet.resize((sheet.width * 3, sheet.height * 3), Image.NEAREST).save(os.path.join(preview_dir(), 'skylines1.png'))

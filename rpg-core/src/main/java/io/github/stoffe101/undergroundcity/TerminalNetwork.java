@@ -349,7 +349,7 @@ public final class TerminalNetwork {
     /** Server to client: show the first-login registration screen. */
     public static void openRegistration(ServerPlayer player) {
         java.util.Map<String, java.util.List<String>> kits = new java.util.LinkedHashMap<>();
-        for (String career : java.util.List.of("farmer", "smith", "gunsmith", "technician")) kits.put(career, StarterKits.INSTANCE.displayItems(career, 5));
+        for (String career : java.util.List.of("farmer", "vintner", "smith", "gunsmith", "technician")) kits.put(career, StarterKits.INSTANCE.displayItems(career, 5));
         CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new OpenRegistration(kits));
     }
 

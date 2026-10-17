@@ -388,6 +388,9 @@ final class Scenarios {
         view("farm-inside", 25.2, 2.3, 12.4, 29, 1, 9.5);
         view("registry-inside", 25.2, 2.3, 36.2, 29, 1, 34);
         view("cottage-inside", 7.2, 2.3, 28.4, 3, 1, 25);
+        view("cellar-front", 18.5, 2.6, 44, 24, 2, 43);
+        view("cellar-inside", 25.2, 2.3, 44.4, 29, 1, 41.5);
+        view("vineyard", 12, 3.5, 40.5, 5, 0.6, 43);
         // the firing range, from the line and from above
         Playtest.queue("camera for the firing range", () -> {
             Vec3 o = Vec3.atLowerCornerOf(DistrictBuilder.originOf(level(), "firing_range"));
@@ -410,7 +413,7 @@ final class Scenarios {
         // ---- The people, with their AI on. Creative mode so the player can stand anywhere and nothing can hurt them.
         Playtest.queue("creative mode, HUD back on", () -> { Playtest.command("gamemode creative"); Minecraft.getInstance().options.hideGui = false; });
         Playtest.wait("settle", 20);
-        int registrar = citizenIndex("registrar", null), gunsmith = citizenIndex("employer", "gunsmith"), farmer = citizenIndex("employer", "farmer");
+        int registrar = citizenIndex("registrar", null), gunsmith = citizenIndex("employer", "gunsmith"), farmer = citizenIndex("employer", "farmer"), vintner = citizenIndex("employer", "vintner");
         int vendor = citizenIndex("vendor", null), guard = citizenIndex("guard", null);
         talkTo("the registrar (a newcomer)", registrar, "dialogue", "uc-row-dialogue-registrar");
         checkHold("the registrar", registrar);
@@ -423,6 +426,8 @@ final class Scenarios {
         chooseOption("What should I do next?", 0, "dialogue", "uc-row-dialogue-next-step");
         closeScreen("the conversation");
         talkTo("the farm co-op's employer (not this citizen's trade)", farmer, "dialogue", "uc-row-dialogue-wrong-employer");
+        closeScreen("the conversation");
+        talkTo("the cellar master (not this citizen's trade)", vintner, "dialogue", "uc-row-dialogue-vintner");
         closeScreen("the conversation");
         // The gunsmith's employer is probably at the bell: asking for her orders sends her back to her desk, and she is held only while we talk.
         talkTo("the gunsmith's employer", gunsmith, "dialogue", "uc-row-dialogue-employer");

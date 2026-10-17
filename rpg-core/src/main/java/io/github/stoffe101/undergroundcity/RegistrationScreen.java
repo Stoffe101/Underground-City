@@ -31,10 +31,11 @@ public final class RegistrationScreen extends UcScreen {
         new City("blackwater", "BLACKWATER", UcUi.BLACKWATER, "Glass towers, a working harbour and nightlife on the water.",
             "Technicians, shippers, brokers", "Uneven enforcement", "Ironhaven, Valewood: about 4 min"));
     private static final List<Career> CAREERS = List.of(
-        new Career("farmer", "FARMER / VINTNER", UcUi.Icon.FARMER, 0xff86c45a, "Crops, seed stock and licensed cultivars", "Restricted cultivation, quiet bales"),
-        new Career("smith", "SMITH / ENGINEER", UcUi.Icon.SMITH, 0xffe07b39, "Structural steel and plating for the guard", "Unstamped plate, contraband armour"),
-        new Career("gunsmith", "GUNSMITH / ARMS DEALER", UcUi.Icon.GUNSMITH, 0xffd9b455, "Licensed repairs, a dealer licence, security work", "Unregistered builds, arms brokerage"),
-        new Career("technician", "HACKER / TECHNICIAN", UcUi.Icon.TECHNICIAN, 0xff46c9e0, "Municipal repairs, automation, security systems", "Bypass tooling, fictional data recovery"));
+        new Career("farmer", "FARMER", UcUi.Icon.FARMER, 0xff86c45a, "Crops, greenhouses and estate supply", "Restricted cultivation, quiet bales"),
+        new Career("vintner", "VINTNER", UcUi.Icon.VINTNER, 0xffc279d6, "Wine, cellars and a licensed still", "An unlicensed still: moonshine"),
+        new Career("smith", "SMITH / ENGINEER", UcUi.Icon.SMITH, 0xffe07b39, "Steel and plating for the guard", "Unstamped plate, contraband armour"),
+        new Career("gunsmith", "GUNSMITH", UcUi.Icon.GUNSMITH, 0xffd9b455, "Licensed repairs and a dealer licence", "Unregistered builds, arms brokerage"),
+        new Career("technician", "TECHNICIAN", UcUi.Icon.TECHNICIAN, 0xff46c9e0, "Municipal repairs and security systems", "Bypass tooling, data recovery"));
 
     private int step, cityIndex = -1, careerIndex = -1;
     private boolean sending, qa;
@@ -51,6 +52,7 @@ public final class RegistrationScreen extends UcScreen {
     static RegistrationScreen forCapture(int step, int city, int career, String message) {
         RegistrationScreen screen = new RegistrationScreen(Map.of(
             "farmer", List.of("minecraft:wooden_hoe", "minecraft:wheat_seeds", "minecraft:bread"),
+            "vintner", List.of("minecraft:wooden_hoe", "minecraft:sweet_berries", "minecraft:glass_bottle", "minecraft:barrel", "minecraft:bread"),
             "smith", List.of("minecraft:stone_pickaxe", "minecraft:coal", "minecraft:bread"),
             "gunsmith", List.of("minecraft:bow", "minecraft:arrow", "minecraft:iron_ingot", "minecraft:copper_ingot", "minecraft:bread"),
             "technician", List.of("minecraft:redstone", "minecraft:copper_ingot", "minecraft:bread")));
@@ -89,15 +91,15 @@ public final class RegistrationScreen extends UcScreen {
     private int introHeight() { return bodyH() >= 232 ? 30 : 0; }
     private int bannerHeight() { return bodyH() >= 236 ? 64 : 44; }
 
-    /** Step 0: three columns of cities; step 1: a 2 x 2 grid of professions. Returns {x, y, w, h}. */
+    /** Step 0: three columns of cities; step 1: a 3 x 2 grid (five trades and a legend). Returns {x, y, w, h}. */
     private int[] cardBounds(int index) {
         int gap = 8, top = bodyY() + (step == 0 ? introHeight() : 18), bottom = footerY() - (step == 0 ? 8 : 24);
         if (step == 0) {
             int w = (bodyW() - 2 * gap) / 3;
             return new int[]{bodyX() + index * (w + gap), top, w, bottom - top};
         }
-        int w = (bodyW() - gap) / 2, h = (bottom - top - gap) / 2;
-        return new int[]{bodyX() + (index % 2) * (w + gap), top + (index / 2) * (h + gap), w, h};
+        int w = (bodyW() - 2 * gap) / 3, h = (bottom - top - gap) / 2;
+        return new int[]{bodyX() + (index % 3) * (w + gap), top + (index / 3) * (h + gap), w, h};
     }
 
     int[] cardCentre(int index) { int[] b = cardBounds(index); return new int[]{b[0] + b[2] / 2, b[1] + b[3] / 2}; }
@@ -258,8 +260,18 @@ public final class RegistrationScreen extends UcScreen {
             g.fill(b[0] + 6, rule, b[0] + b[2] - 6, rule + 1, 0xff243a4e);
             renderStarterKit(g, career.id(), b[0] + 8, b[1] + b[3] - 22, 5, true);
         }
-        UcUi.icon(g, UcUi.Icon.INFO, bodyX(), footerY() - 22, UcUi.AMBER);
-        UcUi.text(g, font, "Legal and underground work are open to every trade, at any time.", bodyX() + 20, footerY() - 18, 0xffd9bd85);
+        // the sixth cell is not a choice: it explains the two kinds of work every card names
+        int[] n = cardBounds(CAREERS.size());
+        UcUi.well(g, n[0], n[1], n[2], n[3]);
+        int y = n[1] + 9;
+        UcUi.display(g, font, "Two sides to every trade", n[0] + 8, y, UcUi.AMBER);
+        y += 18;
+        UcUi.icon(g, UcUi.Icon.LEGAL, n[0] + 6, y - 4, UcUi.LEGAL);
+        y = Math.max(UcUi.wrapped(g, font, "Honest work: licensed, taxed and safe.", n[0] + 24, y, n[2] - 30, UcUi.SOFT, 2), y + 12) + 4;
+        UcUi.icon(g, UcUi.Icon.UNDERGROUND, n[0] + 6, y - 4, UcUi.UNDERGROUND);
+        y = Math.max(UcUi.wrapped(g, font, "Off the books: pays more, can be seized.", n[0] + 24, y, n[2] - 30, UcUi.UNDERGROUND_TEXT, 2), y + 12) + 4;
+        UcUi.icon(g, UcUi.Icon.INFO, n[0] + 6, y - 4, UcUi.AMBER);
+        UcUi.wrapped(g, font, "Both stay open to every trade, always.", n[0] + 24, y, n[2] - 30, 0xffd9bd85, 2);
     }
 
     private void renderConfirm(GuiGraphics g) {

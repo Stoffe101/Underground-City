@@ -1,0 +1,24 @@
+{
+  "schema_version": 3,
+  "title": "Fill an estate cellar",
+  "career": "vintner",
+  "level": 6,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "vinery:noir_wine",
+      "count": 4
+    },
+    {
+      "item": "vinery:cherry_wine",
+      "count": 4
+    }
+  ],
+  "credits": 220,
+  "xp": 430,
+  "capacity": 2,
+  "refill_ticks": 12000,
+  "legality": "legal",
+  "requires_skill": "vintner.estate_vintages",
+  "requires_mod": "vinery"
+}
