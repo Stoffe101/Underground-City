@@ -39,8 +39,8 @@ class DevClientInputs(unittest.TestCase):
         ids = {m["mod_id"] for m in MANIFEST["mods"]}
         self.assertTrue({"lostcities", "tacz", "taczblueprints", "modernlife", "mts", "mtsofficialpack", "oamp"} <= ids)
         sets = {s for m in MANIFEST["mods"] for s in m["sets"]}
-        # "vintner" and "farming" are opt-in candidate sets (-PucPack=...,vintner,farming); the default pack stays the four above
-        self.assertEqual(sets, {"world", "firearms", "vehicles", "boats", "vintner", "farming"})
+        # "vintner", "farming" and "qol" are opt-in candidate sets (-PucPack=...,vintner,farming,qol); the default pack stays the four above
+        self.assertEqual(sets, {"world", "firearms", "vehicles", "boats", "vintner", "farming", "qol"})
 
     def test_wrapper_and_run_configurations_exist(self):
         for name in ("gradlew", "gradlew.bat", "gradle/wrapper/gradle-wrapper.properties", "settings.gradle"):

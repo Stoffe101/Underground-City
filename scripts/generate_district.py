@@ -458,7 +458,7 @@ def founders_row() -> dict:
     # the vintner's cellar office (east side, south of the registry) and a small vineyard opposite it. Vinery and Kaleidoscope Tavern blocks are placed only
     # when those mods are installed; the vanilla barrels and the cauldron stand in for them so the rooms are furnished either way.
     vintner = Building(24, 40, mirror=True)
-    ops += office(vintner, career="vintner", name="Lucien Faure - Cellar Master", profession="leatherworker", workstation="minecraft:cauldron[level=0]",
+    ops += office(vintner, career="vintner", name="Lucien Faure - Cellar Master", profession="leatherworker", workstation="minecraft:cauldron",
                   wall="minecraft:mud_bricks", trim="minecraft:stripped_dark_oak_log", base="minecraft:stone_bricks", floor="minecraft:spruce_planks",
                   roof="minecraft:brick_stairs", ridge="minecraft:bricks", ceiling="minecraft:dark_oak_planks", door="dark_oak",
                   shutter="dark_oak", sign_wood="dark_oak", title=["WINE CELLAR", "Lucien Faure", "Orders daily"], rug="purple",

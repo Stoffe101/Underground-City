@@ -211,6 +211,8 @@ public final class UndergroundGameTests {
                 else if (!order.underground()) legal = true;
             }
             if (career.equals("gunsmith") && !tacz) continue; // gun contracts need TaCZ; they are skipped, not broken
+            // the Vintner's wine and spirits contracts need Vinery and Kaleidoscope Tavern: skipped without them, not broken
+            if (career.equals("vintner") && !(ModList.get().isLoaded("vinery") && ModList.get().isLoaded("kaleidoscope_tavern"))) { check(legal, "vintner needs legal work"); continue; }
             check(legal && underground, career + " needs both legal and underground contracts");
         }
         check(!BuyerCatalog.INSTANCE.all().isEmpty() && BuyerCatalog.INSTANCE.all().stream().anyMatch(BuyerCatalog.Buyer::underground), "Buyers missing");
@@ -327,6 +329,31 @@ public final class UndergroundGameTests {
             check("firearms_restricted".equals(ContrabandCatalog.INSTANCE.classify(uzi)), "Restricted weapon misclassified");
             check("firearms_restricted".equals(ContrabandCatalog.INSTANCE.classify(unknown)), "An unknown gun from another pack must be treated as restricted");
         } finally { ContrabandCatalog.INSTANCE.replaceForTest(original); }
+        helper.succeed();
+    }
+
+    /** The Vintner's spirits (D-067): contraband by item tag, a different status in every city, a licence node, and wine stays ordinary trade. */
+    @GameTest(template = "empty")
+    public static void spiritsAreContrabandWineIsNotAndTheVintnerHasBothPaths(GameTestHelper helper) {
+        check(CityLaws.INSTANCE.find("ironhaven").status("restricted_spirits").equals("prohibited")
+            && CityLaws.INSTANCE.find("valewood").status("restricted_spirits").equals("permit")
+            && CityLaws.INSTANCE.find("blackwater").status("restricted_spirits").equals("legal"), "Spirits: prohibited in Ironhaven, permit in Valewood, legal in Blackwater");
+        var tree = SkillCatalog.INSTANCE.tree("vintner");
+        check(!tree.isEmpty() && tree.stream().anyMatch(n -> n.branch().equals("legal")) && tree.stream().anyMatch(n -> n.branch().equals("underground")), "The Vintner needs both a legal and an underground branch");
+        check(tree.stream().anyMatch(n -> n.id().equals("vintner.distillers_licence") && n.licences().contains("restricted_spirits")), "The Distiller's Licence must license restricted spirits");
+        check(WorkOrderCatalog.INSTANCE.forCareer("vintner").stream().filter(o -> o.foreignVisits() > 0).count() == 3, "The Vintner always has three supply-chain orders, with or without the wine and spirits mods");
+        if (ModList.get().isLoaded("kaleidoscope_tavern")) {
+            check("restricted_spirits".equals(ContrabandCatalog.INSTANCE.classify(new ItemStack(net.minecraft.core.registries.BuiltInRegistries.ITEM.get(ResourceLocation.parse("kaleidoscope_tavern:vodka"))))), "Vodka must be restricted spirits");
+            check("restricted_spirits".equals(ContrabandCatalog.INSTANCE.classify(new ItemStack(net.minecraft.core.registries.BuiltInRegistries.ITEM.get(ResourceLocation.parse("kaleidoscope_tavern:whiskey"))))), "Whiskey must be restricted spirits");
+            check(ContrabandCatalog.INSTANCE.classify(new ItemStack(net.minecraft.core.registries.BuiltInRegistries.ITEM.get(ResourceLocation.parse("kaleidoscope_tavern:wine")))) == null, "Wine is not contraband");
+            check(WorkOrderCatalog.INSTANCE.forCareer("vintner").stream().anyMatch(o -> o.id().equals("underground_city:quiet_bottles") && o.underground()), "The quiet bottle contract must exist when Kaleidoscope Tavern is installed");
+        } else {
+            check(WorkOrderCatalog.INSTANCE.forCareer("vintner").stream().noneMatch(o -> o.id().equals("underground_city:quiet_bottles")), "Without Kaleidoscope Tavern the spirits contracts must not be offered");
+        }
+        if (ModList.get().isLoaded("vinery")) {
+            check(ContrabandCatalog.INSTANCE.classify(new ItemStack(net.minecraft.core.registries.BuiltInRegistries.ITEM.get(ResourceLocation.parse("vinery:red_wine")))) == null, "Vinery wine is not contraband");
+            check(WorkOrderCatalog.INSTANCE.forCareer("vintner").stream().anyMatch(o -> o.id().equals("underground_city:tavern_table_wine")), "The tavern wine contract must exist when Vinery is installed");
+        }
         helper.succeed();
     }
 

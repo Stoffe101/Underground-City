@@ -323,6 +323,62 @@
       "source_url": "https://modrinth.com/mod/kaleidoscopetavern/version/mUnU2u9e",
       "distribution": "download from the author's page; never commit the binary",
       "notes": "Kaleidoscope Tavern 1.2.0, BSD-3-Clause code and CC BY-NC-SA 4.0 assets (private, non-commercial play; never redistributed). Barrel recipes turn water and potato, wheat or sugar cane into unaged spirits in two minutes (a crude home brew, not a still). Chosen over Tadacko's Drinks, whose pot and column stills are the better fit but whose 1.0.0 to 1.2.0 jars crash a dedicated server at mod construction (a client-only class loaded by an automatic event subscriber). Not adopted until a dedicated-server boot and a real-client inspection of this exact jar are recorded."
+    },
+    {
+      "id": "jei",
+      "name": "Just Enough Items (JEI)",
+      "slug": "jei",
+      "project_id": "u6dRKJwZ",
+      "version_id": "9jqubC9n",
+      "version_number": "15.56.0.205",
+      "published": "2026-08-31",
+      "filename": "jei-1.20.1-forge-15.56.0.205.jar",
+      "size": 1778129,
+      "sha1": "7f64b7f8fde7f001ef054dabe3618a8780ba2650",
+      "sha512": "1306fe15c81d54aa9ff8f3d9f04812c0d61ffaaae433c29621f926db8f8e2c898669ccdd99e025849859d38b7a2eac170c466390b467f4dfa77542b5dbdd1678",
+      "license": "MIT",
+      "mod_id": "jei",
+      "role": "recipe and usage viewer (candidate quality-of-life interface)",
+      "sets": [
+        "qol"
+      ],
+      "requires": [],
+      "placement": "classpath",
+      "side": {
+        "client": "optional",
+        "server": "optional"
+      },
+      "source_url": "https://modrinth.com/mod/jei/version/9jqubC9n",
+      "distribution": "download from the author's page; never commit the binary",
+      "notes": "Just Enough Items 15.56.0.205, the latest non-beta 1.20.1 Forge release (newer builds are betas that need MezzConfig). MIT. Client and server optional. Opt-in set 'qol': it lets a player look up the Vintner's and Farmer's recipes in game; Core does not depend on it."
+    },
+    {
+      "id": "jade",
+      "name": "Jade 🔍",
+      "slug": "jade",
+      "project_id": "nvQzSEkH",
+      "version_id": "xJQHCmWJ",
+      "version_number": "11.13.3+forge",
+      "published": "2026-07-21",
+      "filename": "Jade-1.20.1-Forge-11.13.3.jar",
+      "size": 553487,
+      "sha1": "d08e64e66521d69e083c8525f1fc507f1c202384",
+      "sha512": "72025c4ad6d26522bafe3d5d6ac9d4702c006a868312cb34df8a7a2398a4618205839607b129c167fd176e58cb7655f08e3afbf1993925c80d4fcc559c45a037",
+      "license": "CC-BY-NC-SA-4.0",
+      "mod_id": "jade",
+      "role": "look-at tooltips (crop growth, machine state) (candidate quality-of-life interface)",
+      "sets": [
+        "qol"
+      ],
+      "requires": [],
+      "placement": "classpath",
+      "side": {
+        "client": "optional",
+        "server": "optional"
+      },
+      "source_url": "https://modrinth.com/mod/jade/version/xJQHCmWJ",
+      "distribution": "download from the author's page; never commit the binary",
+      "notes": "Jade 11.13.3. CC BY-NC-SA 4.0. Client and server optional. Opt-in set 'qol': shows what a block or plant is and how grown it is; Core does not depend on it."
     }
   ],
   "external": [

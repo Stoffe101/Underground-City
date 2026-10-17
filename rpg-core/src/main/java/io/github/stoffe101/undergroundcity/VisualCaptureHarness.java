@@ -192,6 +192,7 @@ public final class VisualCaptureHarness {
             cases.add(new Case("uc-terminal-"+page.name().toLowerCase(java.util.Locale.ROOT),page,
                 rich?rich("valewood",false,0,VALEWOOD_LAW):fixture(2,8,false,true),0,false,page==TerminalScreen.Page.SKILLS?"farmer.restricted_cultivation":null));
         }
+        cases.add(new Case("uc-skills-vintner",TerminalScreen.Page.SKILLS,careerSkills("vintner",11,java.util.Set.of("vintner.fundamentals","vintner.cellar_craft","vintner.still_craft")),0,false,"vintner.bootleg_trade"));
         cases.add(new Case("uc-skills-smith",TerminalScreen.Page.SKILLS,careerSkills("smith",11,java.util.Set.of("smith.fundamentals","smith.structural_works","smith.armoury_contracts","smith.unlisted_fabrication")),0,false,"smith.contraband_armoury"));
         cases.add(new Case("uc-skills-gunsmith",TerminalScreen.Page.SKILLS,careerSkills("gunsmith",11,java.util.Set.of("gunsmith.fundamentals","gunsmith.licensed_repairs","gunsmith.dealer_licence")),0,false,"gunsmith.unregistered_builds"));
         cases.add(new Case("uc-skills-technician",TerminalScreen.Page.SKILLS,careerSkills("technician",11,java.util.Set.of("technician.fundamentals","technician.municipal_repairs","technician.automation_install")),0,false,"technician.bypass_tooling"));

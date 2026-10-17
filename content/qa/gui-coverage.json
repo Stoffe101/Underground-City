@@ -241,6 +241,13 @@
       "description": "Secured terminal trace: last entry with the timer nearly spent"
     },
     {
+      "id": "skills.vintner",
+      "expected_file": "uc-skills-vintner.png",
+      "owner": "underground_city",
+      "group": "skills",
+      "description": "Skills tab for a level-11 Vintner (Home Distilling learned, Bootleg Trade selected) built from the real skill tree"
+    },
+    {
       "id": "skills.smith",
       "expected_file": "uc-skills-smith.png",
       "owner": "underground_city",

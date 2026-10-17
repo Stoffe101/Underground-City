@@ -18,6 +18,9 @@ which project.
 | `firearms` | TaCZ 1.1.8-hotfix2, TaCZ Blueprints 0.1.3 | real guns, ammo, attachments; per-gun blueprint items |
 | `vehicles` | Immersive Vehicles 24.0.0, Official Content Pack V29, Official Automobile Pack V3 | cars, trucks and a quad bike (the packs go in the game's `mods` folder) |
 | `boats` | Modern Life 1.75 | a motorboat with a persistent 27-slot hold and fuel (needs `-Dproduction=true` in a ForgeGradle run) |
+| `farming` | [Let's Do] Farm & Charm 1.0.14, Architectury 9.2.14 | **candidate** (opt-in, not in the default pack): crops with real growth stages, a stove, pots, silos and a scarecrow for the Farmer |
+| `vintner` | [Let's Do] Vinery 1.4.41, Kaleidoscope Tavern 1.2.0, Architectury 9.2.14 | **candidate** (opt-in): vineyards, a press, barrels and racks (Vinery) and barrel-brewed spirits and cocktails (Kaleidoscope) for the Vintner |
+| `qol` | Just Enough Items 15.56.0.205, Jade 11.13.3 | **candidate** (opt-in) interface helpers: a recipe viewer and look-at tooltips; Core does not depend on them |
 
 ## Using it
 
@@ -26,7 +29,7 @@ which project.
   to the manifest first, and nothing is bundled into the Core jar or committed.
 - **CI and local tests (runtime-only, hash checked):**
   `gradle -p rpg-core runGameTestServer -PucPack=firearms -PucEconomyTest=true -PucRunDir=run-pack-firearms`
-  (sets combine: `-PucPack=firearms,vehicles,boats`). `-PucPack=none` loads Core alone.
+  (sets combine: `-PucPack=firearms,vehicles,boats`; add `vintner,farming` for the candidates, e.g. `-PucPack=world,firearms,vehicles,boats,vintner,farming`). `-PucPack=none` loads Core alone.
 - **Private play outside Gradle:** `python scripts/fetch_dev_pack.py --sets world firearms vehicles boats --output build/dev-pack/mods`
   downloads the same files into an untracked folder (size and SHA-512 verified) so the owner can put them in a
   launcher. The owner is responsible for each author's licence terms.
