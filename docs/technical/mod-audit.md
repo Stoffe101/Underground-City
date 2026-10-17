@@ -71,3 +71,24 @@ Hash-pinned Modrinth releases used as **runtime-only development dependencies**;
 | Official Automobile Pack | V3 | All rights reserved | 137 `mts:oamp.*` items registered | no vehicle placed |
 
 Pufferfish's Skills was **not** selected: Core owns skill trees (D-050). This does not retire it as a possible display layer.
+
+## October 17 candidate review: wine, crops, spirits, cannabis and interface libraries
+
+Requested by the owner: prefer finished, high-quality mods and art over making our own, and consider a Farmer / Vintner split (D-067). Everything here is a **candidate**: metadata read from the Modrinth API and the jar files themselves in the cloud container, textures rendered to contact sheets and looked at. Nothing is adopted until a real-client inspection and a dedicated-server boot are recorded in the sprint report ([sprint-2026-10-17.md](../production/sprint-2026-10-17.md)). The default `runClient` pack is unchanged; the candidates are the opt-in sets `vintner` and `farming` (`-PucPack=world,firearms,vehicles,boats,vintner,farming`).
+
+| Candidate | Exact release (Forge 1.20.1) | Licence as published | Needs | What the jar shows | Verdict so far |
+| --- | --- | --- | --- | --- | --- |
+| [Let's Do] Vinery | 1.4.41 (2025-09-05), 2.0 M downloads on this build | "Custom" (project page links the authors' own text; **not retrievable from the cloud container**, so no redistribution right is assumed) | Architectury >= 9.0.8 | 297 textures of consistent, detailed pixel art: grapes, wine bottles, barrels, presses, racks, aprons and hats; 26 wine recipes (several are fantasy effect wines), `vinery:wine_fermentation` recipes | Strong candidate for the Vintner's legal path (grapes, press, cellar, bottles) |
+| [Let's Do] Farm & Charm | 1.0.14 (2025-10-09) | "Custom" (same authors' text) | Architectury | 324 textures; crops with real growth stages (barley, corn, oats, tomato, strawberry, lettuce, onion), stove, cooking pot, roaster, silos, scarecrow, sprinkler, food items; every crop has a `_stage` ladder | Strong candidate for the Farmer's legal crops and kitchen |
+| Tadacko's Drinks | 1.2.0 (2026-10-15) | MIT | GeckoLib >= 4.7 | the real processes: crusher, press, fermenting barrel, copper pot, **pot still, column still, condenser**; wash -> low wine -> mid and high-proof spirit; vodka, whisky, gin, rum, tequila, brandy and applejack; also its own grapes and wine (overlaps Vinery) | Candidate for the Vintner's underground spirits; ~130 downloads and only days old: unproven |
+| Smokeleaf Industries | 0.7-1.20.1 (CurseForge only; the uploader calls the 1.20.1 build a backport with likely issues) | MIT (template text; art licence not stated) | **Forge >= 47.4.23** (our pin is 47.4.10, D-007) | 25 tinted strains of one flat 16x16 sprite set at 12 stages, grow pots, lights, machines, joints, dealer villagers | **Not adopted**: not realistic (no palmate leaf), would own a second trading and effects system, needs a Forge bump |
+| Weeder Continued / original Weeder | NeoForge 1.21.x only / last Forge build 1.19.4 | All rights reserved | - | no 1.20.1 build exists | Not usable |
+| HempFarmer, Liert's CannaCraft, a "Pot Leaves" cannabis mod, Mystical Herbs | unverified | unverified | - | the pages could not be read from the cloud container (hosts refused) | Unverified; not evaluated |
+| Tobacconist | 4.1.0 (2026-10-12) | MIT | optional only | realistic tobacco farming, curing and blending; 6.4 MB | Not cannabis; kept as a possible later "licensed tobacco" idea only |
+| JEI / EMI | 15.71.0.224 beta / 1.1.24 | MIT / MIT | JEI: MezzConfig | recipe viewers; client-optional | Recommended later for any pack with this many recipes; not needed by the slice |
+| Patchouli | 1.20.1-85 | CC BY-NC-SA 3.0 | none | data-driven guide book | Possible later for a Founders' Handbook; our own Guide tab already exists |
+| Jade | 11.13.3 | CC BY-NC-SA 4.0 | none | block tooltips (crop growth, machine state) | Optional quality-of-life; not adopted |
+| Modern UI | 3.12.0.1 | LGPL-3.0-or-later | client only, 25 MB | replaces the whole game's UI rendering | **Not adopted**: heavy and global; our own toolkit (`UcUi`, D-068) is verified at three resolutions |
+| owo-lib | - | MIT | - | Fabric / Quilt only (no Forge 1.20.1 build) | Not usable |
+
+Notes on the evidence. The Modrinth search has **no** cannabis, hemp, marijuana or moonshine project for Forge 1.20.1 at all; the only cannabis mod with a 1.20.1 Forge file is on CurseForge. The CurseForge file CDN (`mediafilez.forgecdn.net`) is reachable from the cloud container, so a CurseForge-only jar can be fetched for inspection by file id and file name, but it cannot be pinned the way Modrinth releases are (no Modrinth maven coordinate), which is another reason not to depend on one. Tadacko's Drinks' mod id, items and blocks were read from its lang file and blockstates; Vinery's and Farm & Charm's from their blockstates and recipes.

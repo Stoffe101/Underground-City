@@ -92,6 +92,71 @@
    ],
    "placement": "mods_folder",
    "notes": "All rights reserved. Mod ID is checked against the jar when the pack is first booted."
+  },
+  {
+   "id": "architectury",
+   "slug": "architectury-api",
+   "version_id": "1MKTLiiG",
+   "mod_id": "architectury",
+   "role": "shared library the Let's Do mods require",
+   "sets": [
+    "vintner",
+    "farming"
+   ],
+   "notes": "LGPL-3.0-only. Pinned at 9.2.14 (Forge 1.20.1); Vinery needs >= 9.0.8. A library, never an authority."
+  },
+  {
+   "id": "geckolib",
+   "slug": "geckolib",
+   "version_id": "aC5KMoNg",
+   "mod_id": "geckolib",
+   "role": "animation library Tadacko's Drinks requires",
+   "sets": [
+    "vintner"
+   ],
+   "notes": "MIT. Pinned at 4.8.4; Tadacko's Drinks needs >= 4.7."
+  },
+  {
+   "id": "vinery",
+   "slug": "lets-do-vinery",
+   "version_id": "2I4cH49O",
+   "mod_id": "vinery",
+   "role": "candidate legal wine provider (vineyard, grape press, fermenting barrel)",
+   "sets": [
+    "vintner"
+   ],
+   "requires": [
+    "architectury"
+   ],
+   "notes": "[Let's Do] Vinery 1.4.41. Licence is the authors' custom text (not retrievable from the cloud container); treated as: private play only, never redistributed, binary fetched from the author's page. Candidate for the Vintner's legal branch (D-067, proposed): not adopted until a real-client inspection and a dedicated-server boot are recorded."
+  },
+  {
+   "id": "farm_and_charm",
+   "slug": "lets-do-farm-charm",
+   "version_id": "9fzY3YV6",
+   "mod_id": "farm_and_charm",
+   "role": "candidate crop and farmhouse-cooking provider for the Farmer",
+   "sets": [
+    "farming"
+   ],
+   "requires": [
+    "architectury"
+   ],
+   "notes": "[Let's Do] Farm & Charm 1.0.14. Custom licence (see vinery). Candidate for the Farmer's legal crops (D-067, proposed): not adopted until inspected."
+  },
+  {
+   "id": "tadackos_drinks",
+   "slug": "tadackos-drinks",
+   "version_id": "1wlnEn0I",
+   "mod_id": "tadackosdrinks",
+   "role": "candidate distilling provider (pot still, column still, condenser) for the Vintner's underground spirits",
+   "sets": [
+    "vintner"
+   ],
+   "requires": [
+    "geckolib"
+   ],
+   "notes": "Tadacko's Drinks 1.2.0, MIT. Fermented and distilled drinks with the real processes (wash, low wine, high-proof spirit). Also ships its own grapes and wine, which would overlap Vinery: one provider must own wine (D-067, proposed). Very new (published 2026-10-15, ~130 downloads): treated as unproven."
   }
  ],
  "external": [
