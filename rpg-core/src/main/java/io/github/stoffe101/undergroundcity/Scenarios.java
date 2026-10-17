@@ -194,6 +194,30 @@ final class Scenarios {
     private static BlockPos secureCell(BlockPos row) { return row.offset(rowOp("secure_terminal").a()); }
 
     /**
+     * Where to stand to speak to a citizen: the nearest of a few spots around them (toward the lane first, then every side, near then a little farther)
+     * where there is room for a player and nothing solid between the player's eyes and the citizen's head. A desk, a counter or a wall decides which.
+     */
+    private static Vec3 standingSpot(net.minecraft.world.entity.npc.Villager villager) {
+        double laneX = Vec3.atLowerCornerOf(DistrictBuilder.originOf(level(), "founders_row")).x + 16.5;
+        double toward = Math.signum(laneX - villager.getX()) == 0 ? 1 : Math.signum(laneX - villager.getX());
+        double[][] offsets = {{toward * 1.5, 0}, {-toward * 1.5, 0}, {0, 1.5}, {0, -1.5}, {toward * 2.2, 0}, {-toward * 2.2, 0}, {0, 2.2}, {0, -2.2},
+            {toward * 1.5, 1.5}, {toward * 1.5, -1.5}, {-toward * 1.5, 1.5}, {-toward * 1.5, -1.5}};
+        Vec3 head = villager.position().add(0, villager.getBbHeight() * 0.85, 0);
+        for (double[] offset : offsets) {
+            Vec3 spot = villager.position().add(offset[0], 0, offset[1]);
+            BlockPos feet = BlockPos.containing(spot);
+            boolean room = level().getBlockState(feet).getCollisionShape(level(), feet).isEmpty()
+                && level().getBlockState(feet.above()).getCollisionShape(level(), feet.above()).isEmpty()
+                && !level().getBlockState(feet.below()).getCollisionShape(level(), feet.below()).isEmpty();
+            if (!room) continue;
+            Vec3 eye = spot.add(0, 1.62, 0);
+            var hit = level().clip(new net.minecraft.world.level.ClipContext(eye, head, net.minecraft.world.level.ClipContext.Block.COLLIDER, net.minecraft.world.level.ClipContext.Fluid.NONE, villager));
+            if (hit.getType() == net.minecraft.world.phys.HitResult.Type.MISS) return spot;
+        }
+        return villager.position().add(toward * 1.5, 0, 0);
+    }
+
+    /**
      * Speaks to a citizen with a real right click while their AI is running: they walk, so each attempt stands a step in front of where they are now,
      * aims at their head, presses, and looks at what opened. A miss is simply tried again (up to six times) from wherever they have got to.
      * {@code expect} says what should open: "dialogue", "registration", "terminal" or "ledger".
@@ -208,8 +232,7 @@ final class Scenarios {
                 case 0 -> {
                     var villager = citizen(null, index);
                     if (villager == null) { Playtest.fail(label + " is not in the world"); return true; }
-                    double laneX = Vec3.atLowerCornerOf(DistrictBuilder.originOf(level(), "founders_row")).x + 16.5;
-                    Vec3 where = villager.position().add(Math.signum(laneX - villager.getX()) * 1.5, 0, 0);
+                    Vec3 where = standingSpot(villager);
                     stand[0] = where;
                     standLooking(where, villager.position().add(0, villager.getBbHeight() * 0.85, 0));
                     tick[0] = 0; phase[0] = 1;
@@ -365,7 +388,7 @@ final class Scenarios {
 
     private static void rowViews() {
         Playtest.queue("spectator camera, no HUD", () -> { Playtest.command("gamemode spectator"); Minecraft.getInstance().options.hideGui = true; });
-        Playtest.queue("time of day: noon", () -> { Playtest.command("time set 6000"); Playtest.command("gamerule doDaylightCycle false"); Playtest.command("weather clear"); });
+        Playtest.queue("time of day: noon", () -> { Playtest.command("time set 6000"); Playtest.command("gamerule doDaylightCycle false"); Playtest.command("weather clear"); Playtest.command("gamerule sendCommandFeedback false"); });
         waitForMeshes(1500);
         view("overview-nw", -9, 24, -16, 16, 0, 22);
         view("overview-ne", 42, 22, -14, 16, 0, 22);
