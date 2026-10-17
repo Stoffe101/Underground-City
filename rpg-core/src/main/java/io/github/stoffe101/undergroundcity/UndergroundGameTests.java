@@ -149,8 +149,10 @@ public final class UndergroundGameTests {
         SkillService.learn(player, "farmer.fundamentals");
         check(SkillService.has(player, "farmer.fundamentals") && SkillService.pointsAvailable(citizen(player)) == 2, "Fundamentals not learned");
         check("Already unlocked".equals(SkillService.blocker(citizen(player), fundamentals)), "A skill cannot be bought twice");
-        rejected(() -> SkillService.learn(player, "farmer.restricted_cultivation")); // needs greenhouse_management and level 6
-        check(!SkillService.has(player, "farmer.restricted_cultivation"), "Prerequisite skipped");
+        rejected(() -> SkillService.learn(player, "farmer.restricted_cultivation")); // needs level 6 and three points
+        check(!SkillService.has(player, "farmer.restricted_cultivation"), "Level gate skipped");
+        rejected(() -> SkillService.learn(player, "farmer.controlled_crop_licence")); // needs restricted_cultivation
+        check(!SkillService.has(player, "farmer.controlled_crop_licence"), "Prerequisite skipped");
         SkillService.learn(player, "farmer.greenhouse_management");
         check(SkillService.has(player, "farmer.greenhouse_management") && SkillService.pointsAvailable(citizen(player)) == 0, "Legal skill not learned");
         // Take the underground branch too: level up, buy it. Nothing about the legal skills changes.
@@ -444,6 +446,48 @@ public final class UndergroundGameTests {
             check(hold.getItem(0).isEmpty() && hold.getItem(1).getCount() == 16, "Only the forbidden cargo is taken from the hold");
             check(QShopEconomy.balance(driver) == 100 - valewood.fine(CityLaws.PROHIBITED), "The fine is charged: " + QShopEconomy.balance(driver));
             boat.discard();
+        } finally { fixture.close(); }
+        helper.succeed();
+    }
+
+    /**
+     * Immersive Vehicles' crate parts (D-077): a real Quad is placed from its item, a real crate is fitted in its rack and filled, and the checkpoint search
+     * takes the contraband from it when the Quad comes into the zone, and from the seat's side of the vehicle too. Nothing is taken from a Quad left outside.
+     */
+    @GameTest(template = "empty", timeoutTicks = 100)
+    public static void anImmersiveVehiclesCrateIsSearchedWithItsRiderAndAParkedOneIsNot(GameTestHelper helper) throws Exception {
+        if (!ModList.get().isLoaded("mts") || !ModList.get().isLoaded("mtsofficialpack") || !QShopEconomy.available()) { helper.succeed(); return; }
+        Fixture fixture = fixture(helper, "valewood");
+        try {
+            CheckpointCatalog.Checkpoint gate = new CheckpointCatalog.Checkpoint("test_gate", "Test gate", "valewood", "minecraft:overworld", 0, 0, 48, "inspection");
+            CityLaws.Law valewood = CityLaws.INSTANCE.find("valewood");
+            FakePlayer driver = player(helper, "valewood", "farmer", 3);
+            QShopEconomy.applyBalance(driver, 100);
+            BlockPos ground = helper.absolutePos(new BlockPos(3, 1, 3));
+            helper.getLevel().setBlock(ground, net.minecraft.world.level.block.Blocks.STONE.defaultBlockState(), 3);
+            List<String> problems = new java.util.ArrayList<>();
+            net.minecraft.world.entity.Entity quad = OptionalModProbes.placeVehicleWithCrate(driver, ground, "mts:mtsofficialpack.quad_red", "mts:mtsofficialpack.crate",
+                List.of(new ItemStack(core("sable_leaf_bale"), 6), new ItemStack(Items.WHEAT, 16)), problems);
+            check(problems.isEmpty() && quad != null, "A real Quad with a real crate: " + problems);
+            // The crate is the vehicle's hold: three slots or more, the bale first, the wheat second.
+            VehicleCargo.Hold before = VehicleCargo.of(quad);
+            check(before != null && before.size() >= 2 && before.get(0).getCount() == 6 && before.get(1).getCount() == 16, "The adapter must see the crate's slots");
+            // The seat side: a rider is attached to a seat part, and the seat leads to the same vehicle and the same crate.
+            var seats = OptionalModProbes.vehicleParts(quad, "PartSeat");
+            check(!seats.isEmpty(), "The Quad has a seat");
+            VehicleCargo.Hold fromSeat = VehicleCargo.ImmersiveVehicles.holdOfEntity(seats.get(0), quad.getClass().getClassLoader());
+            check(fromSeat != null && fromSeat.size() == before.size(), "A seat must lead to the vehicle's crates");
+            // Parked somewhere else: the driver is searched, the Quad is not.
+            var parked = CheckpointService.inspect(driver, citizen(driver), gate, valewood, fixture.ledger, null);
+            check(parked.outcome() == CheckpointService.Outcome.CLEARED && VehicleCargo.of(quad).get(0).getCount() == 6, "A parked Quad must not be searched: " + parked);
+            // Brought into the zone: the contraband goes, the wheat stays, the fine is charged.
+            var result = CheckpointService.inspect(driver, citizen(driver), gate, valewood, fixture.ledger, quad);
+            check(result.outcome() == CheckpointService.Outcome.SEIZED && result.stacksSeized() == 1, "The bale in the crate is seized: " + result);
+            VehicleCargo.Hold after = VehicleCargo.of(quad);
+            check(after.get(0).isEmpty() && after.get(1).getCount() == 16, "Only the forbidden cargo leaves the crate");
+            check(QShopEconomy.balance(driver) == 100 - valewood.fine(CityLaws.PROHIBITED), "The fine is charged: " + QShopEconomy.balance(driver));
+            com.mojang.logging.LogUtils.getLogger().info("[UC-TEST] Immersive Vehicles crate: {} slots, seized {} stack(s) from {}, fine charged {}", before.size(), result.stacksSeized(), quad.getClass().getSimpleName(), result.fine());
+            quad.discard();
         } finally { fixture.close(); }
         helper.succeed();
     }
