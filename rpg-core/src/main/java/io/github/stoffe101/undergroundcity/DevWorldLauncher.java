@@ -96,7 +96,12 @@ public final class DevWorldLauncher {
      */
     static void acceptExperimentalWarning(Minecraft mc) {
         if (!(mc.screen instanceof net.minecraft.client.gui.screens.ConfirmScreen confirm)) return;
-        if (!confirm.getTitle().getString().equals(net.minecraft.client.resources.language.I18n.get("selectWorld.warning.experimental.title"))) return;
+        // Two vanilla dialogs mention experimental settings: "Warning! These settings are using experimental features" when a world is created, and
+        // "Worlds using Experimental Settings are not supported" when an existing one is reopened (the one a second launch meets; the first version
+        // of this method only knew the first and left a second launch waiting).
+        String title = confirm.getTitle().getString();
+        if (!title.equals(net.minecraft.client.resources.language.I18n.get("selectWorld.warning.experimental.title"))
+            && !title.equals(net.minecraft.client.resources.language.I18n.get("selectWorld.backupQuestion.experimental"))) return;
         for (var child : confirm.children()) {
             if (child instanceof net.minecraft.client.gui.components.Button button
                 && button.getMessage().getString().equals(net.minecraft.client.resources.language.I18n.get("gui.proceed"))) {

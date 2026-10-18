@@ -1256,6 +1256,11 @@ final class Scenarios {
         final Vec3[] centre = new Vec3[1], toRoad = new Vec3[1];
         final BlockPos[] origin = new BlockPos[1];
         talkDistrict = WaysideShelters.kindOf(road, stop);
+        Playtest.queue("what the world already remembers of the stops", () -> {
+            var state = PlacedSites.get(level(), PlacedSites.SHELTERS);
+            Playtest.log("[UC-SHELTER-STATE] decided " + state.done.size() + ", built " + state.where.size() + ": " + new java.util.TreeMap<>(state.where).keySet()
+                + "; districts standing: " + WaysideShelters.KINDS.stream().map(kind -> kind + " x" + DistrictBuilder.count(level(), kind)).toList());
+        });
         // 1. the survey: how many shelters each road should have, and which of them found ground
         String surveyed = System.getProperty("uc.playtest.roads", "ironhaven_valewood,ironhaven_blackwater,valewood_blackwater"); // empty: skip the survey
         for (String each : surveyed.isBlank() ? new String[0] : surveyed.split(",")) {
