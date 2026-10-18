@@ -43,6 +43,8 @@ public final class WaysideShelters {
     /** Most blocks between shelters on open road (the design asks for something useful every 300 to 450), the nearest a shelter may stand to either city circle, how far a site may slide along the road, the step of that slide. */
     public static final int MAX_GAP = 450, EDGE = 150, SEARCH = 64, SHIFT = 16;
     public static final int ACTIVATE = 112, CHECK_TICKS = 100, TRIES = 6;
+    /** A build that throws is tried again after {@link #RETRY_TICKS} (a minute) up to this many times in all; then it is reported to the operator until {@code /uc_shelters retry}. A warden is only looked for when a player is this near. */
+    public static final int MAX_ATTEMPTS = 3, RETRY_TICKS = 1200, WARDEN_RANGE = 48;
     /** Most ground height difference across a lot (the district builds its own foundation, three blocks deep, and clears seven blocks of air); a checkpoint zone's keep-out margin. */
     static final int MAX_RELIEF = 3, ZONE_GAP = 20;
     /** The right-hand verge is where the waymarkers and checkpoint posts stand, so a shelter prefers the left; this many blocks of walking is what the right costs. */
@@ -206,46 +208,126 @@ public final class WaysideShelters {
         int built = 0;
         for (int i = 0; i < ideal.size(); i++) {
             String key = plan.id() + "#" + i;
-            if (state.done.contains(key)) continue;
             DistrictCatalog.District district = DistrictCatalog.INSTANCE.find(kindOf(plan.id(), i));
             if (district == null) continue;
             int width = district.max().getX() - district.min().getX() + 1, depth = district.max().getZ() - district.min().getZ() + 1;
             double[] at = plan.pointAt(ideal.get(i));
-            if (Math.hypot(at[0] - px, at[1] - pz) > ACTIVATE) continue;
+            double distance = Math.hypot(at[0] - px, at[1] - pz);
+            if (distance > ACTIVATE) continue;
             if (!RoadMarkers.areaLoaded(level, at[0], at[1], loadedRadius)) continue; // not yet: nothing is decided until the whole search area is in the world
-            long started = System.nanoTime();
-            BlockPos placed = null;
-            int tried = 0;
-            for (Site site : sites(ground(level, plans), plan, ideal.get(i), width, depth)) {
-                if (tried++ == TRIES) break;
-                if (builtOver(level, site.origin(), district)) continue;
-                // Recorded before the build: the builder saves the world's data as it finishes, so a server that dies right after it still knows the stop is done and does not build a second one beside it.
-                state.done.add(key);
-                state.where.put(key, site.origin().asLong());
-                state.setDirty();
-                try {
-                    DistrictBuilder.build(level, district, site.origin());
-                    placed = site.origin();
-                    break;
-                } catch (IllegalStateException refused) {
-                    LOGGER.info("[UC] wayside shelter {}: site {} refused ({})", key, site.origin().toShortString(), refused.getMessage());
-                } catch (RuntimeException failed) {
-                    LOGGER.error("[UC] wayside shelter {}: building at {} failed; this stop is given up", key, site.origin().toShortString(), failed);
-                    state.where.remove(key);
-                    break;
-                }
-                state.where.remove(key);
+            if (state.done.contains(key)) {
+                if (state.where.containsKey(key)) built += verify(level, plans, plan, ideal, i, key, district, state, distance, width, depth);
+                continue;
             }
-            if (placed != null) {
-                built++;
-                LOGGER.info("[UC] wayside shelter {} built at {} as {} ({} ms to search for the site and build it)", key, placed.toShortString(), district.id(), (System.nanoTime() - started) / 1_000_000L);
-            } else {
-                LOGGER.info("[UC] wayside shelter {}: no level, dry, unbuilt ground within {} blocks of its spot; given up ({} ms)", key, SEARCH, (System.nanoTime() - started) / 1_000_000L);
-            }
-            state.done.add(key);
-            state.setDirty();
+            PlacedSites.Failure earlier = state.failed.get(key);
+            if (earlier != null && level.getGameTime() - earlier.lastTime() < RETRY_TICKS) continue; // a failed attempt waits a minute before the next
+            built += place(level, plans, plan, ideal.get(i), key, district, state, width, depth);
         }
         return built;
+    }
+
+    /** Looks for a site and builds the stop there, with the failure policy: a site that refuses is skipped, an unexpected failure is counted and retried, a stop with no ground is given up. Returns 1 if a stop was built. */
+    private static int place(ServerLevel level, List<CorridorPlan> plans, CorridorPlan plan, double ideal, String key, DistrictCatalog.District district, PlacedSites state, int width, int depth) {
+        long started = System.nanoTime();
+        BlockPos placed = null;
+        boolean failed = false;
+        int tried = 0;
+        for (Site site : sites(ground(level, plans), plan, ideal, width, depth)) {
+            if (tried++ == TRIES) break;
+            if (builtOver(level, site.origin(), district)) continue;
+            // Recorded before the build: the builder saves the world's data as it finishes, so a server that dies right after it still knows the stop is done and does not build a second one beside it.
+            // (Whether the blocks reached the disk is checked when a player next comes near: see verify.)
+            state.done.add(key);
+            state.where.put(key, site.origin().asLong());
+            state.setDirty();
+            try {
+                DistrictBuilder.build(level, district, site.origin());
+                placed = site.origin();
+                break;
+            } catch (IllegalStateException refused) {
+                LOGGER.info("[UC] wayside shelter {}: site {} refused ({})", key, site.origin().toShortString(), refused.getMessage());
+            } catch (RuntimeException error) {
+                // The builder has put the ground back (and removed what it placed) before rethrowing. This is a fault, not a lack of ground, so it is not recorded as "given up".
+                LOGGER.error("[UC] wayside shelter {}: building at {} failed", key, site.origin().toShortString(), error);
+                state.where.remove(key);
+                state.fail(key, level.getGameTime(), error.toString());
+                failed = true;
+                break;
+            }
+            state.where.remove(key);
+        }
+        if (placed != null) {
+            state.failed.remove(key);
+            state.verified.add(key); // just built: nothing to check until the next start
+            state.setDirty();
+            LOGGER.info("[UC] wayside shelter {} built at {} as {} ({} ms to search for the site and build it)", key, placed.toShortString(), district.id(), (System.nanoTime() - started) / 1_000_000L);
+            return 1;
+        }
+        if (failed) {
+            PlacedSites.Failure f = state.failed.get(key);
+            if (f.attempts() >= MAX_ATTEMPTS) {
+                state.done.add(key); // stops being retried by itself; listed as failed until an operator clears it
+                LOGGER.error("[UC] wayside shelter {}: {} attempts failed (last: {}); it will not be tried again until /uc_shelters retry", key, f.attempts(), f.reason());
+            } else {
+                state.done.remove(key);
+                LOGGER.warn("[UC] wayside shelter {}: attempt {} of {} failed; another in {} seconds", key, f.attempts(), MAX_ATTEMPTS, RETRY_TICKS / 20);
+            }
+        } else {
+            state.done.add(key);
+            LOGGER.info("[UC] wayside shelter {}: no level, dry, unbuilt ground within {} blocks of its spot; given up ({} ms)", key, SEARCH, (System.nanoTime() - started) / 1_000_000L);
+        }
+        state.setDirty();
+        return 0;
+    }
+
+    /**
+     * The first time a player comes near a stop that the world records as standing, since the world was loaded: is it really there? The record is saved the moment the
+     * build finishes, the blocks only when the chunks are next saved, so a server that died in between leaves a record of a shelter that never reached the disk.
+     * <ul>
+     *   <li>No record in the district builder (an operator removed it with {@code /uc_district undo}): left alone, it was removed on purpose.</li>
+     *   <li>More than half of its blocks gone: it never reached the disk (or the lot was wiped). It is removed properly and built again, counted like any failed build.</li>
+     *   <li>A few blocks missing: a player's changes; left alone.</li>
+     *   <li>The warden missing (and the lot's entities are loaded and a player is close): put back, as {@code /uc_district repopulate} does.</li>
+     * </ul>
+     * Returns 1 when the stop was built again.
+     */
+    private static int verify(ServerLevel level, List<CorridorPlan> plans, CorridorPlan plan, List<Double> ideal, int index, String key, DistrictCatalog.District district,
+                              PlacedSites state, double distance, int width, int depth) {
+        BlockPos origin = BlockPos.of(state.where.get(key));
+        if (!state.verified.contains(key)) {
+            if (!DistrictBuilder.hasInstance(level, district, origin)) {
+                state.verified.add(key);
+                LOGGER.info("[UC] wayside shelter {} at {} has no record in the district builder; it was removed on purpose (/uc_district undo) and stays removed", key, origin.toShortString());
+                return 0;
+            }
+            DistrictBuilder.Survey survey = DistrictBuilder.survey(level, district, origin);
+            if (survey.lost()) {
+                LOGGER.error("[UC] wayside shelter {} is recorded at {} but only {} of its {} blocks are there (the blocks never reached the disk, or the lot was wiped); removing the remains and building it again",
+                    key, origin.toShortString(), survey.matching(), survey.expected());
+                try {
+                    DistrictBuilder.undoAt(level, district, origin);
+                } catch (RuntimeException error) {
+                    LOGGER.error("[UC] wayside shelter {}: the remains could not be removed", key, error);
+                    state.verified.add(key);
+                    state.fail(key, level.getGameTime(), "the remains could not be removed: " + error);
+                    return 0;
+                }
+                state.done.remove(key);
+                state.where.remove(key);
+                state.setDirty();
+                return place(level, plans, plan, ideal.get(index), key, district, state, width, depth);
+            }
+            state.verified.add(key);
+        }
+        if (distance <= WARDEN_RANGE && level.isPositionEntityTicking(origin.offset(district.max().getX() / 2, 0, district.max().getZ() / 2))) {
+            try {
+                int back = DistrictBuilder.repopulateAt(level, district, origin);
+                if (back > 0) LOGGER.warn("[UC] wayside shelter {}: the warden was missing and has been put back", key);
+            } catch (RuntimeException error) {
+                LOGGER.info("[UC] wayside shelter {}: the warden could not be checked now ({})", key, error.getMessage());
+            }
+        }
+        return 0;
     }
 
     // ------------------------------------------------------------------------------------------ events
@@ -276,15 +358,56 @@ public final class WaysideShelters {
                 for (int i = 0; i < ideal.size(); i++) {
                     double[] at = plan.pointAt(ideal.get(i));
                     String key = plan.id() + "#" + i;
-                    Long where = state.where.get(key);
-                    String status = where != null ? "built at " + BlockPos.of(where).toShortString() : state.done.contains(key) ? "given up (no suitable ground)" : "waiting for a player";
-                    String line = key + ": about " + Math.round(at[0]) + ", " + Math.round(at[1]) + " - " + status;
+                    String line = key + ": about " + Math.round(at[0]) + ", " + Math.round(at[1]) + " - " + status(level, state, key, kindOf(plan.id(), i));
                     ctx.getSource().sendSuccess(() -> Component.literal(line), false);
                     lines++;
                 }
             }
             return lines;
         }));
+        // Clears a failed or given-up stop so that the next player near it tries again. A stop that stands is never touched (remove it with /uc_district undo first).
+        root.then(Commands.literal("retry").executes(ctx -> retry(ctx.getSource(), null))
+            .then(Commands.argument("key", com.mojang.brigadier.arguments.StringArgumentType.string()).executes(ctx -> retry(ctx.getSource(), com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "key")))));
         event.getDispatcher().register(root);
+    }
+
+    /** What an operator is told about a stop. */
+    static String status(ServerLevel level, PlacedSites state, String key, String kind) {
+        Long where = state.where.get(key);
+        PlacedSites.Failure failure = state.failed.get(key);
+        if (where != null) {
+            DistrictCatalog.District district = DistrictCatalog.INSTANCE.find(kind);
+            BlockPos origin = BlockPos.of(where);
+            if (district != null && !DistrictBuilder.hasInstance(level, district, origin)) return "removed on purpose at " + origin.toShortString() + " (no district record; /uc_shelters retry will not rebuild a recorded stop)";
+            return "built at " + origin.toShortString();
+        }
+        if (failure != null) {
+            return (state.done.contains(key) ? "FAILED " + failure.attempts() + " times, no longer retried: " : "failed " + failure.attempts() + " of " + MAX_ATTEMPTS + ", will retry: ") + failure.reason() + " (/uc_shelters retry " + key + ")";
+        }
+        return state.done.contains(key) ? "given up (no suitable ground; /uc_shelters retry " + key + " to look again)" : "waiting for a player";
+    }
+
+    static int retry(net.minecraft.commands.CommandSourceStack source, String only) {
+        int cleared = retry(PlacedSites.get(source.getServer().overworld(), PlacedSites.SHELTERS), only);
+        source.sendSuccess(() -> Component.literal(cleared == 0 ? "Nothing to retry: every stop is built or waiting." : cleared + " stop(s) will be tried again when a player is near."), true);
+        return cleared;
+    }
+
+    /** Forgets that these stops failed or were given up, so the next player near them tries again; a stop that stands is never touched. Returns how many were cleared. */
+    static int retry(PlacedSites state, String only) {
+        int cleared = 0;
+        for (String key : new ArrayList<>(state.done)) {
+            if (state.where.containsKey(key) || (only != null && !only.equals(key))) continue; // a stop that stands is not retried
+            state.done.remove(key);
+            state.failed.remove(key);
+            cleared++;
+        }
+        for (String key : new ArrayList<>(state.failed.keySet())) {
+            if (only != null && !only.equals(key)) continue;
+            state.failed.remove(key);
+            cleared++;
+        }
+        state.setDirty();
+        return cleared;
     }
 }

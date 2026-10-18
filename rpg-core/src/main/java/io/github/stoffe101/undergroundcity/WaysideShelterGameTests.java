@@ -302,4 +302,138 @@ public final class WaysideShelterGameTests {
             });
         });
     }
+
+    /**
+     * The recovery policy for the placement state (the owner asked that it can never permanently conceal an incomplete or failed construction): a build that throws is rolled back
+     * and retried a minute later, three times, then reported until an operator retries it; a stop recorded as standing whose blocks never reached the disk is removed and built again;
+     * a few missing blocks (a player's work) and a stop an operator removed on purpose are left alone; a missing warden is put back.
+     */
+    @GameTest(template = "empty", batch = "uc_shelter_recovery", timeoutTicks = 1200)
+    public static void aFailedOrLostShelterIsNeverConcealedForeverButRetriedRebuiltOrReported(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        String road = roadOfKind(0);
+        DistrictCatalog.District district = DistrictCatalog.INSTANCE.find(WaysideShelters.KINDS.get(0));
+        BlockPos arena = helper.absolutePos(BlockPos.ZERO);
+        int y = level.getMaxBuildHeight() - 100, ox = arena.getX(), oz = arena.getZ() + 520;
+        BlockPos lo = new BlockPos(ox - 70, y - 8, oz - 40), hi = new BlockPos(ox + 70, y + 12, oz + 40);
+        for (int cx = lo.getX() >> 4; cx <= hi.getX() >> 4; cx++) for (int cz = lo.getZ() >> 4; cz <= hi.getZ() >> 4; cz++) level.setChunkForced(cx, cz, true);
+        emptyTheWorldData();
+        DistrictBuilder.forgetForTest(level, district.id());
+        CorridorPlan plan = new CorridorPlan(road, new double[]{ox - 60, ox + 60}, new double[]{oz, oz}, 7, List.of());
+        List<CorridorPlan> plans = List.of(plan);
+        String key = road + "#0";
+        Runnable cleanup = () -> {
+            DistrictBuilder.faultAt = null;
+            DistrictBuilder.forgetForTest(level, district.id());
+            for (BlockPos at : BlockPos.betweenClosed(lo, hi)) level.setBlock(at, Blocks.AIR.defaultBlockState(), 2);
+            for (int cx = lo.getX() >> 4; cx <= hi.getX() >> 4; cx++) for (int cz = lo.getZ() >> 4; cz <= hi.getZ() >> 4; cz++) level.setChunkForced(cx, cz, false);
+            restoreTheWorldData();
+        };
+        List<BlockPos> probes = List.of(lo, hi, new BlockPos(ox, y, oz - 18), new BlockPos(ox, y, oz));
+        UndergroundGameTests.whenEntitiesTick(helper, level, probes, 40, () -> {
+            PlacedSites state = new PlacedSites();
+            BlockPos origin;
+            try {
+                for (BlockPos at : BlockPos.betweenClosed(new BlockPos(ox - 64, y, oz - 36), new BlockPos(ox + 64, y, oz + 36))) level.setBlock(at, Blocks.STONE.defaultBlockState(), 2);
+                int width = district.max().getX() - district.min().getX() + 1, depth = district.max().getZ() - district.min().getZ() + 1;
+                origin = WaysideShelters.sites(WaysideShelters.ground(level, plans), plan, 60, width, depth).get(0).origin();
+                BlockPos lotLo = origin.offset(district.min()), lotHi = origin.offset(district.max());
+                long before = BlockPos.betweenClosedStream(lotLo, lotHi).filter(p -> !level.getBlockState(p).isAir()).count();
+
+                // 1. A build that throws part-way: the ground is put back, the stop is not "given up", and it is tried again after a minute, three times in all.
+                DistrictBuilder.faultAt = origin;
+                DistrictBuilder.faultAfterOps = 4;
+                check(WaysideShelters.serve(level, plans, plan, List.of(60.0), ox + 0.5, oz + 0.5, state, 24) == 0, "A build that throws builds nothing");
+                check(state.failed.get(key) != null && state.failed.get(key).attempts() == 1 && !state.done.contains(key) && !state.where.containsKey(key), "The first failure is counted, not concealed: " + state.failed);
+                check(DistrictBuilder.count(level, district.id()) == 0 && DistrictBuilder.citizensForTest(level, district.id()).isEmpty()
+                    && BlockPos.betweenClosedStream(lotLo, lotHi).filter(p -> !level.getBlockState(p).isAir()).count() == before, "The builder put the ground back and left nothing behind");
+                check(WaysideShelters.status(level, state, key, district.id()).startsWith("failed 1 of 3, will retry"), "The operator is told: " + WaysideShelters.status(level, state, key, district.id()));
+                check(WaysideShelters.serve(level, plans, plan, List.of(60.0), ox + 0.5, oz + 0.5, state, 24) == 0 && state.failed.get(key).attempts() == 1, "A failed attempt waits before the next");
+                for (int attempt = 2; attempt <= WaysideShelters.MAX_ATTEMPTS; attempt++) {
+                    var last = state.failed.get(key);
+                    state.failed.put(key, new PlacedSites.Failure(last.attempts(), level.getGameTime() - WaysideShelters.RETRY_TICKS - 1, last.reason())); // "a minute later"
+                    check(WaysideShelters.serve(level, plans, plan, List.of(60.0), ox + 0.5, oz + 0.5, state, 24) == 0 && state.failed.get(key).attempts() == attempt, "Attempt " + attempt + " is made and counted");
+                }
+                check(state.done.contains(key) && WaysideShelters.status(level, state, key, district.id()).startsWith("FAILED 3 times, no longer retried"), "After three failures the stop is reported, not retried for ever: " + WaysideShelters.status(level, state, key, district.id()));
+                var reloaded = PlacedSites.load(state.save(new net.minecraft.nbt.CompoundTag()));
+                check(reloaded.failed.equals(state.failed) && reloaded.done.equals(state.done), "A failure survives a save and load");
+                check(PlacedSites.load(new net.minecraft.nbt.CompoundTag()).failed.isEmpty(), "A save from before failures were kept apart still loads");
+                var last = state.failed.get(key);
+                state.failed.put(key, new PlacedSites.Failure(last.attempts(), level.getGameTime() - WaysideShelters.RETRY_TICKS - 1, last.reason()));
+                check(WaysideShelters.serve(level, plans, plan, List.of(60.0), ox + 0.5, oz + 0.5, state, 24) == 0 && state.failed.get(key).attempts() == 3, "A reported failure is not attempted again by itself");
+
+                // 2. The operator fixes the cause and retries: the next traveller gets the stop.
+                DistrictBuilder.faultAt = null;
+                check(WaysideShelters.retry(state, "nonexistent#9") == 0 && state.done.contains(key), "Retrying a key nobody knows does nothing");
+                check(WaysideShelters.retry(state, key) >= 1 && !state.done.contains(key) && state.failed.isEmpty(), "Retry clears the failure");
+                check(WaysideShelters.serve(level, plans, plan, List.of(60.0), ox + 0.5, oz + 0.5, state, 24) == 1 && state.where.containsKey(key) && state.failed.isEmpty(), "The stop is built after the retry");
+                check(WaysideShelters.retry(state, null) == 0 && state.where.containsKey(key), "A stop that stands is never touched by retry");
+            } catch (RuntimeException error) {
+                cleanup.run();
+                throw error;
+            }
+            // the warden has to be visible to lookups before the next steps
+            UndergroundGameTests.waitUntil(helper, () -> DistrictBuilder.citizensForTest(level, district.id()).size() == 1
+                && DistrictBuilder.citizensForTest(level, district.id()).stream().allMatch(id -> level.getEntity(id) != null), 0, () -> {
+                try {
+                    BlockPos lotLo = origin.offset(district.min()), lotHi = origin.offset(district.max());
+                    check(WaysideShelters.status(level, state, key, district.id()).startsWith("built at"), "Listed as built");
+
+                    // 3. A missing warden is put back (the entity is gone; the stop stands).
+                    var warden = DistrictBuilder.citizensForTest(level, district.id()).get(0);
+                    level.getEntity(warden).discard();
+                    check(WaysideShelters.serve(level, plans, plan, List.of(60.0), ox + 0.5, oz + 0.5, state, 24) == 0, "Putting a warden back does not build a second stop");
+                    check(DistrictBuilder.count(level, district.id()) == 1, "Still one stop");
+                } catch (RuntimeException error) {
+                    cleanup.run();
+                    throw error;
+                }
+                UndergroundGameTests.waitUntil(helper, () -> {
+                    var ids = DistrictBuilder.citizensForTest(level, district.id());
+                    return ids.size() == 1 && level.getEntity(ids.get(0)) != null && level.getEntity(ids.get(0)).isAlive();
+                }, 0, () -> {
+                    try {
+                        BlockPos lotLo = origin.offset(district.min()), lotHi = origin.offset(district.max());
+                        check(level.getEntity(DistrictBuilder.citizensForTest(level, district.id()).get(0)) instanceof Villager keeper && keeper.hasCustomName(), "A named warden stands in the shelter again");
+
+                        // 4. A few missing blocks are a player's work: left alone, not rebuilt.
+                        BlockPos campfire = origin.offset(5, 0, 4);
+                        check(level.getBlockState(campfire).is(Blocks.CAMPFIRE), "The pavilion has its campfire");
+                        level.setBlock(campfire, Blocks.AIR.defaultBlockState(), 2);
+                        level.setBlock(origin.offset(2, 0, 1), Blocks.AIR.defaultBlockState(), 2);
+                        level.setBlock(origin.offset(8, 0, 1), Blocks.AIR.defaultBlockState(), 2);
+                        state.verified.clear(); // a new start
+                        var survey = DistrictBuilder.survey(level, district, origin);
+                        check(!survey.lost() && survey.matching() < survey.expected(), "A few blocks gone is not a lost stop: " + survey);
+                        check(WaysideShelters.serve(level, plans, plan, List.of(60.0), ox + 0.5, oz + 0.5, state, 24) == 0 && level.getBlockState(campfire).isAir(), "A player's changes are left alone");
+
+                        // 5. The record is saved, the blocks never reached the disk: the lot is bare. It is removed properly and built again, with a new warden.
+                        for (BlockPos at : BlockPos.betweenClosed(lotLo, lotHi)) level.setBlock(at, Blocks.AIR.defaultBlockState(), 2);
+                        check(DistrictBuilder.survey(level, district, origin).lost() && DistrictBuilder.hasInstance(level, district, origin), "Recorded but not there");
+                        state.verified.clear(); // a new start
+                        check(WaysideShelters.serve(level, plans, plan, List.of(60.0), ox + 0.5, oz + 0.5, state, 24) == 1, "The lost stop is built again");
+                        check(level.getBlockState(campfire).is(Blocks.CAMPFIRE) && DistrictBuilder.count(level, district.id()) == 1 && state.where.get(key) == origin.asLong() && !DistrictBuilder.survey(level, district, origin).lost(),
+                            "It stands again, once, in the same place");
+                        check(DistrictBuilder.citizensForTest(level, district.id()).size() == 1, "With one warden, not two");
+                    } catch (RuntimeException error) {
+                        cleanup.run();
+                        throw error;
+                    }
+                    UndergroundGameTests.waitUntil(helper, () -> DistrictBuilder.citizensForTest(level, district.id()).size() == 1
+                        && level.getEntity(DistrictBuilder.citizensForTest(level, district.id()).get(0)) != null, 0, () -> {
+                        try {
+                            // 6. An operator removed the stop on purpose: it stays removed, and the list says so.
+                            DistrictBuilder.undoNear(level, district, new BlockPos(ox, y + 1, oz - 16));
+                            state.verified.clear();
+                            check(WaysideShelters.serve(level, plans, plan, List.of(60.0), ox + 0.5, oz + 0.5, state, 24) == 0 && DistrictBuilder.count(level, district.id()) == 0, "A stop removed by an operator is not built again");
+                            check(WaysideShelters.status(level, state, key, district.id()).startsWith("removed on purpose"), "The list says why: " + WaysideShelters.status(level, state, key, district.id()));
+                        } finally {
+                            cleanup.run();
+                        }
+                        helper.succeed();
+                    });
+                });
+            });
+        });
+    }
 }

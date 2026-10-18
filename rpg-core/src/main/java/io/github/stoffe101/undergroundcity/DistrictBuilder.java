@@ -110,6 +110,38 @@ public final class DistrictBuilder {
         return entry == null ? null : entry.origin();
     }
 
+    /** True when the world's record says this district stands at exactly this origin (an operator's undo removes the record). */
+    static boolean hasInstance(ServerLevel level, DistrictCatalog.District district, BlockPos origin) {
+        return state(level).built.containsKey(key(district, level, origin));
+    }
+
+    /** What a lot looks like against what its district would have left there: blocks the district sets (air ignored), compared by block type, and how many are still in place. */
+    record Survey(int expected, int matching) {
+        /** More than half of the district's blocks are gone: the build never reached the disk, or the lot was wiped. A few missing blocks are a player's changes and are left alone. */
+        boolean lost() { return expected > 0 && matching * 2 < expected; }
+    }
+
+    static Survey survey(ServerLevel level, DistrictCatalog.District district, BlockPos origin) {
+        Map<DistrictCatalog.Op, BlockState> states = validate(level, district);
+        Map<Long, Block> expected = new HashMap<>();
+        for (DistrictCatalog.Op op : district.ops()) {
+            BlockState place = states.get(op); // the same operations in the same order as build(), so a later operation overwrites an earlier one here too
+            if (place == null || op.kind().equals("clerk") || op.kind().equals("npc") || op.kind().equals("residence") || !op.applies()) continue;
+            for (BlockPos pos : BlockPos.betweenClosed(origin.offset(op.a()), origin.offset(op.b()))) expected.put(pos.asLong(), place.getBlock());
+        }
+        int total = 0, matching = 0;
+        for (var entry : expected.entrySet()) {
+            if (entry.getValue() == Blocks.AIR) continue;
+            total++;
+            if (level.getBlockState(BlockPos.of(entry.getKey())).is(entry.getValue())) matching++;
+        }
+        return new Survey(total, matching);
+    }
+
+    /** Test seam: makes a build at exactly {@code faultAt} throw an unexpected exception after {@code faultAfterOps} operations. Never set outside GameTests. */
+    static volatile BlockPos faultAt;
+    static volatile int faultAfterOps;
+
     /** How many instances of a district stand in this world. */
     static int count(ServerLevel level, String id) {
         return (int) state(level).built.keySet().stream().filter(key -> key.equals(id) || key.startsWith(id + "@")).count();
@@ -195,8 +227,10 @@ public final class DistrictBuilder {
         int placedCitizens = 0;
         List<String> registeredHomes = new ArrayList<>();
         try {
+            int opsDone = 0;
             for (DistrictCatalog.Op op : district.ops()) {
                 if (op.kind().equals("clerk") || op.kind().equals("npc") || op.kind().equals("residence") || !op.applies()) continue;
+                if (origin.equals(faultAt) && opsDone++ >= faultAfterOps) throw new UnsupportedOperationException("simulated fault in the middle of a build");
                 BlockState place = states.get(op);
                 for (BlockPos pos : BlockPos.betweenClosed(origin.offset(op.a()), origin.offset(op.b()))) {
                     level.setBlock(pos, place, Block.UPDATE_ALL);
@@ -298,6 +332,20 @@ public final class DistrictBuilder {
         int placed = 0;
         for (var instance : found.entrySet()) placed += repopulateInstance(level, state, district, instance.getKey(), instance.getValue());
         return placed;
+    }
+
+    /** Puts back the citizens of the instance that stands at {@code origin} and have been lost; the lot must be loaded. */
+    static int repopulateAt(ServerLevel level, DistrictCatalog.District district, BlockPos origin) {
+        State state = state(level);
+        String key = key(district, level, origin);
+        Entry entry = state.built.get(key);
+        if (entry == null) throw new IllegalStateException(district.title() + " does not stand at " + origin.toShortString() + ".");
+        return repopulateInstance(level, state, district, key, entry);
+    }
+
+    /** Removes the instance that stands at exactly {@code origin} (what {@link #undoNear} does for the nearest). */
+    static void undoAt(ServerLevel level, DistrictCatalog.District district, BlockPos origin) {
+        undoEntry(level, district, key(district, level, origin));
     }
 
     private static int repopulateInstance(ServerLevel level, State state, DistrictCatalog.District district, String key, Entry entry) {
