@@ -160,6 +160,11 @@ public final class WaysideShelterGameTests {
                 }
                 var ground = WaysideShelters.ground(level, List.of());
                 check(ground.wet(ox - 10, oz) && ground.wet(ox - 24, oz + 10), "A frozen sea is wet, though the ice is solid");
+                // the waymarkers have the same rule: a road along the frozen sea gets no post on its verge, one along the stone floor does
+                CorridorPlan onIce = new CorridorPlan("a_b", new double[]{ox - 25, ox - 3}, new double[]{oz - 12, oz - 12}, 7, List.of());
+                check(RoadMarkers.plan(level, onIce, 0, 11).isEmpty(), "No waymarker on ice");
+                CorridorPlan onStone = new CorridorPlan("a_b", new double[]{ox + 3, ox + 25}, new double[]{oz - 12, oz - 12}, 7, List.of());
+                check(RoadMarkers.plan(level, onStone, 0, 11).isPresent(), "A waymarker on a stone floor");
                 check(!ground.wet(ox + 10, oz) && !ground.wet(ox + 24, oz + 10), "A stone floor is not wet");
                 // open water too: the surface scan steps over it onto the bed
                 for (int dx = 1; dx <= 3; dx++) for (int dz = -2; dz <= 2; dz++) level.setBlock(new BlockPos(ox + 20 + dx, y + 1, oz + dz), Blocks.WATER.defaultBlockState(), 2);

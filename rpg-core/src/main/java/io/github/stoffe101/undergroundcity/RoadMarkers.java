@@ -145,10 +145,14 @@ public final class RoadMarkers {
         return true;
     }
 
-    /** Three free cells over solid, dry ground. */
+    /** Three free cells over solid, dry ground: not water, not ice (a post on a frozen sea stands on a sheet that its own lantern would melt), and no water in the three blocks under it. */
     private static boolean fits(ServerLevel level, BlockPos base) {
         BlockPos below = base.below();
-        if (!level.getFluidState(below).isEmpty() || !level.getFluidState(base).isEmpty() || level.getBlockState(below).getCollisionShape(level, below).isEmpty()) return false;
+        if (!level.getFluidState(base).isEmpty() || level.getBlockState(below).getCollisionShape(level, below).isEmpty()) return false;
+        for (int depth = 1; depth <= 3; depth++) {
+            var under = level.getBlockState(base.below(depth));
+            if (!under.getFluidState().isEmpty() || under.is(net.minecraft.tags.BlockTags.ICE)) return false;
+        }
         for (int i = 0; i < 3; i++) {
             var state = level.getBlockState(base.above(i));
             if (!state.isAir() && !state.canBeReplaced()) return false;
