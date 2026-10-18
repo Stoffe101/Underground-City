@@ -147,7 +147,7 @@ Accepted constraint: routine inter-city travel should take only a few minutes. A
 
 ### Waymarkers (October 18, D-078)
 
-Every road has a stone post with a standing sign every 250 blocks of open road: where it leads, how far and how long on foot. They are placed at run time beside the road when a player comes within 112 blocks (`RoadMarkers`, once each and remembered by the world), so world generation and seed 5908 are unchanged and worlds that already exist get them. A GameTest builds a real post beside a synthetic road and reads both faces of its sign.
+Every road has a stone-brick pillar with a lantern and a wall sign on each of its two faces every 250 blocks of open road: where it leads, how far and how long on foot. They are placed at run time beside the road when a player comes within 112 blocks (`RoadMarkers`, once each and remembered by the world), so world generation and seed 5908 are unchanged and worlds that already exist get them. A GameTest builds a real pillar beside a synthetic road and reads both signs, and a scripted-player run on a generated road read them as the client received them.
 
 ### What is still not built
 

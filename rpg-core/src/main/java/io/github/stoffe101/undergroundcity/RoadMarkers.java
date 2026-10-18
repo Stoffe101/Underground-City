@@ -1,6 +1,7 @@
 package io.github.stoffe101.undergroundcity;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
@@ -12,7 +13,7 @@ import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.StandingSignBlock;
+import net.minecraft.world.level.block.WallSignBlock;
 import net.minecraft.world.level.block.entity.SignBlockEntity;
 import net.minecraft.world.level.block.entity.SignText;
 import net.minecraft.world.level.saveddata.SavedData;
@@ -28,8 +29,8 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
- * Waymarkers: a stone post with a sign every {@link #SPACING} blocks along each inter-city road, on the right-hand verge. Each sign says, on the side a
- * traveller sees, where the road leads, how far that is and how long it takes on foot (D-078): the accepted travel pacing is a few minutes between
+ * Waymarkers: a stone pillar with a lantern on top and a wall sign on each of its two faces along the road, every {@link #SPACING} blocks of each
+ * inter-city road, on the right-hand verge. The sign a traveller reads says where the road leads, how far that is and how long it takes on foot (D-078): the accepted travel pacing is a few minutes between
  * cities, and a road with nothing on it gives no sense of progress.
  *
  * <p>Posts are placed <b>at run time</b>, when a player comes within {@link #ACTIVATE} blocks of one, and only once each (the world remembers which
@@ -44,8 +45,12 @@ public final class RoadMarkers {
     static final double WALK = 4.3;
 
     /** One planned post: where it stands, which way its front faces, and what each side says. */
-    record Spot(String road, int index, double s, BlockPos base, int rotation, List<String> front, List<String> back) {
+    record Spot(String road, int index, double s, BlockPos base, Direction forward, List<String> front, List<String> back) {
         String key() { return road + "#" + index; }
+        /** The sign read by someone heading for the road's far city: on the pillar's face toward the near city, looking back at them. */
+        BlockPos frontSign() { return base.above().relative(forward.getOpposite()); }
+        /** The sign read by someone heading for the near city. */
+        BlockPos backSign() { return base.above().relative(forward); }
     }
 
     private static final java.util.Map<CorridorPlan, List<Double>> IDEAL = new java.util.WeakHashMap<>();
@@ -92,10 +97,9 @@ public final class RoadMarkers {
         return List.of("TO " + city, String.format(Locale.ROOT, "%,d m", rounded), minutes(metres) + " min on foot", "");
     }
 
-    /** Standing-sign rotation (0 to 15) of a face whose text is read by someone walking in the direction (tx, tz): its front looks back at them. */
-    static int rotation(double tx, double tz) {
-        double yaw = Math.toDegrees(Math.atan2(tx, -tz));
-        return Math.floorMod((int) Math.round(yaw / 22.5), 16);
+    /** The compass direction nearest to a direction of travel (x is east, z is south). */
+    static Direction direction(double tx, double tz) {
+        return Math.abs(tx) >= Math.abs(tz) ? (tx >= 0 ? Direction.EAST : Direction.WEST) : (tz >= 0 ? Direction.SOUTH : Direction.NORTH);
     }
 
     // ------------------------------------------------------------------------------------------ the world
@@ -121,7 +125,10 @@ public final class RoadMarkers {
                 BlockPos base = DevCommands.surface(level, x, z);
                 if (!fits(level, base)) continue;
                 double toEnd = last - s, toStart = s - first;
-                return Optional.of(new Spot(plan.id(), index, s, base, rotation(tx, tz), face(ends[1], toEnd), face(ends[0], toStart)));
+                Direction forward = direction(tx, tz);
+                Spot spot = new Spot(plan.id(), index, s, base, forward, face(ends[1], toEnd), face(ends[0], toStart));
+                if (!roomForSigns(level, spot)) continue;
+                return Optional.of(spot);
             }
         }
         return Optional.empty();
@@ -132,6 +139,15 @@ public final class RoadMarkers {
         int sea = level.getSeaLevel();
         for (int dx : new int[]{-radius, 0, radius}) for (int dz : new int[]{-radius, 0, radius}) {
             if (!level.isLoaded(new BlockPos((int) Math.floor(x) + dx, sea, (int) Math.floor(z) + dz))) return false;
+        }
+        return true;
+    }
+
+    /** The two cells the signs hang in are free too. */
+    private static boolean roomForSigns(ServerLevel level, Spot spot) {
+        for (BlockPos at : new BlockPos[]{spot.frontSign(), spot.backSign()}) {
+            var state = level.getBlockState(at);
+            if (!state.isAir() && !state.canBeReplaced()) return false;
         }
         return true;
     }
@@ -147,16 +163,20 @@ public final class RoadMarkers {
         return true;
     }
 
-    /** Builds the post and writes both faces of its sign. */
+    /** Builds the pillar, its lantern and the two signs. */
     static void build(ServerLevel level, Spot spot) {
         BlockPos base = spot.base();
         level.setBlock(base, Blocks.STONE_BRICKS.defaultBlockState(), Block.UPDATE_ALL);
-        level.setBlock(base.above(), Blocks.STONE_BRICK_WALL.defaultBlockState(), Block.UPDATE_ALL);
-        BlockPos at = base.above(2);
-        level.setBlock(at, Blocks.OAK_SIGN.defaultBlockState().setValue(StandingSignBlock.ROTATION, spot.rotation()), Block.UPDATE_ALL);
+        level.setBlock(base.above(), Blocks.STONE_BRICKS.defaultBlockState(), Block.UPDATE_ALL);
+        level.setBlock(base.above(2), Blocks.LANTERN.defaultBlockState(), Block.UPDATE_ALL);
+        sign(level, spot.frontSign(), spot.forward().getOpposite(), spot.front());
+        sign(level, spot.backSign(), spot.forward(), spot.back());
+    }
+
+    private static void sign(ServerLevel level, BlockPos at, Direction facing, List<String> lines) {
+        level.setBlock(at, Blocks.OAK_WALL_SIGN.defaultBlockState().setValue(WallSignBlock.FACING, facing), Block.UPDATE_ALL);
         if (level.getBlockEntity(at) instanceof SignBlockEntity sign) {
-            sign.setText(text(spot.front()), true);
-            sign.setText(text(spot.back()), false);
+            sign.setText(text(lines), true);
             sign.setWaxed(true);
             sign.setChanged();
             level.sendBlockUpdated(at, sign.getBlockState(), sign.getBlockState(), Block.UPDATE_ALL);

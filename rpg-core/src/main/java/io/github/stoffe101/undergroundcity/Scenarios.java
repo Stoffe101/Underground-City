@@ -1181,6 +1181,8 @@ final class Scenarios {
      * The waymarkers (D-078): arrive on a road a little before its first marker, wait for the server to build the post, then photograph its front (the face a
      * traveller heading for the far city reads), its back, and the road with the post in the distance.
      */
+    private static net.minecraft.core.Direction dirOf(Vec3 along) { return RoadMarkers.direction(along.x, along.z); }
+
     private static void markers() {
         final String road = System.getProperty("uc.playtest.route", "ironhaven_valewood");
         final double[] ideal = new double[1];
@@ -1202,26 +1204,28 @@ final class Scenarios {
             post[0] = Vec3.atCenterOf(base);
             Playtest.log("post at " + base.toShortString() + " for " + road + " at " + Math.round(ideal[0]) + " m, road direction " + along[0]);
             // the server's level refuses block-entity reads from this thread: read the sign as the client received it
-            var sign = Minecraft.getInstance().level.getBlockEntity(base.above(2));
-            if (!(sign instanceof net.minecraft.world.level.block.entity.SignBlockEntity entity)) {
-                for (int dy = -1; dy <= 3; dy++) Playtest.log("  base" + (dy >= 0 ? "+" : "") + dy + ": " + level().getBlockState(base.above(dy)) + " / " + Minecraft.getInstance().level.getBlockEntity(base.above(dy)));
-                Playtest.fail("no sign on the post at " + base.toShortString());
+            var level = Minecraft.getInstance().level;
+            var front = level.getBlockEntity(base.above().relative(dirOf(along[0]).getOpposite()));
+            var back = level.getBlockEntity(base.above().relative(dirOf(along[0])));
+            if (!(front instanceof net.minecraft.world.level.block.entity.SignBlockEntity f) || !(back instanceof net.minecraft.world.level.block.entity.SignBlockEntity b)) {
+                for (int dy = -1; dy <= 3; dy++) Playtest.log("  base" + (dy >= 0 ? "+" : "") + dy + ": " + level.getBlockState(base.above(dy)));
+                Playtest.fail("no signs on the pillar at " + base.toShortString());
                 return;
             }
-            Playtest.log("front: " + entity.getFrontText().getMessage(0, false).getString() + " | " + entity.getFrontText().getMessage(1, false).getString() + " | " + entity.getFrontText().getMessage(2, false).getString());
-            Playtest.log("back: " + entity.getBackText().getMessage(0, false).getString() + " | " + entity.getBackText().getMessage(1, false).getString() + " | " + entity.getBackText().getMessage(2, false).getString());
-            // six blocks back along the road and two toward it, looking at the sign
-            Vec3 stand = post[0].subtract(along[0].scale(6)).add(along[0].z * 2.5, -0.4, -along[0].x * 2.5);
-            standLooking(stand, post[0].add(0, 2.1, 0));
+            Playtest.log("front: " + f.getFrontText().getMessage(0, false).getString() + " | " + f.getFrontText().getMessage(1, false).getString() + " | " + f.getFrontText().getMessage(2, false).getString());
+            Playtest.log("back: " + b.getFrontText().getMessage(0, false).getString() + " | " + b.getFrontText().getMessage(1, false).getString() + " | " + b.getFrontText().getMessage(2, false).getString());
+            // five blocks back along the road's axis, in front of the sign a traveller heading for the far city reads
+            Vec3 axis = Vec3.atLowerCornerOf(dirOf(along[0]).getNormal());
+            standLooking(post[0].subtract(axis.scale(5)).add(0, -0.4, 0), post[0].add(0, 0.6, 0).subtract(axis.scale(0.5)));
         });
         Playtest.queue("let the chunks and the post's meshes arrive", () -> { }, () -> groundBelowPlayer(), 6000);
         waitForMeshes(1500);
         Playtest.wait("settle", 120);
         Playtest.queue("screenshot of the front of the post", () -> Playtest.screenshotNextFrame("uc-marker-front"));
         Playtest.wait("frame", 10);
-        Playtest.queue("six blocks ahead, looking back at the post", () -> {
-            Vec3 stand = post[0].add(along[0].scale(6)).add(along[0].z * 2.5, -0.4, -along[0].x * 2.5);
-            standLooking(stand, post[0].add(0, 2.1, 0));
+        Playtest.queue("five blocks ahead, in front of the sign for the near city", () -> {
+            Vec3 axis = Vec3.atLowerCornerOf(dirOf(along[0]).getNormal());
+            standLooking(post[0].add(axis.scale(5)).add(0, -0.4, 0), post[0].add(0, 0.6, 0).add(axis.scale(0.5)));
         });
         Playtest.wait("settle", 60);
         Playtest.queue("screenshot of the back of the post", () -> Playtest.screenshotNextFrame("uc-marker-back"));
