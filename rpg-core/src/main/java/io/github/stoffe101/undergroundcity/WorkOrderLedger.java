@@ -303,6 +303,12 @@ public final class WorkOrderLedger {
         return count;
     }
 
+    /** The Crew hold named by this player's prepared purchase, or null when there is none (no prepared purchase, or one the bank does not help pay). */
+    UUID preparedCrewHold(UUID player) {
+        CompoundTag pending = player(player).getCompound("pending");
+        return pending.hasUUID("crew_tx") ? pending.getUUID("crew_tx") : null;
+    }
+
     boolean hasPurchase(UUID player, UUID purchase) {
         ListTag recent = player(player).getList("recent_purchases", Tag.TAG_STRING);
         for (int i = 0; i < recent.size(); i++) if (recent.getString(i).equals(purchase.toString())) return true;
@@ -315,6 +321,16 @@ public final class WorkOrderLedger {
      */
     void preparePurchase(UUID player, UUID purchase, RegionalStock stock, int quantity,
                          ListTag inventoryAfter, double balanceAfter, int xpNow) {
+        preparePurchase(player, purchase, stock, quantity, inventoryAfter, balanceAfter, xpNow, null, 0);
+    }
+
+    /**
+     * As above, for a purchase the Crew bank pays part of (D-089). The hold's transaction id and amount are written into the same prepared record, so
+     * this record is the one durable decision: while it exists the purchase rolls forward (recovery commits the hold), and a hold that no prepared record
+     * names was never decided and is released. {@code balanceAfter} is the buyer's own wallet after paying only their share.
+     */
+    void preparePurchase(UUID player, UUID purchase, RegionalStock stock, int quantity,
+                         ListTag inventoryAfter, double balanceAfter, int xpNow, UUID crewHold, long crewAmount) {
         checkHealthy();
         CompoundTag record = player(player);
         if (record.contains("pending")) throw new IllegalStateException("Finish recovery before buying");
@@ -329,6 +345,7 @@ public final class WorkOrderLedger {
         pending.putString("kind", PURCHASE); pending.putString("commodity", stock.id()); pending.putInt("quantity", quantity);
         pending.put("inventory", inventoryAfter.copy()); pending.putDouble("balance", balanceAfter);
         pending.putInt("xp", xpNow);
+        if (crewHold != null) { pending.putUUID("crew_tx", crewHold); pending.putLong("crew_amount", crewAmount); }
         record.put("pending", pending);
         ListTag recent = record.getList("recent_purchases", Tag.TAG_STRING);
         recent.add(net.minecraft.nbt.StringTag.valueOf(purchase.toString()));

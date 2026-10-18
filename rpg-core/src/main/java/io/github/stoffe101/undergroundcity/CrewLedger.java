@@ -169,6 +169,13 @@ public final class CrewLedger {
      */
     public record Pending(UUID tx, UUID player, Kind kind, UUID crew, long amount, double before, double after, String residence, boolean starter) {}
 
+    /**
+     * The Crew bank's share of one exchange purchase (D-089), taken out of the bank at once and held until the purchase is decided. The decision is the
+     * work-order journal's prepared record, which names this hold: it commits the hold (the credits are spent) or, never having been written, releases it
+     * (the credits go back to the bank). No credit of a hold ever reaches a wallet, so a purchase that fails cannot leave the bank's money with the buyer.
+     */
+    public record Hold(UUID tx, UUID player, UUID crew, long amount, String note) {}
+
     // ------------------------------------------------------------------------------------------------------------ state
 
     private final Path path;
@@ -181,6 +188,7 @@ public final class CrewLedger {
     final Map<String, Residence> residences = new LinkedHashMap<>();
     final Set<UUID> starterUsed = new LinkedHashSet<>();
     final Map<UUID, Pending> pending = new LinkedHashMap<>();
+    final Map<UUID, Hold> holds = new LinkedHashMap<>();
     private final LinkedHashSet<UUID> seen = new LinkedHashSet<>();
     private final Map<Long, List<Residence>> chunkIndex = new HashMap<>();
 
@@ -215,6 +223,8 @@ public final class CrewLedger {
     public List<Crew> allCrews() { return List.copyOf(crews.values()); }
     public Pending pendingFor(UUID player) { return pending.get(player); }
     public Map<UUID, Pending> allPending() { return Map.copyOf(pending); }
+    public Hold holdFor(UUID tx) { return holds.get(tx); }
+    public List<Hold> allHolds() { return List.copyOf(holds.values()); }
     public long owedTo(UUID player) { return owed.getOrDefault(player, 0L); }
     public boolean starterAvailable(UUID player) { return !starterUsed.contains(player); }
     public List<Residence> allResidences() { return List.copyOf(residences.values()); }
@@ -242,10 +252,11 @@ public final class CrewLedger {
         return total;
     }
 
-    /** Credits taken out of a bank or an owed balance but not yet confirmed in a wallet (withdrawals and claims in flight). */
+    /** Credits taken out of a bank or an owed balance but not yet confirmed in a wallet or spent (withdrawals, claims and purchase holds in flight). */
     public long totalInFlight() {
         long total = 0;
         for (Pending p : pending.values()) if (p.kind() == Kind.WITHDRAW || p.kind() == Kind.CLAIM_OWED) total += p.amount();
+        for (Hold h : holds.values()) total += h.amount();
         return total;
     }
 
@@ -265,10 +276,15 @@ public final class CrewLedger {
         return crew;
     }
 
+    /** True while a money transfer or a purchase hold of this Crew (or of one of its members) is waiting to be decided. */
+    private boolean unresolved(Crew crew) {
+        for (Pending p : pending.values()) if (crew.id.equals(p.crew()) || crew.members.containsKey(p.player())) return true;
+        for (Hold h : holds.values()) if (crew.id.equals(h.crew()) || crew.members.containsKey(h.player())) return true;
+        return false;
+    }
+
     private void requireNoPending(Crew crew) {
-        for (Pending p : pending.values()) if (crew.id.equals(p.crew()) || crew.members.containsKey(p.player())) {
-            throw new IllegalStateException("A money transfer is still being recovered. Try again in a moment.");
-        }
+        require(!unresolved(crew), "A money transfer is still being recovered. Try again in a moment.");
     }
 
     public Crew create(UUID founder, String founderName, String rawName) {
@@ -560,20 +576,13 @@ public final class CrewLedger {
     }
 
     /** Withdrawal step 1: takes the credits out of the bank at once as a hold; {@link #cancel} puts them back if the wallet never received them. */
-    public Pending beginWithdraw(UUID tx, UUID player, long amount, double walletBefore) { return beginWithdraw(tx, player, amount, walletBefore, false); }
-
-    /**
-     * @param sharedSpend a purchase paid from the bank under fully shared finances, which every member agreed to: it needs no WITHDRAW right but does
-     *                    need the agreement to be in force (every member has consented)
-     */
-    public Pending beginWithdraw(UUID tx, UUID player, long amount, double walletBefore, boolean sharedSpend) {
+    public Pending beginWithdraw(UUID tx, UUID player, long amount, double walletBefore) {
         checkHealthy();
         Crew crew = requireCrew(player);
         requireFreshTx(tx, player);
         CrewRules.cleanAmount(amount);
         require(crew.effectiveMode() != Mode.SEPARATE, "This Crew has no bank.");
-        if (sharedSpend) require(crew.effectiveMode() == Mode.SHARED, "Shared finances are not in force.");
-        else require(crew.can(player, Perm.WITHDRAW), "You are not allowed to withdraw from the Crew bank.");
+        require(crew.can(player, Perm.WITHDRAW), "You are not allowed to withdraw from the Crew bank.");
         require(crew.bank >= amount, "The bank only holds " + crew.bank + " credits.");
         require(walletBefore + amount <= 1_000_000_000d, "Your wallet cannot hold that much.");
         crew.bank -= amount;
@@ -582,6 +591,75 @@ public final class CrewLedger {
         remember(tx);
         persist();
         return p;
+    }
+
+    // ---------------------------------------------------------------------------------------------------- purchases paid by the bank (D-089)
+
+    /**
+     * What the bank may pay of a purchase of {@code cost} credits for this player right now, and why not when it may not. Read-only: nothing moves.
+     * The bank pays only under fully shared finances (every member consented) and only to a member who holds the SPEND right, so a member without it
+     * cannot spend the Crew's money by buying things.
+     */
+    public record Share(long credits, String reason) {}
+
+    public Share purchaseShare(UUID player, long cost) {
+        Crew crew = crewOf(player);
+        if (crew == null || cost < 1) return new Share(0, "");
+        if (crew.effectiveMode() != Mode.SHARED) return new Share(0, "");
+        if (!crew.can(player, Perm.SPEND)) return new Share(0, "The Crew bank is not available to you: you are not allowed to spend Crew money.");
+        if (crew.bank < 1) return new Share(0, "");
+        if (unresolved(crew) || pending.containsKey(player)) return new Share(0, "A Crew money transfer is still being recovered.");
+        return new Share(Math.min(crew.bank, cost), "");
+    }
+
+    /**
+     * Purchase step 1: takes {@code amount} out of the bank and keeps it as a hold named by {@code tx}. Everything is checked again here (the Crew's agreement,
+     * the right to spend, the balance) so a stale plan cannot overdraw the bank. The credits stay in the ledger: they are not credited to any wallet.
+     */
+    public Hold reservePurchase(UUID tx, UUID player, long amount, String note) {
+        checkHealthy();
+        Crew crew = requireCrew(player);
+        require(tx != null && !seen.contains(tx) && !holds.containsKey(tx), "That purchase was already processed.");
+        require(amount >= 1 && amount <= CrewRules.MAX_BANK, "Bad purchase amount.");
+        require(crew.effectiveMode() == Mode.SHARED, "Shared finances are not in force.");
+        require(crew.can(player, Perm.SPEND), "You are not allowed to spend Crew money.");
+        require(crew.bank >= amount, "The bank only holds " + crew.bank + " credits.");
+        requireNoPending(crew);
+        require(!pending.containsKey(player), "Finish the money recovery first.");
+        crew.bank -= amount;
+        Hold hold = new Hold(tx, player, crew.id, amount, note == null ? "" : note);
+        holds.put(tx, hold);
+        persist();
+        return hold;
+    }
+
+    /** Purchase step 3: the purchase is decided, so the held credits are spent. Idempotent: returns false when there is nothing to commit (already done). */
+    public boolean commitPurchase(UUID tx, String playerName) {
+        checkHealthy();
+        Hold hold = holds.get(tx);
+        if (hold == null) return false;
+        Crew crew = crews.get(hold.crew());
+        holds.remove(tx);
+        remember(tx);
+        if (crew != null) {
+            Member actor = crew.members.get(hold.player());
+            crew.record(now(), hold.player(), actor != null ? actor.name : playerName, "PURCHASE", hold.amount(), hold.note());
+        }
+        persist();
+        return true;
+    }
+
+    /** The purchase was never decided (its prepared record does not exist): the held credits go back where they came from. Idempotent. */
+    public boolean releasePurchase(UUID tx) {
+        checkHealthy();
+        Hold hold = holds.get(tx);
+        if (hold == null) return false;
+        Crew crew = crews.get(hold.crew());
+        if (crew != null) crew.bank = Math.addExact(crew.bank, hold.amount());
+        else owed.merge(hold.player(), hold.amount(), Math::addExact); // the Crew ended meanwhile: the credits are owed back
+        holds.remove(tx);
+        persist();
+        return true;
     }
 
     /** Claiming a payout owed after a disband or a pay-out: a hold on the owed balance, like a withdrawal. */
@@ -874,6 +952,13 @@ public final class CrewLedger {
             pendingList.add(t);
         }
         root.put("pending", pendingList);
+        ListTag holdList = new ListTag();
+        for (Hold h : holds.values()) {
+            CompoundTag t = new CompoundTag();
+            t.putUUID("tx", h.tx()); t.putUUID("player", h.player()); t.putUUID("crew", h.crew()); t.putLong("amount", h.amount()); t.putString("note", h.note());
+            holdList.add(t);
+        }
+        root.put("holds", holdList);
         ListTag residenceList = new ListTag();
         for (Residence r : residences.values()) {
             CompoundTag t = new CompoundTag();
@@ -934,6 +1019,12 @@ public final class CrewLedger {
             Pending p = new Pending(t.getUUID("tx"), t.getUUID("player"), Kind.valueOf(t.getString("kind")), t.hasUUID("crew") ? t.getUUID("crew") : null,
                 t.getLong("amount"), t.getDouble("before"), t.getDouble("after"), t.getString("residence"), t.getBoolean("starter"));
             pending.put(p.player(), p);
+        }
+        for (Tag raw : root.getList("holds", Tag.TAG_COMPOUND)) {
+            CompoundTag t = (CompoundTag) raw;
+            Hold h = new Hold(t.getUUID("tx"), t.getUUID("player"), t.getUUID("crew"), t.getLong("amount"), t.getString("note"));
+            if (h.amount() < 1) throw new IllegalStateException("A purchase hold has no credits");
+            holds.put(h.tx(), h);
         }
         for (Tag raw : root.getList("residences", Tag.TAG_COMPOUND)) {
             CompoundTag t = (CompoundTag) raw;

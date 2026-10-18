@@ -227,6 +227,13 @@ public final class WorkOrderService {
             }
         }
         player.server.overworld().getDataStorage().save();
+        if (pending.hasUUID("crew_tx")) {
+            // A purchase the Crew bank helped pay: the inventory and wallet targets are applied and saved, so the held credits are now spent. This comes
+            // BEFORE the journal settles, which makes "settled" imply "committed": the hold of a delivered purchase can never be mistaken for an undecided one.
+            CrewService.checkpoint("purchase_after_apply");
+            CrewService.commitPurchase(player, pending.getUUID("crew_tx"));
+            CrewService.checkpoint("purchase_after_commit");
+        }
         ledger.settle(player.getUUID());
     }
 

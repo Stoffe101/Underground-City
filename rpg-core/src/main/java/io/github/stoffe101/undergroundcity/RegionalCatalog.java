@@ -40,6 +40,9 @@ public final class RegionalCatalog extends SimpleJsonResourceReloadListener {
             .sorted(Comparator.comparing(RegionalStock::id)).toList();
     }
 
+    /** Test seam: every line, so a test can put the catalog back after replacing it. */
+    List<RegionalStock> allForTest() { return List.copyOf(stocks.values()); }
+
     /** Test seam: replaces the catalog without a datapack reload. */
     void replaceForTest(List<RegionalStock> replacement) {
         Map<String, RegionalStock> next = new LinkedHashMap<>();

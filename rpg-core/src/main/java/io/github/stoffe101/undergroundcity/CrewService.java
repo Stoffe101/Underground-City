@@ -76,13 +76,24 @@ public final class CrewService {
     }
 
     static volatile Wallet wallet = new QShopWallet();
-    /** Tests set this to {@code after_begin}, {@code after_wallet} or {@code after_save}; production never does. */
+    /**
+     * Tests set this to {@code after_begin}, {@code after_wallet} or {@code after_save} (transfers) or to a {@code purchase_*} stage (Crew-funded
+     * purchases, see {@link #checkpoint}); production never does.
+     */
     static volatile String crashAt = "";
+    /** Tests set this to a {@code purchase_*} stage to make it throw an ordinary exception (a failure, not a dead process). */
+    static volatile String faultAt = "";
     private static final Set<MinecraftServer> BROKEN = java.util.Collections.newSetFromMap(new java.util.WeakHashMap<>());
 
     public CrewService() {}
 
     private static void crash(String stage) { if (stage.equals(crashAt)) throw new SimulatedCrash(stage); }
+
+    /** A named point of a Crew-funded purchase where a test can kill the process ({@link #crashAt}) or raise a failure ({@link #faultAt}). */
+    static void checkpoint(String stage) {
+        if (stage.equals(crashAt)) throw new SimulatedCrash(stage);
+        if (stage.equals(faultAt)) throw new IllegalStateException("simulated failure at " + stage);
+    }
 
     // ------------------------------------------------------------------------------------------------------------ access
 
@@ -320,25 +331,77 @@ public final class CrewService {
         }
     }
 
+    // ------------------------------------------------------------------------------------------------------------ purchases paid by the bank (D-089)
+
     /**
-     * Fully shared finances, spending side: before a terminal purchase the bank pays first, by moving up to the price into the buyer's wallet (an
-     * ordinary withdrawal that needs no WITHDRAW right because every member agreed). The purchase then runs exactly as it always does. Returns the
-     * credits moved; zero when the agreement is not in force or the bank is empty.
+     * Fully shared finances, spending side. The bank's share of an exchange purchase never passes through the buyer's wallet (the first version moved
+     * it there BEFORE the purchase was known to be possible, so a refused purchase left the Crew's credits with someone who had no right to withdraw them).
+     * Instead the purchase is one decision:
+     * <ol>
+     *   <li>{@link #planPurchase}: read-only; how much the bank would pay.</li>
+     *   <li>the caller checks that the buyer's own wallet covers the rest, and that stock and room exist; if anything fails here nothing has moved;</li>
+     *   <li>{@link #reservePurchase}: the bank's share leaves the bank and becomes a durable hold (it is not credited to any wallet);</li>
+     *   <li>the work-order journal writes its prepared record, which names the hold: that write is the single commit point;</li>
+     *   <li>recovery applies the absolute inventory and wallet targets, then {@link #commitPurchase} spends the hold, then the journal settles.</li>
+     * </ol>
+     * A hold that no prepared record names was never decided and is released by {@link #resolveHolds}, at the next purchase, at login and at server
+     * start. Because commit happens before the journal settles, "settled" always implies "committed", so a released hold never belongs to a delivered purchase.
      */
-    public static long topUpForPurchase(ServerPlayer player, long cost) {
+    public static CrewLedger.Share planPurchase(ServerPlayer player, long cost) {
         try {
             CrewLedger ledger = ledger(player.server);
-            Crew crew = ledger == null ? null : ledger.crewOf(player.getUUID());
-            if (crew == null || crew.effectiveMode() != Mode.SHARED || cost < 1 || crew.bank < 1 || !moneyReady(player.server)) return 0;
-            long pull = Math.min(crew.bank, cost);
-            transact(player, balance -> ledger.beginWithdraw(UUID.randomUUID(), player.getUUID(), pull, balance, true));
-            return pull;
-        } catch (CrewService.SimulatedCrash crash) {
-            throw crash;
+            if (ledger == null || ledger.faulted() || !moneyReady(player.server)) return new CrewLedger.Share(0, "");
+            return ledger.purchaseShare(player.getUUID(), cost);
         } catch (RuntimeException error) {
-            LOG.warn("The Crew bank could not pay for {}'s purchase: {}", player.getGameProfile().getName(), error.getMessage());
-            return 0;
+            LOG.warn("The Crew bank could not be consulted for {}'s purchase: {}", player.getGameProfile().getName(), error.getMessage());
+            return new CrewLedger.Share(0, "");
         }
+    }
+
+    /** The hold's transaction id: derived from the purchase nonce so it can never collide with a transfer id the client chose. */
+    static UUID purchaseTx(UUID nonce) {
+        return new UUID(nonce.getMostSignificantBits() ^ 0x5055524348415345L, nonce.getLeastSignificantBits());
+    }
+
+    /** Step 3 of the purchase: takes the bank's share out of the bank as a durable hold. Throws (and changes nothing) if the bank can no longer pay. */
+    public static UUID reservePurchase(ServerPlayer player, UUID nonce, long credits, String note) {
+        CrewLedger ledger = need(player.server);
+        UUID tx = purchaseTx(nonce);
+        ledger.reservePurchase(tx, player.getUUID(), credits, note);
+        return tx;
+    }
+
+    /** Spends a hold once its purchase is decided. Idempotent; used by the work-order recovery before the journal settles. */
+    public static void commitPurchase(ServerPlayer player, UUID tx) {
+        CrewLedger ledger = ledger(player.server);
+        if (ledger == null) throw new IllegalStateException("The Crew ledger is unavailable, so a Crew-funded purchase cannot be finished. Restore data/underground_city_crews.dat.");
+        ledger.commitPurchase(tx, player.getGameProfile().getName());
+    }
+
+    /**
+     * Decides every purchase hold from the work-order journal: a hold named by a prepared record is committed (the purchase will roll forward), any
+     * other is released. Safe to run at any time that no purchase is half-way through its synchronous steps (server start, login, the start of a
+     * purchase). Returns the number of holds decided.
+     */
+    public static int resolveHolds(MinecraftServer server, WorkOrderLedger orders) {
+        CrewLedger ledger = ledger(server);
+        if (ledger == null || ledger.faulted() || orders.faulted()) return 0;
+        int decided = 0;
+        for (CrewLedger.Hold hold : ledger.allHolds()) {
+            try {
+                if (hold.tx().equals(orders.preparedCrewHold(hold.player()))) {
+                    ledger.commitPurchase(hold.tx(), "");
+                    LOG.info("Crew recovery: purchase hold {} ({} credits) belongs to a prepared purchase; committed", hold.tx(), hold.amount());
+                } else {
+                    ledger.releasePurchase(hold.tx());
+                    LOG.info("Crew recovery: purchase hold {} ({} credits) was never prepared; the credits are back in the bank", hold.tx(), hold.amount());
+                }
+                decided++;
+            } catch (RuntimeException error) {
+                LOG.error("Crew recovery could not decide purchase hold {}", hold.tx(), error);
+            }
+        }
+        return decided;
     }
 
     // ------------------------------------------------------------------------------------------------------------ homes
@@ -425,6 +488,7 @@ public final class CrewService {
     public void started(ServerStartedEvent event) {
         CrewLedger ledger = ledger(event.getServer());
         if (ledger == null) return;
+        if (!ledger.allHolds().isEmpty()) resolveHolds(event.getServer(), WorkOrderLedger.get(event.getServer()));
         if (!ledger.allPending().isEmpty()) {
             if (wallet.ready(event.getServer())) recover(event.getServer(), wallet);
             else LOG.warn("{} Crew transfer(s) are waiting for the wallet provider before they can be recovered", ledger.allPending().size());
@@ -438,6 +502,7 @@ public final class CrewService {
         CrewLedger ledger = ledger(player.server);
         if (ledger == null) return;
         try {
+            if (!ledger.allHolds().isEmpty()) resolveHolds(player.server, WorkOrderLedger.get(player.server));
             if (ledger.pendingFor(player.getUUID()) != null && wallet.ready(player.server)) recover(player.server, wallet);
             ledger.touch(player.getUUID(), player.getGameProfile().getName());
             Crew crew = ledger.crewOf(player.getUUID());
