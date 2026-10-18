@@ -26,7 +26,7 @@ java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 // GitHub release), are SHA-512/SHA-256 verified against content/modpacks/dev-pack.json, and are never committed.
 // ---------------------------------------------------------------------------------------------------------------
 def harnessFlags = ['ucPack', 'ucEconomyTest', 'ucScreeningMod', 'ucWorldCandidate', 'ucWorldTour', 'ucJourneyClient',
-                    'ucVisualCapture', 'ucWorldSurvey', 'ucSeedScan', 'ucJourneyPhase', 'ucPerfProbe']
+                    'ucVisualCapture', 'ucWorldSurvey', 'ucSeedScan', 'ucJourneyPhase', 'ucJourneyScenario', 'ucPerfProbe']
 def requestedTasks = gradle.startParameter.taskNames.collect { it.tokenize(':').last() }
 def userLaunch = requestedTasks.any { it in ['runClient', 'runServer'] } &&
         !harnessFlags.any { providers.gradleProperty(it).isPresent() }
@@ -110,6 +110,11 @@ minecraft {
             if (providers.gradleProperty('ucJourneyClient').isPresent()) {
                 jvmArgs '-Duc.journey.client=true', "-Xmx${providers.gradleProperty('ucClientHeap').orElse('1G').get()}", '-XX:ActiveProcessorCount=2'
                 args '--username', providers.gradleProperty('ucJourneyClient').get(), '--width', '1920', '--height', '1080'
+                if (providers.gradleProperty('ucJourneyScenario').isPresent()) {
+                    // a named journey scenario (CrewJourneyActions for "crew") needs to know its phase as well
+                    jvmArgs "-Duc.journey.scenario=${providers.gradleProperty('ucJourneyScenario').get()}"
+                    if (providers.gradleProperty('ucJourneyPhase').isPresent()) jvmArgs "-Duc.journey.phase=${providers.gradleProperty('ucJourneyPhase').get()}"
+                }
             }
             if (providers.gradleProperty('ucVisualCapture').orNull == 'true') {
                 def scale = providers.gradleProperty('ucVisualScale').orElse('3').get()
@@ -137,6 +142,9 @@ minecraft {
             }
             if (providers.gradleProperty('ucJourneyPhase').isPresent()) {
                 jvmArgs "-Duc.journey.phase=${providers.gradleProperty('ucJourneyPhase').get()}", "-Xmx${providers.gradleProperty('ucClientHeap').orElse('1G').get()}", '-XX:ActiveProcessorCount=2'
+            }
+            if (providers.gradleProperty('ucJourneyScenario').isPresent()) {
+                jvmArgs "-Duc.journey.scenario=${providers.gradleProperty('ucJourneyScenario').get()}"
             }
         }
         gameTestServer {

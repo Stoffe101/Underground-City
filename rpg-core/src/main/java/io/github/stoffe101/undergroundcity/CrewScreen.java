@@ -114,6 +114,8 @@ public final class CrewScreen extends UcScreen {
         box.setHint(Component.literal(hint).withStyle(net.minecraft.ChatFormatting.DARK_GRAY));
         box.setValue(value);
         box.setTextColor(UcUi.TEXT);
+        // what you type decides which buttons work (Deposit needs an amount you have, Found Crew a name); without this they only caught up at the next refresh
+        box.setResponder(text -> build());
         return box;
     }
 

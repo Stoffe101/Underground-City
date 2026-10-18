@@ -100,9 +100,12 @@ final class CrewActions {
         return "";
     }
 
+    /** The block the player is looking at, within reach, from the position and turn the server last had from the client's movement packets (the head turn is not used: it only follows the body a tick later). */
     private static net.minecraft.core.BlockPos looking(ServerPlayer player) {
-        HitResult hit = player.pick(6.0, 0.0f, false);
-        if (hit.getType() != HitResult.Type.BLOCK || !(hit instanceof BlockHitResult block)) throw new IllegalStateException("Look at a chest or barrel in your home first.");
+        net.minecraft.world.phys.Vec3 eye = player.getEyePosition(), look = net.minecraft.world.phys.Vec3.directionFromRotation(player.getXRot(), player.getYRot());
+        BlockHitResult block = player.level().clip(new net.minecraft.world.level.ClipContext(eye, eye.add(look.scale(6.0)),
+            net.minecraft.world.level.ClipContext.Block.OUTLINE, net.minecraft.world.level.ClipContext.Fluid.NONE, player));
+        if (block.getType() != HitResult.Type.BLOCK) throw new IllegalStateException("Look at a chest or barrel in your home first.");
         return block.getBlockPos();
     }
 }

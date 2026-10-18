@@ -570,6 +570,49 @@ public final class CrewGameTests {
         helper.succeed();
     }
 
+
+    /**
+     * Law stays individual (D-051, crews.md section 1): one member's underground hand-off earns that member trust and risk, and changes nothing for the other member, the Crew's
+     * bank, its history or its roster. A Crew never inherits a member's heat, searches or guilt, and a shared bank is not evidence.
+     */
+    @GameTest(template = "empty")
+    public static void aMembersHeatTrustAndGuiltNeverReachTheCrewOrTheOtherMembers(GameTestHelper helper) throws Exception {
+        if (!QShopEconomy.available()) { helper.succeed(); return; }
+        try (Rig rig = new Rig(helper)) {
+            FakePlayer dealer = player(helper, "uc_dealer", "farmer"), friend = player(helper, "uc_friend", "farmer");
+            Crew crew = rig.ledger.create(dealer.getUUID(), "uc_dealer", "Quiet Crew");
+            rig.ledger.accept(rig.ledger.invite(dealer.getUUID(), friend.getUUID(), "uc_friend", "uc_dealer").id(), friend.getUUID(), "uc_friend");
+            CitizenState state = CitizenState.get(rig.server);
+            state.addCareerXp(dealer.getUUID(), 125 * 64);
+            for (String skill : List.of("farmer.fundamentals", "farmer.greenhouse_management", "farmer.restricted_cultivation", "farmer.underground_trade")) state.unlockSkill(dealer.getUUID(), skill);
+            QShopEconomy.applyBalance(dealer, 0); QShopEconomy.applyBalance(friend, 50);
+            Path journal = rig.server.getWorldPath(LevelResource.ROOT).resolve("uc-test-journals/law-" + UUID.randomUUID() + ".dat");
+            WorkOrderLedger orders = new WorkOrderLedger(journal);
+            BlockPos pos = helper.absolutePos(new BlockPos(0, 2, 0));
+            var original = CityRegions.INSTANCE.all();
+            CityRegions.INSTANCE.replaceForTest(List.of(new CityRegions.Region("blackwater", helper.getLevel().dimension().location().toString(), pos.getX() >> 4, pos.getZ() >> 4, 64)));
+            try {
+                WorkOrder order = WorkOrderCatalog.INSTANCE.find("underground_city:quiet_bales");
+                check(order != null && order.underground(), "the underground contract exists");
+                int historyBefore = crew.log.size();
+                WorkOrderService.accept(dealer, orders, state.find(dealer.getUUID()).orElseThrow(), order.id());
+                UUID nonce = orders.player(dealer.getUUID()).getUUID("order");
+                dealer.getInventory().setItem(0, new net.minecraft.world.item.ItemStack(UndergroundCity.item("sable_leaf_bale"), 6));
+                WorkOrderService.complete(dealer, orders, nonce, pos);
+                check(orders.trust(dealer.getUUID(), "marrow") == 1, "the member who delivered earned the buyer's trust");
+                check(orders.trust(friend.getUUID(), "marrow") == 0, "the other member did not inherit the trust");
+                for (String city : List.of("valewood", "ironhaven", "blackwater")) {
+                    check(orders.heat(friend.getUUID(), city) == 0, "the other member inherited heat in " + city);
+                }
+                check(QShopEconomy.balance(friend) == 50 && crew.bank == 0 && crew.log.size() == historyBefore && crew.members.size() == 2,
+                    "the Crew's bank, history or roster changed because a member made an underground hand-off");
+                check(state.find(friend.getUUID()).orElseThrow().careerXp() == 0, "the other member's career XP is untouched");
+            } finally { CityRegions.INSTANCE.replaceForTest(original); }
+            Files.deleteIfExists(journal);
+        }
+        helper.succeed();
+    }
+
     @GameTest(template = "empty")
     public static void realQShopTransfers(GameTestHelper helper) throws Exception {
         if (!QShopEconomy.available()) { helper.succeed(); return; }
