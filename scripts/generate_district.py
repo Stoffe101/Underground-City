@@ -611,6 +611,33 @@ def checkpoint_post() -> dict:
     }
 
 
+SHELTER_WIDTH, SHELTER_DEPTH = 11, 9
+
+
+def shelter_ground() -> list[dict]:
+    """The lot every wayside stop shares: a foundation three blocks deep, a coarse-dirt apron and seven blocks of cleared air."""
+    return [
+        fill((0, -4, 0), (SHELTER_WIDTH - 1, -2, SHELTER_DEPTH - 1), "minecraft:stone"),
+        fill((0, -1, 0), (SHELTER_WIDTH - 1, -1, SHELTER_DEPTH - 1), "minecraft:coarse_dirt"),
+        fill((0, 0, 0), (SHELTER_WIDTH - 1, 7, SHELTER_DEPTH - 1), "minecraft:air"),
+    ]
+
+
+def hip_roof(x0: int, x1: int, z0: int, z1: int, y: int, wood: str) -> list[dict]:
+    """A low roof over the posts at ``x0..x1`` and ``z0..z1``: planks at height ``y``, a ring of stairs rising to them (the eaves) and a slab cap."""
+    ops = [
+        fill((x0, y, z0), (x1, y, z1), f"minecraft:{wood}_planks"),
+        fill((x0 + 1, y + 1, z0 + 1), (x1 - 1, y + 1, z1 - 1), f"minecraft:{wood}_slab[type=bottom]"),
+        fill((x0 - 1, y, z0), (x0 - 1, y, z1), f"minecraft:{wood}_stairs[facing=east,half=bottom]"),
+        fill((x1 + 1, y, z0), (x1 + 1, y, z1), f"minecraft:{wood}_stairs[facing=west,half=bottom]"),
+        fill((x0, y, z0 - 1), (x1, y, z0 - 1), f"minecraft:{wood}_stairs[facing=south,half=bottom]"),
+        fill((x0, y, z1 + 1), (x1, y, z1 + 1), f"minecraft:{wood}_stairs[facing=north,half=bottom]"),
+    ]
+    for x, z in ((x0 - 1, z0 - 1), (x1 + 1, z0 - 1), (x0 - 1, z1 + 1), (x1 + 1, z1 + 1)):
+        ops.append(put((x, y, z), f"minecraft:{wood}_slab[type=bottom]"))
+    return ops
+
+
 def wayside_shelter() -> dict:
     """A small open pavilion beside a road, built at run time by ``WaysideShelters`` (D-079) a few hundred blocks from the nearest city.
 
@@ -618,21 +645,7 @@ def wayside_shelter() -> dict:
     barrel, a cauldron of water, a cartography table and a road warden. It has no front: it is open on all four sides and is the same from every
     direction, because a road can run any way and the lot cannot be turned. It is repeatable (one copy per stretch of road, each reversible).
     """
-    ops = [
-        fill((0, -4, 0), (10, -2, 8), "minecraft:stone"),
-        fill((0, -1, 0), (10, -1, 8), "minecraft:coarse_dirt"),
-        fill((0, 0, 0), (10, 7, 8), "minecraft:air"),
-        fill((2, -1, 1), (8, -1, 7), "minecraft:stone_bricks"),
-        # the roof: planks on the posts, a ring of stairs rising to the middle, a slab cap
-        fill((2, 4, 1), (8, 4, 7), "minecraft:spruce_planks"),
-        fill((3, 5, 2), (7, 5, 6), "minecraft:spruce_slab[type=bottom]"),
-        fill((1, 4, 1), (1, 4, 7), "minecraft:spruce_stairs[facing=east,half=bottom]"),
-        fill((9, 4, 1), (9, 4, 7), "minecraft:spruce_stairs[facing=west,half=bottom]"),
-        fill((2, 4, 0), (8, 4, 0), "minecraft:spruce_stairs[facing=south,half=bottom]"),
-        fill((2, 4, 8), (8, 4, 8), "minecraft:spruce_stairs[facing=north,half=bottom]"),
-    ]
-    for x, z in ((1, 0), (9, 0), (1, 8), (9, 8)):
-        ops.append(put((x, 4, z), "minecraft:spruce_slab[type=bottom]"))
+    ops = shelter_ground() + [fill((2, -1, 1), (8, -1, 7), "minecraft:stone_bricks")] + hip_roof(2, 8, 1, 7, 4, "spruce")
     for x, z in ((2, 1), (8, 1), (2, 7), (8, 7)):
         ops.append(fill((x, 0, z), (x, 3, z), "minecraft:stripped_spruce_log"))
     for x, z in ((5, 1), (5, 7), (2, 4), (8, 4)):
@@ -657,7 +670,47 @@ def wayside_shelter() -> dict:
     return {
         "schema_version": 1, "id": "wayside_shelter", "title": "Wayside shelter", "repeatable": True,
         "note": "An open pavilion with a campfire and a road warden, built beside a road a few hundred blocks from the nearest city; origin is the north-west corner, extending east and south.",
-        "size": [11, 8, 9], "ops": ops,
+        "size": [SHELTER_WIDTH, 8, SHELTER_DEPTH], "ops": ops,
+    }
+
+
+def wayside_well() -> dict:
+    """The second kind of wayside stop: a stone well under a small oak roof with two benches, a rain barrel, hay and a road warden.
+
+    Same 11 x 9 lot and the same warden role as the pavilion, so the site search and the dialogue treat them alike; only what stands on the lot differs,
+    because the design asks for travel that is not "identical filler buildings". Open on all four sides like the pavilion.
+    """
+    ops = shelter_ground() + [
+        fill((2, -1, 1), (8, -1, 7), "minecraft:cobblestone"),
+        # the well: a ring of stone-brick wall round a hole of water, a block deep, in the stone below
+        fill((4, 0, 3), (6, 0, 5), "minecraft:stone_brick_wall"),
+        put((5, 0, 4), "minecraft:air"),
+        put((5, -1, 4), "minecraft:water"),
+    ] + hip_roof(3, 7, 2, 6, 4, "oak")
+    for x, z in ((4, 3), (6, 3), (4, 5), (6, 5)):
+        ops.append(fill((x, 1, z), (x, 3, z), "minecraft:stripped_oak_log"))
+    ops += [
+        put((5, 3, 4), "minecraft:lantern[hanging=true]"),
+        # two benches facing the well (a stair's back is on the side it faces), a rain barrel and a stack of hay
+        put((2, 0, 4), "minecraft:oak_stairs[facing=west,half=bottom]"), put((8, 0, 4), "minecraft:oak_stairs[facing=east,half=bottom]"),
+        put((2, 0, 2), "minecraft:barrel[facing=up]"), put((2, 0, 6), "minecraft:water_cauldron[level=3]"),
+        fill((8, 0, 2), (8, 1, 2), "minecraft:hay_block"), put((9, 0, 2), "minecraft:hay_block"),
+        put((8, 0, 6), "minecraft:lantern[hanging=false]"),
+        sign((3, 2, 3), "west", ["THE WELL", "Fresh water", "Help yourself", ""]),
+        sign((7, 2, 5), "east", ["ROAD WARDEN", "on duty", "Ask about the", "road ahead"]),
+    ]
+    ops.append(npc((6, 0, 6), "warden", "Road Warden", "fisherman", [
+        "The well is old and the water is sweet. Drink, fill your skin, and ask me anything about the road.",
+        "Every post stops what its city's law says to stop, and not an ounce more. Read the law before you load the cart, not after.",
+        "Wagons stop here to water the horses. I have heard the whole road's news from the back of a cart.",
+        "A bridge is the safe way over and a boat is the quiet one. Neither beats good boots and a clear head.",
+        "Heat fades while you keep to honest work. Walk the long road a few times and the guards stop looking twice.",
+    ]))
+    assert_citizens_have_room(ops)
+    return {
+        "schema_version": 1, "id": "wayside_well", "title": "Wayside well", "repeatable": True,
+        "note": "A well under a small roof with benches and a road warden, built beside a road; the second kind of wayside stop. Origin is the north-west corner, extending east and south.",
+        "size": [SHELTER_WIDTH, 8, SHELTER_DEPTH], "ops": ops,
     }
 
 
@@ -665,7 +718,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--check", action="store_true")
     args = parser.parse_args()
-    outputs = {"founders_row": founders_row(), "firing_range": firing_range(), "checkpoint_post": checkpoint_post(), "wayside_shelter": wayside_shelter()}
+    outputs = {"founders_row": founders_row(), "firing_range": firing_range(), "checkpoint_post": checkpoint_post(), "wayside_shelter": wayside_shelter(), "wayside_well": wayside_well()}
     status = 0
     for name, data in outputs.items():
         out = DIR / f"{name}.json"

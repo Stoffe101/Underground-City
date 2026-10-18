@@ -40,7 +40,8 @@ import java.util.WeakHashMap;
 @Mod.EventBusSubscriber(modid = UndergroundCity.MOD_ID)
 public final class WaysideShelters {
     private static final Logger LOGGER = LogUtils.getLogger();
-    static final String DISTRICT = "wayside_shelter";
+    /** The kinds of wayside stop, all the same size and with the same warden: which one stands at a spot is decided by its road and index, so it never changes. */
+    static final List<String> KINDS = List.of("wayside_shelter", "wayside_well");
     /** Most blocks between shelters on open road (the design asks for something useful every 300 to 450), the nearest a shelter may stand to either city circle, how far a site may slide along the road, the step of that slide. */
     public static final int MAX_GAP = 450, EDGE = 150, SEARCH = 64, SHIFT = 16;
     public static final int ACTIVATE = 112, CHECK_TICKS = 100, TRIES = 6;
@@ -56,6 +57,11 @@ public final class WaysideShelters {
     private WaysideShelters() {}
 
     // ------------------------------------------------------------------------------------------ pure planning
+
+    /** Which kind of stop stands at a spot of a road: the same answer in every world and every run, and consecutive stops on one road are always different kinds. */
+    static String kindOf(String road, int index) {
+        return KINDS.get(Math.floorMod(road.hashCode() + index, KINDS.size()));
+    }
 
     /**
      * Distances along a road at which its shelters should stand: evenly spread over the open road with no more than {@code maxGap} blocks between one
@@ -155,9 +161,14 @@ public final class WaysideShelters {
     static DistrictSites.Ground ground(ServerLevel level, List<CorridorPlan> plans) {
         return new DistrictSites.Ground() {
             @Override public int height(int x, int z) { return DevCommands.surface(level, x, z).getY(); }
+            /** Water or ice at the surface or in the three blocks under it: the surface scan steps over water (it has no collision) but stops on ice, so a frozen sea reads as solid ground. */
             @Override public boolean wet(int x, int z) {
                 BlockPos at = DevCommands.surface(level, x, z);
-                return !level.getFluidState(at).isEmpty() || !level.getFluidState(at.below()).isEmpty();
+                for (int depth = 0; depth <= 3; depth++) {
+                    BlockState state = level.getBlockState(at.below(depth));
+                    if (!state.getFluidState().isEmpty() || state.is(BlockTags.ICE)) return true;
+                }
+                return false;
             }
             @Override public boolean reserved(int x, int z) {
                 if (!level.hasChunk(x >> 4, z >> 4)) return true;
@@ -195,13 +206,13 @@ public final class WaysideShelters {
 
     /** As above; {@code loadedRadius} is how far around the ideal spot the world must be loaded before anything is decided (a test, which forces its own chunks, passes a smaller one). */
     static int serve(ServerLevel level, List<CorridorPlan> plans, CorridorPlan plan, List<Double> ideal, double px, double pz, PlacedSites state, int loadedRadius) {
-        DistrictCatalog.District district = DistrictCatalog.INSTANCE.find(DISTRICT);
-        if (district == null) return 0;
-        int width = district.max().getX() - district.min().getX() + 1, depth = district.max().getZ() - district.min().getZ() + 1;
         int built = 0;
         for (int i = 0; i < ideal.size(); i++) {
             String key = plan.id() + "#" + i;
             if (state.done.contains(key)) continue;
+            DistrictCatalog.District district = DistrictCatalog.INSTANCE.find(kindOf(plan.id(), i));
+            if (district == null) continue;
+            int width = district.max().getX() - district.min().getX() + 1, depth = district.max().getZ() - district.min().getZ() + 1;
             double[] at = plan.pointAt(ideal.get(i));
             if (Math.hypot(at[0] - px, at[1] - pz) > ACTIVATE) continue;
             if (!RoadMarkers.areaLoaded(level, at[0], at[1], loadedRadius)) continue; // not yet: nothing is decided until the whole search area is in the world
@@ -222,7 +233,7 @@ public final class WaysideShelters {
             if (placed != null) {
                 state.where.put(key, placed.asLong());
                 built++;
-                LOGGER.info("[UC] wayside shelter {} built at {} ({} ms to search for the site and build it)", key, placed.toShortString(), (System.nanoTime() - started) / 1_000_000L);
+                LOGGER.info("[UC] wayside shelter {} built at {} as {} ({} ms to search for the site and build it)", key, placed.toShortString(), district.id(), (System.nanoTime() - started) / 1_000_000L);
             } else {
                 LOGGER.info("[UC] wayside shelter {}: no level, dry, unbuilt ground within {} blocks of its spot; given up ({} ms)", key, SEARCH, (System.nanoTime() - started) / 1_000_000L);
             }

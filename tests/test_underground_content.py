@@ -293,7 +293,7 @@ class DistrictTests(unittest.TestCase):
             if district["id"] == "checkpoint_post":
                 self.assertTrue(district.get("repeatable"), "a checkpoint post is built once per zone")
                 self.assertEqual([npc["role"] for npc in citizens], ["guard"])
-            if district["id"] == "wayside_shelter":
+            if district["id"] in ("wayside_shelter", "wayside_well"):
                 self.assertTrue(district.get("repeatable"), "a shelter is built once per stretch of road")
                 self.assertEqual([npc["role"] for npc in citizens], ["warden"])
                 self.assertLessEqual(max(xs), 10)

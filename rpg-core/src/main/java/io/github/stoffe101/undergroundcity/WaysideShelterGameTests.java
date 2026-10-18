@@ -105,13 +105,88 @@ public final class WaysideShelterGameTests {
     }
 
     @GameTest(template = "empty", batch = "uc_shelter", timeoutTicks = 800)
-    public static void aShelterIsBuiltBesideTheRoadOnceWithItsWardenAndTheWorldRemembers(GameTestHelper helper) {
+    public static void aPavilionIsBuiltBesideTheRoadOnceWithItsWardenAndTheWorldRemembers(GameTestHelper helper) {
+        buildOneKind(helper, 0);
+    }
+
+    @GameTest(template = "empty", batch = "uc_shelter", timeoutTicks = 800)
+    public static void aWellIsBuiltBesideTheRoadOnceWithItsWardenAndTheWorldRemembers(GameTestHelper helper) {
+        buildOneKind(helper, 1);
+    }
+
+    @GameTest(template = "empty")
+    public static void everyKindOfStopIsChosenByItsKeyAndBothKindsAppearOnOneRoad(GameTestHelper helper) {
+        check(WaysideShelters.KINDS.size() >= 2 && WaysideShelters.KINDS.stream().allMatch(id -> DistrictCatalog.INSTANCE.find(id) != null), "The kinds exist: " + WaysideShelters.KINDS);
+        check(WaysideShelters.kindOf("ironhaven_valewood", 0).equals(WaysideShelters.kindOf("ironhaven_valewood", 0)), "The same spot is always the same kind");
+        for (String road : List.of("ironhaven_valewood", "ironhaven_blackwater", "valewood_blackwater")) {
+            java.util.Set<String> kinds = new java.util.HashSet<>();
+            for (int i = 0; i < 2; i++) kinds.add(WaysideShelters.kindOf(road, i));
+            check(kinds.size() == 2, road + ": two neighbouring stops on a road are different kinds, so a road has variety: " + kinds);
+        }
+        // the lots have one size, so the site search does not care which kind it is placing
+        var first = DistrictCatalog.INSTANCE.find(WaysideShelters.KINDS.get(0));
+        for (String id : WaysideShelters.KINDS) {
+            var kind = DistrictCatalog.INSTANCE.find(id);
+            check(kind.min().equals(first.min()) && kind.max().equals(first.max()) && kind.repeatable() && kind.npcOps().size() == 1 && kind.npcOps().get(0).npc().role().equals("warden"),
+                id + " is a repeatable lot of the same size with one warden");
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty", batch = "uc_shelter", timeoutTicks = 600)
+    public static void aFrozenSeaIsNotGroundForAShelter(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
-        DistrictCatalog.District district = DistrictCatalog.INSTANCE.find(WaysideShelters.DISTRICT);
-        check(district != null && district.repeatable() && district.npcOps().size() == 1 && district.npcOps().get(0).npc().role().equals("warden"), "The shelter is a repeatable district with one warden");
+        BlockPos arena = helper.absolutePos(BlockPos.ZERO);
+        // a sheet of ice over three blocks of water over stone, and beside it a plain stone floor, in the sky: the first real shelter went up on a frozen sea in a real world,
+        // because the ground scan steps over water but stops on ice
+        int y = level.getMaxBuildHeight() - 100, ox = arena.getX(), oz = arena.getZ() + 400;
+        BlockPos lo = new BlockPos(ox - 30, y - 8, oz - 20), hi = new BlockPos(ox + 30, y + 10, oz + 20);
+        for (int cx = lo.getX() >> 4; cx <= hi.getX() >> 4; cx++) for (int cz = lo.getZ() >> 4; cz <= hi.getZ() >> 4; cz++) level.setChunkForced(cx, cz, true);
+        Runnable cleanup = () -> {
+            for (BlockPos at : BlockPos.betweenClosed(lo, hi)) level.setBlock(at, Blocks.AIR.defaultBlockState(), 2);
+            for (int cx = lo.getX() >> 4; cx <= hi.getX() >> 4; cx++) for (int cz = lo.getZ() >> 4; cz <= hi.getZ() >> 4; cz++) level.setChunkForced(cx, cz, false);
+        };
+        UndergroundGameTests.whenEntitiesTick(helper, level, List.of(lo, hi, new BlockPos(ox, y, oz)), 40, () -> {
+            try {
+                for (int dx = -25; dx <= 25; dx++) for (int dz = -15; dz <= 15; dz++) {
+                    BlockPos column = new BlockPos(ox + dx, y, oz + dz);
+                    if (dx < 0) {
+                        level.setBlock(column.below(3), Blocks.STONE.defaultBlockState(), 2);
+                        for (int d = 1; d <= 2; d++) level.setBlock(column.below(3 - d), Blocks.WATER.defaultBlockState(), 2);
+                        level.setBlock(column, Blocks.ICE.defaultBlockState(), 2);
+                    } else {
+                        level.setBlock(column, Blocks.STONE.defaultBlockState(), 2);
+                    }
+                }
+                var ground = WaysideShelters.ground(level, List.of());
+                check(ground.wet(ox - 10, oz) && ground.wet(ox - 24, oz + 10), "A frozen sea is wet, though the ice is solid");
+                check(!ground.wet(ox + 10, oz) && !ground.wet(ox + 24, oz + 10), "A stone floor is not wet");
+                // open water too: the surface scan steps over it onto the bed
+                for (int dx = 1; dx <= 3; dx++) for (int dz = -2; dz <= 2; dz++) level.setBlock(new BlockPos(ox + 20 + dx, y + 1, oz + dz), Blocks.WATER.defaultBlockState(), 2);
+                check(ground.wet(ox + 21, oz), "Open water over a bed is wet");
+            } finally {
+                cleanup.run();
+            }
+            helper.succeed();
+        });
+    }
+
+    /** The test world's cells vary, so the road ids are chosen here to land on the kind under test. */
+    private static String roadOfKind(int kind) {
+        for (int n = 0; ; n++) {
+            String road = "test" + n + "_road";
+            if (WaysideShelters.kindOf(road, 0).equals(WaysideShelters.KINDS.get(kind))) return road;
+        }
+    }
+
+    private static void buildOneKind(GameTestHelper helper, int kind) {
+        ServerLevel level = helper.getLevel();
+        String road = roadOfKind(kind);
+        DistrictCatalog.District district = DistrictCatalog.INSTANCE.find(WaysideShelters.KINDS.get(kind));
+        check(district != null && district.repeatable() && district.npcOps().size() == 1 && district.npcOps().get(0).npc().role().equals("warden"), "The stop is a repeatable district with one warden");
         BlockPos arena = helper.absolutePos(BlockPos.ZERO);
         // In the sky, as the other district tests build: a stone platform with a straight road along its middle, away from every other test.
-        int y = level.getMaxBuildHeight() - 100, ox = arena.getX(), oz = arena.getZ() + 160;
+        int y = level.getMaxBuildHeight() - 100, ox = arena.getX(), oz = arena.getZ() + 160 + 120 * kind; // each kind has its own stretch of sky: the tests of one batch run at the same time
         BlockPos lo = new BlockPos(ox - 70, y - 8, oz - 40), hi = new BlockPos(ox + 70, y + 12, oz + 40);
         for (int cx = lo.getX() >> 4; cx <= hi.getX() >> 4; cx++) for (int cz = lo.getZ() >> 4; cz <= hi.getZ() >> 4; cz++) level.setChunkForced(cx, cz, true);
         List<CityRegions.Region> cities = CityRegions.INSTANCE.all();
@@ -119,7 +194,7 @@ public final class WaysideShelterGameTests {
         CityRegions.INSTANCE.replaceForTest(List.of());
         CheckpointCatalog.INSTANCE.replaceForTest(List.of());
         DistrictBuilder.forgetForTest(level, district.id());
-        CorridorPlan plan = new CorridorPlan("ironhaven_valewood", new double[]{ox - 60, ox + 60}, new double[]{oz, oz}, 7, List.of());
+        CorridorPlan plan = new CorridorPlan(road, new double[]{ox - 60, ox + 60}, new double[]{oz, oz}, 7, List.of());
         List<CorridorPlan> plans = List.of(plan);
         Runnable cleanup = () -> {
             DistrictBuilder.forgetForTest(level, district.id());
@@ -150,13 +225,19 @@ public final class WaysideShelterGameTests {
                 PlacedSites state = new PlacedSites();
                 check(WaysideShelters.serve(level, plans, plan, List.of(60.0), ox + 500.0, oz + 500.0, state, 24) == 0, "Nothing is built far from the traveller");
                 check(WaysideShelters.serve(level, plans, plan, List.of(60.0), ox + 0.5, oz + 0.5, state, 24) == 1, "A traveller close by gets the shelter built");
-                check(state.done.contains("ironhaven_valewood#0") && state.where.get("ironhaven_valewood#0") == origin.asLong(), "The world remembers where it stands: " + state.where);
+                check(state.done.contains(road + "#0") && state.where.get(road + "#0") == origin.asLong(), "The world remembers where it stands: " + state.where);
                 check(WaysideShelters.serve(level, plans, plan, List.of(60.0), ox + 0.5, oz + 0.5, state, 24) == 0 && DistrictBuilder.count(level, district.id()) == 1, "A shelter is built once");
                 var reloaded = PlacedSites.load(state.save(new net.minecraft.nbt.CompoundTag()));
                 check(reloaded.done.equals(state.done) && reloaded.where.equals(state.where), "Placed shelters survive a save and load");
-                check(level.getBlockState(origin.offset(5, 0, 4)).is(Blocks.CAMPFIRE) && level.getBlockState(origin.offset(2, 0, 1)).is(Blocks.STRIPPED_SPRUCE_LOG)
-                    && level.getBlockState(origin.offset(5, 4, 4)).is(Blocks.SPRUCE_PLANKS) && level.getBlockState(origin.offset(5, -1, 4)).is(Blocks.STONE_BRICKS), "The pavilion: campfire, posts, roof and floor");
-                check(level.getBlockEntity(origin.offset(2, 2, 2)) instanceof SignBlockEntity sign && sign.getFrontText().getMessage(0, false).getString().equals("WAYSIDE") && sign.isWaxed(), "The sign is written and waxed");
+                if (kind == 0) {
+                    check(level.getBlockState(origin.offset(5, 0, 4)).is(Blocks.CAMPFIRE) && level.getBlockState(origin.offset(2, 0, 1)).is(Blocks.STRIPPED_SPRUCE_LOG)
+                        && level.getBlockState(origin.offset(5, 4, 4)).is(Blocks.SPRUCE_PLANKS) && level.getBlockState(origin.offset(5, -1, 4)).is(Blocks.STONE_BRICKS), "The pavilion: campfire, posts, roof and floor");
+                    check(level.getBlockEntity(origin.offset(2, 2, 2)) instanceof SignBlockEntity sign && sign.getFrontText().getMessage(0, false).getString().equals("WAYSIDE") && sign.isWaxed(), "The sign is written and waxed");
+                } else {
+                    check(level.getBlockState(origin.offset(5, -1, 4)).is(Blocks.WATER) && level.getBlockState(origin.offset(4, 0, 3)).is(Blocks.STONE_BRICK_WALL)
+                        && level.getBlockState(origin.offset(4, 2, 3)).is(Blocks.STRIPPED_OAK_LOG) && level.getBlockState(origin.offset(5, 4, 4)).is(Blocks.OAK_PLANKS), "The well: water in a ring of wall, posts and a roof");
+                    check(level.getBlockEntity(origin.offset(3, 2, 3)) instanceof SignBlockEntity sign && sign.getFrontText().getMessage(0, false).getString().equals("THE WELL") && sign.isWaxed(), "The sign is written and waxed");
+                }
             } catch (RuntimeException error) {
                 cleanup.run();
                 throw error;
@@ -177,7 +258,7 @@ public final class WaysideShelterGameTests {
                     new CityNpcs().joined(new net.minecraftforge.event.entity.EntityJoinLevelEvent(keeper, level));
                     check(keeper.getRestrictCenter().equals(post) && keeper.getRestrictRadius() == CityNpcs.TETHER_RADIUS, "The leash is restored when the warden loads: " + keeper.getRestrictCenter());
                     DistrictBuilder.undoNear(level, district, new BlockPos(ox, y + 1, oz - 16));
-                    check(DistrictBuilder.count(level, district.id()) == 0 && !level.getBlockState(new BlockPos(ox - 1, y + 1, oz - 16)).is(Blocks.CAMPFIRE), "Removing it restores the ground and takes the warden away");
+                    check(DistrictBuilder.count(level, district.id()) == 0 && !level.getBlockState(new BlockPos(ox - 1, y + 1, oz - 16)).is(Blocks.CAMPFIRE) && !level.getBlockState(new BlockPos(ox - 1, y, oz - 16)).is(Blocks.WATER), "Removing it restores the ground and takes the warden away");
                 } finally {
                     cleanup.run();
                 }

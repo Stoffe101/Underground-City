@@ -1251,10 +1251,11 @@ final class Scenarios {
      */
     private static void shelter() {
         final String road = System.getProperty("uc.playtest.route", "ironhaven_valewood");
+        final int stop = Integer.getInteger("uc.playtest.stop", 0); // which of the road's stops to photograph (the kinds alternate along a road)
         final double[] ideal = new double[1];
         final Vec3[] centre = new Vec3[1], toRoad = new Vec3[1];
         final BlockPos[] origin = new BlockPos[1];
-        talkDistrict = WaysideShelters.DISTRICT;
+        talkDistrict = WaysideShelters.kindOf(road, stop);
         // 1. the survey: how many shelters each road should have, and which of them found ground
         String surveyed = System.getProperty("uc.playtest.roads", "ironhaven_valewood,ironhaven_blackwater,valewood_blackwater"); // empty: skip the survey
         for (String each : surveyed.isBlank() ? new String[0] : surveyed.split(",")) {
@@ -1281,19 +1282,19 @@ final class Scenarios {
         arriveOnRoadLater(road, () -> {
             var all = WaysideShelters.positions(roadPlan(road), WaysideShelters.MAX_GAP, WaysideShelters.EDGE);
             if (all.isEmpty()) { Playtest.fail("the road has no shelter positions"); return 100; }
-            ideal[0] = all.get(0);
+            ideal[0] = all.get(Math.min(stop, all.size() - 1));
             return (int) Math.max(0, ideal[0] - 30);
         }, "creative");
-        Playtest.queue("the first shelter of " + road + " is built", () -> { }, () -> {
+        Playtest.queue("shelter " + stop + " of " + road + " is built", () -> { }, () -> {
             var state = PlacedSites.get(level(), PlacedSites.SHELTERS);
-            if (state.done.contains(road + "#0") && !state.where.containsKey(road + "#0")) Playtest.fail("the first shelter was given up: no suitable ground near " + Math.round(ideal[0]) + " m");
-            return state.where.containsKey(road + "#0");
+            if (state.done.contains(road + "#" + stop) && !state.where.containsKey(road + "#" + stop)) Playtest.fail("the shelter was given up: no suitable ground near " + Math.round(ideal[0]) + " m");
+            return state.where.containsKey(road + "#" + stop);
         }, 6000);
         Playtest.queue("noon, clear, no command feedback in the pictures", () -> {
             Playtest.command("time set 6000"); Playtest.command("gamerule doDaylightCycle false"); Playtest.command("weather clear"); Playtest.command("gamerule sendCommandFeedback false");
         });
         Playtest.queue("find the shelter and the road beside it", () -> {
-            origin[0] = BlockPos.of(PlacedSites.get(level(), PlacedSites.SHELTERS).where.get(road + "#0"));
+            origin[0] = BlockPos.of(PlacedSites.get(level(), PlacedSites.SHELTERS).where.get(road + "#" + stop));
             var warden = citizen(null, 0);
             if (warden == null) { Playtest.fail("the shelter's warden is not in the world"); return; }
             Playtest.log("the warden stands at " + warden.blockPosition().toShortString() + " (the lot's corner is " + origin[0].toShortString() + ")");
@@ -1303,25 +1304,29 @@ final class Scenarios {
             Vec3 away = new Vec3(near[0] - centre[0].x, 0, near[1] - centre[0].z);
             toRoad[0] = away.scale(1.0 / Math.max(1e-6, away.length()));
             Playtest.log("shelter at " + origin[0].toShortString() + " for " + road + " at " + Math.round(ideal[0]) + " m, " + Math.round(away.length()) + " blocks from the road");
-            standLooking(centre[0].add(toRoad[0].scale(12)).add(0, 0.1, 0), centre[0].add(0, 2.2, 0));
+            // A free camera (spectator: no ground needed, no hand, no HUD): the ground outside the lot may be a bank or a ditch, and the views are wide enough to show all of it.
+            Playtest.command("gamemode spectator");
+            Minecraft.getInstance().options.hideGui = true;
+            standLooking(centre[0].add(toRoad[0].scale(13)).add(0, 2.4, 0), centre[0].add(0, 1.4, 0));
         });
-        Playtest.queue("let the chunks and the shelter's meshes arrive", () -> { }, () -> groundBelowPlayer(), 6000);
+        Playtest.queue("let the chunks and the shelter's meshes arrive", () -> { }, () -> Minecraft.getInstance().level != null && Minecraft.getInstance().level.hasChunkAt(Minecraft.getInstance().player.blockPosition()), 6000);
         waitForMeshes(1500);
         Playtest.wait("settle", 120);
         Playtest.queue("screenshot from the road", () -> Playtest.screenshotNextFrame("uc-shelter-road"));
         Playtest.wait("frame", 10);
         Playtest.queue("a corner of the lot, looking in", () -> {
-            Vec3 corner = Vec3.atLowerCornerOf(origin[0]).add(-1.5, 0.1, -1.5);
-            standLooking(corner, centre[0].add(0, 1.0, 0));
+            standLooking(centre[0].subtract(toRoad[0].scale(13)).add(0, 2.4, 0), centre[0].add(0, 1.4, 0));
         });
         Playtest.wait("settle", 60);
         Playtest.queue("screenshot of the pavilion", () -> Playtest.screenshotNextFrame("uc-shelter-outside"));
         Playtest.wait("frame", 10);
-        Playtest.queue("under the roof, facing the fire", () -> standLooking(Vec3.atLowerCornerOf(origin[0]).add(2.5, 0.1, 4.5), centre[0].add(0.4, 0.8, 0)));
+        Playtest.queue("under the roof, facing the middle", () -> standLooking(Vec3.atLowerCornerOf(origin[0]).add(1.5, 0.1, 4.5), centre[0].add(0.4, 0.8, 0)));
         Playtest.wait("settle", 60);
         Playtest.queue("screenshot under the roof", () -> Playtest.screenshotNextFrame("uc-shelter-inside"));
         Playtest.wait("frame", 10);
-        Playtest.queue("where the warden stands now", () -> {
+        Playtest.queue("back to creative with the HUD, where the warden stands now", () -> {
+            Playtest.command("gamemode creative");
+            Minecraft.getInstance().options.hideGui = false;
             var warden = citizen(null, 0);
             if (warden != null) Playtest.log("the warden is now at " + warden.blockPosition().toShortString() + ", " + Math.round(Math.hypot(warden.getX() - centre[0].x, warden.getZ() - centre[0].z)) + " blocks from the pavilion's middle");
         });
