@@ -26,6 +26,20 @@ public final class QShopEconomy {
         return value;
     }
 
+    /**
+     * The credits of a player who may be offline, read from the provider's own player-data access, or null when they cannot be read. Read-only:
+     * Crew recovery at server start compares this with a recorded before/after and never writes an offline wallet.
+     */
+    public static Double balanceOffline(net.minecraft.server.MinecraftServer server, java.util.UUID player) {
+        if (!available() || !configured(server)) return null;
+        try {
+            double value = QShopAddonApi.currency().getBalance(server, player, "credits");
+            return Double.isFinite(value) && value >= 0 && value <= 1_000_000_000 ? value : null;
+        } catch (RuntimeException error) {
+            return null;
+        }
+    }
+
     /** Absolute target for replaying a prepared transaction; never client supplied. */
     static void applyBalance(ServerPlayer player, double target) {
         if (!available()) throw new IllegalStateException("Q Shop 1.8.4 is required");

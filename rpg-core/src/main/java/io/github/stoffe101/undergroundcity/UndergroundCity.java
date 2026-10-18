@@ -107,6 +107,7 @@ public final class UndergroundCity {
         ITEMS.register(context.getModEventBus());
         context.getModEventBus().addListener(this::addCreativeTab);
         TerminalNetwork.register();
+        CrewNetwork.register();
         MinecraftForge.EVENT_BUS.register(this);
         MinecraftForge.EVENT_BUS.register(new WorkOrderService());
         MinecraftForge.EVENT_BUS.register(new SupplierNpc());
@@ -119,6 +120,9 @@ public final class UndergroundCity {
         MinecraftForge.EVENT_BUS.register(new DevBootstrap());
         MinecraftForge.EVENT_BUS.register(new CheckpointService());
         MinecraftForge.EVENT_BUS.register(new SecureTerminalService());
+        MinecraftForge.EVENT_BUS.register(new CrewService());
+        MinecraftForge.EVENT_BUS.register(new CrewCommands());
+        MinecraftForge.EVENT_BUS.register(new ResidenceGuard());
         RangeService.register();
     }
 

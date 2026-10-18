@@ -1,0 +1,25 @@
+{
+  "replace": false,
+  "values": [
+    "minecraft:crafting_table",
+    "minecraft:furnace",
+    "minecraft:blast_furnace",
+    "minecraft:smoker",
+    "minecraft:anvil",
+    "minecraft:chipped_anvil",
+    "minecraft:damaged_anvil",
+    "minecraft:smithing_table",
+    "minecraft:grindstone",
+    "minecraft:stonecutter",
+    "minecraft:loom",
+    "minecraft:cartography_table",
+    "minecraft:fletching_table",
+    "minecraft:brewing_stand",
+    "minecraft:enchanting_table",
+    "minecraft:composter",
+    { "id": "tacz:gun_smith_table", "required": false },
+    { "id": "tacz:workbench_a", "required": false },
+    { "id": "tacz:workbench_b", "required": false },
+    { "id": "tacz:workbench_c", "required": false }
+  ]
+}
