@@ -140,7 +140,7 @@ final class Dialogue {
             }
             case "warden" -> {
                 out.add(new Choice("where", "Where am I on the road?", true, ""));
-                out.add(new Choice("posts", "Where is the next checkpoint?", true, ""));
+                out.add(new Choice("posts", "Where is the nearest checkpoint?", true, ""));
                 out.add(new Choice("roadlaw", "What does the law say at either end?", true, ""));
                 out.add(new Choice("rumour", "Anything I should know?", true, ""));
             }

@@ -176,10 +176,21 @@ final class Scenarios {
 
     /** The district whose citizens {@link #citizen} and {@link #talkTo} look up: Founders Row unless a scenario (the wayside shelter) says otherwise. */
     private static String talkDistrict = "founders_row";
+    /** Set for a district that stands in many places (the wayside shelters): the citizen talked to is the one nearest here, not the first the world lists. */
+    private static BlockPos talkNear;
 
     private static net.minecraft.world.entity.npc.Villager citizen(BlockPos origin, int index) {
-        var uuid = DistrictBuilder.citizensForTest(level(), talkDistrict).get(index);
-        var entity = level().getEntity(uuid);
+        var uuids = DistrictBuilder.citizensForTest(level(), talkDistrict);
+        BlockPos near = origin != null ? origin : talkNear;
+        if (near != null) {
+            net.minecraft.world.entity.npc.Villager best = null;
+            for (var uuid : uuids) {
+                if (level().getEntity(uuid) instanceof net.minecraft.world.entity.npc.Villager villager
+                    && (best == null || villager.distanceToSqr(Vec3.atCenterOf(near)) < best.distanceToSqr(Vec3.atCenterOf(near)))) best = villager;
+            }
+            return best;
+        }
+        var entity = level().getEntity(uuids.get(index));
         return entity instanceof net.minecraft.world.entity.npc.Villager villager ? villager : null;
     }
 
@@ -1300,6 +1311,7 @@ final class Scenarios {
         });
         Playtest.queue("find the shelter and the road beside it", () -> {
             origin[0] = BlockPos.of(PlacedSites.get(level(), PlacedSites.SHELTERS).where.get(road + "#" + stop));
+            talkNear = origin[0].offset(5, 0, 4);
             var warden = citizen(null, 0);
             if (warden == null) { Playtest.fail("the shelter's warden is not in the world"); return; }
             Playtest.log("the warden stands at " + warden.blockPosition().toShortString() + " (the lot's corner is " + origin[0].toShortString() + ")");
@@ -1340,7 +1352,7 @@ final class Scenarios {
         chooseOption("Where am I on the road?", 0, "dialogue", "uc-shelter-where");
         chooseOption("What does the law say at either end?", 2, "dialogue", "uc-shelter-law");
         Playtest.queue("goodbye", () -> Minecraft.getInstance().setScreen(null));
-        Playtest.queue("restore the district the talk helper looks in", () -> talkDistrict = "founders_row");
+        Playtest.queue("restore the district the talk helper looks in", () -> { talkDistrict = "founders_row"; talkNear = null; });
     }
 
     /** One look at a block of the Row from a standing position (Row-relative eye and target), long enough for a tooltip mod to notice the crosshair, then a photograph. */

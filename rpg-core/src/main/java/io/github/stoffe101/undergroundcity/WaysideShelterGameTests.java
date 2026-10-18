@@ -197,6 +197,28 @@ public final class WaysideShelterGameTests {
         }
     }
 
+    // The two build tests run at the same time (one batch), and both need the city circles and checkpoint zones out of the way. The first to start keeps the real lists, the last to finish puts them back;
+    // a test that took its own copy would copy the other's empty list and leave the empty one behind for every later test.
+    private static int emptied;
+    private static List<CityRegions.Region> realCities = List.of();
+    private static List<CheckpointCatalog.Checkpoint> realZones = List.of();
+
+    private static synchronized void emptyTheWorldData() {
+        if (emptied++ == 0) {
+            realCities = CityRegions.INSTANCE.all();
+            realZones = CheckpointCatalog.INSTANCE.all();
+        }
+        CityRegions.INSTANCE.replaceForTest(List.of());
+        CheckpointCatalog.INSTANCE.replaceForTest(List.of());
+    }
+
+    private static synchronized void restoreTheWorldData() {
+        if (--emptied == 0) {
+            CityRegions.INSTANCE.replaceForTest(realCities);
+            CheckpointCatalog.INSTANCE.replaceForTest(realZones);
+        }
+    }
+
     private static void buildOneKind(GameTestHelper helper, int kind) {
         ServerLevel level = helper.getLevel();
         String road = roadOfKind(kind);
@@ -207,10 +229,7 @@ public final class WaysideShelterGameTests {
         int y = level.getMaxBuildHeight() - 100, ox = arena.getX(), oz = arena.getZ() + 160 + 120 * kind; // each kind has its own stretch of sky: the tests of one batch run at the same time
         BlockPos lo = new BlockPos(ox - 70, y - 8, oz - 40), hi = new BlockPos(ox + 70, y + 12, oz + 40);
         for (int cx = lo.getX() >> 4; cx <= hi.getX() >> 4; cx++) for (int cz = lo.getZ() >> 4; cz <= hi.getZ() >> 4; cz++) level.setChunkForced(cx, cz, true);
-        List<CityRegions.Region> cities = CityRegions.INSTANCE.all();
-        List<CheckpointCatalog.Checkpoint> zones = CheckpointCatalog.INSTANCE.all();
-        CityRegions.INSTANCE.replaceForTest(List.of());
-        CheckpointCatalog.INSTANCE.replaceForTest(List.of());
+        emptyTheWorldData();
         DistrictBuilder.forgetForTest(level, district.id());
         CorridorPlan plan = new CorridorPlan(road, new double[]{ox - 60, ox + 60}, new double[]{oz, oz}, 7, List.of());
         List<CorridorPlan> plans = List.of(plan);
@@ -218,8 +237,7 @@ public final class WaysideShelterGameTests {
             DistrictBuilder.forgetForTest(level, district.id());
             for (BlockPos at : BlockPos.betweenClosed(lo, hi)) level.setBlock(at, Blocks.AIR.defaultBlockState(), 2);
             for (int cx = lo.getX() >> 4; cx <= hi.getX() >> 4; cx++) for (int cz = lo.getZ() >> 4; cz <= hi.getZ() >> 4; cz++) level.setChunkForced(cx, cz, false);
-            CityRegions.INSTANCE.replaceForTest(cities);
-            CheckpointCatalog.INSTANCE.replaceForTest(zones);
+            restoreTheWorldData();
         };
         List<BlockPos> probes = List.of(lo, hi, new BlockPos(ox, y, oz - 18), new BlockPos(ox, y, oz));
         UndergroundGameTests.whenEntitiesTick(helper, level, probes, 40, () -> {

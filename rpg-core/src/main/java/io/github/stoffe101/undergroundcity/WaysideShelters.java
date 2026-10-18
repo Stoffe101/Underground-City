@@ -20,9 +20,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Optional;
-import java.util.WeakHashMap;
 
 /**
  * Wayside shelters (D-079): a small open stop (a pavilion with a campfire, or a well under a roof) with water and a road warden, built beside each inter-city road a few hundred blocks
@@ -52,7 +50,6 @@ public final class WaysideShelters {
     /** A warden answers for the road they stand within this many blocks of. */
     static final double NEAR_ROAD = 250.0;
 
-    private static final Map<CorridorPlan, List<Double>> IDEAL = new WeakHashMap<>();
 
     private WaysideShelters() {}
 
@@ -222,16 +219,24 @@ public final class WaysideShelters {
             for (Site site : sites(ground(level, plans), plan, ideal.get(i), width, depth)) {
                 if (tried++ == TRIES) break;
                 if (builtOver(level, site.origin(), district)) continue;
+                // Recorded before the build: the builder saves the world's data as it finishes, so a server that dies right after it still knows the stop is done and does not build a second one beside it.
+                state.done.add(key);
+                state.where.put(key, site.origin().asLong());
+                state.setDirty();
                 try {
                     DistrictBuilder.build(level, district, site.origin());
                     placed = site.origin();
                     break;
                 } catch (IllegalStateException refused) {
                     LOGGER.info("[UC] wayside shelter {}: site {} refused ({})", key, site.origin().toShortString(), refused.getMessage());
+                } catch (RuntimeException failed) {
+                    LOGGER.error("[UC] wayside shelter {}: building at {} failed; this stop is given up", key, site.origin().toShortString(), failed);
+                    state.where.remove(key);
+                    break;
                 }
+                state.where.remove(key);
             }
             if (placed != null) {
-                state.where.put(key, placed.asLong());
                 built++;
                 LOGGER.info("[UC] wayside shelter {} built at {} as {} ({} ms to search for the site and build it)", key, placed.toShortString(), district.id(), (System.nanoTime() - started) / 1_000_000L);
             } else {
@@ -253,7 +258,7 @@ public final class WaysideShelters {
         if (plans.isEmpty()) return;
         PlacedSites state = PlacedSites.get(level, PlacedSites.SHELTERS);
         for (CorridorPlan plan : plans) {
-            List<Double> ideal = IDEAL.computeIfAbsent(plan, p -> positions(p, MAX_GAP, EDGE));
+            List<Double> ideal = positions(plan, MAX_GAP, EDGE); // the plans are rebuilt on every call, so there is nothing to cache by; this is a few hundred steps along a road
             for (ServerPlayer player : level.players()) serve(level, plans, plan, ideal, player.getX(), player.getZ(), state);
         }
     }

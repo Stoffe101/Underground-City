@@ -46,8 +46,6 @@ public final class RoadMarkers {
         BlockPos backSign() { return base.above().relative(forward); }
     }
 
-    private static final java.util.Map<CorridorPlan, List<Double>> IDEAL = new java.util.WeakHashMap<>();
-
     private RoadMarkers() {}
 
     // ------------------------------------------------------------------------------------------ pure planning
@@ -213,7 +211,7 @@ public final class RoadMarkers {
         if (plans.isEmpty()) return;
         PlacedSites state = PlacedSites.get(level, PlacedSites.MARKERS);
         for (CorridorPlan plan : plans) {
-            List<Double> ideal = IDEAL.computeIfAbsent(plan, p -> positions(p, SPACING, EDGE));
+            List<Double> ideal = positions(plan, SPACING, EDGE); // the plans are rebuilt on every call, so there is nothing to cache by
             for (ServerPlayer player : level.players()) serve(level, plan, ideal, player.getX(), player.getZ(), state);
         }
     }
