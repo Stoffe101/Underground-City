@@ -38,6 +38,7 @@ public final class IdentityGameTests {
 
     @GameTest(template = "empty")
     public static void crewMembershipMoneyHomesAndPayoutsBelongToTheAccountNotTheName(GameTestHelper helper) throws Exception {
+        if (!QShopEconomy.available()) { helper.succeed(); return; }   // the jobs that run the GameTests without Q Shop (the onboarding and world smoke jobs) have no wallet to read
         try (CrewGameTests.Rig rig = new CrewGameTests.Rig(helper)) {
             CrewService.wallet = rig.previousWallet;   // the live Q Shop wallet: its capability data is per player entity
             CrewLedger l = rig.ledger;
