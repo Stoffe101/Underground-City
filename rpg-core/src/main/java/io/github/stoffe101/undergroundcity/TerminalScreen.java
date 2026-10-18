@@ -664,7 +664,9 @@ public final class TerminalScreen extends UcScreen {
         int y = cy + 26;
         String heading = data.wayside() ? "WAYSIDE PROVISIONS" : exchange ? capitalize(data.region()).toUpperCase(Locale.ROOT) + " EXCHANGE" : "REGIONAL EXCHANGE";
         UcUi.display(g, font, heading, cx, y, UcUi.LEGAL);
-        UcUi.text(g, font, data.wayside() ? "A few basics, shared with " + capitalize(data.city().isEmpty() ? "the city" : data.city()) + "'s other desks" : "Shared stock, refilled during active play", cx + UcUi.displayWidth(font, heading) + 8, y, UcUi.DIM);
+        int subtitleX = cx + UcUi.displayWidth(font, heading) + 8;
+        String subtitle = data.wayside() ? "A few basics, shared with " + capitalize(data.city().isEmpty() ? "the city" : data.city()) + "'s desks" : "Shared stock, refilled during active play";
+        UcUi.text(g, font, UcUi.fit(font, subtitle, cx + cw - subtitleX), subtitleX, y, UcUi.DIM);
         UcUi.well(g, cx, cy + 40, cw, ch - 40);
         if (!exchange) {
             int ty = cy + 52;
