@@ -43,7 +43,7 @@ The journal uses file fsync and atomic replacement; POSIX servers additionally f
 
 ## Regional exchange, recurring orders and rival-city gates (October 15, 2026)
 
-**Status:** implemented in Core and exercised by dedicated-server GameTests, a two-real-client journey (including a dedicated restart) and native GUI captures. It is a *playable prototype loop*, not a finished economy: stock numbers are the provisional planning values, there is no NPC production behind the shelves, and Create/TaCZ item rebinding is designed but untested.
+**Status:** implemented in Core and exercised by dedicated-server GameTests, a two-real-client journey (including a dedicated restart) and native GUI captures. It is a *playable prototype loop*, not a finished economy: stock numbers are the provisional planning values, there is no NPC production behind the shelves, and TaCZ item rebinding is designed but untested (the Create mod is excluded, D-080).
 
 ### What a player can do
 
@@ -67,7 +67,7 @@ Gunsmith recurring orders use **optics, mounts and platforms, not firearms**; Ta
 - **Economy guard:** the generator, a Python test and a GameTest over the *actually loaded* datapack all require each order's credits to be 1.3x-2.1x the shared-stock price of the consumed goods, so recurring jobs earn but cannot print money from free goods.
 - **Authority:** `RegionalMarket` validates registration, a loaded placed terminal within eight blocks (same rule as every terminal action), the city containing that terminal, the catalog line for that city, quantity 1..max, a replay nonce, inventory room (planned on a copy), available stock and credits. The client only chooses a catalog ID, quantity and a random nonce.
 - **Durability:** the purchase uses the same fsynced prepared-settlement journal as deliveries. The stock decrement, the nonce (last eight kept per player) and absolute inventory/wallet targets are written *before* the live inventory or Q Shop wallet change; login or the next action replays them exactly once. New ledger keys: `regional`, per player `visited`, `recent_purchases`, `purchases`, and `pending.kind`. Older journals load unchanged; **do not downgrade Core while a purchase is pending** (an older build would settle it as a delivery).
-- **Rebinding:** `regional_stock/*.json` and work-order requirements name registry IDs. Replacing `underground_city:machined_parts` with a verified Create/TaCZ ID is a datapack change, but no such rebinding has been tested and no third-party item IDs are asserted.
+- **Rebinding:** `regional_stock/*.json` and work-order requirements name registry IDs. Replacing `underground_city:machined_parts` with a verified TaCZ or other non-Create ID is a datapack change, but no such rebinding has been tested and no third-party item IDs are asserted.
 
 ### Known limitations
 

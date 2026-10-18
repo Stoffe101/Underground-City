@@ -8,7 +8,7 @@ puffish,Pufferfish Skills,https://www.curseforge.com/minecraft/mc-mods/puffish-s
 currency,Lightmans Currency,https://www.curseforge.com/minecraft/mc-mods/lightmans-currency,economy,high,candidate,1.20.1 Forge,API and duplication check
 kubejs,KubeJS,https://www.curseforge.com/minecraft/mc-mods/kubejs,scripting,high,candidate,1.20.1 Forge,Recipe and data hooks
 ftb_quests,FTB Quests,https://www.curseforge.com/minecraft/mc-mods/ftb-quests-forge,quests,high,candidate,1.20.1 Forge,Co-op quest semantics
-create,Create,https://www.curseforge.com/minecraft/mc-mods/create,industry,medium,candidate,1.20.1 Forge,Industrial balance and tick cost
+create,Create,https://www.curseforge.com/minecraft/mc-mods/create,industry,none,retired,1.20.1 Forge,Rejected by the owner on 2026-10-18 (D-080); never add Create or anything that requires it
 farmers_delight,Farmers Delight,https://www.curseforge.com/minecraft/mc-mods/farmers-delight,farming,medium,candidate,1.20.1 Forge,Processing and food
 vinery,Lets Do Vinery,https://www.curseforge.com/minecraft/mc-mods/lets-do-vinery,farming,medium,candidate,1.20.1 Forge,Exact loader availability
 minecolonies,MineColonies,https://www.curseforge.com/minecraft/mc-mods/minecolonies,npc,spike,candidate,1.20.1 Forge,Alternative NPC approach

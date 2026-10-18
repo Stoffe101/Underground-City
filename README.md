@@ -29,7 +29,7 @@ Underground City is a handcrafted-feeling, semi-modern Minecraft co-op RPG set a
 
 ## Runtime baseline and candidates
 
-This development slice targets **Minecraft Java 1.20.1, Forge 47.4.10, Java 17**, as requested and compiled/runtime-tested. Candidate mods include The Lost Cities, CustomNPCs-Unofficial, Lootr, TaCZ, Pufferfish's Skills, KubeJS, FTB Quests, Lightman's Currency, Create, Farmer's Delight, and Vinery. All need exact-version dependency audits, client and dedicated-server smoke tests, and licensing checks before adoption.
+This development slice targets **Minecraft Java 1.20.1, Forge 47.4.10, Java 17**, as requested and compiled/runtime-tested. Candidate mods include The Lost Cities, CustomNPCs-Unofficial, Lootr, TaCZ, Pufferfish's Skills, KubeJS, FTB Quests, Farmer's Delight, and Vinery. **The Create mod and its add-ons are excluded by owner direction (D-080).** Lightman's Currency was evaluated only as a design reference for shared accounts (D-081). All need exact-version dependency audits, client and dedicated-server smoke tests, and licensing checks before adoption.
 
 Our custom **RPG Core** will make the authoritative decisions about players, professions, city economies, crime, contracts, and story progress. Content should be data-driven and tested; never bake fixed world coordinates or third-party item IDs into gameplay logic without adapters.
 
@@ -79,7 +79,7 @@ The [inter-city progression plan](docs/design/intercity-progression.md) ties adv
 
 ## Recurring regional supplies, not just one-time city unlocks
 
-Nine specialist commodities, twelve crafted products and twelve recurring work orders are **live in Core** as original items and datapack data ([design](docs/design/recurring-supply-chains.md), [integration guide](docs/technical/economy-integration.md#regional-exchange-recurring-orders-and-rival-city-gates-october-15-2026)). Each city's terminal exchange sells only its own three goods from **finite shared stock** that replenishes during active play; every batch consumes goods, so the next order needs another purchase. Prices, stock and city are server-owned, purchases use the single Q Shop wallet and the prepared-settlement journal, and order margins are guarded at 1.3x-2.1x. Not yet: supplier NPCs/warehouses, permits and convoys, NPC production behind the shelves, and Create/TaCZ item rebinding (untested). The Python [supply simulator](scripts/simulate_regional_supply.py) remains a planning model only.
+Nine specialist commodities, twelve crafted products and twelve recurring work orders are **live in Core** as original items and datapack data ([design](docs/design/recurring-supply-chains.md), [integration guide](docs/technical/economy-integration.md#regional-exchange-recurring-orders-and-rival-city-gates-october-15-2026)). Each city's terminal exchange sells only its own three goods from **finite shared stock** that replenishes during active play; every batch consumes goods, so the next order needs another purchase. Prices, stock and city are server-owned, purchases use the single Q Shop wallet and the prepared-settlement journal, and order margins are guarded at 1.3x-2.1x. Not yet: supplier NPCs/warehouses, permits and convoys, NPC production behind the shelves, and TaCZ item rebinding (untested). The Python [supply simulator](scripts/simulate_regional_supply.py) remains a planning model only.
 
 ## One criminal/civilian computer terminal
 
