@@ -526,11 +526,11 @@ public final class TerminalScreen extends UcScreen {
         int darkTeal = 0xff1d7a69, darkRed = 0xff9a2f27, darkAmber = 0xff8a5a10, darkGreen = 0xff2d7a3a;
         String buyer = extra.buyer().isEmpty() ? "Open order, licensed work" : "Buyer: " + extra.buyer() + " (" + capitalize(extra.buyerCity()) + ")";
         UcUi.icon(g, extra.underground() ? UcUi.Icon.UNDERGROUND : UcUi.Icon.LEGAL, tx - 2, ty - 4, extra.underground() ? darkRed : darkTeal);
-        g.drawString(font, UcUi.fit(font, buyer, w - 40), tx + 16, ty, extra.underground() ? darkRed : darkTeal, false);
-        if (extra.minTrust() > 0 || extra.underground()) {
-            String trust = "trust " + extra.trust() + (extra.minTrust() > 0 ? "/" + extra.minTrust() : "");
-            g.drawString(font, trust, x + w - 9 - font.width(trust), ty, UcUi.PAPER_DIM, false);
-        }
+        boolean showTrust = extra.minTrust() > 0 || extra.underground();
+        String trust = "trust " + extra.trust() + (extra.minTrust() > 0 ? "/" + extra.minTrust() : "");
+        // the buyer's name gives way to the trust figure on the right, so the two never print over each other
+        g.drawString(font, UcUi.fit(font, buyer, w - 40 - (showTrust ? font.width(trust) + 8 : 0)), tx + 16, ty, extra.underground() ? darkRed : darkTeal, false);
+        if (showTrust) g.drawString(font, trust, x + w - 9 - font.width(trust), ty, UcUi.PAPER_DIM, false);
         ty += 16;
         for (TerminalData.Req req : job.reqs()) {
             boolean enough = req.held() >= req.count();
