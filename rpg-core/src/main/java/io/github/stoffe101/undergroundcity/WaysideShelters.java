@@ -25,15 +25,15 @@ import java.util.Optional;
 import java.util.WeakHashMap;
 
 /**
- * Wayside shelters (D-079): a small open pavilion with a campfire, water and a road warden, built beside each inter-city road a few hundred blocks
+ * Wayside shelters (D-079): a small open stop (a pavilion with a campfire, or a well under a roof) with water and a road warden, built beside each inter-city road a few hundred blocks
  * from the nearest city, so that a walk of four minutes has somewhere to stop and someone to ask. The accepted pacing wants "something useful every
  * 300 to 450 blocks" on the road, optional and never compulsory (D-048); this is the smallest thing that is useful: a place to rest and a person who
  * answers from the real data (where the road leads and how far, where the next post is, what each end's law says).
  *
  * <p>Like the waymarkers ({@link RoadMarkers}) shelters are placed <b>at run time</b>, when a player comes within {@link #ACTIVATE} blocks of one, and
- * once each (the world remembers it, see {@link PlacedSites}). That keeps world generation, and so seed 5908, exactly as it was. A shelter is the
- * {@code wayside_shelter} district, so it is built by {@link DistrictBuilder} with all its safeguards: it refuses a lot that contains a container, saves
- * what it replaced so {@code /uc_district undo wayside_shelter confirm} can restore it, and cannot overlap another. The site is searched for
+ * once each (the world remembers it, see {@link PlacedSites}). That keeps world generation, and so seed 5908, exactly as it was. A stop is one of the
+ * {@link #KINDS} (a repeatable district), so it is built by {@link DistrictBuilder} with all its safeguards: it refuses a lot that contains a container, saves
+ * what it replaced so {@code /uc_district undo <kind> confirm} can restore it, and cannot overlap another. The site is searched for
  * ground that is level, dry, outside every city and checkpoint zone and clear of anything built; where nothing fits within {@link #SEARCH} blocks of the
  * ideal spot, that shelter is given up.
  */
