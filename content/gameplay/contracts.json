@@ -460,6 +460,40 @@
       "origin": "valewood"
     },
     {
+      "id": "dray_rifle_run",
+      "title": "Source parts for a rifle build",
+      "career": "gunsmith",
+      "level": 10,
+      "legality": "underground",
+      "requires_skill": "gunsmith.filed_serials",
+      "buyer": "dray",
+      "requires_mod": "taczblueprints",
+      "min_trust": 1,
+      "trust_gain": 1,
+      "capacity": 1,
+      "refill_ticks": 24000,
+      "credits": 330,
+      "xp": 450,
+      "requirements": [
+        {
+          "item": "underground_city:machined_parts",
+          "count": 6
+        },
+        {
+          "item": "underground_city:optical_components",
+          "count": 3
+        }
+      ],
+      "rewards": [
+        {
+          "item": "taczblueprints:blueprint_rifle",
+          "count": 1,
+          "nbt": "{GunId:\"tacz:ak47\"}"
+        }
+      ],
+      "errand": true
+    },
+    {
       "id": "arms_brokerage",
       "title": "Restricted rifle for a trusted buyer",
       "career": "gunsmith",
@@ -624,7 +658,8 @@
       "underground_city:optics_schematic": 102,
       "underground_city:sable_cutting": 22.5,
       "taczblueprints:blueprint_shotgun": 150,
-      "taczblueprints:blueprint_smg": 150
+      "taczblueprints:blueprint_smg": 150,
+      "taczblueprints:blueprint_rifle": 200
     },
     "mods": {
       "vinery:red_wine": 16,

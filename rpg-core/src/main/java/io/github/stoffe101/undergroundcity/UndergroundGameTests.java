@@ -1311,7 +1311,7 @@ public final class UndergroundGameTests {
         for (String name : new String[]{"licensed_sidearm", "unregistered_smg", "arms_brokerage"}) {
             check((WorkOrderCatalog.INSTANCE.find(UndergroundCity.MOD_ID + ":" + name) != null) == tacz, name + " must load exactly when TaCZ is installed");
         }
-        for (String name : new String[]{"licensed_shotgun", "dray_parts_run"}) {
+        for (String name : new String[]{"licensed_shotgun", "dray_parts_run", "dray_rifle_run"}) {
             check((WorkOrderCatalog.INSTANCE.find(UndergroundCity.MOD_ID + ":" + name) != null) == blueprints, name + " must load exactly when TaCZ Blueprints is installed");
         }
         for (WorkOrder order : WorkOrderCatalog.INSTANCE.all()) {
@@ -1324,6 +1324,12 @@ public final class UndergroundGameTests {
             }
             for (WorkOrder.Requirement requirement : order.requirements()) {
                 check(!ForgeRegistries.ITEMS.getValue(requirement.item()).equals(Items.AIR), order.id() + " requires an item that does not exist");
+                // a contract takes plain factory guns only (WorkOrder.matchesFactoryGun): at least one of its guns must come off the Gun Smith Table without an attachment already fitted
+                // (the M4A1's own table recipe fits a stock, so a contract that listed only the M4A1 could never be delivered from a crafted rifle)
+                if (!requirement.gunIds().isEmpty() && tacz) {
+                    java.util.Set<String> plain = OptionalModProbes.plainTableGuns(helper.getLevel());
+                    check(requirement.gunIds().stream().anyMatch(plain::contains), order.id() + ": none of " + requirement.gunIds() + " is built plain at the table (plain: " + plain + ")");
+                }
             }
         }
         helper.succeed();
@@ -1380,6 +1386,84 @@ public final class UndergroundGameTests {
             check(OptionalModProbes.countTagged(player, "tacz:modern_kinetic_gun", "GunId", "tacz:glock_17") == guns - 1, "The pistol was handed over");
             check(OptionalModProbes.countTagged(player, "tacz:ammo", "AmmoId", "tacz:9mm") >= 50, "The smith keeps the ammunition");
         } finally { fixture.close(); }
+        helper.succeed();
+    }
+
+    /**
+     * The whole restricted-rifle chain on real TaCZ and TaCZ Blueprints, as far as a server can show it: components are <b>bought at two rival cities' exchanges</b>, two of Dray's
+     * component runs turn them into credits, XP, trust and the SMG and rifle blueprints, the blueprint-gated Gun Smith Table refuses the rifle until the blueprint is used and then
+     * builds it (a plain AK-47: the M4A1 comes off the table with a stock already fitted and a contract takes only plain guns), and the level-11 arms contract buys it. Every credit, part and unit of stock is accounted for. It does not prove the table's screen, firing, or a person's time.
+     */
+    @GameTest(template = "empty", timeoutTicks = 400)
+    public static void theRestrictedRifleChainRunsFromExchangePartsThroughTheBlueprintAndTheTableToPaymentAndTrust(GameTestHelper helper) throws Exception {
+        if (!ModList.get().isLoaded("tacz") || !ModList.get().isLoaded("taczblueprints") || !QShopEconomy.available()) { helper.succeed(); return; }
+        Fixture fixture = fixture(helper, "ironhaven");
+        Boolean wasOpen = OptionalModProbes.setGunTableOpen(false); // the pack's setting: guns are built from blueprints only
+        check(wasOpen != null, "The addon's configuration is reachable");
+        try {
+            FakePlayer player = player(helper, "valewood", "gunsmith", 12);
+            QShopEconomy.applyBalance(player, 400);
+            learn(player, "gunsmith.fundamentals", "gunsmith.licensed_repairs", "gunsmith.unregistered_builds", "gunsmith.filed_serials", "gunsmith.arms_brokerage");
+            CitizenState.Citizen citizen = citizen(player);
+            RegionalStock parts = RegionalCatalog.INSTANCE.find("underground_city:machined_parts"), optics = RegionalCatalog.INSTANCE.find("underground_city:optical_components");
+            check(parts != null && optics != null && !parts.city().equals(optics.city()), "The two components are sold in different rival cities");
+            int partsBefore = fixture.ledger.regionalUnits(parts), opticsBefore = fixture.ledger.regionalUnits(optics), xpBefore = citizen.careerXp();
+
+            // 1. Trade: ten machined parts at the Ironhaven exchange (two orders, the line's largest order is eight), five optical components in Blackwater.
+            setCity(helper, fixture.pos, parts.city());
+            RegionalMarket.purchase(player, fixture.pos, fixture.ledger, citizen, parts.id(), 8, UUID.randomUUID());
+            RegionalMarket.purchase(player, fixture.pos, fixture.ledger, citizen, parts.id(), 2, UUID.randomUUID());
+            setCity(helper, fixture.pos, optics.city());
+            RegionalMarket.purchase(player, fixture.pos, fixture.ledger, citizen, optics.id(), 5, UUID.randomUUID());
+            long spent = 10L * RegionalMarket.unitPrice(parts, citizen) + 5L * RegionalMarket.unitPrice(optics, citizen);
+            check(player.getInventory().countItem(core("machined_parts")) == 10 && player.getInventory().countItem(core("optical_components")) == 5, "The parts arrived: " + OptionalModProbes.describeInventory(player));
+            check(QShopEconomy.balance(player) == 400 - spent, "The purchases cost exactly " + spent + " credits, balance " + QShopEconomy.balance(player));
+            check(fixture.ledger.regionalUnits(parts) == partsBefore - 10 && fixture.ledger.regionalUnits(optics) == opticsBefore - 5, "The shared stock of both cities went down by what was bought");
+
+            // 2. Dray's first run (trust 1, the SMG blueprint), then the rifle run (needs that trust; pays the rifle blueprint). The buyer is in Blackwater.
+            WorkOrder first = WorkOrderCatalog.INSTANCE.find("underground_city:dray_parts_run"), second = WorkOrderCatalog.INSTANCE.find("underground_city:dray_rifle_run");
+            WorkOrder brokerage = WorkOrderCatalog.INSTANCE.find("underground_city:arms_brokerage");
+            check(first != null && second != null && brokerage != null && second.terms().minTrust() == 1 && brokerage.terms().minTrust() == 2, "The three contracts and their trust ladder exist");
+            rejected(() -> WorkOrderService.accept(player, fixture.ledger, citizen(player), second.id())); // no trust yet
+            WorkOrderService.accept(player, fixture.ledger, citizen(player), first.id());
+            WorkOrderService.complete(player, fixture.ledger, fixture.ledger.player(player.getUUID()).getUUID("order"), fixture.pos);
+            check(fixture.ledger.trust(player.getUUID(), "dray") == 1 && QShopEconomy.balance(player) == 400 - spent + first.credits(), "The first run paid " + first.credits() + " and earned trust 1");
+            check(player.getInventory().countItem(core("machined_parts")) == 6 && player.getInventory().countItem(core("optical_components")) == 3, "The first run took exactly its parts");
+            WorkOrderService.accept(player, fixture.ledger, citizen(player), second.id());
+            WorkOrderService.complete(player, fixture.ledger, fixture.ledger.player(player.getUUID()).getUUID("order"), fixture.pos);
+            check(fixture.ledger.trust(player.getUUID(), "dray") == 2 && player.getInventory().countItem(core("machined_parts")) == 0 && player.getInventory().countItem(core("optical_components")) == 0, "The rifle run took the rest of the parts and earned trust 2");
+            ItemStack rifleBlueprint = player.getInventory().items.stream().filter(stack -> String.valueOf(ForgeRegistries.ITEMS.getKey(stack.getItem())).equals("taczblueprints:blueprint_rifle")
+                && stack.getTag() != null && stack.getTag().getString("GunId").equals("tacz:ak47")).findFirst().orElse(ItemStack.EMPTY);
+            check(!rifleBlueprint.isEmpty(), "The rifle run paid the AK-47 blueprint with the payment: " + OptionalModProbes.describeInventory(player));
+
+            // 3. The table: materials in hand (iron, lapis, logs: what mining and trade supply), no blueprint used yet => refused and nothing taken; then the blueprint => built.
+            player.getInventory().add(new ItemStack(Items.IRON_INGOT, 38));
+            player.getInventory().add(new ItemStack(Items.LAPIS_LAZULI, 6));
+            player.getInventory().add(new ItemStack(Items.OAK_LOG, 10));
+            String refused = OptionalModProbes.craftAtTaczTable(player, "gun", "tacz:ak47");
+            check(OptionalModProbes.countTagged(player, "tacz:modern_kinetic_gun", "GunId", "tacz:ak47") == 0 && player.getInventory().countItem(Items.IRON_INGOT) == 38,
+                "The blueprint-gated table refuses the rifle before the blueprint is used and takes nothing (" + refused + ")");
+            player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, rifleBlueprint.copy());
+            rifleBlueprint.getItem().use(helper.getLevel(), player, net.minecraft.world.InteractionHand.MAIN_HAND);
+            player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+            check(OptionalModProbes.unlockedGuns(player).contains("tacz:ak47"), "Using the blueprint unlocks the AK-47: " + OptionalModProbes.unlockedGuns(player));
+            String crafted = OptionalModProbes.craftAtTaczTable(player, "gun", "tacz:ak47");
+            check(crafted == null && OptionalModProbes.countTagged(player, "tacz:modern_kinetic_gun", "GunId", "tacz:ak47") == 1, "With the blueprint the table builds the rifle: " + crafted);
+            check(player.getInventory().countItem(Items.IRON_INGOT) == 0 && player.getInventory().countItem(Items.LAPIS_LAZULI) == 0 && player.getInventory().countItem(Items.OAK_LOG) == 0, "The recipe consumed its materials");
+
+            // 4. The buyer: the level-11 contract takes the crafted rifle and pays.
+            double beforeSale = QShopEconomy.balance(player);
+            WorkOrderService.accept(player, fixture.ledger, citizen(player), brokerage.id());
+            WorkOrderService.complete(player, fixture.ledger, fixture.ledger.player(player.getUUID()).getUUID("order"), fixture.pos);
+            check(QShopEconomy.balance(player) == beforeSale + brokerage.credits() && OptionalModProbes.countTagged(player, "tacz:modern_kinetic_gun", "GunId", "tacz:ak47") == 0, "The buyer took the rifle and paid " + brokerage.credits());
+            check(fixture.ledger.trust(player.getUUID(), "dray") == 3, "A third delivery, trust 3");
+            check(citizen(player).careerXp() - xpBefore == first.xp() + second.xp() + brokerage.xp(), "The three contracts gave exactly their XP: " + (citizen(player).careerXp() - xpBefore));
+            // the loop closes: the credits it earned buy the next batch of parts
+            check(QShopEconomy.balance(player) == 400 - spent + first.credits() + second.credits() + brokerage.credits(), "Every credit is accounted for");
+        } finally {
+            if (wasOpen != null) OptionalModProbes.setGunTableOpen(wasOpen);
+            fixture.close();
+        }
         helper.succeed();
     }
 }
