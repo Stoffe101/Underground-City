@@ -19,6 +19,7 @@ import org.slf4j.Logger;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Locale;
 import java.util.Optional;
 
@@ -56,6 +57,26 @@ public final class WaysideShelters {
     private WaysideShelters() {}
 
     // ------------------------------------------------------------------------------------------ pure planning
+
+    /**
+     * The origin of the built wayside shelter whose lot contains {@code pos}, if any: how a provisions desk is recognised (D-091). Only shelters that
+     * stand are considered (a key the world gave up on has no entry), and the lot is the district's own extent.
+     */
+    static Optional<BlockPos> shelterAt(ServerLevel level, BlockPos pos) {
+        PlacedSites sites = PlacedSites.get(level, PlacedSites.SHELTERS);
+        for (Map.Entry<String, Long> built : sites.where.entrySet()) {
+            int hash = built.getKey().lastIndexOf('#');
+            if (hash < 1) continue;
+            int index;
+            try { index = Integer.parseInt(built.getKey().substring(hash + 1)); } catch (NumberFormatException notAnIndex) { continue; }
+            DistrictCatalog.District district = DistrictCatalog.INSTANCE.find(kindOf(built.getKey().substring(0, hash), index));
+            if (district == null) continue;
+            BlockPos origin = BlockPos.of(built.getValue());
+            BlockPos lo = origin.offset(district.min()), hi = origin.offset(district.max());
+            if (pos.getX() >= lo.getX() && pos.getX() <= hi.getX() && pos.getY() >= lo.getY() && pos.getY() <= hi.getY() && pos.getZ() >= lo.getZ() && pos.getZ() <= hi.getZ()) return Optional.of(origin);
+        }
+        return Optional.empty();
+    }
 
     /** Which kind of stop stands at a spot of a road: the same answer in every world and every run, and consecutive stops on one road are always different kinds. */
     static String kindOf(String road, int index) {

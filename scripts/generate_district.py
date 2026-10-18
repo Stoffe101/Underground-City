@@ -727,11 +727,15 @@ def wayside_shelter() -> dict:
         put((3, 0, 2), "minecraft:barrel[facing=up]"), put((3, 0, 6), "minecraft:water_cauldron[level=3]"), put((7, 0, 6), "minecraft:cartography_table"),
         sign((2, 2, 2), "south", ["WAYSIDE", "REST STOP", "Fire and water", "Free to all"]),
         sign((8, 2, 6), "north", ["ROAD WARDEN", "on duty", "Ask about the", "road ahead"]),
+        # the provisions desk (D-091): an Operations Terminal that sells the few basics a traveller needs, for credits, from a small shared stock
+        {"op": "terminal", "at": [7, 0, 2], "facing": "south"},
+        sign((8, 2, 2), "south", ["PROVISIONS", "Supplies for", "credits. Small", "stock, shared"]),
     ]
     ops.append(npc((6, 0, 5), "warden", "Road Warden", "cartographer", [
         "Water is free and the fire is never out. Rest, then move on: the road is safer between the posts than anywhere off it.",
         "Every post stops what its city's law says to stop, and not an ounce more. Read the law before you load the cart, not after.",
         "A bridge is the safe way over and a boat is the quiet one. Neither beats good boots and a clear head.",
+        "The desk by the post sells bread, water, torches and the odd flask, for credits. There is not much, and when it is gone it is gone until travellers have passed through again.",
         "I keep this shelter for whoever comes by. A fire is a fire, honest haulier or not.",
         "Heat fades while you keep to honest work. Walk the long road a few times and the guards stop looking twice.",
     ]))
@@ -767,11 +771,15 @@ def wayside_well() -> dict:
         put((8, 0, 6), "minecraft:lantern[hanging=false]"),
         sign((3, 2, 3), "west", ["THE WELL", "Fresh water", "Help yourself", ""]),
         sign((7, 2, 5), "east", ["ROAD WARDEN", "on duty", "Ask about the", "road ahead"]),
+        # the provisions desk (D-091), as at the pavilion
+        {"op": "terminal", "at": [7, 0, 3], "facing": "east"},
+        sign((7, 2, 3), "east", ["PROVISIONS", "Supplies for", "credits. Small", "stock, shared"]),
     ]
     ops.append(npc((6, 0, 6), "warden", "Road Warden", "fisherman", [
         "The well is old and the water is sweet. Drink, fill your skin, and ask me anything about the road.",
         "Every post stops what its city's law says to stop, and not an ounce more. Read the law before you load the cart, not after.",
         "Wagons stop here to water the horses. I have heard the whole road's news from the back of a cart.",
+        "The desk by the post sells bread, water, torches and the odd flask, for credits. There is not much, and when it is gone it is gone until travellers have passed through again.",
         "A bridge is the safe way over and a boat is the quiet one. Neither beats good boots and a clear head.",
         "Heat fades while you keep to honest work. Walk the long road a few times and the guards stop looking twice.",
     ]))

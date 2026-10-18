@@ -127,6 +127,8 @@ public final class ResidenceSecurityGameTests {
     public static void pistonsCannotMoveBlocksAcrossAHomesBoundary(GameTestHelper helper) throws Exception {
         Home h = new Home(helper);
         ServerLevel level = h.level;
+        for (int x = -12; x <= -1; x++) level.setBlockAndUpdate(h.in(x, 1, 2), Blocks.AIR.defaultBlockState());   // the rows this test uses, whatever the world put there
+        for (int x = 5; x <= 6; x++) level.setBlockAndUpdate(h.in(x, 1, 3), Blocks.AIR.defaultBlockState());
         // A. outside, pushing toward the wall: the dirt and the wall block would both move (the wall block into the interior)
         level.setBlockAndUpdate(h.in(-2, 1, 2), Blocks.DIRT.defaultBlockState());
         level.setBlockAndUpdate(h.in(-1, 1, 2), Blocks.STONE_BRICKS.defaultBlockState());   // the shell
@@ -139,7 +141,8 @@ public final class ResidenceSecurityGameTests {
         power(level, h.in(0, 1, 0), Direction.EAST);
         // D. inside the home, pushing a row whose last block would enter the shell
         for (int x = 2; x <= 4; x++) level.setBlockAndUpdate(h.in(x, 1, 3), Blocks.DIRT.defaultBlockState());
-        BlockState wallBefore = level.getBlockState(h.in(5, 1, 3));   // whatever the city's wall is made of here (the test world's own terrain)
+        level.setBlockAndUpdate(h.in(5, 1, 3), Blocks.STONE_BRICKS.defaultBlockState());   // the city's wall here
+        BlockState wallBefore = level.getBlockState(h.in(5, 1, 3));
         power(level, h.in(1, 1, 3), Direction.EAST);
         helper.runAfterDelay(20, () -> {
             try {
@@ -340,6 +343,7 @@ public final class ResidenceSecurityGameTests {
         try (Home h = new Home(helper)) {
             ServerLevel level = h.level;
             BlockPos house = h.base.offset(-14, 0, 2);   // far from the registered home and its shell
+            for (int dx = 0; dx <= 4; dx++) for (int dy = 0; dy <= 2; dy++) level.setBlockAndUpdate(house.offset(dx, dy, 0), Blocks.AIR.defaultBlockState());   // the cells this test uses, whatever the world put there
             level.setBlockAndUpdate(house.below(), Blocks.STONE.defaultBlockState());
             level.setBlockAndUpdate(house.below(2), Blocks.STONE.defaultBlockState());
             check(h.ledger.residenceAt(OVERWORLD, house) == null, "the NPC house must not be a registered home");

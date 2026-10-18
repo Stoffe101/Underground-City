@@ -303,7 +303,10 @@ class DistrictTests(unittest.TestCase):
                 self.assertEqual([npc["role"] for npc in citizens], ["warden"])
                 self.assertLessEqual(max(xs), 10)
                 self.assertLessEqual(max(zs), 8)
-                self.assertEqual(terminals + safes + secure + clerks, 0, "a shelter holds no economy: it is a place to rest and a person to ask")
+                # D-091 (owner direction in D-079): a shelter has exactly one provisions desk, an Operations Terminal that sells a few basics through the
+                # exchange ledger; it still has no safe, no secured terminal and no clerk, and its orders, contacts and law are the cities' (the desk hides them)
+                self.assertEqual(terminals, 1, "a shelter has one provisions desk")
+                self.assertEqual(safes + secure + clerks, 0, "a shelter holds no safe, secured terminal or clerk: it is a place to rest, a person to ask and a small desk")
             # Citizens: bounded, named, with a role Core knows, short lines, and each employer bound to a real terminal of the lot.
             self.assertLessEqual(len(citizens), 20)
             terminal_spots = [op["at"] for op in district["ops"] if op["op"] == "terminal"]

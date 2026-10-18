@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "city": "valewood",
+  "item": "thirstwastaken2:terracotta_water_bowl",
+  "unit_price": 6,
+  "initial": 8,
+  "capacity": 12,
+  "units_per_interval": 2,
+  "interval_ticks": 6000,
+  "max_order": 4,
+  "outlets": [
+    "wayside"
+  ],
+  "requires_mod": "thirstwastaken2"
+}

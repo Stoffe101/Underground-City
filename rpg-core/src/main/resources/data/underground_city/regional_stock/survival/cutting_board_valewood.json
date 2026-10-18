@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "city": "valewood",
+  "item": "farmersdelight:cutting_board",
+  "unit_price": 22,
+  "initial": 3,
+  "capacity": 4,
+  "units_per_interval": 1,
+  "interval_ticks": 36000,
+  "max_order": 1,
+  "outlets": [
+    "city"
+  ],
+  "requires_mod": "farmersdelight"
+}

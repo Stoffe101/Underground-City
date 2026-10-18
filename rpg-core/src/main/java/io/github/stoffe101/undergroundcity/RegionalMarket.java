@@ -26,11 +26,12 @@ public final class RegionalMarket {
 
     static void purchase(ServerPlayer player, BlockPos pos, WorkOrderLedger ledger, CitizenState.Citizen citizen,
                          String commodity, int quantity, UUID nonce) {
-        String city = CityRegions.INSTANCE.cityAt(player.level(), pos)
-            .orElseThrow(() -> new IllegalStateException("No regional exchange here. Use a terminal inside Ironhaven, Valewood or Blackwater."));
-        ledger.noteVisit(player.getUUID(), city);
+        Exchanges.Exchange exchange = Exchanges.at(player.level(), pos)
+            .orElseThrow(() -> new IllegalStateException("No exchange here. Use a terminal inside Ironhaven, Valewood or Blackwater, or at the provisions desk of a wayside shelter."));
+        String city = exchange.city();
+        if (!exchange.wayside()) ledger.noteVisit(player.getUUID(), city);   // only a terminal inside the city counts as a visit
         RegionalStock stock = RegionalCatalog.INSTANCE.find(commodity);
-        if (stock == null || !stock.city().equals(city)) {
+        if (stock == null || !stock.city().equals(city) || !stock.soldAt(exchange.outlet())) {
             throw new IllegalStateException("This exchange does not stock that item");
         }
         if (quantity < 1 || quantity > stock.maxOrder()) {
@@ -57,7 +58,7 @@ public final class RegionalMarket {
             throw new IllegalStateException(shortfall(cost, share, personal, balance));
         }
         UUID hold = share.credits() > 0 ? CrewService.reservePurchase(player, nonce, share.credits(),
-            quantity + " x " + stock.registryItem().getDescription().getString() + ", " + city + " exchange") : null;
+            quantity + " x " + stock.registryItem().getDescription().getString() + ", " + city + (exchange.wayside() ? " wayside desk" : " exchange")) : null;
         try {
             CrewService.checkpoint("purchase_after_reserve");
             ledger.preparePurchase(player.getUUID(), nonce, stock, quantity, after.save(new ListTag()), balance - personal, citizen.careerXp(), hold, share.credits());
@@ -71,7 +72,7 @@ public final class RegionalMarket {
         WorkOrderService.recover(player, ledger);
         CitizenState.get(player.server).markJourney(player.getUUID(), "bought");
         player.sendSystemMessage(Component.literal("Bought " + quantity + " x " + stock.registryItem().getDescription().getString()
-            + " from the " + city + " exchange for " + cost + " credits"
+            + " from the " + city + (exchange.wayside() ? " wayside desk" : " exchange") + " for " + cost + " credits"
             + (share.credits() > 0 ? " (" + share.credits() + " from the Crew bank, " + personal + " from your wallet)." : ".")));
     }
 
@@ -91,9 +92,12 @@ public final class RegionalMarket {
     }
 
     /** Offers visible at a terminal, priced for this citizen. Empty outside every city region. */
-    static List<TerminalData.Offer> offers(WorkOrderLedger ledger, String city, CitizenState.Citizen citizen) {
+    static List<TerminalData.Offer> offers(WorkOrderLedger ledger, String city, CitizenState.Citizen citizen) { return offers(ledger, city, RegionalStock.CITY, citizen); }
+
+    /** Offers of one outlet of a city (its exchange or the provisions desks of its wayside shelters). */
+    static List<TerminalData.Offer> offers(WorkOrderLedger ledger, String city, String outlet, CitizenState.Citizen citizen) {
         if (city == null || city.isEmpty()) return List.of();
-        return RegionalCatalog.INSTANCE.forCity(city).stream().map(stock -> new TerminalData.Offer(stock.id(),
+        return RegionalCatalog.INSTANCE.forOutlet(city, outlet).stream().map(stock -> new TerminalData.Offer(stock.id(),
             stock.item().toString(), unitPrice(stock, citizen), ledger.regionalUnits(stock), stock.capacity(), stock.maxOrder())).toList();
     }
 }

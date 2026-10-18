@@ -51,6 +51,9 @@ public final class WorkOrderService {
 
     public static void action(ServerPlayer player, BlockPos pos, int action, String id, UUID nonce) {
         guarded(player, pos, (ledger, citizen) -> {
+            if (Exchanges.at(player.level(), pos).map(Exchanges.Exchange::wayside).orElse(false)) {
+                throw new IllegalStateException("Orders are posted in the cities. This desk only sells supplies."); // a wayside desk is a shop, not an office
+            }
             switch (action) {
                 case 0 -> accept(player, ledger, citizen, id);
                 case 1 -> complete(player, ledger, nonce, pos);
