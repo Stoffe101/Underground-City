@@ -129,7 +129,12 @@ public final class CrewScreen extends UcScreen {
         addRenderableWidget(box);
     }
 
-    private void send(Act act) { busy = true; busyTicks = 0; note = ""; CrewNetwork.send(act); build(); }
+    private void send(Act act) {
+        if (minecraft == null || minecraft.getConnection() == null) { note = "!Not connected to a server."; build(); return; }
+        busy = true; busyTicks = 0; note = "";
+        CrewNetwork.send(act);
+        build();
+    }
 
     private void build() {
         if (nameBox == null) return; // not opened yet: init() builds
@@ -347,7 +352,7 @@ public final class CrewScreen extends UcScreen {
 
     private void renderMoney(GuiGraphics g, int mx, int my) {
         int cardW = (cw - 8) / 2;
-        card(g, cx, cy, cardW, 50, "CREW BANK", view.bank() + "", UcUi.AMBER, modeShort(view.effectiveMode()) + (view.mode().equals(view.effectiveMode()) ? "" : " (shared finances wait for everyone)"));
+        card(g, cx, cy, cardW, 50, "CREW BANK", view.bank() + "", UcUi.AMBER, modeShort(view.effectiveMode()) + (view.mode().equals(view.effectiveMode()) ? "" : " (not shared yet)"));
         card(g, cx + cardW + 8, cy, cardW, 50, "YOUR WALLET", view.moneyReady() ? String.format(Locale.ROOT, "%.0f", view.wallet()) : "OFFLINE", UcUi.OK, "stays yours");
         int y = cy + 56;
         if (view.owed() > 0) {
@@ -359,7 +364,7 @@ public final class CrewScreen extends UcScreen {
         if (needsConsent()) {
             g.fill(cx, y, cx + cw, y + 48, 0xff261a12);
             UcUi.icon(g, UcUi.Icon.WARNING, cx + 4, y + 4, UcUi.WARN);
-            UcUi.wrapped(g, font, "The founder proposes fully shared finances. Work-order pay would go into the bank and exchange purchases come out of it. It applies only when everyone agrees.",
+            UcUi.wrapped(g, font, "The founder proposes shared finances: work-order pay goes into the bank and exchange purchases come out of it, once everyone agrees.",
                 cx + 24, y + 4, cw - 30, UcUi.SOFT, 2);
             y += 52;
         }

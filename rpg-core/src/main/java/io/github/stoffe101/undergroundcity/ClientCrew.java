@@ -42,10 +42,11 @@ public final class ClientCrew {
             if (event.phase != TickEvent.Phase.END) return;
             Minecraft mc = Minecraft.getInstance();
             while (KEY.consumeClick()) {
-                if (mc.player != null && mc.screen == null) CrewNetwork.ask(true);
+                if (mc.player != null && mc.screen == null && mc.getConnection() != null) CrewNetwork.ask(true);
             }
             // an open Crew screen asks for fresh numbers every five seconds, so a mate's deposit or a new invitation shows up on its own
-            if (mc.screen instanceof CrewScreen && ++ticks % 100 == 0) CrewNetwork.ask(false);
+            // (never without a server connection: a screen shown by a review capture has none)
+            if (mc.screen instanceof CrewScreen && mc.getConnection() != null && ++ticks % 100 == 0) CrewNetwork.ask(false);
         }
     }
 }
