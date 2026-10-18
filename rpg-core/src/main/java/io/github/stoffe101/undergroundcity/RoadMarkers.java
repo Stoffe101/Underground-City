@@ -114,7 +114,7 @@ public final class RoadMarkers {
                 if (length < 1e-6) continue;
                 tx /= length; tz /= length;
                 double out = plan.reach() + 1.5;
-                int x = (int) Math.floor(at[0] + tz * out), z = (int) Math.floor(at[1] - tx * out); // the right-hand side of the direction of travel
+                int x = (int) Math.floor(at[0] - tz * out), z = (int) Math.floor(at[1] + tx * out); // the right-hand side of the direction of travel (x is east, z is south)
                 if (!level.isLoaded(new BlockPos(x, level.getSeaLevel(), z))) continue;
                 CorridorPlan.Hit hit = plan.project(x + 0.5, z + 0.5);
                 if (hit != null && hit.distance() < plan.reach() + 0.5) continue; // never on the road itself

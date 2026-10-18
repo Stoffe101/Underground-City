@@ -51,7 +51,7 @@ public final class RoadMarkerGameTests {
         // a road running east through the test area, 12 blocks south of its origin
         CorridorPlan plan = new CorridorPlan("ironhaven_valewood", new double[]{ox - 50, ox + 50}, new double[]{oz + 12, oz + 12}, 7, List.of());
         var spot = RoadMarkers.plan(level, plan, 0, 50).orElseThrow(() -> new IllegalStateException("No spot found beside the road"));
-        check(spot.base().getX() == ox && spot.base().getZ() == oz + 12 - 7, "The post stands on the right-hand verge, clear of the road: " + spot.base());
+        check(spot.base().getX() == ox && spot.base().getZ() == oz + 12 + 6, "The post stands on the right-hand verge, clear of the road: " + spot.base());
         check(spot.rotation() == 4, "The front faces back at an eastbound traveller: " + spot.rotation());
         check(spot.front().get(0).equals("TO VALEWOOD") && spot.back().get(0).equals("TO IRONHAVEN"), "Front and back name the two ends: " + spot.front() + spot.back());
         check(spot.front().get(1).equals("50 m") && spot.back().get(1).equals("50 m"), "Distances to each end: " + spot.front() + spot.back());

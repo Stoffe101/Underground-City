@@ -108,7 +108,7 @@ minecraft {
                 args '--username', 'UC_WorldSurvey', '--width', '1920', '--height', '1080'
             }
             if (providers.gradleProperty('ucJourneyClient').isPresent()) {
-                jvmArgs '-Duc.journey.client=true', '-Xmx1G', '-XX:ActiveProcessorCount=2'
+                jvmArgs '-Duc.journey.client=true', "-Xmx${providers.gradleProperty('ucClientHeap').orElse('1G').get()}", '-XX:ActiveProcessorCount=2'
                 args '--username', providers.gradleProperty('ucJourneyClient').get(), '--width', '1920', '--height', '1080'
             }
             if (providers.gradleProperty('ucVisualCapture').orNull == 'true') {
@@ -132,7 +132,7 @@ minecraft {
                 jvmArgs "-Duc.seedScan=${providers.gradleProperty('ucSeedScan').get()}", '-XX:ActiveProcessorCount=2'
             }
             if (providers.gradleProperty('ucJourneyPhase').isPresent()) {
-                jvmArgs "-Duc.journey.phase=${providers.gradleProperty('ucJourneyPhase').get()}", '-Xmx1G', '-XX:ActiveProcessorCount=2'
+                jvmArgs "-Duc.journey.phase=${providers.gradleProperty('ucJourneyPhase').get()}", "-Xmx${providers.gradleProperty('ucClientHeap').orElse('1G').get()}", '-XX:ActiveProcessorCount=2'
             }
         }
         gameTestServer {

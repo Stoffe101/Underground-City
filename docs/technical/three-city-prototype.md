@@ -145,9 +145,13 @@ Design intent (user, October 15): ocean or large rivers between the cities make 
 
 Accepted constraint: routine inter-city travel should take only a few minutes. A static estimate at walking speed (4.317 blocks per second, no sprinting, no obstacles) gives about 4.8 minutes along the Ironhaven–Valewood road (1,251 blocks between city edges) and about 4.3 minutes along Ironhaven–Blackwater (1,116 blocks), inside the 3-5 minute aim. That is arithmetic, not a measurement: a real traversal benchmark (with the slab ramps, doors, a horse or boat, and two players) is still owed before a release. The Valewood–Blackwater edge is open sea in seed 579, so it must stay optional until a ferry or boat service exists.
 
+### Waymarkers (October 18, D-078)
+
+Every road has a stone post with a standing sign every 250 blocks of open road: where it leads, how far and how long on foot. They are placed at run time beside the road when a player comes within 112 blocks (`RoadMarkers`, once each and remembered by the world), so world generation and seed 5908 are unchanged and worlds that already exist get them. A GameTest builds a real post beside a synthetic road and reads both faces of its sign.
+
 ### What is still not built
 
-Gate houses at the checkpoints (checkpoints are search zones, see [legal and underground careers](../design/legal-and-underground-careers.md)), rest stops, road signs, NPC patrols and vehicle-mod compatibility. The checkpoint, `travel_modes` and `security` fields in `corridors.json` remain design data.
+Gate houses at the checkpoints (checkpoints are search zones, see [legal and underground careers](../design/legal-and-underground-careers.md)), rest stops, NPC patrols and vehicle-mod compatibility. The checkpoint, `travel_modes` and `security` fields in `corridors.json` remain design data.
 
 ## Source-checked fresh-instance setup
 

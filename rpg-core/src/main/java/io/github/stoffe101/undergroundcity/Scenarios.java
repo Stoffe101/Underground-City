@@ -1201,12 +1201,17 @@ final class Scenarios {
             along[0] = new Vec3(tx / length, 0, tz / length);
             post[0] = Vec3.atCenterOf(base);
             Playtest.log("post at " + base.toShortString() + " for " + road + " at " + Math.round(ideal[0]) + " m, road direction " + along[0]);
-            var sign = level().getBlockEntity(base.above(2));
-            if (!(sign instanceof net.minecraft.world.level.block.entity.SignBlockEntity entity)) { Playtest.fail("no sign on the post"); return; }
+            // the server's level refuses block-entity reads from this thread: read the sign as the client received it
+            var sign = Minecraft.getInstance().level.getBlockEntity(base.above(2));
+            if (!(sign instanceof net.minecraft.world.level.block.entity.SignBlockEntity entity)) {
+                for (int dy = -1; dy <= 3; dy++) Playtest.log("  base" + (dy >= 0 ? "+" : "") + dy + ": " + level().getBlockState(base.above(dy)) + " / " + Minecraft.getInstance().level.getBlockEntity(base.above(dy)));
+                Playtest.fail("no sign on the post at " + base.toShortString());
+                return;
+            }
             Playtest.log("front: " + entity.getFrontText().getMessage(0, false).getString() + " | " + entity.getFrontText().getMessage(1, false).getString() + " | " + entity.getFrontText().getMessage(2, false).getString());
             Playtest.log("back: " + entity.getBackText().getMessage(0, false).getString() + " | " + entity.getBackText().getMessage(1, false).getString() + " | " + entity.getBackText().getMessage(2, false).getString());
             // six blocks back along the road and two toward it, looking at the sign
-            Vec3 stand = post[0].subtract(along[0].scale(6)).add(-along[0].z * 2.5, -0.4, along[0].x * 2.5);
+            Vec3 stand = post[0].subtract(along[0].scale(6)).add(along[0].z * 2.5, -0.4, -along[0].x * 2.5);
             standLooking(stand, post[0].add(0, 2.1, 0));
         });
         Playtest.queue("let the chunks and the post's meshes arrive", () -> { }, () -> groundBelowPlayer(), 6000);
@@ -1215,15 +1220,15 @@ final class Scenarios {
         Playtest.queue("screenshot of the front of the post", () -> Playtest.screenshotNextFrame("uc-marker-front"));
         Playtest.wait("frame", 10);
         Playtest.queue("six blocks ahead, looking back at the post", () -> {
-            Vec3 stand = post[0].add(along[0].scale(6)).add(-along[0].z * 2.5, -0.4, along[0].x * 2.5);
+            Vec3 stand = post[0].add(along[0].scale(6)).add(along[0].z * 2.5, -0.4, -along[0].x * 2.5);
             standLooking(stand, post[0].add(0, 2.1, 0));
         });
         Playtest.wait("settle", 60);
         Playtest.queue("screenshot of the back of the post", () -> Playtest.screenshotNextFrame("uc-marker-back"));
         Playtest.wait("frame", 10);
         Playtest.queue("thirty blocks back, on the road, looking along it", () -> {
-            Vec3 stand = post[0].subtract(along[0].scale(30)).add(-along[0].z * 6.6, 0.1, along[0].x * 6.6);
-            standLooking(stand.add(0, 0, 0), post[0].add(along[0].scale(10)).add(-along[0].z * 6.6, 1.0, along[0].x * 6.6));
+            Vec3 stand = post[0].subtract(along[0].scale(30)).add(along[0].z * 6.6, 0.1, -along[0].x * 6.6);
+            standLooking(stand.add(0, 0, 0), post[0].add(along[0].scale(10)).add(along[0].z * 6.6, 1.0, -along[0].x * 6.6));
         });
         Playtest.wait("settle", 90);
         Playtest.queue("screenshot of the road with the post", () -> Playtest.screenshotNextFrame("uc-marker-road"));
