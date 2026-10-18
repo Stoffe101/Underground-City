@@ -96,3 +96,8 @@ Full report: [sprint-2026-10-15.md](sprint-2026-10-15.md). This section lists on
 | Real-client UI captures | 33 surfaces at 1920x1080 GUI 3 and 3440x1440 GUI 2, viewed in three rounds; defects found and fixed (clipped skill labels, overflowing detail text, an invisible selected filter, a smudged trace digit) |
 
 Not tested: the Technician's trace through a real click path, any vehicle on the roads, any gun fired, a human walking the triangle, 30 minutes of two-player play, Windows, abrupt process kill with clients connected.
+
+## Added October 18: Crews and homes
+
+Scripted evidence only: a two-client journey (Crew founded, invited, accepted, money moved, a home leased from the bank, the dedicated server halted without a stop sequence mid-transfer and restarted, both clients reconnected to the same state), 103 GameTests in five pack configurations, and frames viewed at 1080p and 720p. For the human session use the [Windows 11 playtest guide](playtest-guide-windows11.md): it carries the 14-step Crew test, the known limits and the bug-report checklist. Not tested: a person, Windows, two real clients on the full pack (the journey world is flat and Core-only), an external process kill.
+

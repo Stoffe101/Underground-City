@@ -60,4 +60,25 @@
 - [ ] Roads/vehicles, territorial conflicts, city restoration and full campaign.
 - [ ] Performance tuning, UI polish, expanded city assets, balance testing.
 
+## Sprint 2026-10-18 follow-ups (by priority; the ordered plan is the [expansion plan](expansion-plan.md))
+
+**P0**
+
+- [ ] A person follows the [Windows 11 playtest guide](playtest-guide-windows11.md) with a friend for thirty minutes (Crew steps 1 to 14) and reports what confused them, what felt unfair and what they wanted next.
+- [ ] Measure a player-loaded world: server tick cost with two players, Founders Row, the Row Flats and the full pack (the idle figures exist, October 17).
+
+**P1**
+
+- [ ] Wayside shelter shop: limited food, water, bandages and supplies at the existing exchange ledger, no free healing, no respawn change (owner direction recorded in D-079); then the survival goods in a city supplier.
+- [ ] First Crew contract that needs two careers (expansion plan WP1).
+- [ ] Guard gaps for leased homes (pistons, fluids, fire, mobs, item frames, hoppers); rent charged in active play only; home transfer between a player and a Crew.
+- [ ] Hosted run of `journey-crew` and of the `survival` pack job (added in this PR) read and recorded.
+- [ ] Optional: a Core-owned TaCZ gun pack so that component costs sit in the gun recipe itself (researched, unverified; D-087).
+
+**P2**
+
+- [ ] Open Parties and Claims bridge so that Core's Crew is the party OPAC reads (shared chunk claims for rural properties).
+- [ ] A default-pack decision for Vinery, Farm & Charm and Kaleidoscope Tavern after a played production chain; Farm & Charm versus Farmer's Delight kitchen overlap.
+- [ ] Furnishing provider for the district art pass.
+
 Prefer GitHub issues for actionable scoped work; this document is the canonical sequencing outline until epics are created.

@@ -1,6 +1,6 @@
 # Crew accounts: who owns what, how money moves, and what has been proven
 
-Status: **implemented in Core and tested on a dedicated test server (GameTests with the real Q Shop 1.8.4 wallet, 98 of 98 required tests at this head); not yet driven by two human players.** The decisions are D-081 to D-084 in [decisions.md](../production/decisions.md). The product design is [crews.md](../design/crews.md). Nothing here is a second currency.
+Status: **implemented in Core; tested by GameTests with the real Q Shop 1.8.4 wallet and by a two-client journey in which the dedicated server process is killed without a stop sequence and restarted (October 18); not yet driven by human players.** The decisions are D-081 to D-084 in [decisions.md](../production/decisions.md). The product design is [crews.md](../design/crews.md). Nothing here is a second currency.
 
 ## 1. Authority
 
@@ -66,9 +66,9 @@ Changing a mode never moves a credit. Leaving a Crew never moves a credit either
 | 1,200 seeded random operations (deposits, withdrawals, claims, pay-outs, Crews founded and disbanded) over three seeds, each seed forced to include simulated crashes and restarts, never change the total of wallets, banks and owed payouts | `randomisedOperationsConserveEveryCredit` | long-run behaviour |
 | A replayed transaction id is refused, also after a restart | GameTest | |
 | Two members cannot together overdraw the bank | GameTest | simultaneous clients (the server serialises) |
-| Real Q Shop wallet, offline read, entity save and load | GameTest `realQShopTransfers` | an offline read on a hosted dedicated server with a real player file (planned: the two-client journey restart) |
+| Real Q Shop wallet, offline read, entity save and load | GameTest `realQShopTransfers`; **and the journey:** the restarted dedicated server read both unresolved transfers from the ledger file and the saved player files before any player logged in, settled the deposit whose wallet change had been saved and cancelled the withdrawal that had not touched the wallet | a hosted run of the journey (it ran in the cloud container; the hosted job is added) |
 | Shared finances route pay and purchases and stop when consent is withdrawn | GameTest with the real wallet and real work orders and the real exchange | |
-| Two real clients create a Crew, invite, accept, deposit, withdraw, restart the dedicated server and reconnect | see the sprint report (section on the journey) | |
+| Two real clients found a Crew, invite, accept, deposit, lease a home from the bank, switch a permission, withdraw, make a container private, then the server process is halted without a stop sequence **with one transfer already in the wallet and one stopped after its prepare record**, restarted, and both clients reconnect | `CrewJourneyServer` and `CrewJourneyActions` (scenario `crew` of `scripts/run_cloud_journey.py`): every action is a press of a button of the real Crew screen and a key event for the text boxes; both clients' own screens after the restart showed the same Crew, roles, bank (45), wallets, the Row House as a Crew home, the member's private container and the history including the recovered deposit; replayed transaction ids of both interrupted transfers were refused after the restart; a further deposit and withdrawal after the restart conserved every credit | a person; a process kill from outside (the journey halts the JVM from inside with `Runtime.halt`); a power cut; Lost Cities terrain (the journey world is flat) |
 
 ## 7. Operator notes
 

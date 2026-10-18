@@ -41,7 +41,7 @@ Anybody can **deposit**. The founder edits the table (Rules page). *Reserved, no
 | Hand over leadership | founder to any member; the old founder becomes a Manager | implemented and tested |
 | Founder inactive | after **30 days** unseen, a Manager (or, with none, a member) can **claim** leadership; never automatic | implemented and tested with an injected clock |
 | Disband | founder only, two deliberate steps (arm it, then type the Crew's name), refused while a money transfer is unresolved; the bank is split equally with the remainder to the founder as owed payouts claimed into wallets (automatically at login); **every Crew home becomes the founder's personal home**; everyone keeps wallet, career and homes | implemented and tested (`disbandPaysEveryMemberOnceAndKeepsHomes`) |
-| Persistence | UUIDs and Crew ids; survives a restart; offline members stay listed with "last seen" | implemented and tested (reload from disk); two real clients and a dedicated restart: see the sprint report |
+| Persistence | UUIDs and Crew ids; survives a restart; offline members stay listed with "last seen" | implemented and tested (reload from disk); **journey:** two real clients, then the dedicated server halted without a stop sequence and restarted, both clients saw the same Crew, roles, bank, homes and private container ([sprint report](../production/sprint-2026-10-18.md#c-crews)) |
 
 ## 4. Homes
 
@@ -79,7 +79,7 @@ See [crew-economy.md](../technical/crew-economy.md). In short: three modes (sepa
 | A Crew owns homes | pass to the founder on disband; never orphaned; the district cannot be undone while a home is leased | implemented and tested |
 | A player holds Crew equipment | items are items: the Crew owns no items, only homes and credits; nothing is clawed back | by design |
 | Members change financial mode | no credit moves; shared finances need everyone's consent and stop when one withdraws it | implemented and tested |
-| The server crashes in a transaction | recovery decides from the wallet, at server start and at login, without a write to an offline wallet | implemented and tested (simulated crash and reload); a real process kill is not tested |
+| The server crashes in a transaction | recovery decides from the wallet, at server start and at login, without a write to an offline wallet | implemented and tested (simulated crash and reload; and in the journey, a real server process halted with one transfer in the wallet and one stopped after its prepare record, recovered at the restart before any login); an external `kill -9` and a power cut are not tested |
 | Two players use shared resources at once | the server serialises requests; the second withdrawal that would overdraw is refused | implemented and tested |
 
 ## 8. Open questions for the owner

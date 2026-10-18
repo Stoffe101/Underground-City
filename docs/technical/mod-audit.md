@@ -95,3 +95,28 @@ Requested by the owner: prefer finished, high-quality mods and art over making o
 | owo-lib | - | MIT | - | Fabric / Quilt only (no Forge 1.20.1 build) | Not usable |
 
 Notes on the evidence. The Modrinth search has **no** cannabis, hemp, marijuana or moonshine project for Forge 1.20.1 at all; the only cannabis mod with a 1.20.1 Forge file is on CurseForge. The CurseForge file CDN (`mediafilez.forgecdn.net`) is reachable from the cloud container, so a CurseForge-only jar can be fetched for inspection by file id and file name, but it cannot be pinned the way Modrinth releases are (no Modrinth maven coordinate), which is another reason not to depend on one. Tadacko's Drinks' mod id, items and blocks were read from its lang file and blockstates; Vinery's and Farm & Charm's from their blockstates and recipes.
+
+## October 18 candidate review: Crews, parties, shared money, and the survival set
+
+Requested by the owner (Crew system; backpack, thirst, food and basic furnishing providers; **no Create**, D-080). Read from the exact Forge 1.20.1 jars in the cloud container (downloaded to a scratch folder, never committed), their `mods.toml`, class lists and public APIs. Everything is a **candidate** until its own row says what was run.
+
+### Groups, parties, claims and shared money (the Crew authority is Core's, D-081)
+
+| Candidate | Exact release | Licence | What the jar shows | Verdict |
+| --- | --- | --- | --- | --- |
+| Q Shop | 1.8.4 | see the register above (pinned release, SHA-256 verified) | a per-player wallet capability and `QShopAddonApi.currency()` (`getBalance`, `deposit`, `withdraw`, `set`, offline by UUID); **no** account, team, group or shared balance anywhere in `api`, `wallet`, `currency`, `shop`, `trade`, `net`, `ftb`, `kubejs` | **Stays the only currency** (D-037, D-039). A shared balance is a Core ledger of credits that have left a wallet ([crew-economy.md](crew-economy.md)) |
+| Open Parties and Claims | 0.33.0 (2026-10-17) | LGPL-3.0 | `OpenPACServerAPI.getPartyManager()` (create, invite, members, four fixed ranks) and chunk claims with protection hooks; Create is an *optional* compat hook only | **Not the membership authority** (fixed ranks, no finance mode or home ownership, parties can change outside Core's flow and expire). The bridge route is documented: Core's Crew registers as OPAC's party system (`IPlayerPartySystemRegisterAPI`) so OPAC reads Core, for shared chunk claims later. **Not built** |
+| FTB Teams / FTB Chunks | not on Modrinth | unverified | the standard team provider of the FTB mods, which Q Shop's optional FTB Quests integration would use | **Unverified**: the jars could not be fetched and read from the container. Not a candidate until they are |
+| Lightman's Currency | 2.3.0.6 | Apache-2.0 | a complete second economy with team bank accounts (`TeamAPI`, `BankAPI`) | **Rejected as an installation** (a second authoritative currency, D-037); used as a **design reference** for named bank access levels and a transfer log |
+
+### The survival set (pinned, opt-in set `survival`, D-085)
+
+| Role | Selected | Why | Rejected or deferred, and why |
+| --- | --- | --- | --- |
+| Backpack | **Traveler's Backpack** 1.20.1-9.1.57 (LGPL-3.0-only) | licensed, source published, no mandatory dependency, one backpack authority, built-in fluid tank and sleeping bag | Sophisticated Backpacks: all rights reserved, needs Sophisticated Core and brings a second upgrade system |
+| Thirst | **Thirst Was Taken 2** 1.9.0 (GPL-3.0-only, published 2026-10-15) | thirst, water purity, canteens and flasks (waterskin, copper canteen, iron, diamond and netherite flasks), a sand filter and a copper distiller; its Create hook is **not used** | Thirst Was Taken 1.4.0: MIT but stale (mid-2025), five items, its canteen add-on is all rights reserved. Tough As Nails: beta, all rights reserved, needs Glitchcore, bundles a harsh temperature model |
+| Kitchen | **Farmer's Delight** 1.20.1-1.3.4 (MIT) | food variety, cooking pot, cutting board; no mandatory dependency | [Let's Do] Farm & Charm overlaps it (stove, pot, roaster): the two are **not combined by default** (`farming` and `survival` are separate opt-in sets) until a production-chain check says otherwise |
+| Rest | **Comforts** 6.4.0+1.20.1 (LGPL-3.0-or-later) | sleeping bags and hammocks; the project says they do not set a spawn point, which `SurvivalGameTests` checks with a vanilla bed as the control (the result is in the sprint report) | the sleeping bags built into Traveler's Backpack are untested for the same property |
+| Furnishing | **none selected** | the October 17 candidates (Handcrafted, Macaw's, Supplementaries) are all-rights-reserved or custom-licensed; the Row Flats are furnished with vanilla blocks and Core's terminals | revisit when the district art pass wants a style |
+
+What each row has been through (boot, GameTests, real client) is in the sprint report. The reobfuscated Core jar plus the four pinned jars boot a real Forge server (`scripts/run_prod_boot_check.py --sets survival`: `RESULT: pass`, run locally; the hosted `production-boot` job repeats it with the set alone). Nothing in this set is certified with Lost Cities, Q Shop and the vehicle mods all loaded together beyond the boot records; the two-player and long-session behaviour of the set is untested.

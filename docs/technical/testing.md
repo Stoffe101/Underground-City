@@ -63,3 +63,18 @@ Worth recording because the automated checks were right every time: the first ru
 ### A server that fails to start can still exit 0
 
 Forge's GameTest server exits 0 when a mod breaks registry loading (seen with Modern Life in the development environment). The dev-pack workflow therefore greps for "All N required tests passed" instead of trusting the exit code.
+
+## Evidence from the October 18 sprint (Crews, homes, survival, recovery)
+
+New kinds of check and what each does and does not show:
+
+| Check | What it proves | What it does not |
+| --- | --- | --- |
+| `CrewGameTests`, `ResidenceGameTests` (GameTests; the real Q Shop wallet where marked) | ledger rules, the money protocol at every crash point (a simulated crash is an `Error` that nothing catches, then a reload from disk), 1,200 randomised operations conserving every credit, replay refusal, the guard's decisions and the real Forge events it listens to | a process kill; a person |
+| `CrewJourneyServer` and `CrewJourneyActions` (scenario `crew` of `scripts/run_cloud_journey.py`; hosted job `journey-crew`) | two real clients drive the real Crew screen (button presses at each button's centre through the screen's own click handler, key events for text); the dedicated server JVM is halted with `Runtime.halt` with a transfer in the wallet and the saved player file and another stopped after its prepare record; the restarted server recovers both before any login (an offline Q Shop read of real player files), refuses replayed ids, and both clients' screens show the persisted state | X11 mouse events (the single-client scripted player covers those elsewhere); Lost Cities terrain (the world is flat); a `kill -9` from outside |
+| `WaysideShelterGameTests` (recovery test) | failure counting and retry, reporting after three failures, `retry`, rebuilding a lot whose blocks never reached the disk, leaving a player's small changes and an operator's undo alone, putting a missing warden back; shown to fail when the lost-lot check is disabled | a crash between the data save and the chunk save in a real process |
+| `scripts/audit_item_sources.py` and `tests/test_item_sources.py` | every work order's inputs are reachable, in time, without luck; the audit itself detects each kind of dead end on deliberately broken copies of the data | prices, travel time, or that a path is pleasant |
+| `SurvivalGameTests` (hosted job `dev-pack-smoke`, pack `survival`) | the set's items and blocks register next to Core's data; a Comforts sleeping bag puts the player to sleep without setting the respawn point while a vanilla bed (the control, in the same test) does | thirst, backpack or kitchen behaviour beyond registration; play with every other pack mod loaded |
+
+**Failures these tests found in my own work (all fixed):** a hand-added language key that the generator would have overwritten (the staleness check caught it); two Python tests that had silently gone stale when the Crew screen's captures and the survival set were added; a fixture that stood two players where the look ray hit the crafting table beside the chest, then at a chest walled in on three sides; a server-side "what is the player looking at" that used last tick's position and head turn (now the body rotation); a fixture that judged the end of a run before the clients had written down their last screen; a screen whose buttons ignored what had just been typed; a sleeping-bag test that could not tell "the bag does not set the respawn point" from "the player never lay down"; and the finding that `docs/design/vision.md` did not carry the update that D-080 said it did.
+

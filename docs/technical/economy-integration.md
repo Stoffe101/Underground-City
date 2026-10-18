@@ -80,3 +80,8 @@ Gunsmith recurring orders use **optics, mounts and platforms, not firearms**; Ta
 ### Evidence
 
 Twenty-six dedicated-server GameTests pass locally and in the hosted economy workflow, including: real loaded-datapack margin and recipe checks, shared stock draw-down by two players, replay and out-of-range/foreign-line/unknown-line/low-funds/full-inventory/sold-out rejections, exact stock replenishment arithmetic, a prepared purchase replayed once after a journal reload, the full buy-craft-deliver farmer loop (net +58 credits, 300 XP), visit gating, malformed/legacy definitions, stale-receipt replay and interleaved two-player settlements. The two-client journey additionally clicks the real `BUY 1` button in both clients and asserts wallet 10, one part each, stock initial-2, receipts and visits before and after a dedicated restart.
+
+## Crew bank (October 18, 2026)
+
+Q Shop still owns every credit. A Crew bank is Core's ledger of credits that have **left** a wallet, moved by a wallet-first, crash-safe protocol and recovered by reading the wallet only; with fully shared finances (everyone's consent) work-order pay is swept into it and exchange purchases are paid from it first, built from the ordinary deposit and withdraw operations. Q Shop's own shop screens cannot be routed. Full account, evidence and limits: [crew-economy.md](crew-economy.md).
+

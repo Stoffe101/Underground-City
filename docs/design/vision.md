@@ -1,6 +1,12 @@
 # Vision and design pillars
 
-**Working genre:** a two-player-first, story-driven semi-modern Minecraft living-world RPG, where civilian careers and social simulation matter as much as crime and inter-city conflict.
+**Working genre (updated October 18, 2026, [D-080](../production/decisions.md)):** a **modern open-world Minecraft RPG sandbox** for a private pair of friends (room for more). Three inspirations, none of them a licence to copy protected material: **GTA** (living cities, vehicles, robberies, police, property, businesses, many ways to commit a crime), **Schedule I** (start small, build production operations, craft and sell valuable products, grow a co-operative operation with friends) and **DeceasedCraft** (urban detail, backpacks, food and water, looting, atmosphere). It is **not** a zombie conversion: the world is populated and functional. "Semi-modern" remains the description of what Lost Cities actually generates.
+
+**The central loop:** explore, acquire materials, components and blueprints, craft or grow or process, sell to real buyers, earn money, XP and reputation, unlock skills and equipment, improve your home and workshop, expand. **Crafting and manufacturing are central**: real components wherever the chosen mods have them; loot complements production and never replaces it; other careers may own firearms, and the Gunsmith's edge is *production*, not permission. **Survival is a pillar**, balanced for a functioning modern society (food, water and supplies can be bought in cities; preparation is rewarded on long journeys). Every career has a **legal path and an underground path** open to the same character at all times (D-049). **Crews** (a shared bank, shared homes, never merged careers) are a major *optional* feature ([crews.md](crews.md)).
+
+**Five careers:** Farmer, Vintner (two careers, D-067), Smith/Engineer, Gunsmith/Arms Dealer, Hacker/Technician.
+
+**Hard exclusion:** the **Create** mod, its add-ons and anything that requires it are not part of this project and must not be added, proposed as a dependency or used as a rebinding example.
 
 ## Player fantasy
 

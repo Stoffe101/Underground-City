@@ -19,6 +19,7 @@ The docs here distinguish **confirmed product direction**, **design proposals**,
 - [Repeatable supplies and profession work orders](design/recurring-supply-chains.md)
 - [PC terminal, risky deliveries, black-market dropboxes, and raids](design/terminal-and-underworld.md)
 - [Narrative and quests](design/story.md)
+- [Crews: shared homes and cooperative finances](design/crews.md)
 - [UX and accessibility](design/ui-ux.md)
 
 ## Engineering
@@ -33,6 +34,8 @@ The docs here distinguish **confirmed product direction**, **design proposals**,
 - [Reuse-first mod and modpack policy](technical/reuse-first.md)
 - [First-join class and city selection candidates](technical/onboarding-reuse-spike.md)
 - [Pinned first-login test profiles and automation](technical/onboarding-screening-packs.md)
+- [Crew accounts: who owns what, how money moves, what is proven](technical/crew-economy.md)
+- [Item-source audit: no work order may ask for something a player cannot get](technical/item-source-audit.md)
 - [Testing and reliability](technical/testing.md)
 - [AI-assisted development, docs and PR workflow](technical/agent-workflow.md)
 - [Claude Code cloud MCP setup](technical/claude-cloud-tools.md)
@@ -46,6 +49,10 @@ The docs here distinguish **confirmed product direction**, **design proposals**,
 - [Backlog](production/backlog.md)
 - [Existing modpack base comparison](production/base-comparison.md)
 - [First-join provider test matrix](production/onboarding-tests.md)
+- [Expansion plan: the next twelve work packages, with proof levels (a proposal)](production/expansion-plan.md)
+- [Playtest guide: two players on Windows 11](production/playtest-guide-windows11.md)
+- [Sprint report, October 17, 2026: the living world, profession depth and a production-quality visual overhaul](production/sprint-2026-10-17.md)
+- [Sprint report, October 18, 2026: Crews, shared homes and finances, survival, the Gunsmith's component loop](production/sprint-2026-10-18.md)
 
 ## Legal and assets
 
