@@ -53,15 +53,30 @@ A **residence** is a registered region with an explicit owner: a player or a Cre
 
 **What the guard does** (server side, `ResidenceGuard`): an unleased unit is a **showroom** (look around, open nothing, break nothing). A leased home's **interior** is what the tenants may change; the one-block **shell** (walls, floor, ceiling) belongs to the city, so nobody can open a neighbour's wall. Inside, a tenant (or a Crew member by their rights) may break and place blocks, open doors, open containers and use workstations (a tag: vanilla crafting, furnace, anvil, smithing, grindstone, brewing, enchanting and, when installed, TaCZ's gun tables). Everyone else is refused with a line on the action bar. Explosions spare homes. Creative-mode players are never held back. A Household Safe keeps its own lockpick and evidence rules and is outside the guard.
 
+**Ways round the walls that the guard now closes (D-090; each has a GameTest and a control, and was shown to fail when its check was switched off):**
+
+| Way round | What happens now |
+| --- | --- |
+| **Pistons** (and sticky pistons) | a piston cannot push or pull a block into, out of or through a home's interior or shell, whoever powers it; tag `residence_transfer_blocks` |
+| **Hoppers and droppers** | a hopper cannot be placed beside storage its placer may not open (so it cannot drain a private chest); a hopper under a chest elsewhere still works (control) |
+| **Containers from other mods** | recognised by their item-handler capability as well as the vanilla container interface; breaking a container needs the *storage* right as well as the *build* right |
+| **Item frames, armor stands, paintings, chest boats and minecarts** | cannot be hit, emptied, rotated, opened or broken by someone without the rights; explosions and arrows leave them alone; tags `residence_protected_entities` |
+| **Placed entities, fluids and fire** | spawn eggs, boats, minecarts, armor stands, frames, end crystals, buckets (placing and filling) and fire (flint and steel, fire charges) need the *build* right; a member who may enter but not build cannot place them |
+| **Mobs** | mob griefing and hostile spawns are refused inside a home; farmland is not trampled; entities standing in an explosion are spared |
+
+A house that **nobody has leased and that is not registered** (every NPC property meant for burglary) is deliberately **not** covered and stays open: the guard only exists for registered, player- or Crew-owned homes (`anUnregisteredHouseStaysOpenForBurglary`).
+
 **Private storage in a shared home.** *Make container private* claims the chest or barrel you look at (up to four per home): only you may open it, and nobody can break it. When you leave or are removed, you keep a **three-day retrieval window** (door and your own containers only); after that the contents become the household's. The vanilla ender chest is always yours.
 
 **Implemented and tested:** leasing rules, atomicity and crash recovery (`leasingIsFiniteAtomicAndNotFree`, `crewLeaseFromBankIsOneAtomicWrite`, `walletLeaseCrashRecoversToOwnedOrFreeNeverBoth`); the decision matrix and real Forge events (`guardDecisionMatrix`, `guardCancelsRealForgeEvents`); the real Row Flats (`rowFlatsAreRealHomesThatCanBeLeasedGuardedAndNotUndoneFromUnderTheirTenants`).
 
-**Not guarded yet (known gaps):** pistons, fluids, fire, mobs, and entities such as item frames and armor stands; a Crew-owned vehicle; hoppers pulling from a container across the shell; a home inside a Lost Cities building (the registration is data, but no generated building registers homes yet); rent and eviction (a lease is a one-time price); transferring a home between a player and a Crew after the fact (only the disband path moves one).
+**Not guarded yet (known gaps):** fire that spreads in from outside a home, lightning, dispensers that spill fluid across the shell, a Crew-owned vehicle of a mod other than the vanilla chest boat and minecart, any mod that moves blocks with its own code instead of a piston, a home inside a Lost Cities building (the registration is data, but no generated building registers homes yet); rent and eviction (a lease is a one-time price); transferring a home between a player and a Crew after the fact (only the disband path moves one).
 
 ## 5. Money
 
 See [crew-economy.md](../technical/crew-economy.md). In short: three modes (separate, personal plus bank, fully shared), the default is the bank; deposits by anyone; withdrawals and spending by permission; a history; every movement crash-safe and replay-proof; fully shared finances need **every** member's consent, take effect only while it lasts, sweep the pay of work orders into the bank and pay exchange purchases from it first, and cannot touch Q Shop's own shop screens.
+
+**How a Crew-funded purchase works, in player words.** You buy something at an Operations Terminal (or a provisions desk). If the Crew shares finances and you may spend Crew money, the Crew's bank pays first and your own wallet pays what is left, and the success line says which paid how much. If you cannot afford it, or the shelf is empty, or your pockets are full, **you are told why and no credit moves anywhere**: the bank's share is only set aside while the purchase is being completed, never handed to you in advance, and it goes back to the bank if the purchase does not happen. A member without the *Spend* right always pays from their own wallet. Q Shop's own shop screens are not the exchange and always use your own wallet; the Crew screen says so next to the money mode.
 
 ## 6. Cooperative production (the reason for Crews)
 

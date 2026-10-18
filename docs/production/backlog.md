@@ -69,10 +69,13 @@
 
 **P1**
 
-- [ ] Wayside shelter shop: limited food, water, bandages and supplies at the existing exchange ledger, no free healing, no respawn change (owner direction recorded in D-079); then the survival goods in a city supplier.
+- [x] Wayside shelter shop and the survival goods in a city supplier (D-091, PR #23): bread, torches, water bowls and a waterskin at a provisions desk in both shelter designs; waterskins, canteens, flasks, backpack, cutting board, cooking pot and sleeping bag at the city exchanges; finite shared stock; **bandages are not done** (no medical mod chosen).
 - [ ] First Crew contract that needs two careers (expansion plan WP1).
-- [ ] Guard gaps for leased homes (pistons, fluids, fire, mobs, item frames, hoppers); rent charged in active play only; home transfer between a player and a Crew.
-- [ ] Hosted run of `journey-crew` and of the `survival` pack job (added in this PR) read and recorded.
+- [x] Guard gaps for leased homes: pistons, hoppers and droppers, modded containers, item frames, armor stands, paintings, chest boats, minecarts, placed entities, fluids, fire, mobs (D-090, PR #23). **Still open:** fire spread from outside, lightning, fluid dispensers, vehicles of other mods, mods that move blocks themselves; rent charged in active play only; home transfer between a player and a Crew.
+- [ ] A UUID migration from offline to authenticated identities (explicit, audited, one crash-safe step); none exists and none is silent (D-090).
+- [ ] Report the Lost Cities world-tick stall after bulk chunk generation and the Traveler's Backpack first-start config race upstream, with the crash reports; decide whether production needs a pregeneration policy (risk register).
+- [ ] A medical item (bandage) from a chosen mod or a Core item, sold at the exchange and the shelters, no free healing, no respawn change (D-079).
+- [ ] Hosted run of `journey-crew`, `journey-combined` (generated world, every set, survival half) and of the `survival` pack job read and recorded.
 - [ ] Optional: a Core-owned TaCZ gun pack so that component costs sit in the gun recipe itself (researched, unverified; D-087).
 
 **P2**

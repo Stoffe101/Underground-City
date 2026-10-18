@@ -35,6 +35,7 @@ The docs here distinguish **confirmed product direction**, **design proposals**,
 - [First-join class and city selection candidates](technical/onboarding-reuse-spike.md)
 - [Pinned first-login test profiles and automation](technical/onboarding-screening-packs.md)
 - [Crew accounts: who owns what, how money moves, what is proven](technical/crew-economy.md)
+- [Identity: who a player is, what authentication changes, and what is not migrated](technical/identity.md)
 - [Item-source audit: no work order may ask for something a player cannot get](technical/item-source-audit.md)
 - [Testing and reliability](technical/testing.md)
 - [AI-assisted development, docs and PR workflow](technical/agent-workflow.md)
@@ -53,6 +54,7 @@ The docs here distinguish **confirmed product direction**, **design proposals**,
 - [Playtest guide: two players on Windows 11](production/playtest-guide-windows11.md)
 - [Sprint report, October 17, 2026: the living world, profession depth and a production-quality visual overhaul](production/sprint-2026-10-17.md)
 - [Sprint report, October 18, 2026: Crews, shared homes and finances, survival, the Gunsmith's component loop](production/sprint-2026-10-18.md)
+- [PR #23 follow-up: the shared-finance bug, authentication, home security, survival supply, the combined journey](production/pr23-playtest-readiness.md)
 
 ## Legal and assets
 

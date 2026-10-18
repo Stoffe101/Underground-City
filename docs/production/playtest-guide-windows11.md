@@ -38,8 +38,37 @@ git checkout feature/crews-shared-homes-and-finances
 
 * The first run takes 10 to 25 minutes. When the console says `Done`, the server is up. `-PucAcceptEula=true` writes `eula.txt`; that is your acceptance of the Minecraft EULA.
 * On a brand-new world, the server builds **Founders Row and the Row Flats** (three leasable homes) near the spawn and moves the spawn to the Row's gate. The log says `[UC-DEV] Founders Row built` and `[UC-DEV] Row Flats built`.
-* **Let your friend join with a launcher-less dev client:** stop the server, open `rpg-core\run-dev\server.properties`, set `online-mode=false`, save, start the server again. (Dev clients use offline profiles. Do this only on a network you trust.)
+* **Two ways to let a friend join - pick one on purpose.**
+  * **Developer launch (this section), `online-mode=false`:** the gradle dev clients have no Minecraft account, so they join with an *offline profile*. For that, stop the server, open `rpg-core\run-dev\server.properties`, set `online-mode=false`, save, start the server again. **This turns authentication off: the server believes any name a client types, so anybody who can reach the port can type a Crew member's name and become that member - their Crew, bank, homes, private containers, wallet and progress.** Use it only on your own PC or a home network where everybody is a person you trust, never behind a port forward or on a public address, and never for a world you want to keep for real accounts later (offline and authenticated identities are different people to the server; see [identity](../technical/identity.md)).
+  * **Authenticated launch (section 3b), `online-mode=true`:** the way to run a server other people reach. Minecraft proves which account owns each connection, and the Crew, bank, homes and wallets belong to that account, not to the name.
 * Open the firewall prompt for Java on a private network if Windows asks; the server uses port 25565.
+
+## 3b. Authenticated launch for real accounts
+
+This is the supported launch for anything beyond the two of you at one desk. It starts a **production-style server** from a separate, untracked folder (not `run-dev`), with `online-mode=true`, `enforce-secure-profile=true` and a white-list. **Tested in the cloud:** the server pack's settings, a real Forge server answering a login with an Encryption Request (so it refuses an unproven identity), and the identity rules in code. **Not tested:** a person with a Microsoft account joining it (the cloud has no account). Step 1 below is that test.
+
+1. **Build the Core jar and the server folder** (PowerShell, Python 3 needed for the helper scripts):
+   ```
+   .\gradlew.bat -p rpg-core build
+   python scripts\make_server_pack.py --sets world firearms vehicles boats survival --output build\server-pack --whitelist Alice Bob
+   ```
+   Use the exact Minecraft names of the people who will play. Add `vintner` and `farming` to `--sets` if you want those mods; the clients must have **the same sets**.
+2. **Accept the EULA yourself.** Read https://aka.ms/MinecraftEULA and set `eula=true` in `build\server-pack\server\eula.txt` (or add `--accept-eula` to the command above).
+3. **Start the server:** `build\server-pack\server\start-server.bat`. On the first start type the lines of `whitelist-commands.txt` into the server window (`whitelist add Alice`, ...). Minecraft turns each name into the account's UUID once; from then on only the UUID matters. Nobody else can join.
+4. **Every player sets up their own normal-launcher profile with the same mods.** Install Minecraft 1.20.1 and Forge 47.4.10 (the official Forge installer from files.minecraftforge.net), create a launcher profile for it and give it its own *game directory* (for example `C:\UC-Client`, so your normal Minecraft is untouched). Then, from a checkout of **the same commit as the host** (`git checkout` the same branch), each player runs, with `<mods>` meaning `C:\UC-Client\mods`:
+   ```
+   .\gradlew.bat -p rpg-core build
+   python scripts\fetch_dev_pack.py --sets world firearms vehicles boats survival --output <mods>
+   python scripts\build_world_prototype.py --output <mods>\underground-city-world-prototype.jar
+   copy rpg-core\build\libs\underground_city-0.1.0.jar <mods>
+   ```
+   and downloads **Q Shop 1.8.4** from its author's release page (https://github.com/QLNPLUS/Q-shop/releases/tag/v1.8.4-forge-1.20.1) into `<mods>`, checking that the file's SHA-256 is `ab32e33a7190bbcb7b4b10d9fe6ae4a38f3e65eba5ea1ac9f315d3bd798c5199` (`Get-FileHash`). `fetch_dev_pack.py` refuses any jar whose hash differs from the pin; `build\server-pack\client-mods.json` lists everything. The `--sets` must be the ones the server was built with. **Do not hand the third-party jars to anyone**: most are all-rights-reserved and for private use after you fetched them from their authors yourself.
+   *Honest limit:* the server side of this (the pack, the boot, the authentication handshake) was run in the cloud; the **normal-launcher client with these jars was not**. It is the ordinary Forge setup, but if the client refuses to connect ("mod mismatch"), the first thing to compare is the mod list in `latest.log` on both sides.
+5. **Connect** with *Multiplayer > Direct Connection* to the server's address (your local address on a home network; port forwarding makes it reachable from the internet - do that only with the white-list on, which the pack does).
+
+**What your account means.** Everything the game keeps about you is attached to your account's UUID: citizenship and career, credits, work orders, Crew membership and role, the Crew's bank, homes and private containers. Renaming your Minecraft account keeps all of it. Another player cannot act as you, take your wallet or your Crew's bank, or open your private chest by typing your name.
+
+**Moving from the developer launch.** There is **no tool that moves a world played in offline mode to real accounts**, and nothing converts identities silently. On an authenticated server a person who played offline is a stranger: no citizenship, no Crew, no wallet, no homes. The server warns at start and `/uc_identity` lists the offline-derived identities it found. Start the authenticated world **fresh**; keep the developer world on your own network if you want to keep it.
 
 ## 4. Start the clients
 
@@ -88,13 +117,33 @@ Things that deserve a careful look: does anything feel unfair or confusing; are 
 
 **Built and tested in the cloud (not by a person):** registration, the terminal, work orders, the regional exchange, the Public Ledger, skill trees, checkpoints and searches, firearms crafting with blueprints (with the firearms set), Founders Row, the Row Flats, Crews with a bank, shared homes and a server-side guard, the road waymarkers and wayside shelters. Two scripted clients have played the Crew steps above against a dedicated server that was then **killed without a stop sequence and restarted** (see the sprint report for the exact result).
 
-**Not built, so do not look for it:** rent, evicting a tenant, moving a home between a person and a Crew, Crew contracts, burglary, raids, police patrols, populated daily routines, shops at wayside shelters, vehicle fuel, boat customs, per-player loot. The guard does not stop pistons, fluids, fire, mobs or item frames at a home's walls. Q Shop's own shop screens always spend your own wallet, even when the Crew shares finances.
+**Not built, so do not look for it:** rent, evicting a tenant, moving a home between a person and a Crew, Crew contracts, burglary, raids, police patrols, populated daily routines, vehicle fuel, boat customs, per-player loot, a medical item. **The home guard** now stops pistons, hoppers, fluids, fire, mobs, item frames, armor stands and modded containers at a leased home's walls (section 6b); it does not stop fire that spreads in from outside, lightning, or mods that move blocks with their own code. **Q Shop's own shop screens always spend your own wallet, even when the Crew shares finances**; only the Underground City exchange (the Operations Terminal in a city, the provisions desk in a wayside shelter) can use the Crew bank, and only for a member who holds the *Spend* right.
 
-**Survival set:** see the sprint report for what was run. It is opt-in; nothing in the default pack depends on it.
+**Survival set** (`-PucExtraSets=survival`, opt-in): backpack, thirst, clean and dirty water, canteens and flasks, the kitchen and sleeping bags. The goods are **for sale** (section 6b), finite and shared like every other supplier line, and the cloud has driven the mods' own code for each mechanic. Nothing in the default pack depends on it.
+
+## 6b. Survival and shared-finance test (about 25 minutes, with `-PucExtraSets=survival` on server and clients)
+
+Everything here is also covered by scripts; this list is for **your** eyes and hands. Report anything that feels wrong, not only anything that fails.
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | In a city, open an **Operations Terminal**, press the exchange tab, find *Waterskin*, *Backpack*, *Cutting board*, *Cooking pot*, *Sleeping bag* | goods with a price in credits and a number of units left; buying takes credits from **your** wallet and moves the stock for everybody |
+| 2 | Alice (founder): *Crew > Rules*, choose **Fully shared finances**. Bob: open *Rules* and press *Agree* | a banner explains the change; it takes effect only when **everybody** has agreed; no credit moves because of the switch |
+| 3 | Alice: *Rules > Members may spend Crew money* on. Both deposit credits. Bob buys something that costs **more than the bank holds** | the bank pays what it holds and Bob's wallet pays the rest; the success line and the Crew history (*Purchase*) say how it was split |
+| 4 | Switch *Spend* off for Bob and try to buy again; then try something nobody can afford | Bob pays from his own wallet only; the unaffordable purchase is refused with a line saying why, and **no credit has moved anywhere** (check the bank and your wallet) |
+| 5 | Open a **Q Shop shop** (not the exchange) and buy | it spends **your** wallet only; the Crew screen says so beside the finance mode |
+| 6 | Walk out of the city to a **wayside shelter** (the lanterned roadside pavilion or well). Find the small terminal desk | a *provisions desk*: bread, torches, water bowls, a waterskin; it shows no work orders and sells the nearest city's wayside lines from the same finite stock. Shelters built before this change have no desk until they are undone and rebuilt |
+| 7 | Wear a backpack (right-click it, or the equip key), put things in it, log out, restart the server, log in | the backpack, its contents and the thirst bar are as you left them |
+| 8 | Fill a canteen or waterskin at a pond (use it looking at the water); drink; check that boiling dirty water in a furnace makes it safe | servings go down by one per drink and thirst goes up; dirty water makes you ill, boiled water does not |
+| 9 | Cook something in a cooking pot over a heat source (a campfire, magma or a lit furnace below) | a meal that feeds; |
+| 10 | Sleep in a **sleeping bag**, then die or use /kill and respawn | you respawn at your bed or the world spawn, **not** at the sleeping bag; a vanilla bed does set it |
+| 11 | Break a block of the Row House from outside the Crew: a friend who is not in the Crew (or you, from a second account) tries to open the chest, push a block through the wall with a piston, hopper-drain a chest, place lava or a bucket, break an item frame | each is refused; the same things work for the Crew inside |
+
+Things to write down: did the shared-finance words make sense before you pressed anything; was it ever unclear who paid; was a price silly; did you run out of a good and not know why.
 
 ## 7. Logs, screenshots and bug reports
 
-* Server log: `rpg-core\run-dev\logs\latest.log`; crash reports: `rpg-core\run-dev\crash-reports\`.
+* Server log: `rpg-core\run-dev\logs\latest.log` (authenticated pack: `build\server-pack\server\logs\latest.log`); crash reports: `rpg-core\run-dev\crash-reports\`.
 * Client log: `rpg-core\run-dev\logs\latest.log` of the client's own checkout; screenshots (F2): `rpg-core\run-dev\screenshots\`.
 * The Crew ledger's unresolved transfers (there should never be any): in the server console, `uc_crew pending`.
 * Please report (GitHub issue or message): what you did, what you expected, what happened, the time, both players' names, and attach the two `latest.log` files and screenshots. Do **not** attach the world folder unless asked; it is large.
