@@ -34,6 +34,9 @@ def prepare() -> list[tuple[Path,str]]:
     for role in ('farmer','smith'):
         module=OUTPUT/'clients'/role/'rpg-core'
         shutil.copytree(MODULE,module,ignore=shutil.ignore_patterns('run','run-*','build','.gradle'))
+        if os.environ.get('UC_JOURNEY_PACK','').strip():
+            # the build reads the pinned dev-pack manifest from ../content/modpacks relative to the module
+            shutil.copytree(ROOT/'content/modpacks',module.parent/'content/modpacks')
         clients.append((module,role))
     return clients
 
