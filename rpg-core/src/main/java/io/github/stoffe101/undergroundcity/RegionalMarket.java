@@ -58,7 +58,7 @@ public final class RegionalMarket {
             throw new IllegalStateException(shortfall(cost, share, personal, balance));
         }
         UUID hold = share.credits() > 0 ? CrewService.reservePurchase(player, nonce, share.credits(),
-            quantity + " x " + stock.registryItem().getDescription().getString() + ", " + city + (exchange.wayside() ? " wayside desk" : " exchange")) : null;
+            quantity + " x " + stock.registryItem().getDescription().getString()) : null;
         try {
             CrewService.checkpoint("purchase_after_reserve");
             ledger.preparePurchase(player.getUUID(), nonce, stock, quantity, after.save(new ListTag()), balance - personal, citizen.careerXp(), hold, share.credits());

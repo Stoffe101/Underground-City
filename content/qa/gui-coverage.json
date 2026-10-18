@@ -87,6 +87,13 @@
       "description": "Regional exchange with insufficient credits for some purchases"
     },
     {
+      "id": "operations_terminal.wayside_desk",
+      "expected_file": "uc-exchange-wayside-desk.png",
+      "owner": "underground_city",
+      "group": "operations_terminal",
+      "description": "Provisions desk of a wayside shelter: a few basics with small shared stock, no orders, location shown as Wayside desk"
+    },
+    {
       "id": "operations_terminal.imports_outside_city",
       "expected_file": "uc-imports-outside-city.png",
       "owner": "underground_city",
@@ -346,6 +353,20 @@
       "description": "Money page with a payout owed, a refused request in the footer and the shared-finances proposal awaiting consent"
     },
     {
+      "id": "crew.money_shared",
+      "expected_file": "uc-crew-money-shared.png",
+      "owner": "underground_city",
+      "group": "crew",
+      "description": "Money page with fully shared finances in force, for a member who may spend Crew money: the bank pays first, a purchase in the history, Q Shop's own shops never use the bank"
+    },
+    {
+      "id": "crew.money_shared_nospend",
+      "expected_file": "uc-crew-money-shared-nospend.png",
+      "owner": "underground_city",
+      "group": "crew",
+      "description": "The same Crew for a member who may not spend Crew money: the bank is closed to them and they pay for purchases themselves"
+    },
+    {
       "id": "crew.home",
       "expected_file": "uc-crew-home.png",
       "owner": "underground_city",
@@ -365,6 +386,13 @@
       "owner": "underground_city",
       "group": "crew",
       "description": "Rules page, money mode tab: three modes, shared finances waiting for consent"
+    },
+    {
+      "id": "crew.rules_mode_active",
+      "expected_file": "uc-crew-rules-mode-active.png",
+      "owner": "underground_city",
+      "group": "crew",
+      "description": "Rules page, money mode tab with fully shared finances in force and the limit stated: Q Shop's own shop screens never use the bank"
     },
     {
       "id": "crew.rules_disband",

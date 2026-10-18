@@ -134,7 +134,7 @@ public final class TerminalScreen extends UcScreen {
         int cw2 = UcUi.displayWidth(font, credits);
         UcUi.displayRight(g, font, credits, right - 0, ty, data.economy() ? UcUi.AMBER : UcUi.UNDERGROUND_TEXT);
         UcUi.icon(g, UcUi.Icon.CREDITS, right - cw2 - 19, y + 4, data.economy() ? UcUi.AMBER : UcUi.UNDERGROUND_TEXT);
-        String where = data.region().isEmpty() ? "Outside a city" : "In " + capitalize(data.region());
+        String where = data.wayside() ? "Wayside desk" : data.region().isEmpty() ? "Outside a city" : "In " + capitalize(data.region());
         int wx = right - cw2 - 19 - 14 - font.width(where);
         if (wx > px + pw / 2) {
             UcUi.text(g, font, where, wx, ty, UcUi.DIM);
@@ -182,7 +182,7 @@ public final class TerminalScreen extends UcScreen {
     // ------------------------------------------------------------------------------------------------ state
     private List<TerminalData.Row> jobs() { return data.jobs().stream().filter(job -> job.extra().underground() == undergroundView).toList(); }
     private TerminalData.Row row() { List<TerminalData.Row> list = jobs(); return list.isEmpty() ? null : list.get(Math.max(0, Math.min(selected, list.size() - 1))); }
-    private boolean exchangeOpen() { return !data.region().isEmpty() && !data.offers().isEmpty(); }
+    private boolean exchangeOpen() { return (!data.region().isEmpty() || data.wayside()) && !data.offers().isEmpty(); }
     private void setView(boolean underground) { undergroundView = underground; selected = 0; jobScroll = 0; refresh(); }
     private void send(int action) {
         if (terminalPosition == null || row() == null) return;
@@ -482,7 +482,8 @@ public final class TerminalScreen extends UcScreen {
         int lx = cx, ly = listY(), lw = listW(), lh = ch - 22;
         UcUi.well(g, lx, ly, lw, lh);
         if (list.isEmpty()) {
-            UcUi.wrapped(g, font, undergroundView ? "No underground contracts yet. Learn an underground skill on the SKILLS tab to open the trade."
+            UcUi.wrapped(g, font, data.wayside() ? "Orders are posted in the cities. This desk only sells supplies: open the TRADE tab."
+                : undergroundView ? "No underground contracts yet. Learn an underground skill on the SKILLS tab to open the trade."
                 : "No legal contracts are listed for this trade.", lx + 8, ly + 10, lw - 16, UcUi.SOFT, 6);
             return;
         }
@@ -661,14 +662,15 @@ public final class TerminalScreen extends UcScreen {
     private void renderTrade(GuiGraphics g) {
         boolean exchange = exchangeOpen();
         int y = cy + 26;
-        String heading = exchange ? capitalize(data.region()).toUpperCase(Locale.ROOT) + " EXCHANGE" : "REGIONAL EXCHANGE";
+        String heading = data.wayside() ? "WAYSIDE PROVISIONS" : exchange ? capitalize(data.region()).toUpperCase(Locale.ROOT) + " EXCHANGE" : "REGIONAL EXCHANGE";
         UcUi.display(g, font, heading, cx, y, UcUi.LEGAL);
-        UcUi.text(g, font, "Shared stock, refilled during active play", cx + UcUi.displayWidth(font, heading) + 8, y, UcUi.DIM);
+        UcUi.text(g, font, data.wayside() ? "A few basics, shared with " + capitalize(data.city().isEmpty() ? "the city" : data.city()) + "'s other desks" : "Shared stock, refilled during active play", cx + UcUi.displayWidth(font, heading) + 8, y, UcUi.DIM);
         UcUi.well(g, cx, cy + 40, cw, ch - 40);
         if (!exchange) {
             int ty = cy + 52;
             UcUi.icon(g, UcUi.Icon.INFO, cx + 8, ty - 4, UcUi.AMBER);
-            UcUi.wrapped(g, font, data.region().isEmpty() ? "This terminal is outside every city exchange. Use one inside Ironhaven, Valewood or Blackwater to see local goods."
+            UcUi.wrapped(g, font, data.wayside() ? "This desk has nothing for sale right now."
+                : data.region().isEmpty() ? "This terminal is outside every city exchange. Use one inside Ironhaven, Valewood or Blackwater to see local goods."
                 : "No regional stock is listed for this city.", cx + 28, ty, cw - 40, UcUi.SOFT, 4);
             return;
         }

@@ -319,8 +319,24 @@ public final class CrewScreen extends UcScreen {
         try { return amountBox.getValue().isEmpty() ? 0 : Long.parseLong(amountBox.getValue()); } catch (NumberFormatException e) { return 0; }
     }
 
+    /** The height of the one- or two-line note under the cards that says how money moves in this Crew. */
+    private static final int NOTE_H = 24, BANNER_H = 58;
+
+    /** What the Money page says about how credits move. It always says what Q Shop's own shop screens do, because that is the limit people trip over. */
+    private String moneyNote() {
+        boolean shared = view.mode().equals(Mode.SHARED.name());
+        if (shared && !view.effectiveMode().equals(Mode.SHARED.name())) return "Not in force yet: it needs every member's agreement. Until then this Crew works as a Crew bank.";
+        return switch (view.effectiveMode()) {
+            case "SEPARATE" -> "Everyone pays for their own purchases. Q Shop's own shops always use your wallet.";
+            case "SHARED" -> view.can(Perm.SPEND)
+                ? "Work-order pay goes in; at exchanges the bank pays first and you pay the rest. Q Shop's own shops never use the bank."
+                : "You may not spend Crew money, so you pay for purchases yourself. Q Shop's own shops never use the bank.";
+            default -> "Credits move only when someone deposits or withdraws. Q Shop's own shops always use your wallet.";
+        };
+    }
+
     private void buildMoney() {
-        int y = cy + 56 + (view.owed() > 0 ? 28 : 0) + (needsConsent() ? 52 : 0);
+        int y = cy + 56 + (view.owed() > 0 ? 28 : 0) + (needsConsent() ? BANNER_H + 4 : 0) + NOTE_H;
         int cardW = (cw - 8) / 2;
         place(amountBox, cx, y, 92);
         int[] quick = {10, 50, 100};
@@ -343,9 +359,9 @@ public final class CrewScreen extends UcScreen {
                 .tooltip("Credits owed to you after a payout or a disband.");
         }
         if (needsConsent()) {
-            int cyy = cy + 56 + (view.owed() > 0 ? 28 : 0);
-            btn("consent_yes", cx + cw - 190, cyy + 28, 90, 18, "I agree", () -> send(Act.of(Op.CONSENT).flag(true))).kind(UcButton.Kind.PRIMARY);
-            btn("consent_no", cx + cw - 96, cyy + 28, 96, 18, "Not for me", () -> send(Act.of(Op.CONSENT).flag(false)));
+            int cyy = cy + 56 + (view.owed() > 0 ? 28 : 0);   // the banner sits above the note
+            btn("consent_yes", cx + cw - 190, cyy + 38, 90, 18, "I agree", () -> send(Act.of(Op.CONSENT).flag(true))).kind(UcButton.Kind.PRIMARY);
+            btn("consent_no", cx + cw - 96, cyy + 38, 96, 18, "Not for me", () -> send(Act.of(Op.CONSENT).flag(false)));
         }
         if (cardW < 0) return;
     }
@@ -354,8 +370,10 @@ public final class CrewScreen extends UcScreen {
 
     private void renderMoney(GuiGraphics g, int mx, int my) {
         int cardW = (cw - 8) / 2;
+        boolean sharedInForce = view.effectiveMode().equals(Mode.SHARED.name());
         card(g, cx, cy, cardW, 50, "CREW BANK", view.bank() + "", UcUi.AMBER, modeShort(view.effectiveMode()) + (view.mode().equals(view.effectiveMode()) ? "" : " (not shared yet)"));
-        card(g, cx + cardW + 8, cy, cardW, 50, "YOUR WALLET", view.moneyReady() ? String.format(Locale.ROOT, "%.0f", view.wallet()) : "OFFLINE", UcUi.OK, "stays yours");
+        card(g, cx + cardW + 8, cy, cardW, 50, "YOUR WALLET", view.moneyReady() ? String.format(Locale.ROOT, "%.0f", view.wallet()) : "OFFLINE", UcUi.OK,
+            sharedInForce ? (view.can(Perm.SPEND) ? "pays what the bank does not" : "the bank is closed to you") : "stays yours");
         int y = cy + 56;
         if (view.owed() > 0) {
             g.fill(cx, y, cx + cw, y + 22, 0xff2a2410);
@@ -364,12 +382,14 @@ public final class CrewScreen extends UcScreen {
             y += 28;
         }
         if (needsConsent()) {
-            g.fill(cx, y, cx + cw, y + 48, 0xff261a12);
+            g.fill(cx, y, cx + cw, y + BANNER_H, 0xff261a12);
             UcUi.icon(g, UcUi.Icon.WARNING, cx + 4, y + 4, UcUi.WARN);
-            UcUi.wrapped(g, font, "Proposed: work-order pay goes into the bank and exchange purchases come out of it, once all agree.",
-                cx + 24, y + 4, cw - 30, UcUi.SOFT, 2);
-            y += 52;
+            UcUi.wrapped(g, font, "Proposed: work-order pay goes into the bank, and exchange purchases are paid from it first. Q Shop's own shops never use it.",
+                cx + 24, y + 4, cw - 30, UcUi.SOFT, 3);
+            y += BANNER_H + 4;
         }
+        UcUi.wrapped(g, font, moneyNote(), cx, y, cw, UcUi.DIM, 2);
+        y += NOTE_H;
         UcUi.well(g, amountBox.getX() - 4, amountBox.getY() - 4, amountBox.getWidth() + 8, 20);
         int hy = y + 54;
         UcUi.display(g, font, "History", cx, hy, UcUi.SOFT);
@@ -380,7 +400,7 @@ public final class CrewScreen extends UcScreen {
             int ly = hy + 12 + i * 11;
             UcUi.text(g, font, UcUi.fit(font, row.ago(), 56), cx, ly, UcUi.FAINT);
             String what = logText(row);
-            int color = row.kind().equals("DEPOSIT") ? UcUi.OK : row.kind().equals("WITHDRAW") || row.kind().equals("LEASE") ? UcUi.AMBER : UcUi.SOFT;
+            int color = row.kind().equals("DEPOSIT") ? UcUi.OK : row.kind().equals("WITHDRAW") || row.kind().equals("LEASE") || row.kind().equals("PURCHASE") ? UcUi.AMBER : UcUi.SOFT;
             UcUi.text(g, font, UcUi.fit(font, what, cw - 60), cx + 58, ly, color);
             i++;
         }
@@ -405,6 +425,7 @@ public final class CrewScreen extends UcScreen {
             case "CONSENT" -> who + " " + row.note();
             case "DEPOSIT" -> who + " deposited " + row.amount();
             case "WITHDRAW" -> who + " withdrew " + row.amount();
+            case "PURCHASE" -> who + " bought " + row.note() + ", bank paid " + row.amount();
             case "LEASE" -> who + " leased " + row.note() + " (" + row.amount() + ")";
             case "PAYOUT" -> who + " paid out " + row.amount() + ", " + row.note();
             default -> who + " " + row.kind().toLowerCase(Locale.ROOT);
@@ -474,6 +495,25 @@ public final class CrewScreen extends UcScreen {
 
     // ---- RULES
 
+    private static final String[] MODE_TEXT = {
+        "Everybody keeps their own money. There is no standing bank; whoever makes a Crew purchase pays it.",
+        "Everybody keeps their own money, and the Crew has a shared bank. Members deposit; the rules decide who withdraws and spends. Recommended.",
+        "Like the bank, and while every member agrees, the pay of work orders goes into it and exchange purchases are paid from it first, by members who may spend Crew money. Q Shop's own shop screens never use the bank."};
+
+    /** The height of each money-mode card, from the lines its text needs at this width; the first two give up room if the page is short. Used by the build and the draw alike. */
+    private int[] modeCardHeights() {
+        int textW = cw - 98;
+        int[] heights = new int[MODE_TEXT.length];
+        int total = 0;
+        for (int i = 0; i < heights.length; i++) {
+            heights[i] = Math.max(36, 20 + font.split(Component.literal(MODE_TEXT[i]), textW).size() * 10 + 4);
+            total += heights[i] + 4;
+        }
+        int shrink = Math.max(0, total - (ch - 24 - 8));
+        for (int i = 0; i < 2; i++) heights[i] -= Math.min(shrink / 2, heights[i] - 36);
+        return heights;
+    }
+
     private void buildRules() {
         String[] tabs = {"Permissions", "Money mode", "Crew"};
         int tx = cx;
@@ -503,17 +543,18 @@ public final class CrewScreen extends UcScreen {
             }
         } else if (rulesTab == 1) {
             Mode[] modes = Mode.values();
-            int cardH = Math.max(40, (ch - 24 - 16) / 3 - 4);
+            int[] heights = modeCardHeights();
+            int y = top;
             for (int i = 0; i < modes.length; i++) {
                 Mode mode = modes[i];
-                int y = top + i * (cardH + 4);
-                UcButton choose = btn("mode_" + mode.name().toLowerCase(Locale.ROOT), cx + cw - 82, y + cardH - 24, 76, 18, view.mode().equals(mode.name()) ? "Chosen" : "Choose", () -> send(Act.of(Op.MODE).amount(mode.ordinal())));
+                UcButton choose = btn("mode_" + mode.name().toLowerCase(Locale.ROOT), cx + cw - 82, y + heights[i] - 24, 76, 18, view.mode().equals(mode.name()) ? "Chosen" : "Choose", () -> send(Act.of(Op.MODE).amount(mode.ordinal())));
                 choose.kind(UcButton.Kind.PRIMARY);
                 choose.active = choose.active && view.founder() && !view.mode().equals(mode.name());
                 choose.tooltip(view.founder() ? "Changing the mode never moves a credit." : "Only the founder chooses.");
+                y += heights[i] + 4;
             }
             if (view.bank() > 0 && view.founder()) {
-                btn("pay_out", cx, top + 3 * (cardH + 4) + 2, 170, 18, "Pay out the bank (" + view.bank() + ")", () -> send(Act.of(Op.PAY_OUT))).kind(UcButton.Kind.DANGER)
+                btn("pay_out", cx, top + java.util.Arrays.stream(modeCardHeights()).sum() + 3 * 4 + 2, 170, 18, "Pay out the bank (" + view.bank() + ")", () -> send(Act.of(Op.PAY_OUT))).kind(UcButton.Kind.DANGER)
                     .tooltip("Splits the bank equally between the members; any remainder goes to the founder. Each member then claims their share.");
             }
         } else {
@@ -549,22 +590,21 @@ public final class CrewScreen extends UcScreen {
             }
         } else if (rulesTab == 1) {
             Mode[] modes = Mode.values();
-            String[] text = {
-                "Everybody keeps their own money. There is no standing bank; whoever makes a Crew purchase pays it.",
-                "Everybody keeps their own money, and the Crew has a shared bank. Members deposit; the rules decide who withdraws and spends. Recommended.",
-                "Like the bank, and while every member agrees, the pay of work orders goes into it and purchases at the regional exchange come out of it. Q Shop's own shop screens still use your own wallet."};
-            int cardH = Math.max(40, (ch - 24 - 16) / 3 - 4);
+            int[] heights = modeCardHeights();
+            int textW = cw - 98;
+            int y = top;
             for (int i = 0; i < modes.length; i++) {
-                int y = top + i * (cardH + 4);
+                int h = heights[i];
                 boolean chosen = view.mode().equals(modes[i].name());
-                UcUi.card(g, cx, y, cw, cardH, chosen ? 2 : 0);
+                UcUi.card(g, cx, y, cw, h, chosen ? 2 : 0);
                 UcUi.display(g, font, modes[i].title, cx + 8, y + 6, chosen ? UcUi.TEXT : UcUi.SOFT);
                 if (modes[i] == Mode.SHARED && chosen) {
                     boolean active = view.effectiveMode().equals(Mode.SHARED.name());
                     String state = active ? "in force" : "waiting: " + view.consentCount() + " of " + view.members().size() + " agree";
                     UcUi.text(g, font, state, cx + cw - 90 - font.width(state), y + 7, active ? UcUi.OK : UcUi.WARN);
                 }
-                UcUi.wrapped(g, font, text[i], cx + 8, y + 18, cw - 98, UcUi.DIM, Math.max(2, (cardH - 22) / 10));
+                UcUi.wrapped(g, font, MODE_TEXT[i], cx + 8, y + 18, textW, UcUi.DIM, Math.max(2, (h - 20) / 10));
+                y += h + 4;
             }
         } else {
             int y = top;

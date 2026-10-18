@@ -27,7 +27,8 @@ final class CrewCaptures {
     }
 
     private static List<CrewView.LogRow> log() {
-        return List.of(new CrewView.LogRow("4 min ago", "Tobias", "DEPOSIT", 80, ""), new CrewView.LogRow("22 min ago", "Imogen", "LEASE", 140, "Row House"),
+        return List.of(new CrewView.LogRow("2 min ago", "Tobias", "PURCHASE", 32, "1 x Waterskin"), new CrewView.LogRow("4 min ago", "Tobias", "DEPOSIT", 80, ""),
+            new CrewView.LogRow("22 min ago", "Imogen", "LEASE", 140, "Row House"),
             new CrewView.LogRow("1 h ago", "Imogen", "DEPOSIT", 120, ""), new CrewView.LogRow("1 h ago", "Wren", "JOINED", 0, ""),
             new CrewView.LogRow("2 h ago", "Imogen", "PERM", 0, "Member may: Use workstations"), new CrewView.LogRow("2 h ago", "Imogen", "CREATED", 0, ""));
     }
@@ -72,6 +73,14 @@ final class CrewCaptures {
                 screen = new CrewScreen(crew("Member", MEMBER_BITS, "SHARED", "BANK", 320, 140, 85, false, false, List.of(), List.of(), HOMES, List.of()), "!The bank only holds 320 credits.");
                 screen.showPage(CrewScreen.Page.MONEY);
             }
+            case "money-shared" -> {   // fully shared finances in force, for a member who may spend Crew money
+                screen = new CrewScreen(crew("Member", MEMBER_BITS | CrewView.bits(EnumSet.of(Perm.SPEND)), "SHARED", "SHARED", 320, 140, 0, true, false, List.of(), List.of(), HOMES, List.of()), "");
+                screen.showPage(CrewScreen.Page.MONEY);
+            }
+            case "money-shared-nospend" -> {   // the same Crew, for a member who may not
+                screen = new CrewScreen(crew("Member", MEMBER_BITS, "SHARED", "SHARED", 320, 140, 0, true, false, List.of(), List.of(), HOMES, List.of()), "");
+                screen.showPage(CrewScreen.Page.MONEY);
+            }
             case "home" -> {
                 screen = new CrewScreen(crew("Founder", ALL_BITS, "BANK", "BANK", 320, 140, 0, false, false, List.of(), List.of(), HOMES, NEARBY), "");
                 screen.showPage(CrewScreen.Page.HOME);
@@ -82,6 +91,11 @@ final class CrewCaptures {
             }
             case "rules-mode" -> {
                 screen = new CrewScreen(crew("Founder", ALL_BITS, "SHARED", "BANK", 320, 140, 0, true, false, List.of(), List.of(), HOMES, NEARBY), "");
+                screen.showPage(CrewScreen.Page.RULES);
+                screen.showRulesTab(1);
+            }
+            case "rules-mode-active" -> {
+                screen = new CrewScreen(crew("Founder", ALL_BITS, "SHARED", "SHARED", 320, 140, 0, true, false, List.of(), List.of(), HOMES, NEARBY), "");
                 screen.showPage(CrewScreen.Page.RULES);
                 screen.showRulesTab(1);
             }
