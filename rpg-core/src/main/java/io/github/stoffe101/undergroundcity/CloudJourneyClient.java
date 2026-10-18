@@ -16,17 +16,28 @@ import net.minecraftforge.fml.common.Mod;
 @Mod.EventBusSubscriber(modid=UndergroundCity.MOD_ID,value=Dist.CLIENT)
 public final class CloudJourneyClient {
     private static final boolean ENABLED=Boolean.getBoolean("uc.journey.client");
-    private static boolean connecting;
+    /** A login that the server drops before the player is in (seen once on a hosted runner, a ConcurrentModificationException while both clients were logging in) is tried again; a third failure, or any disconnect after the player has joined, still ends the run. */
+    private static final int ATTEMPTS=3;
+    private static final long RETRY_NANOS=5_000_000_000L;
+    private static boolean connecting, joined;
+    private static int attempt;
+    private static long retryAt;
     private CloudJourneyClient() {}
     @SubscribeEvent public static void render(TickEvent.RenderTickEvent event) {
         if(!ENABLED||event.phase!=TickEvent.Phase.END) return;
         Minecraft mc=Minecraft.getInstance();
         if(!mc.gameDirectory.toPath().toAbsolutePath().normalize().getFileName().toString().startsWith("run-journey-client")) throw new IllegalStateException("Journey client requires disposable game directory");
-        if(!connecting && (mc.screen instanceof TitleScreen || mc.screen instanceof AccessibilityOnboardingScreen)) {
-            connecting=true;mc.options.guiScale().set(3);mc.options.pauseOnLostFocus=false;mc.options.framerateLimit().set(30);mc.resizeDisplay();
+        if(!connecting && (mc.screen instanceof TitleScreen || mc.screen instanceof AccessibilityOnboardingScreen) && System.nanoTime()-retryAt>=0) {
+            connecting=true;attempt++;mc.options.guiScale().set(3);mc.options.pauseOnLostFocus=false;mc.options.framerateLimit().set(30);mc.resizeDisplay();
             ConnectScreen.startConnecting(mc.screen,mc,ServerAddress.parseString("127.0.0.1:25565"),new ServerData("Cloud journey","127.0.0.1:25565",false),false);
         }
-        if(connecting && mc.screen instanceof DisconnectedScreen) mc.stop();
+        if(mc.level!=null) joined=true;
+        if(connecting && mc.screen instanceof DisconnectedScreen screen) {
+            if(joined) { mc.stop(); return; } // the server went away after the player was in: the end of a phase, as before
+            System.out.println("[UC-JOURNEY] connection attempt "+attempt+" of "+ATTEMPTS+" ended on the disconnect screen: "+screen.getNarrationMessage().getString());
+            if(attempt>=ATTEMPTS) { mc.stop(); return; }
+            connecting=false;retryAt=System.nanoTime()+RETRY_NANOS;mc.setScreen(new TitleScreen());
+        }
     }
     @SubscribeEvent public static void tick(TickEvent.ClientTickEvent event) {
         if(!ENABLED||event.phase!=TickEvent.Phase.END) return;
