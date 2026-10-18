@@ -26,7 +26,7 @@ java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 // GitHub release), are SHA-512/SHA-256 verified against content/modpacks/dev-pack.json, and are never committed.
 // ---------------------------------------------------------------------------------------------------------------
 def harnessFlags = ['ucPack', 'ucEconomyTest', 'ucScreeningMod', 'ucWorldCandidate', 'ucWorldTour', 'ucJourneyClient',
-                    'ucVisualCapture', 'ucWorldSurvey', 'ucSeedScan', 'ucJourneyPhase']
+                    'ucVisualCapture', 'ucWorldSurvey', 'ucSeedScan', 'ucJourneyPhase', 'ucPerfProbe']
 def requestedTasks = gradle.startParameter.taskNames.collect { it.tokenize(':').last() }
 def userLaunch = requestedTasks.any { it in ['runClient', 'runServer'] } &&
         !harnessFlags.any { providers.gradleProperty(it).isPresent() }
@@ -124,6 +124,10 @@ minecraft {
             if (userLaunch) jvmArgs '-Duc.devBootstrap=true'
             if (providers.gradleProperty('ucBootSmoke').isPresent()) {
                 jvmArgs '-Duc.bootSmoke=true'
+            }
+            if (providers.gradleProperty('ucPerfProbe').orNull == 'true') {
+                // a dedicated server that measures the cost of a tick with and without Founders Row (PerfProbe.java), then stops
+                jvmArgs '-Duc.perfProbe=true', '-Xmx2G'
             }
             if (providers.gradleProperty('ucWorldSurvey').orNull == 'true') {
                 jvmArgs '-Duc.worldSurvey=true', '-XX:ActiveProcessorCount=2'
