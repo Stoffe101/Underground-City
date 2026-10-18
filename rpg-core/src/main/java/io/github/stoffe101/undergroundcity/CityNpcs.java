@@ -38,6 +38,20 @@ public final class CityNpcs {
     private static final double TERMINAL_REACH_SQUARED = 144.0;
     private static final java.util.Map<UUID, Integer> LAST_TALK = new java.util.HashMap<>();
 
+    /**
+     * Roles that stay where they were put: a wayside warden has no village bell or bed to be drawn back to, so left alone a vanilla villager strolls off down
+     * the road. The tether is a leash on random walking (not a wall) and a mob does not save it, so it is written in the citizen's tag and restored when they load.
+     */
+    static final java.util.Set<String> TETHERED = java.util.Set.of("warden");
+    static final int TETHER_RADIUS = 6;
+
+    @SubscribeEvent
+    public void joined(net.minecraftforge.event.entity.EntityJoinLevelEvent event) {
+        if (event.getLevel().isClientSide() || !(event.getEntity() instanceof Villager villager) || !isCityNpc(villager)) return;
+        CompoundTag tag = villager.getPersistentData().getCompound(TAG);
+        if (tag.contains("home", Tag.TAG_LONG)) villager.restrictTo(BlockPos.of(tag.getLong("home")), TETHER_RADIUS);
+    }
+
     /** Places one citizen. The floor must be solid with two clear blocks above, exactly as for the supply clerk. */
     static Villager spawn(ServerLevel level, String districtId, int index, DistrictCatalog.Npc npc, BlockPos position, BlockPos terminal) {
         if (!level.getBlockState(position).getCollisionShape(level, position).isEmpty()
@@ -58,6 +72,7 @@ public final class CityNpcs {
         tag.putString("district", districtId);
         tag.putInt("index", index);
         if (terminal != null) tag.putLong("terminal", terminal.asLong());
+        if (TETHERED.contains(npc.role())) { tag.putLong("home", position.asLong()); villager.restrictTo(position, TETHER_RADIUS); }
         villager.getPersistentData().put(TAG, tag);
         villager.moveTo(position.getX() + .5, position.getY(), position.getZ() + .5, 0, 0);
         if (!level.addFreshEntity(villager)) throw new IllegalStateException("Spawn of " + npc.name() + " was rejected");

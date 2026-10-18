@@ -59,8 +59,9 @@ public final class WaysideShelterGameTests {
     public static void theWardenAnswersFromTheRealRoadAndTheRealLaw(GameTestHelper helper) {
         List<CorridorPlan> plans = List.of(road(800));
         String where = WaysideShelters.where(plans, 500, 20);
-        check(where.equals("This is the road between Ironhaven and Valewood. Ironhaven lies west, about 400 blocks (2 min on foot); Valewood lies east, about 400 blocks (2 min on foot)."), "Where: " + where);
+        check(where.equals("This is the road between Ironhaven and Valewood. Ironhaven lies west, about 400 blocks (1.5 min on foot); Valewood lies east, about 400 blocks (1.5 min on foot)."), "Where: " + where);
         check(WaysideShelters.where(plans, 500, 5000).equals("I cannot place this spot on any road I know."), "Far from every road");
+        check(WaysideShelters.where(plans, 140, 20).contains("about 40 blocks (under a minute on foot)") && WaysideShelters.where(List.of(road(2000)), 1000, 20).contains("(3.5 min on foot)"), "Half minutes and short walks: " + WaysideShelters.where(plans, 140, 20));
         String law = WaysideShelters.roadLaw(plans, 500, 20);
         String ironhaven = CityLaws.INSTANCE.find("ironhaven").summary(), valewood = CityLaws.INSTANCE.find("valewood").summary();
         check(law.equals("Ironhaven: " + ironhaven + " Valewood: " + valewood), "Law: " + law);
@@ -168,6 +169,13 @@ public final class WaysideShelterGameTests {
                     check(level.getEntity(id) instanceof Villager warden && warden.hasCustomName() && warden.isInvulnerable()
                         && CityNpcs.definition(warden).map(npc -> npc.role().equals("warden")).orElse(false), "The warden is a named, protected citizen with the warden role");
                     check(Math.abs(level.getEntity(id).getY() - (y + 1)) < 2 && Math.abs(level.getEntity(id).getZ() - (oz - 16)) < 12, "The warden stands in the lot: " + level.getEntity(id).position());
+                    // the warden is on a leash around where they were put, and gets it back when they load again (a mob does not save its own)
+                    Villager keeper = (Villager) level.getEntity(id);
+                    BlockPos post = keeper.getRestrictCenter();
+                    check(keeper.hasRestriction() && keeper.getRestrictRadius() == CityNpcs.TETHER_RADIUS && post.distSqr(keeper.blockPosition()) < 100, "The warden is tethered to the shelter: " + post);
+                    keeper.restrictTo(BlockPos.ZERO, 1);
+                    new CityNpcs().joined(new net.minecraftforge.event.entity.EntityJoinLevelEvent(keeper, level));
+                    check(keeper.getRestrictCenter().equals(post) && keeper.getRestrictRadius() == CityNpcs.TETHER_RADIUS, "The leash is restored when the warden loads: " + keeper.getRestrictCenter());
                     DistrictBuilder.undoNear(level, district, new BlockPos(ox, y + 1, oz - 16));
                     check(DistrictBuilder.count(level, district.id()) == 0 && !level.getBlockState(new BlockPos(ox - 1, y + 1, oz - 16)).is(Blocks.CAMPFIRE), "Removing it restores the ground and takes the warden away");
                 } finally {

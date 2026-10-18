@@ -203,7 +203,8 @@ final class Scenarios {
      * where there is room for a player and nothing solid between the player's eyes and the citizen's head. A desk, a counter or a wall decides which.
      */
     private static Vec3 standingSpot(net.minecraft.world.entity.npc.Villager villager) {
-        double laneX = Vec3.atLowerCornerOf(DistrictBuilder.originOf(level(), "founders_row")).x + 16.5;
+        BlockPos row = DistrictBuilder.originOf(level(), "founders_row"); // away from Founders Row (a wayside shelter) there is no lane: try the east side first
+        double laneX = row == null ? villager.getX() + 1 : Vec3.atLowerCornerOf(row).x + 16.5;
         double toward = Math.signum(laneX - villager.getX()) == 0 ? 1 : Math.signum(laneX - villager.getX());
         double[][] offsets = {{toward * 1.5, 0}, {-toward * 1.5, 0}, {0, 1.5}, {0, -1.5}, {toward * 2.2, 0}, {-toward * 2.2, 0}, {0, 2.2}, {0, -2.2},
             {toward * 1.5, 1.5}, {toward * 1.5, -1.5}, {-toward * 1.5, 1.5}, {-toward * 1.5, -1.5}};
@@ -1254,7 +1255,8 @@ final class Scenarios {
         final BlockPos[] origin = new BlockPos[1];
         talkDistrict = WaysideShelters.DISTRICT;
         // 1. the survey: how many shelters each road should have, and which of them found ground
-        for (String each : System.getProperty("uc.playtest.roads", "ironhaven_valewood,ironhaven_blackwater,valewood_blackwater").split(",")) {
+        String surveyed = System.getProperty("uc.playtest.roads", "ironhaven_valewood,ironhaven_blackwater,valewood_blackwater"); // empty: skip the survey
+        for (String each : surveyed.isBlank() ? new String[0] : surveyed.split(",")) {
             for (int index = 0; index < 4; index++) {
                 final int i = index;
                 final String key = each + "#" + i;
@@ -1286,8 +1288,14 @@ final class Scenarios {
             if (state.done.contains(road + "#0") && !state.where.containsKey(road + "#0")) Playtest.fail("the first shelter was given up: no suitable ground near " + Math.round(ideal[0]) + " m");
             return state.where.containsKey(road + "#0");
         }, 6000);
+        Playtest.queue("noon, clear, no command feedback in the pictures", () -> {
+            Playtest.command("time set 6000"); Playtest.command("gamerule doDaylightCycle false"); Playtest.command("weather clear"); Playtest.command("gamerule sendCommandFeedback false");
+        });
         Playtest.queue("find the shelter and the road beside it", () -> {
             origin[0] = BlockPos.of(PlacedSites.get(level(), PlacedSites.SHELTERS).where.get(road + "#0"));
+            var warden = citizen(null, 0);
+            if (warden == null) { Playtest.fail("the shelter's warden is not in the world"); return; }
+            Playtest.log("the warden stands at " + warden.blockPosition().toShortString() + " (the lot's corner is " + origin[0].toShortString() + ")");
             centre[0] = Vec3.atLowerCornerOf(origin[0]).add(5.5, 0, 4.5);
             var plan = roadPlan(road);
             double[] near = plan.pointAt(plan.project(centre[0].x, centre[0].z).s());
@@ -1312,6 +1320,11 @@ final class Scenarios {
         Playtest.wait("settle", 60);
         Playtest.queue("screenshot under the roof", () -> Playtest.screenshotNextFrame("uc-shelter-inside"));
         Playtest.wait("frame", 10);
+        Playtest.queue("where the warden stands now", () -> {
+            var warden = citizen(null, 0);
+            if (warden != null) Playtest.log("the warden is now at " + warden.blockPosition().toShortString() + ", " + Math.round(Math.hypot(warden.getX() - centre[0].x, warden.getZ() - centre[0].z)) + " blocks from the pavilion's middle");
+        });
+        screensStayOpenFromNow();
         talkTo("the road warden", 0, "dialogue", "uc-shelter-dialogue");
         chooseOption("Where am I on the road?", 0, "dialogue", "uc-shelter-where");
         chooseOption("What does the law say at either end?", 2, "dialogue", "uc-shelter-law");

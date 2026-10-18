@@ -130,8 +130,11 @@ public final class WaysideShelters {
             + describe(toStart) + "; " + city(ends[1]) + " lies " + forward.getName() + ", " + describe(toEnd) + ".";
     }
 
+    /** "about 380 blocks (1.5 min on foot)": the signs round to whole minutes, a person standing in front of the warden is told the half minute too. */
     private static String describe(double metres) {
-        return "about " + String.format(Locale.ROOT, "%,d", Math.round(metres / 10.0) * 10) + " blocks (" + RoadMarkers.minutes(metres) + " min on foot)";
+        long halves = Math.round(metres / RoadMarkers.WALK / 30.0);
+        String time = halves <= 1 ? "under a minute" : (halves % 2 == 0 ? String.valueOf(halves / 2) : (halves / 2) + ".5") + " min";
+        return "about " + String.format(Locale.ROOT, "%,d", Math.round(metres / 10.0) * 10) + " blocks (" + time + " on foot)";
     }
 
     /** What the warden says when asked about the law at either end: the real summaries from the city law data. */
@@ -202,6 +205,7 @@ public final class WaysideShelters {
             double[] at = plan.pointAt(ideal.get(i));
             if (Math.hypot(at[0] - px, at[1] - pz) > ACTIVATE) continue;
             if (!RoadMarkers.areaLoaded(level, at[0], at[1], loadedRadius)) continue; // not yet: nothing is decided until the whole search area is in the world
+            long started = System.nanoTime();
             BlockPos placed = null;
             int tried = 0;
             for (Site site : sites(ground(level, plans), plan, ideal.get(i), width, depth)) {
@@ -218,9 +222,9 @@ public final class WaysideShelters {
             if (placed != null) {
                 state.where.put(key, placed.asLong());
                 built++;
-                LOGGER.info("[UC] wayside shelter {} built at {}", key, placed.toShortString());
+                LOGGER.info("[UC] wayside shelter {} built at {} ({} ms to search for the site and build it)", key, placed.toShortString(), (System.nanoTime() - started) / 1_000_000L);
             } else {
-                LOGGER.info("[UC] wayside shelter {}: no level, dry, unbuilt ground within {} blocks of its spot; given up", key, SEARCH);
+                LOGGER.info("[UC] wayside shelter {}: no level, dry, unbuilt ground within {} blocks of its spot; given up ({} ms)", key, SEARCH, (System.nanoTime() - started) / 1_000_000L);
             }
             state.done.add(key);
             state.setDirty();
