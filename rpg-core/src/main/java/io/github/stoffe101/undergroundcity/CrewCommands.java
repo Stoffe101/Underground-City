@@ -35,7 +35,7 @@ public final class CrewCommands {
             if (ledger == null) { ctx.getSource().sendFailure(Component.literal("Crew storage is unavailable.")); return 0; }
             for (Crew c : ledger.allCrews()) ctx.getSource().sendSuccess(() -> Component.literal(CrewService.describe(c)), false);
             ctx.getSource().sendSuccess(() -> Component.literal(ledger.allCrews().size() + " Crews, " + ledger.allResidences().size() + " homes, " + ledger.totalHeld()
-                + " credits held by the ledger, " + ledger.allPending().size() + " transfers unresolved"), false);
+                + " credits held by the ledger, " + ledger.allPending().size() + " transfers and " + ledger.allHolds().size() + " purchase holds unresolved"), false);
             return ledger.allCrews().size();
         }));
         op.then(Commands.literal("pending").executes(ctx -> {
@@ -43,7 +43,9 @@ public final class CrewCommands {
             if (ledger == null) return 0;
             ledger.allPending().values().forEach(p -> ctx.getSource().sendSuccess(() -> Component.literal(p.player() + " " + p.kind() + " " + p.amount() + " credits, wallet before "
                 + p.before() + " after " + p.after() + " (tx " + p.tx() + ")"), false));
-            return ledger.allPending().size();
+            ledger.allHolds().forEach(h -> ctx.getSource().sendSuccess(() -> Component.literal(h.player() + " PURCHASE HOLD " + h.amount() + " credits (" + h.note() + ", tx " + h.tx()
+                + "); decided from the work-order journal at the next start, login or purchase"), false));
+            return ledger.allPending().size() + ledger.allHolds().size();
         }));
         // An unresolved transfer is one whose wallet matches neither side. An operator who has looked at the wallet decides it.
         op.then(Commands.literal("resolve").requires(source -> source.hasPermission(3))
