@@ -15,6 +15,7 @@ final class Scenarios {
             case "walk" -> walk();
             case "row" -> row();
             case "posts" -> posts();
+            case "markers" -> markers();
             case "tracker" -> tracker();
             case "trace" -> trace();
             case "car" -> car();
@@ -1176,6 +1177,59 @@ final class Scenarios {
      * The six checkpoint posts: place them beside the roads, stand at one, register and carry a pistol into the zone, and let the guard search
      * (the die is skipped by /uc_dev search; its wording and effects are what is shown).
      */
+    /**
+     * The waymarkers (D-078): arrive on a road a little before its first marker, wait for the server to build the post, then photograph its front (the face a
+     * traveller heading for the far city reads), its back, and the road with the post in the distance.
+     */
+    private static void markers() {
+        final String road = System.getProperty("uc.playtest.route", "ironhaven_valewood");
+        final double[] ideal = new double[1];
+        final Vec3[] post = new Vec3[1], along = new Vec3[1];
+        arriveOnRoadLater(road, () -> {
+            var plan = roadPlan(road);
+            var all = RoadMarkers.positions(plan, RoadMarkers.SPACING, RoadMarkers.EDGE);
+            if (all.isEmpty()) { Playtest.fail("the road has no marker positions"); return 100; }
+            ideal[0] = all.get(0);
+            return (int) Math.max(0, ideal[0] - 70);
+        }, "creative");
+        Playtest.queue("the first post is built", () -> { }, () -> RoadMarkers.State.get(level()).where.containsKey(road + "#0"), 6000);
+        Playtest.queue("find the post and the direction of the road", () -> {
+            var plan = roadPlan(road);
+            BlockPos base = BlockPos.of(RoadMarkers.State.get(level()).where.get(road + "#0"));
+            double[] at = plan.pointAt(ideal[0]), ahead = plan.pointAt(ideal[0] + 3), behind = plan.pointAt(ideal[0] - 3);
+            double tx = ahead[0] - behind[0], tz = ahead[1] - behind[1], length = Math.hypot(tx, tz);
+            along[0] = new Vec3(tx / length, 0, tz / length);
+            post[0] = Vec3.atCenterOf(base);
+            Playtest.log("post at " + base.toShortString() + " for " + road + " at " + Math.round(ideal[0]) + " m, road direction " + along[0]);
+            var sign = level().getBlockEntity(base.above(2));
+            if (!(sign instanceof net.minecraft.world.level.block.entity.SignBlockEntity entity)) { Playtest.fail("no sign on the post"); return; }
+            Playtest.log("front: " + entity.getFrontText().getMessage(0, false).getString() + " | " + entity.getFrontText().getMessage(1, false).getString() + " | " + entity.getFrontText().getMessage(2, false).getString());
+            Playtest.log("back: " + entity.getBackText().getMessage(0, false).getString() + " | " + entity.getBackText().getMessage(1, false).getString() + " | " + entity.getBackText().getMessage(2, false).getString());
+            // six blocks back along the road and two toward it, looking at the sign
+            Vec3 stand = post[0].subtract(along[0].scale(6)).add(-along[0].z * 2.5, -0.4, along[0].x * 2.5);
+            standLooking(stand, post[0].add(0, 2.1, 0));
+        });
+        Playtest.queue("let the chunks and the post's meshes arrive", () -> { }, () -> groundBelowPlayer(), 6000);
+        waitForMeshes(1500);
+        Playtest.wait("settle", 120);
+        Playtest.queue("screenshot of the front of the post", () -> Playtest.screenshotNextFrame("uc-marker-front"));
+        Playtest.wait("frame", 10);
+        Playtest.queue("six blocks ahead, looking back at the post", () -> {
+            Vec3 stand = post[0].add(along[0].scale(6)).add(-along[0].z * 2.5, -0.4, along[0].x * 2.5);
+            standLooking(stand, post[0].add(0, 2.1, 0));
+        });
+        Playtest.wait("settle", 60);
+        Playtest.queue("screenshot of the back of the post", () -> Playtest.screenshotNextFrame("uc-marker-back"));
+        Playtest.wait("frame", 10);
+        Playtest.queue("thirty blocks back, on the road, looking along it", () -> {
+            Vec3 stand = post[0].subtract(along[0].scale(30)).add(-along[0].z * 6.6, 0.1, along[0].x * 6.6);
+            standLooking(stand.add(0, 0, 0), post[0].add(along[0].scale(10)).add(-along[0].z * 6.6, 1.0, along[0].x * 6.6));
+        });
+        Playtest.wait("settle", 90);
+        Playtest.queue("screenshot of the road with the post", () -> Playtest.screenshotNextFrame("uc-marker-road"));
+        Playtest.wait("frame", 10);
+    }
+
     private static void posts() {
         Playtest.queue("creative mode, then place the posts", () -> {
             Playtest.command("gamemode creative");

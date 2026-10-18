@@ -682,6 +682,8 @@ public final class UndergroundGameTests {
     public static void onlyAFarmerWhoLearnedRestrictedCultivationCanPlantACutting(GameTestHelper helper) {
         var level = helper.getLevel();
         BlockPos ground = helper.absolutePos(new BlockPos(4, 1, 4));
+        // The test cell may sit inside natural terrain (the grid of tests moves when tests are added): clear the room the plant needs first.
+        for (int dx = -1; dx <= 2; dx++) for (int dz = -1; dz <= 1; dz++) for (int dy = 1; dy <= 3; dy++) level.setBlockAndUpdate(ground.offset(dx, dy, dz), Blocks.AIR.defaultBlockState());
         level.setBlockAndUpdate(ground, Blocks.FARMLAND.defaultBlockState());
         level.setBlockAndUpdate(ground.east(), Blocks.GLOWSTONE.defaultBlockState());
         // A crop only survives in light 8 or more and the light engine runs between ticks, so wait for the lamp. A test
