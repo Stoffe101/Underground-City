@@ -133,6 +133,19 @@ public final class WaysideShelterGameTests {
         helper.succeed();
     }
 
+    @GameTest(template = "empty")
+    public static void theOperatorCommandListsTheStopsAndRefusesAnOrdinaryPlayer(GameTestHelper helper) throws Exception {
+        var server = helper.getLevel().getServer();
+        var dispatcher = server.getCommands().getDispatcher();
+        // a console-level source runs it (it answers with the number of lines: none where the test world has no generated roads); a source without permission is refused
+        dispatcher.execute("uc_shelters list", server.createCommandSourceStack());
+        boolean refused = false;
+        try { dispatcher.execute("uc_shelters list", server.createCommandSourceStack().withPermission(0)); }
+        catch (com.mojang.brigadier.exceptions.CommandSyntaxException expected) { refused = true; }
+        check(refused, "A source without operator permission cannot list the stops");
+        helper.succeed();
+    }
+
     @GameTest(template = "empty", batch = "uc_shelter", timeoutTicks = 600)
     public static void aFrozenSeaIsNotGroundForAShelter(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
