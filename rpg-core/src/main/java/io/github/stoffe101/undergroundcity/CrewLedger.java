@@ -879,6 +879,18 @@ public final class CrewLedger {
         return shell;
     }
 
+    /** True when any registered home (interior or shell) lies within {@code radius} blocks of {@code pos}: a cheap test before the guard does heavier work (pistons). */
+    public boolean residenceNear(String dimension, BlockPos pos, int radius) {
+        if (chunkIndex.isEmpty()) return false;
+        for (int cx = (pos.getX() - radius) >> 4; cx <= (pos.getX() + radius) >> 4; cx++) {
+            for (int cz = (pos.getZ() - radius) >> 4; cz <= (pos.getZ() + radius) >> 4; cz++) {
+                List<Residence> list = chunkIndex.get(chunkKey(cx, cz));
+                if (list != null) for (Residence r : list) if (r.dimension.equals(dimension)) return true;
+            }
+        }
+        return false;
+    }
+
     private static long chunkKey(int cx, int cz) { return ((long) cx << 32) ^ (cz & 0xffffffffL); }
 
     private void reindex() {

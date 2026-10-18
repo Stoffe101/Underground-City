@@ -81,12 +81,14 @@ public final class SurvivalGameTests {
                 // the bag must really have been used, or "no respawn point" would prove nothing
                 check(bagger.isSleeping(), "The player did not lie down in the Comforts sleeping bag, so its effect on the respawn point cannot be judged");
                 check(bagger.getRespawnPosition() == null, "A Comforts sleeping bag set the respawn point to " + bagger.getRespawnPosition());
+                helper.succeed();
+            } catch (Throwable failure) {
+                helper.fail(String.valueOf(failure.getMessage())); // an AssertionError thrown from a delayed callback would otherwise take the whole test server down
             } finally {
                 level.setDayTime(before);
                 vanilla.stopSleeping();
                 bagger.stopSleeping();
             }
-            helper.succeed();
         });
     }
 

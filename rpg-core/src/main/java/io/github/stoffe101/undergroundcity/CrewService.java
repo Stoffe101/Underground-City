@@ -435,7 +435,7 @@ public final class CrewService {
         Residence r = ledger.residenceAt(player.level().dimension().location().toString(), pos);
         if (r == null || !r.insideInterior(r.dimension, pos)) throw new IllegalStateException("Look at a container inside your home.");
         if (!ResidenceGuard.allowed(ledger, r, player.getUUID(), r.dimension, pos, ResidenceGuard.Act.CONTAINER)) throw new IllegalStateException("You cannot use that container.");
-        if (!(player.level().getBlockEntity(pos) instanceof Container) || player.level().getBlockEntity(pos) instanceof PropertyCacheBlockEntity) {
+        if (!ResidenceGuard.isContainer(player.level().getBlockEntity(pos))) {
             throw new IllegalStateException("Only chests, barrels and similar containers can be made private.");
         }
         ledger.claimContainer(player.getUUID(), r.id, pos);
