@@ -16,7 +16,7 @@ import org.slf4j.Logger;
  */
 public final class DevBootstrap {
     private static final Logger LOGGER = LogUtils.getLogger();
-    static final String DISTRICT = "founders_row", RANGE = "firing_range";
+    static final String DISTRICT = "founders_row", RANGE = "firing_range", FLATS = "row_flats";
     static final int SEARCH_RADIUS = 160, MAX_RELIEF = 3;
 
     @SubscribeEvent
@@ -56,25 +56,39 @@ public final class DevBootstrap {
      */
     static void placeRange(ServerLevel level, BlockPos rowOrigin) {
         DistrictCatalog.District range = DistrictCatalog.INSTANCE.find(RANGE);
-        if (range == null || DistrictBuilder.isBuilt(level, RANGE)) return;
-        int width = range.max().getX() - range.min().getX() + 1, depth = range.max().getZ() - range.min().getZ() + 1;
-        BlockPos origin = rowOrigin.offset(-width, 0, 4);
+        if (range == null) return;
+        int width = range.max().getX() - range.min().getX() + 1;
+        placeBeside(level, range, rowOrigin.offset(-width, 0, 4), "firing range", "west");
+    }
+
+    /** The Row Flats go east of the Row: the first homes a player or a Crew can lease. Skipped, with a log line, on ground that is not level enough. */
+    static void placeFlats(ServerLevel level, BlockPos rowOrigin) {
+        DistrictCatalog.District flats = DistrictCatalog.INSTANCE.find(FLATS);
+        DistrictCatalog.District row = DistrictCatalog.INSTANCE.find(DISTRICT);
+        if (flats == null || row == null) return;
+        int rowWidth = row.max().getX() - row.min().getX() + 1;
+        placeBeside(level, flats, rowOrigin.offset(rowWidth + 3, 0, 4), "Row Flats", "east");
+    }
+
+    private static void placeBeside(ServerLevel level, DistrictCatalog.District district, BlockPos origin, String what, String side) {
+        if (DistrictBuilder.isBuilt(level, district.id())) return;
+        int width = district.max().getX() - district.min().getX() + 1, depth = district.max().getZ() - district.min().getZ() + 1;
         var ground = ground(level);
         for (int x = 0; x < width; x += 8) for (int z = 0; z < depth; z += 7) {
             int wx = origin.getX() + x, wz = origin.getZ() + z;
             if (ground.wet(wx, wz) || Math.abs(ground.height(wx, wz) - origin.getY()) > MAX_RELIEF + 2) {
-                LOGGER.info("[UC-DEV] the firing range was not placed: the ground west of the Row is not level and dry enough at {} {}", wx, wz);
+                LOGGER.info("[UC-DEV] the {} was not placed: the ground {} of the Row is not level and dry enough at {} {}", what, side, wx, wz);
                 return;
             }
         }
         try {
-            for (int cx = (origin.getX() + range.min().getX()) >> 4; cx <= (origin.getX() + range.max().getX()) >> 4; cx++) {
-                for (int cz = (origin.getZ() + range.min().getZ()) >> 4; cz <= (origin.getZ() + range.max().getZ()) >> 4; cz++) level.getChunk(cx, cz);
+            for (int cx = (origin.getX() + district.min().getX()) >> 4; cx <= (origin.getX() + district.max().getX()) >> 4; cx++) {
+                for (int cz = (origin.getZ() + district.min().getZ()) >> 4; cz <= (origin.getZ() + district.max().getZ()) >> 4; cz++) level.getChunk(cx, cz);
             }
-            DistrictBuilder.build(level, range, origin);
-            LOGGER.info("[UC-DEV] firing range built at {}", origin.toShortString());
+            DistrictBuilder.build(level, district, origin);
+            LOGGER.info("[UC-DEV] {} built at {}", what, origin.toShortString());
         } catch (RuntimeException error) {
-            LOGGER.warn("[UC-DEV] the firing range could not be placed: {}", error.toString());
+            LOGGER.warn("[UC-DEV] the {} could not be placed: {}", what, error.toString());
         }
     }
 
@@ -90,6 +104,7 @@ public final class DevBootstrap {
         }
         DistrictBuilder.build(level, district, origin);
         placeRange(level, origin);
+        placeFlats(level, origin);
         // The gate is the middle of the lane's far (south) end; stand a few blocks outside it, facing the lane.
         BlockPos gate = origin.offset(district.min().getX() + width / 2, 0, depth + 2);
         level.setDefaultSpawnPos(gate, 180.0f);

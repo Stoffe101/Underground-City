@@ -1,0 +1,1092 @@
+{
+ "schema_version": 1,
+ "id": "row_flats",
+ "title": "Row Flats",
+ "note": "Built east of Founders Row by the dev launch (or by hand: /uc_district build row_flats); origin is the north-west corner, extending east and south. Three homes the Crew screen can lease.",
+ "size": [
+  24,
+  10,
+  15
+ ],
+ "ops": [
+  {
+   "op": "fill",
+   "from": [
+    0,
+    -4,
+    0
+   ],
+   "to": [
+    23,
+    -2,
+    14
+   ],
+   "block": "minecraft:stone"
+  },
+  {
+   "op": "fill",
+   "from": [
+    0,
+    -1,
+    0
+   ],
+   "to": [
+    23,
+    -1,
+    14
+   ],
+   "block": "minecraft:grass_block"
+  },
+  {
+   "op": "fill",
+   "from": [
+    0,
+    0,
+    0
+   ],
+   "to": [
+    23,
+    9,
+    14
+   ],
+   "block": "minecraft:air"
+  },
+  {
+   "op": "fill",
+   "from": [
+    0,
+    -1,
+    9
+   ],
+   "to": [
+    23,
+    -1,
+    12
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    1,
+    -1,
+    0
+   ],
+   "to": [
+    21,
+    -1,
+    8
+   ],
+   "block": "minecraft:oak_planks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    1,
+    0,
+    0
+   ],
+   "to": [
+    21,
+    3,
+    0
+   ],
+   "block": "minecraft:bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    1,
+    0,
+    8
+   ],
+   "to": [
+    21,
+    3,
+    8
+   ],
+   "block": "minecraft:bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    1,
+    4,
+    0
+   ],
+   "to": [
+    21,
+    4,
+    8
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    1,
+    5,
+    0
+   ],
+   "to": [
+    21,
+    5,
+    0
+   ],
+   "block": "minecraft:stone_brick_wall"
+  },
+  {
+   "op": "fill",
+   "from": [
+    1,
+    5,
+    8
+   ],
+   "to": [
+    21,
+    5,
+    8
+   ],
+   "block": "minecraft:stone_brick_wall"
+  },
+  {
+   "op": "fill",
+   "from": [
+    1,
+    5,
+    1
+   ],
+   "to": [
+    1,
+    5,
+    7
+   ],
+   "block": "minecraft:stone_brick_wall"
+  },
+  {
+   "op": "fill",
+   "from": [
+    21,
+    5,
+    1
+   ],
+   "to": [
+    21,
+    5,
+    7
+   ],
+   "block": "minecraft:stone_brick_wall"
+  },
+  {
+   "op": "fill",
+   "from": [
+    1,
+    0,
+    0
+   ],
+   "to": [
+    1,
+    3,
+    8
+   ],
+   "block": "minecraft:bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    7,
+    0,
+    0
+   ],
+   "to": [
+    7,
+    3,
+    8
+   ],
+   "block": "minecraft:bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    13,
+    0,
+    0
+   ],
+   "to": [
+    13,
+    3,
+    8
+   ],
+   "block": "minecraft:bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    21,
+    0,
+    0
+   ],
+   "to": [
+    21,
+    3,
+    8
+   ],
+   "block": "minecraft:bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    1,
+    0,
+    0
+   ],
+   "to": [
+    1,
+    0,
+    8
+   ],
+   "block": "minecraft:cobblestone"
+  },
+  {
+   "op": "fill",
+   "from": [
+    7,
+    0,
+    0
+   ],
+   "to": [
+    7,
+    0,
+    8
+   ],
+   "block": "minecraft:cobblestone"
+  },
+  {
+   "op": "fill",
+   "from": [
+    13,
+    0,
+    0
+   ],
+   "to": [
+    13,
+    0,
+    8
+   ],
+   "block": "minecraft:cobblestone"
+  },
+  {
+   "op": "fill",
+   "from": [
+    21,
+    0,
+    0
+   ],
+   "to": [
+    21,
+    0,
+    8
+   ],
+   "block": "minecraft:cobblestone"
+  },
+  {
+   "op": "fill",
+   "from": [
+    4,
+    0,
+    8
+   ],
+   "to": [
+    4,
+    1,
+    8
+   ],
+   "block": "minecraft:air"
+  },
+  {
+   "op": "block",
+   "at": [
+    4,
+    0,
+    8
+   ],
+   "block": "minecraft:oak_door[facing=south,half=lower,hinge=left,open=false]"
+  },
+  {
+   "op": "block",
+   "at": [
+    4,
+    1,
+    8
+   ],
+   "block": "minecraft:oak_door[facing=south,half=upper,hinge=left,open=false]"
+  },
+  {
+   "op": "block",
+   "at": [
+    4,
+    1,
+    0
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    3,
+    1,
+    8
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    5,
+    1,
+    8
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    4,
+    3,
+    4
+   ],
+   "block": "minecraft:lantern[hanging=true]"
+  },
+  {
+   "op": "sign",
+   "at": [
+    4,
+    2,
+    9
+   ],
+   "block": "minecraft:spruce_wall_sign[facing=south]",
+   "lines": [
+    "ROW FLAT 1",
+    "For lease",
+    "Press K nearby"
+   ],
+   "color": "black",
+   "glow": false
+  },
+  {
+   "op": "block",
+   "at": [
+    2,
+    0,
+    9
+   ],
+   "block": "minecraft:potted_fern"
+  },
+  {
+   "op": "block",
+   "at": [
+    6,
+    0,
+    9
+   ],
+   "block": "minecraft:potted_azalea_bush"
+  },
+  {
+   "op": "block",
+   "at": [
+    2,
+    0,
+    3
+   ],
+   "block": "minecraft:red_bed[facing=north,part=foot]"
+  },
+  {
+   "op": "block",
+   "at": [
+    2,
+    0,
+    2
+   ],
+   "block": "minecraft:red_bed[facing=north,part=head]"
+  },
+  {
+   "op": "block",
+   "at": [
+    6,
+    0,
+    1
+   ],
+   "block": "minecraft:chest[facing=south,type=single]"
+  },
+  {
+   "op": "block",
+   "at": [
+    5,
+    0,
+    1
+   ],
+   "block": "minecraft:crafting_table"
+  },
+  {
+   "op": "block",
+   "at": [
+    4,
+    0,
+    1
+   ],
+   "block": "minecraft:furnace[facing=south,lit=false]"
+  },
+  {
+   "op": "terminal",
+   "at": [
+    3,
+    0,
+    1
+   ],
+   "facing": "south"
+  },
+  {
+   "op": "fill",
+   "from": [
+    3,
+    0,
+    4
+   ],
+   "to": [
+    5,
+    0,
+    6
+   ],
+   "block": "minecraft:red_carpet"
+  },
+  {
+   "op": "block",
+   "at": [
+    4,
+    0,
+    5
+   ],
+   "block": "minecraft:spruce_fence"
+  },
+  {
+   "op": "block",
+   "at": [
+    4,
+    1,
+    5
+   ],
+   "block": "minecraft:spruce_slab[type=bottom]"
+  },
+  {
+   "op": "block",
+   "at": [
+    3,
+    0,
+    5
+   ],
+   "block": "minecraft:spruce_stairs[facing=east,half=bottom]"
+  },
+  {
+   "op": "block",
+   "at": [
+    5,
+    0,
+    5
+   ],
+   "block": "minecraft:spruce_stairs[facing=west,half=bottom]"
+  },
+  {
+   "op": "residence",
+   "id": "flat_1",
+   "title": "Row Flat 1",
+   "kind": "flat",
+   "price": 120,
+   "starter_price": 60,
+   "from": [
+    2,
+    0,
+    1
+   ],
+   "to": [
+    6,
+    3,
+    7
+   ]
+  },
+  {
+   "op": "fill",
+   "from": [
+    10,
+    0,
+    8
+   ],
+   "to": [
+    10,
+    1,
+    8
+   ],
+   "block": "minecraft:air"
+  },
+  {
+   "op": "block",
+   "at": [
+    10,
+    0,
+    8
+   ],
+   "block": "minecraft:oak_door[facing=south,half=lower,hinge=left,open=false]"
+  },
+  {
+   "op": "block",
+   "at": [
+    10,
+    1,
+    8
+   ],
+   "block": "minecraft:oak_door[facing=south,half=upper,hinge=left,open=false]"
+  },
+  {
+   "op": "block",
+   "at": [
+    10,
+    1,
+    0
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    9,
+    1,
+    8
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    11,
+    1,
+    8
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    10,
+    3,
+    4
+   ],
+   "block": "minecraft:lantern[hanging=true]"
+  },
+  {
+   "op": "sign",
+   "at": [
+    10,
+    2,
+    9
+   ],
+   "block": "minecraft:spruce_wall_sign[facing=south]",
+   "lines": [
+    "ROW FLAT 2",
+    "For lease",
+    "Press K nearby"
+   ],
+   "color": "black",
+   "glow": false
+  },
+  {
+   "op": "block",
+   "at": [
+    8,
+    0,
+    9
+   ],
+   "block": "minecraft:potted_fern"
+  },
+  {
+   "op": "block",
+   "at": [
+    12,
+    0,
+    9
+   ],
+   "block": "minecraft:potted_azalea_bush"
+  },
+  {
+   "op": "block",
+   "at": [
+    8,
+    0,
+    3
+   ],
+   "block": "minecraft:blue_bed[facing=north,part=foot]"
+  },
+  {
+   "op": "block",
+   "at": [
+    8,
+    0,
+    2
+   ],
+   "block": "minecraft:blue_bed[facing=north,part=head]"
+  },
+  {
+   "op": "block",
+   "at": [
+    12,
+    0,
+    1
+   ],
+   "block": "minecraft:chest[facing=south,type=single]"
+  },
+  {
+   "op": "block",
+   "at": [
+    11,
+    0,
+    1
+   ],
+   "block": "minecraft:crafting_table"
+  },
+  {
+   "op": "block",
+   "at": [
+    10,
+    0,
+    1
+   ],
+   "block": "minecraft:furnace[facing=south,lit=false]"
+  },
+  {
+   "op": "terminal",
+   "at": [
+    9,
+    0,
+    1
+   ],
+   "facing": "south"
+  },
+  {
+   "op": "fill",
+   "from": [
+    9,
+    0,
+    4
+   ],
+   "to": [
+    11,
+    0,
+    6
+   ],
+   "block": "minecraft:red_carpet"
+  },
+  {
+   "op": "block",
+   "at": [
+    10,
+    0,
+    5
+   ],
+   "block": "minecraft:spruce_fence"
+  },
+  {
+   "op": "block",
+   "at": [
+    10,
+    1,
+    5
+   ],
+   "block": "minecraft:spruce_slab[type=bottom]"
+  },
+  {
+   "op": "block",
+   "at": [
+    9,
+    0,
+    5
+   ],
+   "block": "minecraft:spruce_stairs[facing=east,half=bottom]"
+  },
+  {
+   "op": "block",
+   "at": [
+    11,
+    0,
+    5
+   ],
+   "block": "minecraft:spruce_stairs[facing=west,half=bottom]"
+  },
+  {
+   "op": "residence",
+   "id": "flat_2",
+   "title": "Row Flat 2",
+   "kind": "flat",
+   "price": 120,
+   "starter_price": 60,
+   "from": [
+    8,
+    0,
+    1
+   ],
+   "to": [
+    12,
+    3,
+    7
+   ]
+  },
+  {
+   "op": "fill",
+   "from": [
+    17,
+    0,
+    8
+   ],
+   "to": [
+    17,
+    1,
+    8
+   ],
+   "block": "minecraft:air"
+  },
+  {
+   "op": "block",
+   "at": [
+    17,
+    0,
+    8
+   ],
+   "block": "minecraft:oak_door[facing=south,half=lower,hinge=left,open=false]"
+  },
+  {
+   "op": "block",
+   "at": [
+    17,
+    1,
+    8
+   ],
+   "block": "minecraft:oak_door[facing=south,half=upper,hinge=left,open=false]"
+  },
+  {
+   "op": "block",
+   "at": [
+    17,
+    1,
+    0
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    16,
+    1,
+    8
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    18,
+    1,
+    8
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    17,
+    3,
+    4
+   ],
+   "block": "minecraft:lantern[hanging=true]"
+  },
+  {
+   "op": "sign",
+   "at": [
+    17,
+    2,
+    9
+   ],
+   "block": "minecraft:spruce_wall_sign[facing=south]",
+   "lines": [
+    "ROW HOUSE",
+    "For lease",
+    "Press K nearby"
+   ],
+   "color": "black",
+   "glow": false
+  },
+  {
+   "op": "block",
+   "at": [
+    15,
+    0,
+    9
+   ],
+   "block": "minecraft:potted_fern"
+  },
+  {
+   "op": "block",
+   "at": [
+    19,
+    0,
+    9
+   ],
+   "block": "minecraft:potted_azalea_bush"
+  },
+  {
+   "op": "block",
+   "at": [
+    14,
+    0,
+    3
+   ],
+   "block": "minecraft:green_bed[facing=north,part=foot]"
+  },
+  {
+   "op": "block",
+   "at": [
+    14,
+    0,
+    2
+   ],
+   "block": "minecraft:green_bed[facing=north,part=head]"
+  },
+  {
+   "op": "block",
+   "at": [
+    20,
+    0,
+    1
+   ],
+   "block": "minecraft:chest[facing=south,type=single]"
+  },
+  {
+   "op": "block",
+   "at": [
+    19,
+    0,
+    1
+   ],
+   "block": "minecraft:crafting_table"
+  },
+  {
+   "op": "block",
+   "at": [
+    18,
+    0,
+    1
+   ],
+   "block": "minecraft:furnace[facing=south,lit=false]"
+  },
+  {
+   "op": "terminal",
+   "at": [
+    15,
+    0,
+    1
+   ],
+   "facing": "south"
+  },
+  {
+   "op": "fill",
+   "from": [
+    15,
+    0,
+    4
+   ],
+   "to": [
+    19,
+    0,
+    6
+   ],
+   "block": "minecraft:green_carpet"
+  },
+  {
+   "op": "block",
+   "at": [
+    17,
+    0,
+    5
+   ],
+   "block": "minecraft:spruce_fence"
+  },
+  {
+   "op": "block",
+   "at": [
+    17,
+    1,
+    5
+   ],
+   "block": "minecraft:spruce_slab[type=bottom]"
+  },
+  {
+   "op": "block",
+   "at": [
+    16,
+    0,
+    5
+   ],
+   "block": "minecraft:spruce_stairs[facing=east,half=bottom]"
+  },
+  {
+   "op": "block",
+   "at": [
+    18,
+    0,
+    5
+   ],
+   "block": "minecraft:spruce_stairs[facing=west,half=bottom]"
+  },
+  {
+   "op": "residence",
+   "id": "row_house",
+   "title": "Row House",
+   "kind": "house",
+   "price": 260,
+   "starter_price": 140,
+   "from": [
+    14,
+    0,
+    1
+   ],
+   "to": [
+    20,
+    3,
+    7
+   ]
+  },
+  {
+   "op": "block",
+   "at": [
+    16,
+    0,
+    3
+   ],
+   "block": "minecraft:green_bed[facing=north,part=foot]"
+  },
+  {
+   "op": "block",
+   "at": [
+    16,
+    0,
+    2
+   ],
+   "block": "minecraft:green_bed[facing=north,part=head]"
+  },
+  {
+   "op": "block",
+   "at": [
+    20,
+    0,
+    2
+   ],
+   "block": "minecraft:chest[facing=south,type=single]"
+  },
+  {
+   "op": "block",
+   "at": [
+    17,
+    0,
+    1
+   ],
+   "block": "minecraft:smithing_table"
+  },
+  {
+   "op": "block",
+   "at": [
+    16,
+    0,
+    1
+   ],
+   "block": "minecraft:anvil[facing=east]"
+  },
+  {
+   "op": "block",
+   "at": [
+    20,
+    0,
+    7
+   ],
+   "block": "minecraft:grindstone[face=floor,facing=north]"
+  },
+  {
+   "op": "block",
+   "at": [
+    19,
+    0,
+    7
+   ],
+   "block": "minecraft:brewing_stand"
+  },
+  {
+   "op": "fill",
+   "from": [
+    0,
+    0,
+    10
+   ],
+   "to": [
+    0,
+    2,
+    10
+   ],
+   "block": "minecraft:stone_brick_wall"
+  },
+  {
+   "op": "block",
+   "at": [
+    0,
+    3,
+    10
+   ],
+   "block": "minecraft:lantern[hanging=false]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    22,
+    0,
+    10
+   ],
+   "to": [
+    22,
+    2,
+    10
+   ],
+   "block": "minecraft:stone_brick_wall"
+  },
+  {
+   "op": "block",
+   "at": [
+    22,
+    3,
+    10
+   ],
+   "block": "minecraft:lantern[hanging=false]"
+  },
+  {
+   "op": "block",
+   "at": [
+    11,
+    0,
+    11
+   ],
+   "block": "minecraft:spruce_stairs[facing=north,half=bottom]"
+  },
+  {
+   "op": "block",
+   "at": [
+    12,
+    0,
+    11
+   ],
+   "block": "minecraft:spruce_stairs[facing=north,half=bottom]"
+  }
+ ]
+}

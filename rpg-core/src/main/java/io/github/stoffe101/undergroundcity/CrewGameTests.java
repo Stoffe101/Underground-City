@@ -511,6 +511,65 @@ public final class CrewGameTests {
         helper.succeed();
     }
 
+    /** Fully shared finances, end to end with the real wallet: work-order pay goes into the bank, an exchange purchase comes out of it, only while everyone agrees. */
+    @GameTest(template = "empty")
+    public static void fullySharedFinancesSweepWorkOrderPayAndPayExchangePurchasesFromTheBank(GameTestHelper helper) throws Exception {
+        if (!QShopEconomy.available()) { helper.succeed(); return; }
+        try (Rig rig = new Rig(helper)) {
+            CrewService.wallet = rig.previousWallet; // the live provider
+            FakePlayer a = player(helper, "uc_sha", "farmer"), b = player(helper, "uc_shb", "smith");
+            Crew crew = rig.ledger.create(a.getUUID(), "uc_sha", "Shared Crew");
+            rig.ledger.accept(rig.ledger.invite(a.getUUID(), b.getUUID(), "uc_shb", "uc_sha").id(), b.getUUID(), "uc_shb");
+            QShopEconomy.applyBalance(a, 0); QShopEconomy.applyBalance(b, 10);
+            Path journal = rig.server.getWorldPath(LevelResource.ROOT).resolve("uc-test-journals/shared-" + UUID.randomUUID() + ".dat");
+            WorkOrderLedger orders = new WorkOrderLedger(journal);
+            // 1. the recommended default: pay goes to the wallet, the bank is untouched
+            UUID harvest = orders.accept(a.getUUID(), WorkOrderCatalog.INSTANCE.find("underground_city:harvest"));
+            a.getInventory().setItem(0, new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.WHEAT, 16));
+            WorkOrderService.complete(a, orders, harvest);
+            check(QShopEconomy.balance(a) == 24 && crew.bank == 0, "a Crew bank changed the pay in the default mode: wallet " + QShopEconomy.balance(a) + " bank " + crew.bank);
+            // 2. proposed but not agreed by everyone: still nothing moves
+            rig.ledger.setMode(a.getUUID(), "uc_sha", Mode.SHARED);
+            UUID bread = orders.accept(a.getUUID(), WorkOrderCatalog.INSTANCE.find("underground_city:bread"));
+            a.getInventory().setItem(0, new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.BREAD, 8));
+            WorkOrderService.complete(a, orders, bread);
+            check(QShopEconomy.balance(a) == 60 && crew.bank == 0 && crew.effectiveMode() == Mode.BANK, "an unagreed proposal swept income");
+            // 3. everyone agrees: the next delivery's pay goes into the bank
+            rig.ledger.setConsent(b.getUUID(), "uc_shb", true);
+            check(crew.effectiveMode() == Mode.SHARED, "unanimous consent did not put shared finances in force");
+            UUID tools = orders.accept(b.getUUID(), WorkOrderCatalog.INSTANCE.find("underground_city:stone_tools"));
+            for (int slot = 0; slot < 3; slot++) { var pick = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.STONE_PICKAXE); pick.setDamageValue(0); b.getInventory().setItem(slot, pick); }
+            WorkOrderService.complete(b, orders, tools);
+            check(QShopEconomy.balance(b) == 10 && crew.bank == 24, "pay was not swept into the bank: wallet " + QShopEconomy.balance(b) + " bank " + crew.bank);
+            check(CitizenState.get(rig.server).find(b.getUUID()).orElseThrow().careerXp() == 125, "career XP is personal and must still be awarded to the one who delivered");
+            // 4. an exchange purchase by the other member is paid from the bank first
+            BlockPos pos = helper.absolutePos(new BlockPos(0, 2, 0));
+            var original = CityRegions.INSTANCE.all();
+            CityRegions.INSTANCE.replaceForTest(List.of(new CityRegions.Region("ironhaven", helper.getLevel().dimension().location().toString(), pos.getX() >> 4, pos.getZ() >> 4, 64)));
+            try {
+                RegionalStock parts = RegionalCatalog.INSTANCE.find("underground_city:machined_parts");
+                int price = RegionalMarket.unitPrice(parts, CitizenState.get(rig.server).find(a.getUUID()).orElseThrow());
+                long start = (long) (QShopEconomy.balance(a) + QShopEconomy.balance(b)) + crew.bank;
+                RegionalMarket.purchase(a, pos, orders, CitizenState.get(rig.server).find(a.getUUID()).orElseThrow(), "underground_city:machined_parts", 1, id());
+                check(a.getInventory().countItem(UndergroundCity.item("machined_parts")) == 1, "the purchase did not deliver the goods");
+                check(QShopEconomy.balance(a) == 60 && crew.bank == 24 - price, "the bank did not pay: wallet " + QShopEconomy.balance(a) + " bank " + crew.bank + " price " + price);
+                check((long) (QShopEconomy.balance(a) + QShopEconomy.balance(b)) + crew.bank == start - price, "credits were created or destroyed beyond the price");
+                // the bank holds less than the next price: it pays what it has and the wallet pays the rest
+                long left = crew.bank;
+                RegionalMarket.purchase(a, pos, orders, CitizenState.get(rig.server).find(a.getUUID()).orElseThrow(), "underground_city:machined_parts", 1, id());
+                check(crew.bank == 0 && QShopEconomy.balance(a) == 60 - (price - left), "the wallet did not make up the difference");
+                // Q Shop's own shop screens are not routed: they spend the player's own wallet
+                var buy = com.qshop.api.QShopAddonApi.buy(b, new net.minecraftforge.items.wrapper.InvWrapper(b.getInventory()), "uc_starter_supply", 0, 0, 1);
+                check(buy.isSuccess() && QShopEconomy.balance(b) == 2 && crew.bank == 0, "Q Shop's shop must keep using the personal wallet");
+            } finally { CityRegions.INSTANCE.replaceForTest(original); }
+            // 5. withdrawing consent stops the routing at once
+            rig.ledger.setConsent(b.getUUID(), "uc_shb", false);
+            check(crew.effectiveMode() == Mode.BANK, "withdrawing consent did not take effect");
+            Files.deleteIfExists(journal);
+        }
+        helper.succeed();
+    }
+
     @GameTest(template = "empty")
     public static void realQShopTransfers(GameTestHelper helper) throws Exception {
         if (!QShopEconomy.available()) { helper.succeed(); return; }

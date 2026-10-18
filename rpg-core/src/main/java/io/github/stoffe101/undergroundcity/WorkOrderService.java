@@ -172,6 +172,7 @@ public final class WorkOrderService {
         }
         ledger.prepare(player.getUUID(), nonce, after.save(new ListTag()), target, xpTarget, trustAfter, heatAfter);
         recover(player, ledger);
+        CrewService.sweepIncome(player, order.credits(), nonce); // fully shared finances only; never changes the settlement above
         CitizenState.get(player.server).bumpJourney(player.getUUID(), "deliveries");
         player.sendSystemMessage(Component.literal("Delivered " + order.title() + ": +" + order.credits()
             + " credits, +" + order.xp() + " career XP. Level " + citizen.careerLevel() + "."));

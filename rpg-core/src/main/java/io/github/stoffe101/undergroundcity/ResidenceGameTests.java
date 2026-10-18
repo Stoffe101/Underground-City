@@ -318,6 +318,89 @@ public final class ResidenceGameTests {
         return event;
     }
 
+    /** The real Row Flats, built into the sky of the test world: their homes register, lease, and are guarded block by block; the lease is what keeps the district from being undone. */
+    @GameTest(template = "empty", batch = "uc_district", timeoutTicks = 400)
+    public static void rowFlatsAreRealHomesThatCanBeLeasedGuardedAndNotUndoneFromUnderTheirTenants(GameTestHelper helper) throws Exception {
+        ServerLevel level = helper.getLevel();
+        DistrictCatalog.District district = DistrictCatalog.INSTANCE.find("row_flats");
+        check(district != null && district.homeOps().size() == 3, "Row Flats must load with three homes");
+        BlockPos arena = helper.absolutePos(new BlockPos(0, 0, 0));
+        BlockPos origin = new BlockPos(arena.getX() - 12, level.getMaxBuildHeight() - 40, arena.getZ() - 8);
+        BlockPos lo = origin.offset(district.min()), hi = origin.offset(district.max());
+        for (int cx = (lo.getX() - 1) >> 4; cx <= (hi.getX() + 1) >> 4; cx++) for (int cz = (lo.getZ() - 1) >> 4; cz <= (hi.getZ() + 1) >> 4; cz++) level.getChunk(cx, cz);
+        DistrictBuilder.forgetForTest(level, district.id());
+        try (CrewGameTests.Rig rig = new CrewGameTests.Rig(helper)) {
+            CrewLedger l = rig.ledger;
+            var result = DistrictBuilder.build(level, district, origin);
+            check(result.homes() == 3 && l.allResidences().size() == 3 && result.terminals() == 3, "Build summary " + result);
+            ServerPlayer tenant = player(helper, "uc_tenant", "farmer"), mate = player(helper, "uc_mate", "gunsmith"), stranger = player(helper, "uc_visitor", "technician");
+            for (ServerPlayer p : List.of(tenant, mate, stranger)) rig.wallet.balances.put(p.getUUID(), 500d);
+            DistrictCatalog.Op flatOp = district.homeOps().get(0), houseOp = district.homeOps().get(2);
+            Residence flat = l.residence(DistrictBuilder.homeId(district, flatOp.home())), house = l.residence(DistrictBuilder.homeId(district, houseOp.home()));
+            check(flat.min.equals(origin.offset(flatOp.a())) && flat.max.equals(origin.offset(flatOp.b())) && flat.price == 120 && flat.starterPrice == 60, "the registered region and price come from the data");
+            // the furnishings the data promises are really there, inside the registered interior
+            BlockPos flatChest = origin.offset(flatOp.b().getX(), 0, flatOp.a().getZ()), flatDoor = origin.offset((flatOp.a().getX() + flatOp.b().getX()) / 2, 0, 8);
+            check(level.getBlockState(flatChest).is(Blocks.CHEST) && flat.insideInterior(OVERWORLD, flatChest), "the flat's chest");
+            check(level.getBlockState(flatDoor).is(Blocks.OAK_DOOR) && flat.insideShell(OVERWORLD, flatDoor) && !flat.insideInterior(OVERWORLD, flatDoor), "the flat's door is in the shell");
+            check(level.getBlockState(origin.offset(flatOp.a().getX() + 1, 0, 1)).is(UndergroundCity.TERMINAL.get()), "the home computer");
+            for (BlockPos p : BlockPos.betweenClosed(house.min, house.max)) {
+                if (level.getBlockState(p).is(Blocks.SMITHING_TABLE) || level.getBlockState(p).is(Blocks.ANVIL) || level.getBlockState(p).is(Blocks.GRINDSTONE) || level.getBlockState(p).is(Blocks.BREWING_STAND)
+                    || level.getBlockState(p).is(Blocks.CRAFTING_TABLE) || level.getBlockState(p).is(Blocks.FURNACE)) {
+                    check(ResidenceGuard.classify(level.getBlockState(p), level.getBlockEntity(p)) == Act.WORKSTATION, "workstation at " + p);
+                }
+            }
+
+            // a showroom, then a personal lease with the starter price, then a Crew lease of the house from the bank
+            check(brokenBy(level, stranger, flatChest).isCanceled() && usedBy(level, stranger, flatChest).isCanceled() && !usedBy(level, stranger, flatDoor).isCanceled(), "an unleased flat: look, don't touch");
+            near(flat.min, tenant);
+            CrewService.lease(tenant, id(), flat.id, false, false);
+            check(flat.ownerType == OwnerType.PLAYER && rig.wallet.balances.get(tenant.getUUID()) == 440d, "the starter price for the flat");
+            check(!usedBy(level, tenant, flatChest).isCanceled() && !usedBy(level, tenant, flatDoor).isCanceled(), "a tenant locked out of their own flat");
+            check(usedBy(level, stranger, flatChest).isCanceled() && usedBy(level, stranger, flatDoor).isCanceled() && usedBy(level, mate, flatChest).isCanceled(), "a flat open to people who do not live there");
+            check(brokenBy(level, tenant, flatDoor).isCanceled(), "a tenant broke their own front door out of the city's wall");
+            BlockPos wall = origin.offset(flatOp.a().getX() - 1, 1, 4);
+            check(brokenBy(level, tenant, wall).isCanceled(), "a tenant broke the wall they share with the next flat");
+
+            // the Crew takes the house
+            Crew crew = l.create(tenant.getUUID(), "uc_tenant", "Flat Crew");
+            l.accept(l.invite(tenant.getUUID(), mate.getUUID(), "uc_mate", "uc_tenant").id(), mate.getUUID(), "uc_mate");
+            near(house.min, tenant, mate, stranger);
+            CrewService.deposit(tenant, id(), 150);
+            CrewService.deposit(mate, id(), 150);
+            CrewService.lease(tenant, id(), house.id, true, true);
+            check(house.ownerType == OwnerType.CREW && crew.bank == 300 - 260, "the Row House at its full price (the starter discount went on the flat): bank " + crew.bank);
+            BlockPos houseChest = origin.offset(houseOp.b().getX(), 0, houseOp.a().getZ());
+            BlockPos houseSmith = origin.offset(houseOp.b().getX() - 3, 0, 1);
+            check(level.getBlockState(houseSmith).is(Blocks.SMITHING_TABLE), "the house's smithing table");
+            for (BlockPos pos : List.of(houseChest, houseSmith)) {
+                check(!usedBy(level, tenant, pos).isCanceled() && !usedBy(level, mate, pos).isCanceled(), "the Crew cannot use its own " + level.getBlockState(pos).getBlock());
+                check(usedBy(level, stranger, pos).isCanceled(), "a stranger used the Crew's " + level.getBlockState(pos).getBlock());
+            }
+            // the personal flat is still the tenant's alone, and the mate cannot enter it
+            check(usedBy(level, mate, flatDoor).isCanceled() && !usedBy(level, tenant, flatDoor).isCanceled(), "joining a Crew changed who may enter a personal flat");
+            // the founder takes the workstation permission away: the chest stays open, the table closes
+            l.setPermission(tenant.getUUID(), "uc_tenant", Role.MEMBER, Perm.WORKSTATIONS, false);
+            check(!usedBy(level, mate, houseChest).isCanceled() && usedBy(level, mate, houseSmith).isCanceled(), "workstation permission");
+            // the district cannot be undone while its homes are leased
+            rejected(() -> DistrictBuilder.undo(level, district), "undoing a district whose homes are leased");
+            check(level.getBlockState(houseChest).is(Blocks.CHEST) && l.residence(house.id).owned(), "a refused undo changed the world");
+        }
+        // with nobody holding a home the district goes away cleanly, and its homes leave the registry
+        try (CrewGameTests.Rig rig = new CrewGameTests.Rig(helper)) {
+            // the real ledger never knew these homes; undo asks the ledger of the world, which holds none of them
+            DistrictBuilder.undo(level, district);
+            check(!DistrictBuilder.isBuilt(level, district.id()), "undo left the district built");
+            check(!level.getBlockState(origin.offset(district.homeOps().get(0).b().getX(), 0, 1)).is(Blocks.CHEST), "undo left the chest");
+            // registering again after an undo works (a fresh world's ledger, a fresh build)
+            var again = DistrictBuilder.build(level, district, origin);
+            check(again.homes() == 3 && rig.ledger.allResidences().size() == 3, "a rebuilt district registers its homes again");
+            DistrictBuilder.undo(level, district);
+            check(rig.ledger.allResidences().isEmpty(), "undoing an unleased district left its homes registered");
+        }
+        DistrictBuilder.forgetForTest(level, district.id());
+        helper.succeed();
+    }
+
     @GameTest(template = "empty")
     public static void districtsRegisterAndReleaseHomes(GameTestHelper helper) throws Exception {
         try (CrewGameTests.Rig rig = new CrewGameTests.Rig(helper)) {

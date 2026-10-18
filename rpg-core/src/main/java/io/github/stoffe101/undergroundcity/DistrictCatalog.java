@@ -25,18 +25,20 @@ import java.util.Set;
 public final class DistrictCatalog extends SimpleJsonResourceReloadListener {
     private static final Logger LOGGER = LogUtils.getLogger();
     public static final DistrictCatalog INSTANCE = new DistrictCatalog();
-    static final Set<String> OPS = Set.of("fill", "block", "terminal", "safe", "secure_terminal", "ledger", "sign", "clerk", "npc");
+    static final Set<String> OPS = Set.of("fill", "block", "terminal", "safe", "secure_terminal", "ledger", "sign", "clerk", "npc", "residence");
     static final Set<String> ROLES = Set.of("registrar", "employer", "resident", "guard", "vendor", "instructor", "warden");
     static final int MAX_NPCS = 20, MAX_LINES = 8, MAX_LINE = 180;
     /** Hard bound so a bad datapack cannot ask the server to rewrite an unbounded volume. */
     static final int MAX_EXTENT = 64, MAX_VOLUME = 64_000, MAX_OPS = 1_000;
 
     /** {@code a} and {@code b} are relative corners (min/max already ordered); {@code text} is a block state, policy or terminal ref. */
-    public record Op(String kind, BlockPos a, BlockPos b, String text, String facing, BlockPos reference, Npc npc, String requiresMod, Sign sign) {
-        public Op(String kind, BlockPos a, BlockPos b, String text, String facing, BlockPos reference) { this(kind, a, b, text, facing, reference, null, "", null); }
+    public record Op(String kind, BlockPos a, BlockPos b, String text, String facing, BlockPos reference, Npc npc, String requiresMod, Sign sign, Home home) {
+        public Op(String kind, BlockPos a, BlockPos b, String text, String facing, BlockPos reference) { this(kind, a, b, text, facing, reference, null, "", null, null); }
         /** True when this operation applies in the current mod set (an operation naming an absent mod is skipped, not an error). */
         public boolean applies() { return requiresMod.isEmpty() || net.minecraftforge.fml.ModList.get().isLoaded(requiresMod); }
     }
+    /** A leasable home: its interior is the operation's box (corners a and b, relative to the district origin); id is unique within the district. */
+    public record Home(String id, String title, String kind, int price, int starterPrice) {}
     /** The words on a sign: up to four short lines, a dye colour and whether the text glows. */
     public record Sign(List<String> lines, String color, boolean glow) {}
     /** A named citizen of the district: role, villager profession (look and workstation), the career an employer represents and the lines they say. */
@@ -45,6 +47,8 @@ public final class DistrictCatalog extends SimpleJsonResourceReloadListener {
         public int volume() { return (max.getX() - min.getX() + 1) * (max.getY() - min.getY() + 1) * (max.getZ() - min.getZ() + 1); }
         /** The citizens in file order. A citizen's index here is how a placed villager remembers which entry is theirs. */
         public List<Op> npcOps() { return ops.stream().filter(op -> op.npc() != null).toList(); }
+        /** The leasable homes, in file order. */
+        public List<Op> homeOps() { return ops.stream().filter(op -> op.home() != null).toList(); }
     }
 
     private volatile Map<String, District> districts = Map.of();
@@ -77,7 +81,7 @@ public final class DistrictCatalog extends SimpleJsonResourceReloadListener {
             String kind = op.get("op").getAsString();
             if (!OPS.contains(kind)) throw new IllegalArgumentException("Unknown district operation " + kind);
             BlockPos a, b;
-            if (kind.equals("fill")) {
+            if (kind.equals("fill") || kind.equals("residence")) {
                 BlockPos from = pos(op.getAsJsonArray("from")), to = pos(op.getAsJsonArray("to"));
                 a = new BlockPos(Math.min(from.getX(), to.getX()), Math.min(from.getY(), to.getY()), Math.min(from.getZ(), to.getZ()));
                 b = new BlockPos(Math.max(from.getX(), to.getX()), Math.max(from.getY(), to.getY()), Math.max(from.getZ(), to.getZ()));
@@ -92,7 +96,8 @@ public final class DistrictCatalog extends SimpleJsonResourceReloadListener {
             BlockPos reference = kind.equals("clerk") || (kind.equals("npc") && op.has("terminal")) ? pos(op.getAsJsonArray("terminal")) : null;
             Npc npc = kind.equals("npc") ? parseNpc(id, op) : null;
             Sign sign = kind.equals("sign") ? parseSign(id, op) : null;
-            ops.add(new Op(kind, a, b, text, facing, reference, npc, op.has("requires_mod") ? op.get("requires_mod").getAsString() : "", sign));
+            Home home = kind.equals("residence") ? parseHome(id, op) : null;
+            ops.add(new Op(kind, a, b, text, facing, reference, npc, op.has("requires_mod") ? op.get("requires_mod").getAsString() : "", sign, home));
             for (BlockPos corner : reference == null ? new BlockPos[]{a, b} : new BlockPos[]{a, b, reference}) {
                 lo[0] = Math.min(lo[0], corner.getX()); lo[1] = Math.min(lo[1], corner.getY()); lo[2] = Math.min(lo[2], corner.getZ());
                 hi[0] = Math.max(hi[0], corner.getX()); hi[1] = Math.max(hi[1], corner.getY()); hi[2] = Math.max(hi[2], corner.getZ());
@@ -101,12 +106,28 @@ public final class DistrictCatalog extends SimpleJsonResourceReloadListener {
         long npcs = ops.stream().filter(op -> op.kind().equals("npc")).count();
         if (npcs > MAX_NPCS) throw new IllegalArgumentException("District " + id + " has more than " + MAX_NPCS + " NPCs");
         BlockPos min = new BlockPos(lo[0], lo[1], lo[2]), max = new BlockPos(hi[0], hi[1], hi[2]);
+        boolean repeatable = json.has("repeatable") && json.get("repeatable").getAsBoolean();
+        if (repeatable && ops.stream().anyMatch(op -> op.home() != null)) throw new IllegalArgumentException("District " + id + ": a repeatable district cannot hold leasable homes");
+        java.util.Set<String> homeIds = new java.util.HashSet<>();
+        for (Op op : ops) if (op.home() != null && !homeIds.add(op.home().id())) throw new IllegalArgumentException("District " + id + ": duplicate home id " + op.home().id());
         District district = new District(id, json.has("title") ? json.get("title").getAsString() : id, List.copyOf(ops), min, max,
             json.has("repeatable") && json.get("repeatable").getAsBoolean());
         if (max.getX() - min.getX() >= MAX_EXTENT || max.getY() - min.getY() >= MAX_EXTENT || max.getZ() - min.getZ() >= MAX_EXTENT || district.volume() > MAX_VOLUME) {
             throw new IllegalArgumentException("District " + id + " is larger than the safe build limit");
         }
         return district;
+    }
+
+    private static Home parseHome(String district, JsonObject op) {
+        String id = op.get("id").getAsString();
+        if (!id.matches("[a-z0-9_]{3,32}")) throw new IllegalArgumentException("District " + district + ": bad home id " + id);
+        String title = op.get("title").getAsString();
+        if (title.isBlank() || title.length() > 40) throw new IllegalArgumentException("District " + district + ": bad home title");
+        String kind = op.has("kind") ? op.get("kind").getAsString() : "flat";
+        if (!Set.of("flat", "house").contains(kind)) throw new IllegalArgumentException("District " + district + ": unknown home kind " + kind);
+        int price = op.get("price").getAsInt(), starter = op.has("starter_price") ? op.get("starter_price").getAsInt() : -1;
+        if (price < 1 || price > 1_000_000 || starter > price) throw new IllegalArgumentException("District " + district + ": bad home price for " + id);
+        return new Home(id, title, kind, price, starter);
     }
 
     private static Sign parseSign(String district, JsonObject op) {

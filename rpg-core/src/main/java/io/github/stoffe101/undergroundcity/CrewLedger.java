@@ -560,13 +560,20 @@ public final class CrewLedger {
     }
 
     /** Withdrawal step 1: takes the credits out of the bank at once as a hold; {@link #cancel} puts them back if the wallet never received them. */
-    public Pending beginWithdraw(UUID tx, UUID player, long amount, double walletBefore) {
+    public Pending beginWithdraw(UUID tx, UUID player, long amount, double walletBefore) { return beginWithdraw(tx, player, amount, walletBefore, false); }
+
+    /**
+     * @param sharedSpend a purchase paid from the bank under fully shared finances, which every member agreed to: it needs no WITHDRAW right but does
+     *                    need the agreement to be in force (every member has consented)
+     */
+    public Pending beginWithdraw(UUID tx, UUID player, long amount, double walletBefore, boolean sharedSpend) {
         checkHealthy();
         Crew crew = requireCrew(player);
         requireFreshTx(tx, player);
         CrewRules.cleanAmount(amount);
         require(crew.effectiveMode() != Mode.SEPARATE, "This Crew has no bank.");
-        require(crew.can(player, Perm.WITHDRAW), "You are not allowed to withdraw from the Crew bank.");
+        if (sharedSpend) require(crew.effectiveMode() == Mode.SHARED, "Shared finances are not in force.");
+        else require(crew.can(player, Perm.WITHDRAW), "You are not allowed to withdraw from the Crew bank.");
         require(crew.bank >= amount, "The bank only holds " + crew.bank + " credits.");
         require(walletBefore + amount <= 1_000_000_000d, "Your wallet cannot hold that much.");
         crew.bank -= amount;

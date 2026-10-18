@@ -296,6 +296,51 @@ public final class CrewService {
         }
     }
 
+    // ------------------------------------------------------------------------------------------------------------ fully shared finances
+
+    /**
+     * Fully shared finances, income side: when the Crew's agreement is in force (every member has consented) the pay of a work order goes into the
+     * bank straight after it reached the wallet. It is an ordinary deposit with a transaction id taken from the order, so a replay cannot sweep twice,
+     * and a failure of any kind leaves the credits in the player's own wallet. Returns the credits swept.
+     */
+    public static long sweepIncome(ServerPlayer player, long credits, UUID order) {
+        try {
+            CrewLedger ledger = ledger(player.server);
+            Crew crew = ledger == null ? null : ledger.crewOf(player.getUUID());
+            if (crew == null || crew.effectiveMode() != Mode.SHARED || credits < 1 || !moneyReady(player.server)) return 0;
+            UUID tx = new UUID(order.getMostSignificantBits() ^ 0x5348415245444CL, order.getLeastSignificantBits());
+            transact(player, balance -> ledger.beginDeposit(tx, player.getUUID(), credits, balance));
+            Notice.send(player, Notice.Kind.INFO, "Shared finances", credits + " credits went into the Crew bank.");
+            return credits;
+        } catch (CrewService.SimulatedCrash crash) {
+            throw crash;
+        } catch (RuntimeException error) {
+            LOG.warn("Shared income of {} stayed in their wallet: {}", player.getGameProfile().getName(), error.getMessage());
+            return 0;
+        }
+    }
+
+    /**
+     * Fully shared finances, spending side: before a terminal purchase the bank pays first, by moving up to the price into the buyer's wallet (an
+     * ordinary withdrawal that needs no WITHDRAW right because every member agreed). The purchase then runs exactly as it always does. Returns the
+     * credits moved; zero when the agreement is not in force or the bank is empty.
+     */
+    public static long topUpForPurchase(ServerPlayer player, long cost) {
+        try {
+            CrewLedger ledger = ledger(player.server);
+            Crew crew = ledger == null ? null : ledger.crewOf(player.getUUID());
+            if (crew == null || crew.effectiveMode() != Mode.SHARED || cost < 1 || crew.bank < 1 || !moneyReady(player.server)) return 0;
+            long pull = Math.min(crew.bank, cost);
+            transact(player, balance -> ledger.beginWithdraw(UUID.randomUUID(), player.getUUID(), pull, balance, true));
+            return pull;
+        } catch (CrewService.SimulatedCrash crash) {
+            throw crash;
+        } catch (RuntimeException error) {
+            LOG.warn("The Crew bank could not pay for {}'s purchase: {}", player.getGameProfile().getName(), error.getMessage());
+            return 0;
+        }
+    }
+
     // ------------------------------------------------------------------------------------------------------------ homes
 
     /** Leases a registered home near the player, for themselves or their Crew, from the bank or from their own wallet. */

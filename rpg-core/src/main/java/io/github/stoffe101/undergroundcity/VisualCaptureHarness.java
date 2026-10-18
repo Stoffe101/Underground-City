@@ -31,6 +31,8 @@ public final class VisualCaptureHarness {
         static Case dialogue(String name,String pose) { return new Case(name,null,null,0,false,null,"dialogue-"+pose); }
         static Case ledger(String name) { return new Case(name,null,null,0,false,null,"ledger-board"); }
         static Case notices(String name) { return new Case(name,null,null,0,false,null,"notices-stack"); }
+        /** The Crew screen in one of its states (CrewCaptures). */
+        static Case crew(String name,String pose) { return new Case(name,null,null,0,false,null,"crew-"+pose); }
     }
     private static List<Case> cases;
     private static int current,frames;
@@ -223,6 +225,9 @@ public final class VisualCaptureHarness {
         cases.add(Case.challenge("uc-challenge-urgent","urgent"));
         cases.add(Case.ledger("uc-ledger"));
         cases.add(Case.notices("uc-notices"));
+        for(String pose:new String[]{"nocrew","nocrew-invited","unregistered","unavailable","members","members-member","money","money-consent","home","rules-permissions","rules-mode","rules-disband"}) {
+            cases.add(Case.crew("uc-crew-"+pose,pose));
+        }
         cases.add(Case.dialogue("uc-dialogue-registrar","registrar"));
         cases.add(Case.dialogue("uc-dialogue-employer","employer"));
         cases.add(Case.dialogue("uc-dialogue-guard","guard"));
@@ -243,6 +248,8 @@ public final class VisualCaptureHarness {
                 case "register-career" -> RegistrationScreen.forCapture(1,1,-1,"");
                 default -> RegistrationScreen.forCapture(2,1,0,"");
             });
+        } else if(capture.challenge!=null && capture.challenge.startsWith("crew-")) {
+            mc.setScreen(CrewCaptures.screen(capture.challenge.substring("crew-".length())));
         } else if(capture.challenge!=null && capture.challenge.startsWith("notices-")) {
             // the corner notices over a terminal: an order taken, a delivery paid with a level-up, a search at a checkpoint and a rare find
             TerminalScreen screen=new TerminalScreen(BlockPos.ZERO,fixture(2,8,true,true));

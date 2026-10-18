@@ -42,6 +42,12 @@ public record CrewView(boolean storageOk, String problem, UUID self, String self
             false, 0, 0, 0, 0, false, false, List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of());
     }
 
+    /** A view for review captures only: storage unavailable, no player. */
+    static CrewView unavailableForCapture(String problem) {
+        return new CrewView(false, problem, new UUID(0, 1), "Imogen", false, false, 0, 0, false, false, new UUID(0, 0), "", "", 0, "BANK", "BANK",
+            false, 0, 0, 0, 0, false, false, List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of());
+    }
+
     /** The view of {@code player}'s Crew life right now. */
     public static CrewView of(ServerPlayer player, boolean disbandArmed) {
         CrewLedger ledger = CrewService.ledger(player.server);

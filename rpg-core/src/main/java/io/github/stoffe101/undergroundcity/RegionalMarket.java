@@ -46,6 +46,7 @@ public final class RegionalMarket {
         after.add(bought);
         if (!bought.isEmpty()) throw new IllegalStateException("Not enough inventory space for that order");
         long cost = Math.multiplyExact((long) quantity, (long) unitPrice(stock, citizen));
+        CrewService.topUpForPurchase(player, cost); // fully shared finances only: the Crew bank pays first
         double balance = QShopEconomy.balance(player);
         if (balance < cost) throw new IllegalStateException("This order costs " + cost + " credits");
         ledger.preparePurchase(player.getUUID(), nonce, stock, quantity, after.save(new ListTag()), balance - cost, citizen.careerXp());

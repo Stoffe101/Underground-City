@@ -32,7 +32,7 @@ public final class CrewScreen extends UcScreen {
         Page(String label, UcUi.Icon icon) { this.label = label; this.icon = icon; }
     }
 
-    private static final int ROW = 24;
+    private static final int ROW = 24, MROW = 29;
 
     private CrewView view;
     private String note = "";
@@ -43,6 +43,7 @@ public final class CrewScreen extends UcScreen {
     private int busyTicks;
     private int railW, cx, cy, cw, ch;
     private EditBox nameBox, amountBox, renameBox, confirmBox;
+    private String presetAmount = "", presetConfirm = "";
     private final Map<String, UcButton> byId = new LinkedHashMap<>();
 
     CrewScreen(CrewView view, String note) {
@@ -96,8 +97,8 @@ public final class CrewScreen extends UcScreen {
         cw = px + pw - PAD - cx;
         cy = bodyY();
         ch = bodyBottom() - cy;
-        String name = nameBox == null ? "" : nameBox.getValue(), amount = amountBox == null ? "" : amountBox.getValue();
-        String rename = renameBox == null ? "" : renameBox.getValue(), confirm = confirmBox == null ? "" : confirmBox.getValue();
+        String name = nameBox == null ? "" : nameBox.getValue(), amount = amountBox == null ? presetAmount : amountBox.getValue();
+        String rename = renameBox == null ? "" : renameBox.getValue(), confirm = confirmBox == null ? presetConfirm : confirmBox.getValue();
         nameBox = box(name, "Crew name", 24);
         amountBox = box(amount, "Amount", 9);
         amountBox.setFilter(s -> s.matches("[0-9]{0,9}"));
@@ -131,6 +132,7 @@ public final class CrewScreen extends UcScreen {
     private void send(Act act) { busy = true; busyTicks = 0; note = ""; CrewNetwork.send(act); build(); }
 
     private void build() {
+        if (nameBox == null) return; // not opened yet: init() builds
         clearWidgets();
         byId.clear();
         if (!view.storageOk() || !view.citizen()) return;
@@ -156,13 +158,13 @@ public final class CrewScreen extends UcScreen {
     // ---- no Crew
 
     private void buildNoCrew() {
-        int x = px + PAD, w = pw - 2 * PAD, y = cy + 34;
+        int x = px + PAD, w = pw - 2 * PAD, y = cy + 56;
         int half = Math.min(w, 300);
         place(nameBox, x, y + 20, half - 110);
         UcButton found = btn("create", x + half - 104, y + 20, 104, 20, "Found Crew", () -> send(Act.of(Op.CREATE).text(nameBox.getValue()))).kind(UcButton.Kind.PRIMARY);
         found.active = found.active && nameBox.getValue().trim().length() >= CrewRules.NAME_MIN;
         found.tooltip("Founds a Crew with you as its founder.", "Names have 3 to 24 letters, digits and ' - _ .");
-        int iy = y + 78;
+        int iy = y + 84;
         int i = 0;
         for (CrewView.InviteRow invite : view.incoming()) {
             int row = iy + i * 26;
@@ -173,16 +175,16 @@ public final class CrewScreen extends UcScreen {
     }
 
     private void renderNoCrew(GuiGraphics g) {
-        int x = px + PAD, w = pw - 2 * PAD, y = cy + 34;
+        int x = px + PAD, w = pw - 2 * PAD, y = cy + 56;
         UcUi.display(g, font, "Start or join a Crew", x, cy + 4, UcUi.TEXT);
         UcUi.wrapped(g, font, "A Crew is a small group that can share a home and, if you all want it, a bank. You keep your own career, wallet, skills and homes. "
             + "You never need one.", x, cy + 18, w, UcUi.SOFT, 3);
         UcUi.well(g, nameBox.getX() - 4, nameBox.getY() - 4, nameBox.getWidth() + 8, 20);
         UcUi.text(g, font, "Found a Crew", x, y + 6, UcUi.DIM);
-        UcUi.text(g, font, view.incoming().isEmpty() ? "No invitations yet. A friend invites you from their Crew screen (press K)." : "Invitations", x, y + 64, UcUi.DIM);
+        UcUi.text(g, font, view.incoming().isEmpty() ? "No invitations yet. A friend invites you from their Crew screen (press K)." : "Invitations", x, y + 70, UcUi.DIM);
         int i = 0;
         for (CrewView.InviteRow invite : view.incoming()) {
-            int row = y + 78 + i * 26;
+            int row = y + 84 + i * 26;
             g.fill(x, row - 2, x + w, row + 22, i % 2 == 0 ? UcUi.ROW : 0xff111c27);
             UcUi.icon(g, UcUi.Icon.TRUST, x + 4, row + 2, UcUi.LEGAL);
             UcUi.text(g, font, UcUi.fit(font, invite.crew() + "  from " + invite.who(), w - 160), x + 26, row + 6, UcUi.TEXT);
@@ -199,7 +201,7 @@ public final class CrewScreen extends UcScreen {
         int lw = listW();
         CrewView.MemberRow chosen = member(selected);
         boolean founder = view.founder();
-        int by = cy + 18 + view.members().size() * ROW + 8;
+        int by = cy + 18 + view.members().size() * MROW + 6;
         if (chosen != null && !chosen.id().equals(view.self())) {
             int bx = cx;
             boolean target = !chosen.role().equals("Founder");
@@ -256,22 +258,21 @@ public final class CrewScreen extends UcScreen {
         UcUi.display(g, font, "Members " + view.members().size() + "/" + CrewRules.MAX_MEMBERS, cx, cy + 4, UcUi.SOFT);
         int y = cy + 18;
         for (CrewView.MemberRow m : view.members()) {
-            boolean sel = m.id().equals(selected), hover = mx >= cx && mx < cx + lw && my >= y && my < y + ROW - 2;
-            g.fill(cx, y, cx + lw, y + ROW - 2, sel ? 0xff1f3a52 : hover ? UcUi.ROW_HOVER : UcUi.ROW);
-            if (sel) g.fill(cx, y, cx + 3, y + ROW - 2, UcUi.LEGAL);
-            UcUi.icon(g, UcUi.careerIcon(m.career()), cx + 6, y + 3, UcUi.careerColor(m.career()));
+            boolean sel = m.id().equals(selected), hover = mx >= cx && mx < cx + lw && my >= y && my < y + MROW - 2;
+            g.fill(cx, y, cx + lw, y + MROW - 2, sel ? 0xff1f3a52 : hover ? UcUi.ROW_HOVER : UcUi.ROW);
+            if (sel) g.fill(cx, y, cx + 3, y + MROW - 2, UcUi.LEGAL);
+            UcUi.icon(g, UcUi.careerIcon(m.career()), cx + 6, y + 5, UcUi.careerColor(m.career()));
             int tx = cx + 28;
             String you = m.id().equals(view.self()) ? "  (you)" : "";
-            UcUi.text(g, font, UcUi.fit(font, m.name() + you, lw - 120), tx, y + 3, UcUi.TEXT);
-            String detail = (m.career().isEmpty() ? "no trade yet" : capitalize(m.career()) + " L" + m.level());
-            UcUi.text(g, font, UcUi.fit(font, detail, lw - 120), tx, y + 12, UcUi.DIM);
             String role = m.role().toUpperCase(Locale.ROOT);
             int rw = UcUi.displayWidth(font, role) + 8;
-            UcUi.chip(g, font, role, cx + lw - rw - 6, y + 2, roleColor(m.role()), null);
+            UcUi.text(g, font, UcUi.fit(font, m.name() + you, lw - 28 - rw - 14), tx, y + 4, UcUi.TEXT);
+            String detail = (m.career().isEmpty() ? "no trade yet" : capitalize(m.career()) + " L" + m.level());
+            UcUi.text(g, font, UcUi.fit(font, detail, lw - 28 - rw - 14), tx, y + 15, UcUi.DIM);
+            UcUi.chip(g, font, role, cx + lw - rw - 6, y + 3, roleColor(m.role()), null);
             boolean online = m.seen().equals("online");
-            int sw = font.width(m.seen());
-            UcUi.text(g, font, m.seen(), cx + lw - sw - 8, y + 14, online ? UcUi.OK : UcUi.FAINT);
-            y += ROW;
+            UcUi.textRight(g, font, m.seen(), cx + lw - 8, y + 17, online ? UcUi.OK : UcUi.FAINT);
+            y += MROW;
         }
         CrewView.MemberRow chosen = member(selected);
         if (chosen == null) {
@@ -289,7 +290,7 @@ public final class CrewScreen extends UcScreen {
                 CrewView.Candidate candidate = view.candidates().get(i);
                 g.fill(ix, iy, ix + iw, iy + ROW - 2, UcUi.ROW);
                 UcUi.icon(g, UcUi.careerIcon(candidate.career()), ix + 4, iy + 3, UcUi.careerColor(candidate.career()));
-                UcUi.text(g, font, UcUi.fit(font, candidate.name(), iw - 92), ix + 24, iy + 3, UcUi.TEXT);
+                UcUi.text(g, font, UcUi.fit(font, candidate.name(), iw - 24 - 62), ix + 24, iy + 3, UcUi.TEXT);
                 UcUi.text(g, font, capitalize(candidate.career()), ix + 24, iy + 12, UcUi.DIM);
                 iy += ROW;
             }
@@ -312,7 +313,7 @@ public final class CrewScreen extends UcScreen {
     }
 
     private void buildMoney() {
-        int y = cy + 56 + (view.owed() > 0 ? 28 : 0) + (needsConsent() ? 38 : 0);
+        int y = cy + 56 + (view.owed() > 0 ? 28 : 0) + (needsConsent() ? 52 : 0);
         int cardW = (cw - 8) / 2;
         place(amountBox, cx, y, 92);
         int[] quick = {10, 50, 100};
@@ -331,13 +332,13 @@ public final class CrewScreen extends UcScreen {
         withdraw.active = withdraw.active && bank && view.moneyReady() && view.can(Perm.WITHDRAW) && amount() >= 1 && amount() <= view.bank();
         withdraw.tooltip(!view.can(Perm.WITHDRAW) ? "Your role may not withdraw. The founder can allow it on the Rules page." : amount() > view.bank() ? "The bank holds " + view.bank() + " credits." : "Moves credits from the Crew bank into your wallet.");
         if (view.owed() > 0) {
-            btn("claim_owed", cx + cw - 150, cy + 56, 150, 20, "Claim " + view.owed() + " credits", () -> send(Act.of(Op.CLAIM_OWED))).kind(UcButton.Kind.PRIMARY)
+            btn("claim_owed", cx + cw - 130, cy + 56, 130, 22, "Claim " + view.owed(), () -> send(Act.of(Op.CLAIM_OWED))).kind(UcButton.Kind.PRIMARY)
                 .tooltip("Credits owed to you after a payout or a disband.");
         }
         if (needsConsent()) {
             int cyy = cy + 56 + (view.owed() > 0 ? 28 : 0);
-            btn("consent_yes", cx + cw - 190, cyy + 14, 90, 20, "I agree", () -> send(Act.of(Op.CONSENT).flag(true))).kind(UcButton.Kind.PRIMARY);
-            btn("consent_no", cx + cw - 96, cyy + 14, 96, 20, "Not for me", () -> send(Act.of(Op.CONSENT).flag(false)));
+            btn("consent_yes", cx + cw - 190, cyy + 28, 90, 18, "I agree", () -> send(Act.of(Op.CONSENT).flag(true))).kind(UcButton.Kind.PRIMARY);
+            btn("consent_no", cx + cw - 96, cyy + 28, 96, 18, "Not for me", () -> send(Act.of(Op.CONSENT).flag(false)));
         }
         if (cardW < 0) return;
     }
@@ -346,21 +347,21 @@ public final class CrewScreen extends UcScreen {
 
     private void renderMoney(GuiGraphics g, int mx, int my) {
         int cardW = (cw - 8) / 2;
-        card(g, cx, cy, cardW, 50, "CREW BANK", view.bank() + "", UcUi.AMBER, view.effectiveMode().equals(Mode.SEPARATE.name()) ? "none: money is kept separate" : modeTitle(view.effectiveMode()));
+        card(g, cx, cy, cardW, 50, "CREW BANK", view.bank() + "", UcUi.AMBER, modeShort(view.effectiveMode()) + (view.mode().equals(view.effectiveMode()) ? "" : " (shared finances wait for everyone)"));
         card(g, cx + cardW + 8, cy, cardW, 50, "YOUR WALLET", view.moneyReady() ? String.format(Locale.ROOT, "%.0f", view.wallet()) : "OFFLINE", UcUi.OK, "stays yours");
         int y = cy + 56;
         if (view.owed() > 0) {
             g.fill(cx, y, cx + cw, y + 22, 0xff2a2410);
             UcUi.icon(g, UcUi.Icon.CREDITS, cx + 4, y + 3, UcUi.AMBER);
-            UcUi.text(g, font, UcUi.fit(font, view.owed() + " credits are owed to you from the Crew bank.", cw - 170), cx + 24, y + 7, UcUi.AMBER);
+            UcUi.text(g, font, UcUi.fit(font, view.owed() + " credits are owed to you.", cw - 24 - 134), cx + 24, y + 7, UcUi.AMBER);
             y += 28;
         }
         if (needsConsent()) {
-            g.fill(cx, y, cx + cw, y + 34, 0xff261a12);
+            g.fill(cx, y, cx + cw, y + 48, 0xff261a12);
             UcUi.icon(g, UcUi.Icon.WARNING, cx + 4, y + 4, UcUi.WARN);
-            UcUi.wrapped(g, font, "The founder proposes fully shared finances: your eligible income would go into the bank and Crew purchases come from it. It only applies when everyone agrees, and nothing moves by itself.",
-                cx + 24, y + 3, cw - 24 - 200, UcUi.SOFT, 3);
-            y += 38;
+            UcUi.wrapped(g, font, "The founder proposes fully shared finances. Work-order pay would go into the bank and exchange purchases come out of it. It applies only when everyone agrees.",
+                cx + 24, y + 4, cw - 30, UcUi.SOFT, 2);
+            y += 52;
         }
         UcUi.well(g, amountBox.getX() - 4, amountBox.getY() - 4, amountBox.getWidth() + 8, 20);
         int hy = y + 54;
@@ -416,7 +417,7 @@ public final class CrewScreen extends UcScreen {
         UcButton release = btn("release_container", cx + 156, y + 2, 140, 18, "Share it again", () -> send(Act.of(Op.RELEASE_CONTAINER)));
         release.active = release.active && here;
         release.tooltip("Look at your private container to make it shared again.");
-        int ny = y + 52;
+        int ny = y + 46;
         for (int i = 0; i < view.nearby().size(); i++) {
             CrewView.LeaseRow lease = view.nearby().get(i);
             int row = ny + i * ROW;
@@ -449,8 +450,8 @@ public final class CrewScreen extends UcScreen {
             UcUi.chip(g, font, owner, cx + cw - w - 6, y + 5, home.owner().equals("Crew") ? UcUi.AMBER : UcUi.LEGAL, null);
             y += ROW;
         }
-        int ny = y + 30;
-        UcUi.display(g, font, "Homes for lease nearby", cx, ny - 16, UcUi.SOFT);
+        int ny = y + 46;
+        UcUi.display(g, font, "Homes for lease nearby", cx, ny - 17, UcUi.SOFT);
         if (view.nearby().isEmpty()) {
             UcUi.wrapped(g, font, "No unleased home within 64 blocks. Homes are finite: each is leased once, for credits.", cx, ny, cw, UcUi.FAINT, 3);
         }
@@ -513,14 +514,14 @@ public final class CrewScreen extends UcScreen {
             place(renameBox, cx, y + 14, Math.min(cw - 110, 220));
             UcButton rename = btn("rename", cx + Math.min(cw - 110, 220) + 6, y + 14, 90, 20, "Rename", () -> send(Act.of(Op.RENAME).text(renameBox.getValue())));
             rename.active = rename.active && view.founder() && renameBox.getValue().trim().length() >= CrewRules.NAME_MIN;
-            int dy = y + 78;
+            int dy = y + 70;
             if (!view.disbandArmed()) {
-                UcButton start = btn("disband_ask", cx, dy + 18, 150, 20, "Disband the Crew...", () -> send(Act.of(Op.DISBAND_ASK))).kind(UcButton.Kind.DANGER);
+                UcButton start = btn("disband_ask", cx, dy + 40, 150, 20, "Disband the Crew...", () -> send(Act.of(Op.DISBAND_ASK))).kind(UcButton.Kind.DANGER);
                 start.active = start.active && view.founder();
                 start.tooltip(view.founder() ? "Asks you to type the Crew's name before anything happens." : "Only the founder can disband the Crew.");
             } else {
-                place(confirmBox, cx, dy + 18, Math.min(cw - 140, 220));
-                UcButton confirm = btn("disband", cx + Math.min(cw - 140, 220) + 6, dy + 18, 124, 20, "Disband for good", () -> send(Act.of(Op.DISBAND).text(confirmBox.getValue()))).kind(UcButton.Kind.DANGER);
+                place(confirmBox, cx, dy + 40, Math.min(cw - 140, 220));
+                UcButton confirm = btn("disband", cx + Math.min(cw - 140, 220) + 6, dy + 40, 124, 20, "Disband for good", () -> send(Act.of(Op.DISBAND).text(confirmBox.getValue()))).kind(UcButton.Kind.DANGER);
                 confirm.active = confirm.active && confirmBox.getValue().equals(view.crewName());
             }
         }
@@ -544,7 +545,7 @@ public final class CrewScreen extends UcScreen {
             String[] text = {
                 "Everybody keeps their own money. There is no standing bank; whoever makes a Crew purchase pays it.",
                 "Everybody keeps their own money, and the Crew has a shared bank. Members deposit; the rules decide who withdraws and spends. Recommended.",
-                "Like the bank, and eligible income goes into it and Core purchases come out of it, only while every member agrees. Q Shop's own shop screens still use your own wallet."};
+                "Like the bank, and while every member agrees, the pay of work orders goes into it and purchases at the regional exchange come out of it. Q Shop's own shop screens still use your own wallet."};
             int cardH = Math.max(40, (ch - 24 - 16) / 3 - 4);
             for (int i = 0; i < modes.length; i++) {
                 int y = top + i * (cardH + 4);
@@ -562,10 +563,10 @@ public final class CrewScreen extends UcScreen {
             int y = top;
             UcUi.text(g, font, "Rename the Crew", cx, y, UcUi.DIM);
             UcUi.well(g, renameBox.getX() - 4, renameBox.getY() - 4, renameBox.getWidth() + 8, 20);
-            int dy = y + 78;
+            int dy = y + 70;
             UcUi.display(g, font, "Disband", cx, dy, UcUi.UNDERGROUND_TEXT);
             UcUi.wrapped(g, font, "The bank is split equally between the members, every Crew home becomes yours personally, and everyone keeps their own wallet, career and homes.",
-                cx + 70, dy - 1, cw - 70, UcUi.FAINT, 2);
+                cx, dy + 12, cw, UcUi.FAINT, 3);
             if (view.disbandArmed()) UcUi.well(g, confirmBox.getX() - 4, confirmBox.getY() - 4, confirmBox.getWidth() + 8, 20);
         }
     }
@@ -597,8 +598,8 @@ public final class CrewScreen extends UcScreen {
         if (view.inCrew() && page == Page.CREW) {
             int y = cy + 18, lw = listW();
             for (CrewView.MemberRow m : view.members()) {
-                if (mouseX >= cx && mouseX < cx + lw && mouseY >= y && mouseY < y + ROW - 2) { selected = m.id(); build(); return true; }
-                y += ROW;
+                if (mouseX >= cx && mouseX < cx + lw && mouseY >= y && mouseY < y + MROW - 2) { selected = m.id(); build(); return true; }
+                y += MROW;
             }
         }
         return false;
@@ -636,9 +637,8 @@ public final class CrewScreen extends UcScreen {
         return switch (role) { case "Founder" -> UcUi.AMBER; case "Manager" -> UcUi.LEGAL; default -> UcUi.DIM; };
     }
 
-    private static String modeTitle(String name) {
-        for (Mode mode : Mode.values()) if (mode.name().equals(name)) return mode.title;
-        return name;
+    private static String modeShort(String name) {
+        return switch (name) { case "SEPARATE" -> "no bank: money is separate"; case "SHARED" -> "shared finances"; default -> "Crew bank"; };
     }
 
     CrewView snapshot() { return view; }
@@ -650,6 +650,9 @@ public final class CrewScreen extends UcScreen {
     public EditBox amountField() { return amountBox; }
     public EditBox confirmField() { return confirmBox; }
     public EditBox renameField() { return renameBox; }
+    /** QA hooks: text for the amount and confirmation boxes that is used when the screen opens (or put in them straight away if it is open). */
+    public void presetAmount(String text) { presetAmount = text; if (amountBox != null) { amountBox.setValue(text); build(); } }
+    public void presetConfirm(String text) { presetConfirm = text; if (confirmBox != null) { confirmBox.setValue(text); build(); } }
     public void rebuild() { build(); }
     boolean busy() { return busy; }
 

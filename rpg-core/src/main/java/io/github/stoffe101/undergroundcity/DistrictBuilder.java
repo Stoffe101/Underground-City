@@ -47,7 +47,7 @@ public final class DistrictBuilder {
     static final UUID NONE = new UUID(0L, 0L);
 
     /** What a build produced; surfaced to the operator and to tests. */
-    public record Result(int blocks, int safes, int secureTerminals, int terminals, boolean clerkPlaced, boolean insideCity, int citizens) {}
+    public record Result(int blocks, int safes, int secureTerminals, int terminals, boolean clerkPlaced, boolean insideCity, int citizens, int homes) {}
 
     static final class State extends SavedData {
         final Map<String, Entry> built = new LinkedHashMap<>();
@@ -193,9 +193,10 @@ public final class DistrictBuilder {
         UUID clerk = null;
         List<UUID> citizens = new ArrayList<>();
         int placedCitizens = 0;
+        List<String> registeredHomes = new ArrayList<>();
         try {
             for (DistrictCatalog.Op op : district.ops()) {
-                if (op.kind().equals("clerk") || op.kind().equals("npc") || !op.applies()) continue;
+                if (op.kind().equals("clerk") || op.kind().equals("npc") || op.kind().equals("residence") || !op.applies()) continue;
                 BlockState place = states.get(op);
                 for (BlockPos pos : BlockPos.betweenClosed(origin.offset(op.a()), origin.offset(op.b()))) {
                     level.setBlock(pos, place, Block.UPDATE_ALL);
@@ -219,6 +220,7 @@ public final class DistrictBuilder {
                 clerk = SupplierNpc.spawnFor(level, origin.offset(op.reference()), origin.offset(op.a())).getUUID();
                 clerkPlaced = true;
             }
+            registerHomes(level, district, origin, registeredHomes);
             int slot = 0;
             for (DistrictCatalog.Op op : district.npcOps()) {
                 if (!op.applies()) { citizens.add(NONE); slot++; continue; }
@@ -228,13 +230,38 @@ public final class DistrictBuilder {
         } catch (RuntimeException error) {
             for (UUID id : citizens) discard(level, id);
             if (clerk != null) discard(level, clerk); // the supplier registry releases a discarded clerk on its own
+            unregisterHomes(level, registeredHomes);
             restore(level, lo, hi, palette, before);
             throw error;
         }
         state.built.put(key, new Entry(level.dimension().location().toString(), origin.immutable(), saved, before, clerk, citizens));
         state.setDirty();
         level.getServer().overworld().getDataStorage().save();
-        return new Result(blocks, safes, secure, terminals, clerkPlaced, CityRegions.INSTANCE.cityAt(level, origin).isPresent(), placedCitizens);
+        return new Result(blocks, safes, secure, terminals, clerkPlaced, CityRegions.INSTANCE.cityAt(level, origin).isPresent(), placedCitizens, registeredHomes.size());
+    }
+
+    /** The ledger id of a district's home: unique per world because a district with homes is never repeatable. */
+    static String homeId(DistrictCatalog.District district, DistrictCatalog.Home home) { return district.id() + ":" + home.id(); }
+
+    /** Registers the district's homes with the Crew ledger. A world whose ledger cannot be read refuses the build rather than leaving homes that nobody can lease. */
+    private static void registerHomes(ServerLevel level, DistrictCatalog.District district, BlockPos origin, List<String> registered) {
+        List<DistrictCatalog.Op> homes = district.homeOps();
+        if (homes.isEmpty()) return;
+        CrewLedger ledger = CrewService.need(level.getServer());
+        for (DistrictCatalog.Op op : homes) {
+            DistrictCatalog.Home home = op.home();
+            ledger.registerResidence(homeId(district, home), home.title(), home.kind(), level.dimension().location().toString(), district.id(),
+                origin.offset(op.a()), origin.offset(op.b()), home.price(), home.starterPrice());
+            registered.add(homeId(district, home));
+        }
+    }
+
+    private static void unregisterHomes(ServerLevel level, List<String> ids) {
+        CrewLedger ledger = CrewService.ledger(level.getServer());
+        if (ledger == null) return;
+        for (String id : ids) {
+            try { ledger.unregisterResidence(id); } catch (RuntimeException error) { LOG.warn("Could not unregister home {}: {}", id, error.getMessage()); }
+        }
     }
 
     /** Writes the words of a sign (front side) and waxes it, so a player cannot rewrite the district's own signage. */
@@ -333,7 +360,15 @@ public final class DistrictBuilder {
         List<BlockState> palette = new ArrayList<>();
         for (Tag tag : entry.palette()) palette.add(NbtUtils.readBlockState(level.holderLookup(Registries.BLOCK), (CompoundTag) tag));
         if (entry.blocks().length != district.volume()) throw new IllegalStateException("The district definition changed since it was built; undo needs the original definition.");
+        CrewLedger homes = district.homeOps().isEmpty() ? null : CrewService.need(level.getServer());
+        for (DistrictCatalog.Op op : district.homeOps()) {
+            CrewLedger.Residence held = homes.residence(homeId(district, op.home()));
+            if (held != null && (held.owned() || held.reservedBy != null)) {
+                throw new IllegalStateException(held.title + " is leased. Undoing " + district.title() + " would take a home from its tenants.");
+            }
+        }
         restore(level, lo, hi, palette, entry.blocks());
+        if (homes != null) for (DistrictCatalog.Op op : district.homeOps()) homes.unregisterResidence(homeId(district, op.home()));
         if (entry.clerk() != null) {
             Entity clerk = level.getEntity(entry.clerk());
             if (clerk != null) clerk.discard(); // the supplier registry releases a discarded clerk on its own
@@ -378,7 +413,7 @@ public final class DistrictBuilder {
                     String note = (result.insideCity() ? "" : " Warning: this lot is outside every city circle, so city features will not apply here.")
                         + (result.clerkPlaced() ? "" : " The world already has a supply clerk; none was added.");
                     ctx.getSource().sendSuccess(() -> Component.literal(district.title() + " built: " + result.blocks() + " blocks, " + result.safes()
-                        + " safes, " + result.secureTerminals() + " secured terminal, " + result.citizens() + " citizens. Undo with /uc_district undo " + district.id() + " confirm." + note), true);
+                        + " safes, " + result.secureTerminals() + " secured terminal, " + result.citizens() + " citizens, " + result.homes() + " homes to lease. Undo with /uc_district undo " + district.id() + " confirm." + note), true);
                     return 1;
                 } catch (IllegalStateException error) { ctx.getSource().sendFailure(Component.literal(error.getMessage())); return 0; }
             })));

@@ -288,6 +288,90 @@
       "owner": "underground_city",
       "group": "registration",
       "description": "First-login registration, step 3: confirm the choice and the welcome pack"
+    },
+    {
+      "id": "crew.nocrew",
+      "expected_file": "uc-crew-nocrew.png",
+      "owner": "underground_city",
+      "group": "crew",
+      "description": "Crew screen for a citizen without a Crew: found one by name"
+    },
+    {
+      "id": "crew.nocrew_invited",
+      "expected_file": "uc-crew-nocrew-invited.png",
+      "owner": "underground_city",
+      "group": "crew",
+      "description": "Crew screen for a citizen with two invitations to answer"
+    },
+    {
+      "id": "crew.unregistered",
+      "expected_file": "uc-crew-unregistered.png",
+      "owner": "underground_city",
+      "group": "crew",
+      "description": "Crew screen before registration: asks to register first"
+    },
+    {
+      "id": "crew.unavailable",
+      "expected_file": "uc-crew-unavailable.png",
+      "owner": "underground_city",
+      "group": "crew",
+      "description": "Crew screen when the ledger cannot be read: names the problem and the fix"
+    },
+    {
+      "id": "crew.members",
+      "expected_file": "uc-crew-members.png",
+      "owner": "underground_city",
+      "group": "crew",
+      "description": "Members page for a founder: roles, a selected manager, invitable players, an open invitation"
+    },
+    {
+      "id": "crew.members_member",
+      "expected_file": "uc-crew-members-member.png",
+      "owner": "underground_city",
+      "group": "crew",
+      "description": "Members page for a plain member: no invite or role controls, Leave Crew"
+    },
+    {
+      "id": "crew.money",
+      "expected_file": "uc-crew-money.png",
+      "owner": "underground_city",
+      "group": "crew",
+      "description": "Money page: Crew bank and wallet cards, quick amounts, Deposit and Withdraw, history"
+    },
+    {
+      "id": "crew.money_consent",
+      "expected_file": "uc-crew-money-consent.png",
+      "owner": "underground_city",
+      "group": "crew",
+      "description": "Money page with a payout owed, a refused request in the footer and the shared-finances proposal awaiting consent"
+    },
+    {
+      "id": "crew.home",
+      "expected_file": "uc-crew-home.png",
+      "owner": "underground_city",
+      "group": "crew",
+      "description": "Home page: held homes with private-container controls and a home for lease nearby with its three ways to pay"
+    },
+    {
+      "id": "crew.rules_permissions",
+      "expected_file": "uc-crew-rules-permissions.png",
+      "owner": "underground_city",
+      "group": "crew",
+      "description": "Rules page, permissions tab: what Manager and Member may do"
+    },
+    {
+      "id": "crew.rules_mode",
+      "expected_file": "uc-crew-rules-mode.png",
+      "owner": "underground_city",
+      "group": "crew",
+      "description": "Rules page, money mode tab: three modes, shared finances waiting for consent"
+    },
+    {
+      "id": "crew.rules_disband",
+      "expected_file": "uc-crew-rules-disband.png",
+      "owner": "underground_city",
+      "group": "crew",
+      "description": "Rules page, Crew tab: rename and the typed-name disband confirmation"
     }
   ],
   "unintegrated_future_interfaces": [
