@@ -17,6 +17,7 @@ final class Scenarios {
             case "posts" -> posts();
             case "markers" -> markers();
             case "shelter" -> shelter();
+            case "qol" -> qol();
             case "tracker" -> tracker();
             case "trace" -> trace();
             case "car" -> car();
@@ -1330,6 +1331,46 @@ final class Scenarios {
         chooseOption("What does the law say at either end?", 2, "dialogue", "uc-shelter-law");
         Playtest.queue("goodbye", () -> Minecraft.getInstance().setScreen(null));
         Playtest.queue("restore the district the talk helper looks in", () -> talkDistrict = "founders_row");
+    }
+
+    /** One look at a block of the Row from a standing position (Row-relative eye and target), long enough for a tooltip mod to notice the crosshair, then a photograph. */
+    private static void glance(String name, double ex, double ey, double ez, double tx, double ty, double tz) {
+        Playtest.queue("look at " + name, () -> {
+            Vec3 o = Vec3.atLowerCornerOf(DistrictBuilder.originOf(level(), "founders_row"));
+            standLooking(o.add(ex, ey - 1.62, ez), o.add(tx, ty, tz));
+        });
+        Playtest.wait("let the overlay for " + name + " appear", 50);
+        Playtest.queue("photograph " + name, () -> Playtest.screenshotNextFrame("uc-" + name));
+        Playtest.wait("frame " + name, 8);
+    }
+
+    /** The opt-in quality-of-life mods (set {@code qol}): Jade's block tooltip over our blocks, and JEI's item list in the inventory, with a search. */
+    private static void qol() {
+        final BlockPos[] origin = new BlockPos[1];
+        buildRowInTheSky(origin);
+        screensStayOpenFromNow();
+        Playtest.queue("noon, clear, no command feedback", () -> {
+            Playtest.command("gamemode creative");
+            Playtest.command("time set 6000"); Playtest.command("gamerule doDaylightCycle false"); Playtest.command("weather clear"); Playtest.command("gamerule sendCommandFeedback false");
+        });
+        waitForMeshes(1500);
+        glance("jade-terminal", 4.5, 1.7, 6.5, 4.5, 0.5, 2.5);
+        glance("jade-ledger", 14.5, 1.7, 25.5, 11.5, 0.5, 25.5);
+        Playtest.queue("look at the sky and open the inventory", () -> {
+            Vec3 o = Vec3.atLowerCornerOf(DistrictBuilder.originOf(level(), "founders_row"));
+            standLooking(o.add(16.5, 0.1, 40), o.add(16.5, 30, 60));
+        });
+        Playtest.wait("settle", 20);
+        Playtest.queue("open the inventory", () -> Playtest.tap("e"));
+        Playtest.wait("let the screen and JEI draw", 60);
+        Playtest.queue("photograph the inventory with JEI's list", () -> Playtest.screenshotNextFrame("uc-jei-inventory"));
+        Playtest.wait("frame", 8);
+        Playtest.queue("focus JEI's search box (ctrl + f)", () -> { Playtest.keyDown("ctrl"); Playtest.tap("f"); Playtest.keyUp("ctrl"); });
+        Playtest.wait("settle", 10);
+        Playtest.queue("type 'sable'", () -> { for (String key : new String[]{"s", "a", "b", "l", "e"}) Playtest.tap(key); });
+        Playtest.wait("let the list filter", 40);
+        Playtest.queue("photograph the search", () -> Playtest.screenshotNextFrame("uc-jei-search"));
+        Playtest.wait("frame", 8);
     }
 
     private static void posts() {
