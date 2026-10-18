@@ -1366,6 +1366,11 @@ final class Scenarios {
         waitForMeshes(1500);
         glance("jade-terminal", 4.5, 1.7, 6.5, 4.5, 0.5, 2.5);
         glance("jade-ledger", 14.5, 1.7, 25.5, 11.5, 0.5, 25.5);
+        Playtest.queue("a Sable Leaf crop in the greenhouse bed, nearly grown", () -> {
+            BlockPos o = DistrictBuilder.originOf(level(), "founders_row");
+            Playtest.command("setblock " + (o.getX() + 27) + " " + o.getY() + " " + (o.getZ() + 3) + " underground_city:sable_leaf_crop[age=2,nourished=false]");
+        });
+        glance("jade-crop", 27.5, 1.7, 6.5, 27.5, 0.4, 3.5);
         Playtest.queue("look at the sky and open the inventory", () -> {
             Vec3 o = Vec3.atLowerCornerOf(DistrictBuilder.originOf(level(), "founders_row"));
             standLooking(o.add(16.5, 0.1, 40), o.add(16.5, 30, 60));
