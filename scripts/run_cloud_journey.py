@@ -17,6 +17,11 @@ MODULE=ROOT/'rpg-core'
 OUTPUT=ROOT/'build/cloud-journey'
 SERVER=MODULE/'run-journey-server'
 SCENARIO=os.environ.get('UC_JOURNEY_SCENARIO','').strip()  # '' = the economy journey; 'crew' = the Crew journey (CrewJourneyServer / CrewJourneyActions)
+# The combined journey (D-091): UC_JOURNEY_WORLD=generated runs on a Lost Cities world generated from seed 5908 instead of the flat fixture, and UC_JOURNEY_SURVIVAL=true adds the
+# survival and exchange half (SurvivalJourney.java) to the Crew journey. Both need UC_JOURNEY_SCENARIO=crew; the pack sets are chosen with UC_JOURNEY_PACK as before.
+GENERATED=os.environ.get('UC_JOURNEY_WORLD','').strip()=='generated'
+SURVIVAL=os.environ.get('UC_JOURNEY_SURVIVAL','').strip().lower()=='true'
+BANK_SPENT=14 if SURVIVAL else 0  # the interrupted wayside purchase (2 loaves at 7 credits), paid entirely by the Crew bank, which recovery committed at login
 
 
 def prepare() -> list[tuple[Path,str]]:
@@ -24,12 +29,19 @@ def prepare() -> list[tuple[Path,str]]:
         raise ValueError('Disposable journey directory already exists; preserve it and use a fresh checkout.')
     SERVER.mkdir()
     (SERVER/'eula.txt').write_text('eula=true\n')
-    flat=json.dumps({'biome':'minecraft:plains','layers':[{'block':'minecraft:bedrock','height':1},
-        {'block':'minecraft:dirt','height':2},{'block':'minecraft:grass_block','height':1}],
-        'lakes':False,'features':False,'structure_overrides':[]},separators=(',',':'))
-    (SERVER/'server.properties').write_text('server-ip=127.0.0.1\nserver-port=25565\nonline-mode=false\n'
-        'enforce-secure-profile=false\nlevel-name=world\nlevel-type=minecraft:flat\ngenerator-settings='+flat+
-        '\nview-distance=3\nsimulation-distance=3\ndifficulty=peaceful\npvp=false\nmax-players=2\nspawn-protection=0\n')
+    if GENERATED:
+        if SCENARIO!='crew': raise ValueError('UC_JOURNEY_WORLD=generated needs UC_JOURNEY_SCENARIO=crew')
+        # a real generated world: the normal overworld generator with the Lost Cities profile the dev pack stages (the world set), the reference seed of the world plan
+        (SERVER/'server.properties').write_text('server-ip=127.0.0.1\nserver-port=25565\nonline-mode=false\n'
+            'enforce-secure-profile=false\nlevel-name=world\nlevel-seed=5908\nview-distance=4\nsimulation-distance=4\ndifficulty=normal\n'
+            'pvp=false\nmax-players=2\nspawn-protection=0\nmax-tick-time=-1\n')
+    else:
+        flat=json.dumps({'biome':'minecraft:plains','layers':[{'block':'minecraft:bedrock','height':1},
+            {'block':'minecraft:dirt','height':2},{'block':'minecraft:grass_block','height':1}],
+            'lakes':False,'features':False,'structure_overrides':[]},separators=(',',':'))
+        (SERVER/'server.properties').write_text('server-ip=127.0.0.1\nserver-port=25565\nonline-mode=false\n'
+            'enforce-secure-profile=false\nlevel-name=world\nlevel-type=minecraft:flat\ngenerator-settings='+flat+
+            '\nview-distance=3\nsimulation-distance=3\ndifficulty=peaceful\npvp=false\nmax-players=2\nspawn-protection=0\n')
     install(SERVER)
     clients=[]
     for role in ('farmer','smith'):
@@ -38,14 +50,22 @@ def prepare() -> list[tuple[Path,str]]:
         if os.environ.get('UC_JOURNEY_PACK','').strip():
             # the build reads the pinned dev-pack manifest from ../content/modpacks relative to the module
             shutil.copytree(ROOT/'content/modpacks',module.parent/'content/modpacks')
+        if GENERATED:
+            # the world set's own jar and the Lost Cities profile are staged by prepareDevRun from here
+            shutil.copytree(ROOT/'content/generated/world-prototype',module.parent/'content/generated/world-prototype')
         clients.append((module,role))
     return clients
 
 
-def pack_flags() -> list[str]:
+def pack_flags(server: bool = False) -> list[str]:
     """Third-party dev-pack sets to load on the server and on both clients (UC_JOURNEY_PACK, e.g. firearms,vehicles,vintner,farming), with a bigger client heap."""
     sets=os.environ.get('UC_JOURNEY_PACK','').strip()
-    return [f'-PucPack={sets}','-PucClientHeap=2G'] if sets else []
+    flags=[f'-PucPack={sets}','-PucClientHeap=2G'] if sets else []
+    if GENERATED: flags+=['-PucDevWorld=true','-PucAutoWorld=false']
+    if server:
+        if GENERATED: flags+=['-PucJourneyWorld=generated','-PucServerHeap=3G']
+        if SURVIVAL: flags+=['-PucJourneySurvival=true']
+    return flags
 
 
 def scenario_flags(number: int) -> list[str]:
@@ -71,17 +91,49 @@ def start(module: Path, task: str, flags: list[str], logfile: Path, tmpdir: Path
     return process,stream
 
 
+# A known first-start flake of a pack mod, seen once in eight cloud starts: Traveler's Backpack 9.1.57 fills its freshly created server config and Forge reloads the file from a
+# second thread while the first load is still adding to a list, so the server dies with an ArrayIndexOutOfBoundsException before the world is created. The second start finds
+# the file and succeeds. The retry is allowed once, is printed as a warning and is counted in the report; it is never silent.
+FIRST_START_RACE='TravelersBackpackConfig$Server.loadItemsFromConfig'
+
+
+def start_server(number: int, server_log: Path, processes: list) -> int:
+    """Starts the dedicated server and waits for it to be up. Returns how many first-start retries were needed (0 or 1)."""
+    retries=0
+    while True:
+        processes.insert(0,start(MODULE,'runServer',['-PucRunDir=run-journey-server',f'-PucJourneyPhase={number}',*scenario_flags(number)[:1],*pack_flags(server=True)],server_log))
+        deadline=time.monotonic()+900
+        while time.monotonic()<deadline:
+            text=server_log.read_text(errors='replace')
+            if 'Done (' in text: return retries
+            if processes[0][0].poll() is not None: break
+            time.sleep(2)
+        else: raise TimeoutError('Dedicated server startup timed out')
+        text=server_log.read_text(errors='replace')
+        if retries==0 and FIRST_START_RACE in text:
+            retries=1
+            print(f"::warning::Journey phase {number}: the server died during its first start in Traveler's Backpack's config load (known race); starting it once more",flush=True)
+            process,stream=processes.pop(0)
+            stream.close()
+            shutil.copy(server_log,server_log.with_name(f'server-phase{number}-first-start.log'))
+            continue
+        raise RuntimeError('Dedicated server exited before startup; inspect '+str(server_log))
+
+
 def phase(number: int, clients: list[tuple[Path,str]]) -> dict:
     processes=[]
     try:
         server_log=OUTPUT/'logs'/f'server-phase{number}.log'
-        processes.append(start(MODULE,'runServer',['-PucRunDir=run-journey-server',f'-PucJourneyPhase={number}',*scenario_flags(number)[:1],*pack_flags()],server_log))
+        server_retries=start_server(number,server_log,processes)
         deadline=time.monotonic()+900
-        while time.monotonic()<deadline:
-            if 'Done (' in server_log.read_text(errors='replace'): break
-            if processes[0][0].poll() is not None: raise RuntimeError('Dedicated server exited before startup; inspect '+str(server_log))
-            time.sleep(2)
-        else: raise TimeoutError('Dedicated server startup timed out')
+        if GENERATED and number==1:
+            # the generated world's fixture sites (the Row Flats beside the spawn, a wayside shelter in the open country) are requested from the chunk system as soon as the server is up; the clients
+            # start only when they are in memory, so that the server has every core to itself while it generates and no client can be starved or timed out by it
+            while time.monotonic()<deadline:
+                if 'fixture sites generated' in server_log.read_text(errors='replace'): break
+                if processes[0][0].poll() is not None: raise RuntimeError('Dedicated server exited while warming up the fixture sites; inspect '+str(server_log))
+                time.sleep(2)
+            else: raise TimeoutError('Fixture sites were not generated in time')
         for module,role in clients:
             name='UC_Farmer' if role=='farmer' else 'UC_Smith'
             processes.append(start(module,'runClient',[f'-PucRunDir=run-journey-client-{role}',f'-PucJourneyClient={name}',*scenario_flags(number),*pack_flags()],
@@ -107,6 +159,7 @@ def phase(number: int, clients: list[tuple[Path,str]]) -> dict:
         if abrupt: result.update(result_extra)
         if SCENARIO=='crew': result['clients']=check_crew_clients(number,clients)
         result['logins']=login_report(number)
+        result['server_first_start_retries']=server_retries
         print('Real connected-client phase',number,'passed',flush=True)
         return result
     finally:
@@ -155,7 +208,7 @@ def check_crew_clients(number: int, clients: list[tuple[Path,str]]) -> dict:
         for who,obs,wallet,role in (('founder',founder,65,'Founder'),('member',member,150,'Member')):
             seen=obs['after_restart']
             need(seen['in_crew'] and seen['crew']=='Row Harvest' and seen['role']==role,f'the {who} lost the Crew across the restart: '+json.dumps(seen))
-            need(seen['bank']==45 and seen['wallet']==wallet,f'the {who} saw bank {seen["bank"]} / wallet {seen["wallet"]} after the restart, expected 45 / {wallet}')
+            need(seen['bank']==45-BANK_SPENT and seen['wallet']==wallet,f'the {who} saw bank {seen["bank"]} / wallet {seen["wallet"]} after the restart, expected {45-BANK_SPENT} / {wallet}')
             need(len(seen['members'])==2 and any(h.startswith('Row House:Crew') for h in seen['homes']),f'the {who} lost members or the home across the restart')
             need(any(line.startswith('DEPOSIT 15') for line in seen['history_newest_first']),f'the {who} does not see the recovered deposit in the history')
         need(member['after_restart']['homes'] and 'private=1' in ''.join(member['after_restart']['homes']),'the private container was not shown after the restart')

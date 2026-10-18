@@ -63,6 +63,15 @@ public final class CrewJourneyServer {
     private static long startedAt;
     private CrewJourneyServer() {}
 
+    /** Generated world, phase 1: the sites are generated step by step before the journey starts, so no tick is long enough to kill the server or disconnect a client (see {@link SurvivalJourney#planWarmUp}). */
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public static void warmUpSites(ServerStartedEvent event) {
+        if (!ENABLED || PHASE != 1 || !SurvivalJourney.GENERATED) return;
+        var flats = DistrictCatalog.INSTANCE.find("row_flats");
+        if (flats == null) throw new IllegalStateException("Row Flats are not in the catalogue");
+        SurvivalJourney.planWarmUp(event.getServer().overworld(), flats.max().getX() - flats.min().getX() + 1, flats.max().getZ() - flats.min().getZ() + 1);
+    }
+
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void startingRecovery(ServerStartedEvent event) {
         if (!ENABLED || PHASE != 2) return;
@@ -85,6 +94,15 @@ public final class CrewJourneyServer {
         MinecraftServer server = event.getServer();
         Path folder = server.getWorldPath(LevelResource.ROOT).toAbsolutePath().normalize().getParent();
         if (!folder.getFileName().toString().equals("run-journey-server")) throw new IllegalStateException("Journey fixture requires its dedicated disposable directory");
+        if (PHASE == 1 && !SurvivalJourney.warmedUp()) {
+            try { SurvivalJourney.warmStep(); } catch (RuntimeException | AssertionError error) {
+                finished = true;
+                com.mojang.logging.LogUtils.getLogger().error("Crew journey warm-up failed", error);
+                try { Files.writeString(folder.resolve("journey-failure.txt"), error.toString() + "\n"); } catch (IOException ignored) { }
+                server.halt(false);
+            }
+            return;
+        }
         List<ServerPlayer> players = server.getPlayerList().getPlayers();
         if (players.size() != 2) return;
         if (players.stream().anyMatch(p -> !List.of(FARMER, SMITH).contains(p.getGameProfile().getName()))) {
@@ -106,7 +124,7 @@ public final class CrewJourneyServer {
 
     // ------------------------------------------------------------------------------------------------------------ phase 1
 
-    private static void phaseOne(MinecraftServer server, Path folder, ServerPlayer farmer, ServerPlayer smith) throws IOException {
+    private static void phaseOne(MinecraftServer server, Path folder, ServerPlayer farmer, ServerPlayer smith) throws Exception {
         ServerLevel level = server.overworld();
         if (!initialized) {
             initialized = true;
@@ -159,13 +177,23 @@ public final class CrewJourneyServer {
         var citizens = CitizenState.get(server);
         expect(citizens.find(farmer.getUUID()).orElseThrow().career.equals("farmer") && citizens.find(smith.getUUID()).orElseThrow().career.equals("smith"), "careers stay personal");
 
+        // The combined journey (D-091): the Crew goes to fully shared finances, a wayside shelter is built, the players carry, drink, cook and equip, and a Crew-funded purchase at the
+        // shelter's desk is interrupted right after its prepared record. Its hold sits in the ledger beside the two transfers injected below.
+        long held = 0;
+        JsonObject survival = null;
+        if (SurvivalJourney.ON) {
+            survival = SurvivalJourney.prepare(server, level, farmer, smith, table, ledger);
+            held = SurvivalJourney.CRASH_COST;
+            expect(ledger.allHolds().size() == 1 && ledger.totalInFlight() == held && crew.bank == 30 - held, "the interrupted purchase's hold is in the ledger: " + ledger.allHolds() + ", bank " + crew.bank);
+        }
+
         // Two transfers the process never finishes. The deposit reached the wallet and the saved player file; the withdrawal stopped right after its prepare record.
         UUID depositTx = UUID.randomUUID(), withdrawTx = UUID.randomUUID();
         Pending deposit = ledger.beginDeposit(depositTx, farmer.getUUID(), 15, QShopEconomy.balance(farmer));
         CrewService.wallet.set(farmer, deposit.after());
         PlayerStore.saveVerified(farmer);
         Pending withdraw = ledger.beginWithdraw(withdrawTx, smith.getUUID(), 10, QShopEconomy.balance(smith));
-        expect(ledger.allPending().size() == 2 && ledger.totalInFlight() == 10 && crew.bank == 20, "the withdrawal's hold is taken from the bank at once");
+        expect(ledger.allPending().size() == 2 && ledger.totalInFlight() == 10 + held && crew.bank == 20 - held, "the withdrawal's hold is taken from the bank at once");
 
         JsonObject state = new JsonObject();
         state.addProperty("origin_x", origin.getX());
@@ -173,6 +201,7 @@ public final class CrewJourneyServer {
         state.addProperty("origin_z", origin.getZ());
         state.addProperty("deposit_tx", depositTx.toString());
         state.addProperty("withdraw_tx", withdrawTx.toString());
+        if (survival != null) state.add("survival", survival);
         Files.writeString(folder.resolve("crew-journey-state.json"), state + "\n");
         server.saveEverything(false, true, true); // the world, the Row Flats and both player files are on disk; the ledger is already
         JsonObject marker = new JsonObject();
@@ -187,6 +216,9 @@ public final class CrewJourneyServer {
         marker.addProperty("farmer_wallet_at_halt", QShopEconomy.balance(farmer));
         marker.addProperty("smith_wallet_at_halt", QShopEconomy.balance(smith));
         marker.addProperty("history_lines", crew.log.size());
+        marker.addProperty("bank_at_halt", crew.bank);
+        marker.addProperty("purchase_hold_at_halt", held);
+        if (survival != null) marker.add("survival", survival);
         marker.addProperty("process_end", "Runtime.halt: no stop sequence, no shutdown hooks, no world save after this point");
         marker.addProperty("status", "passed");
         Files.writeString(folder.resolve("journey-crew-phase1.json"), marker + "\n");
@@ -201,9 +233,16 @@ public final class CrewJourneyServer {
         if (flats == null) throw new IllegalStateException("Row Flats are not in the catalogue");
         // The journey world is flat and thin (four layers above the world's floor): a district's own foundation would leave the build height, and the development launch's site finder
         // reads ground below sea level as water. So the Row Flats stand on a small stone mesa on the real surface beside the spawn.
-        BlockPos spawn = level.getSharedSpawnPos();
-        int x0 = spawn.getX() + 24, z0 = spawn.getZ() + 24, lift = 6;
-        int width = flats.max().getX() - flats.min().getX() + 1, depth = flats.max().getZ() - flats.min().getZ() + 1;
+        int width = flats.max().getX() - flats.min().getX() + 1, depth = flats.max().getZ() - flats.min().getZ() + 1, lift = 6;
+        int x0, z0;
+        if (SurvivalJourney.GENERATED) {
+            // on a generated Lost Cities world the Row Flats stand inside the real exchange circle of the journey's city (Ironhaven, centred on the spawn), on open ground found by probing, so that the house's terminal belongs to a real city
+            BlockPos corner = SurvivalJourney.flatsCorner != null ? SurvivalJourney.flatsCorner : SurvivalJourney.openGroundInCity(level, SurvivalJourney.CITY, width, depth);
+            x0 = corner.getX(); z0 = corner.getZ();
+        } else {
+            BlockPos spawn = level.getSharedSpawnPos();
+            x0 = spawn.getX() + 24; z0 = spawn.getZ() + 24;
+        }
         for (int cx = (x0 - 4) >> 4; cx <= (x0 + width + 4) >> 4; cx++) for (int cz = (z0 - 4) >> 4; cz <= (z0 + depth + 4) >> 4; cz++) level.getChunk(cx, cz);
         BlockPos ground = DevCommands.surface(level, x0, z0);
         origin = ground.above(lift);
@@ -296,8 +335,11 @@ public final class CrewJourneyServer {
     private static boolean replaysChecked;
     private static int settled;
     private static JsonObject state;
+    private static JsonObject survivalFacts;
+    /** What the interrupted Crew-funded purchase took out of the bank for good (the combined journey only). */
+    private static final long SPENT = SurvivalJourney.ON ? SurvivalJourney.CRASH_COST : 0;
 
-    private static void phaseTwo(MinecraftServer server, Path folder, ServerPlayer farmer, ServerPlayer smith) throws IOException {
+    private static void phaseTwo(MinecraftServer server, Path folder, ServerPlayer farmer, ServerPlayer smith) throws Exception {
         ServerLevel level = server.overworld();
         CrewLedger ledger = CrewService.need(server);
         if (!verified) {
@@ -315,10 +357,10 @@ public final class CrewJourneyServer {
             expect(house != null && house.ownerType == OwnerType.CREW && crew.id.equals(house.owner), "the Row House is still the Crew's");
             expect(smith.getUUID().equals(house.claims.get(chest.asLong())), "the private container survived");
             // the deposit had reached the wallet and the player file: recovery settled it. The withdrawal had not touched the wallet: recovery cancelled it.
-            expect(crew.bank == 45, "bank 45 (30 + the settled deposit of 15; the cancelled withdrawal's hold returned), was " + crew.bank);
+            expect(crew.bank == 45 - SPENT, "bank " + (45 - SPENT) + " (30 + the settled deposit of 15; the cancelled withdrawal's hold returned" + (SPENT > 0 ? "; less the " + SPENT + " the interrupted purchase spent" : "") + "), was " + crew.bank);
             double farmerWallet = QShopEconomy.balance(farmer), smithWallet = QShopEconomy.balance(smith);
             expect(farmerWallet == 65 && smithWallet == 150, "wallets after recovery " + farmerWallet + " / " + smithWallet);
-            expect(farmerWallet + smithWallet + crew.bank + 140 == 400, "conservation after recovery");
+            expect(farmerWallet + smithWallet + crew.bank + 140 + SPENT == 400, "conservation after recovery");
             expect(crew.log.stream().anyMatch(e -> e.kind().equals("DEPOSIT") && e.amount() == 15), "the settled deposit is in the history");
             expect(crew.log.stream().filter(e -> e.kind().equals("WITHDRAW")).count() == 1, "the cancelled withdrawal must not appear as a second withdrawal in the history");
             var citizens = CitizenState.get(server);
@@ -326,7 +368,11 @@ public final class CrewJourneyServer {
             UUID stranger = UUID.nameUUIDFromBytes("uc-journey-stranger".getBytes());
             expect(ResidenceGuard.allowed(ledger, house, smith.getUUID(), house.dimension, chest, Act.CONTAINER) && !ResidenceGuard.allowed(ledger, house, farmer.getUUID(), house.dimension, chest, Act.CONTAINER)
                 && !ResidenceGuard.allowed(ledger, house, stranger, house.dimension, table, Act.WORKSTATION), "the guard's decisions after the restart");
-            System.out.println("[UC-JOURNEY] Crew state verified after the restart: bank 45, wallets 65/150, nothing unresolved");
+            if (SurvivalJourney.ON) {
+                survivalFacts = SurvivalJourney.verifyAfterRestart(server, level, farmer, smith, state, ledger);
+                System.out.println("[UC-JOURNEY] survival state verified after the restart: " + survivalFacts);
+            }
+            System.out.println("[UC-JOURNEY] Crew state verified after the restart: bank " + (45 - SPENT) + ", wallets 65/150, nothing unresolved");
             CrewNetwork.sendView(farmer, true);
             CrewNetwork.sendView(smith, true);
             return;
@@ -351,12 +397,24 @@ public final class CrewJourneyServer {
         if (!text.equals(lastProgress)) { lastProgress = text; stalled = 0; System.out.println("[UC-JOURNEY] " + text); }
         else if (++stalled * 10 > STALL_TICKS) throw new IllegalStateException("No progress for " + STALL_TICKS / 20 + " seconds; last state: " + text);
         // the clients now continue with the screen: the founder deposits 5, the member withdraws 20
-        if (crew.bank != 30 || QShopEconomy.balance(farmer) != 60 || QShopEconomy.balance(smith) != 170 || !ledger.allPending().isEmpty()) return;
+        if (crew.bank != 30 - SPENT || QShopEconomy.balance(farmer) != 60 || QShopEconomy.balance(smith) != 170 || !ledger.allPending().isEmpty()) return;
         // the numbers are final; give the clients a few seconds to take the server's answer into their screens and write down what they show before the server ends the run
         if (++settled * 10 < 20 * 5) return;
-        expect(QShopEconomy.balance(farmer) + QShopEconomy.balance(smith) + crew.bank + 140 == 400, "conservation at the end");
+        expect(QShopEconomy.balance(farmer) + QShopEconomy.balance(smith) + crew.bank + 140 + SPENT == 400, "conservation at the end");
         expect(crew.log.stream().filter(e -> e.kind().equals("DEPOSIT") && e.amount() == 5).count() == 1 && crew.log.stream().filter(e -> e.kind().equals("WITHDRAW") && e.amount() == 20).count() == 1,
             "the two transfers made after the restart are in the history once each");
+        long bankAtClients = crew.bank;
+        double farmerAtClients = QShopEconomy.balance(farmer), smithAtClients = QShopEconomy.balance(smith);
+        long exchangeSpent = 0;
+        if (SurvivalJourney.ON) {
+            // the clients have written down their screens; now the same exchange code the terminal packet calls sells to both players: one purchase paid half by the bank and half by the
+            // wallet, one paid by a wallet alone, and one nobody can pay (refused, nothing moves)
+            exchangeSpent = SurvivalJourney.purchasesAfterRestart(server, level, farmer, smith, table, ledger, survivalFacts);
+            expect(crew.bank == 0 && ledger.allHolds().isEmpty() && ledger.allPending().isEmpty(), "the Crew bank and holds after the exchange purchases: bank " + crew.bank + ", holds " + ledger.allHolds());
+            expect(QShopEconomy.balance(farmer) + QShopEconomy.balance(smith) + crew.bank + 140 + SPENT + exchangeSpent == 400,
+                "conservation after the exchange purchases: " + QShopEconomy.balance(farmer) + " + " + QShopEconomy.balance(smith) + " + " + crew.bank + " + 140 + " + SPENT + " + " + exchangeSpent);
+            System.out.println("[UC-JOURNEY] exchange purchases after the restart passed: " + survivalFacts);
+        }
         server.getPlayerList().saveAll();
         JsonObject marker = new JsonObject();
         marker.addProperty("scenario", "crew");
@@ -364,10 +422,14 @@ public final class CrewJourneyServer {
         marker.addProperty("connected_clients", 2);
         marker.addProperty("unresolved_transfers_found_in_file_at_start", pendingBeforeStart);
         marker.addProperty("unresolved_after_recovery_at_server_start", pendingAfterStart);
-        marker.addProperty("bank_after_recovery", 45);
+        marker.addProperty("bank_after_recovery", 45 - SPENT);
+        marker.addProperty("bank_when_the_clients_looked", bankAtClients);
         marker.addProperty("bank_final", crew.bank);
+        marker.addProperty("farmer_wallet_when_the_clients_looked", farmerAtClients);
+        marker.addProperty("smith_wallet_when_the_clients_looked", smithAtClients);
         marker.addProperty("farmer_wallet_final", QShopEconomy.balance(farmer));
         marker.addProperty("smith_wallet_final", QShopEconomy.balance(smith));
+        if (survivalFacts != null) marker.add("survival", survivalFacts);
         marker.addProperty("replays_refused_after_restart", 2);
         JsonArray history = new JsonArray();
         crew.log.forEach(e -> history.add(e.kind() + (e.amount() > 0 ? " " + e.amount() : "")));

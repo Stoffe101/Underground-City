@@ -92,6 +92,59 @@ jobs:
             rpg-core/run-journey-server/journey-failure.txt
           retention-days: 7
           if-no-files-found: warn
+  journey-combined:
+    name: Combined journey, generated Lost Cities world, every pack set, two real clients, a server killed with a purchase held
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      # Scenario "crew" with the survival and exchange half (SurvivalJourney.java, D-091) on a world generated from seed 5908 by Lost Cities, with the world, firearms, vehicles,
+      # boats, vintner, farming and survival sets loaded on the server and on both clients. Phase 1 puts the Crew in fully shared finances, builds a wayside shelter, equips a
+      # backpack, fills and drinks a canteen, cooks a meal, carries a gun, and starts a Crew-funded purchase at the shelter's desk whose process dies right after its prepared
+      # record; the server JVM is then halted with no stop sequence. Phase 2 restarts it: the held purchase is committed at login, everything the players carry is read back from
+      # their real player files, a replay is refused, and a purchase split between the bank and a wallet, one paid by a wallet and one nobody can pay are made on the exchange.
+      # The clients are offline test profiles, so the server is online-mode=false; the authenticated launch is checked by run_auth_check.py in dev-pack-smoke.yml.
+      UC_JOURNEY_SCENARIO: crew
+      UC_JOURNEY_PACK: world,firearms,vehicles,boats,vintner,farming,survival
+      UC_JOURNEY_WORLD: generated
+      UC_JOURNEY_SURVIVAL: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.8'
+      - name: Install cloud virtual display
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq xvfb xauth libgl1-mesa-dri libgl1
+      - name: Run the combined journey
+        run: xvfb-run -a -s '-screen 0 1920x1080x24' python scripts/run_cloud_journey.py
+      - name: Print why a journey process stopped (the logs are also an artifact)
+        if: failure()
+        run: |
+          for log in build/cloud-journey/logs/*.log; do
+            echo "=== ${log}"
+            grep -nE 'Exception in thread|Crash report saved|Failed to start|OutOfMemory|Exception caught during firing|FAILED|FAILURE|Caused by|Could not|\[UC-JOURNEY\]|Crew recovery|Watchdog' -A 4 "${log}" | head -n 100 || true
+            tail -n 25 "${log}"
+          done
+          cat rpg-core/run-journey-server/journey-failure.txt || true
+      - name: Preserve reports and diagnostics only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: uc-combined-journey-evidence-${{ github.sha }}
+          path: |
+            build/cloud-journey/logs/*.log
+            build/cloud-journey/report.json
+            rpg-core/run-journey-server/journey-crew-phase*.json
+            rpg-core/run-journey-server/journey-failure.txt
+            rpg-core/run-journey-server/crash-reports/*.txt
+          retention-days: 7
+          if-no-files-found: warn
   journey-full-pack:
     name: journey with the TaCZ, vehicle, wine and crop mods loaded
     runs-on: ubuntu-latest

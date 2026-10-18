@@ -24,7 +24,6 @@ import net.minecraftforge.items.ItemStackHandler;
 import net.minecraftforge.registries.ForgeRegistries;
 
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.util.List;
 
 import static io.github.stoffe101.undergroundcity.CrewGameTests.check;
@@ -48,43 +47,13 @@ public final class SurvivalMechanicsGameTests {
         return ModList.get().isLoaded("travelersbackpack") && ModList.get().isLoaded("thirstwastaken2") && ModList.get().isLoaded("farmersdelight") && ModList.get().isLoaded("comforts");
     }
 
-    // ------------------------------------------------------------------------------------------------------------ reflection helpers
+    // ------------------------------------------------------------------------------------------------------------ reflection helpers (see ModReflect)
 
-    private static ClassLoader loaderOf(String itemId) { return ForgeRegistries.ITEMS.getValue(ResourceLocation.parse(itemId)).getClass().getClassLoader(); }
-
-    private static Class<?> cls(String itemId, String name) throws Exception { return Class.forName(name, true, loaderOf(itemId)); }
-
-    /** Calls a public static method by name, choosing the overload whose parameters accept the arguments. */
-    private static Object call(Class<?> type, String method, Object... args) throws Exception {
-        for (Method m : type.getMethods()) {
-            if (!m.getName().equals(method) || !Modifier.isStatic(m.getModifiers()) || m.getParameterCount() != args.length) continue;
-            if (accepts(m.getParameterTypes(), args)) return m.invoke(null, args);
-        }
-        throw new NoSuchMethodException(type.getName() + "." + method + " for " + args.length + " arguments");
-    }
-
-    private static Object callOn(Object target, String method, Object... args) throws Exception {
-        for (Method m : target.getClass().getMethods()) {
-            if (!m.getName().equals(method) || m.getParameterCount() != args.length) continue;
-            if (accepts(m.getParameterTypes(), args)) return m.invoke(target, args);
-        }
-        throw new NoSuchMethodException(target.getClass().getName() + "." + method + " for " + args.length + " arguments");
-    }
-
-    private static boolean accepts(Class<?>[] types, Object[] args) {
-        for (int i = 0; i < types.length; i++) {
-            Class<?> t = types[i];
-            Object a = args[i];
-            if (a == null) { if (t.isPrimitive()) return false; continue; }
-            Class<?> boxed = t == int.class ? Integer.class : t == float.class ? Float.class : t == boolean.class ? Boolean.class : t == long.class ? Long.class : t == double.class ? Double.class : t;
-            if (!boxed.isInstance(a)) return false;
-        }
-        return true;
-    }
-
-    private static int staticInt(Class<?> type, String field) throws Exception { return type.getField(field).getInt(null); }
-
-    private static Item item(String id) { return ForgeRegistries.ITEMS.getValue(ResourceLocation.parse(id)); }
+    private static Class<?> cls(String itemId, String name) throws Exception { return ModReflect.cls(itemId, name); }
+    private static Object call(Class<?> type, String method, Object... args) throws Exception { return ModReflect.call(type, method, args); }
+    private static Object callOn(Object target, String method, Object... args) throws Exception { return ModReflect.callOn(target, method, args); }
+    private static int staticInt(Class<?> type, String field) throws Exception { return ModReflect.staticInt(type, field); }
+    private static Item item(String id) { return ModReflect.item(id); }
 
     // ------------------------------------------------------------------------------------------------------------ thirst
 

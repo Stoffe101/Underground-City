@@ -118,9 +118,15 @@ jobs:
         run: gradle -p rpg-core build --no-daemon --stacktrace
       - name: Install Forge, stage the hash-verified mods and boot a real server
         run: python scripts/run_prod_boot_check.py --sets firearms vehicles boats --work build/prod-boot
-      # the opt-in survival set (D-085) on its own, as it was verified locally; the combination with the other sets has not been booted
+      # the opt-in survival set (D-085) on its own
       - name: Boot a real server with the opt-in survival set
         run: python scripts/run_prod_boot_check.py --sets survival --work build/prod-boot-survival
+      # every set at once (Lost Cities, TaCZ and its blueprints, Immersive Vehicles, Modern Life, the wine and crop mods and the survival set): the combination the combined journey plays on
+      - name: Boot a real server with every pinned set at once
+        run: python scripts/run_prod_boot_check.py --sets world firearms vehicles boats vintner farming survival --work build/prod-boot-all
+      # D-090: the production-style server pack must demand authentication (an Encryption Request), and the developer launch must not; protocol level, no account involved
+      - name: Prove that the authenticated server pack refuses unproven identities
+        run: python scripts/run_auth_check.py --work build/auth-check
       - name: Preserve the report and server log without jars or world saves
         if: always()
         uses: actions/upload-artifact@v4
@@ -133,5 +139,9 @@ jobs:
             build/prod-boot-survival/prod-boot-report.json
             build/prod-boot-survival/server/boot-stdout.log
             build/prod-boot-survival/server/logs/latest.log
+            build/prod-boot-all/prod-boot-report.json
+            build/prod-boot-all/server/boot-stdout.log
+            build/prod-boot-all/server/logs/latest.log
+            build/auth-check/auth-check-report.json
           retention-days: 3
           if-no-files-found: warn

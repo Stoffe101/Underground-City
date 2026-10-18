@@ -26,7 +26,7 @@ java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 // GitHub release), are SHA-512/SHA-256 verified against content/modpacks/dev-pack.json, and are never committed.
 // ---------------------------------------------------------------------------------------------------------------
 def harnessFlags = ['ucPack', 'ucEconomyTest', 'ucScreeningMod', 'ucWorldCandidate', 'ucWorldTour', 'ucJourneyClient',
-                    'ucVisualCapture', 'ucWorldSurvey', 'ucSeedScan', 'ucJourneyPhase', 'ucJourneyScenario', 'ucPerfProbe']
+                    'ucVisualCapture', 'ucWorldSurvey', 'ucSeedScan', 'ucJourneyPhase', 'ucJourneyScenario', 'ucJourneySurvival', 'ucJourneyWorld', 'ucPerfProbe']
 def requestedTasks = gradle.startParameter.taskNames.collect { it.tokenize(':').last() }
 def userLaunch = requestedTasks.any { it in ['runClient', 'runServer'] } &&
         !harnessFlags.any { providers.gradleProperty(it).isPresent() }
@@ -143,11 +143,14 @@ minecraft {
                 jvmArgs "-Duc.seedScan=${providers.gradleProperty('ucSeedScan').get()}", '-XX:ActiveProcessorCount=2'
             }
             if (providers.gradleProperty('ucJourneyPhase').isPresent()) {
-                jvmArgs "-Duc.journey.phase=${providers.gradleProperty('ucJourneyPhase').get()}", "-Xmx${providers.gradleProperty('ucClientHeap').orElse('1G').get()}", '-XX:ActiveProcessorCount=2'
+                jvmArgs "-Duc.journey.phase=${providers.gradleProperty('ucJourneyPhase').get()}", "-Xmx${providers.gradleProperty('ucServerHeap').orElse(providers.gradleProperty('ucClientHeap').orElse('1G').get()).get()}", '-XX:ActiveProcessorCount=2'
             }
             if (providers.gradleProperty('ucJourneyScenario').isPresent()) {
                 jvmArgs "-Duc.journey.scenario=${providers.gradleProperty('ucJourneyScenario').get()}"
             }
+            // the combined journey (D-091): survival goods, the wayside shelter and the interrupted purchase, optionally on a generated Lost Cities world instead of the flat fixture
+            if (providers.gradleProperty('ucJourneySurvival').isPresent()) jvmArgs '-Duc.journey.survival=true'
+            if (providers.gradleProperty('ucJourneyWorld').isPresent()) jvmArgs "-Duc.journey.world=${providers.gradleProperty('ucJourneyWorld').get()}"
         }
         gameTestServer {
             property 'forge.enabledGameTestNamespaces', mod_id
