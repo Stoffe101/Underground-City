@@ -9,7 +9,7 @@ import java.util.Set;
 public final class ProgressionRules {
     public static final int MAX_XP = 2_000_000;
     public static final Set<String> CITIES = Set.of("valewood", "ironhaven", "blackwater");
-    public static final Set<String> CAREERS = Set.of("farmer", "smith", "gunsmith", "technician");
+    public static final Set<String> CAREERS = Set.of("farmer", "vintner", "smith", "gunsmith", "technician");
     public static final Set<String> GENERAL_SKILLS = Set.of("driving", "fitness", "shooting", "trading", "social");
 
     private ProgressionRules() {}
@@ -30,6 +30,20 @@ public final class ProgressionRules {
             throw new IllegalArgumentException("Current XP cannot be negative");
         }
         return (int) Math.min(MAX_XP, (long) current + gain);
+    }
+
+    /** The XP at which {@code level} begins (the inverse of {@link #levelForXp}); level 1 begins at 0. */
+    public static int xpAtLevel(int level) {
+        int n = Math.max(1, level) - 1;
+        return 125 * n * n;
+    }
+
+    /** Fraction of the way from the start of the current level to the next, 0..1 (1 at the top level). */
+    public static float levelProgress(int xp) {
+        int level = levelForXp(xp);
+        if (level >= 30) return 1f;
+        int from = xpAtLevel(level), to = xpAtLevel(level + 1);
+        return Math.max(0f, Math.min(1f, (xp - from) / (float) Math.max(1, to - from)));
     }
 
     /** Early provisional 30-level curve. Rebalance against actual contracts. */

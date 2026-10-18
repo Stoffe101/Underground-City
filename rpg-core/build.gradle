@@ -26,7 +26,7 @@ java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 // GitHub release), are SHA-512/SHA-256 verified against content/modpacks/dev-pack.json, and are never committed.
 // ---------------------------------------------------------------------------------------------------------------
 def harnessFlags = ['ucPack', 'ucEconomyTest', 'ucScreeningMod', 'ucWorldCandidate', 'ucWorldTour', 'ucJourneyClient',
-                    'ucVisualCapture', 'ucWorldSurvey', 'ucSeedScan', 'ucJourneyPhase']
+                    'ucVisualCapture', 'ucWorldSurvey', 'ucSeedScan', 'ucJourneyPhase', 'ucPerfProbe']
 def requestedTasks = gradle.startParameter.taskNames.collect { it.tokenize(':').last() }
 def userLaunch = requestedTasks.any { it in ['runClient', 'runServer'] } &&
         !harnessFlags.any { providers.gradleProperty(it).isPresent() }
@@ -64,6 +64,9 @@ minecraft {
         configureEach {
             workingDirectory project.file(runDirName)
             property 'forge.logging.console.level', 'info'
+            // Forge 1.20.1 does not read [[mixins]] from mods.toml. A development run loads our (optional, pseudo-targeted) mixin config
+            // through this argument; the built jar names it in its manifest (MixinConfigs, below).
+            args '--mixin.config', 'underground_city.mixins.json'
             if (!devPackMods.isEmpty()) {
                 // Dev-pack mods such as TaCZ are mixin mods whose refmaps use SRG names; this development environment
                 // runs with the official names, so Mixin must remap the refmaps (the documented ForgeGradle 6 recipe).
@@ -105,7 +108,7 @@ minecraft {
                 args '--username', 'UC_WorldSurvey', '--width', '1920', '--height', '1080'
             }
             if (providers.gradleProperty('ucJourneyClient').isPresent()) {
-                jvmArgs '-Duc.journey.client=true', '-Xmx1G', '-XX:ActiveProcessorCount=2'
+                jvmArgs '-Duc.journey.client=true', "-Xmx${providers.gradleProperty('ucClientHeap').orElse('1G').get()}", '-XX:ActiveProcessorCount=2'
                 args '--username', providers.gradleProperty('ucJourneyClient').get(), '--width', '1920', '--height', '1080'
             }
             if (providers.gradleProperty('ucVisualCapture').orNull == 'true') {
@@ -122,6 +125,10 @@ minecraft {
             if (providers.gradleProperty('ucBootSmoke').isPresent()) {
                 jvmArgs '-Duc.bootSmoke=true'
             }
+            if (providers.gradleProperty('ucPerfProbe').orNull == 'true') {
+                // a dedicated server that measures the cost of a tick with and without Founders Row (PerfProbe.java), then stops
+                jvmArgs '-Duc.perfProbe=true', '-Xmx2G'
+            }
             if (providers.gradleProperty('ucWorldSurvey').orNull == 'true') {
                 jvmArgs '-Duc.worldSurvey=true', '-XX:ActiveProcessorCount=2'
             }
@@ -129,7 +136,7 @@ minecraft {
                 jvmArgs "-Duc.seedScan=${providers.gradleProperty('ucSeedScan').get()}", '-XX:ActiveProcessorCount=2'
             }
             if (providers.gradleProperty('ucJourneyPhase').isPresent()) {
-                jvmArgs "-Duc.journey.phase=${providers.gradleProperty('ucJourneyPhase').get()}", '-Xmx1G', '-XX:ActiveProcessorCount=2'
+                jvmArgs "-Duc.journey.phase=${providers.gradleProperty('ucJourneyPhase').get()}", "-Xmx${providers.gradleProperty('ucClientHeap').orElse('1G').get()}", '-XX:ActiveProcessorCount=2'
             }
         }
         gameTestServer {
@@ -161,6 +168,9 @@ if (worldCandidateId != null && !worldCandidateId.trim().isEmpty()) {
     if (screeningMod != null) {
         throw new GradleException("Do not run unrelated onboarding and world candidate tests together")
     }
+}
+tasks.named('jar') {
+    manifest { attributes('MixinConfigs': 'underground_city.mixins.json') }
 }
 repositories {
     mavenCentral()

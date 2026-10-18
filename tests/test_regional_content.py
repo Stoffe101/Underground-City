@@ -27,11 +27,15 @@ class RegionalContentTests(unittest.TestCase):
         expected = {ROOT / rel for rel in gen.build(SOURCE, CONTRACTS)}
         for folder, suffixes in (("data/underground_city/regional_stock", {".json"}),
                                  ("data/underground_city/regions", {".json"}),
-                                 ("assets/underground_city/textures/item", {".png"}),
                                  ("assets/underground_city/models/item", {".json"})):
             for path in (RES / folder).glob("*"):
                 if path.suffix in suffixes and path.name != "operations_terminal.json":
                     self.assertIn(path, expected, f"orphaned generated file {path}")
+
+    def test_every_item_texture_belongs_to_an_item(self):
+        ids = {e["id"] for e in SOURCE["commodities"] + SOURCE["products"] + SOURCE["tools"] + SOURCE["specials"]}
+        for path in (RES / "assets/underground_city/textures/item").glob("*.png"):
+            self.assertIn(path.stem, ids, f"texture without an item: {path.name}")
 
     def test_city_regions_are_derived_from_the_world_blueprint(self):
         for city in CITIES["cities"]:
@@ -61,7 +65,7 @@ class RegionalContentTests(unittest.TestCase):
         by_career = {}
         for order in SOURCE["orders"]:
             by_career.setdefault(order["career"], []).append(order)
-        self.assertEqual({k: len(v) for k, v in by_career.items()}, {"farmer": 3, "smith": 3, "gunsmith": 3, "technician": 3})
+        self.assertEqual({k: len(v) for k, v in by_career.items()}, {"farmer": 3, "vintner": 3, "smith": 3, "gunsmith": 3, "technician": 3})
         for orders in by_career.values():
             tiers = sorted(o["foreign_visits"] for o in orders)
             self.assertEqual(tiers, [1, 1, 2], "two tier-2 orders and one tier-3 order per career")
@@ -70,7 +74,7 @@ class RegionalContentTests(unittest.TestCase):
         lang = json.loads((RES / "assets/underground_city/lang/en_us.json").read_text())
         listing = json.loads((RES / "underground_city_items.json").read_text())
         ids = [e["id"] for e in listing["items"]]
-        self.assertEqual(len(ids), 22 + len(SOURCE["specials"]))
+        self.assertEqual(len(ids), 25 + len(SOURCE["specials"]))
         self.assertEqual(set(ids), {e["id"] for e in SOURCE["commodities"] + SOURCE["products"] + SOURCE["tools"] + SOURCE["specials"]})
         from PIL import Image
         for item_id in ids:
@@ -89,13 +93,12 @@ class RegionalContentTests(unittest.TestCase):
             self.assertTrue(any(i["item"].startswith("minecraft:") for i in recipe["ingredients"]),
                             "recipes keep at least one ordinary vanilla ingredient ungated")
 
-    def test_generated_item_icons_are_distinct(self):
+    def test_item_icons_are_distinct(self):
+        """Every item has its own sprite (tools/art draws them; build_all.py --check proves they are current)."""
         from PIL import Image
         seen = {}
         for entry in SOURCE["commodities"] + SOURCE["products"] + SOURCE["tools"] + SOURCE["specials"]:
-            buf = BytesIO()
-            gen.icon(entry["icon"], gen.palette_for(entry)).save(buf, "PNG")
-            pixels = Image.open(BytesIO(buf.getvalue())).convert("RGBA").tobytes()
+            pixels = Image.open(RES / f"assets/underground_city/textures/item/{entry['id']}.png").convert("RGBA").tobytes()
             self.assertNotIn(pixels, seen, f"{entry['id']} duplicates the icon of {seen.get(pixels)}")
             seen[pixels] = entry["id"]
 
@@ -132,14 +135,22 @@ class SpecialItemTests(unittest.TestCase):
         self.assertEqual(posts, set(gates), "orphaned or missing checkpoint")
 
     def test_sable_leaf_crop_has_four_growth_stages(self):
+        """Each stage (and its fed variant) is a model whose textures exist and are 16x16 with drawn pixels."""
         from PIL import Image
+        assets = RES / "assets/underground_city"
         for age in range(4):
-            image = Image.open(RES / f"assets/underground_city/textures/block/sable_leaf_crop_stage{age}.png")
-            self.assertEqual(image.size, (16, 16))
-            self.assertGreater(image.convert("RGBA").getchannel("A").getextrema()[1], 0)
-        state = json.loads((RES / "assets/underground_city/blockstates/sable_leaf_crop.json").read_text())
+            for suffix in ("", "_fed"):
+                model = json.loads((assets / f"models/block/sable_leaf_crop_stage{age}{suffix}.json").read_text())
+                self.assertTrue(model["elements"], f"stage {age}{suffix} has no geometry")
+                for name, ref in model["textures"].items():
+                    if name == "particle" and ref == "#leaf":
+                        continue
+                    self.assertTrue(ref.startswith("underground_city:block/"), (age, name, ref))
+                    image = Image.open(assets / "textures" / f"{ref.split(':', 1)[1]}.png")
+                    self.assertEqual(image.size, (16, 16), ref)
+                    self.assertGreater(image.convert("RGBA").getchannel("A").getextrema()[1], 0, ref)
+        state = json.loads((assets / "blockstates/sable_leaf_crop.json").read_text())
         self.assertEqual(len(state["variants"]), 8)
-
 
 if __name__ == "__main__":
     unittest.main()

@@ -127,8 +127,9 @@ public final class DistrictBuilder {
         Direction facing = Direction.byName(op.facing());
         return switch (op.kind()) {
             case "terminal" -> UndergroundCity.TERMINAL.get().defaultBlockState().setValue(HorizontalDirectionalBlock.FACING, facing);
-            case "safe" -> UndergroundCity.PROPERTY_CACHE.get().defaultBlockState();
-            case "secure_terminal" -> UndergroundCity.SECURE_TERMINAL.get().defaultBlockState();
+            case "safe" -> UndergroundCity.PROPERTY_CACHE.get().defaultBlockState().setValue(PropertyCacheBlock.FACING, facing);
+            case "secure_terminal" -> UndergroundCity.SECURE_TERMINAL.get().defaultBlockState().setValue(SecureTerminalBlock.FACING, facing);
+            case "ledger" -> UndergroundCity.PUBLIC_LEDGER.get().defaultBlockState().setValue(PublicLedgerBlock.FACING, facing);
             default -> null;
         };
     }
@@ -138,7 +139,7 @@ public final class DistrictBuilder {
         Map<DistrictCatalog.Op, BlockState> states = new HashMap<>();
         for (DistrictCatalog.Op op : district.ops()) {
             if (!op.applies()) continue; // an operation that names an absent mod is skipped, never an error
-            BlockState parsed = op.kind().equals("fill") || op.kind().equals("block") ? parse(level, op.text()) : special(op);
+            BlockState parsed = op.kind().equals("fill") || op.kind().equals("block") || op.kind().equals("sign") ? parse(level, op.text()) : special(op);
             if (parsed != null) states.put(op, parsed);
             if (op.kind().equals("safe") && PropertyPolicies.INSTANCE.find(UndergroundCity.MOD_ID + ":" + op.text()) == null) {
                 throw new IllegalStateException("Unknown property policy " + op.text());
@@ -208,6 +209,7 @@ public final class DistrictBuilder {
                         safes++;
                     }
                     case "secure_terminal" -> secure++;
+                    case "sign" -> writeSign(level, at, op.sign());
                     case "terminal" -> terminals++;
                     default -> { }
                 }
@@ -233,6 +235,18 @@ public final class DistrictBuilder {
         state.setDirty();
         level.getServer().overworld().getDataStorage().save();
         return new Result(blocks, safes, secure, terminals, clerkPlaced, CityRegions.INSTANCE.cityAt(level, origin).isPresent(), placedCitizens);
+    }
+
+    /** Writes the words of a sign (front side) and waxes it, so a player cannot rewrite the district's own signage. */
+    private static void writeSign(ServerLevel level, BlockPos at, DistrictCatalog.Sign sign) {
+        if (!(level.getBlockEntity(at) instanceof net.minecraft.world.level.block.entity.SignBlockEntity entity) || sign == null) return;
+        Component[] lines = new Component[4];
+        for (int i = 0; i < 4; i++) lines[i] = Component.literal(i < sign.lines().size() ? sign.lines().get(i) : "");
+        entity.setText(new net.minecraft.world.level.block.entity.SignText(lines, lines,
+            net.minecraft.world.item.DyeColor.byName(sign.color(), net.minecraft.world.item.DyeColor.BLACK), sign.glow()), true);
+        entity.setWaxed(true);
+        entity.setChanged();
+        level.sendBlockUpdated(at, entity.getBlockState(), entity.getBlockState(), Block.UPDATE_ALL);
     }
 
     private static void discard(ServerLevel level, UUID id) {

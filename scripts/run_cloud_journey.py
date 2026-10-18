@@ -34,8 +34,17 @@ def prepare() -> list[tuple[Path,str]]:
     for role in ('farmer','smith'):
         module=OUTPUT/'clients'/role/'rpg-core'
         shutil.copytree(MODULE,module,ignore=shutil.ignore_patterns('run','run-*','build','.gradle'))
+        if os.environ.get('UC_JOURNEY_PACK','').strip():
+            # the build reads the pinned dev-pack manifest from ../content/modpacks relative to the module
+            shutil.copytree(ROOT/'content/modpacks',module.parent/'content/modpacks')
         clients.append((module,role))
     return clients
+
+
+def pack_flags() -> list[str]:
+    """Third-party dev-pack sets to load on the server and on both clients (UC_JOURNEY_PACK, e.g. firearms,vehicles,vintner,farming), with a bigger client heap."""
+    sets=os.environ.get('UC_JOURNEY_PACK','').strip()
+    return [f'-PucPack={sets}','-PucClientHeap=2G'] if sets else []
 
 
 def start(module: Path, task: str, flags: list[str], logfile: Path, tmpdir: Path | None = None):
@@ -57,7 +66,7 @@ def phase(number: int, clients: list[tuple[Path,str]]) -> dict:
     processes=[]
     try:
         server_log=OUTPUT/'logs'/f'server-phase{number}.log'
-        processes.append(start(MODULE,'runServer',['-PucRunDir=run-journey-server',f'-PucJourneyPhase={number}'],server_log))
+        processes.append(start(MODULE,'runServer',['-PucRunDir=run-journey-server',f'-PucJourneyPhase={number}',*pack_flags()],server_log))
         deadline=time.monotonic()+900
         while time.monotonic()<deadline:
             if 'Done (' in server_log.read_text(errors='replace'): break
@@ -66,7 +75,7 @@ def phase(number: int, clients: list[tuple[Path,str]]) -> dict:
         else: raise TimeoutError('Dedicated server startup timed out')
         for module,role in clients:
             name='UC_Farmer' if role=='farmer' else 'UC_Smith'
-            processes.append(start(module,'runClient',[f'-PucRunDir=run-journey-client-{role}',f'-PucJourneyClient={name}'],
+            processes.append(start(module,'runClient',[f'-PucRunDir=run-journey-client-{role}',f'-PucJourneyClient={name}',*pack_flags()],
                 OUTPUT/'logs'/f'{role}-phase{number}.log',OUTPUT/'tmp'/role))
         marker=SERVER/f'journey-phase{number}.json'
         while time.monotonic()<deadline:
@@ -94,7 +103,7 @@ def main() -> None:
     clients=prepare()
     results=[phase(1,clients),phase(2,clients)]
     (OUTPUT/'report.json').write_text(json.dumps({'minecraft':'1.20.1','forge':'47.4.10',
-        'qshop':'1.8.4','actors':'two real loopback-only offline test clients','phases':results},indent=2)+'\n')
+        'qshop':'1.8.4','actors':'two real loopback-only offline test clients','pack':os.environ.get('UC_JOURNEY_PACK','') or 'core only','phases':results},indent=2)+'\n')
 
 
 if __name__=='__main__': main()

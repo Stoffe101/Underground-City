@@ -16,7 +16,7 @@ import org.slf4j.Logger;
  */
 public final class DevBootstrap {
     private static final Logger LOGGER = LogUtils.getLogger();
-    static final String DISTRICT = "founders_row";
+    static final String DISTRICT = "founders_row", RANGE = "firing_range";
     static final int SEARCH_RADIUS = 160, MAX_RELIEF = 3;
 
     @SubscribeEvent
@@ -50,6 +50,34 @@ public final class DevBootstrap {
         };
     }
 
+    /**
+     * The firing range goes west of the Row, its firing line meeting the gunsmith's back door (the Row's west building has it at local z 11, and the
+     * range's path at its own local z 7). It is skipped, with a log line, where the ground there is not level enough for a lawn: the Row works without it.
+     */
+    static void placeRange(ServerLevel level, BlockPos rowOrigin) {
+        DistrictCatalog.District range = DistrictCatalog.INSTANCE.find(RANGE);
+        if (range == null || DistrictBuilder.isBuilt(level, RANGE)) return;
+        int width = range.max().getX() - range.min().getX() + 1, depth = range.max().getZ() - range.min().getZ() + 1;
+        BlockPos origin = rowOrigin.offset(-width, 0, 4);
+        var ground = ground(level);
+        for (int x = 0; x < width; x += 8) for (int z = 0; z < depth; z += 7) {
+            int wx = origin.getX() + x, wz = origin.getZ() + z;
+            if (ground.wet(wx, wz) || Math.abs(ground.height(wx, wz) - origin.getY()) > MAX_RELIEF + 2) {
+                LOGGER.info("[UC-DEV] the firing range was not placed: the ground west of the Row is not level and dry enough at {} {}", wx, wz);
+                return;
+            }
+        }
+        try {
+            for (int cx = (origin.getX() + range.min().getX()) >> 4; cx <= (origin.getX() + range.max().getX()) >> 4; cx++) {
+                for (int cz = (origin.getZ() + range.min().getZ()) >> 4; cz <= (origin.getZ() + range.max().getZ()) >> 4; cz++) level.getChunk(cx, cz);
+            }
+            DistrictBuilder.build(level, range, origin);
+            LOGGER.info("[UC-DEV] firing range built at {}", origin.toShortString());
+        } catch (RuntimeException error) {
+            LOGGER.warn("[UC-DEV] the firing range could not be placed: {}", error.toString());
+        }
+    }
+
     static BlockPos place(ServerLevel level, DistrictCatalog.District district) {
         int width = district.max().getX() - district.min().getX() + 1, depth = district.max().getZ() - district.min().getZ() + 1;
         BlockPos spawn = level.getSharedSpawnPos();
@@ -61,8 +89,9 @@ public final class DevBootstrap {
             for (int cz = (origin.getZ() + district.min().getZ()) >> 4; cz <= (origin.getZ() + district.max().getZ()) >> 4; cz++) level.getChunk(cx, cz);
         }
         DistrictBuilder.build(level, district, origin);
+        placeRange(level, origin);
         // The gate is the middle of the lane's far (south) end; stand a few blocks outside it, facing the lane.
-        BlockPos gate = origin.offset(12, 0, depth + 2);
+        BlockPos gate = origin.offset(district.min().getX() + width / 2, 0, depth + 2);
         level.setDefaultSpawnPos(gate, 180.0f);
         level.getGameRules().getRule(net.minecraft.world.level.GameRules.RULE_SPAWN_RADIUS).set(0, level.getServer()); // arrive exactly at the gate, not up to ten blocks off
         LOGGER.info("[UC-DEV] Founders Row built at {} (relief {}), spawn moved to the gate at {}", origin.toShortString(), site.relief(), gate.toShortString());

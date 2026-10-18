@@ -37,7 +37,8 @@
       "rare_item_probability_percent": 6,
       "locked_safe_chance_percent": 8,
       "profession_weights": {
-        "farmer": 20,
+        "farmer": 12,
+        "vintner": 8,
         "smith": 20,
         "gunsmith": 8,
         "technician": 20,
@@ -57,7 +58,8 @@
       "rare_item_probability_percent": 16,
       "locked_safe_chance_percent": 48,
       "profession_weights": {
-        "farmer": 8,
+        "farmer": 5,
+        "vintner": 3,
         "smith": 17,
         "gunsmith": 25,
         "technician": 30,
@@ -78,7 +80,8 @@
       "rare_item_probability_percent": 12,
       "locked_safe_chance_percent": 30,
       "profession_weights": {
-        "farmer": 5,
+        "farmer": 3,
+        "vintner": 2,
         "smith": 15,
         "gunsmith": 10,
         "technician": 50,
@@ -98,7 +101,8 @@
       "rare_item_probability_percent": 19,
       "locked_safe_chance_percent": 50,
       "profession_weights": {
-        "farmer": 10,
+        "farmer": 6,
+        "vintner": 4,
         "smith": 38,
         "gunsmith": 25,
         "technician": 17,
@@ -119,7 +123,8 @@
       "rare_item_probability_percent": 28,
       "locked_safe_chance_percent": 75,
       "profession_weights": {
-        "farmer": 5,
+        "farmer": 3,
+        "vintner": 2,
         "smith": 15,
         "gunsmith": 48,
         "technician": 17,

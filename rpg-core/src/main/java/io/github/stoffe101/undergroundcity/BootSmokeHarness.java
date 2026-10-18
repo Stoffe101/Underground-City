@@ -16,7 +16,8 @@ import java.util.List;
 @Mod.EventBusSubscriber(modid = UndergroundCity.MOD_ID)
 public final class BootSmokeHarness {
     private static final boolean ENABLED = Boolean.getBoolean("uc.bootSmoke");
-    private static final List<String> MODS = List.of("underground_city", "qshop", "lostcities", "tacz", "taczblueprints", "modernlife", "mts", "mtsofficialpack", "oamp");
+    private static final List<String> MODS = List.of("underground_city", "qshop", "lostcities", "tacz", "taczblueprints", "modernlife", "mts", "mtsofficialpack", "oamp",
+        "architectury", "vinery", "farm_and_charm", "kaleidoscope_tavern");
 
     private BootSmokeHarness() {}
 
@@ -27,9 +28,22 @@ public final class BootSmokeHarness {
         for (String id : MODS) System.out.println("[UC-BOOT] mod " + id + "=" + ModList.get().isLoaded(id));
         System.out.println("[UC-BOOT] core work_orders=" + WorkOrderCatalog.INSTANCE.all().size() + " skills_farmer=" + SkillCatalog.INSTANCE.tree("farmer").size()
             + " districts=" + DistrictCatalog.INSTANCE.ids());
-        for (String ns : List.of("tacz", "taczblueprints", "modernlife", "mts", "mtsofficialpack", "oamp")) {
+        for (String ns : List.of("tacz", "taczblueprints", "modernlife", "mts", "mtsofficialpack", "oamp", "vinery", "farm_and_charm", "kaleidoscope_tavern")) {
             if (ModList.get().isLoaded(ns)) System.out.println("[UC-BOOT] registry " + ns + " items=" + OptionalModProbes.items(ns) + " entities=" + OptionalModProbes.entities(ns));
         }
+        // every item a loaded order, starter kit or contraband tag names must really exist in the installed mods (the Vintner's Vinery and Kaleidoscope goods)
+        List<String> missing = new java.util.ArrayList<>();
+        for (WorkOrder order : WorkOrderCatalog.INSTANCE.all()) {
+            if (!order.terms().requiresMod().isEmpty() && !ModList.get().isLoaded(order.terms().requiresMod())) continue;
+            for (WorkOrder.Requirement requirement : order.requirements()) {
+                if (requirement.gunIds().isEmpty() && !net.minecraftforge.registries.ForgeRegistries.ITEMS.containsKey(requirement.item())) missing.add(order.id() + " needs " + requirement.item());
+            }
+        }
+        System.out.println("[UC-BOOT] order_items=" + (missing.isEmpty() ? "ok" : "MISSING " + missing));
+        System.out.println("[UC-BOOT] vintner skills=" + SkillCatalog.INSTANCE.tree("vintner").size() + " orders="
+            + WorkOrderCatalog.INSTANCE.all().stream().filter(o -> o.career().equals("vintner")).count()
+            + " spirit_items=" + net.minecraftforge.registries.ForgeRegistries.ITEMS.getValues().stream()
+                .filter(i -> new net.minecraft.world.item.ItemStack(i).is(net.minecraft.tags.TagKey.create(net.minecraft.core.registries.Registries.ITEM, new net.minecraft.resources.ResourceLocation("underground_city", "spirits")))).count());
         if (ModList.get().isLoaded("mts")) {
             // Immersive Vehicles registers every content-pack vehicle and part as an item named mts:<pack>.<name>.
             for (String pack : List.of("mtsofficialpack", "oamp")) {

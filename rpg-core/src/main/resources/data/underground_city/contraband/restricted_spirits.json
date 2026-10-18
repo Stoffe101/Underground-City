@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "category": "restricted_spirits",
+  "title": "Unlicensed spirits",
+  "entries": [
+    {
+      "tag": "underground_city:spirits"
+    }
+  ]
+}

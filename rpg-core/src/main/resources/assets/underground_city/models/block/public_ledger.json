@@ -1,0 +1,210 @@
+{
+ "textures": {
+  "board": "underground_city:block/ledger_board",
+  "wood": "underground_city:block/ledger_wood",
+  "particle": "underground_city:block/ledger_wood"
+ },
+ "elements": [
+  {
+   "from": [
+    0.5,
+    0,
+    6.5
+   ],
+   "to": [
+    2,
+    15,
+    8.5
+   ],
+   "faces": {
+    "north": {
+     "texture": "#wood"
+    },
+    "south": {
+     "texture": "#wood"
+    },
+    "east": {
+     "texture": "#wood"
+    },
+    "west": {
+     "texture": "#wood"
+    },
+    "up": {
+     "texture": "#wood"
+    }
+   }
+  },
+  {
+   "from": [
+    14,
+    0,
+    6.5
+   ],
+   "to": [
+    15.5,
+    15,
+    8.5
+   ],
+   "faces": {
+    "north": {
+     "texture": "#wood"
+    },
+    "south": {
+     "texture": "#wood"
+    },
+    "east": {
+     "texture": "#wood"
+    },
+    "west": {
+     "texture": "#wood"
+    },
+    "up": {
+     "texture": "#wood"
+    }
+   }
+  },
+  {
+   "from": [
+    1.5,
+    4,
+    6.8
+   ],
+   "to": [
+    14.5,
+    15,
+    8
+   ],
+   "faces": {
+    "north": {
+     "texture": "#board",
+     "uv": [
+      0,
+      0,
+      16,
+      16
+     ]
+    },
+    "south": {
+     "texture": "#wood"
+    },
+    "east": {
+     "texture": "#wood"
+    },
+    "west": {
+     "texture": "#wood"
+    },
+    "up": {
+     "texture": "#wood"
+    },
+    "down": {
+     "texture": "#wood"
+    }
+   }
+  },
+  {
+   "from": [
+    0,
+    15,
+    5.5
+   ],
+   "to": [
+    16,
+    16.5,
+    9.5
+   ],
+   "faces": {
+    "north": {
+     "texture": "#wood"
+    },
+    "south": {
+     "texture": "#wood"
+    },
+    "east": {
+     "texture": "#wood"
+    },
+    "west": {
+     "texture": "#wood"
+    },
+    "up": {
+     "texture": "#wood"
+    },
+    "down": {
+     "texture": "#wood"
+    }
+   }
+  },
+  {
+   "from": [
+    3,
+    2.6,
+    6.4
+   ],
+   "to": [
+    13,
+    3.4,
+    8.4
+   ],
+   "faces": {
+    "north": {
+     "texture": "#wood"
+    },
+    "south": {
+     "texture": "#wood"
+    },
+    "east": {
+     "texture": "#wood"
+    },
+    "west": {
+     "texture": "#wood"
+    },
+    "up": {
+     "texture": "#wood"
+    },
+    "down": {
+     "texture": "#wood"
+    }
+   }
+  }
+ ],
+ "display": {
+  "gui": {
+   "rotation": [
+    24,
+    200,
+    0
+   ],
+   "translation": [
+    0,
+    -2,
+    0
+   ],
+   "scale": [
+    0.6,
+    0.6,
+    0.6
+   ]
+  },
+  "ground": {
+   "scale": [
+    0.5,
+    0.5,
+    0.5
+   ]
+  },
+  "fixed": {
+   "scale": [
+    0.7,
+    0.7,
+    0.7
+   ]
+  },
+  "thirdperson_righthand": {
+   "scale": [
+    0.4,
+    0.4,
+    0.4
+   ]
+  }
+ },
+ "parent": "minecraft:block/block"
+}

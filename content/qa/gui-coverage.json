@@ -24,13 +24,6 @@
       "description": "Regional import tab"
     },
     {
-      "id": "operations_terminal.deliveries",
-      "expected_file": "uc-terminal-deliveries.png",
-      "owner": "underground_city",
-      "group": "operations_terminal",
-      "description": "In-transit cargo / incident tab"
-    },
-    {
       "id": "operations_terminal.black_market",
       "expected_file": "uc-terminal-black_market.png",
       "owner": "underground_city",
@@ -38,11 +31,11 @@
       "description": "Market tab: local law for controlled goods, buyers and trust, heat (replaces the black-market placeholder)"
     },
     {
-      "id": "operations_terminal.raids",
-      "expected_file": "uc-terminal-raids.png",
+      "id": "operations_terminal.guide",
+      "expected_file": "uc-terminal-guide.png",
       "owner": "underground_city",
       "group": "operations_terminal",
-      "description": "Late-game raid-selection tab"
+      "description": "Guide page: first-half-hour journey checklist with the current step, a hint and a shortcut to the right page"
     },
     {
       "id": "contracts.accepted",
@@ -113,6 +106,41 @@
       "owner": "underground_city",
       "group": "contracts",
       "description": "Recurring order locked until a rival-city exchange has been used"
+    },
+    {
+      "id": "ledger.board",
+      "expected_file": "uc-ledger.png",
+      "owner": "underground_city",
+      "group": "ledger",
+      "description": "Public Ledger: legal postings of every trade in the city, filtered by trade, with level, reward and demand left"
+    },
+    {
+      "id": "notices.stack",
+      "expected_file": "uc-notices.png",
+      "owner": "underground_city",
+      "group": "notices",
+      "description": "Notice plates stacked beside the terminal (drawn by hand for review, the game draws them in the screen corner): order accepted, delivered, contraband seized and a rare find, each with its icon, accent and words"
+    },
+    {
+      "id": "dialogue.registrar",
+      "expected_file": "uc-dialogue-registrar.png",
+      "owner": "underground_city",
+      "group": "dialogue",
+      "description": "Registrar conversation for a citizen already on the rolls"
+    },
+    {
+      "id": "dialogue.employer",
+      "expected_file": "uc-dialogue-employer.png",
+      "owner": "underground_city",
+      "group": "dialogue",
+      "description": "Employer conversation: paper panel, spoken line, choice buttons (the portrait needs a world and is checked in the scripted-player run)"
+    },
+    {
+      "id": "dialogue.guard",
+      "expected_file": "uc-dialogue-guard.png",
+      "owner": "underground_city",
+      "group": "dialogue",
+      "description": "Guard conversation: local law and heat as spoken dialogue"
     },
     {
       "id": "qshop.main",
@@ -213,6 +241,13 @@
       "description": "Secured terminal trace: last entry with the timer nearly spent"
     },
     {
+      "id": "skills.vintner",
+      "expected_file": "uc-skills-vintner.png",
+      "owner": "underground_city",
+      "group": "skills",
+      "description": "Skills tab for a level-11 Vintner (Home Distilling learned, Bootleg Trade selected) built from the real skill tree"
+    },
+    {
       "id": "skills.smith",
       "expected_file": "uc-skills-smith.png",
       "owner": "underground_city",
@@ -282,6 +317,12 @@
       "id": "ultrawide_1440p",
       "width": 3440,
       "height": 1440,
+      "gui_scale": 2
+    },
+    {
+      "id": "compact_720p",
+      "width": 1280,
+      "height": 720,
       "gui_scale": 2
     }
   ],

@@ -1,0 +1,23 @@
+{
+  "schema_version": 3,
+  "title": "Reserve run for the foundry bars",
+  "career": "vintner",
+  "level": 12,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "kaleidoscope_tavern:vodka",
+      "count": 20
+    }
+  ],
+  "credits": 516,
+  "xp": 560,
+  "capacity": 1,
+  "refill_ticks": 24000,
+  "legality": "underground",
+  "requires_skill": "vintner.grey_market_contacts",
+  "buyer": "ironhaven_backbar",
+  "min_trust": 2,
+  "trust_gain": 1,
+  "requires_mod": "kaleidoscope_tavern"
+}

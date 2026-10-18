@@ -20,10 +20,10 @@ public final class ClientRegistration {
         return false;
     }
 
-    public static void open() {
+    public static void open(java.util.Map<String, java.util.List<String>> kits) {
         Minecraft mc = Minecraft.getInstance();
         if (suppressedByHarness()) return;
-        if (!(mc.screen instanceof RegistrationScreen)) mc.setScreen(new RegistrationScreen());
+        if (!(mc.screen instanceof RegistrationScreen)) mc.setScreen(new RegistrationScreen(kits));
     }
 
     public static void result(boolean ok, String message) {

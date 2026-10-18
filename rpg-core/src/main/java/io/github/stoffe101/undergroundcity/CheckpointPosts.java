@@ -29,8 +29,31 @@ public final class CheckpointPosts {
 
     public record Placement(CheckpointCatalog.Checkpoint post, BlockPos origin, double distanceFromRoad) {}
 
+    /** A lot standing beside a road: its north-west corner (y is not decided here) and its centre. */
+    record Lot(BlockPos origin, double cx, double cz) {}
+
     /**
-     * Where the post for a zone goes: beside the road, on the left of its direction of travel, clear of everything the road touches.
+     * The lot of {@code lotWidth} x {@code lotDepth} blocks beside the road at arc position {@code s}, clear of everything the road touches: the lot's
+     * nearest corner stands {@link #GAP} blocks beyond the road's reach. {@code side} is +1 for the right-hand side of the direction of travel as a
+     * walker sees it (x is east, z is south, so that is {@code (-tz, tx)}) and -1 for the left. Empty where the road has no direction (a zero-length stretch).
+     */
+    static Optional<Lot> lotBeside(CorridorPlan plan, double s, int lotWidth, int lotDepth, int side) {
+        double[] at = plan.pointAt(s);
+        double[] behind = plan.pointAt(Math.max(0, s - 3)), ahead = plan.pointAt(Math.min(plan.length(), s + 3));
+        double tx = ahead[0] - behind[0], tz = ahead[1] - behind[1];
+        double length = Math.hypot(tx, tz);
+        if (length < 1e-6) return Optional.empty();
+        tx /= length; tz /= length;
+        double nx = -tz * side, nz = tx * side;
+        // The lot's centre must be far enough out that its nearest corner clears the road: half the diagonal plus the road's reach plus a gap.
+        double half = Math.hypot(lotWidth, lotDepth) / 2.0;
+        double out = plan.reach() + GAP + half;
+        double cx = at[0] + nx * out, cz = at[1] + nz * out;
+        return Optional.of(new Lot(new BlockPos((int) Math.floor(cx - lotWidth / 2.0), 0, (int) Math.floor(cz - lotDepth / 2.0)), cx, cz));
+    }
+
+    /**
+     * Where the post for a zone goes: beside the road, on the right-hand side of its direction of travel, clear of everything the road touches.
      * Returns empty when no road runs through the zone.
      */
     static Optional<Placement> placement(CheckpointCatalog.Checkpoint post, List<CorridorPlan> plans, int lotWidth, int lotDepth) {
@@ -41,19 +64,8 @@ public final class CheckpointPosts {
             if (hit != null && (bestHit == null || hit.distance() < bestHit.distance())) { best = plan; bestHit = hit; }
         }
         if (best == null || bestHit.distance() > post.radius()) return Optional.empty();
-        double[] at = best.pointAt(bestHit.s());
-        double[] behind = best.pointAt(Math.max(0, bestHit.s() - 3)), ahead = best.pointAt(Math.min(best.length(), bestHit.s() + 3));
-        double tx = ahead[0] - behind[0], tz = ahead[1] - behind[1];
-        double length = Math.hypot(tx, tz);
-        if (length < 1e-6) return Optional.empty();
-        tx /= length; tz /= length;
-        double nx = -tz, nz = tx; // the left-hand side of the direction of travel
-        // The lot's centre must be far enough out that its nearest corner clears the road: half the diagonal plus the road's reach plus a gap.
-        double half = Math.hypot(lotWidth, lotDepth) / 2.0;
-        double out = best.reach() + GAP + half;
-        double cx = at[0] + nx * out, cz = at[1] + nz * out;
-        BlockPos origin = new BlockPos((int) Math.floor(cx - lotWidth / 2.0), 0, (int) Math.floor(cz - lotDepth / 2.0));
-        return Optional.of(new Placement(post, origin, best.project(cx, cz).distance()));
+        CorridorPlan road = best;
+        return lotBeside(road, bestHit.s(), lotWidth, lotDepth, 1).map(lot -> new Placement(post, lot.origin(), road.project(lot.cx(), lot.cz()).distance()));
     }
 
     /** Builds a post at every zone that has none within its lot. Returns what was done, one line per zone. */

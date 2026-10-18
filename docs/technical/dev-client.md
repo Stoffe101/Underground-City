@@ -141,7 +141,8 @@ xvfb-run -a -s "-screen 0 1280x720x24" ./gradlew runClient -PucPlaytest=<scenari
 Options are Gradle properties starting with `ucPt` (`-PucPtRoute=x` becomes `-Duc.playtest.route=x`). Reusing an existing playtest world keeps
 its citizens, so use a world name per scenario. Reopening an existing development world makes Minecraft ask
 "Worlds using Experimental Settings are not supported" (a mod-registered generator is not vanilla-stable); the launcher answers *Proceed*
-for the development world only. A scenario result is one line, `[UC-PLAYTEST] RESULT pass` or the failures.
+for the development world only. (Until October 18 it only knew the title of the dialog shown when a world is *created*, so a second launch waited at
+this one until somebody clicked; it now answers both, and a scripted run that reloaded a saved world passed through it.) A scenario result is one line, `[UC-PLAYTEST] RESULT pass` or the failures.
 
 ## Verification so far
 

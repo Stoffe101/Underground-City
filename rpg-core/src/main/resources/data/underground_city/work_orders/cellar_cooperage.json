@@ -1,0 +1,17 @@
+{
+  "schema_version": 2,
+  "title": "Re-hoop the cellar barrels",
+  "career": "vintner",
+  "level": 4,
+  "foreign_visits": 1,
+  "requirements": [
+    {
+      "item": "underground_city:cooperage_set",
+      "count": 4
+    }
+  ],
+  "credits": 140,
+  "xp": 330,
+  "capacity": 2,
+  "refill_ticks": 12000
+}

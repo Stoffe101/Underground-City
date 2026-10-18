@@ -71,7 +71,7 @@ class CandidatePackTests(unittest.TestCase):
     def test_playable_candidate_config_inputs(self):
         class_cfg = tomllib.loads(class_enhancement_config(CATALOG))
         self.assertTrue(class_cfg["general"]["disableDefaultClasses"])
-        self.assertEqual(class_cfg["general"]["customClassSlots"], 4)
+        self.assertEqual(class_cfg["general"]["customClassSlots"], 5)
         self.assertEqual(
             {x["id"] for x in class_cfg["custom_classes"].values()},
             {x["id"] for x in CATALOG["professions"]},

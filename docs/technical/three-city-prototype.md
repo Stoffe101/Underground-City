@@ -145,9 +145,17 @@ Design intent (user, October 15): ocean or large rivers between the cities make 
 
 Accepted constraint: routine inter-city travel should take only a few minutes. A static estimate at walking speed (4.317 blocks per second, no sprinting, no obstacles) gives about 4.8 minutes along the Ironhaven–Valewood road (1,251 blocks between city edges) and about 4.3 minutes along Ironhaven–Blackwater (1,116 blocks), inside the 3-5 minute aim. That is arithmetic, not a measurement: a real traversal benchmark (with the slab ramps, doors, a horse or boat, and two players) is still owed before a release. The Valewood–Blackwater edge is open sea in seed 579, so it must stay optional until a ferry or boat service exists.
 
+### Waymarkers (October 18, D-078)
+
+Every road has a stone-brick pillar with a lantern and a wall sign on each of its two faces every 250 blocks of open road: where it leads, how far and how long on foot. They are placed at run time beside the road when a player comes within 112 blocks (`RoadMarkers`, once each and remembered by the world), so world generation and seed 5908 are unchanged and worlds that already exist get them. A GameTest builds a real pillar beside a synthetic road and reads both signs, and a scripted-player run on a generated road read them as the client received them.
+
+### Wayside shelters (October 18, D-079)
+
+Each road also gets open-air rest stops, two kinds that alternate along a road (an 11 x 9 pavilion with a campfire, four seats, water and a cartography table, or a stone well under a small roof with two benches, a barrel and hay), each with a **road warden** who answers from the real data (where the road leads and how far, the nearest checkpoint, and the city law at each end). They are spaced so that no stretch of open road is longer than 450 blocks between one shelter and the next (or a city), never within 150 blocks of a city circle, and are placed at run time like the waymarkers (`WaysideShelters`, the `wayside_shelter` and `wayside_well` districts, `PlacedSites`) on level, dry, unbuilt ground beside the road, sliding up to 64 blocks along it and trying the other verge before giving up. `/uc_shelters list` (operator) says where each should stand and whether it was built. A shelter has no economy: no terminal, safe, stock or contract. GameTests cover the spacing, the site search on synthetic ground, the warden's answers and a real shelter with its tethered warden built and removed in a test world. A scripted player on the generated seed-5908 world hopped to every planned spot: Ironhaven - Valewood 2 of 2 shelters built, Ironhaven - Blackwater 2 of 2, Valewood - Blackwater 1 of 2 (the other found no level, dry ground within 64 blocks and was given up), each decided in under 100 ms; it then photographed some from the road and from under their roofs and talked to a warden. The first survey's photographs showed a well on a frozen sea (the ground scan treats ice as solid); sites over water or ice are now refused and the survey, repeated, gave the same counts with that stop moved onto land.
+
 ### What is still not built
 
-Gate houses at the checkpoints (checkpoints are search zones, see [legal and underground careers](../design/legal-and-underground-careers.md)), rest stops, road signs, NPC patrols and vehicle-mod compatibility. The checkpoint, `travel_modes` and `security` fields in `corridors.json` remain design data.
+Gate houses at the checkpoints (checkpoints are search zones, see [legal and underground careers](../design/legal-and-underground-careers.md)), NPC patrols and vehicle-mod compatibility on the roads. The checkpoint, `travel_modes` and `security` fields in `corridors.json` remain design data.
 
 ## Source-checked fresh-instance setup
 

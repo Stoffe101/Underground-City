@@ -39,7 +39,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        pack: [firearms, vehicles]
+        include:
+          - pack: firearms
+            sets: firearms
+          - pack: vehicles
+            sets: vehicles
+          # the opt-in candidates of the October 17 sprint (Vinery, Farm & Charm, Kaleidoscope Tavern); not part of the default pack
+          - pack: living
+            sets: vintner,farming
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -55,7 +62,7 @@ jobs:
       - name: Stage original Q Shop templates in a disposable instance
         run: python scripts/install_qshop_templates.py --server-root rpg-core/run-pack-${{ matrix.pack }}
       - name: Run the Core GameTests with the ${{ matrix.pack }} mods loaded
-        run: gradle -p rpg-core runGameTestServer -PucPack=${{ matrix.pack }} -PucEconomyTest=true -PucRunDir=run-pack-${{ matrix.pack }} --no-daemon --stacktrace
+        run: gradle -p rpg-core runGameTestServer -PucPack=${{ matrix.sets }} -PucEconomyTest=true -PucRunDir=run-pack-${{ matrix.pack }} --no-daemon --stacktrace
       - name: Print which tests failed (a failing GameTest makes the server exit 1; the reason is in the log)
         if: failure()
         run: |
@@ -68,6 +75,10 @@ jobs:
           if [ "${{ matrix.pack }}" = "firearms" ]; then
             grep -q "TaCZ Blueprints mod initializing" "$log"
             grep -q "Registered synced data key tacz:" "$log"
+          elif [ "${{ matrix.pack }}" = "living" ]; then
+            grep -q "Registered /wine command" "$log"
+            grep -q "farm_and_charm:set_text" "$log"
+            grep -q "Successfully loaded drink effect data" "$log"
           else
             grep -q "Welcome to MTS VERSION" "$log"
           fi

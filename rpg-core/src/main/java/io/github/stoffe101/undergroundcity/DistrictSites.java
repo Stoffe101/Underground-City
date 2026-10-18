@@ -41,17 +41,17 @@ final class DistrictSites {
         return fits.stream().min(Comparator.comparingDouble(site -> site.relief() * 12.0 + site.distance()));
     }
 
-    private static Site evaluate(Ground ground, int x0, int z0, int width, int depth, double distance) {
+    static Site evaluate(Ground ground, int x0, int z0, int width, int depth, double distance) {
         List<Integer> heights = new ArrayList<>();
         for (int x = x0 - MARGIN; x <= x0 + width + MARGIN; x += SAMPLE) {
             for (int z = z0 - MARGIN; z <= z0 + depth + MARGIN; z += SAMPLE) {
-                if (ground.wet(x, z) || ground.reserved(x, z)) return null;
+                if (ground.reserved(x, z) || ground.wet(x, z)) return null; // reserved first: a column that is not loaded must be refused before anything reads its height
                 heights.add(ground.height(x, z));
             }
         }
         // The far corners are sampled too, so a lot cannot hide a ditch between grid points.
         for (int[] corner : new int[][]{{x0, z0}, {x0 + width, z0}, {x0, z0 + depth}, {x0 + width, z0 + depth}}) {
-            if (ground.wet(corner[0], corner[1]) || ground.reserved(corner[0], corner[1])) return null;
+            if (ground.reserved(corner[0], corner[1]) || ground.wet(corner[0], corner[1])) return null;
             heights.add(ground.height(corner[0], corner[1]));
         }
         int min = heights.stream().mapToInt(Integer::intValue).min().orElse(0), max = heights.stream().mapToInt(Integer::intValue).max().orElse(0);

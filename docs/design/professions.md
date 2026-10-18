@@ -2,7 +2,7 @@
 
 ## Shared career rules
 
-- Four target starting careers: **Farmer/Vintner**, **Smith/Engineer**, **Gunsmith/Arms Dealer**, **Hacker/Technician**.
+- Five target starting careers: **Farmer**, **Vintner** (the old Farmer/Vintner split in two, D-067), **Smith/Engineer**, **Gunsmith/Arms Dealer**, **Hacker/Technician**.
 - Each career has independent XP, level and branching progression. A working target is 30 levels, subject to tuning.
 - Skill-point nodes unlock *capabilities*: recipes, tools, manufacturing, contract types, support workers, efficiency, and business upgrades. Prefer real verbs to '+2% generic output' padding.
 - Profession gates may require XP level, skill nodes, blueprint/research, physical workstation, license/contact, and resources. Show unmet requirements in UI.
@@ -15,7 +15,8 @@
 
 | Career | Branch A | Branch B | Branch C |
 | --- | --- | --- | --- |
-| Farmer/Vintner | Cultivation, soil, greenhouses, seed quality | Fermentation, cellars, premium grapes | Wholesale deals, hiring NPC farmhands, logistics |
+| Farmer | Cultivation, soil, greenhouses, seed quality | Kitchen and estate supply | Wholesale deals, hiring NPC farmhands, logistics |
+| Vintner | Vines, pressing, fermentation, cellars | Licensed distilling | Estate and tavern trade, bottling, logistics |
 | Smith/Engineer | Metallurgy and armor | Machining and tool quality | Automation, workshops, industrial networks |
 | Gunsmith/Arms Dealer | Weapon design/repair | Black-market contacts and delivery | Production logistics and licensed supply |
 | Hacker/Technician | Programming and automation | Defensive security/forensics | Fictional network intrusion missions |
@@ -36,7 +37,7 @@ Farmer + Gunsmith through five levels and meaningful early research; defer the t
 
 ## Implemented skill trees (October 15, 2026)
 
-Skill trees for all four careers are live as Core datapack data with a legal path and an underground path on the
+Skill trees for all five careers are live as Core datapack data with a legal path and an underground path on the
 same character (D-049, D-050). See [legal and underground careers](legal-and-underground-careers.md) for the nodes,
 the contracts they unlock and the balance model. The research/blueprint lifecycle above is implemented for
 firearms only as contract rewards of TaCZ Blueprints items (when that mod is installed); a Core-owned research bench

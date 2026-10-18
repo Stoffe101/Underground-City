@@ -4,9 +4,9 @@
  "title": "Founders Row",
  "note": "Operator-built lot for a fresh world; origin is the north-west corner, extending east and south. The south end of the lane meets a road.",
  "size": [
-  25,
-  12,
-  41
+  33,
+  16,
+  49
  ],
  "ops": [
   {
@@ -17,9 +17,9 @@
     0
    ],
    "to": [
-    24,
+    32,
     -2,
-    40
+    48
    ],
    "block": "minecraft:stone"
   },
@@ -31,11 +31,11 @@
     0
    ],
    "to": [
-    24,
+    32,
     -1,
-    40
+    48
    ],
-   "block": "minecraft:stone_bricks"
+   "block": "minecraft:grass_block"
   },
   {
    "op": "fill",
@@ -45,164 +45,63 @@
     0
    ],
    "to": [
-    24,
-    7,
-    40
+    32,
+    11,
+    48
    ],
    "block": "minecraft:air"
   },
   {
    "op": "fill",
    "from": [
-    10,
+    2,
     -1,
-    6
+    0
    ],
    "to": [
-    14,
+    30,
     -1,
-    40
+    46
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    13,
+    -1,
+    7
+   ],
+   "to": [
+    19,
+    -1,
+    48
    ],
    "block": "minecraft:polished_andesite"
   },
   {
    "op": "fill",
    "from": [
-    0,
-    0,
-    0
+    16,
+    -1,
+    7
    ],
    "to": [
-    24,
-    0,
-    0
+    16,
+    -1,
+    48
    ],
-   "block": "minecraft:stone_brick_wall"
+   "block": "minecraft:smooth_stone"
   },
   {
    "op": "fill",
    "from": [
-    0,
-    0,
-    0
-   ],
-   "to": [
-    0,
     2,
-    0
-   ],
-   "block": "minecraft:stone_brick_wall"
-  },
-  {
-   "op": "block",
-   "at": [
-    0,
-    3,
-    0
-   ],
-   "block": "minecraft:lantern"
-  },
-  {
-   "op": "fill",
-   "from": [
-    6,
-    0,
-    0
-   ],
-   "to": [
-    6,
-    2,
-    0
-   ],
-   "block": "minecraft:stone_brick_wall"
-  },
-  {
-   "op": "block",
-   "at": [
-    6,
-    3,
-    0
-   ],
-   "block": "minecraft:lantern"
-  },
-  {
-   "op": "fill",
-   "from": [
-    12,
-    0,
-    0
-   ],
-   "to": [
-    12,
-    2,
-    0
-   ],
-   "block": "minecraft:stone_brick_wall"
-  },
-  {
-   "op": "block",
-   "at": [
-    12,
-    3,
-    0
-   ],
-   "block": "minecraft:lantern"
-  },
-  {
-   "op": "fill",
-   "from": [
-    18,
-    0,
-    0
-   ],
-   "to": [
-    18,
-    2,
-    0
-   ],
-   "block": "minecraft:stone_brick_wall"
-  },
-  {
-   "op": "block",
-   "at": [
-    18,
-    3,
-    0
-   ],
-   "block": "minecraft:lantern"
-  },
-  {
-   "op": "fill",
-   "from": [
-    24,
-    0,
-    0
-   ],
-   "to": [
-    24,
-    2,
-    0
-   ],
-   "block": "minecraft:stone_brick_wall"
-  },
-  {
-   "op": "block",
-   "at": [
-    24,
-    3,
-    0
-   ],
-   "block": "minecraft:lantern"
-  },
-  {
-   "op": "fill",
-   "from": [
-    1,
     -1,
     1
    ],
    "to": [
-    5,
+    8,
     -1,
     5
    ],
@@ -211,12 +110,12 @@
   {
    "op": "fill",
    "from": [
-    1,
+    2,
     0,
     1
    ],
    "to": [
-    5,
+    8,
     2,
     1
    ],
@@ -225,12 +124,12 @@
   {
    "op": "fill",
    "from": [
-    1,
+    2,
     0,
     5
    ],
    "to": [
-    1,
+    2,
     2,
     5
    ],
@@ -239,12 +138,12 @@
   {
    "op": "fill",
    "from": [
-    5,
+    8,
     0,
     5
    ],
    "to": [
-    5,
+    8,
     2,
     5
    ],
@@ -253,21 +152,105 @@
   {
    "op": "fill",
    "from": [
-    1,
+    2,
+    3,
+    1
+   ],
+   "to": [
+    2,
+    3,
+    6
+   ],
+   "block": "minecraft:lime_wool"
+  },
+  {
+   "op": "fill",
+   "from": [
+    3,
+    3,
+    1
+   ],
+   "to": [
+    3,
+    3,
+    6
+   ],
+   "block": "minecraft:white_wool"
+  },
+  {
+   "op": "fill",
+   "from": [
+    4,
+    3,
+    1
+   ],
+   "to": [
+    4,
+    3,
+    6
+   ],
+   "block": "minecraft:lime_wool"
+  },
+  {
+   "op": "fill",
+   "from": [
+    5,
     3,
     1
    ],
    "to": [
     5,
     3,
-    5
+    6
    ],
-   "block": "minecraft:spruce_slab[type=bottom]"
+   "block": "minecraft:white_wool"
+  },
+  {
+   "op": "fill",
+   "from": [
+    6,
+    3,
+    1
+   ],
+   "to": [
+    6,
+    3,
+    6
+   ],
+   "block": "minecraft:lime_wool"
+  },
+  {
+   "op": "fill",
+   "from": [
+    7,
+    3,
+    1
+   ],
+   "to": [
+    7,
+    3,
+    6
+   ],
+   "block": "minecraft:white_wool"
+  },
+  {
+   "op": "fill",
+   "from": [
+    8,
+    3,
+    1
+   ],
+   "to": [
+    8,
+    3,
+    6
+   ],
+   "block": "minecraft:lime_wool"
   },
   {
    "op": "block",
    "at": [
-    3,
+    5,
     2,
     3
    ],
@@ -276,7 +259,7 @@
   {
    "op": "terminal",
    "at": [
-    3,
+    4,
     0,
     2
    ],
@@ -285,25 +268,76 @@
   {
    "op": "clerk",
    "at": [
-    4,
+    5,
     0,
     2
    ],
    "terminal": [
-    3,
+    4,
     0,
     2
    ]
   },
   {
+   "op": "block",
+   "at": [
+    7,
+    0,
+    2
+   ],
+   "block": "minecraft:barrel[facing=up]"
+  },
+  {
+   "op": "block",
+   "at": [
+    8,
+    0,
+    2
+   ],
+   "block": "minecraft:barrel[facing=up]"
+  },
+  {
+   "op": "block",
+   "at": [
+    7,
+    1,
+    2
+   ],
+   "block": "minecraft:hay_block"
+  },
+  {
+   "op": "block",
+   "at": [
+    3,
+    0,
+    2
+   ],
+   "block": "minecraft:potted_fern"
+  },
+  {
+   "op": "sign",
+   "at": [
+    6,
+    2,
+    2
+   ],
+   "block": "minecraft:spruce_wall_sign[facing=south]",
+   "lines": [
+    "SUPPLY STALL",
+    "Civilian goods"
+   ],
+   "color": "black",
+   "glow": false
+  },
+  {
    "op": "fill",
    "from": [
-    7,
+    10,
     -1,
     1
    ],
    "to": [
-    11,
+    14,
     -1,
     5
    ],
@@ -312,40 +346,26 @@
   {
    "op": "fill",
    "from": [
-    7,
+    10,
     0,
     1
    ],
    "to": [
-    11,
+    14,
     2,
     1
    ],
-   "block": "minecraft:spruce_planks"
+   "block": "minecraft:stone_bricks"
   },
   {
    "op": "fill",
    "from": [
-    7,
+    10,
     0,
     5
    ],
    "to": [
-    7,
-    2,
-    5
-   ],
-   "block": "minecraft:spruce_fence"
-  },
-  {
-   "op": "fill",
-   "from": [
-    11,
-    0,
-    5
-   ],
-   "to": [
-    11,
+    10,
     2,
     5
    ],
@@ -354,21 +374,91 @@
   {
    "op": "fill",
    "from": [
-    7,
+    14,
+    0,
+    5
+   ],
+   "to": [
+    14,
+    2,
+    5
+   ],
+   "block": "minecraft:spruce_fence"
+  },
+  {
+   "op": "fill",
+   "from": [
+    10,
+    3,
+    1
+   ],
+   "to": [
+    10,
+    3,
+    6
+   ],
+   "block": "minecraft:light_gray_wool"
+  },
+  {
+   "op": "fill",
+   "from": [
+    11,
     3,
     1
    ],
    "to": [
     11,
     3,
-    5
+    6
    ],
-   "block": "minecraft:spruce_slab[type=bottom]"
+   "block": "minecraft:white_wool"
+  },
+  {
+   "op": "fill",
+   "from": [
+    12,
+    3,
+    1
+   ],
+   "to": [
+    12,
+    3,
+    6
+   ],
+   "block": "minecraft:light_gray_wool"
+  },
+  {
+   "op": "fill",
+   "from": [
+    13,
+    3,
+    1
+   ],
+   "to": [
+    13,
+    3,
+    6
+   ],
+   "block": "minecraft:white_wool"
+  },
+  {
+   "op": "fill",
+   "from": [
+    14,
+    3,
+    1
+   ],
+   "to": [
+    14,
+    3,
+    6
+   ],
+   "block": "minecraft:light_gray_wool"
   },
   {
    "op": "block",
    "at": [
-    9,
+    12,
     2,
     3
    ],
@@ -377,7 +467,7 @@
   {
    "op": "safe",
    "at": [
-    8,
+    11,
     0,
     2
    ],
@@ -386,7 +476,7 @@
   {
    "op": "safe",
    "at": [
-    9,
+    12,
     0,
     2
    ],
@@ -395,21 +485,138 @@
   {
    "op": "safe",
    "at": [
-    10,
+    13,
     0,
     2
    ],
    "policy": "industrial"
   },
   {
+   "op": "sign",
+   "at": [
+    12,
+    2,
+    2
+   ],
+   "block": "minecraft:spruce_wall_sign[facing=south]",
+   "lines": [
+    "RECORDS",
+    "Safe deposit"
+   ],
+   "color": "black",
+   "glow": false
+  },
+  {
    "op": "fill",
    "from": [
-    13,
+    15,
+    0,
+    2
+   ],
+   "to": [
+    17,
+    0,
+    4
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "block",
+   "at": [
+    16,
+    0,
+    3
+   ],
+   "block": "minecraft:water"
+  },
+  {
+   "op": "fill",
+   "from": [
+    15,
+    1,
+    2
+   ],
+   "to": [
+    15,
+    2,
+    2
+   ],
+   "block": "minecraft:stone_brick_wall"
+  },
+  {
+   "op": "fill",
+   "from": [
+    17,
+    1,
+    2
+   ],
+   "to": [
+    17,
+    2,
+    2
+   ],
+   "block": "minecraft:stone_brick_wall"
+  },
+  {
+   "op": "fill",
+   "from": [
+    15,
+    1,
+    4
+   ],
+   "to": [
+    15,
+    2,
+    4
+   ],
+   "block": "minecraft:stone_brick_wall"
+  },
+  {
+   "op": "fill",
+   "from": [
+    17,
+    1,
+    4
+   ],
+   "to": [
+    17,
+    2,
+    4
+   ],
+   "block": "minecraft:stone_brick_wall"
+  },
+  {
+   "op": "fill",
+   "from": [
+    15,
+    3,
+    2
+   ],
+   "to": [
+    17,
+    3,
+    4
+   ],
+   "block": "minecraft:spruce_slab[type=bottom]"
+  },
+  {
+   "op": "block",
+   "at": [
+    16,
+    2,
+    3
+   ],
+   "block": "minecraft:lantern[hanging=true]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    18,
     -1,
     1
    ],
    "to": [
-    17,
+    22,
     -1,
     5
    ],
@@ -418,12 +625,12 @@
   {
    "op": "fill",
    "from": [
-    13,
+    18,
     0,
     1
    ],
    "to": [
-    17,
+    22,
     3,
     1
    ],
@@ -432,12 +639,12 @@
   {
    "op": "fill",
    "from": [
-    13,
+    18,
     0,
     2
    ],
    "to": [
-    13,
+    18,
     3,
     5
    ],
@@ -446,12 +653,12 @@
   {
    "op": "fill",
    "from": [
-    17,
+    22,
     0,
     2
    ],
    "to": [
-    17,
+    22,
     3,
     5
    ],
@@ -460,12 +667,12 @@
   {
    "op": "fill",
    "from": [
-    13,
+    18,
     4,
     1
    ],
    "to": [
-    17,
+    22,
     4,
     5
    ],
@@ -474,12 +681,12 @@
   {
    "op": "fill",
    "from": [
-    14,
+    19,
     3,
     5
    ],
    "to": [
-    16,
+    21,
     3,
     5
    ],
@@ -488,12 +695,12 @@
   {
    "op": "fill",
    "from": [
-    13,
+    18,
     1,
     3
    ],
    "to": [
-    13,
+    18,
     2,
     3
    ],
@@ -502,12 +709,12 @@
   {
    "op": "fill",
    "from": [
-    17,
+    22,
     1,
     3
    ],
    "to": [
-    17,
+    22,
     2,
     3
    ],
@@ -516,24 +723,39 @@
   {
    "op": "block",
    "at": [
-    15,
+    20,
     3,
     3
    ],
    "block": "minecraft:lantern[hanging=true]"
   },
   {
+   "op": "fill",
+   "from": [
+    19,
+    3,
+    2
+   ],
+   "to": [
+    21,
+    3,
+    2
+   ],
+   "block": "minecraft:sea_lantern"
+  },
+  {
    "op": "secure_terminal",
    "at": [
-    15,
+    20,
     0,
     2
-   ]
+   ],
+   "facing": "south"
   },
   {
    "op": "terminal",
    "at": [
-    14,
+    19,
     0,
     3
    ],
@@ -542,16 +764,54 @@
   {
    "op": "block",
    "at": [
-    16,
+    21,
     0,
     2
    ],
    "block": "minecraft:lectern[facing=south]"
   },
   {
+   "op": "fill",
+   "from": [
+    19,
+    0,
+    4
+   ],
+   "to": [
+    19,
+    1,
+    4
+   ],
+   "block": "minecraft:iron_block"
+  },
+  {
+   "op": "block",
+   "at": [
+    19,
+    2,
+    4
+   ],
+   "block": "minecraft:redstone_lamp[lit=true]"
+  },
+  {
+   "op": "sign",
+   "at": [
+    20,
+    2,
+    6
+   ],
+   "block": "minecraft:warped_wall_sign[facing=south]",
+   "lines": [
+    "NETWORK OFFICE",
+    "Kit Arden"
+   ],
+   "color": "white",
+   "glow": false
+  },
+  {
    "op": "npc",
    "at": [
-    16,
+    21,
     0,
     3
    ],
@@ -565,7 +825,7 @@
    ],
    "career": "technician",
    "terminal": [
-    14,
+    19,
     0,
     3
    ]
@@ -573,12 +833,12 @@
   {
    "op": "fill",
    "from": [
-    19,
+    25,
     -1,
     1
    ],
    "to": [
-    23,
+    29,
     -1,
     6
    ],
@@ -587,12 +847,12 @@
   {
    "op": "fill",
    "from": [
-    20,
+    26,
     -1,
     2
    ],
    "to": [
-    22,
+    28,
     -1,
     5
    ],
@@ -601,7 +861,7 @@
   {
    "op": "block",
    "at": [
-    21,
+    27,
     -1,
     3
    ],
@@ -610,7 +870,7 @@
   {
    "op": "block",
    "at": [
-    21,
+    27,
     -1,
     4
    ],
@@ -619,12 +879,12 @@
   {
    "op": "fill",
    "from": [
-    19,
+    25,
     0,
     1
    ],
    "to": [
-    23,
+    29,
     3,
     1
    ],
@@ -633,12 +893,12 @@
   {
    "op": "fill",
    "from": [
-    19,
+    25,
     0,
     1
    ],
    "to": [
-    19,
+    25,
     3,
     6
    ],
@@ -647,12 +907,12 @@
   {
    "op": "fill",
    "from": [
-    23,
+    29,
     0,
     1
    ],
    "to": [
-    23,
+    29,
     3,
     6
    ],
@@ -661,12 +921,12 @@
   {
    "op": "fill",
    "from": [
-    19,
+    25,
     0,
     6
    ],
    "to": [
-    23,
+    29,
     3,
     6
    ],
@@ -675,12 +935,12 @@
   {
    "op": "fill",
    "from": [
-    19,
+    25,
     4,
     1
    ],
    "to": [
-    23,
+    29,
     4,
     6
    ],
@@ -689,12 +949,12 @@
   {
    "op": "fill",
    "from": [
-    21,
+    27,
     0,
     6
    ],
    "to": [
-    21,
+    27,
     1,
     6
    ],
@@ -703,7 +963,7 @@
   {
    "op": "block",
    "at": [
-    20,
+    26,
     3,
     2
    ],
@@ -712,7 +972,7 @@
   {
    "op": "block",
    "at": [
-    22,
+    28,
     3,
     5
    ],
@@ -721,20 +981,238 @@
   {
    "op": "block",
    "at": [
-    12,
+    26,
     0,
+    7
+   ],
+   "block": "minecraft:potted_fern"
+  },
+  {
+   "op": "block",
+   "at": [
+    28,
+    0,
+    7
+   ],
+   "block": "minecraft:potted_azalea_bush"
+  },
+  {
+   "op": "fill",
+   "from": [
+    10,
+    -1,
+    20
+   ],
+   "to": [
+    22,
+    -1,
+    30
+   ],
+   "block": "minecraft:polished_andesite"
+  },
+  {
+   "op": "fill",
+   "from": [
+    10,
+    -1,
+    20
+   ],
+   "to": [
+    22,
+    -1,
+    20
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    10,
+    -1,
+    30
+   ],
+   "to": [
+    22,
+    -1,
+    30
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    10,
+    -1,
+    20
+   ],
+   "to": [
+    10,
+    -1,
+    30
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    22,
+    -1,
+    20
+   ],
+   "to": [
+    22,
+    -1,
+    30
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    14,
+    -1,
     23
+   ],
+   "to": [
+    18,
+    -1,
+    27
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    15,
+    -1,
+    24
+   ],
+   "to": [
+    17,
+    -1,
+    26
+   ],
+   "block": "minecraft:polished_andesite"
+  },
+  {
+   "op": "block",
+   "at": [
+    16,
+    0,
+    25
    ],
    "block": "minecraft:stone_bricks"
   },
   {
    "op": "block",
    "at": [
-    12,
+    16,
     1,
-    23
+    25
    ],
    "block": "minecraft:bell[attachment=floor,facing=north]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    15,
+    0,
+    24
+   ],
+   "to": [
+    15,
+    2,
+    24
+   ],
+   "block": "minecraft:spruce_fence"
+  },
+  {
+   "op": "fill",
+   "from": [
+    17,
+    0,
+    24
+   ],
+   "to": [
+    17,
+    2,
+    24
+   ],
+   "block": "minecraft:spruce_fence"
+  },
+  {
+   "op": "fill",
+   "from": [
+    15,
+    0,
+    26
+   ],
+   "to": [
+    15,
+    2,
+    26
+   ],
+   "block": "minecraft:spruce_fence"
+  },
+  {
+   "op": "fill",
+   "from": [
+    17,
+    0,
+    26
+   ],
+   "to": [
+    17,
+    2,
+    26
+   ],
+   "block": "minecraft:spruce_fence"
+  },
+  {
+   "op": "fill",
+   "from": [
+    14,
+    3,
+    23
+   ],
+   "to": [
+    18,
+    3,
+    27
+   ],
+   "block": "minecraft:spruce_slab[type=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    15,
+    3,
+    24
+   ],
+   "to": [
+    17,
+    3,
+    26
+   ],
+   "block": "minecraft:spruce_planks"
+  },
+  {
+   "op": "block",
+   "at": [
+    16,
+    4,
+    25
+   ],
+   "block": "minecraft:lantern[hanging=false]"
+  },
+  {
+   "op": "ledger",
+   "at": [
+    11,
+    0,
+    25
+   ],
+   "facing": "east"
   },
   {
    "op": "block",
@@ -743,16 +1221,1014 @@
     0,
     23
    ],
-   "block": "minecraft:lantern"
+   "block": "minecraft:spruce_stairs[facing=east,half=bottom]"
   },
   {
    "op": "block",
    "at": [
-    13,
+    11,
+    0,
+    27
+   ],
+   "block": "minecraft:spruce_stairs[facing=east,half=bottom]"
+  },
+  {
+   "op": "block",
+   "at": [
+    10,
     0,
     23
    ],
-   "block": "minecraft:lantern"
+   "block": "minecraft:potted_poppy"
+  },
+  {
+   "op": "block",
+   "at": [
+    10,
+    0,
+    27
+   ],
+   "block": "minecraft:potted_cornflower"
+  },
+  {
+   "op": "block",
+   "at": [
+    11,
+    0,
+    21
+   ],
+   "block": "minecraft:potted_oxeye_daisy"
+  },
+  {
+   "op": "block",
+   "at": [
+    11,
+    0,
+    29
+   ],
+   "block": "minecraft:potted_azalea_bush"
+  },
+  {
+   "op": "fill",
+   "from": [
+    20,
+    -1,
+    21
+   ],
+   "to": [
+    22,
+    -1,
+    23
+   ],
+   "block": "minecraft:spruce_planks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    22,
+    0,
+    21
+   ],
+   "to": [
+    22,
+    2,
+    23
+   ],
+   "block": "minecraft:spruce_planks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    20,
+    0,
+    21
+   ],
+   "to": [
+    20,
+    2,
+    21
+   ],
+   "block": "minecraft:spruce_fence"
+  },
+  {
+   "op": "fill",
+   "from": [
+    20,
+    0,
+    23
+   ],
+   "to": [
+    20,
+    2,
+    23
+   ],
+   "block": "minecraft:spruce_fence"
+  },
+  {
+   "op": "block",
+   "at": [
+    20,
+    0,
+    22
+   ],
+   "block": "minecraft:barrel[facing=west]"
+  },
+  {
+   "op": "block",
+   "at": [
+    20,
+    1,
+    22
+   ],
+   "block": "minecraft:oak_slab[type=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    19,
+    3,
+    21
+   ],
+   "to": [
+    22,
+    3,
+    21
+   ],
+   "block": "minecraft:red_wool"
+  },
+  {
+   "op": "fill",
+   "from": [
+    19,
+    3,
+    22
+   ],
+   "to": [
+    22,
+    3,
+    22
+   ],
+   "block": "minecraft:white_wool"
+  },
+  {
+   "op": "fill",
+   "from": [
+    19,
+    3,
+    23
+   ],
+   "to": [
+    22,
+    3,
+    23
+   ],
+   "block": "minecraft:red_wool"
+  },
+  {
+   "op": "block",
+   "at": [
+    21,
+    2,
+    22
+   ],
+   "block": "minecraft:lantern[hanging=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    20,
+    0,
+    23
+   ],
+   "block": "minecraft:hay_block"
+  },
+  {
+   "op": "block",
+   "at": [
+    21,
+    0,
+    21
+   ],
+   "block": "minecraft:barrel[facing=up]"
+  },
+  {
+   "op": "npc",
+   "at": [
+    21,
+    0,
+    22
+   ],
+   "role": "vendor",
+   "name": "Pell Dorsey - Baker",
+   "profession": "farmer",
+   "lines": [
+    "Bread is the one honest thing in this city that gets cheaper the more of it there is. Ask the exchange what is on today.",
+    "The farm co-op buys flour and eggs by the order. I buy what the co-op will not take, at a fair price.",
+    "Everyone passes the bell on their way somewhere. I hear a good deal and I repeat very little."
+   ]
+  },
+  {
+   "op": "fill",
+   "from": [
+    20,
+    -1,
+    27
+   ],
+   "to": [
+    22,
+    -1,
+    29
+   ],
+   "block": "minecraft:spruce_planks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    22,
+    0,
+    27
+   ],
+   "to": [
+    22,
+    2,
+    29
+   ],
+   "block": "minecraft:spruce_planks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    20,
+    0,
+    27
+   ],
+   "to": [
+    20,
+    2,
+    27
+   ],
+   "block": "minecraft:spruce_fence"
+  },
+  {
+   "op": "fill",
+   "from": [
+    20,
+    0,
+    29
+   ],
+   "to": [
+    20,
+    2,
+    29
+   ],
+   "block": "minecraft:spruce_fence"
+  },
+  {
+   "op": "block",
+   "at": [
+    20,
+    0,
+    28
+   ],
+   "block": "minecraft:barrel[facing=west]"
+  },
+  {
+   "op": "block",
+   "at": [
+    20,
+    1,
+    28
+   ],
+   "block": "minecraft:oak_slab[type=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    19,
+    3,
+    27
+   ],
+   "to": [
+    22,
+    3,
+    27
+   ],
+   "block": "minecraft:blue_wool"
+  },
+  {
+   "op": "fill",
+   "from": [
+    19,
+    3,
+    28
+   ],
+   "to": [
+    22,
+    3,
+    28
+   ],
+   "block": "minecraft:white_wool"
+  },
+  {
+   "op": "fill",
+   "from": [
+    19,
+    3,
+    29
+   ],
+   "to": [
+    22,
+    3,
+    29
+   ],
+   "block": "minecraft:blue_wool"
+  },
+  {
+   "op": "block",
+   "at": [
+    21,
+    2,
+    28
+   ],
+   "block": "minecraft:lantern[hanging=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    20,
+    0,
+    29
+   ],
+   "block": "minecraft:barrel[facing=up]"
+  },
+  {
+   "op": "block",
+   "at": [
+    21,
+    0,
+    27
+   ],
+   "block": "minecraft:melon"
+  },
+  {
+   "op": "npc",
+   "at": [
+    21,
+    0,
+    28
+   ],
+   "role": "vendor",
+   "name": "Juno Ketterman - Fishmonger",
+   "profession": "fisherman",
+   "lines": [
+    "Fresh from the Blackwater docks, or fresh enough. The river is wider than it looks, so the boats keep me honest.",
+    "I carry crates for Hollis and Sons when the stall is slow. The checkpoints look in the hold as well as the cab.",
+    "If you want to know what a city is worth, watch what its market sells on a Monday."
+   ]
+  },
+  {
+   "op": "fill",
+   "from": [
+    12,
+    0,
+    9
+   ],
+   "to": [
+    12,
+    2,
+    9
+   ],
+   "block": "minecraft:stone_brick_wall"
+  },
+  {
+   "op": "block",
+   "at": [
+    12,
+    3,
+    9
+   ],
+   "block": "minecraft:lantern[hanging=false]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    20,
+    0,
+    9
+   ],
+   "to": [
+    20,
+    2,
+    9
+   ],
+   "block": "minecraft:stone_brick_wall"
+  },
+  {
+   "op": "block",
+   "at": [
+    20,
+    3,
+    9
+   ],
+   "block": "minecraft:lantern[hanging=false]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    12,
+    0,
+    17
+   ],
+   "to": [
+    12,
+    2,
+    17
+   ],
+   "block": "minecraft:stone_brick_wall"
+  },
+  {
+   "op": "block",
+   "at": [
+    12,
+    3,
+    17
+   ],
+   "block": "minecraft:lantern[hanging=false]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    20,
+    0,
+    17
+   ],
+   "to": [
+    20,
+    2,
+    17
+   ],
+   "block": "minecraft:stone_brick_wall"
+  },
+  {
+   "op": "block",
+   "at": [
+    20,
+    3,
+    17
+   ],
+   "block": "minecraft:lantern[hanging=false]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    12,
+    0,
+    33
+   ],
+   "to": [
+    12,
+    2,
+    33
+   ],
+   "block": "minecraft:stone_brick_wall"
+  },
+  {
+   "op": "block",
+   "at": [
+    12,
+    3,
+    33
+   ],
+   "block": "minecraft:lantern[hanging=false]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    20,
+    0,
+    33
+   ],
+   "to": [
+    20,
+    2,
+    33
+   ],
+   "block": "minecraft:stone_brick_wall"
+  },
+  {
+   "op": "block",
+   "at": [
+    20,
+    3,
+    33
+   ],
+   "block": "minecraft:lantern[hanging=false]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    12,
+    0,
+    41
+   ],
+   "to": [
+    12,
+    2,
+    41
+   ],
+   "block": "minecraft:stone_brick_wall"
+  },
+  {
+   "op": "block",
+   "at": [
+    12,
+    3,
+    41
+   ],
+   "block": "minecraft:lantern[hanging=false]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    20,
+    0,
+    41
+   ],
+   "to": [
+    20,
+    2,
+    41
+   ],
+   "block": "minecraft:stone_brick_wall"
+  },
+  {
+   "op": "block",
+   "at": [
+    20,
+    3,
+    41
+   ],
+   "block": "minecraft:lantern[hanging=false]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    1,
+    0,
+    15
+   ],
+   "to": [
+    1,
+    3,
+    15
+   ],
+   "block": "minecraft:oak_log"
+  },
+  {
+   "op": "fill",
+   "from": [
+    0,
+    3,
+    14
+   ],
+   "to": [
+    2,
+    4,
+    16
+   ],
+   "block": "minecraft:oak_leaves[persistent=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    1,
+    5,
+    15
+   ],
+   "block": "minecraft:oak_leaves[persistent=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    1,
+    3,
+    15
+   ],
+   "block": "minecraft:oak_log"
+  },
+  {
+   "op": "fill",
+   "from": [
+    31,
+    0,
+    15
+   ],
+   "to": [
+    31,
+    3,
+    15
+   ],
+   "block": "minecraft:oak_log"
+  },
+  {
+   "op": "fill",
+   "from": [
+    30,
+    3,
+    14
+   ],
+   "to": [
+    32,
+    4,
+    16
+   ],
+   "block": "minecraft:oak_leaves[persistent=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    31,
+    5,
+    15
+   ],
+   "block": "minecraft:oak_leaves[persistent=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    31,
+    3,
+    15
+   ],
+   "block": "minecraft:oak_log"
+  },
+  {
+   "op": "fill",
+   "from": [
+    1,
+    0,
+    23
+   ],
+   "to": [
+    1,
+    3,
+    23
+   ],
+   "block": "minecraft:oak_log"
+  },
+  {
+   "op": "fill",
+   "from": [
+    0,
+    3,
+    22
+   ],
+   "to": [
+    2,
+    4,
+    24
+   ],
+   "block": "minecraft:oak_leaves[persistent=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    1,
+    5,
+    23
+   ],
+   "block": "minecraft:oak_leaves[persistent=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    1,
+    3,
+    23
+   ],
+   "block": "minecraft:oak_log"
+  },
+  {
+   "op": "fill",
+   "from": [
+    31,
+    0,
+    23
+   ],
+   "to": [
+    31,
+    3,
+    23
+   ],
+   "block": "minecraft:oak_log"
+  },
+  {
+   "op": "fill",
+   "from": [
+    30,
+    3,
+    22
+   ],
+   "to": [
+    32,
+    4,
+    24
+   ],
+   "block": "minecraft:oak_leaves[persistent=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    31,
+    5,
+    23
+   ],
+   "block": "minecraft:oak_leaves[persistent=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    31,
+    3,
+    23
+   ],
+   "block": "minecraft:oak_log"
+  },
+  {
+   "op": "fill",
+   "from": [
+    1,
+    0,
+    31
+   ],
+   "to": [
+    1,
+    3,
+    31
+   ],
+   "block": "minecraft:oak_log"
+  },
+  {
+   "op": "fill",
+   "from": [
+    0,
+    3,
+    30
+   ],
+   "to": [
+    2,
+    4,
+    32
+   ],
+   "block": "minecraft:oak_leaves[persistent=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    1,
+    5,
+    31
+   ],
+   "block": "minecraft:oak_leaves[persistent=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    1,
+    3,
+    31
+   ],
+   "block": "minecraft:oak_log"
+  },
+  {
+   "op": "fill",
+   "from": [
+    31,
+    0,
+    31
+   ],
+   "to": [
+    31,
+    3,
+    31
+   ],
+   "block": "minecraft:oak_log"
+  },
+  {
+   "op": "fill",
+   "from": [
+    30,
+    3,
+    30
+   ],
+   "to": [
+    32,
+    4,
+    32
+   ],
+   "block": "minecraft:oak_leaves[persistent=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    31,
+    5,
+    31
+   ],
+   "block": "minecraft:oak_leaves[persistent=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    31,
+    3,
+    31
+   ],
+   "block": "minecraft:oak_log"
+  },
+  {
+   "op": "fill",
+   "from": [
+    1,
+    0,
+    40
+   ],
+   "to": [
+    1,
+    3,
+    40
+   ],
+   "block": "minecraft:oak_log"
+  },
+  {
+   "op": "fill",
+   "from": [
+    0,
+    3,
+    39
+   ],
+   "to": [
+    2,
+    4,
+    41
+   ],
+   "block": "minecraft:oak_leaves[persistent=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    1,
+    5,
+    40
+   ],
+   "block": "minecraft:oak_leaves[persistent=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    1,
+    3,
+    40
+   ],
+   "block": "minecraft:oak_log"
+  },
+  {
+   "op": "fill",
+   "from": [
+    31,
+    0,
+    40
+   ],
+   "to": [
+    31,
+    3,
+    40
+   ],
+   "block": "minecraft:oak_log"
+  },
+  {
+   "op": "fill",
+   "from": [
+    30,
+    3,
+    39
+   ],
+   "to": [
+    32,
+    4,
+    41
+   ],
+   "block": "minecraft:oak_leaves[persistent=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    31,
+    5,
+    40
+   ],
+   "block": "minecraft:oak_leaves[persistent=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    31,
+    3,
+    40
+   ],
+   "block": "minecraft:oak_log"
+  },
+  {
+   "op": "fill",
+   "from": [
+    1,
+    0,
+    44
+   ],
+   "to": [
+    1,
+    3,
+    44
+   ],
+   "block": "minecraft:oak_log"
+  },
+  {
+   "op": "fill",
+   "from": [
+    0,
+    3,
+    43
+   ],
+   "to": [
+    2,
+    4,
+    45
+   ],
+   "block": "minecraft:oak_leaves[persistent=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    1,
+    5,
+    44
+   ],
+   "block": "minecraft:oak_leaves[persistent=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    1,
+    3,
+    44
+   ],
+   "block": "minecraft:oak_log"
+  },
+  {
+   "op": "fill",
+   "from": [
+    31,
+    0,
+    44
+   ],
+   "to": [
+    31,
+    3,
+    44
+   ],
+   "block": "minecraft:oak_log"
+  },
+  {
+   "op": "fill",
+   "from": [
+    30,
+    3,
+    43
+   ],
+   "to": [
+    32,
+    4,
+    45
+   ],
+   "block": "minecraft:oak_leaves[persistent=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    31,
+    5,
+    44
+   ],
+   "block": "minecraft:oak_leaves[persistent=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    31,
+    3,
+    44
+   ],
+   "block": "minecraft:oak_log"
   },
   {
    "op": "fill",
@@ -777,7 +2253,7 @@
    ],
    "to": [
     8,
-    2,
+    3,
     8
    ],
    "block": "minecraft:stone_bricks"
@@ -791,7 +2267,7 @@
    ],
    "to": [
     8,
-    2,
+    3,
     14
    ],
    "block": "minecraft:stone_bricks"
@@ -805,7 +2281,7 @@
    ],
    "to": [
     2,
-    2,
+    3,
     14
    ],
    "block": "minecraft:stone_bricks"
@@ -819,7 +2295,7 @@
    ],
    "to": [
     8,
-    2,
+    3,
     14
    ],
    "block": "minecraft:stone_bricks"
@@ -832,11 +2308,39 @@
     8
    ],
    "to": [
-    2,
-    2,
+    8,
+    0,
     8
    ],
-   "block": "minecraft:stripped_spruce_log"
+   "block": "minecraft:cobblestone"
+  },
+  {
+   "op": "fill",
+   "from": [
+    2,
+    0,
+    14
+   ],
+   "to": [
+    8,
+    0,
+    14
+   ],
+   "block": "minecraft:cobblestone"
+  },
+  {
+   "op": "fill",
+   "from": [
+    2,
+    0,
+    8
+   ],
+   "to": [
+    2,
+    0,
+    14
+   ],
+   "block": "minecraft:cobblestone"
   },
   {
    "op": "fill",
@@ -847,10 +2351,38 @@
    ],
    "to": [
     8,
+    0,
+    14
+   ],
+   "block": "minecraft:cobblestone"
+  },
+  {
+   "op": "fill",
+   "from": [
     2,
+    0,
     8
    ],
-   "block": "minecraft:stripped_spruce_log"
+   "to": [
+    2,
+    3,
+    8
+   ],
+   "block": "minecraft:stripped_dark_oak_log"
+  },
+  {
+   "op": "fill",
+   "from": [
+    8,
+    0,
+    8
+   ],
+   "to": [
+    8,
+    3,
+    8
+   ],
+   "block": "minecraft:stripped_dark_oak_log"
   },
   {
    "op": "fill",
@@ -861,10 +2393,10 @@
    ],
    "to": [
     2,
-    2,
+    3,
     14
    ],
-   "block": "minecraft:stripped_spruce_log"
+   "block": "minecraft:stripped_dark_oak_log"
   },
   {
    "op": "fill",
@@ -875,10 +2407,10 @@
    ],
    "to": [
     8,
-    2,
+    3,
     14
    ],
-   "block": "minecraft:stripped_spruce_log"
+   "block": "minecraft:stripped_dark_oak_log"
   },
   {
    "op": "fill",
@@ -889,7 +2421,7 @@
    ],
    "to": [
     7,
-    2,
+    3,
     13
    ],
    "block": "minecraft:air"
@@ -898,29 +2430,253 @@
    "op": "fill",
    "from": [
     2,
-    3,
+    4,
     8
    ],
    "to": [
     8,
-    3,
+    4,
     14
    ],
-   "block": "minecraft:spruce_planks"
+   "block": "minecraft:dark_oak_planks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    2,
+    4,
+    8
+   ],
+   "to": [
+    8,
+    4,
+    8
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    2,
+    4,
+    14
+   ],
+   "to": [
+    8,
+    4,
+    14
+   ],
+   "block": "minecraft:stone_bricks"
   },
   {
    "op": "fill",
    "from": [
     3,
-    4,
-    9
+    5,
+    8
    ],
    "to": [
     7,
-    4,
-    13
+    5,
+    8
    ],
-   "block": "minecraft:spruce_slab[type=bottom]"
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    3,
+    5,
+    14
+   ],
+   "to": [
+    7,
+    5,
+    14
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    4,
+    6,
+    8
+   ],
+   "to": [
+    6,
+    6,
+    8
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    4,
+    6,
+    14
+   ],
+   "to": [
+    6,
+    6,
+    14
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    5,
+    7,
+    8
+   ],
+   "to": [
+    5,
+    7,
+    8
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    5,
+    7,
+    14
+   ],
+   "to": [
+    5,
+    7,
+    14
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    1,
+    4,
+    7
+   ],
+   "to": [
+    1,
+    4,
+    15
+   ],
+   "block": "minecraft:deepslate_tile_stairs[facing=east,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    9,
+    4,
+    7
+   ],
+   "to": [
+    9,
+    4,
+    15
+   ],
+   "block": "minecraft:deepslate_tile_stairs[facing=west,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    2,
+    5,
+    7
+   ],
+   "to": [
+    2,
+    5,
+    15
+   ],
+   "block": "minecraft:deepslate_tile_stairs[facing=east,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    8,
+    5,
+    7
+   ],
+   "to": [
+    8,
+    5,
+    15
+   ],
+   "block": "minecraft:deepslate_tile_stairs[facing=west,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    3,
+    6,
+    7
+   ],
+   "to": [
+    3,
+    6,
+    15
+   ],
+   "block": "minecraft:deepslate_tile_stairs[facing=east,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    7,
+    6,
+    7
+   ],
+   "to": [
+    7,
+    6,
+    15
+   ],
+   "block": "minecraft:deepslate_tile_stairs[facing=west,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    4,
+    7,
+    7
+   ],
+   "to": [
+    4,
+    7,
+    15
+   ],
+   "block": "minecraft:deepslate_tile_stairs[facing=east,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    6,
+    7,
+    7
+   ],
+   "to": [
+    6,
+    7,
+    15
+   ],
+   "block": "minecraft:deepslate_tile_stairs[facing=west,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    5,
+    7,
+    7
+   ],
+   "to": [
+    5,
+    7,
+    15
+   ],
+   "block": "minecraft:deepslate_tiles"
   },
   {
    "op": "fill",
@@ -935,6 +2691,105 @@
     11
    ],
    "block": "minecraft:air"
+  },
+  {
+   "op": "block",
+   "at": [
+    8,
+    0,
+    11
+   ],
+   "block": "minecraft:dark_oak_door[facing=east,half=lower,hinge=left,open=false]"
+  },
+  {
+   "op": "block",
+   "at": [
+    8,
+    1,
+    11
+   ],
+   "block": "minecraft:dark_oak_door[facing=east,half=upper,hinge=left,open=false]"
+  },
+  {
+   "op": "block",
+   "at": [
+    5,
+    3,
+    11
+   ],
+   "block": "minecraft:lantern[hanging=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    9,
+    0,
+    10
+   ],
+   "block": "minecraft:potted_azalea_bush"
+  },
+  {
+   "op": "block",
+   "at": [
+    9,
+    0,
+    12
+   ],
+   "block": "minecraft:potted_fern"
+  },
+  {
+   "op": "block",
+   "at": [
+    8,
+    1,
+    9
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    9,
+    1,
+    8
+   ],
+   "block": "minecraft:dark_oak_trapdoor[facing=east,half=bottom,open=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    9,
+    1,
+    10
+   ],
+   "block": "minecraft:dark_oak_trapdoor[facing=east,half=bottom,open=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    8,
+    1,
+    13
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    9,
+    1,
+    12
+   ],
+   "block": "minecraft:dark_oak_trapdoor[facing=east,half=bottom,open=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    9,
+    1,
+    14
+   ],
+   "block": "minecraft:dark_oak_trapdoor[facing=east,half=bottom,open=true]"
   },
   {
    "op": "block",
@@ -957,7 +2812,7 @@
   {
    "op": "block",
    "at": [
-    5,
+    4,
     1,
     8
    ],
@@ -966,7 +2821,7 @@
   {
    "op": "block",
    "at": [
-    5,
+    4,
     1,
     14
    ],
@@ -975,11 +2830,36 @@
   {
    "op": "block",
    "at": [
-    5,
+    6,
+    1,
+    8
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    6,
+    1,
+    14
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "sign",
+   "at": [
+    9,
     2,
     11
    ],
-   "block": "minecraft:lantern[hanging=true]"
+   "block": "minecraft:dark_oak_wall_sign[facing=east]",
+   "lines": [
+    "GUNSMITH",
+    "Ines Calloway",
+    "Licensed arms"
+   ],
+   "color": "black",
+   "glow": false
   },
   {
    "op": "terminal",
@@ -1012,7 +2892,7 @@
    "lines": [
     "Licensed sidearms and shotguns for the Valewood co-op, range targets, optic mounts: the orders are on the terminal.",
     "With the gun smith table in the corner and a blueprint, parts become a real gun. Without the parts, a blueprint is only paper.",
-    "Arms brokerage is not something I offer. Dray in Blackwater might, if you have the trust and the papers."
+    "The range is out the back door and along the path. Instructor Vale keeps the score. Arms brokerage is not something I offer; Dray in Blackwater might."
    ],
    "career": "gunsmith",
    "terminal": [
@@ -1020,6 +2900,70 @@
     0,
     10
    ]
+  },
+  {
+   "op": "fill",
+   "from": [
+    4,
+    0,
+    11
+   ],
+   "to": [
+    7,
+    0,
+    11
+   ],
+   "block": "minecraft:red_carpet"
+  },
+  {
+   "op": "fill",
+   "from": [
+    4,
+    0,
+    9
+   ],
+   "to": [
+    4,
+    1,
+    9
+   ],
+   "block": "minecraft:bookshelf"
+  },
+  {
+   "op": "block",
+   "at": [
+    6,
+    0,
+    13
+   ],
+   "block": "minecraft:spruce_fence"
+  },
+  {
+   "op": "block",
+   "at": [
+    6,
+    1,
+    13
+   ],
+   "block": "minecraft:spruce_slab[type=bottom]"
+  },
+  {
+   "op": "block",
+   "at": [
+    5,
+    0,
+    13
+   ],
+   "block": "minecraft:spruce_stairs[facing=east,half=bottom]"
+  },
+  {
+   "op": "block",
+   "at": [
+    7,
+    0,
+    13
+   ],
+   "block": "minecraft:potted_fern"
   },
   {
    "op": "block",
@@ -1039,6 +2983,53 @@
     9
    ],
    "block": "minecraft:anvil[facing=north]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    2,
+    0,
+    11
+   ],
+   "to": [
+    2,
+    1,
+    11
+   ],
+   "block": "minecraft:air"
+  },
+  {
+   "op": "block",
+   "at": [
+    2,
+    0,
+    11
+   ],
+   "block": "minecraft:dark_oak_door[facing=west,half=lower,hinge=left,open=false]"
+  },
+  {
+   "op": "block",
+   "at": [
+    2,
+    1,
+    11
+   ],
+   "block": "minecraft:dark_oak_door[facing=west,half=upper,hinge=left,open=false]"
+  },
+  {
+   "op": "sign",
+   "at": [
+    1,
+    2,
+    11
+   ],
+   "block": "minecraft:dark_oak_wall_sign[facing=west]",
+   "lines": [
+    "RANGE",
+    "out the back"
+   ],
+   "color": "black",
+   "glow": false
   },
   {
    "op": "block",
@@ -1081,7 +3072,63 @@
    ],
    "to": [
     8,
+    3,
+    16
+   ],
+   "block": "minecraft:bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
     2,
+    0,
+    22
+   ],
+   "to": [
+    8,
+    3,
+    22
+   ],
+   "block": "minecraft:bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    2,
+    0,
+    16
+   ],
+   "to": [
+    2,
+    3,
+    22
+   ],
+   "block": "minecraft:bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    8,
+    0,
+    16
+   ],
+   "to": [
+    8,
+    3,
+    22
+   ],
+   "block": "minecraft:bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    2,
+    0,
+    16
+   ],
+   "to": [
+    8,
+    0,
     16
    ],
    "block": "minecraft:stone_bricks"
@@ -1095,7 +3142,7 @@
    ],
    "to": [
     8,
-    2,
+    0,
     22
    ],
    "block": "minecraft:stone_bricks"
@@ -1109,7 +3156,7 @@
    ],
    "to": [
     2,
-    2,
+    0,
     22
    ],
    "block": "minecraft:stone_bricks"
@@ -1123,7 +3170,7 @@
    ],
    "to": [
     8,
-    2,
+    0,
     22
    ],
    "block": "minecraft:stone_bricks"
@@ -1137,10 +3184,10 @@
    ],
    "to": [
     2,
-    2,
+    3,
     16
    ],
-   "block": "minecraft:stripped_spruce_log"
+   "block": "minecraft:stripped_dark_oak_log"
   },
   {
    "op": "fill",
@@ -1151,10 +3198,10 @@
    ],
    "to": [
     8,
-    2,
+    3,
     16
    ],
-   "block": "minecraft:stripped_spruce_log"
+   "block": "minecraft:stripped_dark_oak_log"
   },
   {
    "op": "fill",
@@ -1165,10 +3212,10 @@
    ],
    "to": [
     2,
-    2,
+    3,
     22
    ],
-   "block": "minecraft:stripped_spruce_log"
+   "block": "minecraft:stripped_dark_oak_log"
   },
   {
    "op": "fill",
@@ -1179,10 +3226,10 @@
    ],
    "to": [
     8,
-    2,
+    3,
     22
    ],
-   "block": "minecraft:stripped_spruce_log"
+   "block": "minecraft:stripped_dark_oak_log"
   },
   {
    "op": "fill",
@@ -1193,7 +3240,7 @@
    ],
    "to": [
     7,
-    2,
+    3,
     21
    ],
    "block": "minecraft:air"
@@ -1202,29 +3249,253 @@
    "op": "fill",
    "from": [
     2,
-    3,
+    4,
     16
    ],
    "to": [
     8,
-    3,
+    4,
     22
    ],
-   "block": "minecraft:spruce_planks"
+   "block": "minecraft:dark_oak_planks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    2,
+    4,
+    16
+   ],
+   "to": [
+    8,
+    4,
+    16
+   ],
+   "block": "minecraft:bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    2,
+    4,
+    22
+   ],
+   "to": [
+    8,
+    4,
+    22
+   ],
+   "block": "minecraft:bricks"
   },
   {
    "op": "fill",
    "from": [
     3,
-    4,
-    17
+    5,
+    16
    ],
    "to": [
     7,
-    4,
-    21
+    5,
+    16
    ],
-   "block": "minecraft:spruce_slab[type=bottom]"
+   "block": "minecraft:bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    3,
+    5,
+    22
+   ],
+   "to": [
+    7,
+    5,
+    22
+   ],
+   "block": "minecraft:bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    4,
+    6,
+    16
+   ],
+   "to": [
+    6,
+    6,
+    16
+   ],
+   "block": "minecraft:bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    4,
+    6,
+    22
+   ],
+   "to": [
+    6,
+    6,
+    22
+   ],
+   "block": "minecraft:bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    5,
+    7,
+    16
+   ],
+   "to": [
+    5,
+    7,
+    16
+   ],
+   "block": "minecraft:bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    5,
+    7,
+    22
+   ],
+   "to": [
+    5,
+    7,
+    22
+   ],
+   "block": "minecraft:bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    1,
+    4,
+    15
+   ],
+   "to": [
+    1,
+    4,
+    23
+   ],
+   "block": "minecraft:stone_brick_stairs[facing=east,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    9,
+    4,
+    15
+   ],
+   "to": [
+    9,
+    4,
+    23
+   ],
+   "block": "minecraft:stone_brick_stairs[facing=west,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    2,
+    5,
+    15
+   ],
+   "to": [
+    2,
+    5,
+    23
+   ],
+   "block": "minecraft:stone_brick_stairs[facing=east,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    8,
+    5,
+    15
+   ],
+   "to": [
+    8,
+    5,
+    23
+   ],
+   "block": "minecraft:stone_brick_stairs[facing=west,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    3,
+    6,
+    15
+   ],
+   "to": [
+    3,
+    6,
+    23
+   ],
+   "block": "minecraft:stone_brick_stairs[facing=east,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    7,
+    6,
+    15
+   ],
+   "to": [
+    7,
+    6,
+    23
+   ],
+   "block": "minecraft:stone_brick_stairs[facing=west,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    4,
+    7,
+    15
+   ],
+   "to": [
+    4,
+    7,
+    23
+   ],
+   "block": "minecraft:stone_brick_stairs[facing=east,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    6,
+    7,
+    15
+   ],
+   "to": [
+    6,
+    7,
+    23
+   ],
+   "block": "minecraft:stone_brick_stairs[facing=west,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    5,
+    7,
+    15
+   ],
+   "to": [
+    5,
+    7,
+    23
+   ],
+   "block": "minecraft:stone_bricks"
   },
   {
    "op": "fill",
@@ -1239,6 +3510,105 @@
     19
    ],
    "block": "minecraft:air"
+  },
+  {
+   "op": "block",
+   "at": [
+    8,
+    0,
+    19
+   ],
+   "block": "minecraft:dark_oak_door[facing=east,half=lower,hinge=left,open=false]"
+  },
+  {
+   "op": "block",
+   "at": [
+    8,
+    1,
+    19
+   ],
+   "block": "minecraft:dark_oak_door[facing=east,half=upper,hinge=left,open=false]"
+  },
+  {
+   "op": "block",
+   "at": [
+    5,
+    3,
+    19
+   ],
+   "block": "minecraft:lantern[hanging=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    9,
+    0,
+    18
+   ],
+   "block": "minecraft:potted_azalea_bush"
+  },
+  {
+   "op": "block",
+   "at": [
+    9,
+    0,
+    20
+   ],
+   "block": "minecraft:potted_fern"
+  },
+  {
+   "op": "block",
+   "at": [
+    8,
+    1,
+    17
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    9,
+    1,
+    16
+   ],
+   "block": "minecraft:dark_oak_trapdoor[facing=east,half=bottom,open=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    9,
+    1,
+    18
+   ],
+   "block": "minecraft:dark_oak_trapdoor[facing=east,half=bottom,open=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    8,
+    1,
+    21
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    9,
+    1,
+    20
+   ],
+   "block": "minecraft:dark_oak_trapdoor[facing=east,half=bottom,open=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    9,
+    1,
+    22
+   ],
+   "block": "minecraft:dark_oak_trapdoor[facing=east,half=bottom,open=true]"
   },
   {
    "op": "block",
@@ -1261,7 +3631,7 @@
   {
    "op": "block",
    "at": [
-    5,
+    4,
     1,
     16
    ],
@@ -1270,7 +3640,7 @@
   {
    "op": "block",
    "at": [
-    5,
+    4,
     1,
     22
    ],
@@ -1279,11 +3649,59 @@
   {
    "op": "block",
    "at": [
-    5,
+    6,
+    1,
+    16
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    6,
+    1,
+    22
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "fill",
+   "from": [
+    3,
+    0,
+    21
+   ],
+   "to": [
+    3,
+    9,
+    21
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "block",
+   "at": [
+    3,
+    10,
+    21
+   ],
+   "block": "minecraft:campfire[lit=true,signal_fire=false,facing=north]"
+  },
+  {
+   "op": "sign",
+   "at": [
+    9,
     2,
     19
    ],
-   "block": "minecraft:lantern[hanging=true]"
+   "block": "minecraft:dark_oak_wall_sign[facing=east]",
+   "lines": [
+    "FOUNDRY",
+    "Brannock Voss",
+    "Parts and plate"
+   ],
+   "color": "black",
+   "glow": false
   },
   {
    "op": "terminal",
@@ -1326,6 +3744,70 @@
    ]
   },
   {
+   "op": "fill",
+   "from": [
+    4,
+    0,
+    19
+   ],
+   "to": [
+    7,
+    0,
+    19
+   ],
+   "block": "minecraft:gray_carpet"
+  },
+  {
+   "op": "fill",
+   "from": [
+    4,
+    0,
+    17
+   ],
+   "to": [
+    4,
+    1,
+    17
+   ],
+   "block": "minecraft:bookshelf"
+  },
+  {
+   "op": "block",
+   "at": [
+    6,
+    0,
+    21
+   ],
+   "block": "minecraft:spruce_fence"
+  },
+  {
+   "op": "block",
+   "at": [
+    6,
+    1,
+    21
+   ],
+   "block": "minecraft:spruce_slab[type=bottom]"
+  },
+  {
+   "op": "block",
+   "at": [
+    5,
+    0,
+    21
+   ],
+   "block": "minecraft:spruce_stairs[facing=east,half=bottom]"
+  },
+  {
+   "op": "block",
+   "at": [
+    7,
+    0,
+    21
+   ],
+   "block": "minecraft:potted_fern"
+  },
+  {
    "op": "block",
    "at": [
     6,
@@ -1341,7 +3823,7 @@
     0,
     17
    ],
-   "block": "minecraft:furnace[facing=south]"
+   "block": "minecraft:blast_furnace[facing=east,lit=true]"
   },
   {
    "op": "block",
@@ -1351,6 +3833,24 @@
     21
    ],
    "block": "minecraft:iron_block"
+  },
+  {
+   "op": "block",
+   "at": [
+    7,
+    1,
+    21
+   ],
+   "block": "minecraft:iron_block"
+  },
+  {
+   "op": "block",
+   "at": [
+    6,
+    0,
+    18
+   ],
+   "block": "minecraft:cauldron"
   },
   {
    "op": "block",
@@ -1393,10 +3893,10 @@
    ],
    "to": [
     8,
-    2,
+    3,
     24
    ],
-   "block": "minecraft:spruce_planks"
+   "block": "minecraft:birch_planks"
   },
   {
    "op": "fill",
@@ -1407,10 +3907,10 @@
    ],
    "to": [
     8,
-    2,
+    3,
     30
    ],
-   "block": "minecraft:spruce_planks"
+   "block": "minecraft:birch_planks"
   },
   {
    "op": "fill",
@@ -1421,10 +3921,10 @@
    ],
    "to": [
     2,
-    2,
+    3,
     30
    ],
-   "block": "minecraft:spruce_planks"
+   "block": "minecraft:birch_planks"
   },
   {
    "op": "fill",
@@ -1435,10 +3935,38 @@
    ],
    "to": [
     8,
-    2,
+    3,
     30
    ],
-   "block": "minecraft:spruce_planks"
+   "block": "minecraft:birch_planks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    2,
+    0,
+    24
+   ],
+   "to": [
+    8,
+    0,
+    24
+   ],
+   "block": "minecraft:cobblestone"
+  },
+  {
+   "op": "fill",
+   "from": [
+    2,
+    0,
+    30
+   ],
+   "to": [
+    8,
+    0,
+    30
+   ],
+   "block": "minecraft:cobblestone"
   },
   {
    "op": "fill",
@@ -1449,7 +3977,35 @@
    ],
    "to": [
     2,
+    0,
+    30
+   ],
+   "block": "minecraft:cobblestone"
+  },
+  {
+   "op": "fill",
+   "from": [
+    8,
+    0,
+    24
+   ],
+   "to": [
+    8,
+    0,
+    30
+   ],
+   "block": "minecraft:cobblestone"
+  },
+  {
+   "op": "fill",
+   "from": [
     2,
+    0,
+    24
+   ],
+   "to": [
+    2,
+    3,
     24
    ],
    "block": "minecraft:stripped_oak_log"
@@ -1463,7 +4019,7 @@
    ],
    "to": [
     8,
-    2,
+    3,
     24
    ],
    "block": "minecraft:stripped_oak_log"
@@ -1477,7 +4033,7 @@
    ],
    "to": [
     2,
-    2,
+    3,
     30
    ],
    "block": "minecraft:stripped_oak_log"
@@ -1491,7 +4047,7 @@
    ],
    "to": [
     8,
-    2,
+    3,
     30
    ],
    "block": "minecraft:stripped_oak_log"
@@ -1505,7 +4061,7 @@
    ],
    "to": [
     7,
-    2,
+    3,
     29
    ],
    "block": "minecraft:air"
@@ -1514,12 +4070,12 @@
    "op": "fill",
    "from": [
     2,
-    3,
+    4,
     24
    ],
    "to": [
     8,
-    3,
+    4,
     30
    ],
    "block": "minecraft:oak_planks"
@@ -1527,16 +4083,240 @@
   {
    "op": "fill",
    "from": [
-    3,
+    2,
     4,
-    25
+    24
+   ],
+   "to": [
+    8,
+    4,
+    24
+   ],
+   "block": "minecraft:birch_planks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    2,
+    4,
+    30
+   ],
+   "to": [
+    8,
+    4,
+    30
+   ],
+   "block": "minecraft:birch_planks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    3,
+    5,
+    24
    ],
    "to": [
     7,
-    4,
-    29
+    5,
+    24
    ],
-   "block": "minecraft:oak_slab[type=bottom]"
+   "block": "minecraft:birch_planks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    3,
+    5,
+    30
+   ],
+   "to": [
+    7,
+    5,
+    30
+   ],
+   "block": "minecraft:birch_planks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    4,
+    6,
+    24
+   ],
+   "to": [
+    6,
+    6,
+    24
+   ],
+   "block": "minecraft:birch_planks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    4,
+    6,
+    30
+   ],
+   "to": [
+    6,
+    6,
+    30
+   ],
+   "block": "minecraft:birch_planks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    5,
+    7,
+    24
+   ],
+   "to": [
+    5,
+    7,
+    24
+   ],
+   "block": "minecraft:birch_planks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    5,
+    7,
+    30
+   ],
+   "to": [
+    5,
+    7,
+    30
+   ],
+   "block": "minecraft:birch_planks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    1,
+    4,
+    23
+   ],
+   "to": [
+    1,
+    4,
+    31
+   ],
+   "block": "minecraft:spruce_stairs[facing=east,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    9,
+    4,
+    23
+   ],
+   "to": [
+    9,
+    4,
+    31
+   ],
+   "block": "minecraft:spruce_stairs[facing=west,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    2,
+    5,
+    23
+   ],
+   "to": [
+    2,
+    5,
+    31
+   ],
+   "block": "minecraft:spruce_stairs[facing=east,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    8,
+    5,
+    23
+   ],
+   "to": [
+    8,
+    5,
+    31
+   ],
+   "block": "minecraft:spruce_stairs[facing=west,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    3,
+    6,
+    23
+   ],
+   "to": [
+    3,
+    6,
+    31
+   ],
+   "block": "minecraft:spruce_stairs[facing=east,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    7,
+    6,
+    23
+   ],
+   "to": [
+    7,
+    6,
+    31
+   ],
+   "block": "minecraft:spruce_stairs[facing=west,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    4,
+    7,
+    23
+   ],
+   "to": [
+    4,
+    7,
+    31
+   ],
+   "block": "minecraft:spruce_stairs[facing=east,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    6,
+    7,
+    23
+   ],
+   "to": [
+    6,
+    7,
+    31
+   ],
+   "block": "minecraft:spruce_stairs[facing=west,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    5,
+    7,
+    23
+   ],
+   "to": [
+    5,
+    7,
+    31
+   ],
+   "block": "minecraft:spruce_planks"
   },
   {
    "op": "fill",
@@ -1551,6 +4331,105 @@
     27
    ],
    "block": "minecraft:air"
+  },
+  {
+   "op": "block",
+   "at": [
+    8,
+    0,
+    27
+   ],
+   "block": "minecraft:birch_door[facing=east,half=lower,hinge=left,open=false]"
+  },
+  {
+   "op": "block",
+   "at": [
+    8,
+    1,
+    27
+   ],
+   "block": "minecraft:birch_door[facing=east,half=upper,hinge=left,open=false]"
+  },
+  {
+   "op": "block",
+   "at": [
+    5,
+    3,
+    27
+   ],
+   "block": "minecraft:lantern[hanging=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    9,
+    0,
+    26
+   ],
+   "block": "minecraft:potted_azalea_bush"
+  },
+  {
+   "op": "block",
+   "at": [
+    9,
+    0,
+    28
+   ],
+   "block": "minecraft:potted_fern"
+  },
+  {
+   "op": "block",
+   "at": [
+    8,
+    1,
+    25
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    9,
+    1,
+    24
+   ],
+   "block": "minecraft:birch_trapdoor[facing=east,half=bottom,open=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    9,
+    1,
+    26
+   ],
+   "block": "minecraft:birch_trapdoor[facing=east,half=bottom,open=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    8,
+    1,
+    29
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    9,
+    1,
+    28
+   ],
+   "block": "minecraft:birch_trapdoor[facing=east,half=bottom,open=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    9,
+    1,
+    30
+   ],
+   "block": "minecraft:birch_trapdoor[facing=east,half=bottom,open=true]"
   },
   {
    "op": "block",
@@ -1573,7 +4452,7 @@
   {
    "op": "block",
    "at": [
-    5,
+    4,
     1,
     24
    ],
@@ -1582,7 +4461,7 @@
   {
    "op": "block",
    "at": [
-    5,
+    4,
     1,
     30
    ],
@@ -1591,11 +4470,36 @@
   {
    "op": "block",
    "at": [
-    5,
+    6,
+    1,
+    24
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    6,
+    1,
+    30
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "sign",
+   "at": [
+    9,
     2,
     27
    ],
-   "block": "minecraft:lantern[hanging=true]"
+   "block": "minecraft:birch_wall_sign[facing=east]",
+   "lines": [
+    "HAULIER",
+    "Tomas Reyes",
+    "Hollis and Sons"
+   ],
+   "color": "black",
+   "glow": false
   },
   {
    "op": "block",
@@ -1625,15 +4529,6 @@
    "block": "minecraft:crafting_table"
   },
   {
-   "op": "block",
-   "at": [
-    7,
-    0,
-    29
-   ],
-   "block": "minecraft:bookshelf"
-  },
-  {
    "op": "npc",
    "at": [
     5,
@@ -1648,6 +4543,70 @@
     "Mind the bridges; the river is wider than it looks from the bank. A car is quick, a boat is stranger, your own legs are free.",
     "I keep my pay in the safe by the bed. The apartment lock stops a curious neighbour. It does not stop a lockpick."
    ]
+  },
+  {
+   "op": "fill",
+   "from": [
+    4,
+    0,
+    26
+   ],
+   "to": [
+    7,
+    0,
+    26
+   ],
+   "block": "minecraft:brown_carpet"
+  },
+  {
+   "op": "fill",
+   "from": [
+    7,
+    0,
+    29
+   ],
+   "to": [
+    7,
+    1,
+    29
+   ],
+   "block": "minecraft:bookshelf"
+  },
+  {
+   "op": "block",
+   "at": [
+    6,
+    0,
+    28
+   ],
+   "block": "minecraft:spruce_fence"
+  },
+  {
+   "op": "block",
+   "at": [
+    6,
+    1,
+    28
+   ],
+   "block": "minecraft:spruce_slab[type=bottom]"
+  },
+  {
+   "op": "block",
+   "at": [
+    5,
+    0,
+    28
+   ],
+   "block": "minecraft:spruce_stairs[facing=east,half=bottom]"
+  },
+  {
+   "op": "block",
+   "at": [
+    4,
+    0,
+    25
+   ],
+   "block": "minecraft:potted_fern"
   },
   {
    "op": "block",
@@ -1690,7 +4649,7 @@
    ],
    "to": [
     8,
-    2,
+    3,
     32
    ],
    "block": "minecraft:stone_bricks"
@@ -1704,7 +4663,7 @@
    ],
    "to": [
     8,
-    2,
+    3,
     37
    ],
    "block": "minecraft:stone_bricks"
@@ -1718,7 +4677,7 @@
    ],
    "to": [
     2,
-    2,
+    3,
     37
    ],
    "block": "minecraft:stone_bricks"
@@ -1732,7 +4691,7 @@
    ],
    "to": [
     8,
-    2,
+    3,
     37
    ],
    "block": "minecraft:stone_bricks"
@@ -1745,8 +4704,64 @@
     32
    ],
    "to": [
+    8,
+    0,
+    32
+   ],
+   "block": "minecraft:cobblestone"
+  },
+  {
+   "op": "fill",
+   "from": [
     2,
+    0,
+    37
+   ],
+   "to": [
+    8,
+    0,
+    37
+   ],
+   "block": "minecraft:cobblestone"
+  },
+  {
+   "op": "fill",
+   "from": [
     2,
+    0,
+    32
+   ],
+   "to": [
+    2,
+    0,
+    37
+   ],
+   "block": "minecraft:cobblestone"
+  },
+  {
+   "op": "fill",
+   "from": [
+    8,
+    0,
+    32
+   ],
+   "to": [
+    8,
+    0,
+    37
+   ],
+   "block": "minecraft:cobblestone"
+  },
+  {
+   "op": "fill",
+   "from": [
+    2,
+    0,
+    32
+   ],
+   "to": [
+    2,
+    3,
     32
    ],
    "block": "minecraft:stripped_oak_log"
@@ -1760,7 +4775,7 @@
    ],
    "to": [
     8,
-    2,
+    3,
     32
    ],
    "block": "minecraft:stripped_oak_log"
@@ -1774,7 +4789,7 @@
    ],
    "to": [
     2,
-    2,
+    3,
     37
    ],
    "block": "minecraft:stripped_oak_log"
@@ -1788,7 +4803,7 @@
    ],
    "to": [
     8,
-    2,
+    3,
     37
    ],
    "block": "minecraft:stripped_oak_log"
@@ -1802,7 +4817,7 @@
    ],
    "to": [
     7,
-    2,
+    3,
     36
    ],
    "block": "minecraft:air"
@@ -1811,12 +4826,12 @@
    "op": "fill",
    "from": [
     2,
-    3,
+    4,
     32
    ],
    "to": [
     8,
-    3,
+    4,
     37
    ],
    "block": "minecraft:oak_planks"
@@ -1824,16 +4839,240 @@
   {
    "op": "fill",
    "from": [
-    3,
+    2,
     4,
-    33
+    32
+   ],
+   "to": [
+    8,
+    4,
+    32
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    2,
+    4,
+    37
+   ],
+   "to": [
+    8,
+    4,
+    37
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    3,
+    5,
+    32
    ],
    "to": [
     7,
-    4,
-    36
+    5,
+    32
    ],
-   "block": "minecraft:oak_slab[type=bottom]"
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    3,
+    5,
+    37
+   ],
+   "to": [
+    7,
+    5,
+    37
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    4,
+    6,
+    32
+   ],
+   "to": [
+    6,
+    6,
+    32
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    4,
+    6,
+    37
+   ],
+   "to": [
+    6,
+    6,
+    37
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    5,
+    7,
+    32
+   ],
+   "to": [
+    5,
+    7,
+    32
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    5,
+    7,
+    37
+   ],
+   "to": [
+    5,
+    7,
+    37
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    1,
+    4,
+    31
+   ],
+   "to": [
+    1,
+    4,
+    38
+   ],
+   "block": "minecraft:stone_brick_stairs[facing=east,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    9,
+    4,
+    31
+   ],
+   "to": [
+    9,
+    4,
+    38
+   ],
+   "block": "minecraft:stone_brick_stairs[facing=west,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    2,
+    5,
+    31
+   ],
+   "to": [
+    2,
+    5,
+    38
+   ],
+   "block": "minecraft:stone_brick_stairs[facing=east,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    8,
+    5,
+    31
+   ],
+   "to": [
+    8,
+    5,
+    38
+   ],
+   "block": "minecraft:stone_brick_stairs[facing=west,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    3,
+    6,
+    31
+   ],
+   "to": [
+    3,
+    6,
+    38
+   ],
+   "block": "minecraft:stone_brick_stairs[facing=east,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    7,
+    6,
+    31
+   ],
+   "to": [
+    7,
+    6,
+    38
+   ],
+   "block": "minecraft:stone_brick_stairs[facing=west,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    4,
+    7,
+    31
+   ],
+   "to": [
+    4,
+    7,
+    38
+   ],
+   "block": "minecraft:stone_brick_stairs[facing=east,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    6,
+    7,
+    31
+   ],
+   "to": [
+    6,
+    7,
+    38
+   ],
+   "block": "minecraft:stone_brick_stairs[facing=west,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    5,
+    7,
+    31
+   ],
+   "to": [
+    5,
+    7,
+    38
+   ],
+   "block": "minecraft:stone_bricks"
   },
   {
    "op": "fill",
@@ -1848,6 +5087,96 @@
     35
    ],
    "block": "minecraft:air"
+  },
+  {
+   "op": "block",
+   "at": [
+    8,
+    0,
+    35
+   ],
+   "block": "minecraft:oak_door[facing=east,half=lower,hinge=left,open=false]"
+  },
+  {
+   "op": "block",
+   "at": [
+    8,
+    1,
+    35
+   ],
+   "block": "minecraft:oak_door[facing=east,half=upper,hinge=left,open=false]"
+  },
+  {
+   "op": "block",
+   "at": [
+    5,
+    3,
+    35
+   ],
+   "block": "minecraft:lantern[hanging=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    9,
+    0,
+    34
+   ],
+   "block": "minecraft:potted_azalea_bush"
+  },
+  {
+   "op": "block",
+   "at": [
+    9,
+    0,
+    36
+   ],
+   "block": "minecraft:potted_fern"
+  },
+  {
+   "op": "block",
+   "at": [
+    8,
+    1,
+    33
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    9,
+    1,
+    32
+   ],
+   "block": "minecraft:oak_trapdoor[facing=east,half=bottom,open=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    9,
+    1,
+    34
+   ],
+   "block": "minecraft:oak_trapdoor[facing=east,half=bottom,open=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    8,
+    1,
+    36
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    9,
+    1,
+    37
+   ],
+   "block": "minecraft:oak_trapdoor[facing=east,half=bottom,open=true]"
   },
   {
    "op": "block",
@@ -1870,7 +5199,7 @@
   {
    "op": "block",
    "at": [
-    5,
+    4,
     1,
     32
    ],
@@ -1879,7 +5208,7 @@
   {
    "op": "block",
    "at": [
-    5,
+    4,
     1,
     37
    ],
@@ -1888,11 +5217,35 @@
   {
    "op": "block",
    "at": [
-    5,
+    6,
+    1,
+    32
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    6,
+    1,
+    37
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "sign",
+   "at": [
+    9,
     2,
     35
    ],
-   "block": "minecraft:lantern[hanging=true]"
+   "block": "minecraft:oak_wall_sign[facing=east]",
+   "lines": [
+    "MIRA VOSS",
+    "Retired courier"
+   ],
+   "color": "black",
+   "glow": false
   },
   {
    "op": "block",
@@ -1922,15 +5275,6 @@
    "block": "minecraft:crafting_table"
   },
   {
-   "op": "block",
-   "at": [
-    7,
-    0,
-    36
-   ],
-   "block": "minecraft:bookshelf"
-  },
-  {
    "op": "npc",
    "at": [
     5,
@@ -1945,6 +5289,70 @@
     "Heat fades if you keep your head down and your hands clean. A fine is cheaper than a reputation.",
     "Some doors on this row look locked and are not, and some are locked and look open. Learn which before dark."
    ]
+  },
+  {
+   "op": "fill",
+   "from": [
+    4,
+    0,
+    34
+   ],
+   "to": [
+    7,
+    0,
+    34
+   ],
+   "block": "minecraft:brown_carpet"
+  },
+  {
+   "op": "fill",
+   "from": [
+    7,
+    0,
+    36
+   ],
+   "to": [
+    7,
+    1,
+    36
+   ],
+   "block": "minecraft:bookshelf"
+  },
+  {
+   "op": "block",
+   "at": [
+    6,
+    0,
+    36
+   ],
+   "block": "minecraft:spruce_fence"
+  },
+  {
+   "op": "block",
+   "at": [
+    6,
+    1,
+    36
+   ],
+   "block": "minecraft:spruce_slab[type=bottom]"
+  },
+  {
+   "op": "block",
+   "at": [
+    5,
+    0,
+    36
+   ],
+   "block": "minecraft:spruce_stairs[facing=east,half=bottom]"
+  },
+  {
+   "op": "block",
+   "at": [
+    4,
+    0,
+    33
+   ],
+   "block": "minecraft:potted_fern"
   },
   {
    "op": "block",
@@ -1967,12 +5375,12 @@
   {
    "op": "fill",
    "from": [
-    22,
+    30,
     -1,
     8
    ],
    "to": [
-    16,
+    24,
     -1,
     14
    ],
@@ -1981,13 +5389,13 @@
   {
    "op": "fill",
    "from": [
-    22,
+    30,
     0,
     8
    ],
    "to": [
-    16,
-    2,
+    24,
+    3,
     8
    ],
    "block": "minecraft:spruce_planks"
@@ -1995,13 +5403,13 @@
   {
    "op": "fill",
    "from": [
-    22,
+    30,
     0,
     14
    ],
    "to": [
-    16,
-    2,
+    24,
+    3,
     14
    ],
    "block": "minecraft:spruce_planks"
@@ -2009,13 +5417,13 @@
   {
    "op": "fill",
    "from": [
-    22,
+    30,
     0,
     8
    ],
    "to": [
-    22,
-    2,
+    30,
+    3,
     14
    ],
    "block": "minecraft:spruce_planks"
@@ -2023,13 +5431,13 @@
   {
    "op": "fill",
    "from": [
-    16,
+    24,
     0,
     8
    ],
    "to": [
-    16,
-    2,
+    24,
+    3,
     14
    ],
    "block": "minecraft:spruce_planks"
@@ -2037,13 +5445,69 @@
   {
    "op": "fill",
    "from": [
-    22,
+    30,
     0,
     8
    ],
    "to": [
-    22,
-    2,
+    24,
+    0,
+    8
+   ],
+   "block": "minecraft:cobblestone"
+  },
+  {
+   "op": "fill",
+   "from": [
+    30,
+    0,
+    14
+   ],
+   "to": [
+    24,
+    0,
+    14
+   ],
+   "block": "minecraft:cobblestone"
+  },
+  {
+   "op": "fill",
+   "from": [
+    30,
+    0,
+    8
+   ],
+   "to": [
+    30,
+    0,
+    14
+   ],
+   "block": "minecraft:cobblestone"
+  },
+  {
+   "op": "fill",
+   "from": [
+    24,
+    0,
+    8
+   ],
+   "to": [
+    24,
+    0,
+    14
+   ],
+   "block": "minecraft:cobblestone"
+  },
+  {
+   "op": "fill",
+   "from": [
+    30,
+    0,
+    8
+   ],
+   "to": [
+    30,
+    3,
     8
    ],
    "block": "minecraft:stripped_spruce_log"
@@ -2051,13 +5515,13 @@
   {
    "op": "fill",
    "from": [
-    16,
+    24,
     0,
     8
    ],
    "to": [
-    16,
-    2,
+    24,
+    3,
     8
    ],
    "block": "minecraft:stripped_spruce_log"
@@ -2065,13 +5529,13 @@
   {
    "op": "fill",
    "from": [
-    22,
+    30,
     0,
     14
    ],
    "to": [
-    22,
-    2,
+    30,
+    3,
     14
    ],
    "block": "minecraft:stripped_spruce_log"
@@ -2079,13 +5543,13 @@
   {
    "op": "fill",
    "from": [
-    16,
+    24,
     0,
     14
    ],
    "to": [
-    16,
-    2,
+    24,
+    3,
     14
    ],
    "block": "minecraft:stripped_spruce_log"
@@ -2093,13 +5557,13 @@
   {
    "op": "fill",
    "from": [
-    21,
+    29,
     0,
     9
    ],
    "to": [
-    17,
-    2,
+    25,
+    3,
     13
    ],
    "block": "minecraft:air"
@@ -2107,13 +5571,41 @@
   {
    "op": "fill",
    "from": [
-    22,
-    3,
+    30,
+    4,
     8
    ],
    "to": [
-    16,
-    3,
+    24,
+    4,
+    14
+   ],
+   "block": "minecraft:oak_planks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    30,
+    4,
+    8
+   ],
+   "to": [
+    24,
+    4,
+    8
+   ],
+   "block": "minecraft:spruce_planks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    30,
+    4,
+    14
+   ],
+   "to": [
+    24,
+    4,
     14
    ],
    "block": "minecraft:spruce_planks"
@@ -2121,26 +5613,222 @@
   {
    "op": "fill",
    "from": [
-    21,
-    4,
-    9
+    29,
+    5,
+    8
    ],
    "to": [
-    17,
-    4,
-    13
+    25,
+    5,
+    8
    ],
-   "block": "minecraft:spruce_slab[type=bottom]"
+   "block": "minecraft:spruce_planks"
   },
   {
    "op": "fill",
    "from": [
-    16,
+    29,
+    5,
+    14
+   ],
+   "to": [
+    25,
+    5,
+    14
+   ],
+   "block": "minecraft:spruce_planks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    28,
+    6,
+    8
+   ],
+   "to": [
+    26,
+    6,
+    8
+   ],
+   "block": "minecraft:spruce_planks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    28,
+    6,
+    14
+   ],
+   "to": [
+    26,
+    6,
+    14
+   ],
+   "block": "minecraft:spruce_planks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    27,
+    7,
+    8
+   ],
+   "to": [
+    27,
+    7,
+    8
+   ],
+   "block": "minecraft:spruce_planks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    27,
+    7,
+    14
+   ],
+   "to": [
+    27,
+    7,
+    14
+   ],
+   "block": "minecraft:spruce_planks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    31,
+    4,
+    7
+   ],
+   "to": [
+    31,
+    4,
+    15
+   ],
+   "block": "minecraft:dark_oak_stairs[facing=west,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    23,
+    4,
+    7
+   ],
+   "to": [
+    23,
+    4,
+    15
+   ],
+   "block": "minecraft:dark_oak_stairs[facing=east,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    30,
+    5,
+    7
+   ],
+   "to": [
+    30,
+    5,
+    15
+   ],
+   "block": "minecraft:dark_oak_stairs[facing=west,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    24,
+    5,
+    7
+   ],
+   "to": [
+    24,
+    5,
+    15
+   ],
+   "block": "minecraft:dark_oak_stairs[facing=east,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    29,
+    6,
+    7
+   ],
+   "to": [
+    29,
+    6,
+    15
+   ],
+   "block": "minecraft:dark_oak_stairs[facing=west,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    25,
+    6,
+    7
+   ],
+   "to": [
+    25,
+    6,
+    15
+   ],
+   "block": "minecraft:dark_oak_stairs[facing=east,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    28,
+    7,
+    7
+   ],
+   "to": [
+    28,
+    7,
+    15
+   ],
+   "block": "minecraft:dark_oak_stairs[facing=west,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    26,
+    7,
+    7
+   ],
+   "to": [
+    26,
+    7,
+    15
+   ],
+   "block": "minecraft:dark_oak_stairs[facing=east,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    27,
+    7,
+    7
+   ],
+   "to": [
+    27,
+    7,
+    15
+   ],
+   "block": "minecraft:dark_oak_planks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    24,
     0,
     11
    ],
    "to": [
-    16,
+    24,
     1,
     11
    ],
@@ -2149,7 +5837,106 @@
   {
    "op": "block",
    "at": [
-    22,
+    24,
+    0,
+    11
+   ],
+   "block": "minecraft:spruce_door[facing=west,half=lower,hinge=left,open=false]"
+  },
+  {
+   "op": "block",
+   "at": [
+    24,
+    1,
+    11
+   ],
+   "block": "minecraft:spruce_door[facing=west,half=upper,hinge=left,open=false]"
+  },
+  {
+   "op": "block",
+   "at": [
+    27,
+    3,
+    11
+   ],
+   "block": "minecraft:lantern[hanging=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    23,
+    0,
+    10
+   ],
+   "block": "minecraft:potted_azalea_bush"
+  },
+  {
+   "op": "block",
+   "at": [
+    23,
+    0,
+    12
+   ],
+   "block": "minecraft:potted_fern"
+  },
+  {
+   "op": "block",
+   "at": [
+    24,
+    1,
+    9
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    23,
+    1,
+    8
+   ],
+   "block": "minecraft:spruce_trapdoor[facing=west,half=bottom,open=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    23,
+    1,
+    10
+   ],
+   "block": "minecraft:spruce_trapdoor[facing=west,half=bottom,open=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    24,
+    1,
+    13
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    23,
+    1,
+    12
+   ],
+   "block": "minecraft:spruce_trapdoor[facing=west,half=bottom,open=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    23,
+    1,
+    14
+   ],
+   "block": "minecraft:spruce_trapdoor[facing=west,half=bottom,open=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    30,
     1,
     10
    ],
@@ -2158,7 +5945,7 @@
   {
    "op": "block",
    "at": [
-    22,
+    30,
     1,
     12
    ],
@@ -2167,7 +5954,7 @@
   {
    "op": "block",
    "at": [
-    19,
+    28,
     1,
     8
    ],
@@ -2176,7 +5963,7 @@
   {
    "op": "block",
    "at": [
-    19,
+    28,
     1,
     14
    ],
@@ -2185,16 +5972,41 @@
   {
    "op": "block",
    "at": [
-    19,
+    26,
+    1,
+    8
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    26,
+    1,
+    14
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "sign",
+   "at": [
+    23,
     2,
     11
    ],
-   "block": "minecraft:lantern[hanging=true]"
+   "block": "minecraft:spruce_wall_sign[facing=west]",
+   "lines": [
+    "FARM CO-OP",
+    "Odette Marsh",
+    "Orders daily"
+   ],
+   "color": "black",
+   "glow": false
   },
   {
    "op": "terminal",
    "at": [
-    21,
+    29,
     0,
     10
    ],
@@ -2203,7 +6015,7 @@
   {
    "op": "block",
    "at": [
-    19,
+    27,
     0,
     9
    ],
@@ -2212,7 +6024,7 @@
   {
    "op": "npc",
    "at": [
-    20,
+    28,
     0,
     10
    ],
@@ -2226,15 +6038,79 @@
    ],
    "career": "farmer",
    "terminal": [
-    21,
+    29,
     0,
     10
    ]
   },
   {
+   "op": "fill",
+   "from": [
+    28,
+    0,
+    11
+   ],
+   "to": [
+    25,
+    0,
+    11
+   ],
+   "block": "minecraft:green_carpet"
+  },
+  {
+   "op": "fill",
+   "from": [
+    28,
+    0,
+    9
+   ],
+   "to": [
+    28,
+    1,
+    9
+   ],
+   "block": "minecraft:bookshelf"
+  },
+  {
    "op": "block",
    "at": [
-    18,
+    26,
+    0,
+    13
+   ],
+   "block": "minecraft:spruce_fence"
+  },
+  {
+   "op": "block",
+   "at": [
+    26,
+    1,
+    13
+   ],
+   "block": "minecraft:spruce_slab[type=bottom]"
+  },
+  {
+   "op": "block",
+   "at": [
+    27,
+    0,
+    13
+   ],
+   "block": "minecraft:spruce_stairs[facing=west,half=bottom]"
+  },
+  {
+   "op": "block",
+   "at": [
+    25,
+    0,
+    13
+   ],
+   "block": "minecraft:potted_fern"
+  },
+  {
+   "op": "block",
+   "at": [
+    26,
     0,
     9
    ],
@@ -2243,7 +6119,7 @@
   {
    "op": "block",
    "at": [
-    17,
+    25,
     0,
     9
    ],
@@ -2252,7 +6128,7 @@
   {
    "op": "block",
    "at": [
-    17,
+    25,
     0,
     13
    ],
@@ -2261,7 +6137,25 @@
   {
    "op": "block",
    "at": [
-    21,
+    25,
+    1,
+    13
+   ],
+   "block": "minecraft:hay_block"
+  },
+  {
+   "op": "block",
+   "at": [
+    26,
+    0,
+    10
+   ],
+   "block": "minecraft:barrel[facing=up]"
+  },
+  {
+   "op": "block",
+   "at": [
+    29,
     0,
     13
    ],
@@ -2270,7 +6164,7 @@
   {
    "op": "block",
    "at": [
-    21,
+    29,
     0,
     12
    ],
@@ -2279,12 +6173,12 @@
   {
    "op": "fill",
    "from": [
-    22,
+    30,
     -1,
     16
    ],
    "to": [
-    16,
+    24,
     -1,
     22
    ],
@@ -2293,69 +6187,125 @@
   {
    "op": "fill",
    "from": [
-    22,
+    30,
     0,
     16
    ],
    "to": [
-    16,
-    2,
+    24,
+    3,
     16
    ],
-   "block": "minecraft:spruce_planks"
+   "block": "minecraft:mud_bricks"
   },
   {
    "op": "fill",
    "from": [
-    22,
+    30,
     0,
     22
    ],
    "to": [
-    16,
-    2,
+    24,
+    3,
     22
    ],
-   "block": "minecraft:spruce_planks"
+   "block": "minecraft:mud_bricks"
   },
   {
    "op": "fill",
    "from": [
-    22,
+    30,
     0,
     16
    ],
    "to": [
-    22,
-    2,
+    30,
+    3,
     22
    ],
-   "block": "minecraft:spruce_planks"
+   "block": "minecraft:mud_bricks"
   },
   {
    "op": "fill",
    "from": [
-    16,
+    24,
     0,
     16
    ],
    "to": [
-    16,
-    2,
+    24,
+    3,
     22
    ],
-   "block": "minecraft:spruce_planks"
+   "block": "minecraft:mud_bricks"
   },
   {
    "op": "fill",
    "from": [
-    22,
+    30,
     0,
     16
    ],
    "to": [
-    22,
-    2,
+    24,
+    0,
+    16
+   ],
+   "block": "minecraft:cobblestone"
+  },
+  {
+   "op": "fill",
+   "from": [
+    30,
+    0,
+    22
+   ],
+   "to": [
+    24,
+    0,
+    22
+   ],
+   "block": "minecraft:cobblestone"
+  },
+  {
+   "op": "fill",
+   "from": [
+    30,
+    0,
+    16
+   ],
+   "to": [
+    30,
+    0,
+    22
+   ],
+   "block": "minecraft:cobblestone"
+  },
+  {
+   "op": "fill",
+   "from": [
+    24,
+    0,
+    16
+   ],
+   "to": [
+    24,
+    0,
+    22
+   ],
+   "block": "minecraft:cobblestone"
+  },
+  {
+   "op": "fill",
+   "from": [
+    30,
+    0,
+    16
+   ],
+   "to": [
+    30,
+    3,
     16
    ],
    "block": "minecraft:stripped_oak_log"
@@ -2363,13 +6313,13 @@
   {
    "op": "fill",
    "from": [
-    16,
+    24,
     0,
     16
    ],
    "to": [
-    16,
-    2,
+    24,
+    3,
     16
    ],
    "block": "minecraft:stripped_oak_log"
@@ -2377,13 +6327,13 @@
   {
    "op": "fill",
    "from": [
-    22,
+    30,
     0,
     22
    ],
    "to": [
-    22,
-    2,
+    30,
+    3,
     22
    ],
    "block": "minecraft:stripped_oak_log"
@@ -2391,13 +6341,13 @@
   {
    "op": "fill",
    "from": [
-    16,
+    24,
     0,
     22
    ],
    "to": [
-    16,
-    2,
+    24,
+    3,
     22
    ],
    "block": "minecraft:stripped_oak_log"
@@ -2405,13 +6355,13 @@
   {
    "op": "fill",
    "from": [
-    21,
+    29,
     0,
     17
    ],
    "to": [
-    17,
-    2,
+    25,
+    3,
     21
    ],
    "block": "minecraft:air"
@@ -2419,13 +6369,13 @@
   {
    "op": "fill",
    "from": [
-    22,
-    3,
+    30,
+    4,
     16
    ],
    "to": [
-    16,
-    3,
+    24,
+    4,
     22
    ],
    "block": "minecraft:oak_planks"
@@ -2433,26 +6383,250 @@
   {
    "op": "fill",
    "from": [
-    21,
+    30,
     4,
-    17
+    16
    ],
    "to": [
-    17,
+    24,
     4,
-    21
+    16
    ],
-   "block": "minecraft:oak_slab[type=bottom]"
+   "block": "minecraft:mud_bricks"
   },
   {
    "op": "fill",
    "from": [
-    16,
+    30,
+    4,
+    22
+   ],
+   "to": [
+    24,
+    4,
+    22
+   ],
+   "block": "minecraft:mud_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    29,
+    5,
+    16
+   ],
+   "to": [
+    25,
+    5,
+    16
+   ],
+   "block": "minecraft:mud_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    29,
+    5,
+    22
+   ],
+   "to": [
+    25,
+    5,
+    22
+   ],
+   "block": "minecraft:mud_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    28,
+    6,
+    16
+   ],
+   "to": [
+    26,
+    6,
+    16
+   ],
+   "block": "minecraft:mud_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    28,
+    6,
+    22
+   ],
+   "to": [
+    26,
+    6,
+    22
+   ],
+   "block": "minecraft:mud_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    27,
+    7,
+    16
+   ],
+   "to": [
+    27,
+    7,
+    16
+   ],
+   "block": "minecraft:mud_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    27,
+    7,
+    22
+   ],
+   "to": [
+    27,
+    7,
+    22
+   ],
+   "block": "minecraft:mud_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    31,
+    4,
+    15
+   ],
+   "to": [
+    31,
+    4,
+    23
+   ],
+   "block": "minecraft:oak_stairs[facing=west,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    23,
+    4,
+    15
+   ],
+   "to": [
+    23,
+    4,
+    23
+   ],
+   "block": "minecraft:oak_stairs[facing=east,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    30,
+    5,
+    15
+   ],
+   "to": [
+    30,
+    5,
+    23
+   ],
+   "block": "minecraft:oak_stairs[facing=west,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    24,
+    5,
+    15
+   ],
+   "to": [
+    24,
+    5,
+    23
+   ],
+   "block": "minecraft:oak_stairs[facing=east,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    29,
+    6,
+    15
+   ],
+   "to": [
+    29,
+    6,
+    23
+   ],
+   "block": "minecraft:oak_stairs[facing=west,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    25,
+    6,
+    15
+   ],
+   "to": [
+    25,
+    6,
+    23
+   ],
+   "block": "minecraft:oak_stairs[facing=east,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    28,
+    7,
+    15
+   ],
+   "to": [
+    28,
+    7,
+    23
+   ],
+   "block": "minecraft:oak_stairs[facing=west,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    26,
+    7,
+    15
+   ],
+   "to": [
+    26,
+    7,
+    23
+   ],
+   "block": "minecraft:oak_stairs[facing=east,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    27,
+    7,
+    15
+   ],
+   "to": [
+    27,
+    7,
+    23
+   ],
+   "block": "minecraft:oak_planks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    24,
     0,
     19
    ],
    "to": [
-    16,
+    24,
     1,
     19
    ],
@@ -2461,7 +6635,106 @@
   {
    "op": "block",
    "at": [
-    22,
+    24,
+    0,
+    19
+   ],
+   "block": "minecraft:oak_door[facing=west,half=lower,hinge=left,open=false]"
+  },
+  {
+   "op": "block",
+   "at": [
+    24,
+    1,
+    19
+   ],
+   "block": "minecraft:oak_door[facing=west,half=upper,hinge=left,open=false]"
+  },
+  {
+   "op": "block",
+   "at": [
+    27,
+    3,
+    19
+   ],
+   "block": "minecraft:lantern[hanging=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    23,
+    0,
+    18
+   ],
+   "block": "minecraft:potted_azalea_bush"
+  },
+  {
+   "op": "block",
+   "at": [
+    23,
+    0,
+    20
+   ],
+   "block": "minecraft:potted_fern"
+  },
+  {
+   "op": "block",
+   "at": [
+    24,
+    1,
+    17
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    23,
+    1,
+    16
+   ],
+   "block": "minecraft:oak_trapdoor[facing=west,half=bottom,open=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    23,
+    1,
+    18
+   ],
+   "block": "minecraft:oak_trapdoor[facing=west,half=bottom,open=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    24,
+    1,
+    21
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    23,
+    1,
+    20
+   ],
+   "block": "minecraft:oak_trapdoor[facing=west,half=bottom,open=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    23,
+    1,
+    22
+   ],
+   "block": "minecraft:oak_trapdoor[facing=west,half=bottom,open=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    30,
     1,
     18
    ],
@@ -2470,7 +6743,7 @@
   {
    "op": "block",
    "at": [
-    22,
+    30,
     1,
     20
    ],
@@ -2479,7 +6752,7 @@
   {
    "op": "block",
    "at": [
-    19,
+    28,
     1,
     16
    ],
@@ -2488,7 +6761,7 @@
   {
    "op": "block",
    "at": [
-    19,
+    28,
     1,
     22
    ],
@@ -2497,16 +6770,40 @@
   {
    "op": "block",
    "at": [
-    19,
-    2,
-    19
+    26,
+    1,
+    16
    ],
-   "block": "minecraft:lantern[hanging=true]"
+   "block": "minecraft:glass_pane"
   },
   {
    "op": "block",
    "at": [
-    19,
+    26,
+    1,
+    22
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "sign",
+   "at": [
+    23,
+    2,
+    19
+   ],
+   "block": "minecraft:oak_wall_sign[facing=west]",
+   "lines": [
+    "ADA BRIGHTWATER",
+    "Market gardener"
+   ],
+   "color": "black",
+   "glow": false
+  },
+  {
+   "op": "block",
+   "at": [
+    27,
     0,
     17
    ],
@@ -2515,7 +6812,7 @@
   {
    "op": "safe",
    "at": [
-    21,
+    29,
     0,
     18
    ],
@@ -2524,25 +6821,16 @@
   {
    "op": "block",
    "at": [
-    17,
+    25,
     0,
     17
    ],
    "block": "minecraft:crafting_table"
   },
   {
-   "op": "block",
-   "at": [
-    17,
-    0,
-    21
-   ],
-   "block": "minecraft:bookshelf"
-  },
-  {
    "op": "npc",
    "at": [
-    19,
+    27,
     0,
     19
    ],
@@ -2556,9 +6844,73 @@
    ]
   },
   {
+   "op": "fill",
+   "from": [
+    28,
+    0,
+    18
+   ],
+   "to": [
+    25,
+    0,
+    18
+   ],
+   "block": "minecraft:brown_carpet"
+  },
+  {
+   "op": "fill",
+   "from": [
+    25,
+    0,
+    21
+   ],
+   "to": [
+    25,
+    1,
+    21
+   ],
+   "block": "minecraft:bookshelf"
+  },
+  {
    "op": "block",
    "at": [
-    21,
+    26,
+    0,
+    20
+   ],
+   "block": "minecraft:spruce_fence"
+  },
+  {
+   "op": "block",
+   "at": [
+    26,
+    1,
+    20
+   ],
+   "block": "minecraft:spruce_slab[type=bottom]"
+  },
+  {
+   "op": "block",
+   "at": [
+    27,
+    0,
+    20
+   ],
+   "block": "minecraft:spruce_stairs[facing=west,half=bottom]"
+  },
+  {
+   "op": "block",
+   "at": [
+    28,
+    0,
+    17
+   ],
+   "block": "minecraft:potted_fern"
+  },
+  {
+   "op": "block",
+   "at": [
+    29,
     0,
     21
    ],
@@ -2567,7 +6919,7 @@
   {
    "op": "block",
    "at": [
-    21,
+    29,
     0,
     20
    ],
@@ -2576,12 +6928,12 @@
   {
    "op": "fill",
    "from": [
-    22,
+    30,
     -1,
     24
    ],
    "to": [
-    16,
+    24,
     -1,
     30
    ],
@@ -2590,13 +6942,13 @@
   {
    "op": "fill",
    "from": [
-    22,
+    30,
     0,
     24
    ],
    "to": [
-    16,
-    2,
+    24,
+    3,
     24
    ],
    "block": "minecraft:stone_bricks"
@@ -2604,13 +6956,13 @@
   {
    "op": "fill",
    "from": [
-    22,
+    30,
     0,
     30
    ],
    "to": [
-    16,
-    2,
+    24,
+    3,
     30
    ],
    "block": "minecraft:stone_bricks"
@@ -2618,13 +6970,13 @@
   {
    "op": "fill",
    "from": [
-    22,
+    30,
     0,
     24
    ],
    "to": [
-    22,
-    2,
+    30,
+    3,
     30
    ],
    "block": "minecraft:stone_bricks"
@@ -2632,13 +6984,13 @@
   {
    "op": "fill",
    "from": [
-    16,
+    24,
     0,
     24
    ],
    "to": [
-    16,
-    2,
+    24,
+    3,
     30
    ],
    "block": "minecraft:stone_bricks"
@@ -2646,13 +6998,69 @@
   {
    "op": "fill",
    "from": [
-    22,
+    30,
     0,
     24
    ],
    "to": [
-    22,
-    2,
+    24,
+    0,
+    24
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    30,
+    0,
+    30
+   ],
+   "to": [
+    24,
+    0,
+    30
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    30,
+    0,
+    24
+   ],
+   "to": [
+    30,
+    0,
+    30
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    24,
+    0,
+    24
+   ],
+   "to": [
+    24,
+    0,
+    30
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    30,
+    0,
+    24
+   ],
+   "to": [
+    30,
+    3,
     24
    ],
    "block": "minecraft:stripped_dark_oak_log"
@@ -2660,13 +7068,13 @@
   {
    "op": "fill",
    "from": [
-    16,
+    24,
     0,
     24
    ],
    "to": [
-    16,
-    2,
+    24,
+    3,
     24
    ],
    "block": "minecraft:stripped_dark_oak_log"
@@ -2674,13 +7082,13 @@
   {
    "op": "fill",
    "from": [
-    22,
+    30,
     0,
     30
    ],
    "to": [
-    22,
-    2,
+    30,
+    3,
     30
    ],
    "block": "minecraft:stripped_dark_oak_log"
@@ -2688,13 +7096,13 @@
   {
    "op": "fill",
    "from": [
-    16,
+    24,
     0,
     30
    ],
    "to": [
-    16,
-    2,
+    24,
+    3,
     30
    ],
    "block": "minecraft:stripped_dark_oak_log"
@@ -2702,13 +7110,13 @@
   {
    "op": "fill",
    "from": [
-    21,
+    29,
     0,
     25
    ],
    "to": [
-    17,
-    2,
+    25,
+    3,
     29
    ],
    "block": "minecraft:air"
@@ -2716,13 +7124,13 @@
   {
    "op": "fill",
    "from": [
-    22,
-    3,
+    30,
+    4,
     24
    ],
    "to": [
-    16,
-    3,
+    24,
+    4,
     30
    ],
    "block": "minecraft:spruce_planks"
@@ -2730,26 +7138,250 @@
   {
    "op": "fill",
    "from": [
-    21,
+    30,
     4,
-    25
+    24
    ],
    "to": [
-    17,
+    24,
     4,
-    29
+    24
    ],
-   "block": "minecraft:stone_brick_slab[type=bottom]"
+   "block": "minecraft:stone_bricks"
   },
   {
    "op": "fill",
    "from": [
-    16,
+    30,
+    4,
+    30
+   ],
+   "to": [
+    24,
+    4,
+    30
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    29,
+    5,
+    24
+   ],
+   "to": [
+    25,
+    5,
+    24
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    29,
+    5,
+    30
+   ],
+   "to": [
+    25,
+    5,
+    30
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    28,
+    6,
+    24
+   ],
+   "to": [
+    26,
+    6,
+    24
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    28,
+    6,
+    30
+   ],
+   "to": [
+    26,
+    6,
+    30
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    27,
+    7,
+    24
+   ],
+   "to": [
+    27,
+    7,
+    24
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    27,
+    7,
+    30
+   ],
+   "to": [
+    27,
+    7,
+    30
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    31,
+    4,
+    23
+   ],
+   "to": [
+    31,
+    4,
+    31
+   ],
+   "block": "minecraft:stone_brick_stairs[facing=west,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    23,
+    4,
+    23
+   ],
+   "to": [
+    23,
+    4,
+    31
+   ],
+   "block": "minecraft:stone_brick_stairs[facing=east,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    30,
+    5,
+    23
+   ],
+   "to": [
+    30,
+    5,
+    31
+   ],
+   "block": "minecraft:stone_brick_stairs[facing=west,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    24,
+    5,
+    23
+   ],
+   "to": [
+    24,
+    5,
+    31
+   ],
+   "block": "minecraft:stone_brick_stairs[facing=east,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    29,
+    6,
+    23
+   ],
+   "to": [
+    29,
+    6,
+    31
+   ],
+   "block": "minecraft:stone_brick_stairs[facing=west,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    25,
+    6,
+    23
+   ],
+   "to": [
+    25,
+    6,
+    31
+   ],
+   "block": "minecraft:stone_brick_stairs[facing=east,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    28,
+    7,
+    23
+   ],
+   "to": [
+    28,
+    7,
+    31
+   ],
+   "block": "minecraft:stone_brick_stairs[facing=west,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    26,
+    7,
+    23
+   ],
+   "to": [
+    26,
+    7,
+    31
+   ],
+   "block": "minecraft:stone_brick_stairs[facing=east,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    27,
+    7,
+    23
+   ],
+   "to": [
+    27,
+    7,
+    31
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    24,
     0,
     27
    ],
    "to": [
-    16,
+    24,
     1,
     27
    ],
@@ -2758,7 +7390,106 @@
   {
    "op": "block",
    "at": [
-    22,
+    24,
+    0,
+    27
+   ],
+   "block": "minecraft:dark_oak_door[facing=west,half=lower,hinge=left,open=false]"
+  },
+  {
+   "op": "block",
+   "at": [
+    24,
+    1,
+    27
+   ],
+   "block": "minecraft:dark_oak_door[facing=west,half=upper,hinge=left,open=false]"
+  },
+  {
+   "op": "block",
+   "at": [
+    27,
+    3,
+    27
+   ],
+   "block": "minecraft:lantern[hanging=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    23,
+    0,
+    26
+   ],
+   "block": "minecraft:potted_azalea_bush"
+  },
+  {
+   "op": "block",
+   "at": [
+    23,
+    0,
+    28
+   ],
+   "block": "minecraft:potted_fern"
+  },
+  {
+   "op": "block",
+   "at": [
+    24,
+    1,
+    25
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    23,
+    1,
+    24
+   ],
+   "block": "minecraft:dark_oak_trapdoor[facing=west,half=bottom,open=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    23,
+    1,
+    26
+   ],
+   "block": "minecraft:dark_oak_trapdoor[facing=west,half=bottom,open=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    24,
+    1,
+    29
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    23,
+    1,
+    28
+   ],
+   "block": "minecraft:dark_oak_trapdoor[facing=west,half=bottom,open=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    23,
+    1,
+    30
+   ],
+   "block": "minecraft:dark_oak_trapdoor[facing=west,half=bottom,open=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    30,
     1,
     26
    ],
@@ -2767,7 +7498,7 @@
   {
    "op": "block",
    "at": [
-    22,
+    30,
     1,
     28
    ],
@@ -2776,7 +7507,7 @@
   {
    "op": "block",
    "at": [
-    19,
+    28,
     1,
     24
    ],
@@ -2785,7 +7516,7 @@
   {
    "op": "block",
    "at": [
-    19,
+    28,
     1,
     30
    ],
@@ -2794,16 +7525,40 @@
   {
    "op": "block",
    "at": [
-    19,
+    26,
+    1,
+    24
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    26,
+    1,
+    30
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "sign",
+   "at": [
+    23,
     2,
     27
    ],
-   "block": "minecraft:lantern[hanging=true]"
+   "block": "minecraft:dark_oak_wall_sign[facing=west]",
+   "lines": [
+    "STOREHOUSE",
+    "Locked stores"
+   ],
+   "color": "black",
+   "glow": false
   },
   {
    "op": "safe",
    "at": [
-    21,
+    29,
     0,
     26
    ],
@@ -2812,7 +7567,7 @@
   {
    "op": "safe",
    "at": [
-    21,
+    29,
     0,
     28
    ],
@@ -2821,7 +7576,7 @@
   {
    "op": "block",
    "at": [
-    17,
+    25,
     0,
     25
    ],
@@ -2830,7 +7585,7 @@
   {
    "op": "block",
    "at": [
-    17,
+    25,
     0,
     26
    ],
@@ -2839,7 +7594,7 @@
   {
    "op": "block",
    "at": [
-    17,
+    25,
     0,
     28
    ],
@@ -2848,7 +7603,43 @@
   {
    "op": "block",
    "at": [
-    17,
+    25,
+    0,
+    29
+   ],
+   "block": "minecraft:barrel[facing=up]"
+  },
+  {
+   "op": "block",
+   "at": [
+    26,
+    0,
+    25
+   ],
+   "block": "minecraft:hay_block"
+  },
+  {
+   "op": "block",
+   "at": [
+    27,
+    0,
+    25
+   ],
+   "block": "minecraft:barrel[facing=up]"
+  },
+  {
+   "op": "block",
+   "at": [
+    27,
+    1,
+    25
+   ],
+   "block": "minecraft:barrel[facing=up]"
+  },
+  {
+   "op": "block",
+   "at": [
+    27,
     0,
     29
    ],
@@ -2857,12 +7648,12 @@
   {
    "op": "fill",
    "from": [
-    22,
+    30,
     -1,
     32
    ],
    "to": [
-    16,
+    24,
     -1,
     37
    ],
@@ -2871,13 +7662,13 @@
   {
    "op": "fill",
    "from": [
-    22,
+    30,
     0,
     32
    ],
    "to": [
-    16,
-    2,
+    24,
+    3,
     32
    ],
    "block": "minecraft:stone_bricks"
@@ -2885,13 +7676,13 @@
   {
    "op": "fill",
    "from": [
-    22,
+    30,
     0,
     37
    ],
    "to": [
-    16,
-    2,
+    24,
+    3,
     37
    ],
    "block": "minecraft:stone_bricks"
@@ -2899,13 +7690,13 @@
   {
    "op": "fill",
    "from": [
-    22,
+    30,
     0,
     32
    ],
    "to": [
-    22,
-    2,
+    30,
+    3,
     37
    ],
    "block": "minecraft:stone_bricks"
@@ -2913,13 +7704,13 @@
   {
    "op": "fill",
    "from": [
-    16,
+    24,
     0,
     32
    ],
    "to": [
-    16,
-    2,
+    24,
+    3,
     37
    ],
    "block": "minecraft:stone_bricks"
@@ -2927,13 +7718,69 @@
   {
    "op": "fill",
    "from": [
-    22,
+    30,
     0,
     32
    ],
    "to": [
-    22,
-    2,
+    24,
+    0,
+    32
+   ],
+   "block": "minecraft:polished_andesite"
+  },
+  {
+   "op": "fill",
+   "from": [
+    30,
+    0,
+    37
+   ],
+   "to": [
+    24,
+    0,
+    37
+   ],
+   "block": "minecraft:polished_andesite"
+  },
+  {
+   "op": "fill",
+   "from": [
+    30,
+    0,
+    32
+   ],
+   "to": [
+    30,
+    0,
+    37
+   ],
+   "block": "minecraft:polished_andesite"
+  },
+  {
+   "op": "fill",
+   "from": [
+    24,
+    0,
+    32
+   ],
+   "to": [
+    24,
+    0,
+    37
+   ],
+   "block": "minecraft:polished_andesite"
+  },
+  {
+   "op": "fill",
+   "from": [
+    30,
+    0,
+    32
+   ],
+   "to": [
+    30,
+    3,
     32
    ],
    "block": "minecraft:stripped_spruce_log"
@@ -2941,13 +7788,13 @@
   {
    "op": "fill",
    "from": [
-    16,
+    24,
     0,
     32
    ],
    "to": [
-    16,
-    2,
+    24,
+    3,
     32
    ],
    "block": "minecraft:stripped_spruce_log"
@@ -2955,13 +7802,13 @@
   {
    "op": "fill",
    "from": [
-    22,
+    30,
     0,
     37
    ],
    "to": [
-    22,
-    2,
+    30,
+    3,
     37
    ],
    "block": "minecraft:stripped_spruce_log"
@@ -2969,13 +7816,13 @@
   {
    "op": "fill",
    "from": [
-    16,
+    24,
     0,
     37
    ],
    "to": [
-    16,
-    2,
+    24,
+    3,
     37
    ],
    "block": "minecraft:stripped_spruce_log"
@@ -2983,13 +7830,13 @@
   {
    "op": "fill",
    "from": [
-    21,
+    29,
     0,
     33
    ],
    "to": [
-    17,
-    2,
+    25,
+    3,
     36
    ],
    "block": "minecraft:air"
@@ -2997,13 +7844,13 @@
   {
    "op": "fill",
    "from": [
-    22,
-    3,
+    30,
+    4,
     32
    ],
    "to": [
-    16,
-    3,
+    24,
+    4,
     37
    ],
    "block": "minecraft:spruce_planks"
@@ -3011,26 +7858,250 @@
   {
    "op": "fill",
    "from": [
-    21,
+    30,
     4,
-    33
+    32
    ],
    "to": [
-    17,
+    24,
     4,
-    36
+    32
    ],
-   "block": "minecraft:spruce_slab[type=bottom]"
+   "block": "minecraft:stone_bricks"
   },
   {
    "op": "fill",
    "from": [
-    16,
+    30,
+    4,
+    37
+   ],
+   "to": [
+    24,
+    4,
+    37
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    29,
+    5,
+    32
+   ],
+   "to": [
+    25,
+    5,
+    32
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    29,
+    5,
+    37
+   ],
+   "to": [
+    25,
+    5,
+    37
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    28,
+    6,
+    32
+   ],
+   "to": [
+    26,
+    6,
+    32
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    28,
+    6,
+    37
+   ],
+   "to": [
+    26,
+    6,
+    37
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    27,
+    7,
+    32
+   ],
+   "to": [
+    27,
+    7,
+    32
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    27,
+    7,
+    37
+   ],
+   "to": [
+    27,
+    7,
+    37
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    31,
+    4,
+    31
+   ],
+   "to": [
+    31,
+    4,
+    38
+   ],
+   "block": "minecraft:spruce_stairs[facing=west,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    23,
+    4,
+    31
+   ],
+   "to": [
+    23,
+    4,
+    38
+   ],
+   "block": "minecraft:spruce_stairs[facing=east,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    30,
+    5,
+    31
+   ],
+   "to": [
+    30,
+    5,
+    38
+   ],
+   "block": "minecraft:spruce_stairs[facing=west,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    24,
+    5,
+    31
+   ],
+   "to": [
+    24,
+    5,
+    38
+   ],
+   "block": "minecraft:spruce_stairs[facing=east,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    29,
+    6,
+    31
+   ],
+   "to": [
+    29,
+    6,
+    38
+   ],
+   "block": "minecraft:spruce_stairs[facing=west,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    25,
+    6,
+    31
+   ],
+   "to": [
+    25,
+    6,
+    38
+   ],
+   "block": "minecraft:spruce_stairs[facing=east,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    28,
+    7,
+    31
+   ],
+   "to": [
+    28,
+    7,
+    38
+   ],
+   "block": "minecraft:spruce_stairs[facing=west,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    26,
+    7,
+    31
+   ],
+   "to": [
+    26,
+    7,
+    38
+   ],
+   "block": "minecraft:spruce_stairs[facing=east,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    27,
+    7,
+    31
+   ],
+   "to": [
+    27,
+    7,
+    38
+   ],
+   "block": "minecraft:spruce_planks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    24,
     0,
     35
    ],
    "to": [
-    16,
+    24,
     1,
     35
    ],
@@ -3039,7 +8110,97 @@
   {
    "op": "block",
    "at": [
-    22,
+    24,
+    0,
+    35
+   ],
+   "block": "minecraft:spruce_door[facing=west,half=lower,hinge=left,open=false]"
+  },
+  {
+   "op": "block",
+   "at": [
+    24,
+    1,
+    35
+   ],
+   "block": "minecraft:spruce_door[facing=west,half=upper,hinge=left,open=false]"
+  },
+  {
+   "op": "block",
+   "at": [
+    27,
+    3,
+    35
+   ],
+   "block": "minecraft:lantern[hanging=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    23,
+    0,
+    34
+   ],
+   "block": "minecraft:potted_azalea_bush"
+  },
+  {
+   "op": "block",
+   "at": [
+    23,
+    0,
+    36
+   ],
+   "block": "minecraft:potted_fern"
+  },
+  {
+   "op": "block",
+   "at": [
+    24,
+    1,
+    33
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    23,
+    1,
+    32
+   ],
+   "block": "minecraft:spruce_trapdoor[facing=west,half=bottom,open=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    23,
+    1,
+    34
+   ],
+   "block": "minecraft:spruce_trapdoor[facing=west,half=bottom,open=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    24,
+    1,
+    36
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    23,
+    1,
+    37
+   ],
+   "block": "minecraft:spruce_trapdoor[facing=west,half=bottom,open=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    30,
     1,
     34
    ],
@@ -3048,7 +8209,7 @@
   {
    "op": "block",
    "at": [
-    22,
+    30,
     1,
     35
    ],
@@ -3057,7 +8218,7 @@
   {
    "op": "block",
    "at": [
-    19,
+    28,
     1,
     32
    ],
@@ -3066,7 +8227,7 @@
   {
    "op": "block",
    "at": [
-    19,
+    28,
     1,
     37
    ],
@@ -3075,16 +8236,59 @@
   {
    "op": "block",
    "at": [
-    19,
+    26,
+    1,
+    32
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    26,
+    1,
+    37
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "sign",
+   "at": [
+    23,
     2,
     35
    ],
-   "block": "minecraft:lantern[hanging=true]"
+   "block": "minecraft:spruce_wall_sign[facing=west]",
+   "lines": [
+    "REGISTRY",
+    "Register here",
+    "Imani Okafor"
+   ],
+   "color": "black",
+   "glow": false
+  },
+  {
+   "op": "block",
+   "at": [
+    23,
+    2,
+    33
+   ],
+   "block": "minecraft:blue_wall_banner[facing=west]"
+  },
+  {
+   "op": "block",
+   "at": [
+    23,
+    2,
+    36
+   ],
+   "block": "minecraft:blue_wall_banner[facing=west]"
   },
   {
    "op": "terminal",
    "at": [
-    21,
+    29,
     0,
     34
    ],
@@ -3093,7 +8297,7 @@
   {
    "op": "block",
    "at": [
-    19,
+    27,
     0,
     33
    ],
@@ -3102,7 +8306,7 @@
   {
    "op": "block",
    "at": [
-    17,
+    25,
     0,
     33
    ],
@@ -3111,8 +8315,26 @@
   {
    "op": "block",
    "at": [
-    17,
+    25,
     0,
+    36
+   ],
+   "block": "minecraft:bookshelf"
+  },
+  {
+   "op": "block",
+   "at": [
+    25,
+    1,
+    33
+   ],
+   "block": "minecraft:bookshelf"
+  },
+  {
+   "op": "block",
+   "at": [
+    25,
+    1,
     36
    ],
    "block": "minecraft:bookshelf"
@@ -3120,7 +8342,7 @@
   {
    "op": "npc",
    "at": [
-    20,
+    28,
     0,
     35
    ],
@@ -3134,9 +8356,23 @@
    ]
   },
   {
+   "op": "fill",
+   "from": [
+    27,
+    0,
+    34
+   ],
+   "to": [
+    26,
+    0,
+    35
+   ],
+   "block": "minecraft:blue_carpet"
+  },
+  {
    "op": "block",
    "at": [
-    21,
+    29,
     0,
     36
    ],
@@ -3145,7 +8381,7 @@
   {
    "op": "block",
    "at": [
-    21,
+    29,
     0,
     35
    ],
@@ -3154,87 +8390,1292 @@
   {
    "op": "fill",
    "from": [
-    9,
-    0,
-    39
+    30,
+    -1,
+    40
    ],
    "to": [
-    9,
-    4,
-    39
+    24,
+    -1,
+    46
+   ],
+   "block": "minecraft:spruce_planks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    30,
+    0,
+    40
+   ],
+   "to": [
+    24,
+    3,
+    40
+   ],
+   "block": "minecraft:mud_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    30,
+    0,
+    46
+   ],
+   "to": [
+    24,
+    3,
+    46
+   ],
+   "block": "minecraft:mud_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    30,
+    0,
+    40
+   ],
+   "to": [
+    30,
+    3,
+    46
+   ],
+   "block": "minecraft:mud_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    24,
+    0,
+    40
+   ],
+   "to": [
+    24,
+    3,
+    46
+   ],
+   "block": "minecraft:mud_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    30,
+    0,
+    40
+   ],
+   "to": [
+    24,
+    0,
+    40
    ],
    "block": "minecraft:stone_bricks"
   },
   {
    "op": "fill",
    "from": [
-    15,
+    30,
     0,
-    39
+    46
    ],
    "to": [
-    15,
-    4,
-    39
+    24,
+    0,
+    46
    ],
    "block": "minecraft:stone_bricks"
   },
   {
    "op": "fill",
    "from": [
-    9,
+    30,
+    0,
+    40
+   ],
+   "to": [
+    30,
+    0,
+    46
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    24,
+    0,
+    40
+   ],
+   "to": [
+    24,
+    0,
+    46
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    30,
+    0,
+    40
+   ],
+   "to": [
+    30,
+    3,
+    40
+   ],
+   "block": "minecraft:stripped_dark_oak_log"
+  },
+  {
+   "op": "fill",
+   "from": [
+    24,
+    0,
+    40
+   ],
+   "to": [
+    24,
+    3,
+    40
+   ],
+   "block": "minecraft:stripped_dark_oak_log"
+  },
+  {
+   "op": "fill",
+   "from": [
+    30,
+    0,
+    46
+   ],
+   "to": [
+    30,
+    3,
+    46
+   ],
+   "block": "minecraft:stripped_dark_oak_log"
+  },
+  {
+   "op": "fill",
+   "from": [
+    24,
+    0,
+    46
+   ],
+   "to": [
+    24,
+    3,
+    46
+   ],
+   "block": "minecraft:stripped_dark_oak_log"
+  },
+  {
+   "op": "fill",
+   "from": [
+    29,
+    0,
+    41
+   ],
+   "to": [
+    25,
+    3,
+    45
+   ],
+   "block": "minecraft:air"
+  },
+  {
+   "op": "fill",
+   "from": [
+    30,
+    4,
+    40
+   ],
+   "to": [
+    24,
+    4,
+    46
+   ],
+   "block": "minecraft:dark_oak_planks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    30,
+    4,
+    40
+   ],
+   "to": [
+    24,
+    4,
+    40
+   ],
+   "block": "minecraft:mud_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    30,
+    4,
+    46
+   ],
+   "to": [
+    24,
+    4,
+    46
+   ],
+   "block": "minecraft:mud_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    29,
+    5,
+    40
+   ],
+   "to": [
+    25,
+    5,
+    40
+   ],
+   "block": "minecraft:mud_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    29,
+    5,
+    46
+   ],
+   "to": [
+    25,
+    5,
+    46
+   ],
+   "block": "minecraft:mud_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    28,
+    6,
+    40
+   ],
+   "to": [
+    26,
+    6,
+    40
+   ],
+   "block": "minecraft:mud_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    28,
+    6,
+    46
+   ],
+   "to": [
+    26,
+    6,
+    46
+   ],
+   "block": "minecraft:mud_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    27,
+    7,
+    40
+   ],
+   "to": [
+    27,
+    7,
+    40
+   ],
+   "block": "minecraft:mud_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    27,
+    7,
+    46
+   ],
+   "to": [
+    27,
+    7,
+    46
+   ],
+   "block": "minecraft:mud_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    31,
     4,
     39
    ],
    "to": [
-    15,
+    31,
+    4,
+    47
+   ],
+   "block": "minecraft:brick_stairs[facing=west,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    23,
     4,
     39
    ],
+   "to": [
+    23,
+    4,
+    47
+   ],
+   "block": "minecraft:brick_stairs[facing=east,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    30,
+    5,
+    39
+   ],
+   "to": [
+    30,
+    5,
+    47
+   ],
+   "block": "minecraft:brick_stairs[facing=west,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    24,
+    5,
+    39
+   ],
+   "to": [
+    24,
+    5,
+    47
+   ],
+   "block": "minecraft:brick_stairs[facing=east,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    29,
+    6,
+    39
+   ],
+   "to": [
+    29,
+    6,
+    47
+   ],
+   "block": "minecraft:brick_stairs[facing=west,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    25,
+    6,
+    39
+   ],
+   "to": [
+    25,
+    6,
+    47
+   ],
+   "block": "minecraft:brick_stairs[facing=east,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    28,
+    7,
+    39
+   ],
+   "to": [
+    28,
+    7,
+    47
+   ],
+   "block": "minecraft:brick_stairs[facing=west,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    26,
+    7,
+    39
+   ],
+   "to": [
+    26,
+    7,
+    47
+   ],
+   "block": "minecraft:brick_stairs[facing=east,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    27,
+    7,
+    39
+   ],
+   "to": [
+    27,
+    7,
+    47
+   ],
+   "block": "minecraft:bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    24,
+    0,
+    43
+   ],
+   "to": [
+    24,
+    1,
+    43
+   ],
+   "block": "minecraft:air"
+  },
+  {
+   "op": "block",
+   "at": [
+    24,
+    0,
+    43
+   ],
+   "block": "minecraft:dark_oak_door[facing=west,half=lower,hinge=left,open=false]"
+  },
+  {
+   "op": "block",
+   "at": [
+    24,
+    1,
+    43
+   ],
+   "block": "minecraft:dark_oak_door[facing=west,half=upper,hinge=left,open=false]"
+  },
+  {
+   "op": "block",
+   "at": [
+    27,
+    3,
+    43
+   ],
+   "block": "minecraft:lantern[hanging=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    23,
+    0,
+    42
+   ],
+   "block": "minecraft:potted_azalea_bush"
+  },
+  {
+   "op": "block",
+   "at": [
+    23,
+    0,
+    44
+   ],
+   "block": "minecraft:potted_fern"
+  },
+  {
+   "op": "block",
+   "at": [
+    24,
+    1,
+    41
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    23,
+    1,
+    40
+   ],
+   "block": "minecraft:dark_oak_trapdoor[facing=west,half=bottom,open=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    23,
+    1,
+    42
+   ],
+   "block": "minecraft:dark_oak_trapdoor[facing=west,half=bottom,open=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    24,
+    1,
+    45
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    23,
+    1,
+    44
+   ],
+   "block": "minecraft:dark_oak_trapdoor[facing=west,half=bottom,open=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    23,
+    1,
+    46
+   ],
+   "block": "minecraft:dark_oak_trapdoor[facing=west,half=bottom,open=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    30,
+    1,
+    42
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    30,
+    1,
+    44
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    28,
+    1,
+    40
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    28,
+    1,
+    46
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    26,
+    1,
+    40
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "block",
+   "at": [
+    26,
+    1,
+    46
+   ],
+   "block": "minecraft:glass_pane"
+  },
+  {
+   "op": "sign",
+   "at": [
+    23,
+    2,
+    43
+   ],
+   "block": "minecraft:dark_oak_wall_sign[facing=west]",
+   "lines": [
+    "WINE CELLAR",
+    "Lucien Faure",
+    "Orders daily"
+   ],
+   "color": "black",
+   "glow": false
+  },
+  {
+   "op": "terminal",
+   "at": [
+    29,
+    0,
+    42
+   ],
+   "facing": "west"
+  },
+  {
+   "op": "block",
+   "at": [
+    27,
+    0,
+    41
+   ],
+   "block": "minecraft:cauldron"
+  },
+  {
+   "op": "npc",
+   "at": [
+    28,
+    0,
+    42
+   ],
+   "role": "employer",
+   "name": "Lucien Faure - Cellar Master",
+   "profession": "leatherworker",
+   "lines": [
+    "Table wine for the tavern, estate cellars, a still column for the co-op: the orders are on the terminal. Wine is patience in a bottle.",
+    "Strong spirit is another matter. Valewood licenses distillers and Ironhaven allows none. A back bar there pays well for bottles with no stamp.",
+    "Keep your head down and the heat fades. A fine is cheaper than a reputation, and a seizure is neither."
+   ],
+   "career": "vintner",
+   "terminal": [
+    29,
+    0,
+    42
+   ]
+  },
+  {
+   "op": "fill",
+   "from": [
+    28,
+    0,
+    43
+   ],
+   "to": [
+    25,
+    0,
+    43
+   ],
+   "block": "minecraft:purple_carpet"
+  },
+  {
+   "op": "fill",
+   "from": [
+    28,
+    0,
+    41
+   ],
+   "to": [
+    28,
+    1,
+    41
+   ],
+   "block": "minecraft:bookshelf"
+  },
+  {
+   "op": "block",
+   "at": [
+    26,
+    0,
+    45
+   ],
+   "block": "minecraft:spruce_fence"
+  },
+  {
+   "op": "block",
+   "at": [
+    26,
+    1,
+    45
+   ],
+   "block": "minecraft:spruce_slab[type=bottom]"
+  },
+  {
+   "op": "block",
+   "at": [
+    27,
+    0,
+    45
+   ],
+   "block": "minecraft:spruce_stairs[facing=west,half=bottom]"
+  },
+  {
+   "op": "block",
+   "at": [
+    25,
+    0,
+    45
+   ],
+   "block": "minecraft:potted_fern"
+  },
+  {
+   "op": "block",
+   "at": [
+    26,
+    0,
+    41
+   ],
+   "block": "vinery:fermentation_barrel[facing=south]",
+   "requires_mod": "vinery"
+  },
+  {
+   "op": "block",
+   "at": [
+    25,
+    0,
+    41
+   ],
+   "block": "vinery:grapevine_pot",
+   "requires_mod": "vinery"
+  },
+  {
+   "op": "block",
+   "at": [
+    26,
+    0,
+    42
+   ],
+   "block": "minecraft:barrel[facing=up]"
+  },
+  {
+   "op": "block",
+   "at": [
+    25,
+    0,
+    42
+   ],
+   "block": "minecraft:barrel[facing=up]"
+  },
+  {
+   "op": "block",
+   "at": [
+    25,
+    0,
+    44
+   ],
+   "block": "vinery:oak_wine_rack_big[facing=west]",
+   "requires_mod": "vinery"
+  },
+  {
+   "op": "block",
+   "at": [
+    25,
+    0,
+    43
+   ],
+   "block": "vinery:basket",
+   "requires_mod": "vinery"
+  },
+  {
+   "op": "block",
+   "at": [
+    25,
+    1,
+    44
+   ],
+   "block": "minecraft:barrel[facing=up]"
+  },
+  {
+   "op": "block",
+   "at": [
+    29,
+    1,
+    45
+   ],
+   "block": "kaleidoscope_tavern:barrel",
+   "requires_mod": "kaleidoscope_tavern"
+  },
+  {
+   "op": "block",
+   "at": [
+    29,
+    0,
+    45
+   ],
+   "block": "minecraft:barrel[facing=up]"
+  },
+  {
+   "op": "block",
+   "at": [
+    29,
+    0,
+    45
+   ],
+   "block": "minecraft:red_bed[facing=north,part=foot]"
+  },
+  {
+   "op": "block",
+   "at": [
+    29,
+    0,
+    44
+   ],
+   "block": "minecraft:red_bed[facing=north,part=head]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    2,
+    -1,
+    40
+   ],
+   "to": [
+    8,
+    -1,
+    45
+   ],
+   "block": "minecraft:grass_block"
+  },
+  {
+   "op": "fill",
+   "from": [
+    3,
+    -1,
+    41
+   ],
+   "to": [
+    7,
+    -1,
+    44
+   ],
+   "block": "minecraft:farmland[moisture=7]"
+  },
+  {
+   "op": "block",
+   "at": [
+    5,
+    -1,
+    42
+   ],
+   "block": "minecraft:water"
+  },
+  {
+   "op": "block",
+   "at": [
+    5,
+    -1,
+    43
+   ],
+   "block": "minecraft:water"
+  },
+  {
+   "op": "fill",
+   "from": [
+    2,
+    0,
+    40
+   ],
+   "to": [
+    8,
+    0,
+    40
+   ],
+   "block": "minecraft:spruce_fence"
+  },
+  {
+   "op": "fill",
+   "from": [
+    2,
+    0,
+    45
+   ],
+   "to": [
+    8,
+    0,
+    45
+   ],
+   "block": "minecraft:spruce_fence"
+  },
+  {
+   "op": "fill",
+   "from": [
+    2,
+    0,
+    41
+   ],
+   "to": [
+    2,
+    0,
+    44
+   ],
+   "block": "minecraft:spruce_fence"
+  },
+  {
+   "op": "fill",
+   "from": [
+    8,
+    0,
+    41
+   ],
+   "to": [
+    8,
+    0,
+    44
+   ],
+   "block": "minecraft:spruce_fence"
+  },
+  {
+   "op": "fill",
+   "from": [
+    8,
+    0,
+    42
+   ],
+   "to": [
+    8,
+    0,
+    42
+   ],
+   "block": "minecraft:air"
+  },
+  {
+   "op": "block",
+   "at": [
+    3,
+    0,
+    41
+   ],
+   "block": "vinery:red_grape_bush[age=3]",
+   "requires_mod": "vinery"
+  },
+  {
+   "op": "block",
+   "at": [
+    3,
+    0,
+    43
+   ],
+   "block": "vinery:red_grape_bush[age=2]",
+   "requires_mod": "vinery"
+  },
+  {
+   "op": "block",
+   "at": [
+    7,
+    0,
+    41
+   ],
+   "block": "vinery:white_grape_bush[age=3]",
+   "requires_mod": "vinery"
+  },
+  {
+   "op": "block",
+   "at": [
+    7,
+    0,
+    43
+   ],
+   "block": "vinery:white_grape_bush[age=1]",
+   "requires_mod": "vinery"
+  },
+  {
+   "op": "block",
+   "at": [
+    4,
+    0,
+    41
+   ],
+   "block": "minecraft:sweet_berry_bush[age=3]"
+  },
+  {
+   "op": "block",
+   "at": [
+    6,
+    0,
+    44
+   ],
+   "block": "minecraft:sweet_berry_bush[age=2]"
+  },
+  {
+   "op": "block",
+   "at": [
+    4,
+    0,
+    44
+   ],
+   "block": "minecraft:potted_fern"
+  },
+  {
+   "op": "block",
+   "at": [
+    6,
+    0,
+    41
+   ],
+   "block": "minecraft:potted_fern"
+  },
+  {
+   "op": "sign",
+   "at": [
+    5,
+    0,
+    39
+   ],
+   "block": "minecraft:dark_oak_sign[rotation=8]",
+   "lines": [
+    "VINEYARD",
+    "Cellar's own"
+   ],
+   "color": "black",
+   "glow": false
+  },
+  {
+   "op": "fill",
+   "from": [
+    12,
+    0,
+    46
+   ],
+   "to": [
+    12,
+    5,
+    46
+   ],
    "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    20,
+    0,
+    46
+   ],
+   "to": [
+    20,
+    5,
+    46
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    12,
+    5,
+    46
+   ],
+   "to": [
+    20,
+    5,
+    46
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    13,
+    4,
+    46
+   ],
+   "to": [
+    19,
+    4,
+    46
+   ],
+   "block": "minecraft:stone_brick_slab[type=top]"
+  },
+  {
+   "op": "block",
+   "at": [
+    13,
+    3,
+    46
+   ],
+   "block": "minecraft:lantern[hanging=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    19,
+    3,
+    46
+   ],
+   "block": "minecraft:lantern[hanging=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    12,
+    6,
+    46
+   ],
+   "block": "minecraft:stone_brick_wall"
+  },
+  {
+   "op": "block",
+   "at": [
+    20,
+    6,
+    46
+   ],
+   "block": "minecraft:stone_brick_wall"
+  },
+  {
+   "op": "block",
+   "at": [
+    12,
+    7,
+    46
+   ],
+   "block": "minecraft:lantern[hanging=false]"
+  },
+  {
+   "op": "block",
+   "at": [
+    20,
+    7,
+    46
+   ],
+   "block": "minecraft:lantern[hanging=false]"
+  },
+  {
+   "op": "sign",
+   "at": [
+    16,
+    5,
+    45
+   ],
+   "block": "minecraft:dark_oak_wall_sign[facing=north]",
+   "lines": [
+    "FOUNDERS ROW",
+    "Welcome"
+   ],
+   "color": "white",
+   "glow": false
+  },
+  {
+   "op": "sign",
+   "at": [
+    16,
+    5,
+    47
+   ],
+   "block": "minecraft:dark_oak_wall_sign[facing=south]",
+   "lines": [
+    "FOUNDERS ROW",
+    "Mind the gate"
+   ],
+   "color": "white",
+   "glow": false
+  },
+  {
+   "op": "fill",
+   "from": [
+    9,
+    -1,
+    44
+   ],
+   "to": [
+    11,
+    -1,
+    46
+   ],
+   "block": "minecraft:smooth_stone"
+  },
+  {
+   "op": "fill",
+   "from": [
+    9,
+    0,
+    44
+   ],
+   "to": [
+    9,
+    2,
+    44
+   ],
+   "block": "minecraft:spruce_fence"
+  },
+  {
+   "op": "fill",
+   "from": [
+    9,
+    0,
+    46
+   ],
+   "to": [
+    9,
+    2,
+    46
+   ],
+   "block": "minecraft:spruce_fence"
+  },
+  {
+   "op": "fill",
+   "from": [
+    11,
+    0,
+    44
+   ],
+   "to": [
+    11,
+    2,
+    44
+   ],
+   "block": "minecraft:spruce_fence"
+  },
+  {
+   "op": "fill",
+   "from": [
+    9,
+    3,
+    44
+   ],
+   "to": [
+    11,
+    3,
+    46
+   ],
+   "block": "minecraft:spruce_slab[type=bottom]"
   },
   {
    "op": "block",
    "at": [
     10,
-    3,
-    39
+    2,
+    45
    ],
    "block": "minecraft:lantern[hanging=true]"
   },
   {
    "op": "block",
    "at": [
-    14,
-    3,
-    39
-   ],
-   "block": "minecraft:lantern[hanging=true]"
-  },
-  {
-   "op": "block",
-   "at": [
-    8,
+    10,
     0,
-    38
+    44
    ],
-   "block": "minecraft:blast_furnace[facing=east]"
+   "block": "minecraft:blast_furnace[facing=south]"
   },
   {
    "op": "block",
    "at": [
-    8,
+    10,
     1,
-    38
+    44
    ],
-   "block": "minecraft:lantern"
+   "block": "minecraft:lantern[hanging=false]"
   },
   {
    "op": "npc",
    "at": [
-    9,
+    10,
     0,
-    38
+    46
    ],
    "role": "guard",
    "name": "Sergeant Halloran - Gate Guard",
