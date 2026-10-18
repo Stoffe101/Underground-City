@@ -31,8 +31,10 @@ def requestedTasks = gradle.startParameter.taskNames.collect { it.tokenize(':').
 def userLaunch = requestedTasks.any { it in ['runClient', 'runServer'] } &&
         !harnessFlags.any { providers.gradleProperty(it).isPresent() }
 def explicitPack = providers.gradleProperty('ucPack').orNull
+// -PucExtraSets=survival (or vintner,farming,qol) adds opt-in sets to the complete development pack without leaving the developer launch (the dev world and the bootstrap stay on)
+def extraSets = providers.gradleProperty('ucExtraSets').orElse('').get().trim()
 def packSelection = explicitPack != null ? (explicitPack == 'none' ? '' : explicitPack)
-        : (userLaunch ? 'world,firearms,vehicles,boats' : '')
+        : (userLaunch ? 'world,firearms,vehicles,boats' + (extraSets.isEmpty() ? '' : ',' + extraSets) : '')
 def devPackSets = packSelection.split(',').collect { it.trim() }.findAll { !it.isEmpty() }
 def devWorldWanted = userLaunch || providers.gradleProperty('ucDevWorld').orNull == 'true'
 def autoWorld = devWorldWanted && providers.gradleProperty('ucAutoWorld').orNull != 'false' && !providers.gradleProperty('ucPlaytest').isPresent()

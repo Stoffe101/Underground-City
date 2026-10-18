@@ -366,7 +366,7 @@ public final class CrewScreen extends UcScreen {
         if (needsConsent()) {
             g.fill(cx, y, cx + cw, y + 48, 0xff261a12);
             UcUi.icon(g, UcUi.Icon.WARNING, cx + 4, y + 4, UcUi.WARN);
-            UcUi.wrapped(g, font, "The founder proposes shared finances: work-order pay goes into the bank and exchange purchases come out of it, once everyone agrees.",
+            UcUi.wrapped(g, font, "Proposed: work-order pay goes into the bank and exchange purchases come out of it, once all agree.",
                 cx + 24, y + 4, cw - 30, UcUi.SOFT, 2);
             y += 52;
         }
