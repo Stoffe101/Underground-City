@@ -47,6 +47,9 @@ jobs:
           # the opt-in candidates of the October 17 sprint (Vinery, Farm & Charm, Kaleidoscope Tavern); not part of the default pack
           - pack: living
             sets: vintner,farming
+          # the opt-in survival set (D-085): Traveler's Backpack, Thirst Was Taken 2, Farmer's Delight, Comforts; includes the sleeping-bag respawn GameTest
+          - pack: survival
+            sets: survival
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -75,6 +78,9 @@ jobs:
           if [ "${{ matrix.pack }}" = "firearms" ]; then
             grep -q "TaCZ Blueprints mod initializing" "$log"
             grep -q "Registered synced data key tacz:" "$log"
+          elif [ "${{ matrix.pack }}" = "survival" ]; then
+            grep -q "ThirstWasTaken2 initialized" "$log"
+            grep -q "Registered the FluidEffect with Unique ID of minecraft:water" "$log"
           elif [ "${{ matrix.pack }}" = "living" ]; then
             grep -q "Registered /wine command" "$log"
             grep -q "farm_and_charm:set_text" "$log"

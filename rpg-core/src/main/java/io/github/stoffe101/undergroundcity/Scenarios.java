@@ -18,6 +18,7 @@ final class Scenarios {
             case "markers" -> markers();
             case "shelter" -> shelter();
             case "qol" -> qol();
+            case "survival" -> survival();
             case "tracker" -> tracker();
             case "trace" -> trace();
             case "car" -> car();
@@ -1397,6 +1398,47 @@ final class Scenarios {
         Playtest.queue("type 'sable'", () -> { for (String key : new String[]{"s", "a", "b", "l", "e"}) Playtest.tap(key); });
         Playtest.wait("let the list filter", 40);
         Playtest.queue("photograph the search", () -> Playtest.screenshotNextFrame("uc-jei-search"));
+        Playtest.wait("frame", 8);
+    }
+
+    /**
+     * The opt-in survival set (D-085) in a real client: survival mode with thirst on, the set's goods in the inventory, the HUD with the thirst bar, the inventory screen with
+     * the backpack, canteen, cooking pot and sleeping bag, and the backpack put on with a real right click and opened with its own key. Frames are looked at by a person afterwards.
+     */
+    private static void survival() {
+        final BlockPos[] origin = new BlockPos[1];
+        buildRowInTheSky(origin);
+        screensStayOpenFromNow();
+        Playtest.queue("survival mode, noon, clear, no command feedback, and the set's goods", () -> {
+            Playtest.command("gamerule sendCommandFeedback false");
+            Playtest.command("time set 6000"); Playtest.command("gamerule doDaylightCycle false"); Playtest.command("weather clear");
+            for (String item : new String[]{"travelersbackpack:standard", "thirstwastaken2:waterskin", "thirstwastaken2:copper_canteen", "thirstwastaken2:iron_flask",
+                "farmersdelight:cooking_pot", "farmersdelight:cutting_board", "comforts:sleeping_bag_red", "comforts:hammock_blue", "farmersdelight:pumpkin_slice 8", "minecraft:bread 6"}) {
+                Playtest.command("give @s " + item);
+            }
+            Playtest.command("gamemode survival");
+        });
+        Playtest.queue("stand on the Row's lane looking down it", () -> {
+            Vec3 o = Vec3.atLowerCornerOf(DistrictBuilder.originOf(level(), "founders_row"));
+            standLooking(o.add(16.5, 0.1, 30), o.add(16.5, 1.6, 20));
+        });
+        waitForMeshes(1500);
+        Playtest.wait("let the HUD settle", 80);
+        Playtest.queue("photograph the HUD with the thirst bar", () -> Playtest.screenshotNextFrame("uc-survival-hud"));
+        Playtest.wait("frame", 8);
+        Playtest.queue("open the inventory", () -> Playtest.tap("e"));
+        Playtest.wait("let the screen draw", 60);
+        Playtest.queue("photograph the inventory with the set's goods", () -> Playtest.screenshotNextFrame("uc-survival-inventory"));
+        Playtest.wait("frame", 8);
+        Playtest.queue("close the inventory; the backpack is in the selected hotbar slot", () -> { Playtest.tap("e"); Playtest.command("clear @s minecraft:bread"); });
+        Playtest.wait("settle", 20);
+        Playtest.queue("press the right mouse button with the backpack in hand", () -> Playtest.mouseButton(3, true));
+        Playtest.wait("hold it a few ticks", 4);
+        Playtest.queue("release it", () -> Playtest.mouseButton(3, false));
+        Playtest.wait("let the backpack settle on the player's back", 30);
+        Playtest.queue("open the worn backpack with its own key (B)", () -> Playtest.tap("b"));
+        Playtest.wait("let the backpack screen draw", 60);
+        Playtest.queue("photograph the backpack screen", () -> Playtest.screenshotNextFrame("uc-survival-backpack"));
         Playtest.wait("frame", 8);
     }
 
