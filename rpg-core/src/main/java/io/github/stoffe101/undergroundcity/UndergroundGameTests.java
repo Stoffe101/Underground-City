@@ -1274,7 +1274,7 @@ public final class UndergroundGameTests {
     }
 
     /** Runs {@code body} once {@code ready} holds: checked every ten ticks, and after 200 ticks regardless so the assertion that follows reports what is missing. */
-    private static void waitUntil(GameTestHelper helper, java.util.function.BooleanSupplier ready, int waited, Runnable body) {
+    static void waitUntil(GameTestHelper helper, java.util.function.BooleanSupplier ready, int waited, Runnable body) {
         helper.runAfterDelay(10, () -> {
             if (ready.getAsBoolean() || waited >= 200) { body.run(); return; }
             waitUntil(helper, ready, waited + 10, body);
@@ -1282,7 +1282,7 @@ public final class UndergroundGameTests {
     }
 
     /** Runs {@code body} once every position is in an entity-ticking chunk: checked after {@code first} ticks, then every ten, giving up after 200 more. */
-    private static void whenEntitiesTick(GameTestHelper helper, net.minecraft.server.level.ServerLevel level, List<BlockPos> positions, int first, Runnable body) {
+    static void whenEntitiesTick(GameTestHelper helper, net.minecraft.server.level.ServerLevel level, List<BlockPos> positions, int first, Runnable body) {
         waitForTicking(helper, level, positions, first, 0, body);
     }
 

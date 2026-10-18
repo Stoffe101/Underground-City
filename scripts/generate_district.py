@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate the Founders Row and firing range district definitions (D-055, D-061, D-066).
+"""Generate the district definitions: Founders Row, the firing range, the checkpoint post and the wayside shelter (D-055, D-061, D-066, D-079).
 
 A district is data: a list of block and citizen operations relative to an origin chosen by an operator at build time
 (the footprint's north-west corner, extending east and south), so no world coordinate is hard-coded. ``y = 0`` is the
@@ -22,6 +22,9 @@ office. Lines of dialogue live here, in data. It is an operator tool for a fresh
 
 The firing range is a second, small district built beside the Row (the dev launch places it): three firing lanes behind a line, targets at 10,
 20 and 30 blocks, a bench and an instructor.
+
+The checkpoint post (a booth and a guard) and the wayside shelter (an open pavilion with a campfire and a road warden) are small repeatable districts
+that stand beside a road, one per checkpoint zone or per stretch of road.
 
 ``python scripts/generate_district.py`` writes the files; ``--check`` fails when a committed file differs.
 """
@@ -608,11 +611,61 @@ def checkpoint_post() -> dict:
     }
 
 
+def wayside_shelter() -> dict:
+    """A small open pavilion beside a road, built at run time by ``WaysideShelters`` (D-079) a few hundred blocks from the nearest city.
+
+    An 11 x 9 lot: a stone-brick floor on a coarse-dirt apron, four log posts under a low spruce roof, a campfire with a seat on each side, a rain
+    barrel, a cauldron of water, a cartography table and a road warden. It has no front: it is open on all four sides and is the same from every
+    direction, because a road can run any way and the lot cannot be turned. It is repeatable (one copy per stretch of road, each reversible).
+    """
+    ops = [
+        fill((0, -4, 0), (10, -2, 8), "minecraft:stone"),
+        fill((0, -1, 0), (10, -1, 8), "minecraft:coarse_dirt"),
+        fill((0, 0, 0), (10, 7, 8), "minecraft:air"),
+        fill((2, -1, 1), (8, -1, 7), "minecraft:stone_bricks"),
+        # the roof: planks on the posts, a ring of stairs rising to the middle, a slab cap
+        fill((2, 4, 1), (8, 4, 7), "minecraft:spruce_planks"),
+        fill((3, 5, 2), (7, 5, 6), "minecraft:spruce_slab[type=bottom]"),
+        fill((1, 4, 1), (1, 4, 7), "minecraft:spruce_stairs[facing=east,half=bottom]"),
+        fill((9, 4, 1), (9, 4, 7), "minecraft:spruce_stairs[facing=west,half=bottom]"),
+        fill((2, 4, 0), (8, 4, 0), "minecraft:spruce_stairs[facing=south,half=bottom]"),
+        fill((2, 4, 8), (8, 4, 8), "minecraft:spruce_stairs[facing=north,half=bottom]"),
+    ]
+    for x, z in ((1, 0), (9, 0), (1, 8), (9, 8)):
+        ops.append(put((x, 4, z), "minecraft:spruce_slab[type=bottom]"))
+    for x, z in ((2, 1), (8, 1), (2, 7), (8, 7)):
+        ops.append(fill((x, 0, z), (x, 3, z), "minecraft:stripped_spruce_log"))
+    for x, z in ((5, 1), (5, 7), (2, 4), (8, 4)):
+        ops.append(put((x, 3, z), "minecraft:lantern[hanging=true]"))
+    ops += [
+        put((5, 0, 4), "minecraft:campfire[lit=true]"),
+        # four seats facing the fire: a stair's back is on the side it faces, so each one faces away from the fire
+        put((3, 0, 4), "minecraft:spruce_stairs[facing=west,half=bottom]"), put((7, 0, 4), "minecraft:spruce_stairs[facing=east,half=bottom]"),
+        put((5, 0, 2), "minecraft:spruce_stairs[facing=north,half=bottom]"), put((5, 0, 6), "minecraft:spruce_stairs[facing=south,half=bottom]"),
+        put((3, 0, 2), "minecraft:barrel[facing=up]"), put((3, 0, 6), "minecraft:water_cauldron[level=3]"), put((7, 0, 6), "minecraft:cartography_table"),
+        sign((2, 2, 2), "south", ["WAYSIDE", "REST STOP", "Fire and water", "Free to all"]),
+        sign((8, 2, 6), "north", ["ROAD WARDEN", "on duty", "Ask about the", "road ahead"]),
+    ]
+    ops.append(npc((6, 0, 5), "warden", "Road Warden", "cartographer", [
+        "Water is free and the fire is never out. Rest, then move on: the road is safer between the posts than anywhere off it.",
+        "Every post stops what its city's law says to stop, and not an ounce more. Read the law before you load the cart, not after.",
+        "A bridge is the safe way over and a boat is the quiet one. Neither beats good boots and a clear head.",
+        "I keep this shelter for whoever comes by. A fire is a fire, honest haulier or not.",
+        "Heat fades while you keep to honest work. Walk the long road a few times and the guards stop looking twice.",
+    ]))
+    assert_citizens_have_room(ops)
+    return {
+        "schema_version": 1, "id": "wayside_shelter", "title": "Wayside shelter", "repeatable": True,
+        "note": "An open pavilion with a campfire and a road warden, built beside a road a few hundred blocks from the nearest city; origin is the north-west corner, extending east and south.",
+        "size": [11, 8, 9], "ops": ops,
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--check", action="store_true")
     args = parser.parse_args()
-    outputs = {"founders_row": founders_row(), "firing_range": firing_range(), "checkpoint_post": checkpoint_post()}
+    outputs = {"founders_row": founders_row(), "firing_range": firing_range(), "checkpoint_post": checkpoint_post(), "wayside_shelter": wayside_shelter()}
     status = 0
     for name, data in outputs.items():
         out = DIR / f"{name}.json"

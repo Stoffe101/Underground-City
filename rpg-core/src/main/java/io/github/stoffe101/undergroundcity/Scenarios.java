@@ -16,6 +16,7 @@ final class Scenarios {
             case "row" -> row();
             case "posts" -> posts();
             case "markers" -> markers();
+            case "shelter" -> shelter();
             case "tracker" -> tracker();
             case "trace" -> trace();
             case "car" -> car();
@@ -172,8 +173,11 @@ final class Scenarios {
         Playtest.command(String.format(java.util.Locale.ROOT, "tp @s %.2f %.2f %.2f %.1f %.1f", at.x, at.y, at.z, yaw, pitch));
     }
 
+    /** The district whose citizens {@link #citizen} and {@link #talkTo} look up: Founders Row unless a scenario (the wayside shelter) says otherwise. */
+    private static String talkDistrict = "founders_row";
+
     private static net.minecraft.world.entity.npc.Villager citizen(BlockPos origin, int index) {
-        var uuid = DistrictBuilder.citizensForTest(level(), "founders_row").get(index);
+        var uuid = DistrictBuilder.citizensForTest(level(), talkDistrict).get(index);
         var entity = level().getEntity(uuid);
         return entity instanceof net.minecraft.world.entity.npc.Villager villager ? villager : null;
     }
@@ -1194,10 +1198,10 @@ final class Scenarios {
             ideal[0] = all.get(0);
             return (int) Math.max(0, ideal[0] - 70);
         }, "creative");
-        Playtest.queue("the first post is built", () -> { }, () -> RoadMarkers.State.get(level()).where.containsKey(road + "#0"), 6000);
+        Playtest.queue("the first post is built", () -> { }, () -> PlacedSites.get(level(), PlacedSites.MARKERS).where.containsKey(road + "#0"), 6000);
         Playtest.queue("find the post and the direction of the road", () -> {
             var plan = roadPlan(road);
-            BlockPos base = BlockPos.of(RoadMarkers.State.get(level()).where.get(road + "#0"));
+            BlockPos base = BlockPos.of(PlacedSites.get(level(), PlacedSites.MARKERS).where.get(road + "#0"));
             double[] at = plan.pointAt(ideal[0]), ahead = plan.pointAt(ideal[0] + 3), behind = plan.pointAt(ideal[0] - 3);
             double tx = ahead[0] - behind[0], tz = ahead[1] - behind[1], length = Math.hypot(tx, tz);
             along[0] = new Vec3(tx / length, 0, tz / length);
@@ -1237,6 +1241,82 @@ final class Scenarios {
         Playtest.wait("settle", 90);
         Playtest.queue("screenshot of the road with the post", () -> Playtest.screenshotNextFrame("uc-marker-road"));
         Playtest.wait("frame", 10);
+    }
+
+    /**
+     * The wayside shelters (D-079): hop to every shelter's spot on every road and report what the server did (built where, or given up), then, at the first
+     * shelter of one road, photograph it from the road, from inside, and talk to the warden: where the road leads, and what the law says at either end.
+     */
+    private static void shelter() {
+        final String road = System.getProperty("uc.playtest.route", "ironhaven_valewood");
+        final double[] ideal = new double[1];
+        final Vec3[] centre = new Vec3[1], toRoad = new Vec3[1];
+        final BlockPos[] origin = new BlockPos[1];
+        talkDistrict = WaysideShelters.DISTRICT;
+        // 1. the survey: how many shelters each road should have, and which of them found ground
+        for (String each : System.getProperty("uc.playtest.roads", "ironhaven_valewood,ironhaven_blackwater,valewood_blackwater").split(",")) {
+            for (int index = 0; index < 4; index++) {
+                final int i = index;
+                final String key = each + "#" + i;
+                java.util.function.Supplier<java.util.List<Double>> all = () -> {
+                    try { return WaysideShelters.positions(roadPlan(each), WaysideShelters.MAX_GAP, WaysideShelters.EDGE); } catch (RuntimeException absent) { return java.util.List.of(); }
+                };
+                arriveOnRoadLater(each, () -> all.get().size() > i ? (int) Math.max(0, all.get().get(i) - 30) : 100, "creative");
+                Playtest.queue("shelter " + key + " is decided", () -> { }, () -> all.get().size() <= i || PlacedSites.get(level(), PlacedSites.SHELTERS).done.contains(key), 3000);
+                Playtest.queue("report on " + key, () -> {
+                    var spots = all.get();
+                    if (spots.size() <= i) return;
+                    var plan = roadPlan(each);
+                    var state = PlacedSites.get(level(), PlacedSites.SHELTERS);
+                    Long where = state.where.get(key);
+                    Playtest.log("[UC-SHELTER] " + key + " (open road " + Math.round(RoadMarkers.firstOpen(plan)) + " to " + Math.round(RoadMarkers.lastOpen(plan)) + " m, ideal spot "
+                        + Math.round(spots.get(i)) + " m of " + spots.size() + "): " + (where != null ? "built at " + BlockPos.of(where).toShortString() : state.done.contains(key) ? "GIVEN UP, no suitable ground" : "NOT DECIDED"));
+                });
+            }
+        }
+        // 2. the first shelter of one road, up close
+        arriveOnRoadLater(road, () -> {
+            var all = WaysideShelters.positions(roadPlan(road), WaysideShelters.MAX_GAP, WaysideShelters.EDGE);
+            if (all.isEmpty()) { Playtest.fail("the road has no shelter positions"); return 100; }
+            ideal[0] = all.get(0);
+            return (int) Math.max(0, ideal[0] - 30);
+        }, "creative");
+        Playtest.queue("the first shelter of " + road + " is built", () -> { }, () -> {
+            var state = PlacedSites.get(level(), PlacedSites.SHELTERS);
+            if (state.done.contains(road + "#0") && !state.where.containsKey(road + "#0")) Playtest.fail("the first shelter was given up: no suitable ground near " + Math.round(ideal[0]) + " m");
+            return state.where.containsKey(road + "#0");
+        }, 6000);
+        Playtest.queue("find the shelter and the road beside it", () -> {
+            origin[0] = BlockPos.of(PlacedSites.get(level(), PlacedSites.SHELTERS).where.get(road + "#0"));
+            centre[0] = Vec3.atLowerCornerOf(origin[0]).add(5.5, 0, 4.5);
+            var plan = roadPlan(road);
+            double[] near = plan.pointAt(plan.project(centre[0].x, centre[0].z).s());
+            Vec3 away = new Vec3(near[0] - centre[0].x, 0, near[1] - centre[0].z);
+            toRoad[0] = away.scale(1.0 / Math.max(1e-6, away.length()));
+            Playtest.log("shelter at " + origin[0].toShortString() + " for " + road + " at " + Math.round(ideal[0]) + " m, " + Math.round(away.length()) + " blocks from the road");
+            standLooking(centre[0].add(toRoad[0].scale(12)).add(0, 0.1, 0), centre[0].add(0, 2.2, 0));
+        });
+        Playtest.queue("let the chunks and the shelter's meshes arrive", () -> { }, () -> groundBelowPlayer(), 6000);
+        waitForMeshes(1500);
+        Playtest.wait("settle", 120);
+        Playtest.queue("screenshot from the road", () -> Playtest.screenshotNextFrame("uc-shelter-road"));
+        Playtest.wait("frame", 10);
+        Playtest.queue("a corner of the lot, looking in", () -> {
+            Vec3 corner = Vec3.atLowerCornerOf(origin[0]).add(-1.5, 0.1, -1.5);
+            standLooking(corner, centre[0].add(0, 1.0, 0));
+        });
+        Playtest.wait("settle", 60);
+        Playtest.queue("screenshot of the pavilion", () -> Playtest.screenshotNextFrame("uc-shelter-outside"));
+        Playtest.wait("frame", 10);
+        Playtest.queue("under the roof, facing the fire", () -> standLooking(Vec3.atLowerCornerOf(origin[0]).add(2.5, 0.1, 4.5), centre[0].add(0.4, 0.8, 0)));
+        Playtest.wait("settle", 60);
+        Playtest.queue("screenshot under the roof", () -> Playtest.screenshotNextFrame("uc-shelter-inside"));
+        Playtest.wait("frame", 10);
+        talkTo("the road warden", 0, "dialogue", "uc-shelter-dialogue");
+        chooseOption("Where am I on the road?", 0, "dialogue", "uc-shelter-where");
+        chooseOption("What does the law say at either end?", 2, "dialogue", "uc-shelter-law");
+        Playtest.queue("goodbye", () -> Minecraft.getInstance().setScreen(null));
+        Playtest.queue("restore the district the talk helper looks in", () -> talkDistrict = "founders_row");
     }
 
     private static void posts() {

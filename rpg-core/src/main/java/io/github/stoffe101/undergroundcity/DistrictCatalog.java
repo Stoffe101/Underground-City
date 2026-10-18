@@ -26,7 +26,7 @@ public final class DistrictCatalog extends SimpleJsonResourceReloadListener {
     private static final Logger LOGGER = LogUtils.getLogger();
     public static final DistrictCatalog INSTANCE = new DistrictCatalog();
     static final Set<String> OPS = Set.of("fill", "block", "terminal", "safe", "secure_terminal", "ledger", "sign", "clerk", "npc");
-    static final Set<String> ROLES = Set.of("registrar", "employer", "resident", "guard", "vendor", "instructor");
+    static final Set<String> ROLES = Set.of("registrar", "employer", "resident", "guard", "vendor", "instructor", "warden");
     static final int MAX_NPCS = 20, MAX_LINES = 8, MAX_LINE = 180;
     /** Hard bound so a bad datapack cannot ask the server to rewrite an unbounded volume. */
     static final int MAX_EXTENT = 64, MAX_VOLUME = 64_000, MAX_OPS = 1_000;

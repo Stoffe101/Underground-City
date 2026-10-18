@@ -2,10 +2,6 @@ package io.github.stoffe101.undergroundcity;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.StringTag;
-import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -16,17 +12,14 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.WallSignBlock;
 import net.minecraft.world.level.block.entity.SignBlockEntity;
 import net.minecraft.world.level.block.entity.SignText;
-import net.minecraft.world.level.saveddata.SavedData;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
-import java.util.Set;
 
 /**
  * Waymarkers: a stone pillar with a lantern on top and a wall sign on each of its two faces along the road, every {@link #SPACING} blocks of each
@@ -190,7 +183,7 @@ public final class RoadMarkers {
     }
 
     /** Places the post of every marker of a road that a player is near and that was not placed or given up before. Returns how many were built. */
-    static int serve(ServerLevel level, CorridorPlan plan, List<Double> ideal, double px, double pz, State state) {
+    static int serve(ServerLevel level, CorridorPlan plan, List<Double> ideal, double px, double pz, PlacedSites state) {
         int built = 0;
         for (int i = 0; i < ideal.size(); i++) {
             String key = plan.id() + "#" + i;
@@ -214,41 +207,10 @@ public final class RoadMarkers {
         if (level.getGameTime() % CHECK_TICKS != 0 || level.players().isEmpty()) return;
         List<CorridorPlan> plans = DevCommands.plans(level.getServer());
         if (plans.isEmpty()) return;
-        State state = State.get(level);
+        PlacedSites state = PlacedSites.get(level, PlacedSites.MARKERS);
         for (CorridorPlan plan : plans) {
             List<Double> ideal = IDEAL.computeIfAbsent(plan, p -> positions(p, SPACING, EDGE));
             for (ServerPlayer player : level.players()) serve(level, plan, ideal, player.getX(), player.getZ(), state);
-        }
-    }
-
-    /** Which markers have been dealt with (placed, or given up because nothing fitted). */
-    static final class State extends SavedData {
-        private static final String KEY = "underground_city_road_markers";
-        final Set<String> done = new HashSet<>();
-        /** Where each built post stands (the base block), for tools and tests; a key in {@link #done} without an entry here was given up. */
-        final java.util.Map<String, Long> where = new java.util.HashMap<>();
-
-        static State get(ServerLevel level) {
-            return level.getServer().overworld().getDataStorage().computeIfAbsent(State::load, State::new, KEY);
-        }
-
-        static State load(CompoundTag root) {
-            State state = new State();
-            ListTag list = root.getList("done", Tag.TAG_STRING);
-            for (int i = 0; i < list.size() && i < 4096; i++) state.done.add(list.getString(i));
-            ListTag built = root.getList("built", Tag.TAG_COMPOUND);
-            for (int i = 0; i < built.size() && i < 4096; i++) state.where.put(built.getCompound(i).getString("key"), built.getCompound(i).getLong("at"));
-            return state;
-        }
-
-        @Override public CompoundTag save(CompoundTag root) {
-            ListTag list = new ListTag();
-            for (String key : done) list.add(StringTag.valueOf(key));
-            root.put("done", list);
-            ListTag built = new ListTag();
-            where.forEach((key, at) -> { CompoundTag entry = new CompoundTag(); entry.putString("key", key); entry.putLong("at", at); built.add(entry); });
-            root.put("built", built);
-            return root;
         }
     }
 }

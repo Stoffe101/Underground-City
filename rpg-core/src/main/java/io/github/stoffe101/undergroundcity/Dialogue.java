@@ -95,6 +95,7 @@ final class Dialogue {
             case "registrar" -> "Registrar";
             case "employer" -> "Employer: " + careerTitle(npc.career());
             case "guard" -> "Gate guard";
+            case "warden" -> "Road warden";
             default -> "Resident";
         };
     }
@@ -136,6 +137,12 @@ final class Dialogue {
                 out.add(new Choice("law", "What is the law here?", true, ""));
                 out.add(new Choice("posts", "Where are the checkpoints?", true, ""));
                 out.add(new Choice("search", "How do searches work?", true, ""));
+            }
+            case "warden" -> {
+                out.add(new Choice("where", "Where am I on the road?", true, ""));
+                out.add(new Choice("posts", "Where is the next checkpoint?", true, ""));
+                out.add(new Choice("roadlaw", "What does the law say at either end?", true, ""));
+                out.add(new Choice("rumour", "Anything I should know?", true, ""));
             }
             case "vendor" -> {
                 out.add(new Choice("stock", "What is on the exchange today?", true, ""));
@@ -185,6 +192,8 @@ final class Dialogue {
             }
             case "law" -> open(player, villager, npc, lawText(player, villager, citizen));
             case "posts" -> open(player, villager, npc, postsText(player));
+            case "where" -> open(player, villager, npc, WaysideShelters.where(DevCommands.plans(player.server), villager.getX(), villager.getZ()));
+            case "roadlaw" -> open(player, villager, npc, WaysideShelters.roadLaw(DevCommands.plans(player.server), villager.getX(), villager.getZ()));
             case "search" -> open(player, villager, npc, "A search is a roll weighed by the city's law, your heat and your skills. I cannot see what you carry: only a search can find it, and a hand-off can be seen. Heat fades while you keep to honest work.");
             case "demand" -> open(player, villager, npc, "Every order draws on my shared demand. It refills only while players are active, so nobody can empty it for you while you are away, and nobody can use it up before you return.");
             case "rumour" -> open(player, villager, npc, rumour(npc, tag));

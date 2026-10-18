@@ -16,7 +16,7 @@
 - [ ] Career XP/skill tree and one general skill, versioned save data.
 - [x] A safe travel route: three inter-city roads with bridges (a close triangle) generate into new chunks of a fresh seed-5908 world (cloud-measured; every road continuous, bridges over real water; see [three-city notes](../technical/three-city-prototype.md)). Nobody has walked, driven or sailed them yet.
 - [ ] Small district/world import, one workshop and one farm.
-- [ ] Gate houses at the road checkpoints (the zones exist as data; the buildings and guard NPCs do not), rest stops, patrol/NPC presence and a vehicle-mod fit test on the roads; boat customs for the water routes.
+- [ ] Gate houses at the road checkpoints (the zones exist as data; the buildings and guard NPCs do not), patrol/NPC presence and a vehicle-mod fit test on the roads; boat customs for the water routes. Waymarkers (D-078) and wayside shelters with a road warden (D-079) are built.
 
 ## Sprint 2026-10-15 follow-ups (by priority)
 
@@ -36,7 +36,7 @@
 **P2**
 
 - [ ] Founders Row inside a city by a fixed lot rather than the operator's position. **Populated** since October 16 (nine named citizens, beds, workstations, a bell, eight registered safes); a development world now builds it beside the spawn on first launch (D-064).
-- [ ] Roadside settlements and an optional boat taxi so that the 4-minute walk is a choice rather than the only route.
+- [ ] Roadside settlements (the wayside shelters of D-079 are the first, smallest step: a place to rest and a warden to ask) and an optional boat taxi so that the 4-minute walk is a choice rather than the only route.
 - [ ] More skill-tree effects beyond the capped inspection modifier, exchange discount and licences.
 
 **P3**

@@ -135,6 +135,7 @@ public final class CityNpcs {
             case "vendor" -> "Back for more, " + playerName + "?";
             case "guard" -> "Papers in order, " + playerName + "?";
             case "instructor" -> "Welcome back to the line, " + playerName + ".";
+            case "warden" -> "Still on the road, " + playerName + "?";
             default -> "Good to see you again, " + playerName + ".";
         };
     }

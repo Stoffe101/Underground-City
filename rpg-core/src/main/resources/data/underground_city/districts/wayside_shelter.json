@@ -1,0 +1,406 @@
+{
+ "schema_version": 1,
+ "id": "wayside_shelter",
+ "title": "Wayside shelter",
+ "repeatable": true,
+ "note": "An open pavilion with a campfire and a road warden, built beside a road a few hundred blocks from the nearest city; origin is the north-west corner, extending east and south.",
+ "size": [
+  11,
+  8,
+  9
+ ],
+ "ops": [
+  {
+   "op": "fill",
+   "from": [
+    0,
+    -4,
+    0
+   ],
+   "to": [
+    10,
+    -2,
+    8
+   ],
+   "block": "minecraft:stone"
+  },
+  {
+   "op": "fill",
+   "from": [
+    0,
+    -1,
+    0
+   ],
+   "to": [
+    10,
+    -1,
+    8
+   ],
+   "block": "minecraft:coarse_dirt"
+  },
+  {
+   "op": "fill",
+   "from": [
+    0,
+    0,
+    0
+   ],
+   "to": [
+    10,
+    7,
+    8
+   ],
+   "block": "minecraft:air"
+  },
+  {
+   "op": "fill",
+   "from": [
+    2,
+    -1,
+    1
+   ],
+   "to": [
+    8,
+    -1,
+    7
+   ],
+   "block": "minecraft:stone_bricks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    2,
+    4,
+    1
+   ],
+   "to": [
+    8,
+    4,
+    7
+   ],
+   "block": "minecraft:spruce_planks"
+  },
+  {
+   "op": "fill",
+   "from": [
+    3,
+    5,
+    2
+   ],
+   "to": [
+    7,
+    5,
+    6
+   ],
+   "block": "minecraft:spruce_slab[type=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    1,
+    4,
+    1
+   ],
+   "to": [
+    1,
+    4,
+    7
+   ],
+   "block": "minecraft:spruce_stairs[facing=east,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    9,
+    4,
+    1
+   ],
+   "to": [
+    9,
+    4,
+    7
+   ],
+   "block": "minecraft:spruce_stairs[facing=west,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    2,
+    4,
+    0
+   ],
+   "to": [
+    8,
+    4,
+    0
+   ],
+   "block": "minecraft:spruce_stairs[facing=south,half=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    2,
+    4,
+    8
+   ],
+   "to": [
+    8,
+    4,
+    8
+   ],
+   "block": "minecraft:spruce_stairs[facing=north,half=bottom]"
+  },
+  {
+   "op": "block",
+   "at": [
+    1,
+    4,
+    0
+   ],
+   "block": "minecraft:spruce_slab[type=bottom]"
+  },
+  {
+   "op": "block",
+   "at": [
+    9,
+    4,
+    0
+   ],
+   "block": "minecraft:spruce_slab[type=bottom]"
+  },
+  {
+   "op": "block",
+   "at": [
+    1,
+    4,
+    8
+   ],
+   "block": "minecraft:spruce_slab[type=bottom]"
+  },
+  {
+   "op": "block",
+   "at": [
+    9,
+    4,
+    8
+   ],
+   "block": "minecraft:spruce_slab[type=bottom]"
+  },
+  {
+   "op": "fill",
+   "from": [
+    2,
+    0,
+    1
+   ],
+   "to": [
+    2,
+    3,
+    1
+   ],
+   "block": "minecraft:stripped_spruce_log"
+  },
+  {
+   "op": "fill",
+   "from": [
+    8,
+    0,
+    1
+   ],
+   "to": [
+    8,
+    3,
+    1
+   ],
+   "block": "minecraft:stripped_spruce_log"
+  },
+  {
+   "op": "fill",
+   "from": [
+    2,
+    0,
+    7
+   ],
+   "to": [
+    2,
+    3,
+    7
+   ],
+   "block": "minecraft:stripped_spruce_log"
+  },
+  {
+   "op": "fill",
+   "from": [
+    8,
+    0,
+    7
+   ],
+   "to": [
+    8,
+    3,
+    7
+   ],
+   "block": "minecraft:stripped_spruce_log"
+  },
+  {
+   "op": "block",
+   "at": [
+    5,
+    3,
+    1
+   ],
+   "block": "minecraft:lantern[hanging=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    5,
+    3,
+    7
+   ],
+   "block": "minecraft:lantern[hanging=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    2,
+    3,
+    4
+   ],
+   "block": "minecraft:lantern[hanging=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    8,
+    3,
+    4
+   ],
+   "block": "minecraft:lantern[hanging=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    5,
+    0,
+    4
+   ],
+   "block": "minecraft:campfire[lit=true]"
+  },
+  {
+   "op": "block",
+   "at": [
+    3,
+    0,
+    4
+   ],
+   "block": "minecraft:spruce_stairs[facing=west,half=bottom]"
+  },
+  {
+   "op": "block",
+   "at": [
+    7,
+    0,
+    4
+   ],
+   "block": "minecraft:spruce_stairs[facing=east,half=bottom]"
+  },
+  {
+   "op": "block",
+   "at": [
+    5,
+    0,
+    2
+   ],
+   "block": "minecraft:spruce_stairs[facing=north,half=bottom]"
+  },
+  {
+   "op": "block",
+   "at": [
+    5,
+    0,
+    6
+   ],
+   "block": "minecraft:spruce_stairs[facing=south,half=bottom]"
+  },
+  {
+   "op": "block",
+   "at": [
+    3,
+    0,
+    2
+   ],
+   "block": "minecraft:barrel[facing=up]"
+  },
+  {
+   "op": "block",
+   "at": [
+    3,
+    0,
+    6
+   ],
+   "block": "minecraft:water_cauldron[level=3]"
+  },
+  {
+   "op": "block",
+   "at": [
+    7,
+    0,
+    6
+   ],
+   "block": "minecraft:cartography_table"
+  },
+  {
+   "op": "sign",
+   "at": [
+    2,
+    2,
+    2
+   ],
+   "block": "minecraft:spruce_wall_sign[facing=south]",
+   "lines": [
+    "WAYSIDE",
+    "REST STOP",
+    "Fire and water",
+    "Free to all"
+   ],
+   "color": "black",
+   "glow": false
+  },
+  {
+   "op": "sign",
+   "at": [
+    8,
+    2,
+    6
+   ],
+   "block": "minecraft:spruce_wall_sign[facing=north]",
+   "lines": [
+    "ROAD WARDEN",
+    "on duty",
+    "Ask about the",
+    "road ahead"
+   ],
+   "color": "black",
+   "glow": false
+  },
+  {
+   "op": "npc",
+   "at": [
+    6,
+    0,
+    5
+   ],
+   "role": "warden",
+   "name": "Road Warden",
+   "profession": "cartographer",
+   "lines": [
+    "Water is free and the fire is never out. Rest, then move on: the road is safer between the posts than anywhere off it.",
+    "Every post stops what its city's law says to stop, and not an ounce more. Read the law before you load the cart, not after.",
+    "A bridge is the safe way over and a boat is the quiet one. Neither beats good boots and a clear head.",
+    "I keep this shelter for whoever comes by. A fire is a fire, honest haulier or not.",
+    "Heat fades while you keep to honest work. Walk the long road a few times and the guards stop looking twice."
+   ]
+  }
+ ]
+}

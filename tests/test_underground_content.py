@@ -293,10 +293,16 @@ class DistrictTests(unittest.TestCase):
             if district["id"] == "checkpoint_post":
                 self.assertTrue(district.get("repeatable"), "a checkpoint post is built once per zone")
                 self.assertEqual([npc["role"] for npc in citizens], ["guard"])
+            if district["id"] == "wayside_shelter":
+                self.assertTrue(district.get("repeatable"), "a shelter is built once per stretch of road")
+                self.assertEqual([npc["role"] for npc in citizens], ["warden"])
+                self.assertLessEqual(max(xs), 10)
+                self.assertLessEqual(max(zs), 8)
+                self.assertEqual(terminals + safes + secure + clerks, 0, "a shelter holds no economy: it is a place to rest and a person to ask")
             # Citizens: bounded, named, with a role Core knows, short lines, and each employer bound to a real terminal of the lot.
             self.assertLessEqual(len(citizens), 20)
             terminal_spots = [op["at"] for op in district["ops"] if op["op"] == "terminal"]
-            self.assertEqual({npc["role"] for npc in citizens} - {"registrar", "employer", "resident", "guard", "vendor", "instructor"}, set())
+            self.assertEqual({npc["role"] for npc in citizens} - {"registrar", "employer", "resident", "guard", "vendor", "instructor", "warden"}, set())
             self.assertEqual(len({npc["name"] for npc in citizens}), len(citizens), "citizen names must be unique")
             for npc in citizens:
                 self.assertTrue(0 < len(npc["name"]) <= 40, npc["name"])

@@ -45,19 +45,39 @@ public final class RoadMarkerGameTests {
         helper.succeed();
     }
 
-    @GameTest(template = "empty")
+    @GameTest(template = "empty", batch = "uc_markers", timeoutTicks = 600)
     public static void aPostIsBuiltBesideTheRoadOnceAndItsSignIsWritten(GameTestHelper helper) {
         var level = helper.getLevel();
-        BlockPos origin = helper.absolutePos(BlockPos.ZERO);
-        int ox = origin.getX(), oz = origin.getZ();
-        // a road running east through the test area, 12 blocks south of its origin
+        BlockPos arena = helper.absolutePos(BlockPos.ZERO);
+        // In the sky on a platform of its own: the natural terrain at a test cell depends on the mods loaded and on how many tests came before, and a post cannot stand
+        // in a lake or on a tree. (The first version of this test stood on the ground and failed on hosted runners whose cells fell on water.)
+        int y = level.getMaxBuildHeight() - 120, ox = arena.getX(), oz = arena.getZ() + 260;
+        BlockPos lo = new BlockPos(ox - 80, y - 2, oz - 60), hi = new BlockPos(ox + 80, y + 6, oz + 80);
+        for (int cx = lo.getX() >> 4; cx <= hi.getX() >> 4; cx++) for (int cz = lo.getZ() >> 4; cz <= hi.getZ() >> 4; cz++) level.setChunkForced(cx, cz, true);
+        Runnable cleanup = () -> {
+            for (BlockPos at : BlockPos.betweenClosed(lo, hi)) level.setBlock(at, Blocks.AIR.defaultBlockState(), 2);
+            for (int cx = lo.getX() >> 4; cx <= hi.getX() >> 4; cx++) for (int cz = lo.getZ() >> 4; cz <= hi.getZ() >> 4; cz++) level.setChunkForced(cx, cz, false);
+        };
+        UndergroundGameTests.whenEntitiesTick(helper, level, List.of(lo, hi, new BlockPos(lo.getX(), y, hi.getZ()), new BlockPos(hi.getX(), y, lo.getZ())), 40, () -> {
+            try {
+                for (BlockPos at : BlockPos.betweenClosed(new BlockPos(ox - 70, y, oz - 5), new BlockPos(ox + 70, y, oz + 40))) level.setBlock(at, Blocks.STONE.defaultBlockState(), 2);
+                postIsBuiltOnce(level, ox, oz);
+            } finally {
+                cleanup.run();
+            }
+            helper.succeed();
+        });
+    }
+
+    private static void postIsBuiltOnce(net.minecraft.server.level.ServerLevel level, int ox, int oz) {
+        // a road running east through the platform, 12 blocks south of its origin
         CorridorPlan plan = new CorridorPlan("ironhaven_valewood", new double[]{ox - 50, ox + 50}, new double[]{oz + 12, oz + 12}, 7, List.of());
         var spot = RoadMarkers.plan(level, plan, 0, 50).orElseThrow(() -> new IllegalStateException("No spot found beside the road"));
         check(spot.base().getX() == ox && spot.base().getZ() == oz + 12 + 6, "The post stands on the right-hand verge, clear of the road: " + spot.base());
         check(spot.forward() == Direction.EAST, "The road runs east: " + spot.forward());
         check(spot.front().get(0).equals("TO VALEWOOD") && spot.back().get(0).equals("TO IRONHAVEN"), "Front and back name the two ends: " + spot.front() + spot.back());
         check(spot.front().get(1).equals("50 m") && spot.back().get(1).equals("50 m"), "Distances to each end: " + spot.front() + spot.back());
-        RoadMarkers.State state = new RoadMarkers.State();
+        PlacedSites state = new PlacedSites();
         check(RoadMarkers.serve(level, plan, List.of(50.0), ox + 0.5, oz + 12.5, state) == 1, "A traveller close by gets the post built");
         BlockPos base = spot.base();
         check(level.getBlockState(base).is(Blocks.STONE_BRICKS) && level.getBlockState(base.above()).is(Blocks.STONE_BRICKS) && level.getBlockState(base.above(2)).is(Blocks.LANTERN), "A stone pillar with a lantern on top");
@@ -70,12 +90,10 @@ public final class RoadMarkerGameTests {
         check(level.getBlockEntity(spot.backSign()) instanceof SignBlockEntity b2 && b2.getFrontText().getMessage(0, false).getString().equals("TO IRONHAVEN") && b2.isWaxed(), "The back sign is written and waxed");
         check(RoadMarkers.serve(level, plan, List.of(50.0), ox + 0.5, oz + 12.5, state) == 0 && state.done.contains("ironhaven_valewood#0"), "A post is built once");
         check(state.where.get("ironhaven_valewood#0") == base.asLong(), "The world remembers where the post stands");
-        var reloaded = RoadMarkers.State.load(state.save(new net.minecraft.nbt.CompoundTag()));
+        var reloaded = PlacedSites.load(state.save(new net.minecraft.nbt.CompoundTag()));
         check(reloaded.done.equals(state.done) && reloaded.where.equals(state.where), "Placed posts survive a save and load");
         // a traveller far away builds nothing
         CorridorPlan far = new CorridorPlan("ironhaven_valewood", new double[]{ox - 50, ox + 50}, new double[]{oz + 12, oz + 12}, 7, List.of());
-        check(RoadMarkers.serve(level, far, List.of(50.0), ox + 500.0, oz + 500.0, new RoadMarkers.State()) == 0, "Nothing is built far from the traveller");
-        for (BlockPos at : new BlockPos[]{spot.frontSign(), spot.backSign(), base.above(2), base.above(), base}) level.removeBlock(at, false);
-        helper.succeed();
+        check(RoadMarkers.serve(level, far, List.of(50.0), ox + 500.0, oz + 500.0, new PlacedSites()) == 0, "Nothing is built far from the traveller");
     }
 }
