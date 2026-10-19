@@ -51,6 +51,9 @@ public final class WorkOrderService {
 
     public static void action(ServerPlayer player, BlockPos pos, int action, String id, UUID nonce) {
         guarded(player, pos, (ledger, citizen) -> {
+            if (Exchanges.at(player.level(), pos).map(Exchanges.Exchange::wayside).orElse(false)) {
+                throw new IllegalStateException("Orders are posted in the cities. This desk only sells supplies."); // a wayside desk is a shop, not an office
+            }
             switch (action) {
                 case 0 -> accept(player, ledger, citizen, id);
                 case 1 -> complete(player, ledger, nonce, pos);
@@ -172,6 +175,7 @@ public final class WorkOrderService {
         }
         ledger.prepare(player.getUUID(), nonce, after.save(new ListTag()), target, xpTarget, trustAfter, heatAfter);
         recover(player, ledger);
+        CrewService.sweepIncome(player, order.credits(), nonce); // fully shared finances only; never changes the settlement above
         CitizenState.get(player.server).bumpJourney(player.getUUID(), "deliveries");
         player.sendSystemMessage(Component.literal("Delivered " + order.title() + ": +" + order.credits()
             + " credits, +" + order.xp() + " career XP. Level " + citizen.careerLevel() + "."));
@@ -226,6 +230,13 @@ public final class WorkOrderService {
             }
         }
         player.server.overworld().getDataStorage().save();
+        if (pending.hasUUID("crew_tx")) {
+            // A purchase the Crew bank helped pay: the inventory and wallet targets are applied and saved, so the held credits are now spent. This comes
+            // BEFORE the journal settles, which makes "settled" imply "committed": the hold of a delivered purchase can never be mistaken for an undecided one.
+            CrewService.checkpoint("purchase_after_apply");
+            CrewService.commitPurchase(player, pending.getUUID("crew_tx"));
+            CrewService.checkpoint("purchase_after_commit");
+        }
         ledger.settle(player.getUUID());
     }
 

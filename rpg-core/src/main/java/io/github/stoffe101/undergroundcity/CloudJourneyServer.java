@@ -26,7 +26,7 @@ public final class CloudJourneyServer {
             && p.getInventory().countItem(UndergroundCity.item("machined_parts"))==1);
     }
     @SubscribeEvent public static void tick(TickEvent.ServerTickEvent event) {
-        if(PHASE==0 || finished || event.phase!=TickEvent.Phase.END) return;
+        if(PHASE==0 || CrewJourneyServer.ENABLED || finished || event.phase!=TickEvent.Phase.END) return; // a named scenario (CrewJourneyServer) drives its own server
         var server=event.getServer();
         var folder=server.getWorldPath(LevelResource.ROOT).toAbsolutePath().normalize().getParent();
         if(!folder.getFileName().toString().equals("run-journey-server")) throw new IllegalStateException("Journey fixture requires its dedicated disposable directory");

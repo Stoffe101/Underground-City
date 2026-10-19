@@ -108,10 +108,14 @@ To place the same district by hand in any other world: `/uc_district build found
 * It loads the same pack (same pinned jars, same manifest), creates `rpg-core/run-dev/world` with seed 5908 and
   `server.properties` defaults (view distance 8, `online-mode` left at its default `true`).
 * Gradle-launched dev clients use an **offline** profile, which an online-mode server refuses. To join a dev server from
-  dev clients on a trusted LAN or VPN, set `online-mode=false` in `rpg-core/run-dev/server.properties`; to let normal
-  launcher accounts join, keep it `true` and install the same pinned mods in that launcher
-  (`python scripts/fetch_dev_pack.py --sets world firearms vehicles boats --output build/dev-pack/mods`, plus Q Shop and
-  the Core jar from `gradlew build`).
+  dev clients on a trusted LAN or VPN, set `online-mode=false` in `rpg-core/run-dev/server.properties`. **That turns
+  authentication off**: anybody who can reach the port can type a Crew member's name and be that member (their Crew, bank,
+  homes, wallet and progress), so it is for your own PC or a home network of people you trust, never for a server that is
+  port-forwarded or public, and offline and authenticated identities are different people to the server (nothing migrates
+  them: [identity.md](identity.md)). **For real launcher accounts use the authenticated server pack** instead
+  (`python scripts/make_server_pack.py --sets world firearms vehicles boats --output build/server-pack --whitelist <names>`;
+  `online-mode=true`, `enforce-secure-profile=true`, white-list; the [Windows guide](../production/playtest-guide-windows11.md#3b-authenticated-launch-for-real-accounts)
+  lists the steps and what each player installs).
 * Not tested: two real clients on this dev server. The hosted `journey` job tests two clients against a Core-only
   dedicated server, not this pack.
 

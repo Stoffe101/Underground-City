@@ -4,7 +4,10 @@
   "package": "io.github.stoffe101.undergroundcity.mixin",
   "compatibilityLevel": "JAVA_17",
   "mixins": [
-    "GunSmithTableMenuMixin"
+    "GunSmithTableMenuMixin",
+    "InventoryInteractionHelperMixin",
+    "FeedingUpgradeWrapperMixin",
+    "GroundPathNavigationMixin"
   ],
   "injectors": {
     "defaultRequire": 0

@@ -1,0 +1,269 @@
+{
+  "schema_version": 1,
+  "decision": "D-095",
+  "summary": "Items whose only reliable source in the base game is a hostile creature, and what replaces the creature in the simulation world (D-094). A root with a route is obtainable without luck and without hunting; a root with route null is needed by nothing that the game offers as progression. docs/technical/monster-resources.md explains the audit; scripts/audit_item_sources.py and ProgressionAuditGameTests enforce it.",
+  "routes_kinds": {
+    "exchange": "sold by a finite, shared regional-exchange line (content/gameplay/survival-supply.json): price, small shelf, slow refill, no stockpile",
+    "recipe": "crafted from ordinary materials by a recipe that ships with a pinned mod (verified against the loaded recipes)",
+    "derived": "crafted from another root that has a route, by a base-game recipe",
+    "byproduct": "a by-product of a livestock chain that ships with a pinned mod"
+  },
+  "roots": {
+    "minecraft:gunpowder": {
+      "monsters": [
+        "creeper",
+        "witch",
+        "ghast"
+      ],
+      "gameplay": "every TaCZ cartridge and rocket, Modern Life bullets, vehicle munitions, fireworks",
+      "route": {
+        "kind": "recipe",
+        "recipe": "tacz:gunpowder",
+        "mod": "tacz",
+        "inputs": [
+          "minecraft:flint",
+          "minecraft:sugar",
+          "minecraft:charcoal"
+        ],
+        "why": "TaCZ ships a recipe: one flint, two sugar and three charcoal make three gunpowder. It is a small production chain (sugar cane, a kiln, gravel), neither unlimited nor a creeper hunt."
+      }
+    },
+    "minecraft:string": {
+      "monsters": [
+        "spider",
+        "cave_spider"
+      ],
+      "gameplay": "every backpack and backpack upgrade, copper canteen, hammocks, vehicle seat harnesses, guitar, road markers",
+      "route": {
+        "kind": "exchange",
+        "lines": [
+          "underground_city:survival/string_valewood",
+          "underground_city:survival/string_ironhaven"
+        ],
+        "why": "Valewood's mills and Ironhaven's workshops sell it by the hank at a few credits; the shelf is small and refills slowly."
+      }
+    },
+    "minecraft:slime_ball": {
+      "monsters": [
+        "slime"
+      ],
+      "gameplay": "sticky pistons (pickup and restock backpack upgrades), vehicle plastic, leads",
+      "route": {
+        "kind": "exchange",
+        "lines": [
+          "underground_city:survival/slime_ball_ironhaven"
+        ],
+        "why": "Ironhaven's polymer works sell the little they make."
+      }
+    },
+    "minecraft:ender_pearl": {
+      "monsters": [
+        "enderman",
+        "endermite"
+      ],
+      "gameplay": "the magnet and feeding backpack upgrades",
+      "route": {
+        "kind": "exchange",
+        "lines": [
+          "underground_city:survival/ender_pearl_blackwater"
+        ],
+        "why": "A rare import through the port of Blackwater: expensive and one at a time."
+      }
+    },
+    "minecraft:blaze_rod": {
+      "monsters": [
+        "blaze"
+      ],
+      "gameplay": "fifteen heavier TaCZ firearms and attachments (Desert Eagle, AWP, M249, minigun and others), blaze powder",
+      "route": {
+        "kind": "exchange",
+        "lines": [
+          "underground_city:survival/blaze_rod_blackwater"
+        ],
+        "why": "Military surplus that reaches the port of Blackwater now and then: the premium weapons stay scarce and costly."
+      }
+    },
+    "minecraft:blaze_powder": {
+      "monsters": [
+        "blaze"
+      ],
+      "gameplay": "vehicle engines, explosives and solid fuel, cocktails",
+      "route": {
+        "kind": "derived",
+        "from": "minecraft:blaze_rod",
+        "recipe": "minecraft:blaze_powder",
+        "why": "Two powder from one rod, by the base game's own recipe."
+      }
+    },
+    "minecraft:magma_cream": {
+      "monsters": [
+        "magma_cube",
+        "blaze"
+      ],
+      "gameplay": "vehicle flares and smoke cans",
+      "route": {
+        "kind": "derived",
+        "from": "minecraft:slime_ball",
+        "recipe": "minecraft:magma_cream",
+        "why": "A slime ball and blaze powder, by the base game's own recipe."
+      }
+    },
+    "minecraft:spider_eye": {
+      "monsters": [
+        "spider",
+        "cave_spider",
+        "witch"
+      ],
+      "gameplay": "Vinery's two special wines (and fermented spider eyes)",
+      "route": {
+        "kind": "exchange",
+        "lines": [
+          "underground_city:survival/spider_eye_valewood"
+        ],
+        "why": "The apothecary in Valewood sells a few for the vintners."
+      }
+    },
+    "minecraft:bone": {
+      "monsters": [
+        "skeleton",
+        "stray",
+        "wither_skeleton"
+      ],
+      "gameplay": "Farmer's Delight bone broth, a few vehicle ornaments, Farm & Charm bone meal (bone meal itself comes from a composter)",
+      "route": {
+        "kind": "byproduct",
+        "recipe": "farmersdelight:cutting/ham",
+        "mod": "farmersdelight",
+        "why": "Cutting a ham with a knife leaves a bone; hams come from livestock."
+      }
+    },
+    "minecraft:rotten_flesh": {
+      "monsters": [
+        "zombie",
+        "husk",
+        "drowned",
+        "zombified_piglin"
+      ],
+      "gameplay": "Farmer's Delight dog food and one compost recipe, Farm & Charm fertilizer (which has another recipe)",
+      "route": null,
+      "needed_by_approved_gameplay": false
+    },
+    "minecraft:ghast_tear": {
+      "monsters": [
+        "ghast"
+      ],
+      "gameplay": "regeneration brewing, end crystals",
+      "route": null,
+      "needed_by_approved_gameplay": false
+    },
+    "minecraft:phantom_membrane": {
+      "monsters": [
+        "phantom"
+      ],
+      "gameplay": "elytra repair, slow-falling potions",
+      "route": null,
+      "needed_by_approved_gameplay": false
+    },
+    "minecraft:nether_star": {
+      "monsters": [
+        "wither"
+      ],
+      "gameplay": "beacons and two disabled backpack upgrades",
+      "route": null,
+      "needed_by_approved_gameplay": false
+    },
+    "minecraft:shulker_shell": {
+      "monsters": [
+        "shulker"
+      ],
+      "gameplay": "shulker boxes (also disallowed inside backpacks)",
+      "route": null,
+      "needed_by_approved_gameplay": false
+    },
+    "minecraft:wither_skeleton_skull": {
+      "monsters": [
+        "wither_skeleton"
+      ],
+      "gameplay": "the Wither, one disabled backpack upgrade",
+      "route": null,
+      "needed_by_approved_gameplay": false
+    },
+    "minecraft:prismarine_shard": {
+      "monsters": [
+        "guardian",
+        "elder_guardian"
+      ],
+      "gameplay": "prismarine decoration (Modern Life furniture variants)",
+      "route": null,
+      "needed_by_approved_gameplay": false
+    },
+    "minecraft:prismarine_crystals": {
+      "monsters": [
+        "guardian",
+        "elder_guardian"
+      ],
+      "gameplay": "sea lanterns",
+      "route": null,
+      "needed_by_approved_gameplay": false
+    },
+    "minecraft:nautilus_shell": {
+      "monsters": [
+        "drowned"
+      ],
+      "gameplay": "conduits",
+      "route": null,
+      "needed_by_approved_gameplay": false
+    },
+    "minecraft:trident": {
+      "monsters": [
+        "drowned"
+      ],
+      "gameplay": "a weapon of no career",
+      "route": null,
+      "needed_by_approved_gameplay": false
+    },
+    "minecraft:totem_of_undying": {
+      "monsters": [
+        "evoker"
+      ],
+      "gameplay": "a resurrection item no design asks for",
+      "route": null,
+      "needed_by_approved_gameplay": false
+    }
+  },
+  "exclusions": [
+    {
+      "item": "farmersdelight:dog_food",
+      "needs": [
+        "minecraft:rotten_flesh"
+      ],
+      "why": "Pet food; pets eat meat from the butcher and no work order or skill asks for it. Rotten flesh has no route because nothing the game offers as progression needs it."
+    },
+    {
+      "pattern": "modernlife:(dark_)?prismarine.*",
+      "needs": [
+        "minecraft:prismarine_shard"
+      ],
+      "why": "Decorative furniture and barrier variants made of prismarine; the same furniture exists in other materials."
+    }
+  ],
+  "approved_scopes": {
+    "why": "Every recipe result of these mods is treated as approved gameplay: if it needs a root above, the root must have a route (or the result is listed in exclusions with a reason).",
+    "namespaces": [
+      "underground_city",
+      "tacz",
+      "taczblueprints",
+      "sophisticatedbackpacks",
+      "thirstwastaken2",
+      "comforts",
+      "farmersdelight",
+      "vinery",
+      "farm_and_charm",
+      "kaleidoscope_tavern",
+      "modernlife",
+      "mts",
+      "mtsofficialpack",
+      "oamp"
+    ]
+  }
+}

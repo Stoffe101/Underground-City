@@ -63,6 +63,9 @@ public final class CitizenState extends SavedData {
         return Optional.ofNullable(citizens.get(uuid));
     }
 
+    /** Every registered account's UUID (for the identity audit; no names are stored here). */
+    public java.util.Set<UUID> ids() { return java.util.Set.copyOf(citizens.keySet()); }
+
     public boolean register(UUID uuid, String city, String career) {
         if (citizens.containsKey(uuid) || !ProgressionRules.validCity(city)
                 || !ProgressionRules.validCareer(career)) {

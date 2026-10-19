@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "city": "ironhaven",
+  "item": "minecraft:string",
+  "unit_price": 4,
+  "initial": 24,
+  "capacity": 48,
+  "units_per_interval": 4,
+  "interval_ticks": 18000,
+  "max_order": 16,
+  "outlets": [
+    "city"
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "city": "ironhaven",
+  "item": "thirstwastaken2:waterskin",
+  "unit_price": 45,
+  "initial": 2,
+  "capacity": 3,
+  "units_per_interval": 1,
+  "interval_ticks": 36000,
+  "max_order": 1,
+  "outlets": [
+    "wayside"
+  ],
+  "requires_mod": "thirstwastaken2"
+}

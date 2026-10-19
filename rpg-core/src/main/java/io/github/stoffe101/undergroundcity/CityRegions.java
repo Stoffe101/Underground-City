@@ -70,6 +70,13 @@ public final class CityRegions extends SimpleJsonResourceReloadListener {
             .map(Region::id);
     }
 
+    /** The city whose centre is nearest to the position, wherever it is in the dimension (a wayside shelter belongs to the city nearest to it). */
+    public Optional<String> nearest(Level level, BlockPos pos) {
+        String dimension = level.dimension().location().toString();
+        return regions.stream().filter(region -> region.dimension.equals(dimension))
+            .min(java.util.Comparator.comparingDouble(region -> region.distanceSquared(pos))).map(Region::id);
+    }
+
     List<Region> all() { return regions; }
 
     /** Test seam: replaces the loaded circles without a datapack reload. */

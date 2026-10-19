@@ -4,6 +4,7 @@
   "items": [
     {"item": "minecraft:redstone", "count": 16},
     {"item": "minecraft:copper_ingot", "count": 8},
-    {"item": "minecraft:bread", "count": 4}
+    {"item": "minecraft:bread", "count": 4},
+    {"item": "thirstwastaken2:waterskin", "count": 1, "requires_mod": "thirstwastaken2"}
   ]
 }

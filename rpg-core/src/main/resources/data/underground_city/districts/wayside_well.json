@@ -386,6 +386,32 @@
    "glow": false
   },
   {
+   "op": "terminal",
+   "at": [
+    7,
+    0,
+    3
+   ],
+   "facing": "east"
+  },
+  {
+   "op": "sign",
+   "at": [
+    7,
+    2,
+    3
+   ],
+   "block": "minecraft:spruce_wall_sign[facing=east]",
+   "lines": [
+    "PROVISIONS",
+    "Supplies for",
+    "credits. Small",
+    "stock, shared"
+   ],
+   "color": "black",
+   "glow": false
+  },
+  {
    "op": "npc",
    "at": [
     6,
@@ -399,6 +425,7 @@
     "The well is old and the water is sweet. Drink, fill your skin, and ask me anything about the road.",
     "Every post stops what its city's law says to stop, and not an ounce more. Read the law before you load the cart, not after.",
     "Wagons stop here to water the horses. I have heard the whole road's news from the back of a cart.",
+    "The desk by the post sells bread, water, torches and the odd flask, for credits. There is not much, and when it is gone it is gone until travellers have passed through again.",
     "A bridge is the safe way over and a boat is the quiet one. Neither beats good boots and a clear head.",
     "Heat fades while you keep to honest work. Walk the long road a few times and the guards stop looking twice."
    ]

@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "city": "ironhaven",
+  "item": "thirstwastaken2:copper_canteen",
+  "unit_price": 80,
+  "initial": 2,
+  "capacity": 4,
+  "units_per_interval": 1,
+  "interval_ticks": 48000,
+  "max_order": 1,
+  "outlets": [
+    "city"
+  ],
+  "requires_mod": "thirstwastaken2"
+}

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate the district definitions: Founders Row, the firing range, the checkpoint post and the wayside shelter (D-055, D-061, D-066, D-079).
+"""Generate the district definitions: Founders Row, the firing range, the Row Flats, the checkpoint post and the wayside shelter (D-055, D-061, D-066, D-079, D-084).
 
 A district is data: a list of block and citizen operations relative to an origin chosen by an operator at build time
 (the footprint's north-west corner, extending east and south), so no world coordinate is hard-coded. ``y = 0`` is the
@@ -572,6 +572,75 @@ def firing_range() -> dict:
             "size": [width, 8, depth], "ops": ops}
 
 
+def row_flats() -> dict:
+    """The Row Flats: a brick terrace of three leasable homes (two flats and a larger Row House) built beside Founders Row (D-084).
+
+    The only homes in the game that a player or a Crew can lease. Each has a front door on the lane side, a bed (the house two), a chest for shared
+    storage, a crafting table, a furnace and an Operations Terminal as the home computer; the house adds a smithing table, an anvil, a grindstone,
+    a brewing stand and a second chest. The registered interior is what a tenant may change; the one-block shell around it (the walls, floor and
+    ceiling) belongs to the city. Prices are the data of the ``residence`` operations; the starter price is the one-time discount for a new tenant.
+
+    Local x runs 0..23 west to east, z runs 0..14 north to south; the building is x 1..21, z 0..8, with a pavement in front.
+    """
+    width, depth = 24, 15
+    wall, trim, floor = "minecraft:bricks", "minecraft:stone_bricks", "minecraft:oak_planks"
+    ops = [
+        fill((0, -4, 0), (width - 1, -2, depth - 1), "minecraft:stone"),
+        fill((0, -1, 0), (width - 1, -1, depth - 1), "minecraft:grass_block"),
+        fill((0, 0, 0), (width - 1, 9, depth - 1), "minecraft:air"),
+        fill((0, -1, 9), (width - 1, -1, 12), "minecraft:stone_bricks"),
+        fill((1, -1, 0), (21, -1, 8), floor),
+        fill((1, 0, 0), (21, 3, 0), wall), fill((1, 0, 8), (21, 3, 8), wall),
+        fill((1, 4, 0), (21, 4, 8), trim),
+        fill((1, 5, 0), (21, 5, 0), "minecraft:stone_brick_wall"), fill((1, 5, 8), (21, 5, 8), "minecraft:stone_brick_wall"),
+        fill((1, 5, 1), (1, 5, 7), "minecraft:stone_brick_wall"), fill((21, 5, 1), (21, 5, 7), "minecraft:stone_brick_wall"),
+    ]
+    for x in (1, 7, 13, 21):                       # the walls between and around the homes
+        ops.append(fill((x, 0, 0), (x, 3, 8), wall))
+    for x in (1, 7, 13, 21):
+        ops.append(fill((x, 0, 0), (x, 0, 8), "minecraft:cobblestone"))
+    units = [
+        {"name": "flat_1", "title": "Row Flat 1", "kind": "flat", "x0": 2, "x1": 6, "price": 120, "starter": 60, "bed": "red", "beds": 1},
+        {"name": "flat_2", "title": "Row Flat 2", "kind": "flat", "x0": 8, "x1": 12, "price": 120, "starter": 60, "bed": "blue", "beds": 1},
+        {"name": "row_house", "title": "Row House", "kind": "house", "x0": 14, "x1": 20, "price": 260, "starter": 140, "bed": "green", "beds": 2},
+    ]
+    for unit in units:
+        x0, x1 = unit["x0"], unit["x1"]
+        mid = (x0 + x1) // 2
+        ops += [
+            fill((mid, 0, 8), (mid, 1, 8), "minecraft:air"),
+            put((mid, 0, 8), "minecraft:oak_door[facing=south,half=lower,hinge=left,open=false]"),
+            put((mid, 1, 8), "minecraft:oak_door[facing=south,half=upper,hinge=left,open=false]"),
+            put((mid, 1, 0), "minecraft:glass_pane"),
+            put((mid - 1, 1, 8), "minecraft:glass_pane"), put((mid + 1, 1, 8), "minecraft:glass_pane"),
+            put((mid, 3, 4), "minecraft:lantern[hanging=true]"),
+            sign((mid, 2, 9), "south", [unit["title"].upper()[:15], "For lease", "Press K nearby"]),
+            put((mid - 2, 0, 9), "minecraft:potted_fern"), put((mid + 2, 0, 9), "minecraft:potted_azalea_bush"),
+            # the furnishings: a bed, shared storage, the workstations and the home computer along the back wall
+            put((x0, 0, 3), f"minecraft:{unit['bed']}_bed[facing=north,part=foot]"), put((x0, 0, 2), f"minecraft:{unit['bed']}_bed[facing=north,part=head]"),
+            put((x1, 0, 1), "minecraft:chest[facing=south,type=single]"),
+            put((x1 - 1, 0, 1), "minecraft:crafting_table"), put((x1 - 2, 0, 1), "minecraft:furnace[facing=south,lit=false]"),
+            {"op": "terminal", "at": [x0 + 1, 0, 1], "facing": "south"},
+            fill((x0 + 1, 0, 4), (x1 - 1, 0, 6), "minecraft:red_carpet" if unit["kind"] == "flat" else "minecraft:green_carpet"),
+            put((mid, 0, 5), "minecraft:spruce_fence"), put((mid, 1, 5), "minecraft:spruce_slab[type=bottom]"),
+            put((mid - 1, 0, 5), "minecraft:spruce_stairs[facing=east,half=bottom]"), put((mid + 1, 0, 5), "minecraft:spruce_stairs[facing=west,half=bottom]"),
+            {"op": "residence", "id": unit["name"], "title": unit["title"], "kind": unit["kind"], "price": unit["price"], "starter_price": unit["starter"],
+             "from": [x0, 0, 1], "to": [x1, 3, 7]},
+        ]
+        if unit["beds"] == 2:
+            ops += [put((x0 + 2, 0, 3), "minecraft:green_bed[facing=north,part=foot]"), put((x0 + 2, 0, 2), "minecraft:green_bed[facing=north,part=head]"),
+                    put((x1, 0, 2), "minecraft:chest[facing=south,type=single]"),
+                    put((x1 - 3, 0, 1), "minecraft:smithing_table"), put((x1 - 4, 0, 1), "minecraft:anvil[facing=east]"),
+                    put((x1, 0, 7), "minecraft:grindstone[face=floor,facing=north]"), put((x1 - 1, 0, 7), "minecraft:brewing_stand")]
+    # lamp posts and a bench on the pavement
+    ops += [fill((0, 0, 10), (0, 2, 10), "minecraft:stone_brick_wall"), put((0, 3, 10), "minecraft:lantern[hanging=false]"),
+            fill((22, 0, 10), (22, 2, 10), "minecraft:stone_brick_wall"), put((22, 3, 10), "minecraft:lantern[hanging=false]"),
+            put((11, 0, 11), "minecraft:spruce_stairs[facing=north,half=bottom]"), put((12, 0, 11), "minecraft:spruce_stairs[facing=north,half=bottom]")]
+    return {"schema_version": 1, "id": "row_flats", "title": "Row Flats",
+            "note": "Built east of Founders Row by the dev launch (or by hand: /uc_district build row_flats); origin is the north-west corner, extending east and south. Three homes the Crew screen can lease.",
+            "size": [width, 10, depth], "ops": ops}
+
+
 def checkpoint_post() -> dict:
     """A roadside inspection post, built beside a road at each checkpoint zone by ``/uc_checkpoints place``.
 
@@ -658,11 +727,15 @@ def wayside_shelter() -> dict:
         put((3, 0, 2), "minecraft:barrel[facing=up]"), put((3, 0, 6), "minecraft:water_cauldron[level=3]"), put((7, 0, 6), "minecraft:cartography_table"),
         sign((2, 2, 2), "south", ["WAYSIDE", "REST STOP", "Fire and water", "Free to all"]),
         sign((8, 2, 6), "north", ["ROAD WARDEN", "on duty", "Ask about the", "road ahead"]),
+        # the provisions desk (D-091): an Operations Terminal that sells the few basics a traveller needs, for credits, from a small shared stock
+        {"op": "terminal", "at": [7, 0, 2], "facing": "south"},
+        sign((8, 2, 2), "south", ["PROVISIONS", "Supplies for", "credits. Small", "stock, shared"]),
     ]
     ops.append(npc((6, 0, 5), "warden", "Road Warden", "cartographer", [
         "Water is free and the fire is never out. Rest, then move on: the road is safer between the posts than anywhere off it.",
         "Every post stops what its city's law says to stop, and not an ounce more. Read the law before you load the cart, not after.",
         "A bridge is the safe way over and a boat is the quiet one. Neither beats good boots and a clear head.",
+        "The desk by the post sells bread, water, torches and the odd flask, for credits. There is not much, and when it is gone it is gone until travellers have passed through again.",
         "I keep this shelter for whoever comes by. A fire is a fire, honest haulier or not.",
         "Heat fades while you keep to honest work. Walk the long road a few times and the guards stop looking twice.",
     ]))
@@ -698,11 +771,15 @@ def wayside_well() -> dict:
         put((8, 0, 6), "minecraft:lantern[hanging=false]"),
         sign((3, 2, 3), "west", ["THE WELL", "Fresh water", "Help yourself", ""]),
         sign((7, 2, 5), "east", ["ROAD WARDEN", "on duty", "Ask about the", "road ahead"]),
+        # the provisions desk (D-091), as at the pavilion
+        {"op": "terminal", "at": [7, 0, 3], "facing": "east"},
+        sign((7, 2, 3), "east", ["PROVISIONS", "Supplies for", "credits. Small", "stock, shared"]),
     ]
     ops.append(npc((6, 0, 6), "warden", "Road Warden", "fisherman", [
         "The well is old and the water is sweet. Drink, fill your skin, and ask me anything about the road.",
         "Every post stops what its city's law says to stop, and not an ounce more. Read the law before you load the cart, not after.",
         "Wagons stop here to water the horses. I have heard the whole road's news from the back of a cart.",
+        "The desk by the post sells bread, water, torches and the odd flask, for credits. There is not much, and when it is gone it is gone until travellers have passed through again.",
         "A bridge is the safe way over and a boat is the quiet one. Neither beats good boots and a clear head.",
         "Heat fades while you keep to honest work. Walk the long road a few times and the guards stop looking twice.",
     ]))
@@ -718,7 +795,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--check", action="store_true")
     args = parser.parse_args()
-    outputs = {"founders_row": founders_row(), "firing_range": firing_range(), "checkpoint_post": checkpoint_post(), "wayside_shelter": wayside_shelter(), "wayside_well": wayside_well()}
+    outputs = {"founders_row": founders_row(), "firing_range": firing_range(), "row_flats": row_flats(), "checkpoint_post": checkpoint_post(), "wayside_shelter": wayside_shelter(), "wayside_well": wayside_well()}
     status = 0
     for name, data in outputs.items():
         out = DIR / f"{name}.json"

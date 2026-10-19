@@ -134,7 +134,7 @@ public final class TerminalScreen extends UcScreen {
         int cw2 = UcUi.displayWidth(font, credits);
         UcUi.displayRight(g, font, credits, right - 0, ty, data.economy() ? UcUi.AMBER : UcUi.UNDERGROUND_TEXT);
         UcUi.icon(g, UcUi.Icon.CREDITS, right - cw2 - 19, y + 4, data.economy() ? UcUi.AMBER : UcUi.UNDERGROUND_TEXT);
-        String where = data.region().isEmpty() ? "Outside a city" : "In " + capitalize(data.region());
+        String where = data.wayside() ? "Wayside desk" : data.region().isEmpty() ? "Outside a city" : "In " + capitalize(data.region());
         int wx = right - cw2 - 19 - 14 - font.width(where);
         if (wx > px + pw / 2) {
             UcUi.text(g, font, where, wx, ty, UcUi.DIM);
@@ -182,7 +182,7 @@ public final class TerminalScreen extends UcScreen {
     // ------------------------------------------------------------------------------------------------ state
     private List<TerminalData.Row> jobs() { return data.jobs().stream().filter(job -> job.extra().underground() == undergroundView).toList(); }
     private TerminalData.Row row() { List<TerminalData.Row> list = jobs(); return list.isEmpty() ? null : list.get(Math.max(0, Math.min(selected, list.size() - 1))); }
-    private boolean exchangeOpen() { return !data.region().isEmpty() && !data.offers().isEmpty(); }
+    private boolean exchangeOpen() { return (!data.region().isEmpty() || data.wayside()) && !data.offers().isEmpty(); }
     private void setView(boolean underground) { undergroundView = underground; selected = 0; jobScroll = 0; refresh(); }
     private void send(int action) {
         if (terminalPosition == null || row() == null) return;
@@ -306,7 +306,8 @@ public final class TerminalScreen extends UcScreen {
     }
 
     // ------------------------------------------------------------------------------------------------ trade rows
-    private int offerRows() { return Math.max(1, (ch - 56) / 26); }
+    /** Rows that fit under the heading, with 14 pixels kept free at the bottom for the "Scroll for N more lines" hint, which used to be drawn over the last row's price (seen in the combined journey's captures at 720p and 1440p). */
+    private int offerRows() { return Math.max(1, (ch - 56 - 14) / 26); }
 
     private void layoutOffers() {
         boolean exchange = current == Page.IMPORTS && exchangeOpen();
@@ -317,6 +318,7 @@ public final class TerminalScreen extends UcScreen {
             buyOne[i].visible = buyLot[i].visible = present;
             if (!present) continue;
             TerminalData.Offer offer = data.offers().get(i + offerScroll);
+            buyLot[i].visible = Math.min(LOT, offer.maxOrder()) > 1;   // a line that sells one unit per order has one button, not two that say the same
             int y = cy + 56 + i * 26;
             buyOne[i].setX(cx + cw - 100); buyOne[i].setY(y + 2);
             buyLot[i].setX(cx + cw - 52); buyLot[i].setY(y + 2);
@@ -352,6 +354,16 @@ public final class TerminalScreen extends UcScreen {
     boolean clickBuy(int row, boolean lot) {
         UcButton button = (lot ? buyLot : buyOne)[row];
         return mouseClicked(button.getX() + button.getWidth() / 2.0, button.getY() + button.getHeight() / 2.0, 0);
+    }
+
+    /** Journey/QA hook: turns the mouse wheel over the exchange list until the offer is on screen, then clicks its BUY 1 button. False when the offer is not listed or its button is not active. */
+    boolean clickBuyOffer(String id) {
+        int index = -1;
+        for (int i = 0; i < data.offers().size(); i++) if (data.offers().get(i).id().equals(id)) index = i;
+        if (index < 0 || current != Page.IMPORTS) return false;
+        for (int guard = 0; guard < data.offers().size() && index >= offerScroll + offerRows(); guard++) mouseScrolled(0, 0, -1);
+        layoutOffers();
+        return index >= offerScroll && index - offerScroll < MAX_OFFERS && clickBuy(index - offerScroll, false);
     }
 
     // ------------------------------------------------------------------------------------------------ skill tree layout
@@ -482,7 +494,8 @@ public final class TerminalScreen extends UcScreen {
         int lx = cx, ly = listY(), lw = listW(), lh = ch - 22;
         UcUi.well(g, lx, ly, lw, lh);
         if (list.isEmpty()) {
-            UcUi.wrapped(g, font, undergroundView ? "No underground contracts yet. Learn an underground skill on the SKILLS tab to open the trade."
+            UcUi.wrapped(g, font, data.wayside() ? "Orders are posted in the cities. This desk only sells supplies: open the TRADE tab."
+                : undergroundView ? "No underground contracts yet. Learn an underground skill on the SKILLS tab to open the trade."
                 : "No legal contracts are listed for this trade.", lx + 8, ly + 10, lw - 16, UcUi.SOFT, 6);
             return;
         }
@@ -661,14 +674,17 @@ public final class TerminalScreen extends UcScreen {
     private void renderTrade(GuiGraphics g) {
         boolean exchange = exchangeOpen();
         int y = cy + 26;
-        String heading = exchange ? capitalize(data.region()).toUpperCase(Locale.ROOT) + " EXCHANGE" : "REGIONAL EXCHANGE";
+        String heading = data.wayside() ? "WAYSIDE PROVISIONS" : exchange ? capitalize(data.region()).toUpperCase(Locale.ROOT) + " EXCHANGE" : "REGIONAL EXCHANGE";
         UcUi.display(g, font, heading, cx, y, UcUi.LEGAL);
-        UcUi.text(g, font, "Shared stock, refilled during active play", cx + UcUi.displayWidth(font, heading) + 8, y, UcUi.DIM);
+        int subtitleX = cx + UcUi.displayWidth(font, heading) + 8;
+        String subtitle = data.wayside() ? "A few basics, shared with " + capitalize(data.city().isEmpty() ? "the city" : data.city()) + "'s desks" : "Shared stock, refilled during active play";
+        UcUi.text(g, font, UcUi.fit(font, subtitle, cx + cw - subtitleX), subtitleX, y, UcUi.DIM);
         UcUi.well(g, cx, cy + 40, cw, ch - 40);
         if (!exchange) {
             int ty = cy + 52;
             UcUi.icon(g, UcUi.Icon.INFO, cx + 8, ty - 4, UcUi.AMBER);
-            UcUi.wrapped(g, font, data.region().isEmpty() ? "This terminal is outside every city exchange. Use one inside Ironhaven, Valewood or Blackwater to see local goods."
+            UcUi.wrapped(g, font, data.wayside() ? "This desk has nothing for sale right now."
+                : data.region().isEmpty() ? "This terminal is outside every city exchange. Use one inside Ironhaven, Valewood or Blackwater to see local goods."
                 : "No regional stock is listed for this city.", cx + 28, ty, cw - 40, UcUi.SOFT, 4);
             return;
         }

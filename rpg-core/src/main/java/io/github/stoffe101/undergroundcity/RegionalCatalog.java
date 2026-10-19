@@ -24,21 +24,30 @@ public final class RegionalCatalog extends SimpleJsonResourceReloadListener {
     @Override
     protected void apply(Map<ResourceLocation, JsonElement> data, ResourceManager resources, ProfilerFiller profiler) {
         Map<String, RegionalStock> next = new LinkedHashMap<>();
+        int[] skipped = {0};
         data.entrySet().stream().sorted(Map.Entry.comparingByKey()).forEach(entry -> {
             RegionalStock stock = RegionalStock.fromJson(entry.getKey(), entry.getValue().getAsJsonObject());
+            if (stock == null) { skipped[0]++; return; }   // an optional mod's goods while that mod is not installed
             next.put(stock.id(), stock);
         });
         if (next.size() > 64) throw new IllegalArgumentException("At most 64 regional stock lines supported");
         stocks = Map.copyOf(next);
-        LOGGER.info("Loaded {} Underground City regional supplier lines", stocks.size());
+        LOGGER.info("Loaded {} Underground City regional supplier lines ({} left out because their mod is not installed)", stocks.size(), skipped[0]);
     }
 
     public RegionalStock find(String id) { return stocks.get(id); }
 
-    public List<RegionalStock> forCity(String city) {
-        return stocks.values().stream().filter(stock -> stock.city().equals(city))
+    /** What the exchange inside {@code city} sells. */
+    public List<RegionalStock> forCity(String city) { return forOutlet(city, RegionalStock.CITY); }
+
+    /** What one kind of outlet of {@code city} sells: its exchange, or the provisions desks of the wayside shelters that belong to it. */
+    public List<RegionalStock> forOutlet(String city, String outlet) {
+        return stocks.values().stream().filter(stock -> stock.city().equals(city) && stock.soldAt(outlet))
             .sorted(Comparator.comparing(RegionalStock::id)).toList();
     }
+
+    /** Test seam: every line, so a test can put the catalog back after replacing it. */
+    List<RegionalStock> allForTest() { return List.copyOf(stocks.values()); }
 
     /** Test seam: replaces the catalog without a datapack reload. */
     void replaceForTest(List<RegionalStock> replacement) {

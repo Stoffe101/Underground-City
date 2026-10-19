@@ -87,6 +87,13 @@
       "description": "Regional exchange with insufficient credits for some purchases"
     },
     {
+      "id": "operations_terminal.wayside_desk",
+      "expected_file": "uc-exchange-wayside-desk.png",
+      "owner": "underground_city",
+      "group": "operations_terminal",
+      "description": "Provisions desk of a wayside shelter: a few basics with small shared stock, no orders, location shown as Wayside desk"
+    },
+    {
       "id": "operations_terminal.imports_outside_city",
       "expected_file": "uc-imports-outside-city.png",
       "owner": "underground_city",
@@ -288,6 +295,111 @@
       "owner": "underground_city",
       "group": "registration",
       "description": "First-login registration, step 3: confirm the choice and the welcome pack"
+    },
+    {
+      "id": "crew.nocrew",
+      "expected_file": "uc-crew-nocrew.png",
+      "owner": "underground_city",
+      "group": "crew",
+      "description": "Crew screen for a citizen without a Crew: found one by name"
+    },
+    {
+      "id": "crew.nocrew_invited",
+      "expected_file": "uc-crew-nocrew-invited.png",
+      "owner": "underground_city",
+      "group": "crew",
+      "description": "Crew screen for a citizen with two invitations to answer"
+    },
+    {
+      "id": "crew.unregistered",
+      "expected_file": "uc-crew-unregistered.png",
+      "owner": "underground_city",
+      "group": "crew",
+      "description": "Crew screen before registration: asks to register first"
+    },
+    {
+      "id": "crew.unavailable",
+      "expected_file": "uc-crew-unavailable.png",
+      "owner": "underground_city",
+      "group": "crew",
+      "description": "Crew screen when the ledger cannot be read: names the problem and the fix"
+    },
+    {
+      "id": "crew.members",
+      "expected_file": "uc-crew-members.png",
+      "owner": "underground_city",
+      "group": "crew",
+      "description": "Members page for a founder: roles, a selected manager, invitable players, an open invitation"
+    },
+    {
+      "id": "crew.members_member",
+      "expected_file": "uc-crew-members-member.png",
+      "owner": "underground_city",
+      "group": "crew",
+      "description": "Members page for a plain member: no invite or role controls, Leave Crew"
+    },
+    {
+      "id": "crew.money",
+      "expected_file": "uc-crew-money.png",
+      "owner": "underground_city",
+      "group": "crew",
+      "description": "Money page: Crew bank and wallet cards, quick amounts, Deposit and Withdraw, history"
+    },
+    {
+      "id": "crew.money_consent",
+      "expected_file": "uc-crew-money-consent.png",
+      "owner": "underground_city",
+      "group": "crew",
+      "description": "Money page with a payout owed, a refused request in the footer and the shared-finances proposal awaiting consent"
+    },
+    {
+      "id": "crew.money_shared",
+      "expected_file": "uc-crew-money-shared.png",
+      "owner": "underground_city",
+      "group": "crew",
+      "description": "Money page with fully shared finances in force, for a member who may spend Crew money: the bank pays first, a purchase in the history, Q Shop's own shops never use the bank"
+    },
+    {
+      "id": "crew.money_shared_nospend",
+      "expected_file": "uc-crew-money-shared-nospend.png",
+      "owner": "underground_city",
+      "group": "crew",
+      "description": "The same Crew for a member who may not spend Crew money: the bank is closed to them and they pay for purchases themselves"
+    },
+    {
+      "id": "crew.home",
+      "expected_file": "uc-crew-home.png",
+      "owner": "underground_city",
+      "group": "crew",
+      "description": "Home page: held homes with private-container controls and a home for lease nearby with its three ways to pay"
+    },
+    {
+      "id": "crew.rules_permissions",
+      "expected_file": "uc-crew-rules-permissions.png",
+      "owner": "underground_city",
+      "group": "crew",
+      "description": "Rules page, permissions tab: what Manager and Member may do"
+    },
+    {
+      "id": "crew.rules_mode",
+      "expected_file": "uc-crew-rules-mode.png",
+      "owner": "underground_city",
+      "group": "crew",
+      "description": "Rules page, money mode tab: three modes, shared finances waiting for consent"
+    },
+    {
+      "id": "crew.rules_mode_active",
+      "expected_file": "uc-crew-rules-mode-active.png",
+      "owner": "underground_city",
+      "group": "crew",
+      "description": "Rules page, money mode tab with fully shared finances in force and the limit stated: Q Shop's own shop screens never use the bank"
+    },
+    {
+      "id": "crew.rules_disband",
+      "expected_file": "uc-crew-rules-disband.png",
+      "owner": "underground_city",
+      "group": "crew",
+      "description": "Rules page, Crew tab: rename and the typed-name disband confirmation"
     }
   ],
   "unintegrated_future_interfaces": [

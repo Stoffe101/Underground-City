@@ -31,6 +31,8 @@ public final class VisualCaptureHarness {
         static Case dialogue(String name,String pose) { return new Case(name,null,null,0,false,null,"dialogue-"+pose); }
         static Case ledger(String name) { return new Case(name,null,null,0,false,null,"ledger-board"); }
         static Case notices(String name) { return new Case(name,null,null,0,false,null,"notices-stack"); }
+        /** The Crew screen in one of its states (CrewCaptures). */
+        static Case crew(String name,String pose) { return new Case(name,null,null,0,false,null,"crew-"+pose); }
     }
     private static List<Case> cases;
     private static int current,frames;
@@ -46,6 +48,15 @@ public final class VisualCaptureHarness {
         new TerminalData.Offer("underground_city:machined_parts","underground_city:machined_parts",18,16,36,8),
         new TerminalData.Offer("underground_city:refined_alloy","underground_city:refined_alloy",28,14,30,8),
         new TerminalData.Offer("underground_city:security_fabric","underground_city:security_fabric",22,0,24,8));
+    /** The lines of a wayside provisions desk (D-091): a few basics, small stock, no city: the region stays empty and no orders are listed. */
+    private static final List<TerminalData.Offer> WAYSIDE_OFFERS=List.of(
+        new TerminalData.Offer("underground_city:survival/wayside_bread_ironhaven","minecraft:bread",7,8,12,4),
+        new TerminalData.Offer("underground_city:survival/wayside_water_ironhaven","minecraft:potion",6,0,12,4),
+        new TerminalData.Offer("underground_city:survival/wayside_waterskin_ironhaven","minecraft:leather",45,2,3,1),
+        new TerminalData.Offer("underground_city:survival/wayside_torch_ironhaven","minecraft:torch",2,12,16,8));
+    private static TerminalData waysideDesk(double balance) {
+        return new TerminalData("ironhaven","farmer",3,520,balance,true,null,0,"",List.of(),WAYSIDE_OFFERS,0,List.of(),List.of(),List.of(),0,"",List.of(),"wayside");
+    }
     private static TerminalData exchange(String region,double balance) {
         return new TerminalData("valewood","farmer",3,520,balance,true,null,region.isEmpty()?0:1,region,
             List.of(),region.isEmpty()?List.of():IRONHAVEN_OFFERS);
@@ -212,6 +223,7 @@ public final class VisualCaptureHarness {
         cases.add(new Case("uc-exchange-ironhaven",TerminalScreen.Page.IMPORTS,exchange("ironhaven",120),0));
         cases.add(new Case("uc-exchange-low-funds",TerminalScreen.Page.IMPORTS,exchange("ironhaven",20),0));
         cases.add(new Case("uc-imports-outside-city",TerminalScreen.Page.IMPORTS,exchange("",120),0));
+        cases.add(new Case("uc-exchange-wayside-desk",TerminalScreen.Page.IMPORTS,waysideDesk(120),0));
         cases.add(new Case("uc-contract-regional",TerminalScreen.Page.CONTRACTS,regionalContract(true,2,1),0));
         cases.add(new Case("uc-contract-visit-locked",TerminalScreen.Page.CONTRACTS,regionalContract(false,0,0),0));
         if(!QShopEconomy.available()) throw new IllegalStateException("Visual coverage requires installed Q Shop 1.8.4");
@@ -223,6 +235,9 @@ public final class VisualCaptureHarness {
         cases.add(Case.challenge("uc-challenge-urgent","urgent"));
         cases.add(Case.ledger("uc-ledger"));
         cases.add(Case.notices("uc-notices"));
+        for(String pose:new String[]{"nocrew","nocrew-invited","unregistered","unavailable","members","members-member","money","money-consent","money-shared","money-shared-nospend","home","rules-permissions","rules-mode","rules-mode-active","rules-disband"}) {
+            cases.add(Case.crew("uc-crew-"+pose,pose));
+        }
         cases.add(Case.dialogue("uc-dialogue-registrar","registrar"));
         cases.add(Case.dialogue("uc-dialogue-employer","employer"));
         cases.add(Case.dialogue("uc-dialogue-guard","guard"));
@@ -243,6 +258,8 @@ public final class VisualCaptureHarness {
                 case "register-career" -> RegistrationScreen.forCapture(1,1,-1,"");
                 default -> RegistrationScreen.forCapture(2,1,0,"");
             });
+        } else if(capture.challenge!=null && capture.challenge.startsWith("crew-")) {
+            mc.setScreen(CrewCaptures.screen(capture.challenge.substring("crew-".length())));
         } else if(capture.challenge!=null && capture.challenge.startsWith("notices-")) {
             // the corner notices over a terminal: an order taken, a delivery paid with a level-up, a search at a checkpoint and a rare find
             TerminalScreen screen=new TerminalScreen(BlockPos.ZERO,fixture(2,8,true,true));

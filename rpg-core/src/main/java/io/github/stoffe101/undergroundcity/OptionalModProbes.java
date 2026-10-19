@@ -146,6 +146,19 @@ final class OptionalModProbes {
         }
     }
 
+    /** The guns whose Gun Smith Table recipe builds a plain gun, with no attachment already fitted (what a contract that takes plain factory guns accepts). */
+    static java.util.Set<String> plainTableGuns(net.minecraft.world.level.Level level) {
+        java.util.Set<String> plain = new java.util.TreeSet<>();
+        for (net.minecraft.world.item.crafting.Recipe<?> recipe : level.getRecipeManager().getRecipes()) {
+            if (!String.valueOf(recipe.getType()).equals("tacz:gun_smith_table_crafting")) continue;
+            CompoundTag tag = recipe.getResultItem(level.registryAccess()).getTag();
+            if (tag == null || !tag.contains("GunId", net.minecraft.nbt.Tag.TAG_STRING)) continue;
+            boolean fitted = tag.getAllKeys().stream().anyMatch(key -> key.startsWith("Attachment") && !key.equals("AttachmentLock"));
+            if (!fitted) plain.add(tag.getString("GunId"));
+        }
+        return plain;
+    }
+
     /** Test seam: turns the addon's "gun table is open to everyone" switch (its {@code enableGunTable}) on or off and returns what it was; null when the addon is absent. */
     static Boolean setGunTableOpen(boolean open) {
         try {

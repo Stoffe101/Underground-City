@@ -111,11 +111,12 @@ public final class UcUi {
         return font.plainSubstrByWidth(text, Math.max(0, width - font.width("..."))) + "...";
     }
 
-    /** Greedy word wrap into lines no wider than {@code width} (a word longer than a line is broken). */
+    /** Greedy word wrap into lines no wider than {@code width} (a word longer than a line is broken). The product name "Q Shop" is never split across two lines ("Q" alone at a line's end looked like a typo). */
     public static List<String> wrapLines(Font font, String text, int width) {
         List<String> lines = new java.util.ArrayList<>();
         StringBuilder line = new StringBuilder();
-        for (String word : text.split(" ")) {
+        for (String token : text.replace("Q Shop", "Q\u0001Shop").split(" ")) {
+            String word = token.replace('\u0001', ' ');
             if (word.isEmpty()) continue;
             String candidate = line.length() == 0 ? word : line + " " + word;
             if (font.width(candidate) <= width) { line.setLength(0); line.append(candidate); continue; }

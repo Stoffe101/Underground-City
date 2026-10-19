@@ -385,6 +385,32 @@
    "glow": false
   },
   {
+   "op": "terminal",
+   "at": [
+    7,
+    0,
+    2
+   ],
+   "facing": "south"
+  },
+  {
+   "op": "sign",
+   "at": [
+    8,
+    2,
+    2
+   ],
+   "block": "minecraft:spruce_wall_sign[facing=south]",
+   "lines": [
+    "PROVISIONS",
+    "Supplies for",
+    "credits. Small",
+    "stock, shared"
+   ],
+   "color": "black",
+   "glow": false
+  },
+  {
    "op": "npc",
    "at": [
     6,
@@ -398,6 +424,7 @@
     "Water is free and the fire is never out. Rest, then move on: the road is safer between the posts than anywhere off it.",
     "Every post stops what its city's law says to stop, and not an ounce more. Read the law before you load the cart, not after.",
     "A bridge is the safe way over and a boat is the quiet one. Neither beats good boots and a clear head.",
+    "The desk by the post sells bread, water, torches and the odd flask, for credits. There is not much, and when it is gone it is gone until travellers have passed through again.",
     "I keep this shelter for whoever comes by. A fire is a fire, honest haulier or not.",
     "Heat fades while you keep to honest work. Walk the long road a few times and the guards stop looking twice."
    ]

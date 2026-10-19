@@ -165,6 +165,78 @@
     "qol"
    ],
    "notes": "Jade 11.13.3. CC BY-NC-SA 4.0. Client and server optional. Opt-in set 'qol': shows what a block or plant is and how grown it is; Core does not depend on it."
+  },
+  {
+   "id": "sophisticated_core",
+   "slug": "sophisticated-core",
+   "version_id": "YxgjJy68",
+   "mod_id": "sophisticatedcore",
+   "role": "library of the Sophisticated mods: the storage engine, the upgrade system and their configuration (required by Sophisticated Backpacks)",
+   "sets": [
+    "survival"
+   ],
+   "notes": "Sophisticated Core 1.20.1-1.5.12.2412 (2026-10-17, release). All Rights Reserved; private use of the author's own download only. Declared dependencies: Forge 47.1+, JEI optional (client). Contains an optional Create compatibility mixin plugin (CreateMixinConfigPlugin) that applies only when Create is installed; Create is NOT a dependency and is never installed here (D-080). Core's enabledItems config disables an item and its recipe by registry name."
+  },
+  {
+   "id": "sophisticated_backpacks",
+   "slug": "sophisticated-backpacks",
+   "version_id": "X7q2xTaV",
+   "mod_id": "sophisticatedbackpacks",
+   "role": "backpacks: a wearable or placeable pack with upgrade slots and tiered capacity (the survival set's one backpack provider, D-092)",
+   "sets": [
+    "survival"
+   ],
+   "requires": [
+    "sophisticated_core"
+   ],
+   "notes": "Sophisticated Backpacks 1.20.1-3.26.12.2206 (2026-10-13, release). All Rights Reserved; private use of the author's own download only, never committed or redistributed. Requires Sophisticated Core [1.5.8.+,) and Forge 47.1+; JEI, Curios, Chipped, Crafting Tweaks, Trash Slot and Item Borders are optional and not installed. Replaces Traveler's Backpack (owner direction, October 19, 2026). Server config tunes capacity, upgrades and nerfs (see docs/technical/backpack-economy.md)."
+  },
+  {
+   "id": "travelers_backpack",
+   "slug": "travelersbackpack",
+   "version_id": "wuJ2J0SL",
+   "mod_id": "travelersbackpack",
+   "role": "LEGACY (superseded by Sophisticated Backpacks, D-092): the old survival set's backpack, kept pinned only so that a world that already holds Traveler's Backpack items can be opened once, emptied and migrated (see docs/technical/backpack-migration.md). Never combined with Sophisticated Backpacks.",
+   "sets": [
+    "legacy_travelers"
+   ],
+   "notes": "Traveler's Backpack 1.20.1-9.1.57 (2026-08-29, release). LGPL-3.0-only. It was the survival set's backpack in the October 18 sprint (D-085) and is replaced by Sophisticated Backpacks by the owner's direction of October 19, 2026 (D-092). Opt-in set 'legacy_travelers' exists only for old-world migration; it is not part of 'survival' and must not be loaded together with Sophisticated Backpacks. One start in eight of a fresh server crashed in TravelersBackpackConfig$Server.loadItemsFromConfig (config reload race)."
+  },
+  {
+   "id": "thirst_was_taken_2",
+   "slug": "thirst-was-taken-2",
+   "version_id": "JwHArXPv",
+   "mod_id": "thirstwastaken2",
+   "role": "thirst, drinking, water purity, canteens and flasks (the survival set's one thirst provider)",
+   "sets": [
+    "survival",
+    "legacy_travelers"
+   ],
+   "notes": "Thirst Was Taken 2 1.9.0 (2026-10-15, release). GPL-3.0-only. Optional integrations only (AppleSkin, Jade, Farmer's Delight, and a Create hook that is NOT used: Create is excluded, D-080). Items include a waterskin, a copper canteen, iron, diamond and netherite flasks, a sand filter and a copper distiller. Chosen over the older Thirst Was Taken 1.4.0 (MIT, stale since mid-2025, five items; its canteen add-on is all rights reserved) and Tough As Nails (beta, all rights reserved, needs Glitchcore, bundles a harsh temperature model). Also in the legacy_travelers set so that a world saved with the October 18 survival set (D-085) can be opened once with exactly that set; see docs/technical/backpack-migration.md."
+  },
+  {
+   "id": "farmers_delight",
+   "slug": "farmers-delight",
+   "version_id": "SiIpcZzM",
+   "mod_id": "farmersdelight",
+   "role": "food variety, cooking pot, cutting board (the survival set's one kitchen)",
+   "sets": [
+    "survival",
+    "legacy_travelers"
+   ],
+   "notes": "Farmer's Delight 1.3.4 (2026-08-29, release). MIT; no mandatory dependency. Chosen as the kitchen so that the pack has one: it overlaps [Let's Do] Farm & Charm (stove, cooking pot, roaster), so the 'farming' set is not combined with it by default. Core's recipes and orders are unaffected. Also in the legacy_travelers set so that a world saved with the October 18 survival set (D-085) can be opened once with exactly that set; see docs/technical/backpack-migration.md."
+  },
+  {
+   "id": "comforts",
+   "slug": "comforts",
+   "version_id": "gBDsc134",
+   "mod_id": "comforts",
+   "role": "sleeping bags and hammocks that do not set a respawn point",
+   "sets": [
+    "survival",
+    "legacy_travelers"
+   ],
+   "notes": "Comforts 6.4.0+1.20.1 (2024-07-05, release). LGPL-3.0-or-later; no mandatory dependency. Matches D-079: resting is never an automatic change of respawn. Also in the legacy_travelers set so that a world saved with the October 18 survival set (D-085) can be opened once with exactly that set; see docs/technical/backpack-migration.md."
   }
  ],
  "external": [

@@ -26,11 +26,12 @@ public final class RegionalMarket {
 
     static void purchase(ServerPlayer player, BlockPos pos, WorkOrderLedger ledger, CitizenState.Citizen citizen,
                          String commodity, int quantity, UUID nonce) {
-        String city = CityRegions.INSTANCE.cityAt(player.level(), pos)
-            .orElseThrow(() -> new IllegalStateException("No regional exchange here. Use a terminal inside Ironhaven, Valewood or Blackwater."));
-        ledger.noteVisit(player.getUUID(), city);
+        Exchanges.Exchange exchange = Exchanges.at(player.level(), pos)
+            .orElseThrow(() -> new IllegalStateException("No exchange here. Use a terminal inside Ironhaven, Valewood or Blackwater, or at the provisions desk of a wayside shelter."));
+        String city = exchange.city();
+        if (!exchange.wayside()) ledger.noteVisit(player.getUUID(), city);   // only a terminal inside the city counts as a visit
         RegionalStock stock = RegionalCatalog.INSTANCE.find(commodity);
-        if (stock == null || !stock.city().equals(city)) {
+        if (stock == null || !stock.city().equals(city) || !stock.soldAt(exchange.outlet())) {
             throw new IllegalStateException("This exchange does not stock that item");
         }
         if (quantity < 1 || quantity > stock.maxOrder()) {
@@ -46,13 +47,42 @@ public final class RegionalMarket {
         after.add(bought);
         if (!bought.isEmpty()) throw new IllegalStateException("Not enough inventory space for that order");
         long cost = Math.multiplyExact((long) quantity, (long) unitPrice(stock, citizen));
+        // Holds left behind by an interrupted purchase are decided first, so the bank shows what it really has.
+        CrewService.resolveHolds(player.server, ledger);
+        // Everything that can refuse the purchase is decided BEFORE a single credit moves: the bank's share is only planned here, and the buyer's own
+        // wallet must cover the rest. A refusal therefore leaves the wallet, the bank, the stock and the inventory exactly as they were.
+        CrewLedger.Share share = CrewService.planPurchase(player, cost);
+        long personal = cost - share.credits();
         double balance = QShopEconomy.balance(player);
-        if (balance < cost) throw new IllegalStateException("This order costs " + cost + " credits");
-        ledger.preparePurchase(player.getUUID(), nonce, stock, quantity, after.save(new ListTag()), balance - cost, citizen.careerXp());
+        if (balance < personal) {
+            throw new IllegalStateException(shortfall(cost, share, personal, balance));
+        }
+        UUID hold = share.credits() > 0 ? CrewService.reservePurchase(player, nonce, share.credits(),
+            quantity + " x " + stock.registryItem().getDescription().getString()) : null;
+        try {
+            CrewService.checkpoint("purchase_after_reserve");
+            ledger.preparePurchase(player.getUUID(), nonce, stock, quantity, after.save(new ListTag()), balance - personal, citizen.careerXp(), hold, share.credits());
+        } catch (RuntimeException error) {
+            // The journal decides: a hold that no prepared record names goes back to the bank; if the journal's own write was uncertain the hold stays
+            // untouched for the next start. Never a blind refund.
+            if (hold != null) CrewService.resolveHolds(player.server, ledger);
+            throw error;
+        }
+        CrewService.checkpoint("purchase_after_prepare");
         WorkOrderService.recover(player, ledger);
         CitizenState.get(player.server).markJourney(player.getUUID(), "bought");
         player.sendSystemMessage(Component.literal("Bought " + quantity + " x " + stock.registryItem().getDescription().getString()
-            + " from the " + city + " exchange for " + cost + " credits."));
+            + " from the " + city + (exchange.wayside() ? " wayside desk" : " exchange") + " for " + cost + " credits"
+            + (share.credits() > 0 ? " (" + share.credits() + " from the Crew bank, " + personal + " from your wallet)." : ".")));
+    }
+
+    /** The refusal text when the buyer's own wallet cannot cover its part: it says what the bank would have paid and why it cannot help, if it cannot. */
+    static String shortfall(long cost, CrewLedger.Share share, long personal, double balance) {
+        StringBuilder text = new StringBuilder("This order costs ").append(cost).append(" credits");
+        if (share.credits() > 0) text.append(": the Crew bank would pay ").append(share.credits()).append(" and your wallet the other ").append(personal);
+        text.append(". You have ").append((long) Math.floor(balance)).append(" in your wallet.");
+        if (!share.reason().isEmpty()) text.append(' ').append(share.reason());
+        return text.toString();
     }
 
     /** The list price less the citizen's exchange discount from utility skills (at most 10%), never below 1 credit. */
@@ -62,9 +92,12 @@ public final class RegionalMarket {
     }
 
     /** Offers visible at a terminal, priced for this citizen. Empty outside every city region. */
-    static List<TerminalData.Offer> offers(WorkOrderLedger ledger, String city, CitizenState.Citizen citizen) {
+    static List<TerminalData.Offer> offers(WorkOrderLedger ledger, String city, CitizenState.Citizen citizen) { return offers(ledger, city, RegionalStock.CITY, citizen); }
+
+    /** Offers of one outlet of a city (its exchange or the provisions desks of its wayside shelters). */
+    static List<TerminalData.Offer> offers(WorkOrderLedger ledger, String city, String outlet, CitizenState.Citizen citizen) {
         if (city == null || city.isEmpty()) return List.of();
-        return RegionalCatalog.INSTANCE.forCity(city).stream().map(stock -> new TerminalData.Offer(stock.id(),
+        return RegionalCatalog.INSTANCE.forOutlet(city, outlet).stream().map(stock -> new TerminalData.Offer(stock.id(),
             stock.item().toString(), unitPrice(stock, citizen), ledger.regionalUnits(stock), stock.capacity(), stock.maxOrder())).toList();
     }
 }

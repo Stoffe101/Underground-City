@@ -26,13 +26,15 @@ java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 // GitHub release), are SHA-512/SHA-256 verified against content/modpacks/dev-pack.json, and are never committed.
 // ---------------------------------------------------------------------------------------------------------------
 def harnessFlags = ['ucPack', 'ucEconomyTest', 'ucScreeningMod', 'ucWorldCandidate', 'ucWorldTour', 'ucJourneyClient',
-                    'ucVisualCapture', 'ucWorldSurvey', 'ucSeedScan', 'ucJourneyPhase', 'ucPerfProbe']
+                    'ucVisualCapture', 'ucWorldSurvey', 'ucSeedScan', 'ucJourneyPhase', 'ucJourneyScenario', 'ucJourneySurvival', 'ucJourneyWorld', 'ucPerfProbe', 'ucStallProbe']
 def requestedTasks = gradle.startParameter.taskNames.collect { it.tokenize(':').last() }
 def userLaunch = requestedTasks.any { it in ['runClient', 'runServer'] } &&
         !harnessFlags.any { providers.gradleProperty(it).isPresent() }
 def explicitPack = providers.gradleProperty('ucPack').orNull
+// -PucExtraSets=survival (or vintner,farming,qol) adds opt-in sets to the complete development pack without leaving the developer launch (the dev world and the bootstrap stay on)
+def extraSets = providers.gradleProperty('ucExtraSets').orElse('').get().trim()
 def packSelection = explicitPack != null ? (explicitPack == 'none' ? '' : explicitPack)
-        : (userLaunch ? 'world,firearms,vehicles,boats' : '')
+        : (userLaunch ? 'world,firearms,vehicles,boats' + (extraSets.isEmpty() ? '' : ',' + extraSets) : '')
 def devPackSets = packSelection.split(',').collect { it.trim() }.findAll { !it.isEmpty() }
 def devWorldWanted = userLaunch || providers.gradleProperty('ucDevWorld').orNull == 'true'
 def autoWorld = devWorldWanted && providers.gradleProperty('ucAutoWorld').orNull != 'false' && !providers.gradleProperty('ucPlaytest').isPresent()
@@ -53,7 +55,7 @@ if (!devPackSets.isEmpty()) {
         chosen[id] = mod
     }
     manifest.mods.findAll { mod -> mod.sets.any { devPackSets.contains(it) } }.each { include(it.id) }
-    if (chosen.isEmpty()) throw new GradleException('No dev-pack mods in sets ' + devPackSets + ' (known sets: world, firearms, vehicles, boats)')
+    if (chosen.isEmpty()) throw new GradleException('No dev-pack mods in sets ' + devPackSets + ' (known sets: world, firearms, vehicles, boats, vintner, farming, qol, survival, legacy_travelers)')
     devPackMods = chosen.values().toList()
 }
 
@@ -110,6 +112,13 @@ minecraft {
             if (providers.gradleProperty('ucJourneyClient').isPresent()) {
                 jvmArgs '-Duc.journey.client=true', "-Xmx${providers.gradleProperty('ucClientHeap').orElse('1G').get()}", '-XX:ActiveProcessorCount=2'
                 args '--username', providers.gradleProperty('ucJourneyClient').get(), '--width', '1920', '--height', '1080'
+                if (providers.gradleProperty('ucJourneyScenario').isPresent()) {
+                    // a named journey scenario (CrewJourneyActions for "crew") needs to know its phase as well
+                    jvmArgs "-Duc.journey.scenario=${providers.gradleProperty('ucJourneyScenario').get()}"
+                    if (providers.gradleProperty('ucJourneyPhase').isPresent()) jvmArgs "-Duc.journey.phase=${providers.gradleProperty('ucJourneyPhase').get()}"
+                }
+                // the combined journey's client half (SurvivalJourneyActions): the Smith buys, wears and opens a backpack on the real screens, with screenshots at three window sizes
+                if (providers.gradleProperty('ucJourneySurvival').isPresent()) jvmArgs '-Duc.journey.survival=true'
             }
             if (providers.gradleProperty('ucVisualCapture').orNull == 'true') {
                 def scale = providers.gradleProperty('ucVisualScale').orElse('3').get()
@@ -129,6 +138,13 @@ minecraft {
                 // a dedicated server that measures the cost of a tick with and without Founders Row (PerfProbe.java), then stops
                 jvmArgs '-Duc.perfProbe=true', '-Xmx2G'
             }
+            if (providers.gradleProperty('ucStallProbe').orNull == 'true') {
+                // reproduces and measures the long server ticks after bulk chunk generation on a Lost Cities world (StallProbe.java); -PucStallRadius=8 -PucStallMode=bulk|paced -PucStallCenter=0,0 -PucStallSettle=1200
+                jvmArgs '-Duc.stallProbe=true', "-Xmx${providers.gradleProperty('ucServerHeap').orElse('3G').get()}"
+                project.properties.each { name, value ->
+                    if (name.startsWith('ucStall') && name.length() > 8 && name != 'ucStallProbe') jvmArgs "-Duc.stallProbe.${name.substring(7).toLowerCase()}=${value}"
+                }
+            }
             if (providers.gradleProperty('ucWorldSurvey').orNull == 'true') {
                 jvmArgs '-Duc.worldSurvey=true', '-XX:ActiveProcessorCount=2'
             }
@@ -136,8 +152,14 @@ minecraft {
                 jvmArgs "-Duc.seedScan=${providers.gradleProperty('ucSeedScan').get()}", '-XX:ActiveProcessorCount=2'
             }
             if (providers.gradleProperty('ucJourneyPhase').isPresent()) {
-                jvmArgs "-Duc.journey.phase=${providers.gradleProperty('ucJourneyPhase').get()}", "-Xmx${providers.gradleProperty('ucClientHeap').orElse('1G').get()}", '-XX:ActiveProcessorCount=2'
+                jvmArgs "-Duc.journey.phase=${providers.gradleProperty('ucJourneyPhase').get()}", "-Xmx${providers.gradleProperty('ucServerHeap').orElse(providers.gradleProperty('ucClientHeap').orElse('1G').get()).get()}", '-XX:ActiveProcessorCount=2'
             }
+            if (providers.gradleProperty('ucJourneyScenario').isPresent()) {
+                jvmArgs "-Duc.journey.scenario=${providers.gradleProperty('ucJourneyScenario').get()}"
+            }
+            // the combined journey (D-091): survival goods, the wayside shelter and the interrupted purchase, optionally on a generated Lost Cities world instead of the flat fixture
+            if (providers.gradleProperty('ucJourneySurvival').isPresent()) jvmArgs '-Duc.journey.survival=true'
+            if (providers.gradleProperty('ucJourneyWorld').isPresent()) jvmArgs "-Duc.journey.world=${providers.gradleProperty('ucJourneyWorld').get()}"
         }
         gameTestServer {
             property 'forge.enabledGameTestNamespaces', mod_id
@@ -282,6 +304,16 @@ def prepareDevRun = tasks.register('prepareDevRun') {
             ant.zip(destfile: worldJar, basedir: pack, whenempty: 'fail', level: 9)
             wanted << worldJar.name
             fileTree(runConfig).visit { entry ->
+                if (entry.isDirectory()) return
+                def target = new File(runDir, entry.relativePath.pathString)
+                if (!target.exists()) { target.parentFile.mkdirs(); entry.file.withInputStream { input -> target.withOutputStream { it << input } } }
+            }
+        }
+        if (devPackSets.contains('survival')) {
+            // Sophisticated Backpacks' policy (D-092): server defaults for a NEW world and the Core item switches. Existing files are never overwritten.
+            def survivalConfig = file('../content/generated/survival-config')
+            if (!survivalConfig.isDirectory()) throw new GradleException('content/generated/survival-config is missing; run python scripts/generate_backpack_config.py')
+            fileTree(survivalConfig).visit { entry ->
                 if (entry.isDirectory()) return
                 def target = new File(runDir, entry.relativePath.pathString)
                 if (!target.exists()) { target.parentFile.mkdirs(); entry.file.withInputStream { input -> target.withOutputStream { it << input } } }

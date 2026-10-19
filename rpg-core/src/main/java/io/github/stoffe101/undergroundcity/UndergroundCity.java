@@ -107,6 +107,7 @@ public final class UndergroundCity {
         ITEMS.register(context.getModEventBus());
         context.getModEventBus().addListener(this::addCreativeTab);
         TerminalNetwork.register();
+        CrewNetwork.register();
         MinecraftForge.EVENT_BUS.register(this);
         MinecraftForge.EVENT_BUS.register(new WorkOrderService());
         MinecraftForge.EVENT_BUS.register(new SupplierNpc());
@@ -119,6 +120,15 @@ public final class UndergroundCity {
         MinecraftForge.EVENT_BUS.register(new DevBootstrap());
         MinecraftForge.EVENT_BUS.register(new CheckpointService());
         MinecraftForge.EVENT_BUS.register(new SecureTerminalService());
+        MinecraftForge.EVENT_BUS.register(new CrewService());
+        MinecraftForge.EVENT_BUS.register(new CrewCommands());
+        MinecraftForge.EVENT_BUS.register(new IdentityAudit());
+        MinecraftForge.EVENT_BUS.register(new ResidenceGuard());
+        MinecraftForge.EVENT_BUS.register(new BackpackPolicy());
+        // the world's rule about hostile creatures (D-094): SIMULATION unless an operator chooses CLASSIC; the default lives in code, so no file has to exist
+        net.minecraftforge.fml.ModLoadingContext.get().registerConfig(net.minecraftforge.fml.config.ModConfig.Type.SERVER, SimulationWorld.SPEC, "underground_city-server.toml");
+        context.getModEventBus().addListener(SimulationWorld::reloaded);
+        MinecraftForge.EVENT_BUS.register(new SimulationWorld());
         RangeService.register();
     }
 

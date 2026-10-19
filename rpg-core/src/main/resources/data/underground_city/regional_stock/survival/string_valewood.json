@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "city": "valewood",
+  "item": "minecraft:string",
+  "unit_price": 3,
+  "initial": 32,
+  "capacity": 48,
+  "units_per_interval": 4,
+  "interval_ticks": 14400,
+  "max_order": 16,
+  "outlets": [
+    "city"
+  ]
+}

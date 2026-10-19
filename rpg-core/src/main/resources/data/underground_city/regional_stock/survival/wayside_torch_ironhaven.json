@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "city": "ironhaven",
+  "item": "minecraft:torch",
+  "unit_price": 2,
+  "initial": 12,
+  "capacity": 16,
+  "units_per_interval": 2,
+  "interval_ticks": 7200,
+  "max_order": 8,
+  "outlets": [
+    "wayside"
+  ]
+}

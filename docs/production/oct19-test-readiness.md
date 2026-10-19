@@ -60,7 +60,7 @@ Windows runtime and full power-loss/process-kill recovery with connected clients
 
 ## Still incomplete
 
-Roads exist on all three edges of the triangle in a fresh seed-5908 world (the earlier line layout and seed 579 are superseded) but have no gate houses or patrols (October 18: every road now has waymarker signs, D-078, and wayside shelters with a road warden, D-079). No populated district, regional suppliers, advanced Create/TaCZ items/recipes, skill trees, city treasuries/taxes, police/factions, burglary/refill containers, imported shipments, crash recovery, black-market escrow/dropboxes or raid locations. The corresponding Python models remain design simulations. The original twelve Gunsmith starter orders use archery/range equipment; the sprint's TaCZ contracts name real guns but only run when TaCZ is installed. The clerk is one NPC prototype with no automatic death/replacement recovery; provide a safe room and backup the save.
+Roads exist on all three edges of the triangle in a fresh seed-5908 world (the earlier line layout and seed 579 are superseded) but have no gate houses or patrols (October 18: every road now has waymarker signs, D-078, and wayside shelters with a road warden, D-079). No populated district, regional suppliers, advanced TaCZ items/recipes (Create is excluded, D-080), skill trees, city treasuries/taxes, police/factions, burglary/refill containers, imported shipments, crash recovery, black-market escrow/dropboxes or raid locations. The corresponding Python models remain design simulations. The original twelve Gunsmith starter orders use archery/range equipment; the sprint's TaCZ contracts name real guns but only run when TaCZ is installed. The clerk is one NPC prototype with no automatic death/replacement recovery; provide a safe room and backup the save.
 
 Q Shop editor/search/item-picker states and uninstalled onboarding/FTB/TaCZ/NPC dialogue/safe/faction interfaces remain outside the current capture manifest. Small-window/long-localization and controller/accessibility interaction coverage needs expansion.
 
@@ -96,3 +96,8 @@ Full report: [sprint-2026-10-15.md](sprint-2026-10-15.md). This section lists on
 | Real-client UI captures | 33 surfaces at 1920x1080 GUI 3 and 3440x1440 GUI 2, viewed in three rounds; defects found and fixed (clipped skill labels, overflowing detail text, an invisible selected filter, a smudged trace digit) |
 
 Not tested: the Technician's trace through a real click path, any vehicle on the roads, any gun fired, a human walking the triangle, 30 minutes of two-player play, Windows, abrupt process kill with clients connected.
+
+## Added October 18: Crews and homes
+
+Scripted evidence only: a two-client journey (Crew founded, invited, accepted, money moved, a home leased from the bank, the dedicated server halted without a stop sequence mid-transfer and restarted, both clients reconnected to the same state), 103 GameTests in five pack configurations, and frames viewed at 1080p and 720p. For the human session use the [Windows 11 playtest guide](playtest-guide-windows11.md): it carries the 14-step Crew test, the known limits and the bug-report checklist. Not tested: a person, Windows, two real clients on the full pack (the journey world is flat and Core-only), an external process kill.
+
