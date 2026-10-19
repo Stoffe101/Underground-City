@@ -17,7 +17,7 @@ import java.util.List;
 public final class BootSmokeHarness {
     private static final boolean ENABLED = Boolean.getBoolean("uc.bootSmoke");
     private static final List<String> MODS = List.of("underground_city", "qshop", "lostcities", "tacz", "taczblueprints", "modernlife", "mts", "mtsofficialpack", "oamp",
-        "architectury", "vinery", "farm_and_charm", "kaleidoscope_tavern");
+        "architectury", "vinery", "farm_and_charm", "kaleidoscope_tavern", "sophisticatedbackpacks", "sophisticatedcore", "thirstwastaken2", "farmersdelight", "comforts", "travelersbackpack");
 
     private BootSmokeHarness() {}
 
@@ -54,6 +54,34 @@ public final class BootSmokeHarness {
             List<String> problems = OptionalModProbes.boatCargoRoundTrip(server.overworld());
             System.out.println("[UC-BOOT] boat_cargo=" + (problems.isEmpty() ? "ok" : "FAILED " + problems));
         }
+        // D-096 on the real jars (Searge names): a walking creature asking for a path into a chunk nobody loaded gets "no path" at once and the chunk stays unloaded. This is the only check that
+        // proves the navigation mixin applies in a production server, where the method has its Searge name.
+        {
+            net.minecraft.server.level.ServerLevel level = server.overworld();
+            net.minecraft.core.BlockPos far = new net.minecraft.core.BlockPos(7_000_016, 80, 7_000_016);
+            net.minecraft.world.level.ChunkPos farChunk = new net.minecraft.world.level.ChunkPos(far);
+            String navigation;
+            if (level.getChunkSource().getChunkNow(farChunk.x, farChunk.z) != null) {
+                navigation = "FAILED the far chunk was already loaded";
+            } else {
+                net.minecraft.world.entity.npc.Villager villager = net.minecraft.world.entity.EntityType.VILLAGER.create(level);
+                long began = System.nanoTime();
+                var path = villager.getNavigation().createPath(far, 1);
+                long millis = (System.nanoTime() - began) / 1_000_000;
+                boolean unloaded = level.getChunkSource().getChunkNow(farChunk.x, farChunk.z) == null;
+                navigation = path == null && unloaded && millis < 250 ? "ok" : "FAILED path=" + path + " chunkStillUnloaded=" + unloaded + " ms=" + millis;
+            }
+            System.out.println("[UC-BOOT] nav_unloaded_chunk=" + navigation);
+        }
+        // D-092/D-094/D-095 on the real jars: the world's rule about hostile creatures, the running backpack configuration against its policy, and a route for every drop a recipe needs
+        System.out.println("[UC-BOOT] simulation=" + SimulationWorld.profile());
+        if (SurvivalSet.backpacksLoaded()) {
+            List<String> drift = BackpackPolicy.audit(BackpackPolicy.load());
+            System.out.println("[UC-BOOT] backpack_policy=" + (drift.isEmpty() ? "ok" : "DRIFT " + drift));
+        }
+        var catalogue = MonsterDependencies.catalogue();
+        var unrouted = MonsterDependencies.unrouted(MonsterDependencies.rootsNeeded(server.overworld(), MonsterDependencies.allRoots(catalogue)), catalogue);
+        System.out.println("[UC-BOOT] monster_routes=" + (unrouted.isEmpty() ? "ok" : "UNROUTED " + unrouted));
         System.out.println("[UC-BOOT] done");
         server.halt(false);
     }

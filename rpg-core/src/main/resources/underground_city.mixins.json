@@ -6,7 +6,8 @@
   "mixins": [
     "GunSmithTableMenuMixin",
     "InventoryInteractionHelperMixin",
-    "FeedingUpgradeWrapperMixin"
+    "FeedingUpgradeWrapperMixin",
+    "GroundPathNavigationMixin"
   ],
   "injectors": {
     "defaultRequire": 0

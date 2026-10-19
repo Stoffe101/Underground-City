@@ -84,9 +84,30 @@ def stage_mods(server: Path, sets: list[str], core_jar: Path) -> list[str]:
     if "world" in sets:
         subprocess.run([sys.executable, str(ROOT / "scripts/build_world_prototype.py"), "--output", str(mods / "underground-city-world-prototype.jar")], check=True)
         staged.append("underground-city-world-prototype.jar")
+    if "world" in sets:
+        stage_world_config(server)
     if "survival" in sets:
         stage_survival_config(server)
     return staged
+
+
+def stage_world_config(server: Path) -> list[str]:
+    """Copy the Lost Cities profile selection and server defaults of the world set (``content/generated/world-prototype/game-config``) into a server folder, only where a file is absent.
+
+    A production-style server needs them as much as the development launch does: the profile (three cities, ``uc_three_city``) and the server default ``forceSaplingGrowth = false`` that
+    keeps a long tick away (D-096). An existing world keeps the configuration it was created with.
+    """
+    source = ROOT / "content/generated/world-prototype/game-config"
+    if not source.is_dir():
+        raise SystemExit("content/generated/world-prototype/game-config is missing; run python scripts/emit_dev_world_pack.py")
+    copied = []
+    for path in sorted(p for p in source.rglob("*") if p.is_file()):
+        target = server / path.relative_to(source)
+        if not target.exists():
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(path, target)
+            copied.append(str(path.relative_to(source)))
+    return copied
 
 
 def stage_survival_config(server: Path) -> list[str]:
@@ -135,7 +156,8 @@ def evaluate(lines: list[str], sets: list[str]) -> tuple[dict, list[str]]:
         if "Failed to start the minecraft server" in line or "Exception caught during firing event" in line:
             problems.append("mod loading error: " + line.strip()[:160])
             break
-    need = {"firearms": ["tacz", "taczblueprints"], "vehicles": ["mts", "mtsofficialpack", "oamp"], "boats": ["modernlife"], "world": ["lostcities"]}
+    need = {"firearms": ["tacz", "taczblueprints"], "vehicles": ["mts", "mtsofficialpack", "oamp"], "boats": ["modernlife"], "world": ["lostcities"],
+            "survival": ["sophisticatedbackpacks", "sophisticatedcore", "thirstwastaken2", "farmersdelight", "comforts"], "vintner": ["vinery", "kaleidoscope_tavern"], "farming": ["farm_and_charm"]}
     for name in sets:
         for mod_id in need.get(name, []):
             if facts.get(f"mod {mod_id}") != "True" and facts.get(f"mod {mod_id}") != "true":
@@ -143,6 +165,23 @@ def evaluate(lines: list[str], sets: list[str]) -> tuple[dict, list[str]]:
     for mod_id in ("underground_city", "qshop"):
         if facts.get(f"mod {mod_id}", "").lower() != "true":
             problems.append(f"mod {mod_id} did not load")
+    # D-092: one backpack authority, and the retired provider is never loaded
+    if facts.get("mod travelersbackpack", "false").lower() == "true" and "legacy_travelers" not in sets:
+        problems.append("Traveler's Backpack is loaded although the legacy_travelers set was not chosen")
+    if "survival" in sets and "legacy_travelers" in sets:
+        problems.append("the survival set and the legacy_travelers set must never be loaded together (two backpack authorities)")
+    # D-094: the world is a simulation unless an operator chose otherwise; D-092/D-095: the backpack configuration is the policy and every drop has a route
+    if facts.get("simulation") != "SIMULATION":
+        problems.append("the world's hostile-creature rule is " + facts.get("simulation", "unreported") + ", not SIMULATION")
+    if "survival" in sets and facts.get("backpack_policy") != "ok":
+        problems.append("the running backpack configuration differs from the policy: " + facts.get("backpack_policy", "not reported"))
+    # D-096: the navigation mixin applies under the production (Searge) names
+    if not facts.get("nav_unloaded_chunk", "").startswith("ok"):
+        problems.append("a walking creature's path request waited for (or loaded) an unloaded chunk: " + facts.get("nav_unloaded_chunk", "not reported"))
+    if facts.get("monster_routes") != "ok":
+        problems.append("a recipe needs a hostile drop that has no route: " + facts.get("monster_routes", "not reported"))
+    if not any("[UC-SIMULATION] hostile creatures: SIMULATION" in line for line in lines):
+        problems.append("the server log carries no [UC-SIMULATION] profile line")
     if "vehicles" in sets:
         # Immersive Vehicles registers each content-pack vehicle and part as an mts:<pack>.<name> item.
         for pack_name in ("mtsofficialpack", "oamp"):

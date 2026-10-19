@@ -26,7 +26,7 @@ java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 // GitHub release), are SHA-512/SHA-256 verified against content/modpacks/dev-pack.json, and are never committed.
 // ---------------------------------------------------------------------------------------------------------------
 def harnessFlags = ['ucPack', 'ucEconomyTest', 'ucScreeningMod', 'ucWorldCandidate', 'ucWorldTour', 'ucJourneyClient',
-                    'ucVisualCapture', 'ucWorldSurvey', 'ucSeedScan', 'ucJourneyPhase', 'ucJourneyScenario', 'ucJourneySurvival', 'ucJourneyWorld', 'ucPerfProbe']
+                    'ucVisualCapture', 'ucWorldSurvey', 'ucSeedScan', 'ucJourneyPhase', 'ucJourneyScenario', 'ucJourneySurvival', 'ucJourneyWorld', 'ucPerfProbe', 'ucStallProbe']
 def requestedTasks = gradle.startParameter.taskNames.collect { it.tokenize(':').last() }
 def userLaunch = requestedTasks.any { it in ['runClient', 'runServer'] } &&
         !harnessFlags.any { providers.gradleProperty(it).isPresent() }
@@ -117,6 +117,8 @@ minecraft {
                     jvmArgs "-Duc.journey.scenario=${providers.gradleProperty('ucJourneyScenario').get()}"
                     if (providers.gradleProperty('ucJourneyPhase').isPresent()) jvmArgs "-Duc.journey.phase=${providers.gradleProperty('ucJourneyPhase').get()}"
                 }
+                // the combined journey's client half (SurvivalJourneyActions): the Smith buys, wears and opens a backpack on the real screens, with screenshots at three window sizes
+                if (providers.gradleProperty('ucJourneySurvival').isPresent()) jvmArgs '-Duc.journey.survival=true'
             }
             if (providers.gradleProperty('ucVisualCapture').orNull == 'true') {
                 def scale = providers.gradleProperty('ucVisualScale').orElse('3').get()
@@ -135,6 +137,13 @@ minecraft {
             if (providers.gradleProperty('ucPerfProbe').orNull == 'true') {
                 // a dedicated server that measures the cost of a tick with and without Founders Row (PerfProbe.java), then stops
                 jvmArgs '-Duc.perfProbe=true', '-Xmx2G'
+            }
+            if (providers.gradleProperty('ucStallProbe').orNull == 'true') {
+                // reproduces and measures the long server ticks after bulk chunk generation on a Lost Cities world (StallProbe.java); -PucStallRadius=8 -PucStallMode=bulk|paced -PucStallCenter=0,0 -PucStallSettle=1200
+                jvmArgs '-Duc.stallProbe=true', "-Xmx${providers.gradleProperty('ucServerHeap').orElse('3G').get()}"
+                project.properties.each { name, value ->
+                    if (name.startsWith('ucStall') && name.length() > 8 && name != 'ucStallProbe') jvmArgs "-Duc.stallProbe.${name.substring(7).toLowerCase()}=${value}"
+                }
             }
             if (providers.gradleProperty('ucWorldSurvey').orNull == 'true') {
                 jvmArgs '-Duc.worldSurvey=true', '-XX:ActiveProcessorCount=2'

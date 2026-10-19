@@ -20,7 +20,11 @@ for name in REQUIRED:
         issues.append("Required file missing: " + name)
 
 link_pattern = re.compile(r"(?<!!)\[[^\]]+\]\(([^)]+)\)")
+IGNORED_FOLDERS = {"build", ".gradle", "node_modules", ".git"}   # generated or disposable copies (journey and probe runs copy the module with its README)
 for document in ROOT.rglob("*.md"):
+    relative_parts = document.relative_to(ROOT).parts
+    if IGNORED_FOLDERS & set(relative_parts) or any(part.startswith("run-") for part in relative_parts):
+        continue
     for raw in link_pattern.findall(document.read_text(encoding="utf-8")):
         target = raw.split()[0].strip("<>")
         if target.startswith(("#", "mailto:")):

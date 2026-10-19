@@ -41,7 +41,9 @@ def config_files(data: dict) -> dict[str, str]:
     return {
         "config/lostcities/profiles/uc_three_city.json": json.dumps(profile(data), indent=2)+"\n",
         "config/lostcities/common.toml": '[profiles]\ndimensionsWithProfiles = ["minecraft:overworld=uc_three_city", "lostcities:lostcity=biosphere", "lostworlds:abyss=biosphere_caves"]\n',
-        "defaultconfigs/lostcities-server.toml": '[profiles]\nselectedProfile = "uc_three_city"\nselectedCustomJson = ""\n',
+        # forceSaplingGrowth = false: the mod's default (true) queues every city sapling as a server-thread task that blocks on neighbouring chunks (docs/technical/lost-cities-stalls.md, D-096);
+        # it only changes how many city trees stand at generation, and a new world only (an existing world keeps world/serverconfig/lostcities-server.toml)
+        "defaultconfigs/lostcities-server.toml": '[profiles]\nselectedProfile = "uc_three_city"\nselectedCustomJson = ""\nforceSaplingGrowth = false\n',
     }
 
 
