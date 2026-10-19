@@ -56,6 +56,12 @@ def prepare() -> list[tuple[Path,str]]:
         if 'survival' in os.environ.get('UC_JOURNEY_PACK','').split(','):
             # the generated Sophisticated Backpacks policy (server settings and item switches, D-092) is staged by prepareDevRun from here
             shutil.copytree(ROOT/'content/generated/survival-config',module.parent/'content/generated/survival-config')
+        # Forge's early loading window gives up ("Timed out trying to setup the Game Window") when it cannot get a GL context in time, and the JVM then stays up behind an error dialog. It happened
+        # to the second client of the every-set job on a loaded hosted runner and cost the 15-minute phase limit. The window is only the loading splash, so the journey clients start without it
+        # (the same setting the world tour uses); Minecraft opens its own window as usual and the real screens are unaffected.
+        config=module/f'run-journey-client-{role}'/'config'
+        config.mkdir(parents=True,exist_ok=True)
+        (config/'fml.toml').write_text('earlyWindowControl = false\n')
         clients.append((module,role))
     return clients
 
@@ -149,6 +155,8 @@ def phase(number: int, clients: list[tuple[Path,str]]) -> dict:
             if marker.exists(): break
             if any(process.poll() is not None for process,_ in processes):
                 raise RuntimeError('A journey process exited before successful assertions; inspect logs')
+            dead=client_that_died_starting(number)
+            if dead: raise RuntimeError(f'The {dead} client could not open its window and is waiting behind an error dialog; inspect build/cloud-journey/logs/{dead}-phase{number}.log')
             time.sleep(2)
         else: raise TimeoutError('Two-client gameplay timed out; inspect logs')
         abrupt=SCENARIO=='crew' and number==1  # the Crew journey ends its first phase by halting the server JVM with no stop sequence
@@ -177,6 +185,18 @@ def phase(number: int, clients: list[tuple[Path,str]]) -> dict:
                 try: process.wait(timeout=20)
                 except subprocess.TimeoutExpired: process.kill()
             stream.close()
+
+
+# Forge's early display prints "We died but didn't somehow?" with a stack trace each time one OpenGL version fails and then tries the next, so that line alone is not an error. It gives up with
+# "Timed out trying to setup the Game Window" and an error dialog, and the JVM then stays up, so the runner would wait out its whole limit for a client that can never join.
+WINDOW_FAILURE = 'Timed out trying to setup the Game Window'
+
+
+def client_that_died_starting(number: int) -> str | None:
+    for role in ('farmer','smith'):
+        log=OUTPUT/'logs'/f'{role}-phase{number}.log'
+        if log.exists() and WINDOW_FAILURE in log.read_text(errors='replace'): return role
+    return None
 
 
 def login_report(number: int) -> dict:
