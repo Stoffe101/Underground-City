@@ -38,3 +38,14 @@ A requirement is then one of: fine; **DEAD END** (nothing makes it); **LUCK ONLY
 * It reads level as "career level at which the order opens", not the player's actual route; a player who skips an order still needs the reward's order done once.
 * TaCZ's own gun recipes are not read: TaCZ crafts guns from vanilla materials (iron, copper, gunpowder in the Gunsmith's kit), so the only gate Core adds is the blueprint. A Core-owned TaCZ gun pack with component costs (research in the sprint report) is not built.
 * Recipes in other mods are not read; an ingredient from another mod is treated as not obtainable unless Core data supplies it, so the audit errs toward reporting.
+
+## Monster drops (D-095, added October 19, 2026)
+
+The simulation world ([simulation-world.md](simulation-world.md)) has no hostile creatures, so a recipe that needs a creature's drop is a dead end unless something else supplies it. The same script now reads the **catalogue of monster-drop roots** (`progression/monster_resources.json`: gunpowder, string, slime balls, ender pearls, blaze rods and powder, magma cream, spider eyes, bones and the drops nothing needs) and reports two more findings:
+
+| Finding | Meaning |
+| --- | --- |
+| **MONSTER ONLY** | a work order's item, a Core recipe's ingredient or a backpack item needs a root that has no route (no exchange line, no replacement recipe) |
+| **BROKEN ROUTE** | a route names an exchange line that does not exist, sells another item, is not a small finite shelf, or a derived root (blaze powder from rods, magma cream) whose source has no route |
+
+`tests/test_item_sources.py` (`MonsterDrops`) copies the data, breaks one route at a time and shows that each finding fires. The audit above cannot see recipes of other mods; the Forge GameTest `ProgressionAuditGameTests` and the jar scan `scripts/scan_pack_for_monster_drops.py` do, and are described in [monster-resources.md](monster-resources.md). Together they are the regression tests for D-095; none of them is a balance test.

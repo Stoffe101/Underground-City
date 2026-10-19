@@ -117,6 +117,9 @@ public final class BackpackPolicy {
     /** Logged once when the server is up: one line when the running configuration is the policy, one warning per difference otherwise. */
     @SubscribeEvent
     public void started(ServerStartedEvent event) {
+        if (net.minecraftforge.fml.ModList.get().isLoaded(SurvivalSet.LEGACY_BACKPACK_MOD) && net.minecraftforge.fml.ModList.get().isLoaded(SurvivalSet.BACKPACK_MOD)) {
+            LOG.error("[UC-BACKPACKS] Traveler's Backpack and Sophisticated Backpacks are both installed: the pack supports one backpack provider (D-092). Remove one; docs/technical/backpack-migration.md says how to keep an old world's items");
+        }
         if (!SurvivalSet.backpacksLoaded()) return;
         List<String> drift = audit(load());
         if (drift.isEmpty()) {

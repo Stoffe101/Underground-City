@@ -4,6 +4,7 @@
   "items": [
     {"item": "minecraft:wooden_hoe", "count": 1},
     {"item": "minecraft:bread", "count": 4},
+    {"item": "thirstwastaken2:waterskin", "count": 1, "requires_mod": "thirstwastaken2"},
     {"item": "vinery:red_grape_seeds", "count": 4, "requires_mod": "vinery"},
     {"item": "vinery:white_grape_seeds", "count": 4, "requires_mod": "vinery"},
     {"item": "vinery:wine_bottle", "count": 6, "requires_mod": "vinery"},

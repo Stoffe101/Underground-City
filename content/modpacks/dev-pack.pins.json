@@ -209,9 +209,10 @@
    "mod_id": "thirstwastaken2",
    "role": "thirst, drinking, water purity, canteens and flasks (the survival set's one thirst provider)",
    "sets": [
-    "survival"
+    "survival",
+    "legacy_travelers"
    ],
-   "notes": "Thirst Was Taken 2 1.9.0 (2026-10-15, release). GPL-3.0-only. Optional integrations only (AppleSkin, Jade, Farmer's Delight, and a Create hook that is NOT used: Create is excluded, D-080). Items include a waterskin, a copper canteen, iron, diamond and netherite flasks, a sand filter and a copper distiller. Chosen over the older Thirst Was Taken 1.4.0 (MIT, stale since mid-2025, five items; its canteen add-on is all rights reserved) and Tough As Nails (beta, all rights reserved, needs Glitchcore, bundles a harsh temperature model)."
+   "notes": "Thirst Was Taken 2 1.9.0 (2026-10-15, release). GPL-3.0-only. Optional integrations only (AppleSkin, Jade, Farmer's Delight, and a Create hook that is NOT used: Create is excluded, D-080). Items include a waterskin, a copper canteen, iron, diamond and netherite flasks, a sand filter and a copper distiller. Chosen over the older Thirst Was Taken 1.4.0 (MIT, stale since mid-2025, five items; its canteen add-on is all rights reserved) and Tough As Nails (beta, all rights reserved, needs Glitchcore, bundles a harsh temperature model). Also in the legacy_travelers set so that a world saved with the October 18 survival set (D-085) can be opened once with exactly that set; see docs/technical/backpack-migration.md."
   },
   {
    "id": "farmers_delight",
@@ -220,9 +221,10 @@
    "mod_id": "farmersdelight",
    "role": "food variety, cooking pot, cutting board (the survival set's one kitchen)",
    "sets": [
-    "survival"
+    "survival",
+    "legacy_travelers"
    ],
-   "notes": "Farmer's Delight 1.3.4 (2026-08-29, release). MIT; no mandatory dependency. Chosen as the kitchen so that the pack has one: it overlaps [Let's Do] Farm & Charm (stove, cooking pot, roaster), so the 'farming' set is not combined with it by default. Core's recipes and orders are unaffected."
+   "notes": "Farmer's Delight 1.3.4 (2026-08-29, release). MIT; no mandatory dependency. Chosen as the kitchen so that the pack has one: it overlaps [Let's Do] Farm & Charm (stove, cooking pot, roaster), so the 'farming' set is not combined with it by default. Core's recipes and orders are unaffected. Also in the legacy_travelers set so that a world saved with the October 18 survival set (D-085) can be opened once with exactly that set; see docs/technical/backpack-migration.md."
   },
   {
    "id": "comforts",
@@ -231,9 +233,10 @@
    "mod_id": "comforts",
    "role": "sleeping bags and hammocks that do not set a respawn point",
    "sets": [
-    "survival"
+    "survival",
+    "legacy_travelers"
    ],
-   "notes": "Comforts 6.4.0+1.20.1 (2024-07-05, release). LGPL-3.0-or-later; no mandatory dependency. Matches D-079: resting is never an automatic change of respawn."
+   "notes": "Comforts 6.4.0+1.20.1 (2024-07-05, release). LGPL-3.0-or-later; no mandatory dependency. Matches D-079: resting is never an automatic change of respawn. Also in the legacy_travelers set so that a world saved with the October 18 survival set (D-085) can be opened once with exactly that set; see docs/technical/backpack-migration.md."
   }
  ],
  "external": [

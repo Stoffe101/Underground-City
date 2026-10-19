@@ -4,6 +4,7 @@
   "items": [
     {"item": "minecraft:stone_pickaxe", "count": 1},
     {"item": "minecraft:coal", "count": 8},
-    {"item": "minecraft:bread", "count": 4}
+    {"item": "minecraft:bread", "count": 4},
+    {"item": "thirstwastaken2:waterskin", "count": 1, "requires_mod": "thirstwastaken2"}
   ]
 }

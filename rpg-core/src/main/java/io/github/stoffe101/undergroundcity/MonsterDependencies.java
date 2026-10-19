@@ -201,43 +201,50 @@ final class MonsterDependencies {
             if (roots.contains(name)) best.put(name, new TreeSet<>(Set.of(name)));
             else if (!recipesFor.containsKey(name)) best.put(name, new TreeSet<>());
         }
-        // items that are made from each other (a gem and its block, cobblestone and its slabs) come from the world: break every cycle by taking its members as natural
+        // Items that are made from each other (a gem and its block, cobblestone and its slabs) come from the world. A cycle is broken only where nothing else resolves it: first
+        // every recipe that can be worked out from the world is, and only the members of a cycle that are still unresolved are then taken as natural, so that a member which also
+        // has a recipe from outside the cycle (a hammock of every colour, each made from another colour but one from string) keeps what that recipe needs.
         lastUnresolved = new TreeSet<>();
-        for (Set<String> cycle : cycles(recipesFor, roots)) {
-            for (String member : cycle) {
-                best.put(member, new TreeSet<>());
-                lastUnresolved.add(member);
-            }
-        }
-        boolean changed = true;
-        for (int pass = 0; changed && pass < 200; pass++) {
-            changed = false;
-            for (Map.Entry<String, List<List<List<String>>>> entry : recipesFor.entrySet()) {
-                String name = entry.getKey();
-                if (roots.contains(name)) continue;
-                for (List<List<String>> ingredients : entry.getValue()) {
-                    Set<String> needed = new TreeSet<>();
-                    boolean known = true;
-                    for (List<String> options : ingredients) {
-                        Set<String> cheapest = null;
-                        for (String option : options) {
-                            Set<String> sub = best.get(option);
-                            if (sub == null) continue;
-                            if (cheapest == null || sub.size() < cheapest.size() || (sub.size() == cheapest.size() && sub.toString().compareTo(cheapest.toString()) < 0)) cheapest = sub;
+        Set<String> inCycle = new HashSet<>();
+        for (Set<String> cycle : cycles(recipesFor, roots)) inCycle.addAll(cycle);
+        while (true) {
+            boolean changed = true;
+            for (int pass = 0; changed && pass < 400; pass++) {
+                changed = false;
+                for (Map.Entry<String, List<List<List<String>>>> entry : recipesFor.entrySet()) {
+                    String name = entry.getKey();
+                    if (roots.contains(name)) continue;
+                    for (List<List<String>> ingredients : entry.getValue()) {
+                        Set<String> needed = new TreeSet<>();
+                        boolean known = true;
+                        for (List<String> options : ingredients) {
+                            Set<String> cheapest = null;
+                            for (String option : options) {
+                                Set<String> sub = best.get(option);
+                                if (sub == null) continue;
+                                if (cheapest == null || sub.size() < cheapest.size() || (sub.size() == cheapest.size() && sub.toString().compareTo(cheapest.toString()) < 0)) cheapest = sub;
+                            }
+                            if (cheapest == null) { known = false; break; }
+                            needed.addAll(cheapest);
                         }
-                        if (cheapest == null) { known = false; break; }
-                        needed.addAll(cheapest);
-                    }
-                    if (!known) continue;
-                    Set<String> current = best.get(name);
-                    if (current == null || better(needed, current)) {
-                        best.put(name, needed);
-                        changed = true;
+                        if (!known) continue;
+                        Set<String> current = best.get(name);
+                        if (current == null || better(needed, current)) {
+                            best.put(name, needed);
+                            changed = true;
+                        }
                     }
                 }
             }
+            List<String> stuck = new ArrayList<>();
+            for (String name : recipesFor.keySet()) if (!best.containsKey(name) && inCycle.contains(name)) stuck.add(name);
+            if (stuck.isEmpty()) break;
+            for (String name : stuck) {
+                best.put(name, new TreeSet<>());
+                lastUnresolved.add(name);
+            }
         }
-        for (Map.Entry<String, List<List<List<String>>>> entry : recipesFor.entrySet()) best.putIfAbsent(entry.getKey(), new TreeSet<>());   // nothing should be left; if it is, it is natural
+        for (String name : recipesFor.keySet()) if (best.putIfAbsent(name, new TreeSet<>()) == null) lastUnresolved.add(name);   // nothing else should be left; if it is, it is natural
         return best;
     }
 
