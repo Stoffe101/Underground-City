@@ -1539,7 +1539,7 @@ final class Scenarios {
         Playtest.queue("clear a firing lane and place a target", () -> {
             // The test world's spawn can be in a forest; a bullet that meets leaves proves nothing about the gun.
             Playtest.command("fill ~-1 ~ ~-1 ~1 ~3 ~9 minecraft:air");
-            Playtest.command("summon minecraft:zombie ~ ~ ~7 {NoAI:1b,Silent:1b,PersistenceRequired:1b}");
+            Playtest.command("summon minecraft:zombie ~ ~ ~7 {NoAI:1b,Silent:1b,PersistenceRequired:1b,Tags:[\"uc_permitted_hostile\"]}");   // a target dummy: the simulation world keeps ordinary zombies out (D-094) unless they carry the tag
         }, () -> target() != null, 200);
         final float[] health = new float[1];
         Playtest.queue("face the target and aim with the right mouse button", () -> {

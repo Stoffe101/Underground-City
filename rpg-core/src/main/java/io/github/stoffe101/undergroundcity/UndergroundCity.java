@@ -125,6 +125,10 @@ public final class UndergroundCity {
         MinecraftForge.EVENT_BUS.register(new IdentityAudit());
         MinecraftForge.EVENT_BUS.register(new ResidenceGuard());
         MinecraftForge.EVENT_BUS.register(new BackpackPolicy());
+        // the world's rule about hostile creatures (D-094): SIMULATION unless an operator chooses CLASSIC; the default lives in code, so no file has to exist
+        net.minecraftforge.fml.ModLoadingContext.get().registerConfig(net.minecraftforge.fml.config.ModConfig.Type.SERVER, SimulationWorld.SPEC, "underground_city-server.toml");
+        context.getModEventBus().addListener(SimulationWorld::reloaded);
+        MinecraftForge.EVENT_BUS.register(new SimulationWorld());
         RangeService.register();
     }
 

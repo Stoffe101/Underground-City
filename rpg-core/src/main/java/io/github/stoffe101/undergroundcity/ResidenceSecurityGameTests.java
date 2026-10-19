@@ -426,7 +426,8 @@ public final class ResidenceSecurityGameTests {
             BlockEvent.FarmlandTrampleEvent trampledByMember = new BlockEvent.FarmlandTrampleEvent(level, h.in(3, 0, 3), farmland, 2f, h.member);
             MinecraftForge.EVENT_BUS.post(trampledByMember);
             check(!trampledByMember.isCanceled(), "control: a member was not allowed to walk on their own farmland as vanilla does");
-            // hostile spawns
+            // hostile spawns: the guard's own rule, tested as the base game would run it (the simulation world refuses every ordinary hostile spawn before the guard is asked, D-094)
+            SimulationWorld.withProfile(SimulationWorld.Profile.CLASSIC, () -> {
             Zombie spawner = EntityType.ZOMBIE.create(level);
             spawner.moveTo(wood.getX() + 0.5, wood.getY(), wood.getZ() + 0.5);
             MobSpawnEvent.PositionCheck natural = new MobSpawnEvent.PositionCheck(spawner, level, MobSpawnType.NATURAL, null);
@@ -445,6 +446,7 @@ public final class ResidenceSecurityGameTests {
             MobSpawnEvent.PositionCheck field = new MobSpawnEvent.PositionCheck(wild, level, MobSpawnType.NATURAL, null);
             MinecraftForge.EVENT_BUS.post(field);
             check(field.getResult() == Event.Result.DEFAULT, "control: monsters were kept from spawning outside every home");
+            });
         }
         helper.succeed();
     }
