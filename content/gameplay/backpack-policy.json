@@ -1,0 +1,375 @@
+{
+  "schema_version": 1,
+  "status": "implemented_as_data",
+  "disclaimer": "The backpack economy of the opt-in survival set (D-092): which Sophisticated Backpacks tiers and upgrades exist in Underground City, at what size, and why. Run scripts/generate_backpack_config.py to regenerate the Sophisticated server and common configuration (content/generated/survival-config/) and Core's copy of this policy (rpg-core/src/main/resources/data/underground_city/backpack_policy/policy.json). Core checks at every server start that the mod's recipes obey the policy and removes any disabled recipe it finds (BackpackPolicyEnforcer). The policy is convenience, not power: a backpack carries more, it does not produce, automate, repair or heal anything.",
+  "provider": {
+    "backpacks": "sophisticatedbackpacks",
+    "library": "sophisticatedcore"
+  },
+  "tiers": {
+    "leatherBackpack": {
+      "item": "sophisticatedbackpacks:backpack",
+      "inventorySlotCount": 27,
+      "upgradeSlotCount": 1,
+      "why": "The everyday pack, sold in every city for 70 credits and craftable from leather, string and a chest: a newcomer carries a little more than their pockets within the first hour."
+    },
+    "copperBackpack": {
+      "item": "sophisticatedbackpacks:copper_backpack",
+      "inventorySlotCount": 36,
+      "upgradeSlotCount": 1,
+      "why": "Eight copper ingots around the basic pack. Worth it for a farmer or a smith who hauls goods; still one upgrade slot."
+    },
+    "ironBackpack": {
+      "item": "sophisticatedbackpacks:iron_backpack",
+      "inventorySlotCount": 45,
+      "upgradeSlotCount": 2,
+      "why": "Eight iron ingots. The working pack of a tradesperson: the player's own inventory plus one more, and a second upgrade slot."
+    },
+    "goldBackpack": {
+      "item": "sophisticatedbackpacks:gold_backpack",
+      "inventorySlotCount": 54,
+      "upgradeSlotCount": 2,
+      "why": "Eight gold ingots. More room, not more upgrades: the capacity of a delivery driver."
+    },
+    "diamondBackpack": {
+      "item": "sophisticatedbackpacks:diamond_backpack",
+      "inventorySlotCount": 72,
+      "upgradeSlotCount": 3,
+      "why": "Eight diamonds. The most a person should carry without a vehicle; the upper end of what the economy is balanced around."
+    },
+    "netheriteBackpack": {
+      "item": "sophisticatedbackpacks:netherite_backpack",
+      "inventorySlotCount": 90,
+      "upgradeSlotCount": 4,
+      "why": "A smithing upgrade with a netherite ingot (a trip to the Nether). The top tier is deliberately below the mod's default of 120 slots and 7 upgrades."
+    }
+  },
+  "server": {
+    "allowOpeningOtherPlayerBackpacks": false,
+    "itemFluidHandlerEnabled": false,
+    "tickDedupeLogicDisabled": false,
+    "canBePlacedInContainerItems": false,
+    "containerItemsDisallowed": true,
+    "maxUpgradesPerStorage": [
+      "stack_upgrades|1",
+      "jukebox_upgrades|1",
+      "furnace_upgrades|0"
+    ],
+    "nerfs": {
+      "tooManyBackpacksSlowness": true,
+      "maxNumberOfBackpacks": 2,
+      "slownessLevelsPerAdditionalBackpack": 1.0,
+      "onlyWornBackpackTriggersUpgrades": true
+    },
+    "entityBackpackAdditions": {
+      "chance": 0.0
+    },
+    "magnetUpgrade": {
+      "magnetRange": 3
+    },
+    "why": {
+      "allowOpeningOtherPlayerBackpacks": "Nobody can open the pack another player is wearing (the right-click route the mod offers): contents belong to the person carrying them.",
+      "itemFluidHandlerEnabled": "The mod itself warns that the fluid handling of a backpack in item form can duplicate items or fluids together with other mods' tanks.",
+      "tickDedupeLogicDisabled": "Stays false: the mod's periodic check that notices two packs with the same contents id (a copied item stack) and gives one of them a new, empty id, so a duplicated stack cannot duplicate the contents.",
+      "containerItemsDisallowed": "No shulker boxes or other container items inside a pack (nesting would multiply capacity).",
+      "maxUpgradesPerStorage": "One stack upgrade and one jukebox per pack, and no furnace upgrade: capacity multiplication and portable production stay small.",
+      "nerfs": "Carrying more than two backpacks slows the player, and only the worn pack runs its automatic upgrades (magnet, pickup, feeding), so spare packs cannot be stacked into a vacuum cleaner.",
+      "entityBackpackAdditions": "Mobs never spawn wearing backpacks with loot, and never drop them: a backpack is made or bought, never farmed from a monster (D-093).",
+      "magnetUpgrade": "Three blocks: it picks up what you dropped at your feet, not the street."
+    }
+  },
+  "common": {
+    "chestLootEnabled": false,
+    "why": "No backpacks or upgrades in vanilla chests: loot would hand out upgrades the policy removed and would undercut the supplier."
+  },
+  "items": {
+    "enabled": [
+      {
+        "item": "sophisticatedbackpacks:backpack",
+        "why": "The basic leather pack: 27 slots (a vanilla chest) and one upgrade slot. Recipe: 4 string, 4 leather and a wooden chest. Sold in every city so that a newcomer is never without one, and the base of every bigger pack."
+      },
+      {
+        "item": "sophisticatedbackpacks:copper_backpack",
+        "why": "Second tier, 36 slots and one upgrade slot: the basic pack ringed with 8 copper ingots (a branch beside the iron one)."
+      },
+      {
+        "item": "sophisticatedbackpacks:iron_backpack",
+        "why": "Third tier, 45 slots and two upgrade slots: the basic pack ringed with 8 iron ingots. The first pack that carries a working loadout (one upgrade for pickup, one for feeding)."
+      },
+      {
+        "item": "sophisticatedbackpacks:gold_backpack",
+        "why": "Fourth tier, 54 slots and two upgrade slots: the iron pack ringed with 8 gold ingots. A double chest of room, still only two upgrades."
+      },
+      {
+        "item": "sophisticatedbackpacks:diamond_backpack",
+        "why": "Fifth tier, 72 slots and three upgrade slots: the gold pack ringed with 8 diamonds. A deliberate mid-game purchase of real materials."
+      },
+      {
+        "item": "sophisticatedbackpacks:netherite_backpack",
+        "why": "Top tier, 90 slots and four upgrade slots: the diamond pack, a netherite ingot and a netherite upgrade template at a smithing table. Capped well below the mod default (120 slots, 7 upgrades) so that carrying never replaces storage and logistics."
+      },
+      {
+        "item": "sophisticatedbackpacks:upgrade_base",
+        "why": "the part every upgrade is made from (iron, leather and string)"
+      },
+      {
+        "item": "sophisticatedbackpacks:pickup_upgrade",
+        "why": "picks up chosen items you walk over into the worn pack: convenience"
+      },
+      {
+        "item": "sophisticatedbackpacks:filter_upgrade",
+        "why": "decides what goes in and out of the pack's openings"
+      },
+      {
+        "item": "sophisticatedbackpacks:magnet_upgrade",
+        "why": "range 3, worn pack only: picks up what you just dropped; needs 2 ender pearls (a rare importer's line), the pickup upgrade, iron, lapis and redstone"
+      },
+      {
+        "item": "sophisticatedbackpacks:feeding_upgrade",
+        "why": "eats food from the pack when you are hungry: saves a keypress, consumes real food, never creates any; needs an ender pearl (rare importer), a golden apple, a golden carrot and a glistering melon"
+      },
+      {
+        "item": "sophisticatedbackpacks:restock_upgrade",
+        "why": "refills hotbar stacks from the pack"
+      },
+      {
+        "item": "sophisticatedbackpacks:deposit_upgrade",
+        "why": "puts chosen items into a chest you are standing at (respects home storage rights)"
+      },
+      {
+        "item": "sophisticatedbackpacks:crafting_upgrade",
+        "why": "a crafting grid in the pack: the plain table everyone already has at home, not a workstation"
+      },
+      {
+        "item": "sophisticatedbackpacks:jukebox_upgrade",
+        "why": "Atmosphere only (a portable music box); limited to one per pack."
+      },
+      {
+        "item": "sophisticatedbackpacks:stack_upgrade_starter_tier",
+        "why": "doubles stack sizes inside the pack, one per pack: real storage gain for 72 copper ingots, nothing that breaks supply"
+      }
+    ],
+    "disabled": [
+      {
+        "item": "sophisticatedbackpacks:stack_upgrade_tier_1",
+        "why": "x4 and above multiplies storage until supply and trips stop mattering"
+      },
+      {
+        "item": "sophisticatedbackpacks:stack_upgrade_tier_2",
+        "why": "stack multiplication beyond x2"
+      },
+      {
+        "item": "sophisticatedbackpacks:stack_upgrade_tier_3",
+        "why": "stack multiplication beyond x2"
+      },
+      {
+        "item": "sophisticatedbackpacks:stack_upgrade_tier_4",
+        "why": "stack multiplication beyond x2"
+      },
+      {
+        "item": "sophisticatedbackpacks:stack_upgrade_omega_tier",
+        "why": "stack multiplication beyond x2"
+      },
+      {
+        "item": "sophisticatedbackpacks:stack_downgrade_tier_1",
+        "why": "part of the disabled stack ladder"
+      },
+      {
+        "item": "sophisticatedbackpacks:stack_downgrade_tier_2",
+        "why": "part of the disabled stack ladder"
+      },
+      {
+        "item": "sophisticatedbackpacks:stack_downgrade_tier_3",
+        "why": "part of the disabled stack ladder"
+      },
+      {
+        "item": "sophisticatedbackpacks:stack_upgrade_starter_tier_to_tier_1_conversion",
+        "why": "part of the disabled stack ladder"
+      },
+      {
+        "item": "sophisticatedbackpacks:stack_upgrade_starter_tier_to_tier_2_conversion",
+        "why": "part of the disabled stack ladder"
+      },
+      {
+        "item": "sophisticatedbackpacks:stack_upgrade_starter_tier_to_tier_3_conversion",
+        "why": "part of the disabled stack ladder"
+      },
+      {
+        "item": "sophisticatedbackpacks:stack_upgrade_starter_tier_to_tier_4_conversion",
+        "why": "part of the disabled stack ladder"
+      },
+      {
+        "item": "sophisticatedbackpacks:stack_upgrade_tier_1_to_tier_2_conversion",
+        "why": "part of the disabled stack ladder"
+      },
+      {
+        "item": "sophisticatedbackpacks:stack_upgrade_tier_1_to_tier_3_conversion",
+        "why": "part of the disabled stack ladder"
+      },
+      {
+        "item": "sophisticatedbackpacks:stack_upgrade_tier_1_to_tier_4_conversion",
+        "why": "part of the disabled stack ladder"
+      },
+      {
+        "item": "sophisticatedbackpacks:stack_upgrade_tier_2_to_tier_3_conversion",
+        "why": "part of the disabled stack ladder"
+      },
+      {
+        "item": "sophisticatedbackpacks:stack_upgrade_tier_2_to_tier_4_conversion",
+        "why": "part of the disabled stack ladder"
+      },
+      {
+        "item": "sophisticatedbackpacks:stack_upgrade_tier_3_to_tier_4_conversion",
+        "why": "part of the disabled stack ladder"
+      },
+      {
+        "item": "sophisticatedbackpacks:advanced_pickup_upgrade",
+        "why": "the basic upgrades are the supported ones; advanced variants only add filter slots and strength"
+      },
+      {
+        "item": "sophisticatedbackpacks:advanced_filter_upgrade",
+        "why": "The advanced variant of the filter upgrade (larger range, more filter slots, extra modes); only the basic version is part of the economy, so the stronger one is a later, deliberate decision (D-093)."
+      },
+      {
+        "item": "sophisticatedbackpacks:advanced_magnet_upgrade",
+        "why": "The advanced variant of the magnet upgrade (larger range, more filter slots, extra modes); only the basic version is part of the economy, so the stronger one is a later, deliberate decision (D-093)."
+      },
+      {
+        "item": "sophisticatedbackpacks:advanced_feeding_upgrade",
+        "why": "The advanced variant of the feeding upgrade (larger range, more filter slots, extra modes); only the basic version is part of the economy, so the stronger one is a later, deliberate decision (D-093)."
+      },
+      {
+        "item": "sophisticatedbackpacks:advanced_restock_upgrade",
+        "why": "The advanced variant of the restock upgrade (larger range, more filter slots, extra modes); only the basic version is part of the economy, so the stronger one is a later, deliberate decision (D-093)."
+      },
+      {
+        "item": "sophisticatedbackpacks:advanced_deposit_upgrade",
+        "why": "The advanced variant of the deposit upgrade (larger range, more filter slots, extra modes); only the basic version is part of the economy, so the stronger one is a later, deliberate decision (D-093)."
+      },
+      {
+        "item": "sophisticatedbackpacks:advanced_void_upgrade",
+        "why": "The advanced variant of the void upgrade (larger range, more filter slots, extra modes); only the basic version is part of the economy, so the stronger one is a later, deliberate decision (D-093)."
+      },
+      {
+        "item": "sophisticatedbackpacks:advanced_refill_upgrade",
+        "why": "The advanced variant of the refill upgrade (larger range, more filter slots, extra modes); only the basic version is part of the economy, so the stronger one is a later, deliberate decision (D-093)."
+      },
+      {
+        "item": "sophisticatedbackpacks:advanced_jukebox_upgrade",
+        "why": "The advanced variant of the jukebox upgrade (larger range, more filter slots, extra modes); only the basic version is part of the economy, so the stronger one is a later, deliberate decision (D-093)."
+      },
+      {
+        "item": "sophisticatedbackpacks:advanced_compacting_upgrade",
+        "why": "The advanced variant of the compacting upgrade (larger range, more filter slots, extra modes); only the basic version is part of the economy, so the stronger one is a later, deliberate decision (D-093)."
+      },
+      {
+        "item": "sophisticatedbackpacks:advanced_alchemy_upgrade",
+        "why": "The advanced variant of the alchemy upgrade (larger range, more filter slots, extra modes); only the basic version is part of the economy, so the stronger one is a later, deliberate decision (D-093)."
+      },
+      {
+        "item": "sophisticatedbackpacks:advanced_tool_swapper_upgrade",
+        "why": "The advanced variant of the tool swapper upgrade (larger range, more filter slots, extra modes); only the basic version is part of the economy, so the stronger one is a later, deliberate decision (D-093)."
+      },
+      {
+        "item": "sophisticatedbackpacks:advanced_mob_catcher_upgrade",
+        "why": "The advanced variant of the mob catcher upgrade (larger range, more filter slots, extra modes); only the basic version is part of the economy, so the stronger one is a later, deliberate decision (D-093)."
+      },
+      {
+        "item": "sophisticatedbackpacks:advanced_pump_upgrade",
+        "why": "The advanced variant of the pump upgrade (larger range, more filter slots, extra modes); only the basic version is part of the economy, so the stronger one is a later, deliberate decision (D-093)."
+      },
+      {
+        "item": "sophisticatedbackpacks:smelting_upgrade",
+        "why": "a furnace in the pack is portable production: the workstation stays where the workshop is"
+      },
+      {
+        "item": "sophisticatedbackpacks:smoking_upgrade",
+        "why": "Portable smoker: cooking is done at a stove or in a kitchen, not in the pack (the same reason the smelting upgrade is off)."
+      },
+      {
+        "item": "sophisticatedbackpacks:blasting_upgrade",
+        "why": "Portable blast furnace: smelting is a workshop job, not a backpack feature (the same reason the smelting upgrade is off)."
+      },
+      {
+        "item": "sophisticatedbackpacks:auto_smelting_upgrade",
+        "why": "automatic cooking inside a pack: production without a person or a place"
+      },
+      {
+        "item": "sophisticatedbackpacks:auto_smoking_upgrade",
+        "why": "Automatic cooking while carried would turn the pack into a production line; production belongs to workstations (the same reason as the auto smelting upgrade)."
+      },
+      {
+        "item": "sophisticatedbackpacks:auto_blasting_upgrade",
+        "why": "Automatic cooking while carried would turn the pack into a production line; production belongs to workstations (the same reason as the auto smelting upgrade)."
+      },
+      {
+        "item": "sophisticatedbackpacks:anvil_upgrade",
+        "why": "portable anvil: repair belongs to a workshop"
+      },
+      {
+        "item": "sophisticatedbackpacks:smithing_upgrade",
+        "why": "portable smithing table: the Smith's workstation stays a workstation"
+      },
+      {
+        "item": "sophisticatedbackpacks:stonecutter_upgrade",
+        "why": "A portable stonecutter is a workstation in a pocket; building and crafting stay at workstations."
+      },
+      {
+        "item": "sophisticatedbackpacks:alchemy_upgrade",
+        "why": "portable brewing: the Vintner's and the pharmacist's craft stays at the still"
+      },
+      {
+        "item": "sophisticatedbackpacks:compacting_upgrade",
+        "why": "automatic crafting of blocks inside a pack: automation"
+      },
+      {
+        "item": "sophisticatedbackpacks:refill_upgrade",
+        "why": "the restock upgrade already covers keeping the hotbar full"
+      },
+      {
+        "item": "sophisticatedbackpacks:tool_swapper_upgrade",
+        "why": "not needed for the first sessions; fewer upgrades to balance"
+      },
+      {
+        "item": "sophisticatedbackpacks:tank_upgrade",
+        "why": "a bulk fluid tank beside Thirst Was Taken 2's water purity is untested: deferred, not rejected"
+      },
+      {
+        "item": "sophisticatedbackpacks:pump_upgrade",
+        "why": "moves fluids in and out of the world: untested beside water purity"
+      },
+      {
+        "item": "sophisticatedbackpacks:xp_pump_upgrade",
+        "why": "experience storage and mending have no place in the economy"
+      },
+      {
+        "item": "sophisticatedbackpacks:battery_upgrade",
+        "why": "stores energy for mods that are not installed"
+      },
+      {
+        "item": "sophisticatedbackpacks:mob_catcher_upgrade",
+        "why": "captures animals and people-shaped mobs into an item: no place in a simulation"
+      },
+      {
+        "item": "sophisticatedbackpacks:inception_upgrade",
+        "why": "nests packs inside packs: capacity multiplication"
+      },
+      {
+        "item": "sophisticatedbackpacks:everlasting_upgrade",
+        "why": "an indestructible pack: death should cost something, and the recipe needs a boss item"
+      },
+      {
+        "item": "sophisticatedbackpacks:infinity_upgrade",
+        "why": "enchantment effects on a pack are not part of the economy"
+      },
+      {
+        "item": "sophisticatedbackpacks:survival_infinity_upgrade",
+        "why": "Infinite supplies of anything would remove scarcity and the supply chains this project is built on (the same reason as the infinity upgrade)."
+      },
+      {
+        "item": "sophisticatedbackpacks:void_upgrade",
+        "why": "it deletes items for good and its recipe needs an ender pearl, which only a rare importer sells"
+      }
+    ]
+  }
+}

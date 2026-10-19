@@ -41,11 +41,12 @@ class SurvivalSupply(unittest.TestCase):
             self.assertLessEqual(line["capacity"] * line["price"], 1200, line["id"])
             hourly = line["units_per_interval"] * 60 / line["interval_minutes"]
             self.assertLessEqual(hourly, 24, f"{line['id']} refills {hourly} units an hour")
-        # the big purchases refill at most once an hour
-        for item in ("travelersbackpack:standard", "thirstwastaken2:iron_flask"):
-            for line in LINES:
-                if line["item"] == item:
-                    self.assertGreaterEqual(line["interval_minutes"], 60, line["id"])
+        # the big purchases refill at most once an hour; the plain backpack, which every newcomer needs (D-092), at most about once in three quarters of an hour per city
+        for line in LINES:
+            if line["item"] == "thirstwastaken2:iron_flask":
+                self.assertGreaterEqual(line["interval_minutes"], 60, line["id"])
+            if line["item"] == "sophisticatedbackpacks:backpack":
+                self.assertGreaterEqual(line["interval_minutes"], 30, line["id"])
 
     def test_the_wayside_costs_more_than_the_city(self):
         by_item = {}
@@ -57,10 +58,22 @@ class SurvivalSupply(unittest.TestCase):
                 self.assertGreater(min(outlets["wayside"]), max(outlets["city"]), item)
         self.assertGreater(min(by_item["minecraft:bread"]["wayside"]), gen.STARTER_SHOP_UNIT_PRICES["minecraft:bread"])
 
-    def test_a_backpack_is_the_dearest_everyday_purchase_and_a_sleeping_bag_is_not_free_housing(self):
+    def test_the_first_backpack_is_within_a_starter_budget_and_a_sleeping_bag_is_not_free_housing(self):
         price = {l["item"]: l["price"] for l in LINES if "city" in l["outlets"]}
-        self.assertGreaterEqual(price["travelersbackpack:standard"], 100)
+        # D-092: an ordinary citizen has a basic (leather) backpack early, so it is dearer than a loaf but well inside a first day's wages; only the plain pack is sold, the bigger tiers are made
+        self.assertTrue(40 <= price["sophisticatedbackpacks:backpack"] <= 100, price["sophisticatedbackpacks:backpack"])
+        self.assertGreater(price["sophisticatedbackpacks:backpack"], gen.STARTER_SHOP_UNIT_PRICES["minecraft:bread"] * 5)
         self.assertGreaterEqual(price["comforts:sleeping_bag_red"], 40)
+        self.assertFalse([l for l in LINES if l["item"].startswith("sophisticatedbackpacks:") and l["item"] != "sophisticatedbackpacks:backpack" and "city" in l["outlets"] and not l["item"].endswith("_upgrade") and l["item"] != "sophisticatedbackpacks:upgrade_base"],
+                         "only the plain pack and upgrade parts are sold; the bigger packs are crafted from materials")
+
+    def test_the_backpack_provider_is_one_mod(self):
+        providers = {l["item"].split(":")[0] for l in LINES if "backpack" in l["item"]}
+        self.assertEqual({"sophisticatedbackpacks"}, providers)
+        self.assertFalse([l for l in LINES if "travelersbackpack" in l["item"]])
+        for line in LINES:
+            if line["item"].startswith("sophisticatedbackpacks:"):
+                self.assertEqual("sophisticatedbackpacks", line.get("requires_mod"), line["id"])
 
     def test_no_medical_item_is_pretended(self):
         text = (ROOT / "content/gameplay/survival-supply.json").read_text(encoding="utf-8")

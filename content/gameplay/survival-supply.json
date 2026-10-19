@@ -118,18 +118,50 @@
     {
       "id": "backpack_ironhaven",
       "city": "ironhaven",
-      "item": "travelersbackpack:standard",
+      "item": "sophisticatedbackpacks:backpack",
       "outlets": [
         "city"
       ],
-      "price": 120,
-      "initial": 2,
-      "capacity": 3,
+      "price": 70,
+      "initial": 3,
+      "capacity": 4,
       "units_per_interval": 1,
-      "interval_minutes": 60,
+      "interval_minutes": 45,
       "max_order": 1,
-      "why": "A backpack is the largest everyday purchase: several deliveries, and the stock is small.",
-      "requires_mod": "travelersbackpack"
+      "why": "The everyday carrying pack: leather, plain, one upgrade slot. Every city sells it so that a newcomer is never sent across the map for one (D-092).",
+      "requires_mod": "sophisticatedbackpacks"
+    },
+    {
+      "id": "backpack_valewood",
+      "city": "valewood",
+      "item": "sophisticatedbackpacks:backpack",
+      "outlets": [
+        "city"
+      ],
+      "price": 70,
+      "initial": 3,
+      "capacity": 4,
+      "units_per_interval": 1,
+      "interval_minutes": 45,
+      "max_order": 1,
+      "why": "The same basic pack as in every city; larger packs are made from it with metal, not bought (docs/technical/backpack-economy.md).",
+      "requires_mod": "sophisticatedbackpacks"
+    },
+    {
+      "id": "backpack_blackwater",
+      "city": "blackwater",
+      "item": "sophisticatedbackpacks:backpack",
+      "outlets": [
+        "city"
+      ],
+      "price": 70,
+      "initial": 3,
+      "capacity": 4,
+      "units_per_interval": 1,
+      "interval_minutes": 45,
+      "max_order": 1,
+      "why": "The same basic pack as in every city; larger packs are made from it with metal, not bought (docs/technical/backpack-economy.md).",
+      "requires_mod": "sophisticatedbackpacks"
     },
     {
       "id": "sleeping_bag_blackwater",

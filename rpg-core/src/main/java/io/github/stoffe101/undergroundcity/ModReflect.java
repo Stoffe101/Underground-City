@@ -49,4 +49,23 @@ final class ModReflect {
     }
 
     static int staticInt(Class<?> type, String field) throws Exception { return type.getField(field).getInt(null); }
+
+    /** Reads a field (public or private, own or inherited) of an object, or of a class when {@code target} is null. */
+    static Object field(Class<?> type, Object target, String name) throws Exception {
+        for (Class<?> c = type; c != null; c = c.getSuperclass()) {
+            try {
+                java.lang.reflect.Field f = c.getDeclaredField(name);
+                f.setAccessible(true);
+                return f.get(target);
+            } catch (NoSuchFieldException ignored) {
+                // try the superclass
+            }
+        }
+        throw new NoSuchFieldException(type.getName() + "." + name);
+    }
+
+    static Object field(Object target, String name) throws Exception { return field(target.getClass(), target, name); }
+
+    /** The value of a Forge config entry (a ForgeConfigSpec value) held in a field. */
+    static Object configValue(Object holder, String name) throws Exception { return callOn(field(holder, name), "get"); }
 }

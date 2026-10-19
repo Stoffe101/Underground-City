@@ -47,7 +47,7 @@ jobs:
           # the opt-in candidates of the October 17 sprint (Vinery, Farm & Charm, Kaleidoscope Tavern); not part of the default pack
           - pack: living
             sets: vintner,farming
-          # the opt-in survival set (D-085): Traveler's Backpack, Thirst Was Taken 2, Farmer's Delight, Comforts; includes the sleeping-bag respawn GameTest
+          # the opt-in survival set (D-085, backpack provider replaced by Sophisticated Backpacks + Core in D-092): Thirst Was Taken 2, Farmer's Delight, Comforts; includes the sleeping-bag respawn and the backpack GameTests
           - pack: survival
             sets: survival
     steps:

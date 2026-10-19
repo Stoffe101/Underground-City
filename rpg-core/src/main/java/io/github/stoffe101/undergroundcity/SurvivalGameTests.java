@@ -28,7 +28,7 @@ import static io.github.stoffe101.undergroundcity.CrewGameTests.check;
 import static io.github.stoffe101.undergroundcity.CrewGameTests.player;
 
 /**
- * The opt-in survival set (D-085: Traveler's Backpack, Thirst Was Taken 2, Farmer's Delight, Comforts). When the set is not loaded each test passes
+ * The opt-in survival set (D-085, backpack replaced by Sophisticated Backpacks and Sophisticated Core in D-092: Thirst Was Taken 2, Farmer's Delight, Comforts). When the set is not loaded each test passes
  * at once, as the Vinery and TaCZ tests do; the hosted job {@code dev-pack-smoke} runs them with {@code -PucPack=survival}.
  */
 @GameTestHolder(UndergroundCity.MOD_ID)
@@ -37,23 +37,25 @@ public final class SurvivalGameTests {
     private SurvivalGameTests() {}
 
     private static boolean loaded() {
-        return ModList.get().isLoaded("travelersbackpack") && ModList.get().isLoaded("thirstwastaken2") && ModList.get().isLoaded("farmersdelight") && ModList.get().isLoaded("comforts");
+        return SurvivalSet.loaded();
     }
 
     @GameTest(template = "empty")
     public static void theSurvivalSetRegistersItsItemsAndCoreStillLoadsItsOwnData(GameTestHelper helper) {
         if (!loaded()) { helper.succeed(); return; }
         List<String> missing = new ArrayList<>();
-        for (String id : List.of("travelersbackpack:standard", "thirstwastaken2:waterskin", "thirstwastaken2:copper_canteen", "thirstwastaken2:iron_flask", "thirstwastaken2:copper_pipe",
+        for (String id : List.of("sophisticatedbackpacks:backpack", "sophisticatedbackpacks:iron_backpack", "sophisticatedbackpacks:upgrade_base", "sophisticatedbackpacks:pickup_upgrade", "thirstwastaken2:waterskin", "thirstwastaken2:copper_canteen", "thirstwastaken2:iron_flask", "thirstwastaken2:copper_pipe",
             "farmersdelight:cooking_pot", "farmersdelight:cutting_board", "farmersdelight:stove", "comforts:sleeping_bag_red", "comforts:hammock_red", "comforts:rope_and_nail")) {
             if (!ForgeRegistries.ITEMS.containsKey(ResourceLocation.parse(id)) || ForgeRegistries.ITEMS.getValue(ResourceLocation.parse(id)) == Items.AIR) missing.add("item " + id);
         }
-        for (String id : List.of("thirstwastaken2:copper_distiller", "farmersdelight:cooking_pot", "comforts:sleeping_bag_red")) {
+        for (String id : List.of("thirstwastaken2:copper_distiller", "farmersdelight:cooking_pot", "comforts:sleeping_bag_red", "sophisticatedbackpacks:backpack", "sophisticatedbackpacks:iron_backpack")) {
             if (!ForgeRegistries.BLOCKS.containsKey(ResourceLocation.parse(id))) missing.add("block " + id);
         }
         check(missing.isEmpty(), "Things the survival set should register are missing: " + missing);
         // the set adds goods, never a second authority over what Core owns: no second currency, no second wallet, no registration screen of its own
         check(!ModList.get().isLoaded("lightmanscurrency") && !ModList.get().isLoaded("create"), "Nothing in the survival set may bring in a second economy or Create");
+        // one backpack authority (D-092): the retired provider is never loaded beside the new one
+        check(!ModList.get().isLoaded(SurvivalSet.LEGACY_BACKPACK_MOD), "Traveler's Backpack must not be loaded next to Sophisticated Backpacks");
         check(WorkOrderCatalog.INSTANCE.find(UndergroundCity.MOD_ID + ":greenhouse_wholesale") != null && RegionalCatalog.INSTANCE.find(UndergroundCity.MOD_ID + ":machined_parts") != null,
             "Core's own orders and regional stock still load next to the set");
         helper.succeed();
@@ -79,7 +81,8 @@ public final class SurvivalGameTests {
                 Block bag = ForgeRegistries.BLOCKS.getValue(ResourceLocation.parse("comforts:sleeping_bag_red"));
                 lieDown(helper, bagger, bag, new BlockPos(5, 1, 1));
                 // the bag must really have been used, or "no respawn point" would prove nothing
-                check(bagger.isSleeping(), "The player did not lie down in the Comforts sleeping bag, so its effect on the respawn point cannot be judged");
+                check(bagger.isSleeping(), "The player did not lie down in the Comforts sleeping bag, so its effect on the respawn point cannot be judged (the vanilla route says: "
+                    + bagger.startSleepInBed(helper.absolutePos(new BlockPos(5, 1, 1))).left() + "; day time " + level.getDayTime() + ", isDay " + level.isDay() + ", thundering " + level.isThundering() + ", difficulty " + level.getDifficulty() + ")");
                 check(bagger.getRespawnPosition() == null, "A Comforts sleeping bag set the respawn point to " + bagger.getRespawnPosition());
                 helper.succeed();
             } catch (Throwable failure) {

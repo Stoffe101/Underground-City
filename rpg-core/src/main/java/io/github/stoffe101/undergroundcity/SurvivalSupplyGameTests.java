@@ -40,7 +40,7 @@ public final class SurvivalSupplyGameTests {
     private static final String SURVIVAL = "underground_city:survival/";
 
     private static boolean survivalLoaded() {
-        return ModList.get().isLoaded("travelersbackpack") && ModList.get().isLoaded("thirstwastaken2") && ModList.get().isLoaded("farmersdelight") && ModList.get().isLoaded("comforts");
+        return SurvivalSet.loaded();
     }
 
     @GameTest(template = "empty")
@@ -54,7 +54,7 @@ public final class SurvivalSupplyGameTests {
         }
         // the third-party goods exist exactly when their mod does
         Map<String, String> needs = Map.of("waterskin_valewood", "thirstwastaken2", "waterskin_ironhaven", "thirstwastaken2", "waterskin_blackwater", "thirstwastaken2",
-            "cooking_pot_valewood", "farmersdelight", "copper_canteen_ironhaven", "thirstwastaken2", "backpack_ironhaven", "travelersbackpack", "sleeping_bag_blackwater", "comforts",
+            "cooking_pot_valewood", "farmersdelight", "copper_canteen_ironhaven", "thirstwastaken2", "backpack_ironhaven", "sophisticatedbackpacks", "backpack_valewood", "sophisticatedbackpacks", "backpack_blackwater", "sophisticatedbackpacks", "sleeping_bag_blackwater", "comforts",
             "wayside_water_valewood", "thirstwastaken2");
         needs.forEach((line, mod) -> {
             boolean on = RegionalCatalog.INSTANCE.find(SURVIVAL + line) != null;

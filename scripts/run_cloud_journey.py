@@ -91,10 +91,13 @@ def start(module: Path, task: str, flags: list[str], logfile: Path, tmpdir: Path
     return process,stream
 
 
-# A known first-start flake of a pack mod, seen once in eight cloud starts: Traveler's Backpack 9.1.57 fills its freshly created server config and Forge reloads the file from a
-# second thread while the first load is still adding to a list, so the server dies with an ArrayIndexOutOfBoundsException before the world is created. The second start finds
-# the file and succeeds. The retry is allowed once, is printed as a warning and is counted in the report; it is never silent.
-FIRST_START_RACE='TravelersBackpackConfig$Server.loadItemsFromConfig'
+# First-start crash signatures of a pack mod that are allowed ONE retry (never silent: a warning annotation, the first log is kept and the retry is counted in the report). Traveler's Backpack 9.1.57
+# had one (TravelersBackpackConfig$Server.loadItemsFromConfig, an ArrayIndexOutOfBoundsException while Forge reloaded a config the mod was still filling; D-092 retired that mod). Nothing in the
+# Sophisticated Backpacks pair has crashed a start so far (docs/technical/first-start-stability.md), so the list is empty and a crash during a first start fails the journey; add a signature only
+# for a crash that has been reproduced and understood.
+FIRST_START_RACES: tuple[str, ...] = ()
+# Forge's own message when a mod's config file could not be read (a torn write from a concurrent save) and was backed up and rewritten. The server survives it; the report counts it.
+CONFIG_CORRECTION = 'is not correct. Correcting'
 
 
 def start_server(number: int, server_log: Path, processes: list) -> int:
@@ -110,9 +113,10 @@ def start_server(number: int, server_log: Path, processes: list) -> int:
             time.sleep(2)
         else: raise TimeoutError('Dedicated server startup timed out')
         text=server_log.read_text(errors='replace')
-        if retries==0 and FIRST_START_RACE in text:
+        race=next((signature for signature in FIRST_START_RACES if signature in text),None)
+        if retries==0 and race:
             retries=1
-            print(f"::warning::Journey phase {number}: the server died during its first start in Traveler's Backpack's config load (known race); starting it once more",flush=True)
+            print(f'::warning::Journey phase {number}: the server died during its first start in a known race ({race}); starting it once more',flush=True)
             process,stream=processes.pop(0)
             stream.close()
             shutil.copy(server_log,server_log.with_name(f'server-phase{number}-first-start.log'))
@@ -160,6 +164,7 @@ def phase(number: int, clients: list[tuple[Path,str]]) -> dict:
         if SCENARIO=='crew': result['clients']=check_crew_clients(number,clients)
         result['logins']=login_report(number)
         result['server_first_start_retries']=server_retries
+        result['server_config_corrections']=server_log.read_text(errors='replace').count(CONFIG_CORRECTION)
         print('Real connected-client phase',number,'passed',flush=True)
         return result
     finally:

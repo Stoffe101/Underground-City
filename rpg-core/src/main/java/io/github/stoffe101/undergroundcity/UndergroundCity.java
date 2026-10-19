@@ -124,6 +124,7 @@ public final class UndergroundCity {
         MinecraftForge.EVENT_BUS.register(new CrewCommands());
         MinecraftForge.EVENT_BUS.register(new IdentityAudit());
         MinecraftForge.EVENT_BUS.register(new ResidenceGuard());
+        MinecraftForge.EVENT_BUS.register(new BackpackPolicy());
         RangeService.register();
     }
 

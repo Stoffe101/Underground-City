@@ -55,7 +55,7 @@ if (!devPackSets.isEmpty()) {
         chosen[id] = mod
     }
     manifest.mods.findAll { mod -> mod.sets.any { devPackSets.contains(it) } }.each { include(it.id) }
-    if (chosen.isEmpty()) throw new GradleException('No dev-pack mods in sets ' + devPackSets + ' (known sets: world, firearms, vehicles, boats)')
+    if (chosen.isEmpty()) throw new GradleException('No dev-pack mods in sets ' + devPackSets + ' (known sets: world, firearms, vehicles, boats, vintner, farming, qol, survival, legacy_travelers)')
     devPackMods = chosen.values().toList()
 }
 
@@ -295,6 +295,16 @@ def prepareDevRun = tasks.register('prepareDevRun') {
             ant.zip(destfile: worldJar, basedir: pack, whenempty: 'fail', level: 9)
             wanted << worldJar.name
             fileTree(runConfig).visit { entry ->
+                if (entry.isDirectory()) return
+                def target = new File(runDir, entry.relativePath.pathString)
+                if (!target.exists()) { target.parentFile.mkdirs(); entry.file.withInputStream { input -> target.withOutputStream { it << input } } }
+            }
+        }
+        if (devPackSets.contains('survival')) {
+            // Sophisticated Backpacks' policy (D-092): server defaults for a NEW world and the Core item switches. Existing files are never overwritten.
+            def survivalConfig = file('../content/generated/survival-config')
+            if (!survivalConfig.isDirectory()) throw new GradleException('content/generated/survival-config is missing; run python scripts/generate_backpack_config.py')
+            fileTree(survivalConfig).visit { entry ->
                 if (entry.isDirectory()) return
                 def target = new File(runDir, entry.relativePath.pathString)
                 if (!target.exists()) { target.parentFile.mkdirs(); entry.file.withInputStream { input -> target.withOutputStream { it << input } } }

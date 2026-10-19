@@ -44,7 +44,7 @@ public final class SurvivalMechanicsGameTests {
     private SurvivalMechanicsGameTests() {}
 
     private static boolean loaded() {
-        return ModList.get().isLoaded("travelersbackpack") && ModList.get().isLoaded("thirstwastaken2") && ModList.get().isLoaded("farmersdelight") && ModList.get().isLoaded("comforts");
+        return SurvivalSet.loaded();
     }
 
     // ------------------------------------------------------------------------------------------------------------ reflection helpers (see ModReflect)
@@ -217,34 +217,6 @@ public final class SurvivalMechanicsGameTests {
         for (int i = 0; i < 12; i++) p.gameMode.useItem(p, level, p.getMainHandItem(), net.minecraft.world.InteractionHand.MAIN_HAND);
         int capacity = (Integer) call(skin, "capacity", p.getMainHandItem());
         check((Integer) call(skin, "servings", p.getMainHandItem()) == capacity, "the flask is not full after repeated use: " + call(skin, "servings", p.getMainHandItem()) + " of " + capacity);
-        helper.succeed();
-    }
-
-    // ------------------------------------------------------------------------------------------------------------ backpack
-
-    private static final String BACKPACK = "travelersbackpack:standard";
-
-    @GameTest(template = "empty")
-    public static void aBackpackIsWornHoldsItemsAndKeepsThemThroughASaveAndLoad(GameTestHelper helper) throws Exception {
-        if (!loaded()) { helper.succeed(); return; }
-        ServerPlayer p = player(helper, "uc_packer", "farmer");
-        Class<?> util = cls(BACKPACK, "com.tiviacz.travelersbackpack.capability.CapabilityUtils");
-        check(!(Boolean) call(util, "isWearingBackpack", p), "a new player wears no backpack");
-        call(util, "equipBackpack", p, new ItemStack(item(BACKPACK)));
-        check((Boolean) call(util, "isWearingBackpack", p), "the backpack was not worn after equipping it");
-        ItemStackHandler storage = ((ItemStackHandler) callOn(call(util, "getBackpackWrapper", p), "getStorage"));
-        check(storage.getSlots() >= 20, "a backpack should hold a real load: " + storage.getSlots() + " slots");
-        ItemStack leftover = storage.insertItem(0, new ItemStack(Items.DIAMOND, 7), false);
-        storage.insertItem(1, new ItemStack(Items.BREAD, 12), false);
-        check(leftover.isEmpty() && storage.getStackInSlot(0).getCount() == 7 && storage.getStackInSlot(1).getCount() == 12, "items did not go into the backpack");
-        // the player is saved the way the server saves them, and a new body is loaded from it (what a reconnect or a restart does)
-        CompoundTag saved = p.serializeNBT();
-        ServerPlayer again = player(helper, "uc_packer2", "farmer");
-        again.deserializeNBT(saved);
-        check((Boolean) call(util, "isWearingBackpack", again), "the backpack is no longer worn after a save and a load");
-        ItemStackHandler restored = ((ItemStackHandler) callOn(call(util, "getBackpackWrapper", again), "getStorage"));
-        check(restored.getStackInSlot(0).is(Items.DIAMOND) && restored.getStackInSlot(0).getCount() == 7 && restored.getStackInSlot(1).is(Items.BREAD) && restored.getStackInSlot(1).getCount() == 12,
-            "the backpack's contents did not survive a save and a load: " + restored.getStackInSlot(0) + ", " + restored.getStackInSlot(1));
         helper.succeed();
     }
 

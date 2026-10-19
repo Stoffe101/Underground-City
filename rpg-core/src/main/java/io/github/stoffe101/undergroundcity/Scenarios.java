@@ -1412,7 +1412,7 @@ final class Scenarios {
         Playtest.queue("survival mode, noon, clear, no command feedback, and the set's goods", () -> {
             Playtest.command("gamerule sendCommandFeedback false");
             Playtest.command("time set 6000"); Playtest.command("gamerule doDaylightCycle false"); Playtest.command("weather clear");
-            for (String item : new String[]{"travelersbackpack:standard", "thirstwastaken2:waterskin", "thirstwastaken2:copper_canteen", "thirstwastaken2:iron_flask",
+            for (String item : new String[]{"sophisticatedbackpacks:backpack", "thirstwastaken2:waterskin", "thirstwastaken2:copper_canteen", "thirstwastaken2:iron_flask",
                 "farmersdelight:cooking_pot", "farmersdelight:cutting_board", "comforts:sleeping_bag_red", "comforts:hammock_blue", "farmersdelight:pumpkin_slice 8", "minecraft:bread 6"}) {
                 Playtest.command("give @s " + item);
             }

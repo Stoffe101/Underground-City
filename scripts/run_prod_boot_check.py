@@ -84,7 +84,24 @@ def stage_mods(server: Path, sets: list[str], core_jar: Path) -> list[str]:
     if "world" in sets:
         subprocess.run([sys.executable, str(ROOT / "scripts/build_world_prototype.py"), "--output", str(mods / "underground-city-world-prototype.jar")], check=True)
         staged.append("underground-city-world-prototype.jar")
+    if "survival" in sets:
+        stage_survival_config(server)
     return staged
+
+
+def stage_survival_config(server: Path) -> list[str]:
+    """Copy the generated Sophisticated Backpacks policy (D-092) into a server folder, only where the file is absent: an existing world keeps its own configuration."""
+    source = ROOT / "content/generated/survival-config"
+    if not source.is_dir():
+        raise SystemExit("content/generated/survival-config is missing; run python scripts/generate_backpack_config.py")
+    copied = []
+    for path in sorted(p for p in source.rglob("*") if p.is_file()):
+        target = server / path.relative_to(source)
+        if not target.exists():
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(path, target)
+            copied.append(str(path.relative_to(source)))
+    return copied
 
 
 def run_server(server: Path, seconds: int) -> list[str]:

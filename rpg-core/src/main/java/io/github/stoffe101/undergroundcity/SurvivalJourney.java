@@ -52,7 +52,7 @@ final class SurvivalJourney {
     static final boolean GENERATED = "generated".equals(System.getProperty("uc.journey.world", ""));
     /** The purchase that is interrupted: two loaves at the wayside desk (7 credits each), paid entirely by the bank. */
     static final int CRASH_UNITS = 2, CRASH_COST = 14;
-    private static final String THIRST = "thirstwastaken2:waterskin", BACKPACK = "travelersbackpack:standard", GUN = "tacz:modern_kinetic_gun";
+    private static final String THIRST = "thirstwastaken2:waterskin", BACKPACK = SurvivalSet.BACKPACK, GUN = "tacz:modern_kinetic_gun";
 
     static void expect(boolean condition, String what) { if (!condition) throw new AssertionError(what); }
 
@@ -183,12 +183,12 @@ final class SurvivalJourney {
         facts.addProperty("authenticated", server.usesAuthentication());
         facts.addProperty("difficulty", level.getDifficulty().getKey());
         JsonArray mods = new JsonArray();
-        for (String id : List.of("underground_city", "qshop", "lostcities", "tacz", "taczblueprints", "mts", "mtsofficialpack", "oamp", "modernlife", "travelersbackpack", "thirstwastaken2", "farmersdelight", "comforts",
+        for (String id : List.of("underground_city", "qshop", "lostcities", "tacz", "taczblueprints", "mts", "mtsofficialpack", "oamp", "modernlife", "sophisticatedbackpacks", "sophisticatedcore", "thirstwastaken2", "farmersdelight", "comforts",
             "vinery", "farm_and_charm", "kaleidoscope_tavern")) {
             if (ModList.get().isLoaded(id)) mods.add(id);
         }
         facts.add("mods", mods);
-        for (String id : List.of("underground_city", "qshop", "travelersbackpack", "thirstwastaken2", "farmersdelight", "comforts")) expect(ModList.get().isLoaded(id), "the combined journey needs " + id);
+        for (String id : List.of("underground_city", "qshop", "sophisticatedbackpacks", "sophisticatedcore", "thirstwastaken2", "farmersdelight", "comforts")) expect(ModList.get().isLoaded(id), "the combined journey needs " + id);
         if (GENERATED) {
             expect(!level.isFlat(), "the combined journey is meant for a generated world, but the level is flat");
             // Lost Cities does not replace the overworld's noise generator, it adds its terrain feature to it, so the class name says nothing; its own planner API does: it must plan a city at the centre chunk
@@ -237,13 +237,15 @@ final class SurvivalJourney {
         facts.addProperty("desk_x", desk.getX()); facts.addProperty("desk_y", desk.getY()); facts.addProperty("desk_z", desk.getZ());
 
         // 5. the second player: a backpack with things in it, a canteen filled at a pond and drunk from, a gun
-        Class<?> backpacks = cls(BACKPACK, "com.tiviacz.travelersbackpack.capability.CapabilityUtils");
-        call(backpacks, "equipBackpack", smith, new ItemStack(item(BACKPACK)));
-        expect((Boolean) call(backpacks, "isWearingBackpack", smith), "the backpack is worn");
-        ItemStackHandler storage = (ItemStackHandler) callOn(call(backpacks, "getBackpackWrapper", smith), "getStorage");
-        storage.insertItem(0, new ItemStack(Items.DIAMOND, 7), false);
-        storage.insertItem(1, new ItemStack(Items.BREAD, 12), false);
-        call(backpacks, "synchronise", smith);
+        ItemStack pack = new ItemStack(item(BACKPACK));
+        BackpackSupport.wear(smith, pack);
+        expect(BackpackSupport.worn(smith), "the backpack is worn");
+        ItemStack worn = smith.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.CHEST);
+        var storage = BackpackSupport.inventory(worn);
+        expect(BackpackSupport.insertAll(storage, new ItemStack(Items.DIAMOND, 7)) && BackpackSupport.insertAll(storage, new ItemStack(Items.BREAD, 12)), "items did not go into the backpack");
+        expect(BackpackSupport.insertAll(BackpackSupport.upgrades(worn), BackpackSupport.stack("sophisticatedbackpacks:pickup_upgrade")), "the pickup upgrade did not go into the upgrade slot");
+        facts.addProperty("backpack_slots", BackpackSupport.slots(worn));
+        facts.addProperty("backpack_contents_uuid", BackpackSupport.contentsUuid(worn).map(java.util.UUID::toString).orElse(""));
 
         Class<?> skin = cls(THIRST, "com.thirstwastaken2.item.WaterskinItem"), manager = cls(THIRST, "com.thirstwastaken2.data.ThirstManager"), data = cls(THIRST, "com.thirstwastaken2.data.ThirstData"),
             purity = cls(THIRST, "com.thirstwastaken2.purity.WaterPurity"), api = cls(THIRST, "com.thirstwastaken2.api.ThirstApi");
@@ -357,11 +359,12 @@ final class SurvivalJourney {
         expect(crew.bank == bank && smith.getInventory().countItem(Items.BREAD) == CRASH_UNITS, "the refused replay moved something");
 
         // what the players carry came back from their real player files
-        Class<?> backpacks = cls(BACKPACK, "com.tiviacz.travelersbackpack.capability.CapabilityUtils");
-        expect((Boolean) call(backpacks, "isWearingBackpack", smith), "the backpack is still worn after the restart");
-        ItemStackHandler storage = (ItemStackHandler) callOn(call(backpacks, "getBackpackWrapper", smith), "getStorage");
-        expect(storage.getStackInSlot(0).is(Items.DIAMOND) && storage.getStackInSlot(0).getCount() == 7 && storage.getStackInSlot(1).is(Items.BREAD) && storage.getStackInSlot(1).getCount() == 12,
-            "the backpack's contents survived: " + storage.getStackInSlot(0) + ", " + storage.getStackInSlot(1));
+        expect(BackpackSupport.worn(smith), "the backpack is still worn after the restart");
+        ItemStack worn = smith.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.CHEST);
+        var storage = BackpackSupport.inventory(worn);
+        expect(BackpackSupport.count(storage, Items.DIAMOND) == 7 && BackpackSupport.count(storage, Items.BREAD) == 12, "the backpack's contents survived: " + BackpackSupport.count(storage, Items.DIAMOND) + " diamonds, " + BackpackSupport.count(storage, Items.BREAD) + " bread");
+        expect(BackpackSupport.count(BackpackSupport.upgrades(worn), item("sophisticatedbackpacks:pickup_upgrade")) == 1, "the pickup upgrade survived the restart");
+        expect(BackpackSupport.contentsUuid(worn).map(java.util.UUID::toString).orElse("").equals(saved.get("backpack_contents_uuid").getAsString()), "the backpack kept its contents identity across the restart");
         Class<?> skin = cls(THIRST, "com.thirstwastaken2.item.WaterskinItem"), purity = cls(THIRST, "com.thirstwastaken2.purity.WaterPurity"), api = cls(THIRST, "com.thirstwastaken2.api.ThirstApi");
         ItemStack flask = smith.getInventory().getItem(1);
         expect(flask.getItem() == item("thirstwastaken2:copper_canteen") && (Integer) call(skin, "servings", flask) == saved.get("flask_servings").getAsInt()
@@ -374,7 +377,7 @@ final class SurvivalJourney {
         expect(soup.is(Items.BEETROOT_SOUP) && soup.getCount() == saved.get("soup").getAsInt(), "the cooked soup survived: " + soup);
         facts.addProperty("thirst_after_restart", thirst);
         facts.addProperty("flask_servings_after_restart", (Integer) call(skin, "servings", flask));
-        facts.addProperty("backpack_diamonds", storage.getStackInSlot(0).getCount());
+        facts.addProperty("backpack_diamonds", BackpackSupport.count(storage, Items.DIAMOND));
         facts.addProperty("loaves_delivered_at_login", smith.getInventory().countItem(Items.BREAD));
         facts.addProperty("shared_stock_units", orders.regionalUnits(bread));
         facts.addProperty("replayed_purchase", "refused");
