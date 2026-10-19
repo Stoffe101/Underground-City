@@ -71,6 +71,8 @@ def problems(policy: dict) -> list[str]:
             seen[item] = status
             if not entry.get("why"):
                 found.append(f"{item}: say why")
+            if status == "enabled" and not (isinstance(entry.get("monster_inputs"), list) and all(ITEM.fullmatch(i) for i in entry["monster_inputs"])):
+                found.append(f"{item}: say which monster-drop items it needs, transitively ([] for none): monster_inputs (D-095)")
             if "create" in item.split(":")[0]:
                 found.append(f"{item}: the Create mod is not used anywhere in this project")
     for name, tier in tiers.items():
@@ -144,6 +146,7 @@ def core_copy(policy: dict) -> str:
         "provider": policy["provider"],
         "tiers": {name: {"item": t["item"], "inventorySlotCount": t["inventorySlotCount"], "upgradeSlotCount": t["upgradeSlotCount"]} for name, t in policy["tiers"].items()},
         "enabled": [e["item"] for e in policy["items"]["enabled"]],
+        "monster_inputs": {e["item"]: e["monster_inputs"] for e in policy["items"]["enabled"]},
         "disabled": [e["item"] for e in policy["items"]["disabled"]],
         "server": {key: server[key] for key in ("allowOpeningOtherPlayerBackpacks", "itemFluidHandlerEnabled", "tickDedupeLogicDisabled", "canBePlacedInContainerItems", "containerItemsDisallowed", "maxUpgradesPerStorage")},
         "nerfs": server["nerfs"],

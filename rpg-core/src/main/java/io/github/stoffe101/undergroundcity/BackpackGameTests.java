@@ -386,8 +386,13 @@ public final class BackpackGameTests {
             check(done && containerCount(level, chest, Items.COBBLESTONE) > 0, "the member's deposit did nothing (done=" + done + "): the control for the refusals is void");
             // far away is refused for everybody: the packet carries any position
             BlockPos far = chest.offset(40, 0, 0);
+            net.minecraft.world.level.block.state.BlockState before = level.getBlockState(far);   // the neighbouring tests' blocks are not ours to leave changed
             level.setBlockAndUpdate(far, Blocks.CHEST.defaultBlockState());
-            check(!(Boolean) call(helperClass, "tryInventoryInteraction", far, level, pack, Direction.UP, h.member), "a pack deposited into a chest 40 blocks away");
+            try {
+                check(!(Boolean) call(helperClass, "tryInventoryInteraction", far, level, pack, Direction.UP, h.member), "a pack deposited into a chest 40 blocks away");
+            } finally {
+                level.setBlockAndUpdate(far, before);
+            }
         }
         helper.succeed();
     }

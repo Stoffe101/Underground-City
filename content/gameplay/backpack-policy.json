@@ -86,67 +86,120 @@
     "enabled": [
       {
         "item": "sophisticatedbackpacks:backpack",
-        "why": "The basic leather pack: 27 slots (a vanilla chest) and one upgrade slot. Recipe: 4 string, 4 leather and a wooden chest. Sold in every city so that a newcomer is never without one, and the base of every bigger pack."
+        "why": "The basic leather pack: 27 slots (a vanilla chest) and one upgrade slot. Recipe: 4 string, 4 leather and a wooden chest. Sold in every city so that a newcomer is never without one, and the base of every bigger pack.",
+        "monster_inputs": [
+          "minecraft:string"
+        ]
       },
       {
         "item": "sophisticatedbackpacks:copper_backpack",
-        "why": "Second tier, 36 slots and one upgrade slot: the basic pack ringed with 8 copper ingots (a branch beside the iron one)."
+        "why": "Second tier, 36 slots and one upgrade slot: the basic pack ringed with 8 copper ingots (a branch beside the iron one).",
+        "monster_inputs": [
+          "minecraft:string"
+        ]
       },
       {
         "item": "sophisticatedbackpacks:iron_backpack",
-        "why": "Third tier, 45 slots and two upgrade slots: the basic pack ringed with 8 iron ingots. The first pack that carries a working loadout (one upgrade for pickup, one for feeding)."
+        "why": "Third tier, 45 slots and two upgrade slots: the basic pack ringed with 8 iron ingots. The first pack that carries a working loadout (one upgrade for pickup, one for feeding).",
+        "monster_inputs": [
+          "minecraft:string"
+        ]
       },
       {
         "item": "sophisticatedbackpacks:gold_backpack",
-        "why": "Fourth tier, 54 slots and two upgrade slots: the iron pack ringed with 8 gold ingots. A double chest of room, still only two upgrades."
+        "why": "Fourth tier, 54 slots and two upgrade slots: the iron pack ringed with 8 gold ingots. A double chest of room, still only two upgrades.",
+        "monster_inputs": [
+          "minecraft:string"
+        ]
       },
       {
         "item": "sophisticatedbackpacks:diamond_backpack",
-        "why": "Fifth tier, 72 slots and three upgrade slots: the gold pack ringed with 8 diamonds. A deliberate mid-game purchase of real materials."
+        "why": "Fifth tier, 72 slots and three upgrade slots: the gold pack ringed with 8 diamonds. A deliberate mid-game purchase of real materials.",
+        "monster_inputs": [
+          "minecraft:string"
+        ]
       },
       {
         "item": "sophisticatedbackpacks:netherite_backpack",
-        "why": "Top tier, 90 slots and four upgrade slots: the diamond pack, a netherite ingot and a netherite upgrade template at a smithing table. Capped well below the mod default (120 slots, 7 upgrades) so that carrying never replaces storage and logistics."
+        "why": "Top tier, 90 slots and four upgrade slots: the diamond pack, a netherite ingot and a netherite upgrade template at a smithing table. Capped well below the mod default (120 slots, 7 upgrades) so that carrying never replaces storage and logistics.",
+        "monster_inputs": [
+          "minecraft:string"
+        ]
       },
       {
         "item": "sophisticatedbackpacks:upgrade_base",
-        "why": "the part every upgrade is made from (iron, leather and string)"
+        "why": "the part every upgrade is made from (iron, leather and string)",
+        "monster_inputs": [
+          "minecraft:string"
+        ]
       },
       {
         "item": "sophisticatedbackpacks:pickup_upgrade",
-        "why": "picks up chosen items you walk over into the worn pack: convenience"
+        "why": "picks up chosen items you walk over into the worn pack: convenience",
+        "monster_inputs": [
+          "minecraft:slime_ball",
+          "minecraft:string"
+        ]
       },
       {
         "item": "sophisticatedbackpacks:filter_upgrade",
-        "why": "decides what goes in and out of the pack's openings"
+        "why": "decides what goes in and out of the pack's openings",
+        "monster_inputs": [
+          "minecraft:string"
+        ]
       },
       {
         "item": "sophisticatedbackpacks:magnet_upgrade",
-        "why": "range 3, worn pack only: picks up what you just dropped; needs 2 ender pearls (a rare importer's line), the pickup upgrade, iron, lapis and redstone"
+        "why": "range 3, worn pack only: picks up what you just dropped; needs 2 ender pearls (a rare importer's line), the pickup upgrade, iron, lapis and redstone",
+        "monster_inputs": [
+          "minecraft:ender_pearl",
+          "minecraft:slime_ball",
+          "minecraft:string"
+        ]
       },
       {
         "item": "sophisticatedbackpacks:feeding_upgrade",
-        "why": "eats food from the pack when you are hungry: saves a keypress, consumes real food, never creates any; needs an ender pearl (rare importer), a golden apple, a golden carrot and a glistering melon"
+        "why": "eats food from the pack when you are hungry: saves a keypress, consumes real food, never creates any; needs an ender pearl (rare importer), a golden apple, a golden carrot and a glistering melon",
+        "monster_inputs": [
+          "minecraft:ender_pearl",
+          "minecraft:string"
+        ]
       },
       {
         "item": "sophisticatedbackpacks:restock_upgrade",
-        "why": "refills hotbar stacks from the pack"
+        "why": "refills hotbar stacks from the pack",
+        "monster_inputs": [
+          "minecraft:slime_ball",
+          "minecraft:string"
+        ]
       },
       {
         "item": "sophisticatedbackpacks:deposit_upgrade",
-        "why": "puts chosen items into a chest you are standing at (respects home storage rights)"
+        "why": "puts chosen items into a chest you are standing at (respects home storage rights)",
+        "monster_inputs": [
+          "minecraft:string"
+        ]
       },
       {
         "item": "sophisticatedbackpacks:crafting_upgrade",
-        "why": "a crafting grid in the pack: the plain table everyone already has at home, not a workstation"
+        "why": "a crafting grid in the pack: the plain table everyone already has at home, not a workstation",
+        "monster_inputs": [
+          "minecraft:string"
+        ]
       },
       {
         "item": "sophisticatedbackpacks:jukebox_upgrade",
-        "why": "Atmosphere only (a portable music box); limited to one per pack."
+        "why": "Atmosphere only (a portable music box); limited to one per pack.",
+        "monster_inputs": [
+          "minecraft:string"
+        ]
       },
       {
         "item": "sophisticatedbackpacks:stack_upgrade_starter_tier",
-        "why": "doubles stack sizes inside the pack, one per pack: real storage gain for 72 copper ingots, nothing that breaks supply"
+        "why": "doubles stack sizes inside the pack, one per pack: real storage gain for 72 copper ingots, nothing that breaks supply",
+        "monster_inputs": [
+          "minecraft:string"
+        ]
       }
     ],
     "disabled": [

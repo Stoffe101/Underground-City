@@ -364,6 +364,96 @@
       "interval_minutes": 6,
       "max_order": 8,
       "why": "Light for the road."
+    },
+    {
+      "id": "string_valewood",
+      "city": "valewood",
+      "item": "minecraft:string",
+      "outlets": [
+        "city"
+      ],
+      "price": 3,
+      "initial": 32,
+      "capacity": 48,
+      "units_per_interval": 4,
+      "interval_minutes": 12,
+      "max_order": 16,
+      "why": "Spiders do not exist in the simulation world (D-094), so string is a trade good: the textile mills of the farm country sell it by the hank. Every backpack, backpack upgrade, hammock and canteen is made with it (D-095)."
+    },
+    {
+      "id": "string_ironhaven",
+      "city": "ironhaven",
+      "item": "minecraft:string",
+      "outlets": [
+        "city"
+      ],
+      "price": 4,
+      "initial": 24,
+      "capacity": 48,
+      "units_per_interval": 4,
+      "interval_minutes": 15,
+      "max_order": 16,
+      "why": "The second source of string, dearer than the mills of Valewood: the workshops of Ironhaven buy it in and sell it on (D-095)."
+    },
+    {
+      "id": "slime_ball_ironhaven",
+      "city": "ironhaven",
+      "item": "minecraft:slime_ball",
+      "outlets": [
+        "city"
+      ],
+      "price": 14,
+      "initial": 6,
+      "capacity": 16,
+      "units_per_interval": 1,
+      "interval_minutes": 20,
+      "max_order": 4,
+      "why": "Slimes do not exist in the simulation world (D-094); the polymer works of Ironhaven sell the little they make. Sticky pistons (pickup and restock backpack upgrades) and vehicle plastic need it (D-095)."
+    },
+    {
+      "id": "ender_pearl_blackwater",
+      "city": "blackwater",
+      "item": "minecraft:ender_pearl",
+      "outlets": [
+        "city"
+      ],
+      "price": 120,
+      "initial": 1,
+      "capacity": 4,
+      "units_per_interval": 1,
+      "interval_minutes": 90,
+      "max_order": 1,
+      "why": "Endermen do not exist in the simulation world (D-094); an ender pearl is a rare import that the port of Blackwater brings in. Only the magnet and feeding backpack upgrades need one (D-095)."
+    },
+    {
+      "id": "blaze_rod_blackwater",
+      "city": "blackwater",
+      "item": "minecraft:blaze_rod",
+      "outlets": [
+        "city"
+      ],
+      "price": 200,
+      "initial": 1,
+      "capacity": 3,
+      "units_per_interval": 1,
+      "interval_minutes": 180,
+      "max_order": 1,
+      "why": "Blazes do not exist in the simulation world (D-094); a blaze rod is military surplus that surfaces at the port of Blackwater now and then. Fifteen of the heavier TaCZ firearms and attachments are made with one or more, so the premium weapons stay scarce and expensive (D-095)."
+    },
+    {
+      "id": "spider_eye_valewood",
+      "city": "valewood",
+      "item": "minecraft:spider_eye",
+      "outlets": [
+        "city"
+      ],
+      "price": 18,
+      "initial": 3,
+      "capacity": 6,
+      "units_per_interval": 1,
+      "interval_minutes": 60,
+      "max_order": 2,
+      "why": "Spiders do not exist in the simulation world (D-094); the apothecary of Valewood sells a few spider eyes to the vintners, whose two special wines are made with them (D-095)."
     }
   ]
 }

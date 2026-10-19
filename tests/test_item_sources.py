@@ -93,5 +93,92 @@ class DetectsDeadEnds(unittest.TestCase):
         self.assertIn(("t_ext_bad", "DEAD END"), kinds)
 
 
+
+
+class MonsterDrops(unittest.TestCase):
+    """D-095: the simulation world has no hostile creatures, so what only they drop needs a route, and the audit notices when one is missing."""
+
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp())
+        shutil.copytree(audit.DATA, self.tmp / "data")
+        self.real = audit.DATA
+        audit.DATA = self.tmp / "data"
+        self.addCleanup(lambda: (setattr(audit, "DATA", self.real), shutil.rmtree(self.tmp)))
+
+    def catalogue_path(self):
+        return audit.DATA / "progression/monster_resources.json"
+
+    def edit_catalogue(self, change):
+        data = json.loads(self.catalogue_path().read_text())
+        change(data)
+        self.catalogue_path().write_text(json.dumps(data))
+
+    def monster_kinds(self):
+        return {(f["kind"], f["item"]) for f in audit.audit()["findings"]}
+
+    def test_the_real_catalogue_has_a_route_for_every_root_anything_needs(self):
+        data = audit.monster_catalogue()
+        needed = {"minecraft:gunpowder", "minecraft:string", "minecraft:slime_ball", "minecraft:ender_pearl", "minecraft:blaze_rod", "minecraft:blaze_powder", "minecraft:spider_eye"}
+        for item in needed:
+            self.assertTrue(data["roots"][item]["route"], item)
+        self.assertEqual([], [f for f in audit.audit()["findings"] if f["kind"] in ("MONSTER ONLY", "BROKEN ROUTE")])
+
+    def test_every_listed_root_without_a_route_says_nothing_needs_it(self):
+        for item, root in audit.monster_catalogue()["roots"].items():
+            if not root.get("route"):
+                self.assertIs(root.get("needed_by_approved_gameplay"), False, item)
+
+    def test_a_route_to_an_exchange_line_that_does_not_exist_is_caught(self):
+        (audit.DATA / "regional_stock/survival/string_valewood.json").unlink()
+        (audit.DATA / "regional_stock/survival/string_ironhaven.json").unlink()
+        self.assertIn(("BROKEN ROUTE", "minecraft:string"), self.monster_kinds())
+
+    def test_a_line_that_sells_something_else_or_a_stockpile_is_caught(self):
+        path = audit.DATA / "regional_stock/survival/slime_ball_ironhaven.json"
+        line = json.loads(path.read_text())
+        line["capacity"] = 256
+        path.write_text(json.dumps(line))
+        self.assertIn(("BROKEN ROUTE", "minecraft:slime_ball"), self.monster_kinds())
+        line.update(capacity=4, item="minecraft:gold_ingot")
+        path.write_text(json.dumps(line))
+        self.assertIn(("BROKEN ROUTE", "minecraft:slime_ball"), self.monster_kinds())
+
+    def test_a_derived_root_whose_source_has_no_route_is_caught(self):
+        self.edit_catalogue(lambda d: d["roots"]["minecraft:blaze_rod"].update(route=None, needed_by_approved_gameplay=False))
+        self.assertIn(("BROKEN ROUTE", "minecraft:blaze_powder"), self.monster_kinds())
+
+    def test_a_work_order_that_needs_an_unrouted_drop_is_caught(self):
+        self.edit_catalogue(lambda d: d["roots"]["minecraft:gunpowder"].update(route=None, needed_by_approved_gameplay=False))
+        (audit.DATA / "work_orders/t_powder.json").write_text(json.dumps({"schema_version": 3, "title": "t", "career": "smith", "level": 2, "foreign_visits": 0, "credits": 10, "xp": 10,
+                                                                          "capacity": 1, "refill_ticks": 100, "requirements": [{"item": "minecraft:gunpowder", "count": 4}]}))
+        self.assertIn(("MONSTER ONLY", "minecraft:gunpowder"), self.monster_kinds())
+
+    def test_a_backpack_item_that_needs_an_unrouted_drop_is_caught(self):
+        self.edit_catalogue(lambda d: d["roots"]["minecraft:ender_pearl"].update(route=None, needed_by_approved_gameplay=False))
+        self.assertIn(("MONSTER ONLY", "minecraft:ender_pearl"), self.monster_kinds())
+
+    def test_an_unrouted_root_must_say_that_nothing_needs_it(self):
+        self.edit_catalogue(lambda d: d["roots"]["minecraft:rotten_flesh"].pop("needed_by_approved_gameplay"))
+        self.assertIn(("MONSTER ONLY", "minecraft:rotten_flesh"), self.monster_kinds())
+
+    def test_the_supply_lines_of_the_routes_are_small_slow_and_not_for_hoarding(self):
+        for root, definition in audit.monster_catalogue()["roots"].items():
+            route = definition.get("route") or {}
+            if route.get("kind") != "exchange":
+                continue
+            for line_id in route["lines"]:
+                line = audit.stock_lines()[line_id]
+                hourly = line["units_per_interval"] * 72000 / line["interval_ticks"]
+                self.assertLessEqual(line["max_order"], 16, line_id)
+                self.assertLessEqual(hourly, 20, f"{line_id} refills {hourly} an hour")
+                self.assertLessEqual(line["capacity"] * line["unit_price"], 1200, line_id)
+        # the rare imports are rare: an ender pearl or a blaze rod is at most about one every hour and a half
+        for line_id in ("underground_city:survival/ender_pearl_blackwater", "underground_city:survival/blaze_rod_blackwater"):
+            line = audit.stock_lines()[line_id]
+            self.assertEqual(1, line["max_order"])
+            self.assertLessEqual(line["units_per_interval"] * 72000 / line["interval_ticks"], 0.7, line_id)
+            self.assertGreaterEqual(line["unit_price"], 100, line_id)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -54,6 +54,61 @@
     "sophisticatedbackpacks:jukebox_upgrade",
     "sophisticatedbackpacks:stack_upgrade_starter_tier"
   ],
+  "monster_inputs": {
+    "sophisticatedbackpacks:backpack": [
+      "minecraft:string"
+    ],
+    "sophisticatedbackpacks:copper_backpack": [
+      "minecraft:string"
+    ],
+    "sophisticatedbackpacks:iron_backpack": [
+      "minecraft:string"
+    ],
+    "sophisticatedbackpacks:gold_backpack": [
+      "minecraft:string"
+    ],
+    "sophisticatedbackpacks:diamond_backpack": [
+      "minecraft:string"
+    ],
+    "sophisticatedbackpacks:netherite_backpack": [
+      "minecraft:string"
+    ],
+    "sophisticatedbackpacks:upgrade_base": [
+      "minecraft:string"
+    ],
+    "sophisticatedbackpacks:pickup_upgrade": [
+      "minecraft:slime_ball",
+      "minecraft:string"
+    ],
+    "sophisticatedbackpacks:filter_upgrade": [
+      "minecraft:string"
+    ],
+    "sophisticatedbackpacks:magnet_upgrade": [
+      "minecraft:ender_pearl",
+      "minecraft:slime_ball",
+      "minecraft:string"
+    ],
+    "sophisticatedbackpacks:feeding_upgrade": [
+      "minecraft:ender_pearl",
+      "minecraft:string"
+    ],
+    "sophisticatedbackpacks:restock_upgrade": [
+      "minecraft:slime_ball",
+      "minecraft:string"
+    ],
+    "sophisticatedbackpacks:deposit_upgrade": [
+      "minecraft:string"
+    ],
+    "sophisticatedbackpacks:crafting_upgrade": [
+      "minecraft:string"
+    ],
+    "sophisticatedbackpacks:jukebox_upgrade": [
+      "minecraft:string"
+    ],
+    "sophisticatedbackpacks:stack_upgrade_starter_tier": [
+      "minecraft:string"
+    ]
+  },
   "disabled": [
     "sophisticatedbackpacks:stack_upgrade_tier_1",
     "sophisticatedbackpacks:stack_upgrade_tier_2",

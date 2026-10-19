@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "city": "blackwater",
+  "item": "minecraft:blaze_rod",
+  "unit_price": 200,
+  "initial": 1,
+  "capacity": 3,
+  "units_per_interval": 1,
+  "interval_ticks": 216000,
+  "max_order": 1,
+  "outlets": [
+    "city"
+  ]
+}

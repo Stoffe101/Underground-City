@@ -13,6 +13,11 @@ a work order's reward, or an ordinary vanilla item) or *luck* (a rolled loot tab
 * EXTERNAL    - (informational, not a failure) the item belongs to another mod that the order itself requires (``requires_mod``), so that mod's own
                 production chain is its source; the audit cannot see inside it. These need a real-pack production test, not a data audit.
 
+* MONSTER ONLY - (D-095) an item that a work order, a Core recipe or an enabled backpack item needs is, in the base game, dropped only by a hostile creature, and the
+                simulation world (D-094) has none: the catalogue data/underground_city/progression/monster_resources.json must give it a route (a finite exchange line,
+                a recipe that ships with a pinned mod, a derivation, a livestock by-product). A route is checked: the line must exist and sell that item in a city.
+                The runtime half (every recipe of every pinned mod) is ProgressionAuditGameTests; the static half over the pinned jars is scripts/scan_pack_for_monster_drops.py.
+
 Run ``python scripts/audit_item_sources.py`` for the report, ``--check`` to fail on any finding (CI), ``--json`` for machine output.
 Vanilla items (``minecraft:``) count as obtainable at level 1: the world supplies them. Mods other than Core are taken at their word only where a
 requirement names a gun (TaCZ crafts it from vanilla materials at the Gun Smith Table behind a blueprint, D-073).
@@ -126,6 +131,71 @@ def earliest_levels(orders: dict[str, dict], recipes: dict[str, dict], kits: dic
     return level, loot_items
 
 
+def monster_catalogue() -> dict:
+    return json.loads((DATA / 'progression/monster_resources.json').read_text())
+
+
+def stock_lines() -> dict[str, dict]:
+    """Every regional-exchange line Core ships, by its in-game id."""
+    lines = {}
+    for path in sorted((DATA / 'regional_stock').rglob('*.json')):
+        relative = path.relative_to(DATA / 'regional_stock').with_suffix('')
+        lines['underground_city:' + relative.as_posix()] = json.loads(path.read_text())
+    return lines
+
+
+def monster_findings(orders: dict[str, dict], recipes: dict[str, dict]) -> list[dict]:
+    """D-095: every root a route is promised for must have a real route, and nothing Core offers may need a root that has none."""
+    catalogue = monster_catalogue()
+    roots = catalogue['roots']
+    lines = stock_lines()
+    findings: list[dict] = []
+
+    def problem(kind: str, item: str, detail: str, order: str = '-'):
+        findings.append({'order': order, 'career': '-', 'level': 0, 'kind': kind, 'item': item, 'detail': detail})
+
+    routed = {item for item, root in roots.items() if root.get('route')}
+    for item, root in roots.items():
+        route = root.get('route')
+        if not route:
+            if root.get('needed_by_approved_gameplay') is not False:
+                problem('MONSTER ONLY', item, 'no route, and the catalogue does not say that nothing needs it (needed_by_approved_gameplay: false)')
+            continue
+        kind = route['kind']
+        if kind == 'exchange':
+            for line_id in route['lines']:
+                line = lines.get(line_id)
+                if line is None:
+                    problem('BROKEN ROUTE', item, f'the exchange line {line_id} does not exist')
+                elif line['item'] != item or 'city' not in line.get('outlets', ['city']) or line['capacity'] < 1 or line['capacity'] * line['unit_price'] > 1200:
+                    problem('BROKEN ROUTE', item, f'{line_id} must sell {item} in a city from a small finite shelf: {line}')
+        elif kind == 'derived':
+            if route['from'] not in routed:
+                problem('BROKEN ROUTE', item, f"derived from {route['from']}, which has no route")
+        elif kind not in ('recipe', 'byproduct'):
+            problem('BROKEN ROUTE', item, f'unknown route kind {kind}')
+    # Core's own demands
+    for name, order in orders.items():
+        for need in requirements(order):
+            if need['item'] in roots and need['item'] not in routed:
+                problem('MONSTER ONLY', need['item'], 'a work order asks for an item only a hostile creature drops, and it has no route', name)
+    for name, recipe in recipes.items():
+        for options in ingredients(recipe):
+            if all(option in roots and option not in routed for option in options):
+                problem('MONSTER ONLY', options[0], f'Core recipe {name} needs it and it has no route')
+    # the enabled backpack items declare what they need; each must have a route
+    policy_file = DATA / 'backpack_policy/policy.json'
+    if policy_file.is_file():
+        policy = json.loads(policy_file.read_text())
+        for item, inputs in policy.get('monster_inputs', {}).items():
+            for root in inputs:
+                if root not in roots:
+                    problem('MONSTER ONLY', root, f'{item} needs it but the catalogue does not know it')
+                elif root not in routed:
+                    problem('MONSTER ONLY', root, f'{item} needs it and it has no route')
+    return findings
+
+
 def audit() -> dict:
     orders, recipes = load_dir('work_orders'), load_dir('recipes')
     kits, stock = load_dir('starter_kits'), load_dir('regional_stock')
@@ -177,6 +247,7 @@ def audit() -> dict:
             elif have > order['level']:
                 findings.append({'order': name, 'career': order['career'], 'level': order['level'], 'kind': 'TOO LATE', 'item': item,
                                  'detail': f'first obtainable at career level {have}, the order needs level {order["level"]}'})
+    findings += monster_findings(orders, recipes)
     return {'orders': len(orders), 'recipes': len(recipes), 'findings': findings, 'external': external,
             'items_with_a_deterministic_source': len(level), 'loot_only_items': sorted(i for i in loot_items if i not in level and i.startswith('underground_city:'))}
 

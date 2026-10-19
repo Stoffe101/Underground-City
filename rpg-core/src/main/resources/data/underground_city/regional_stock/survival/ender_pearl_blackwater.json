@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "city": "blackwater",
+  "item": "minecraft:ender_pearl",
+  "unit_price": 120,
+  "initial": 1,
+  "capacity": 4,
+  "units_per_interval": 1,
+  "interval_ticks": 108000,
+  "max_order": 1,
+  "outlets": [
+    "city"
+  ]
+}

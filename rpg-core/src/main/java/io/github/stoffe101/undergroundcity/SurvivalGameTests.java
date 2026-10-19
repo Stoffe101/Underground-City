@@ -99,6 +99,8 @@ public final class SurvivalGameTests {
     private static void lieDown(GameTestHelper helper, FakePlayer player, Block block, BlockPos relative) {
         ServerLevel level = helper.getLevel();
         BlockPos foot = helper.absolutePos(relative), head = foot.south();
+        // the tests are packed closely, so whatever a neighbour left standing above this spot would block the sleeper ("obstructed"): clear the room the bed needs
+        for (int dx = -1; dx <= 1; dx++) for (int dz = -2; dz <= 2; dz++) for (int dy = 0; dy <= 3; dy++) level.setBlock(foot.offset(dx, dy, dz), Blocks.AIR.defaultBlockState(), 3);
         for (BlockPos floor : List.of(foot.below(), head.below())) level.setBlock(floor, Blocks.STONE.defaultBlockState(), 3);
         BlockState base = block.defaultBlockState().setValue(BedBlock.FACING, Direction.SOUTH);
         level.setBlock(foot, base.setValue(BedBlock.PART, BedPart.FOOT), 3);

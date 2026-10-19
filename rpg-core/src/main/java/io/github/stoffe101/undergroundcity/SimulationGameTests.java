@@ -342,12 +342,27 @@ public final class SimulationGameTests {
         return player;
     }
 
-    /** Somewhere the natural spawner will use for any profile: at least 30 blocks from the world's spawn point. */
-    private static BlockPos farFromSpawn(ServerLevel level, BlockPos wanted) {
-        BlockPos spawn = level.getSharedSpawnPos();
-        BlockPos pos = wanted;
-        while (Math.sqrt(pos.distSqr(spawn)) < 30) pos = pos.offset(64, 0, 0);
+    /**
+     * A place for a test arena that no other test uses (the tests are packed closely and the template is a single block): far east of the test area, high above any terrain, at least 24
+     * blocks from the world's spawn point as the natural spawner insists, with its chunks held loaded. {@code slot} separates the arenas of tests that run at the same time.
+     */
+    private static BlockPos arena(ServerLevel level, int slot) {
+        BlockPos pos = new BlockPos(3000 + slot * 160, 290, 3000);
+        net.minecraft.world.level.ChunkPos centre = new net.minecraft.world.level.ChunkPos(pos);
+        for (int dx = -3; dx <= 8; dx++) for (int dz = -2; dz <= 9; dz++) {
+            net.minecraft.world.level.ChunkPos chunk = new net.minecraft.world.level.ChunkPos(centre.x + dx, centre.z + dz);
+            level.getChunkSource().addRegionTicket(net.minecraft.server.level.TicketType.FORCED, chunk, 2, chunk);
+            level.getChunk(chunk.x, chunk.z);
+        }
         return pos;
+    }
+
+    private static void releaseArena(ServerLevel level, int slot) {
+        net.minecraft.world.level.ChunkPos centre = new net.minecraft.world.level.ChunkPos(new BlockPos(3000 + slot * 160, 290, 3000));
+        for (int dx = -3; dx <= 8; dx++) for (int dz = -2; dz <= 9; dz++) {
+            net.minecraft.world.level.ChunkPos chunk = new net.minecraft.world.level.ChunkPos(centre.x + dx, centre.z + dz);
+            level.getChunkSource().removeRegionTicket(net.minecraft.server.level.TicketType.FORCED, chunk, 2, chunk);
+        }
     }
 
     @GameTest(template = "empty", timeoutTicks = 600, batch = "uc_simulation_spawner")
@@ -356,7 +371,7 @@ public final class SimulationGameTests {
         if (level.getDifficulty() == Difficulty.PEACEFUL) level.getServer().setDifficulty(Difficulty.NORMAL, true);
         long time = level.getDayTime();
         level.setDayTime(18000);   // midnight
-        BlockPos origin = farFromSpawn(level, helper.absolutePos(new BlockPos(0, 0, 0)).offset(16, 0, 16));
+        BlockPos origin = arena(level, 0);
         BlockPos cave = darkRoom(level, origin, 9, false), hall = darkRoom(level, origin.offset(14, 0, 0), 9, true);
         ServerPlayer far = distantPlayer(level, origin);
         later(helper, 60, () -> {
@@ -374,6 +389,7 @@ public final class SimulationGameTests {
             } finally {
                 level.setDayTime(time);
                 level.removePlayerImmediately(far, Entity.RemovalReason.DISCARDED);
+                releaseArena(level, 0);
             }
         });
     }
@@ -382,7 +398,7 @@ public final class SimulationGameTests {
     public static void aMonsterSpawnerBlockSpawnsNothingInTheSimulationButSomethingInTheClassicProfile(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
         if (level.getDifficulty() == Difficulty.PEACEFUL) level.getServer().setDifficulty(Difficulty.NORMAL, true);
-        BlockPos origin = farFromSpawn(level, helper.absolutePos(new BlockPos(0, 0, 0)).offset(16, 0, 40));
+        BlockPos origin = arena(level, 1);
         BlockPos room = darkRoom(level, origin, 9, false);
         BlockPos block = room.above();
         level.setBlock(block, Blocks.SPAWNER.defaultBlockState(), 3);
@@ -405,8 +421,22 @@ public final class SimulationGameTests {
                 check(control > 0, "control: the spawner block spawned nothing in CLASSIC either, so the zero above proves nothing about the rule");
             } finally {
                 level.removePlayerImmediately(near, Entity.RemovalReason.DISCARDED);
+                releaseArena(level, 1);
             }
         });
+    }
+
+    /** Open-air spots (found by asking the world's biome source, which generates nothing) whose biome has livestock, at least 100 blocks apart. */
+    private static List<BlockPos> livestockSpots(ServerLevel level, int wanted) {
+        List<BlockPos> found = new ArrayList<>();
+        for (int i = 0; i < 400 && found.size() < wanted; i++) {
+            BlockPos spot = new BlockPos(5000 + (i % 20) * 160, 290, 5000 + (i / 20) * 160);
+            var biome = level.getBiome(spot).value();
+            boolean livestock = !biome.getMobSettings().getMobs(MobCategory.CREATURE).isEmpty() && biome.getBaseTemperature() > 0.15f && biome.getBaseTemperature() < 1.5f;
+            String name = level.getBiome(spot).unwrapKey().map(k -> k.location().getPath()).orElse("");
+            if (livestock && !name.contains("ocean") && !name.contains("river") && !name.contains("beach") && !name.contains("desert") && !name.contains("badlands")) found.add(spot);
+        }
+        return found;
     }
 
     @GameTest(template = "empty", timeoutTicks = 900, batch = "uc_simulation_spawner")
@@ -414,23 +444,29 @@ public final class SimulationGameTests {
         ServerLevel level = helper.getLevel();
         long time = level.getDayTime();
         level.setDayTime(6000);
-        // lit grass meadows under the open sky, one after another along a line, until the base game's own spawner (the CLASSIC control) finds livestock in one: the world is random and
-        // a beach or a desert offers none, so the first meadow whose biome has livestock is the one on which the simulation is compared
-        BlockPos start = farFromSpawn(level, helper.absolutePos(new BlockPos(0, 0, 0)).offset(16, 0, 100));
-        List<BlockPos> meadows = new ArrayList<>();
-        for (int i = 0; i < 16; i++) {
-            BlockPos origin = start.offset(0, 0, i * 48);
-            for (int x = 0; x < 20; x++) for (int z = 0; z < 20; z++) {
-                level.setBlock(origin.offset(x, 0, z), Blocks.GRASS_BLOCK.defaultBlockState(), 2);
-                for (int y = 1; y <= 4; y++) level.setBlock(origin.offset(x, y, z), Blocks.AIR.defaultBlockState(), 2);
-            }
-            meadows.add(origin.offset(10, 1, 10));
-        }
-        ServerPlayer far = distantPlayer(level, start);
-        later(helper, 80, () -> {
-            try {
-                String tried = "";
-                for (BlockPos centre : meadows) {
+        List<BlockPos> spots = livestockSpots(level, 3);
+        check(!spots.isEmpty(), "the biome source offers no spot with livestock within 3000 blocks, so the test world cannot show it");
+        String tried = "";
+        try {
+            for (BlockPos origin : spots) {
+                // a lit grass meadow under the open sky, used in this very tick while its chunks are held, with a player of the level 60 blocks off (the natural spawner needs one and keeps 24 blocks from it)
+                BlockPos playerAt = origin.offset(0, 0, 60);
+                List<net.minecraft.world.level.ChunkPos> held = new ArrayList<>();
+                for (BlockPos around : List.of(origin, origin.offset(19, 0, 19), playerAt)) {
+                    net.minecraft.world.level.ChunkPos chunk = new net.minecraft.world.level.ChunkPos(around);
+                    level.getChunkSource().addRegionTicket(net.minecraft.server.level.TicketType.FORCED, chunk, 2, chunk);
+                    level.getChunk(chunk.x, chunk.z);
+                    held.add(chunk);
+                }
+                ServerPlayer far = FakePlayerFactory.get(level, new com.mojang.authlib.GameProfile(UUID.randomUUID(), "uc_sim_far"));
+                far.moveTo(playerAt.getX() + 0.5, playerAt.getY(), playerAt.getZ() + 0.5);
+                level.addNewPlayer(far);
+                try {
+                    for (int x = 0; x < 20; x++) for (int z = 0; z < 20; z++) {
+                        level.setBlock(origin.offset(x, 0, z), Blocks.GRASS_BLOCK.defaultBlockState(), 2);
+                        for (int y = 1; y <= 4; y++) level.setBlock(origin.offset(x, y, z), Blocks.AIR.defaultBlockState(), 2);
+                    }
+                    BlockPos centre = origin.offset(10, 1, 10);
                     int classic = SimulationWorld.withProfile(Profile.CLASSIC, () -> spawnMonstersInto(level, centre, 150, MobCategory.CREATURE));
                     for (Entity e : level.getEntitiesOfClass(Animal.class, new AABB(centre).inflate(30))) e.discard();
                     String biome = level.getBiome(centre).unwrapKey().map(k -> k.location().getPath()).orElse("?");
@@ -440,13 +476,16 @@ public final class SimulationGameTests {
                     for (Entity e : level.getEntitiesOfClass(Animal.class, new AABB(centre).inflate(30))) e.discard();
                     System.out.println("[UC-SIMULATION-AUDIT] natural spawner on a meadow in " + biome + ", 150 attempts: creatures in classic " + classic + ", in the simulation " + spawned);
                     check(spawned > 0, "the simulation world stopped livestock from spawning in " + biome + ": " + spawned + " against " + classic + " in CLASSIC");
+                    helper.succeed();
                     return;
+                } finally {
+                    level.removePlayerImmediately(far, Entity.RemovalReason.DISCARDED);
+                    for (net.minecraft.world.level.ChunkPos chunk : held) level.getChunkSource().removeRegionTicket(net.minecraft.server.level.TicketType.FORCED, chunk, 2, chunk);
                 }
-                throw new IllegalStateException("none of 16 meadows lies in a biome with livestock, so the test world cannot show it (tried: " + tried + ")");
-            } finally {
-                level.setDayTime(time);
-                level.removePlayerImmediately(far, Entity.RemovalReason.DISCARDED);
             }
-        });
+            check(false, "the base game's own spawner found no livestock on any of " + spots.size() + " meadows, so the test world cannot show it (tried: " + tried + ")");
+        } finally {
+            level.setDayTime(time);
+        }
     }
 }
