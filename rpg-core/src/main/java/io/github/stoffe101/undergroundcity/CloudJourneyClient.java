@@ -31,6 +31,7 @@ public final class CloudJourneyClient {
     @SubscribeEvent public static void render(TickEvent.RenderTickEvent event) {
         if(!ENABLED||event.phase!=TickEvent.Phase.END) return;
         Minecraft mc=Minecraft.getInstance();
+        SurvivalJourneyActions.render(mc);
         if(!mc.gameDirectory.toPath().toAbsolutePath().normalize().getFileName().toString().startsWith("run-journey-client")) throw new IllegalStateException("Journey client requires disposable game directory");
         if(!connecting && (mc.screen instanceof TitleScreen || mc.screen instanceof AccessibilityOnboardingScreen) && System.nanoTime()-retryAt>=0) {
             connecting=true;attempt++;mc.options.guiScale().set(3);mc.options.pauseOnLostFocus=false;mc.options.framerateLimit().set(30);mc.resizeDisplay();
@@ -59,7 +60,11 @@ public final class CloudJourneyClient {
     @SubscribeEvent public static void tick(TickEvent.ClientTickEvent event) {
         if(!ENABLED||event.phase!=TickEvent.Phase.END) return;
         if(!QShopEconomy.available()) throw new IllegalStateException("Journey requires installed Q Shop 1.8.4");
-        if(CrewJourneyServer.ENABLED) CrewJourneyActions.tick(Minecraft.getInstance());
+        if(CrewJourneyServer.ENABLED) {
+            // the combined journey's backpack and exchange steps use the screen once this client's Crew steps are done (SurvivalJourneyActions)
+            if(SurvivalJourneyActions.takesOver(Minecraft.getInstance())) SurvivalJourneyActions.tick(Minecraft.getInstance());
+            else CrewJourneyActions.tick(Minecraft.getInstance());
+        }
         else QShopJourneyActions.tick(Minecraft.getInstance());
     }
 }

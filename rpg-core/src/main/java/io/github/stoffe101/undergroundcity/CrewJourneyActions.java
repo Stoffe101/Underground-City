@@ -23,11 +23,15 @@ import java.util.List;
 final class CrewJourneyActions {
     private static final int PHASE = Integer.getInteger("uc.journey.phase", 0);
     private static int ticks, step, askedAt;
+    private static boolean allStepsDone;
     private static final List<String> LOG = new ArrayList<>();
     private static JsonObject observed;
     private CrewJourneyActions() {}
 
     private interface Step { boolean run(CrewScreen screen, CrewView view); }
+
+    /** Has this client finished every Crew step of its script (so that the survival script, if the combined journey runs one, may use the screen)? */
+    static boolean finished() { return allStepsDone; }
 
     static void tick(Minecraft mc) {
         if (mc.player == null || ++ticks % 10 != 0) return;
@@ -38,11 +42,12 @@ final class CrewJourneyActions {
             return;
         }
         List<Step> steps = PHASE == 1 ? (founder ? founderOne() : memberOne()) : (founder ? founderTwo() : memberTwo());
-        if (step >= steps.size()) return;
+        if (step >= steps.size()) { allStepsDone = true; return; }
         if (screen.busy()) return; // a request is in flight: wait for the server's answer, like a person would
         CrewView view = screen.snapshot();
         if (steps.get(step).run(screen, view)) {
             step++;
+            if (step >= steps.size()) allStepsDone = true;
             say("step " + step + " of " + steps.size() + " done");
             record(mc, screen.snapshot(), "after_step_" + step);
         }

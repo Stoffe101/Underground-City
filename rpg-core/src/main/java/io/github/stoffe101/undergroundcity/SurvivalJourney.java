@@ -168,6 +168,112 @@ final class SurvivalJourney {
         return ground(level, xz[0], xz[1]);
     }
 
+    // ------------------------------------------------------------------------------------------------------------ phase 1: the backpack, through the real screens
+
+    static final String PACK_LINE = "underground_city:survival/backpack_" + CITY;
+    private static int guiStage, guiWaited;
+    private static double guiWalletBefore;
+    private static int guiShelfBefore;
+    private static long guiClockBefore;
+    private static final JsonObject GUI = new JsonObject();
+
+    /** On a flat fixture world the house terminal needs an exchange region to belong to; a generated world has the real ones. */
+    static void fixtureRegion(ServerLevel level, BlockPos houseTerminal) {
+        if (!GENERATED) CityRegions.INSTANCE.replaceForTest(List.of(new CityRegions.Region(CITY, level.dimension().location().toString(), houseTerminal.getX() >> 4, houseTerminal.getZ() >> 4, 128)));
+    }
+
+    /** True when the backpack has been bought, worn, filled and closed through the real client screens (or there is no survival journey). */
+    static boolean guiDone() { return !ON || guiStage >= 4; }
+
+    static String guiProgress() { return ON ? "backpack stage " + guiStage : ""; }
+
+    /**
+     * The second player's backpack, bought and used by a real client (D-092): the server hands over the things to carry, opens the exchange terminal beside the player, and then only watches
+     * what the client's clicks cause. Stage 0 hands over and opens the terminal; 1 waits for the purchase (BUY 1 on the exchange screen); 2 waits for the pack to be worn (a click in the inventory
+     * screen); 3 waits for the contents (the client opens the pack with the mod's own key and moves items in) and for the screen to be closed. Called every ten server ticks until it returns true.
+     * Every check throws {@link AssertionError} on the first thing that is not as it should be.
+     */
+    static boolean guiBackpack(MinecraftServer server, ServerLevel level, ServerPlayer smith, BlockPos terminal) throws Exception {
+        if (guiStage >= 4) return true;
+        RegionalStock pack = RegionalCatalog.INSTANCE.find(PACK_LINE);
+        net.minecraft.world.item.Item packItem = item(BACKPACK);
+        WorkOrderLedger orders = WorkOrderLedger.get(server);
+        switch (guiStage) {
+            case 0 -> {
+                expect(pack != null && pack.soldAt("city") && pack.registryItem() == packItem, "the exchange sells the plain backpack in " + CITY);
+                expect(smith.level().getBlockState(terminal).is(UndergroundCity.TERMINAL.get()), "there is an Operations Terminal at " + terminal.toShortString());
+                expect(!BackpackSupport.worn(smith) && smith.getInventory().countItem(packItem) == 0, "the second player starts without a backpack");
+                fixtureRegion(level, terminal);
+                var exchange = Exchanges.at(level, terminal).orElseThrow(() -> new AssertionError("the house terminal is not inside any exchange"));
+                expect(exchange.city().equals(CITY) && !exchange.wayside(), "the house terminal belongs to " + exchange);
+                guiWalletBefore = QShopEconomy.balance(smith);
+                guiShelfBefore = orders.regionalUnits(pack);
+                guiClockBefore = orders.clock();
+                expect(guiShelfBefore >= 1, "a backpack is on the shelf: " + guiShelfBefore);
+                // Fixture only: the pack's price is granted to the wallet, so that every other number the Crew journey asserts stays exactly as it was (a person earns it from a first work order).
+                // The purchase takes it back out through the real exchange, and the journey checks that the wallet is where it began.
+                CrewService.wallet.set(smith, guiWalletBefore + pack.unitPrice());
+                smith.getInventory().add(new ItemStack(Items.DIAMOND, 7));
+                smith.getInventory().add(new ItemStack(Items.BREAD, 12));
+                smith.getInventory().add(BackpackSupport.stack("sophisticatedbackpacks:pickup_upgrade"));
+                GUI.addProperty("fixture_grant_for_the_pack", pack.unitPrice());
+                GUI.addProperty("pack_shelf_before", guiShelfBefore);
+                TerminalNetwork.open(smith, terminal);
+                System.out.println("[UC-JOURNEY] backpack: the Smith carries 7 diamonds, 12 bread and a pickup upgrade, was granted the pack's " + pack.unitPrice() + " credits, and the exchange terminal is open on his screen");
+                guiStage = 1;
+            }
+            case 1 -> {
+                if (smith.getInventory().countItem(packItem) < 1) return false;
+                double wallet = QShopEconomy.balance(smith);
+                expect(wallet == guiWalletBefore, "the pack was paid for from the wallet: " + wallet + " (began at " + guiWalletBefore + ", price " + pack.unitPrice() + ")");
+                long intervals = (orders.clock() - guiClockBefore) / pack.intervalTicks();
+                expect(orders.regionalUnits(pack) == Math.min(pack.capacity(), guiShelfBefore - 1 + intervals * pack.unitsPerInterval()), "the shared shelf lost exactly one backpack: " + orders.regionalUnits(pack) + " (was " + guiShelfBefore + ")");
+                expect(smith.getInventory().countItem(packItem) == 1, "exactly one backpack was delivered");
+                GUI.addProperty("pack_bought_at_exchange_for", pack.unitPrice());
+                System.out.println("[UC-JOURNEY] backpack: bought at the exchange screen for " + pack.unitPrice() + " credits; the shelf holds " + orders.regionalUnits(pack));
+                guiStage = 2;
+            }
+            case 2 -> {
+                if (!BackpackSupport.worn(smith)) return false;
+                int stillInMainInventory = 0;   // Inventory.countItem also counts the armour slots, where the worn pack now is
+                for (ItemStack stack : smith.getInventory().items) if (stack.is(packItem)) stillInMainInventory += stack.getCount();
+                expect(stillInMainInventory == 0, "the worn backpack left the main inventory: " + stillInMainInventory + " still in it");
+                GUI.addProperty("worn_by_clicking", true);
+                System.out.println("[UC-JOURNEY] backpack: worn (the client's click in the inventory screen)");
+                guiStage = 3;
+            }
+            case 3 -> {
+                if (smith.containerMenu != smith.inventoryMenu && !GUI.has("opened_menu")) GUI.addProperty("opened_menu", smith.containerMenu.getClass().getName());
+                ItemStack worn = smith.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.CHEST);
+                var storage = BackpackSupport.inventory(worn);
+                boolean filled = BackpackSupport.count(storage, Items.DIAMOND) == 7 && BackpackSupport.count(storage, Items.BREAD) == 12
+                    && BackpackSupport.count(BackpackSupport.upgrades(worn), item("sophisticatedbackpacks:pickup_upgrade")) == 1;
+                if (!filled || smith.containerMenu != smith.inventoryMenu) return false;
+                expect(GUI.has("opened_menu") && GUI.get("opened_menu").getAsString().contains("sophisticatedbackpacks"), "the pack's own container was opened: " + GUI);
+                expect(smith.getInventory().countItem(Items.DIAMOND) == 0 && smith.getInventory().countItem(Items.BREAD) == 0 && smith.getInventory().countItem(item("sophisticatedbackpacks:pickup_upgrade")) == 0,
+                    "everything the player carried is now in the pack");
+                GUI.addProperty("pack_slots", BackpackSupport.slots(worn));
+                GUI.addProperty("contents_uuid", BackpackSupport.contentsUuid(worn).map(java.util.UUID::toString).orElse(""));
+                System.out.println("[UC-JOURNEY] backpack: the client moved 7 diamonds, 12 bread and the pickup upgrade into the pack with the pack's own screen: " + GUI);
+                guiStage = 4;
+            }
+            default -> { }
+        }
+        return guiStage >= 4;
+    }
+
+    /** What the Smith's client has done with the pack's screen after the restart (phase 2): it must be seen open, with the pack's own container, and then closed. */
+    private static boolean sawOpen, sawClosedAfter;
+    static boolean packLookedAt(ServerPlayer smith) {
+        if (smith.containerMenu != smith.inventoryMenu) {
+            if (smith.containerMenu.getClass().getName().contains("sophisticatedbackpacks")) sawOpen = true;
+        } else if (sawOpen) sawClosedAfter = true;
+        return sawClosedAfter;
+    }
+
+    /** Facts the client-driven part adds to the marker. */
+    static JsonObject guiFacts() { return GUI; }
+
     // ------------------------------------------------------------------------------------------------------------ phase 1
 
     /**
@@ -202,9 +308,7 @@ final class SurvivalJourney {
         expect(!server.usesAuthentication(), "the journey's offline test clients need online-mode=false (see docs/technical/identity.md); the authenticated launch is checked by scripts/run_auth_check.py");
 
         // 2. the exchange the house terminal belongs to: a real city of the generated world (or, only on a flat world, a fixture region)
-        if (!GENERATED) {
-            CityRegions.INSTANCE.replaceForTest(List.of(new CityRegions.Region(CITY, level.dimension().location().toString(), houseTerminal.getX() >> 4, houseTerminal.getZ() >> 4, 128)));
-        }
+        fixtureRegion(level, houseTerminal);
         var exchange = Exchanges.at(level, houseTerminal).orElseThrow(() -> new AssertionError("the Crew's house terminal is not inside any exchange"));
         expect(exchange.city().equals(CITY) && !exchange.wayside(), "the house terminal belongs to " + exchange);
         facts.addProperty("exchange_region", GENERATED ? "real city region of the generated world" : "fixture region on a flat world");
@@ -236,16 +340,15 @@ final class SurvivalJourney {
         facts.addProperty("shelter_x", shelter.getX()); facts.addProperty("shelter_y", shelter.getY()); facts.addProperty("shelter_z", shelter.getZ());
         facts.addProperty("desk_x", desk.getX()); facts.addProperty("desk_y", desk.getY()); facts.addProperty("desk_z", desk.getZ());
 
-        // 5. the second player: a backpack with things in it, a canteen filled at a pond and drunk from, a gun
-        ItemStack pack = new ItemStack(item(BACKPACK));
-        BackpackSupport.wear(smith, pack);
-        expect(BackpackSupport.worn(smith), "the backpack is worn");
+        // 5. the second player: the backpack the client bought, wore and filled through the screens (guiBackpack), a canteen filled at a pond and drunk from, a gun
+        expect(guiDone() && BackpackSupport.worn(smith), "the backpack is worn (bought and filled through the client's screens)");
         ItemStack worn = smith.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.CHEST);
         var storage = BackpackSupport.inventory(worn);
-        expect(BackpackSupport.insertAll(storage, new ItemStack(Items.DIAMOND, 7)) && BackpackSupport.insertAll(storage, new ItemStack(Items.BREAD, 12)), "items did not go into the backpack");
-        expect(BackpackSupport.insertAll(BackpackSupport.upgrades(worn), BackpackSupport.stack("sophisticatedbackpacks:pickup_upgrade")), "the pickup upgrade did not go into the upgrade slot");
+        expect(BackpackSupport.count(storage, Items.DIAMOND) == 7 && BackpackSupport.count(storage, Items.BREAD) == 12, "the pack holds what the client moved in");
+        expect(BackpackSupport.count(BackpackSupport.upgrades(worn), item("sophisticatedbackpacks:pickup_upgrade")) == 1, "the pickup upgrade is in an upgrade slot");
         facts.addProperty("backpack_slots", BackpackSupport.slots(worn));
         facts.addProperty("backpack_contents_uuid", BackpackSupport.contentsUuid(worn).map(java.util.UUID::toString).orElse(""));
+        facts.add("backpack_gui", GUI);
 
         Class<?> skin = cls(THIRST, "com.thirstwastaken2.item.WaterskinItem"), manager = cls(THIRST, "com.thirstwastaken2.data.ThirstManager"), data = cls(THIRST, "com.thirstwastaken2.data.ThirstData"),
             purity = cls(THIRST, "com.thirstwastaken2.purity.WaterPurity"), api = cls(THIRST, "com.thirstwastaken2.api.ThirstApi");

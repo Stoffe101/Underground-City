@@ -306,7 +306,8 @@ public final class TerminalScreen extends UcScreen {
     }
 
     // ------------------------------------------------------------------------------------------------ trade rows
-    private int offerRows() { return Math.max(1, (ch - 56) / 26); }
+    /** Rows that fit under the heading, with 14 pixels kept free at the bottom for the "Scroll for N more lines" hint, which used to be drawn over the last row's price (seen in the combined journey's captures at 720p and 1440p). */
+    private int offerRows() { return Math.max(1, (ch - 56 - 14) / 26); }
 
     private void layoutOffers() {
         boolean exchange = current == Page.IMPORTS && exchangeOpen();
@@ -317,6 +318,7 @@ public final class TerminalScreen extends UcScreen {
             buyOne[i].visible = buyLot[i].visible = present;
             if (!present) continue;
             TerminalData.Offer offer = data.offers().get(i + offerScroll);
+            buyLot[i].visible = Math.min(LOT, offer.maxOrder()) > 1;   // a line that sells one unit per order has one button, not two that say the same
             int y = cy + 56 + i * 26;
             buyOne[i].setX(cx + cw - 100); buyOne[i].setY(y + 2);
             buyLot[i].setX(cx + cw - 52); buyLot[i].setY(y + 2);
@@ -352,6 +354,16 @@ public final class TerminalScreen extends UcScreen {
     boolean clickBuy(int row, boolean lot) {
         UcButton button = (lot ? buyLot : buyOne)[row];
         return mouseClicked(button.getX() + button.getWidth() / 2.0, button.getY() + button.getHeight() / 2.0, 0);
+    }
+
+    /** Journey/QA hook: turns the mouse wheel over the exchange list until the offer is on screen, then clicks its BUY 1 button. False when the offer is not listed or its button is not active. */
+    boolean clickBuyOffer(String id) {
+        int index = -1;
+        for (int i = 0; i < data.offers().size(); i++) if (data.offers().get(i).id().equals(id)) index = i;
+        if (index < 0 || current != Page.IMPORTS) return false;
+        for (int guard = 0; guard < data.offers().size() && index >= offerScroll + offerRows(); guard++) mouseScrolled(0, 0, -1);
+        layoutOffers();
+        return index >= offerScroll && index - offerScroll < MAX_OFFERS && clickBuy(index - offerScroll, false);
     }
 
     // ------------------------------------------------------------------------------------------------ skill tree layout

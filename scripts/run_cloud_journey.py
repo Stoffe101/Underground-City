@@ -53,6 +53,9 @@ def prepare() -> list[tuple[Path,str]]:
         if GENERATED:
             # the world set's own jar and the Lost Cities profile are staged by prepareDevRun from here
             shutil.copytree(ROOT/'content/generated/world-prototype',module.parent/'content/generated/world-prototype')
+        if 'survival' in os.environ.get('UC_JOURNEY_PACK','').split(','):
+            # the generated Sophisticated Backpacks policy (server settings and item switches, D-092) is staged by prepareDevRun from here
+            shutil.copytree(ROOT/'content/generated/survival-config',module.parent/'content/generated/survival-config')
         clients.append((module,role))
     return clients
 
@@ -62,9 +65,8 @@ def pack_flags(server: bool = False) -> list[str]:
     sets=os.environ.get('UC_JOURNEY_PACK','').strip()
     flags=[f'-PucPack={sets}','-PucClientHeap=2G'] if sets else []
     if GENERATED: flags+=['-PucDevWorld=true','-PucAutoWorld=false']
-    if server:
-        if GENERATED: flags+=['-PucJourneyWorld=generated','-PucServerHeap=3G']
-        if SURVIVAL: flags+=['-PucJourneySurvival=true']
+    if SURVIVAL: flags+=['-PucJourneySurvival=true']   # the server's staging (SurvivalJourney) and the Smith's client script (SurvivalJourneyActions) both need to know
+    if server and GENERATED: flags+=['-PucJourneyWorld=generated','-PucServerHeap=3G']
     return flags
 
 
@@ -162,6 +164,7 @@ def phase(number: int, clients: list[tuple[Path,str]]) -> dict:
         if result['status']!='passed' or result['connected_clients']!=2: raise RuntimeError('Incomplete journey report')
         if abrupt: result.update(result_extra)
         if SCENARIO=='crew': result['clients']=check_crew_clients(number,clients)
+        if SCENARIO=='crew' and SURVIVAL: result['smith_backpack_screens']=check_survival_clients(number)
         result['logins']=login_report(number)
         result['server_first_start_retries']=server_retries
         result['server_config_corrections']=server_log.read_text(errors='replace').count(CONFIG_CORRECTION)
@@ -192,6 +195,43 @@ def read_client(role: str, number: int) -> dict:
     path=OUTPUT/'clients'/role/'rpg-core'/f'run-journey-client-{role}'/f'journey-crew-client-phase{number}.json'
     if not path.exists(): raise RuntimeError(f'The {role} client wrote no observations: {path}')
     return json.loads(path.read_text())
+
+
+def read_survival_client(number: int) -> dict:
+    path=OUTPUT/'clients'/'smith'/'rpg-core'/'run-journey-client-smith'/f'journey-survival-client-phase{number}.json'
+    if not path.exists(): raise RuntimeError(f'The Smith client wrote no backpack observations: {path}')
+    return json.loads(path.read_text())
+
+
+def collect_screenshots(number: int) -> list[str]:
+    """Copies the screenshots the Smith's client took of its own screens (exchange, inventory, backpack at 720p, 1080p and 1440p) next to the report. Returns their names."""
+    target=OUTPUT/'screenshots'
+    target.mkdir(parents=True,exist_ok=True)
+    names=[]
+    shots=OUTPUT/'clients'/'smith'/'rpg-core'/'run-journey-client-smith'/'screenshots'
+    for path in sorted(shots.glob(f'journey-{number}-*.png')) if shots.is_dir() else []:
+        shutil.copy2(path,target/path.name)
+        names.append(path.name)
+    return names
+
+
+def check_survival_clients(number: int) -> dict:
+    """The backpack part of the combined journey, as the Smith's own screens showed it (the server asserts the contents itself, from its side)."""
+    seen=read_survival_client(number)
+    names=collect_screenshots(number)
+    need(len(names)>=(3*4 if number==1 else 3),f'the Smith client took {len(names)} screenshots, fewer than expected: {names}')
+    # three sizes per series; the client reports what the framebuffer really was, so a window the display could not give is not passed off as 1440p
+    for shot in seen['screenshots']:
+        need(shot['actual_framebuffer']==shot['requested'],f"a screenshot was requested at {shot['requested']} but the framebuffer was {shot['actual_framebuffer']}: the display is too small ({shot['file']})")
+    if number==1:
+        need(seen.get('backpack_price_seen')==70 and seen.get('backpack_stock_seen',0)>=1,'the exchange screen did not show the 70-credit backpack with stock: '+json.dumps({k:v for k,v in seen.items() if k.startswith('backpack')}))
+        need(seen.get('worn_after_click') is True and seen.get('opened_with_key') is True,'the backpack was not worn by a click or opened with the key')
+        need(seen.get('screen_shows_diamonds')==7 and seen.get('screen_shows_bread')==12 and seen.get('pickup_upgrade_left_the_inventory') is True,'the pack screen did not show what was moved in: '+json.dumps(seen))   # the upgrade slot itself is checked by the server
+    else:
+        need(seen.get('worn_after_restart') is True,'the backpack was not on the back after the restart')
+        need(seen.get('screen_after_restart_shows_diamonds')==7 and seen.get('screen_after_restart_shows_bread')==12,'the pack screen after the restart did not show the contents: '+json.dumps(seen))   # the upgrade slot is checked by the server
+    seen['screenshot_files']=names
+    return seen
 
 
 def need(condition: bool, what: str) -> None:

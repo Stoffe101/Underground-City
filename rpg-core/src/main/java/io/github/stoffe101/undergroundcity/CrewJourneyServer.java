@@ -56,9 +56,9 @@ public final class CrewJourneyServer {
     private static final double START = 200;
 
     private static boolean initialized, finished, opened;
-    private static int stalled, seenTicks;
+    private static int stalled, seenTicks, lastStepSeenAt = -1;
     private static String lastProgress = "";
-    private static BlockPos origin, chest, table;
+    private static BlockPos origin, chest, table, terminal;
     private static int pendingBeforeStart = -1, pendingAfterStart = -1;
     private static long startedAt;
     private CrewJourneyServer() {}
@@ -153,6 +153,19 @@ public final class CrewJourneyServer {
         Residence house = ledger.residence(houseId());
         boolean lastStepDone = house != null && smith.getUUID().equals(house.claims.get(chest.asLong()));
         if (!lastStepDone) return;
+
+        // The last step has reached the ledger, but the member's screen has not necessarily taken the server's answer yet, and it records what it shows after each step (the runner compares those
+        // observations). Give both clients five seconds before anything else happens to their screens or to the process: without it the abrupt halt below could come first and the last
+        // observation never be written.
+        if (lastStepSeenAt < 0) lastStepSeenAt = server.getTickCount();
+        if (server.getTickCount() - lastStepSeenAt < 100) return;
+
+        // The second player's backpack, through the real screens (D-092): he buys it at the house's exchange terminal, wears it from the inventory screen, opens it with the mod's key and
+        // moves things into it. The server only hands over the goods and watches the effects; every check of the Crew journey below runs after it, with the wallet back where it began.
+        if (SurvivalJourney.ON && !SurvivalJourney.guiDone()) {
+            SurvivalJourney.guiBackpack(server, level, smith, terminal);
+            return;
+        }
 
         // every step happened: now check all of it, strictly
         Crew crew = ledger.crewOf(farmer.getUUID());
@@ -313,7 +326,9 @@ public final class CrewJourneyServer {
         // the Row House has two chests side by side against the north wall; the one at (20, 0, 2) is open to the west and the south, the other is walled in by the crafting table and its twin
         chest = origin.offset(20, 0, 2);
         table = origin.offset(17, 0, 1);
-        expect(level.getBlockState(chest).is(Blocks.CHEST) && level.getBlockState(table).is(Blocks.SMITHING_TABLE), "the Row House's chest and smithing table are where the data says");
+        terminal = origin.offset(15, 0, 1);   // the house's own Operations Terminal, beside the smithing table
+        expect(level.getBlockState(chest).is(Blocks.CHEST) && level.getBlockState(table).is(Blocks.SMITHING_TABLE) && level.getBlockState(terminal).is(UndergroundCity.TERMINAL.get()),
+            "the Row House's chest, smithing table and terminal are where the data says");
     }
 
     private static String houseId() {
@@ -326,7 +341,7 @@ public final class CrewJourneyServer {
         String crewText = crew == null ? "no Crew" : crew.name + " members=" + crew.members.size() + " bank=" + crew.bank + " memberPerms=" + crew.perms.get(Role.MEMBER).size();
         String houseText = house == null ? "no house" : house.ownerType + (house.claims.isEmpty() ? "" : " claims=" + house.claims.size());
         return crewText + " | house " + houseText + " | wallets " + (long) QShopEconomy.balance(farmer) + "/" + (long) QShopEconomy.balance(smith)
-            + " | invites " + ledger.invitesFor(smith.getUUID()).size() + " | pending " + ledger.allPending().size();
+            + " | invites " + ledger.invitesFor(smith.getUUID()).size() + " | pending " + ledger.allPending().size() + (SurvivalJourney.ON ? " | " + SurvivalJourney.guiProgress() : "");
     }
 
     // ------------------------------------------------------------------------------------------------------------ phase 2
@@ -342,6 +357,7 @@ public final class CrewJourneyServer {
     private static void phaseTwo(MinecraftServer server, Path folder, ServerPlayer farmer, ServerPlayer smith) throws Exception {
         ServerLevel level = server.overworld();
         CrewLedger ledger = CrewService.need(server);
+        if (SurvivalJourney.ON) SurvivalJourney.packLookedAt(smith);   // every tick: the client's look at its pack may be shorter than the ten ticks between the checks below
         if (!verified) {
             verified = true;
             state = JsonParser.parseString(Files.readString(folder.resolve("crew-journey-state.json"))).getAsJsonObject();
@@ -400,6 +416,8 @@ public final class CrewJourneyServer {
         if (crew.bank != 30 - SPENT || QShopEconomy.balance(farmer) != 60 || QShopEconomy.balance(smith) != 170 || !ledger.allPending().isEmpty()) return;
         // the numbers are final; give the clients a few seconds to take the server's answer into their screens and write down what they show before the server ends the run
         if (++settled * 10 < 20 * 5) return;
+        // the second client opens the backpack the restart gave back, with the mod's key, looks at it (screenshots) and closes it; the pack's own container must be seen open and then closed
+        if (SurvivalJourney.ON && !SurvivalJourney.packLookedAt(smith)) { lastProgress = text + " | waiting for the client to open and close the backpack"; return; }
         expect(QShopEconomy.balance(farmer) + QShopEconomy.balance(smith) + crew.bank + 140 + SPENT == 400, "conservation at the end");
         expect(crew.log.stream().filter(e -> e.kind().equals("DEPOSIT") && e.amount() == 5).count() == 1 && crew.log.stream().filter(e -> e.kind().equals("WITHDRAW") && e.amount() == 20).count() == 1,
             "the two transfers made after the restart are in the history once each");
@@ -430,6 +448,7 @@ public final class CrewJourneyServer {
         marker.addProperty("farmer_wallet_final", QShopEconomy.balance(farmer));
         marker.addProperty("smith_wallet_final", QShopEconomy.balance(smith));
         if (survivalFacts != null) marker.add("survival", survivalFacts);
+        if (SurvivalJourney.ON) marker.addProperty("client_opened_and_closed_the_pack_after_restart", true);
         marker.addProperty("replays_refused_after_restart", 2);
         JsonArray history = new JsonArray();
         crew.log.forEach(e -> history.add(e.kind() + (e.amount() > 0 ? " " + e.amount() : "")));

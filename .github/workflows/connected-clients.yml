@@ -99,7 +99,7 @@ jobs:
     env:
       # Scenario "crew" with the survival and exchange half (SurvivalJourney.java, D-091) on a world generated from seed 5908 by Lost Cities, with the world, firearms, vehicles,
       # boats, vintner, farming and survival sets loaded on the server and on both clients. Phase 1 puts the Crew in fully shared finances, builds a wayside shelter, equips a
-      # backpack, fills and drinks a canteen, cooks a meal, carries a gun, and starts a Crew-funded purchase at the shelter's desk whose process dies right after its prepared
+      # backpack (bought, worn, opened with the mod's key and filled by a real client on the real screens, photographed at 720p, 1080p and 1440p), fills and drinks a canteen, cooks a meal, carries a gun, and starts a Crew-funded purchase at the shelter's desk whose process dies right after its prepared
       # record; the server JVM is then halted with no stop sequence. Phase 2 restarts it: the held purchase is committed at login, everything the players carry is read back from
       # their real player files, a replay is refused, and a purchase split between the bank and a wallet, one paid by a wallet and one nobody can pay are made on the exchange.
       # The clients are offline test profiles, so the server is online-mode=false; the authenticated launch is checked by run_auth_check.py in dev-pack-smoke.yml.
@@ -122,7 +122,8 @@ jobs:
       - name: Install cloud virtual display
         run: sudo apt-get update -qq && sudo apt-get install -y -qq xvfb xauth libgl1-mesa-dri libgl1
       - name: Run the combined journey
-        run: xvfb-run -a -s '-screen 0 1920x1080x24' python scripts/run_cloud_journey.py
+        # 2560x1440: the Smith's client resizes its window to 720p, 1080p and 1440p to photograph the exchange, inventory and backpack screens (SurvivalJourneyActions)
+        run: xvfb-run -a -s '-screen 0 2560x1440x24' python scripts/run_cloud_journey.py
       - name: Print why a journey process stopped (the logs are also an artifact)
         if: failure()
         run: |
@@ -140,6 +141,7 @@ jobs:
           path: |
             build/cloud-journey/logs/*.log
             build/cloud-journey/report.json
+            build/cloud-journey/screenshots/*.png
             rpg-core/run-journey-server/journey-crew-phase*.json
             rpg-core/run-journey-server/journey-failure.txt
             rpg-core/run-journey-server/crash-reports/*.txt

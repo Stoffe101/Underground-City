@@ -80,7 +80,8 @@ jobs:
             grep -q "Registered synced data key tacz:" "$log"
           elif [ "${{ matrix.pack }}" = "survival" ]; then
             grep -q "ThirstWasTaken2 initialized" "$log"
-            grep -q "Registered the FluidEffect with Unique ID of minecraft:water" "$log"
+            # Sophisticated Backpacks is the backpack provider (D-092); Core compares the configuration the mod is really running with against the policy at server start and logs this line only when they match
+            grep -q "\[UC-BACKPACKS\] the running Sophisticated Backpacks configuration matches the Underground City policy" "$log"
           elif [ "${{ matrix.pack }}" = "living" ]; then
             grep -q "Registered /wine command" "$log"
             grep -q "farm_and_charm:set_text" "$log"
