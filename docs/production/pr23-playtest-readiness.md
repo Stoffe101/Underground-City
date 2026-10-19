@@ -1,5 +1,7 @@
 # PR #23 follow-up: the shared-finance bug, authentication, home security, survival supply and the combined journey
 
+> **Superseded in part (October 19, 2026; D-092):** the backpack provider named in this report, Traveler's Backpack, was **replaced by Sophisticated Backpacks + Sophisticated Core**. Read "Traveler's Backpack" below as the retired provider; the current facts are in [backpack-economy.md](../technical/backpack-economy.md). Everything else here is as it was when written.
+
 Branch `feature/crews-shared-homes-and-finances`, the same **draft** PR [#23](https://github.com/Stoffe101/Underground-City/pull/23). Nothing was merged. This report answers the owner's review of October 18, 2026 ("Critical Shared-Finance Fix and Playtest Readiness") point by point. Decisions: **D-089** (the purchase protocol), **D-090** (identity, authentication and the home guard), **D-091** (survival goods on sale).
 
 **Status vocabulary** (as in the earlier sprint reports): *GameTested* = an automated test in a headless dedicated test server; *journey* = two real Minecraft clients and a real dedicated server driven by `scripts/run_cloud_journey.py`; *mutation-checked* = a deliberate bug was applied to the code and the named tests failed; *human* = a person played it. **Nothing here is *human*.** Everything ran in the Claude cloud container (4 CPUs, 16 GB) or on GitHub Actions, never on the owner's computer.

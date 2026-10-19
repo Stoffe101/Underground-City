@@ -88,7 +88,13 @@ In Minecraft: *Multiplayer*, *Add Server* (or *Direct Connection*), address `loc
 
 Single player instead: `.\gradlew.bat runClient` opens straight into the dev world `UC-Dev-5908`.
 
-Optional survival set (backpack, thirst, kitchen, sleeping bags): add `-PucExtraSets=survival` to **every** command (server and clients), for example `.\gradlew.bat runClient -PucExtraSets=survival`. It adds the four opt-in mods to the complete pack and keeps the developer launch (the dev world and the Founders Row and Row Flats bootstrap) as it is. See section 6 for what is verified.
+Optional survival set (backpack, thirst, kitchen, sleeping bags): add `-PucExtraSets=survival` to **every** command (server and clients), for example `.\gradlew.bat runClient -PucExtraSets=survival`. It adds the opt-in mods to the complete pack and keeps the developer launch (the dev world and the Founders Row and Row Flats bootstrap) as it is. See section 6 for what is verified.
+
+**Installing Sophisticated Backpacks (nothing to do by hand).** The backpack is **Sophisticated Backpacks 3.26.12.2206 with Sophisticated Core 1.5.12.2412**. They are *all rights reserved* mods: this repository does not contain them and you must not copy them into it. `-PucExtraSets=survival` makes Gradle download exactly those two files from their author's Modrinth page into the build cache and refuse any file whose SHA-512 differs from `content/modpacks/dev-pack.json`. Do **not** also put a backpack mod of your own, or Traveler's Backpack, into a `mods` folder: the pack tests only one backpack mod, and the server logs an error if both are present. The generated settings (smaller sizes, fewer upgrades) are copied into `run-dev\defaultconfigs` for you and apply to a **new** world; a world you already have keeps the settings it was made with, and the server log says so at every start (`[UC-BACKPACKS] ... matches the Underground City policy`, or one line per difference).
+
+**The world has no ordinary monsters.** Underground City is a simulation of a working world, not a monster-survival pack. Out of the box there are **no zombies, skeletons, creepers, spiders, endermen, witches or any other hostile creature** (not at night, not in caves, not from spawner blocks); the game is **not** on Peaceful and animals, villagers and pets are normal. Hunger, thirst, falls, fire and drowning still hurt. This applies to the dev world, to a dedicated server and to a single-player or LAN world, with no file to edit: the default is in the code. The server log shows `[UC-SIMULATION] hostile creatures: SIMULATION` at every start. If you *want* the base game's monsters for a test, stop the server and set `hostileMobs = "CLASSIC"` in `world\serverconfig\underground_city-server.toml` (it takes effect at once; set it back to `SIMULATION` to remove them again). See [simulation-world.md](../technical/simulation-world.md).
+
+**If you have an older world with Traveler's Backpack items in it:** do not open it with the current pack until you have read [backpack-migration.md](../technical/backpack-migration.md). Nothing converts the items for you; the document says exactly what the server did in the cloud experiment and how to keep them.
 
 ## 5. The Crew test (about 30 minutes)
 
@@ -127,19 +133,37 @@ Everything here is also covered by scripts; this list is for **your** eyes and h
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | In a city, open an **Operations Terminal**, press the exchange tab, find *Waterskin*, *Backpack*, *Cutting board*, *Cooking pot*, *Sleeping bag* | goods with a price in credits and a number of units left; buying takes credits from **your** wallet and moves the stock for everybody |
+| 1 | In a city, open an **Operations Terminal**, press the exchange tab, find *Waterskin*, *Backpack* (**70 credits**, at most four on the shelf, one more every 45 minutes), *Cutting board*, *Cooking pot*, *Sleeping bag* | goods with a price in credits and a number of units left; buying takes credits from **your** wallet and moves the stock for everybody |
 | 2 | Alice (founder): *Crew > Rules*, choose **Fully shared finances**. Bob: open *Rules* and press *Agree* | a banner explains the change; it takes effect only when **everybody** has agreed; no credit moves because of the switch |
 | 3 | Alice: *Rules > Members may spend Crew money* on. Both deposit credits. Bob buys something that costs **more than the bank holds** | the bank pays what it holds and Bob's wallet pays the rest; the success line and the Crew history (*Purchase*) say how it was split |
 | 4 | Switch *Spend* off for Bob and try to buy again; then try something nobody can afford | Bob pays from his own wallet only; the unaffordable purchase is refused with a line saying why, and **no credit has moved anywhere** (check the bank and your wallet) |
 | 5 | Open a **Q Shop shop** (not the exchange) and buy | it spends **your** wallet only; the Crew screen says so beside the finance mode |
 | 6 | Walk out of the city to a **wayside shelter** (the lanterned roadside pavilion or well). Find the small terminal desk | a *provisions desk*: bread, torches, water bowls, a waterskin; it shows no work orders and sells the nearest city's wayside lines from the same finite stock. Shelters built before this change have no desk until they are undone and rebuilt |
-| 7 | Wear a backpack (right-click it, or the equip key), put things in it, log out, restart the server, log in | the backpack, its contents and the thirst bar are as you left them |
+| 7 | Wear a backpack (open the inventory with **E** and shift-click the pack, or drag it onto the chest armour slot), press **B** to open it, put things in it, log out, restart the server, log in | the backpack, its contents and the thirst bar are as you left them. See section 6c for the full backpack list |
 | 8 | Fill a canteen or waterskin at a pond (use it looking at the water); drink; check that boiling dirty water in a furnace makes it safe | servings go down by one per drink and thirst goes up; dirty water makes you ill, boiled water does not |
 | 9 | Cook something in a cooking pot over a heat source (a campfire, magma or a lit furnace below) | a meal that feeds; |
 | 10 | Sleep in a **sleeping bag**, then die or use /kill and respawn | you respawn at your bed or the world spawn, **not** at the sleeping bag; a vanilla bed does set it |
 | 11 | Break a block of the Row House from outside the Crew: a friend who is not in the Crew (or you, from a second account) tries to open the chest, push a block through the wall with a piston, hopper-drain a chest, place lava or a bucket, break an item frame | each is refused; the same things work for the Crew inside |
 
 Things to write down: did the shared-finance words make sense before you pressed anything; was it ever unclear who paid; was a price silly; did you run out of a good and not know why.
+
+## 6c. Backpack and monster-free world test (about 20 minutes, with `-PucExtraSets=survival` on server and clients)
+
+The backpack is **Sophisticated Backpacks**; its keys are **B** (open the worn backpack), **C** (the inventory-interaction key, used by the deposit and restock upgrades) and **Z** / **X** (switch an upgrade). Everything below was run by scripts in the cloud (a Forge GameTest per rule; one scripted client for the screens). Nobody has done it by hand.
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Buy the plain *Backpack* for 70 credits at a city terminal. Look at the other goods on the same screen: string, slime balls, ender pearls, blaze rods | the pack has **27 slots and one upgrade slot**; string (3 to 4 credits), a slime ball (14), an ender pearl (**120**, four on the shelf) and a blaze rod (**200**, three on the shelf) are on sale because there are no spiders, slimes, endermen or blazes |
+| 2 | Wear it, press **B**, put in a stack of food, a tool and a few ingots; close it; take it off and put it on the ground (sneak and right-click a block); open the placed pack with a right-click | the contents are the same in the worn and the placed pack; sneaking with an empty hand and right-clicking the placed pack picks it up with its contents |
+| 3 | Craft or buy an upgrade (*Pickup*, *Filter*, *Magnet*, *Feeding*, *Restock*, *Deposit*, *Crafting* and *Jukebox* are switched on, and the first *Stack* upgrade, one per pack; every other upgrade is off) and put it into the pack's upgrade slot (the tab on the pack screen's left edge). Walk over dropped items with the Pickup upgrade on | the item is picked up into the pack. The *Magnet* has range 3 and works only while worn. *Feeding* eats real food from the pack when you are hungry and works **only in a worn pack** |
+| 4 | Try to open a **second** backpack while wearing one, carry three, then four | the screens work; more than two packs slow you down |
+| 5 | In a Crew home: put a backpack on the floor in the shared room. Let the other player open it, then take it away; then make it private (*Home > Make container private*) and let the other player try | a Crew member with the storage right can open and pick it up; after it is private only you can; a visitor who is not in the Crew can do neither, and a hopper placed beside it by someone without the right is refused |
+| 6 | Die with a full backpack on (`/kill`), respawn, find the grave of items | the pack and its contents are on the ground where you died, and the same contents come back when you pick it up |
+| 7 | Stop the server, start it, log in | the worn pack and its contents are as you left them. The server log has the line `[UC-BACKPACKS] the running Sophisticated Backpacks configuration matches the Underground City policy` |
+| 8 | Wait for a night (`/time set night` as an operator is fine) and walk outside, into a cave, into a building | **no zombies, skeletons, creepers, spiders or other hostile creatures**; animals, villagers and your pets are normal. The log line `[UC-SIMULATION] hostile creatures: SIMULATION` is at the top of the server log. Hunger and thirst still drain and a fall still hurts |
+| 9 | As an operator, `/uc_simulation status`, then `/uc_simulation purge` | the profile, how many hostile creatures were kept out since the start, and (after the purge) none in the loaded chunks |
+
+Things to write down: did the pack feel like a convenience or like a trap; was 70 credits a lot or little for your first hour; did you miss the disabled upgrades (smelting, tanks, void, infinite stacks); was the world too quiet at night; did anything take longer than a second to open.
 
 ## 7. Logs, screenshots and bug reports
 

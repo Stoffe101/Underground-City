@@ -6,6 +6,8 @@
 
 **Five careers:** Farmer, Vintner (two careers, D-067), Smith/Engineer, Gunsmith/Arms Dealer, Hacker/Technician.
 
+**A simulation, not a monster pack (owner direction, October 19, 2026; [D-094](../production/decisions.md)):** the world has **no ordinary hostile creatures** (no zombies, skeletons, creepers or the like, at night or in caves); danger comes from hunger, thirst, falls and fire, and above all from **people**: security, criminals, rivals, police. Survival is about preparation (water, food, a backpack, shelter), not about killing things. Items the base game gets from monsters have bought, crafted or scripted routes ([monster-resources.md](../technical/monster-resources.md)).
+
 **Hard exclusion:** the **Create** mod, its add-ons and anything that requires it are not part of this project and must not be added, proposed as a dependency or used as a rebinding example.
 
 ## Player fantasy

@@ -1,5 +1,7 @@
 # Expansion plan: from a tested slice to a populated, playable region
 
+> **Superseded in part (October 19, 2026; D-092):** the backpack provider named in this report, Traveler's Backpack, was **replaced by Sophisticated Backpacks + Sophisticated Core**. Read "Traveler's Backpack" below as the retired provider; the current facts are in [backpack-economy.md](../technical/backpack-economy.md). Everything else here is as it was when written.
+
 Status: **proposal for the owner's decision**, written October 18, 2026 after the Crew sprint. Nothing below is built unless the "Today" line of its work package says so, and a "Today" line only claims what a named test or record shows. Accepted intent is in [vision.md](../design/vision.md) and [decisions.md](decisions.md) (D-080 in particular); this document says *in what order, with what proof*. It does not change a decision.
 
 How to read a work package (WP):

@@ -73,7 +73,9 @@
 - [ ] First Crew contract that needs two careers (expansion plan WP1).
 - [x] Guard gaps for leased homes: pistons, hoppers and droppers, modded containers, item frames, armor stands, paintings, chest boats, minecarts, placed entities, fluids, fire, mobs (D-090, PR #23). **Still open:** fire spread from outside, lightning, fluid dispensers, vehicles of other mods, mods that move blocks themselves; rent charged in active play only; home transfer between a player and a Crew.
 - [ ] A UUID migration from offline to authenticated identities (explicit, audited, one crash-safe step); none exists and none is silent (D-090).
-- [ ] Report the Lost Cities world-tick stall after bulk chunk generation and the Traveler's Backpack first-start config race upstream, with the crash reports; decide whether production needs a pregeneration policy (risk register).
+- [ ] Lost Cities long ticks (D-096): the draft upstream report is in [lost-cities-stalls.md](../technical/lost-cities-stalls.md) and **is not posted**; it needs the owner's approval. Owner decision: keep `forceSaplingGrowth = false` as the new-world default (fewer grown trees at generation, no 5 to 10 s ticks) or restore the default. Decide the pregeneration policy for a production server (the document says: no bulk requests).
+- [ ] A simple medical-supply item (no instant unrestricted healing, no injury system): nothing was selected on October 19 (see the mod audit); the base game's food, golden apples and potions are the only healing today.
+- [ ] Backpack economy review after a played session: the price of the first pack (70 credits), the tier sizes and the disabled upgrade list are first guesses (D-092).
 - [ ] A medical item (bandage) from a chosen mod or a Core item, sold at the exchange and the shelters, no free healing, no respawn change (D-079).
 - [ ] Hosted run of `journey-crew`, `journey-combined` (generated world, every set, survival half) and of the `survival` pack job read and recorded.
 - [ ] Optional: a Core-owned TaCZ gun pack so that component costs sit in the gun recipe itself (researched, unverified; D-087).
