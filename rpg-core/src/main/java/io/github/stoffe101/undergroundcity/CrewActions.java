@@ -93,7 +93,19 @@ final class CrewActions {
             case DEPOSIT -> { CrewService.deposit(player, act.tx(), act.amount()); return act.amount() + " credits deposited."; }
             case WITHDRAW -> { CrewService.withdraw(player, act.tx(), act.amount()); return act.amount() + " credits withdrawn."; }
             case CLAIM_OWED -> { CrewService.claimOwed(player, act.tx()); return "Payout received."; }
-            case LEASE -> { CrewService.lease(player, act.tx(), act.text(), act.flag(), act.flag2()); return "Home leased."; }
+            case LEASE -> { CrewService.lease(player, act.tx(), act.text(), act.flag(), act.flag2()); return "Home bought."; }
+            case RENT -> { PropertyService.rent(player, act.tx(), act.text(), act.flag(), act.flag2()); return "Home rented."; }
+            case PAY -> {
+                if (act.amount() < 1 || act.amount() > 24) throw new IllegalStateException("Choose between 1 and 24 hours.");
+                PropertyService.pay(player, act.tx(), act.text(), (int) act.amount(), act.flag2());
+                return act.amount() + " hour" + (act.amount() == 1 ? "" : "s") + " paid.";
+            }
+            case AUTOPAY -> { PropertyService.setAutopay(player, act.text(), act.flag()); return act.flag() ? "Automatic payment is on." : "Automatic payment is off."; }
+            case MOVE_OUT -> { int back = PropertyService.moveOut(player, act.text()); return "You moved out." + (back > 0 ? " " + back + " credits of the deposit came back." : ""); }
+            case SELL_BACK -> { int back = PropertyService.sellBack(player, act.text()); return "Sold for " + back + " credits."; }
+            case UPGRADE -> { PropertyService.upgrade(player, act.tx(), act.text(), (int) act.amount(), act.flag2()); return "Upgrade fitted."; }
+            case HAND_TO_CREW -> { PropertyService.transferToCrew(player, act.text()); return "The home is the Crew's now."; }
+            case HAND_TO_FOUNDER -> { PropertyService.transferToFounder(player, act.text()); return "The home is yours alone now."; }
             case CLAIM_CONTAINER -> { CrewService.claimContainer(player, looking(player)); return "That container is private to you now."; }
             case RELEASE_CONTAINER -> { CrewService.releaseContainer(player, looking(player)); return "That container is shared again."; }
         }

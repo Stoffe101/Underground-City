@@ -5,6 +5,9 @@ import io.github.stoffe101.undergroundcity.CrewLedger.OwnerType;
 import io.github.stoffe101.undergroundcity.CrewLedger.Residence;
 import io.github.stoffe101.undergroundcity.CrewRules.Perm;
 import io.github.stoffe101.undergroundcity.CrewRules.Role;
+import io.github.stoffe101.undergroundcity.PropertyRules.Rules;
+import io.github.stoffe101.undergroundcity.PropertyRules.Tenure;
+import io.github.stoffe101.undergroundcity.PropertyRules.Terms;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.common.util.FakePlayer;
@@ -21,16 +24,46 @@ public record CrewView(boolean storageOk, String problem, UUID self, String self
                        boolean inCrew, UUID crewId, String crewName, String role, int myPerms, String mode, String effectiveMode, boolean consentSelf, int consentCount,
                        long bank, int managerPerms, int memberPerms, boolean canClaimLead, boolean disbandArmed,
                        List<MemberRow> members, List<InviteRow> incoming, List<InviteRow> outgoing, List<Candidate> candidates,
-                       List<LogRow> log, List<HomeRow> homes, List<LeaseRow> nearby) {
+                       List<LogRow> log, List<HomeRow> homes, List<LeaseRow> nearby, List<UpgradeRow> upgrades, RulesRow rules) {
+
+    /** The shape before the property economy: the new parts take their defaults (used by the review captures and the failure views). */
+    public CrewView(boolean storageOk, String problem, UUID self, String selfName, boolean citizen, boolean moneyReady, double wallet, long owed, boolean starter,
+                    boolean inCrew, UUID crewId, String crewName, String role, int myPerms, String mode, String effectiveMode, boolean consentSelf, int consentCount,
+                    long bank, int managerPerms, int memberPerms, boolean canClaimLead, boolean disbandArmed,
+                    List<MemberRow> members, List<InviteRow> incoming, List<InviteRow> outgoing, List<Candidate> candidates,
+                    List<LogRow> log, List<HomeRow> homes, List<LeaseRow> nearby) {
+        this(storageOk, problem, self, selfName, citizen, moneyReady, wallet, owed, starter, inCrew, crewId, crewName, role, myPerms, mode, effectiveMode, consentSelf, consentCount,
+            bank, managerPerms, memberPerms, canClaimLead, disbandArmed, members, incoming, outgoing, candidates, log, homes, nearby, List.of(), RulesRow.DEFAULT);
+    }
 
     public record MemberRow(UUID id, String name, String role, String career, int level, boolean online, String seen) {}
     public record InviteRow(UUID id, String crew, String who, String ago) {}
     public record Candidate(String name, String career) {}
     public record LogRow(String ago, String who, String kind, long amount, String note) {}
-    public record HomeRow(String id, String title, String kind, String owner, String where, int mine, boolean here) {}
-    public record LeaseRow(String id, String title, String kind, int price, boolean starter, int distance) {}
+    /** How a held home is kept: the server's numbers and words for the Home page. Nothing here is decided by the client. */
+    public record Tenancy(String tenure, String standing, String category, String area, int charge, int deposit, int minutes, int prepaid, int arrears, int owed, boolean autopay,
+                          boolean manage, boolean crewHome, int containers, int maxContainers, int claimsMine, int claimsMax, String facilities, String upgrades, String residents,
+                          boolean legacy, int refund, List<String> receipts) {
+        public static final Tenancy NONE = new Tenancy("", "CURRENT", "", "", 0, 0, 0, 0, 0, 0, false, false, false, 0, 0, 0, 0, "", "", "", false, 0, List.of());
+        public boolean rented() { return tenure.equals(Tenure.RENT.name()); }
+        public boolean billed() { return charge > 0; }
+    }
+    public record HomeRow(String id, String title, String kind, String owner, String where, int mine, boolean here, Tenancy tenancy) {
+        public HomeRow(String id, String title, String kind, String owner, String where, int mine, boolean here) { this(id, title, kind, owner, where, mine, here, Tenancy.NONE); }
+    }
+    /** What a home that nobody holds offers, in the numbers this player would pay in this city. */
+    public record Offer(boolean canRent, boolean canBuy, int rent, int deposit, int upkeep, boolean welcome, String category, String summary, String facilities, int containers, int claims, int factor) {
+        public static final Offer LEGACY = new Offer(false, true, 0, 0, 0, false, "", "", "", 0, 0, 100);
+    }
+    public record LeaseRow(String id, String title, String kind, int price, boolean starter, int distance, Offer offer) {
+        public LeaseRow(String id, String title, String kind, int price, boolean starter, int distance) { this(id, title, kind, price, starter, distance, Offer.LEGACY); }
+    }
+    public record UpgradeRow(String id, String title, int cost, String summary) {}
+    public record RulesRow(int cycleMinutes, int prepayMax, int grace, int notice, int sellBackPercent, int welcomeCycles) {
+        public static final RulesRow DEFAULT = new RulesRow(60, 6, 2, 1, 60, 2);
+    }
 
-    public static final int MAX_MEMBERS = 8, MAX_INVITES = 6, MAX_CANDIDATES = 12, MAX_LOG = 14, MAX_HOMES = 8, MAX_NEARBY = 8;
+    public static final int MAX_MEMBERS = 8, MAX_INVITES = 6, MAX_CANDIDATES = 12, MAX_LOG = 14, MAX_HOMES = 8, MAX_NEARBY = 8, MAX_UPGRADES = 6, MAX_RECEIPTS = 5;
 
     public boolean can(Perm perm) { return role.equals(Role.FOUNDER.title) || (myPerms & (1 << perm.ordinal())) != 0; }
     public boolean founder() { return role.equals(Role.FOUNDER.title); }
@@ -45,7 +78,7 @@ public record CrewView(boolean storageOk, String problem, UUID self, String self
     /** A view for review captures only: storage unavailable, no player. */
     static CrewView unavailableForCapture(String problem) {
         return new CrewView(false, problem, new UUID(0, 1), "Imogen", false, false, 0, 0, false, false, new UUID(0, 0), "", "", 0, "BANK", "BANK",
-            false, 0, 0, 0, 0, false, false, List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of());
+            false, 0, 0, 0, 0, false, false, List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), RulesRow.DEFAULT);
     }
 
     /** The view of {@code player}'s Crew life right now. */
@@ -79,26 +112,45 @@ public record CrewView(boolean storageOk, String problem, UUID self, String self
         List<HomeRow> homes = new ArrayList<>();
         List<LeaseRow> nearby = new ArrayList<>();
         String dimension = player.level().dimension().location().toString();
+        Rules rules = PropertyCatalog.INSTANCE.rules();
         List<Residence> held = new ArrayList<>(ledger.residencesOf(OwnerType.PLAYER, player.getUUID()));
         if (crew != null) held.addAll(ledger.residencesOf(OwnerType.CREW, crew.id));
         for (Residence r : held) {
             if (homes.size() >= MAX_HOMES) break;
             int mine = (int) r.claims.values().stream().filter(player.getUUID()::equals).count();
             boolean here = r.dimension.equals(dimension) && r.insideShell(dimension, player.blockPosition());
-            homes.add(new HomeRow(r.id, r.title, r.kind, r.ownerType == OwnerType.CREW ? "Crew" : "You", r.min.getX() + " " + r.min.getY() + " " + r.min.getZ(), mine, here));
+            homes.add(new HomeRow(r.id, r.title, r.kind, r.ownerType == OwnerType.CREW ? "Crew" : "You", r.min.getX() + " " + r.min.getY() + " " + r.min.getZ(), mine, here,
+                tenancy(ledger, player, r, crew, rules, mine)));
         }
         for (Residence r : ledger.allResidences()) {
             if (nearby.size() >= MAX_NEARBY) break;
             if (r.owned() || r.reservedBy != null || !r.dimension.equals(dimension)) continue;
             double distance = Math.sqrt(r.distanceSqr(player.blockPosition()));
             if (distance > 64) continue;
-            nearby.add(new LeaseRow(r.id, r.title, r.kind, ledger.priceFor(player.getUUID(), r), ledger.usesStarter(player.getUUID(), r), (int) distance));
+            Terms terms = PropertyCatalog.INSTANCE.find(r.id).orElse(null);
+            Offer offer = Offer.LEGACY;
+            int price = ledger.priceFor(player.getUUID(), r);
+            if (terms != null) {
+                CrewLedger.Quote quote = terms.canRent() ? ledger.rentQuote(player.getUUID(), r, terms, rules) : null;
+                price = terms.canBuy() ? ledger.buyPrice(r, terms) : 0;
+                offer = new Offer(terms.canRent(), terms.canBuy(), quote == null ? 0 : quote.rent(), quote == null ? 0 : quote.deposit(), PropertyRules.scaled(terms.upkeep(), r.factorPct),
+                    quote != null && quote.welcome(), PropertyCatalog.INSTANCE.categoryTitle(terms.category()), terms.summary(), String.join(", ", terms.facilities()),
+                    terms.maxContainers(), terms.privateClaims(), r.factorPct);
+            }
+            nearby.add(new LeaseRow(r.id, r.title, r.kind, price, terms == null && ledger.usesStarter(player.getUUID(), r), (int) distance, offer));
         }
+        List<UpgradeRow> upgrades = new ArrayList<>();
+        int tradeDiscount = SkillService.upgradeDiscountPercent(player);
+        for (PropertyRules.Upgrade up : PropertyCatalog.INSTANCE.upgrades().values()) if (upgrades.size() < MAX_UPGRADES) {
+            PropertyRules.Upgrade priced = up.discounted(tradeDiscount);
+            upgrades.add(new UpgradeRow(up.id(), up.title(), priced.cost(), up.summary() + (priced.cost() < up.cost() ? " Your trade saves you " + (up.cost() - priced.cost()) + " credits." : "")));
+        }
+        RulesRow rulesRow = new RulesRow(rules.cycleMinutes(), rules.prepayMaxCycles(), rules.graceCycles(), rules.noticeCycles(), rules.sellBackPercent(), rules.welcomeMotelCycles());
         long owed = ledger.owedTo(player.getUUID());
         boolean starter = ledger.starterAvailable(player.getUUID());
         if (crew == null) {
             return new CrewView(true, "", player.getUUID(), player.getGameProfile().getName(), citizen, money, wallet, owed, starter, false, new UUID(0, 0), "", "", 0,
-                "BANK", "BANK", false, 0, 0, 0, 0, false, false, List.of(), incoming, List.of(), List.of(), List.of(), homes, nearby);
+                "BANK", "BANK", false, 0, 0, 0, 0, false, false, List.of(), incoming, List.of(), List.of(), List.of(), homes, nearby, upgrades, rulesRow);
         }
         List<MemberRow> members = new ArrayList<>();
         for (CrewLedger.Member member : crew.members.values()) {
@@ -123,7 +175,39 @@ public record CrewView(boolean storageOk, String problem, UUID self, String self
         return new CrewView(true, "", player.getUUID(), player.getGameProfile().getName(), citizen, money, wallet, owed, starter, true, crew.id, crew.name,
             crew.roleOf(player.getUUID()).title, bits(crew.roleOf(player.getUUID()) == Role.FOUNDER ? java.util.EnumSet.allOf(Perm.class) : crew.perms.get(crew.roleOf(player.getUUID()))),
             crew.mode.name(), crew.effectiveMode().name(), crew.consent.contains(player.getUUID()), crew.consent.size(), crew.bank,
-            bits(crew.perms.get(Role.MANAGER)), bits(crew.perms.get(Role.MEMBER)), away, disbandArmed, members, incoming, outgoing, candidates, log, homes, nearby);
+            bits(crew.perms.get(Role.MANAGER)), bits(crew.perms.get(Role.MEMBER)), away, disbandArmed, members, incoming, outgoing, candidates, log, homes, nearby, upgrades, rulesRow);
+    }
+
+    private static final java.util.Comparator<String> WORDS = String::compareTo;
+
+    /** The server's account of how a held home is kept, for its Home page card. */
+    private static Tenancy tenancy(CrewLedger ledger, ServerPlayer viewer, Residence r, Crew crew, Rules rules, int claimsMine) {
+        Terms terms = PropertyCatalog.INSTANCE.find(r.id).orElse(null);
+        String residents;
+        if (r.ownerType == OwnerType.CREW && crew != null) {
+            List<String> names = new ArrayList<>();
+            for (CrewLedger.Member m : crew.members.values()) names.add(m.name);
+            residents = String.join(", ", names);
+        } else residents = "You";
+        int owed = (int) Math.min(Integer.MAX_VALUE, r.owedCredits());
+        int refund = 0;
+        if (r.rented()) refund = PropertyRules.depositBack(r.deposit, owed) + Math.max(0, r.prepaid - r.freeCycles) * r.charge;
+        else if (r.tenure == Tenure.OWN) refund = PropertyRules.sellBack(r.paidPrice, owed, rules) + Math.max(0, r.prepaid - r.freeCycles) * r.charge;
+        List<String> receipts = new ArrayList<>();
+        long now = ledger.now();
+        for (CrewLedger.Entry e : r.receipts) {
+            if (receipts.size() >= MAX_RECEIPTS) break;
+            receipts.add(CrewRules.ago(now - e.time()) + "  " + e.kind() + (e.amount() > 0 ? " " + e.amount() : "") + (e.note().isEmpty() ? "" : "  " + e.note()));
+        }
+        String upgrades = String.join(",", r.upgrades);
+        int containerCap = PropertyService.maxContainers(r);
+        int used = 0;
+        net.minecraft.server.level.ServerLevel level = viewer.server.getLevel(net.minecraft.resources.ResourceKey.create(net.minecraft.core.registries.Registries.DIMENSION, net.minecraft.resources.ResourceLocation.parse(r.dimension)));
+        if (level != null && viewer.level() == level && r.distanceSqr(viewer.blockPosition()) < 96.0 * 96.0) used = PropertyService.containerCount(level, r);
+        return new Tenancy(r.tenure.name(), r.standing(rules).name(), terms == null ? "" : PropertyCatalog.INSTANCE.categoryTitle(terms.category()), terms == null ? "" : terms.area(), r.charge, r.deposit,
+            PropertyRules.minutesToNextCycle(r.progress, rules), r.prepaid, r.arrears + r.due, owed, r.autopay, ledger.canManage(viewer.getUUID(), r), r.ownerType == OwnerType.CREW,
+            used, containerCap == Integer.MAX_VALUE ? 0 : containerCap, claimsMine, PropertyService.privateClaims(r), String.join(", ", PropertyService.facilities(r).stream().sorted(WORDS).toList()),
+            upgrades, residents, r.legacy, refund, receipts);
     }
 
     // ------------------------------------------------------------------------------------------------------------ wire format
@@ -144,9 +228,26 @@ public record CrewView(boolean storageOk, String problem, UUID self, String self
         b.writeVarInt(log.size());
         for (LogRow l : log) { b.writeUtf(l.ago(), 24); b.writeUtf(l.who(), 32); b.writeUtf(l.kind(), 16); b.writeVarLong(l.amount()); b.writeUtf(l.note(), 80); }
         b.writeVarInt(homes.size());
-        for (HomeRow h : homes) { b.writeUtf(h.id(), 64); b.writeUtf(h.title(), 40); b.writeUtf(h.kind(), 16); b.writeUtf(h.owner(), 8); b.writeUtf(h.where(), 40); b.writeVarInt(h.mine()); b.writeBoolean(h.here()); }
+        for (HomeRow h : homes) {
+            b.writeUtf(h.id(), 64); b.writeUtf(h.title(), 40); b.writeUtf(h.kind(), 16); b.writeUtf(h.owner(), 8); b.writeUtf(h.where(), 40); b.writeVarInt(h.mine()); b.writeBoolean(h.here());
+            Tenancy t = h.tenancy();
+            b.writeUtf(t.tenure(), 8); b.writeUtf(t.standing(), 8); b.writeUtf(t.category(), 40); b.writeUtf(t.area(), 40); b.writeVarInt(t.charge()); b.writeVarInt(t.deposit());
+            b.writeVarInt(t.minutes()); b.writeVarInt(t.prepaid()); b.writeVarInt(t.arrears()); b.writeVarInt(t.owed()); b.writeBoolean(t.autopay()); b.writeBoolean(t.manage()); b.writeBoolean(t.crewHome());
+            b.writeVarInt(t.containers()); b.writeVarInt(t.maxContainers()); b.writeVarInt(t.claimsMine()); b.writeVarInt(t.claimsMax());
+            b.writeUtf(t.facilities(), 120); b.writeUtf(t.upgrades(), 120); b.writeUtf(t.residents(), 120); b.writeBoolean(t.legacy()); b.writeVarInt(t.refund());
+            b.writeVarInt(t.receipts().size());
+            for (String line : t.receipts()) b.writeUtf(line, 100);
+        }
         b.writeVarInt(nearby.size());
-        for (LeaseRow n : nearby) { b.writeUtf(n.id(), 64); b.writeUtf(n.title(), 40); b.writeUtf(n.kind(), 16); b.writeVarInt(n.price()); b.writeBoolean(n.starter()); b.writeVarInt(n.distance()); }
+        for (LeaseRow n : nearby) {
+            b.writeUtf(n.id(), 64); b.writeUtf(n.title(), 40); b.writeUtf(n.kind(), 16); b.writeVarInt(n.price()); b.writeBoolean(n.starter()); b.writeVarInt(n.distance());
+            Offer o = n.offer();
+            b.writeBoolean(o.canRent()); b.writeBoolean(o.canBuy()); b.writeVarInt(o.rent()); b.writeVarInt(o.deposit()); b.writeVarInt(o.upkeep()); b.writeBoolean(o.welcome());
+            b.writeUtf(o.category(), 40); b.writeUtf(o.summary(), 200); b.writeUtf(o.facilities(), 120); b.writeVarInt(o.containers()); b.writeVarInt(o.claims()); b.writeVarInt(o.factor());
+        }
+        b.writeVarInt(upgrades.size());
+        for (UpgradeRow u : upgrades) { b.writeUtf(u.id(), 32); b.writeUtf(u.title(), 32); b.writeVarInt(u.cost()); b.writeUtf(u.summary(), 200); }
+        b.writeVarInt(rules.cycleMinutes()); b.writeVarInt(rules.prepayMax()); b.writeVarInt(rules.grace()); b.writeVarInt(rules.notice()); b.writeVarInt(rules.sellBackPercent()); b.writeVarInt(rules.welcomeCycles());
     }
 
     private static void writeInvites(FriendlyByteBuf b, List<InviteRow> list) {
@@ -175,10 +276,35 @@ public record CrewView(boolean storageOk, String problem, UUID self, String self
         List<LogRow> log = new ArrayList<>();
         for (int i = 0, n = Math.min(b.readVarInt(), MAX_LOG); i < n; i++) log.add(new LogRow(b.readUtf(24), b.readUtf(32), b.readUtf(16), b.readVarLong(), b.readUtf(80)));
         List<HomeRow> homes = new ArrayList<>();
-        for (int i = 0, n = Math.min(b.readVarInt(), MAX_HOMES); i < n; i++) homes.add(new HomeRow(b.readUtf(64), b.readUtf(40), b.readUtf(16), b.readUtf(8), b.readUtf(40), b.readVarInt(), b.readBoolean()));
+        for (int i = 0, n = Math.min(b.readVarInt(), MAX_HOMES); i < n; i++) {
+            String id = b.readUtf(64), title = b.readUtf(40), kind = b.readUtf(16), owner = b.readUtf(8), where = b.readUtf(40);
+            int mine = b.readVarInt();
+            boolean here = b.readBoolean();
+            String tenure = b.readUtf(8), standing = b.readUtf(8), category = b.readUtf(40), area = b.readUtf(40);
+            int charge = b.readVarInt(), deposit = b.readVarInt(), minutes = b.readVarInt(), prepaid = b.readVarInt(), arrears = b.readVarInt(), owedCredits = b.readVarInt();
+            boolean autopay = b.readBoolean(), manage = b.readBoolean(), crewHome = b.readBoolean();
+            int containers = b.readVarInt(), maxContainers = b.readVarInt(), claimsMine = b.readVarInt(), claimsMax = b.readVarInt();
+            String facilities = b.readUtf(120), upgradeIds = b.readUtf(120), residents = b.readUtf(120);
+            boolean legacy = b.readBoolean();
+            int refund = b.readVarInt();
+            List<String> receipts = new ArrayList<>();
+            for (int k = 0, m = Math.min(b.readVarInt(), MAX_RECEIPTS); k < m; k++) receipts.add(b.readUtf(100));
+            homes.add(new HomeRow(id, title, kind, owner, where, mine, here, new Tenancy(tenure, standing, category, area, charge, deposit, minutes, prepaid, arrears, owedCredits, autopay, manage, crewHome,
+                containers, maxContainers, claimsMine, claimsMax, facilities, upgradeIds, residents, legacy, refund, List.copyOf(receipts))));
+        }
         List<LeaseRow> nearby = new ArrayList<>();
-        for (int i = 0, n = Math.min(b.readVarInt(), MAX_NEARBY); i < n; i++) nearby.add(new LeaseRow(b.readUtf(64), b.readUtf(40), b.readUtf(16), b.readVarInt(), b.readBoolean(), b.readVarInt()));
+        for (int i = 0, n = Math.min(b.readVarInt(), MAX_NEARBY); i < n; i++) {
+            String id = b.readUtf(64), title = b.readUtf(40), kind = b.readUtf(16);
+            int price = b.readVarInt();
+            boolean starterFlag = b.readBoolean();
+            int distance = b.readVarInt();
+            Offer offer = new Offer(b.readBoolean(), b.readBoolean(), b.readVarInt(), b.readVarInt(), b.readVarInt(), b.readBoolean(), b.readUtf(40), b.readUtf(200), b.readUtf(120), b.readVarInt(), b.readVarInt(), b.readVarInt());
+            nearby.add(new LeaseRow(id, title, kind, price, starterFlag, distance, offer));
+        }
+        List<UpgradeRow> upgrades = new ArrayList<>();
+        for (int i = 0, n = Math.min(b.readVarInt(), MAX_UPGRADES); i < n; i++) upgrades.add(new UpgradeRow(b.readUtf(32), b.readUtf(32), b.readVarInt(), b.readUtf(200)));
+        RulesRow rulesRow = new RulesRow(b.readVarInt(), b.readVarInt(), b.readVarInt(), b.readVarInt(), b.readVarInt(), b.readVarInt());
         return new CrewView(storageOk, problem, self, selfName, citizen, moneyReady, wallet, owed, starter, inCrew, crewId, crewName, role, myPerms, mode, effective, consentSelf, consentCount,
-            bank, managerPerms, memberPerms, canClaim, armed, List.copyOf(members), incoming, outgoing, List.copyOf(candidates), List.copyOf(log), List.copyOf(homes), List.copyOf(nearby));
+            bank, managerPerms, memberPerms, canClaim, armed, List.copyOf(members), incoming, outgoing, List.copyOf(candidates), List.copyOf(log), List.copyOf(homes), List.copyOf(nearby), List.copyOf(upgrades), rulesRow);
     }
 }

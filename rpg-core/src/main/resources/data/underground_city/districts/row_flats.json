@@ -2,7 +2,7 @@
  "schema_version": 1,
  "id": "row_flats",
  "title": "Row Flats",
- "note": "Built east of Founders Row by the dev launch (or by hand: /uc_district build row_flats); origin is the north-west corner, extending east and south. Three homes the Crew screen can lease.",
+ "note": "Built east of Founders Row by the dev launch (or by hand: /uc_district build row_flats); origin is the north-west corner, extending east and south. Three homes the Home page can rent or sell (terms: data/underground_city/properties/ladder.json).",
  "size": [
   24,
   10,
@@ -367,7 +367,7 @@
    "block": "minecraft:spruce_wall_sign[facing=south]",
    "lines": [
     "ROW FLAT 1",
-    "For lease",
+    "Rent or buy",
     "Press K nearby"
    ],
    "color": "black",
@@ -500,8 +500,7 @@
    "id": "flat_1",
    "title": "Row Flat 1",
    "kind": "flat",
-   "price": 120,
-   "starter_price": 60,
+   "price": 2000,
    "from": [
     2,
     0,
@@ -591,7 +590,7 @@
    "block": "minecraft:spruce_wall_sign[facing=south]",
    "lines": [
     "ROW FLAT 2",
-    "For lease",
+    "Rent or buy",
     "Press K nearby"
    ],
    "color": "black",
@@ -724,8 +723,7 @@
    "id": "flat_2",
    "title": "Row Flat 2",
    "kind": "flat",
-   "price": 120,
-   "starter_price": 60,
+   "price": 2000,
    "from": [
     8,
     0,
@@ -815,7 +813,7 @@
    "block": "minecraft:spruce_wall_sign[facing=south]",
    "lines": [
     "ROW HOUSE",
-    "For lease",
+    "Rent or buy",
     "Press K nearby"
    ],
    "color": "black",
@@ -948,8 +946,7 @@
    "id": "row_house",
    "title": "Row House",
    "kind": "house",
-   "price": 260,
-   "starter_price": 140,
+   "price": 7000,
    "from": [
     14,
     0,

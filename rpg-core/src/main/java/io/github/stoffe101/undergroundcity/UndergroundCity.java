@@ -121,6 +121,7 @@ public final class UndergroundCity {
         MinecraftForge.EVENT_BUS.register(new CheckpointService());
         MinecraftForge.EVENT_BUS.register(new SecureTerminalService());
         MinecraftForge.EVENT_BUS.register(new CrewService());
+        MinecraftForge.EVENT_BUS.register(new PropertyService());
         MinecraftForge.EVENT_BUS.register(new CrewCommands());
         MinecraftForge.EVENT_BUS.register(new IdentityAudit());
         MinecraftForge.EVENT_BUS.register(new ResidenceGuard());
@@ -140,6 +141,7 @@ public final class UndergroundCity {
         event.addListener(PropertyPolicies.INSTANCE);
         event.addListener(ExceptionalLoot.INSTANCE);
         event.addListener(SkillCatalog.INSTANCE);
+        event.addListener(PropertyCatalog.INSTANCE);
         event.addListener(ContrabandCatalog.INSTANCE);
         event.addListener(CityLaws.INSTANCE);
         event.addListener(BuyerCatalog.INSTANCE);

@@ -16,7 +16,7 @@ import org.slf4j.Logger;
  */
 public final class DevBootstrap {
     private static final Logger LOGGER = LogUtils.getLogger();
-    static final String DISTRICT = "founders_row", RANGE = "firing_range", FLATS = "row_flats";
+    static final String DISTRICT = "founders_row", RANGE = "firing_range", FLATS = "row_flats", MOTEL = "row_motel";
     static final int SEARCH_RADIUS = 160, MAX_RELIEF = 3;
 
     @SubscribeEvent
@@ -68,6 +68,12 @@ public final class DevBootstrap {
         if (flats == null || row == null) return;
         int rowWidth = row.max().getX() - row.min().getX() + 1;
         placeBeside(level, flats, rowOrigin.offset(rowWidth + 3, 0, 4), "Row Flats", "east");
+        // The Row Motel goes beside the flats: the cheapest rooms, where a new citizen with no credits at all can sleep (the first hours are the city's).
+        DistrictCatalog.District motel = DistrictCatalog.INSTANCE.find(MOTEL);
+        if (motel != null) {
+            int flatsWidth = flats.max().getX() - flats.min().getX() + 1;
+            placeBeside(level, motel, rowOrigin.offset(rowWidth + 3 + flatsWidth + 3, 0, 4), "Row Motel", "east");
+        }
     }
 
     private static void placeBeside(ServerLevel level, DistrictCatalog.District district, BlockPos origin, String what, String side) {
