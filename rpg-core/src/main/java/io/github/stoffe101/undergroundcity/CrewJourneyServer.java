@@ -213,22 +213,25 @@ public final class CrewJourneyServer {
         // credits and career XP, spends the point it earned on a skill, and the household clock of the rented Row House runs for 30 active minutes with both players online.
         // Phase 2 checks that every one of them survived the abrupt halt, and that the time the server was dead was not billed.
         {
-            WorkOrderLedger orders = WorkOrderLedger.get(server);
-            WorkOrder harvest = WorkOrderCatalog.INSTANCE.find(ORDER);
-            double walletBeforeOrder = QShopEconomy.balance(farmer);
-            farmer.getInventory().add(new ItemStack(Items.WHEAT, harvest.requirements().get(0).count()));
-            WorkOrderService.accept(farmer, orders, CitizenState.get(server).find(farmer.getUUID()).orElseThrow(), harvest.id());
-            WorkOrderService.complete(farmer, orders, orders.player(farmer.getUUID()).getUUID("order"));
-            expect(QShopEconomy.balance(farmer) == walletBeforeOrder + orderIncome() && farmer.getInventory().countItem(Items.WHEAT) == 0, "the delivery paid " + orderIncome() + " and took the wheat");
-            CitizenState.Citizen citizen = CitizenState.get(server).find(farmer.getUUID()).orElseThrow();
-            expect(citizen.careerXp() == ORDER_XP_TARGET && citizen.careerLevel() == 2 && SkillService.pointsAvailable(citizen) == 1, "the delivery earned level 2 and one skill point: " + citizen.careerXp());
-            SkillService.learn(farmer, "farmer.fundamentals");
-            expect(SkillService.has(farmer, "farmer.fundamentals") && SkillService.pointsAvailable(citizen) == 0, "the point bought the foundation skill");
+            if (!SurvivalJourney.ON) {
+                // (not in the combined journey: its Crew has fully shared finances, which sweep a delivery's pay into the bank and would change every number its exchange purchases assume)
+                WorkOrderLedger orders = WorkOrderLedger.get(server);
+                WorkOrder harvest = WorkOrderCatalog.INSTANCE.find(ORDER);
+                double walletBeforeOrder = QShopEconomy.balance(farmer);
+                farmer.getInventory().add(new ItemStack(Items.WHEAT, harvest.requirements().get(0).count()));
+                WorkOrderService.accept(farmer, orders, CitizenState.get(server).find(farmer.getUUID()).orElseThrow(), harvest.id());
+                WorkOrderService.complete(farmer, orders, orders.player(farmer.getUUID()).getUUID("order"));
+                expect(QShopEconomy.balance(farmer) == walletBeforeOrder + orderIncome() && farmer.getInventory().countItem(Items.WHEAT) == 0, "the delivery paid " + orderIncome() + " and took the wheat");
+                CitizenState.Citizen citizen = CitizenState.get(server).find(farmer.getUUID()).orElseThrow();
+                expect(citizen.careerXp() == ORDER_XP_TARGET && citizen.careerLevel() == 2 && SkillService.pointsAvailable(citizen) == 1, "the delivery earned level 2 and one skill point: " + citizen.careerXp());
+                SkillService.learn(farmer, "farmer.fundamentals");
+                expect(SkillService.has(farmer, "farmer.fundamentals") && SkillService.pointsAvailable(citizen) == 0, "the point bought the foundation skill");
+            }
             long before = house.progress;
             PropertyService.tickClock(server, 30L * PropertyRules.TICKS_PER_MINUTE, java.util.Set.of(farmer.getUUID(), smith.getUUID()));
             expect(house.progress == before + 30L * PropertyRules.TICKS_PER_MINUTE && house.due == 0 && house.arrears == 0, "30 active minutes of the household clock, counted once for two residents online: progress " + house.progress);
             ledger.flushProgress();   // the clock is written every five minutes and on logout; the fixture writes it now so the abrupt halt below cannot lose part of what it asserts
-            System.out.println("[UC-JOURNEY] economy milestones: order delivered (+" + orderIncome() + "), skill learned, rent clock at " + house.progress / PropertyRules.TICKS_PER_MINUTE + " active minutes");
+            System.out.println("[UC-JOURNEY] economy milestones: " + (SurvivalJourney.ON ? "no delivery (shared finances)" : "order delivered (+" + orderIncome() + "), skill learned") + ", rent clock at " + house.progress / PropertyRules.TICKS_PER_MINUTE + " active minutes");
         }
 
         // Two transfers the process never finishes. The deposit reached the wallet and the saved player file; the withdrawal stopped right after its prepare record.
@@ -384,7 +387,8 @@ public final class CrewJourneyServer {
     }
 
     /** The credits the fixture's one work order paid the farmer: income, which is why the conserved total below grows by exactly this. */
-    private static long orderIncome() { return WorkOrderCatalog.INSTANCE.find(ORDER).credits(); }
+    /** What the farmer's delivery pays into the wallet in this journey: nothing in the combined one, which makes no delivery (see the milestone block). */
+    private static long orderIncome() { return SurvivalJourney.ON ? 0 : WorkOrderCatalog.INSTANCE.find(ORDER).credits(); }
 
     private static String houseId() {
         return DistrictBuilder.homeId(DistrictCatalog.INSTANCE.find("row_flats"), DistrictCatalog.INSTANCE.find("row_flats").homeOps().get(2).home());
@@ -434,7 +438,7 @@ public final class CrewJourneyServer {
             expect(house.progress >= startTicks && house.progress <= startTicks + 6000L, "the rent clock kept its 30 active minutes and the dead server was not billed: " + house.progress + " ticks, was " + startTicks);
             expect(house.due == 0 && house.arrears == 0, "no hour fell due while the server was down");
             var after = CitizenState.get(server).find(farmer.getUUID()).orElseThrow();
-            expect(after.careerXp() == ORDER_XP_TARGET && SkillService.has(after, "farmer.fundamentals"), "the career XP and the learned skill survived the restart");
+            expect(SurvivalJourney.ON || (after.careerXp() == ORDER_XP_TARGET && SkillService.has(after, "farmer.fundamentals")), "the career XP and the learned skill survived the restart");
             expect(crew.bank == BANK_AFTER_WITHDRAWAL + 15 - SPENT, "bank " + (BANK_AFTER_WITHDRAWAL + 15 - SPENT) + " (" + BANK_AFTER_WITHDRAWAL + " + the settled deposit of 15; the cancelled withdrawal's hold returned" + (SPENT > 0 ? "; less the " + SPENT + " the interrupted purchase spent" : "") + "), was " + crew.bank);
             double farmerWallet = QShopEconomy.balance(farmer), smithWallet = QShopEconomy.balance(smith);
             expect(farmerWallet == START - founderDeposit - 15 + income && smithWallet == START - MEMBER_DEPOSIT + FIRST_WITHDRAWAL, "wallets after recovery " + farmerWallet + " / " + smithWallet);
