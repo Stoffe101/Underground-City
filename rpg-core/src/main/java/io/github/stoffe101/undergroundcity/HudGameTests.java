@@ -5,7 +5,6 @@ import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.util.FakePlayerFactory;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.gametest.GameTestHolder;
@@ -148,12 +147,11 @@ public final class HudGameTests {
         ServerPlayer player = FakePlayerFactory.get(level, new GameProfile(id, "uc_buyer_" + id.toString().substring(0, 6)));
         CitizenState citizens = CitizenState.get(level.getServer());
         citizens.register(id, "ironhaven", "smith");
-        var trade = com.qshop.api.CurrencyService.SOURCE_TRADE;
-        MinecraftForge.EVENT_BUS.post(new com.qshop.api.CurrencyChangedEvent(player, "credits", 100, 120, trade, null)); // a sale pays: not a purchase
+        QShopTestEvents.post(player, 100, 120, "trade"); // a sale pays: not a purchase
         check(citizens.find(id).orElseThrow().journey("bought") == 0, "A sale to the shop is not buying something");
-        MinecraftForge.EVENT_BUS.post(new com.qshop.api.CurrencyChangedEvent(player, "credits", 120, 100, com.qshop.api.CurrencyService.SOURCE_COMMAND, null)); // not a trade
+        QShopTestEvents.post(player, 120, 100, "command"); // not a trade
         check(citizens.find(id).orElseThrow().journey("bought") == 0, "A balance change that is not a trade is not buying something");
-        MinecraftForge.EVENT_BUS.post(new com.qshop.api.CurrencyChangedEvent(player, "credits", 120, 100, trade, null));
+        QShopTestEvents.post(player, 120, 100, "trade");
         check(citizens.find(id).orElseThrow().journey("bought") > 0, "A purchase from a shop counts");
         helper.succeed();
     }
