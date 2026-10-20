@@ -31,6 +31,13 @@ public final class IslandField implements DensityFunction {
      */
     public static final double PLATEAU_RIDGES = Double.parseDouble(System.getProperty("uc.island.plateauRidges", "0.51"));
 
+    /**
+     * Humidity under a city: the middle of Minecraft's "plains" band (-0.35 to -0.1 at a neutral temperature). A plains biome has next to no trees (one in twenty chunks gets one), and the first
+     * survey of the generated cities found tens of thousands of leaf blocks and thousands of logs over streets and roofs wherever the island's own climate was a forest. The countryside keeps its
+     * island's forest, birch wood or dark wood; only the ground under and around a city (the plateau) is blended to this value.
+     */
+    public static final double CITY_HUMIDITY = Double.parseDouble(System.getProperty("uc.island.cityHumidity", "-0.22"));
+
     public enum Channel {
         CONTINENTS(-1.2, 1.0), EROSION(-1.0, 1.0), TEMPERATURE(-0.2, 0.7), HUMIDITY(-1.0, 1.0), RIDGES(-1.0, 1.0);
         final double min, max;
@@ -83,7 +90,11 @@ public final class IslandField implements DensityFunction {
                 yield clamp(base * (1 - p) + PLATEAU_RIDGES * p, Channel.RIDGES.min, Channel.RIDGES.max);
             }
             case TEMPERATURE -> clamp(plan.climate(x, z, true, 0.06) + 0.10 * clamp(base, -1, 1), Channel.TEMPERATURE.min, Channel.TEMPERATURE.max);
-            case HUMIDITY -> clamp(plan.climate(x, z, false, 0.0) + 0.12 * clamp(base, -1, 1), Channel.HUMIDITY.min, Channel.HUMIDITY.max);
+            case HUMIDITY -> {
+                double p = plan.plateau(x, z);
+                double island = plan.climate(x, z, false, 0.0) + 0.12 * clamp(base, -1, 1);
+                yield clamp(island * (1 - p) + CITY_HUMIDITY * p, Channel.HUMIDITY.min, Channel.HUMIDITY.max);
+            }
         };
     }
 

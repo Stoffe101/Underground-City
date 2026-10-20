@@ -94,7 +94,9 @@ public final class PhotoTour {
         if (LIST == null || finished || captured || captureRequested || event.phase != TickEvent.Phase.END) return;
         Minecraft mc = Minecraft.getInstance();
         var server = mc.getSingleplayerServer();
-        if (mc.player == null || mc.level == null || server == null || mc.screen != null) return;
+        if (mc.player == null || mc.level == null || server == null) return;
+        // the first thing a new citizen sees is the registration screen; a photographer is not a citizen, so any screen that opened by itself is closed
+        if (mc.screen != null) { mc.setScreen(null); return; }
         Shot shot = shots().get(current);
         if (!positioned) {
             targetX = shot.x(); targetZ = shot.z();

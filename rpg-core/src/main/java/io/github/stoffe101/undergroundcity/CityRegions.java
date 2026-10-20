@@ -73,6 +73,21 @@ public final class CityRegions extends SimpleJsonResourceReloadListener {
             .map(Region::id);
     }
 
+    /** How far beyond a city's circle no vanilla structure may start (D-106): a village is about 100 blocks across, so a start this far out cannot reach the circle. */
+    public static final int STRUCTURE_MARGIN = 160;
+
+    /** True when a structure start in this chunk would be inside, or close enough to reach, a city's circle: the archipelago generates none there (see {@code ChunkGeneratorStructuresMixin}). */
+    public boolean excludesStructures(net.minecraft.world.level.ChunkPos chunk) {
+        double x = chunk.getMiddleBlockX() + 0.5, z = chunk.getMiddleBlockZ() + 0.5;
+        for (Region region : regions) {
+            if (!region.dimension.equals("minecraft:overworld")) continue;
+            double reach = region.cityRadius + STRUCTURE_MARGIN;
+            double dx = x - region.centerX(), dz = z - region.centerZ();
+            if (dx * dx + dz * dz <= reach * reach) return true;
+        }
+        return false;
+    }
+
     /** The city whose centre is nearest to the position, wherever it is in the dimension (a wayside shelter belongs to the city nearest to it). */
     public Optional<String> nearest(Level level, BlockPos pos) {
         String dimension = level.dimension().location().toString();

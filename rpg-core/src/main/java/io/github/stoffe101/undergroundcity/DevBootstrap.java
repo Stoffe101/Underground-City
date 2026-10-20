@@ -4,26 +4,46 @@ import com.mojang.logging.LogUtils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.world.level.Level;
+import net.minecraftforge.event.level.LevelEvent;
 import net.minecraftforge.event.server.ServerStartedEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import org.slf4j.Logger;
 
 /**
- * Development worlds only ({@code -Duc.devBootstrap=true}, set by the Gradle development launch): in a brand-new world, builds Founders Row on level, dry
- * ground near the spawn point and moves the spawn to the lane's gate, so that a new player arrives at the district, gets the first-login
- * screen and can walk to the registrar. Never touches an existing world (game time above zero), never runs on a production server, and the
- * build is the same reversible one an operator would run ({@code /uc_district undo founders_row confirm}).
+ * The deliberate arrival (D-107): in a brand-new world, builds Founders Row on level, dry ground near the spawn point and moves the spawn to the lane's
+ * gate, so that a new player arrives at the district, gets the first-login screen and can walk to the registrar. It runs for
+ * <ul>
+ *   <li>the <b>archipelago</b> layout, always (the layout names its landing, a flat plateau on Ironhaven's island: the world spawn is set there before the game prepares the spawn
+ *       area, so no chunk of a city is generated for nothing, and Founders Row, the Row Flats, the Row Motel and the firing range are built around it);</li>
+ *   <li>the legacy layout only for development worlds ({@code -Duc.devBootstrap=true}, set by the Gradle development launch), near the vanilla spawn point as before.</li>
+ * </ul>
+ * It never touches an existing world (game time above zero) and the build is the same reversible one an operator would run ({@code /uc_district undo founders_row confirm}).
  */
 public final class DevBootstrap {
     private static final Logger LOGGER = LogUtils.getLogger();
     static final String DISTRICT = "founders_row", RANGE = "firing_range", FLATS = "row_flats", MOTEL = "row_motel";
     static final int SEARCH_RADIUS = 160, MAX_RELIEF = 3;
 
+    /** A new archipelago world starts at its landing, not at the vanilla spawn point (which would be inside a city). Runs once, when the world is created. */
+    @SubscribeEvent
+    public void createSpawn(LevelEvent.CreateSpawnPosition event) {
+        if (!(event.getLevel() instanceof ServerLevel level) || level.dimension() != Level.OVERWORLD) return;
+        var anchor = WorldLayout.INSTANCE.arrivalAnchor();
+        if (anchor.isEmpty()) return;
+        var generator = level.getChunkSource().getGenerator();
+        int x = anchor.get().getX(), z = anchor.get().getZ();
+        int y = generator.getBaseHeight(x, z, Heightmap.Types.WORLD_SURFACE_WG, level, level.getChunkSource().randomState());
+        event.getSettings().setSpawn(new BlockPos(x, y, z), 180.0f);
+        event.setCanceled(true);
+        LOGGER.info("[UC-WORLD] new archipelago world: spawn set to the landing at {} {} {}", x, y, z);
+    }
+
     @SubscribeEvent
     public void started(ServerStartedEvent event) {
-        if (!Boolean.getBoolean("uc.devBootstrap")) return;
+        if (!Boolean.getBoolean("uc.devBootstrap") && WorldLayout.INSTANCE.arrivalAnchor().isEmpty()) return;
         ServerLevel level = event.getServer().overworld();
-        if (level.getGameTime() > 100) { LOGGER.info("[UC-DEV] existing world: Founders Row is not placed automatically (use /uc_district build founders_row)"); return; }
+        if (level.getGameTime() > 100) { LOGGER.info("[UC-WORLD] existing world: Founders Row is not placed automatically (use /uc_district build founders_row)"); return; }
         DistrictCatalog.District district = DistrictCatalog.INSTANCE.find(DISTRICT);
         if (district == null || DistrictBuilder.isBuilt(level, DISTRICT)) return;
         try {

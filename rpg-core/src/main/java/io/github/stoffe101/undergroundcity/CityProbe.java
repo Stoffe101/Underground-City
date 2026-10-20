@@ -117,16 +117,24 @@ public final class CityProbe {
     }
 
     private JsonObject probe(ServerLevel level, int cx, int cz) {
+        // Lost Cities' plan for the chunk BEFORE the chunk exists, then the same question after it was generated: if the two ever differ the city would have a hole that nobody planned
+        boolean planned = LostCitiesLink.chunk(level, cx, cz).map(LostCitiesLink.ChunkSample::city).orElse(false);
         LevelChunk chunk = level.getChunk(cx, cz);
         var sample = LostCitiesLink.chunk(level, cx, cz).orElseThrow();
+        String type = sample.building() == null ? "" : sample.building();
         JsonObject out = new JsonObject();
         out.addProperty("chunk_x", cx); out.addProperty("chunk_z", cz);
-        out.addProperty("city", sample.city()); out.addProperty("type", sample.building()); out.addProperty("building", sample.buildingId());
+        out.addProperty("planned_city_before_generation", planned);
+        out.addProperty("city", sample.city()); out.addProperty("type", type); out.addProperty("building", sample.buildingId());
         out.addProperty("floors", sample.floors()); out.addProperty("cellars", sample.cellars()); out.addProperty("city_level", sample.cityLevel());
         int minY = level.getMinBuildHeight(), maxY = level.getMaxBuildHeight();
         int topSolid = minY, bottomBuilt = maxY, doors = 0, glass = 0, containers = 0, onStructure = 0, trees = 0;
         Map<String, Integer> counts = new TreeMap<>();
         JsonArray samples = new JsonArray();
+        JsonArray doorList = new JsonArray();
+        int street = LostCitiesLink.realHeight(level, sample.cityLevel());
+        out.addProperty("street_y", street);
+        int covered = 0;
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         ChunkPos base = chunk.getPos();
         for (int x = 0; x < 16; x++) for (int z = 0; z < 16; z++) {
@@ -141,7 +149,7 @@ public final class CityProbe {
                     boolean natural = soil(below) || category(below) != null || below.is(BlockTags.LEAVES) || below.is(net.minecraft.world.level.block.Blocks.GRASS_BLOCK) || below.is(BlockTags.DIRT);
                     boolean flagged = !natural && !below.isAir();
                     if (flagged) onStructure++;
-                    if ((kind.equals("log") || kind.equals("leaves")) && sample.city() && !sample.building().isEmpty()) trees++;
+                    if ((kind.equals("log") || kind.equals("leaves")) && sample.city() && !type.isEmpty()) trees++;
                     if ((flagged || kind.equals("sapling")) && samples.size() < 8) {
                         JsonObject s = new JsonObject();
                         s.addProperty("x", pos.getX()); s.addProperty("y", y); s.addProperty("z", pos.getZ()); s.addProperty("kind", kind);
@@ -155,11 +163,33 @@ public final class CityProbe {
                 if (topSolid == minY) topSolid = y;
                 bottomBuilt = Math.min(bottomBuilt, y);
                 Block block = state.getBlock();
-                if (block instanceof DoorBlock && state.getValue(DoorBlock.HALF) == net.minecraft.world.level.block.state.properties.DoubleBlockHalf.LOWER) doors++;
+                if (block instanceof DoorBlock && state.getValue(DoorBlock.HALF) == net.minecraft.world.level.block.state.properties.DoubleBlockHalf.LOWER) {
+                    doors++;
+                    if (doorList.size() < 12) {
+                        JsonObject d = new JsonObject();
+                        var facing = state.getValue(DoorBlock.FACING);
+                        d.addProperty("x", pos.getX()); d.addProperty("y", y); d.addProperty("z", pos.getZ());
+                        d.addProperty("block", String.valueOf(ForgeRegistries.BLOCKS.getKey(block)));
+                        d.addProperty("facing", facing.getName()); d.addProperty("open", state.getValue(DoorBlock.OPEN)); d.addProperty("hinge", state.getValue(DoorBlock.HINGE).getSerializedName());
+                        d.addProperty("rel_street", y - street);
+                        for (var side : new net.minecraft.core.Direction[] {facing, facing.getOpposite()}) {
+                            BlockPos beside = pos.relative(side).above();
+                            boolean loaded = level.hasChunkAt(beside);
+                            d.addProperty("sky_" + (side == facing ? "front" : "back"), loaded && BuildingGuard.exposed(level, beside));
+                        }
+                        doorList.add(d);
+                    }
+                }
                 else if (state.is(net.minecraftforge.common.Tags.Blocks.GLASS) || state.is(net.minecraftforge.common.Tags.Blocks.GLASS_PANES)) glass++;
                 else if (block instanceof ChestBlock || block instanceof BarrelBlock || block instanceof ShulkerBoxBlock) containers++;
             }
         }
+        for (int x = 0; x < 16; x++) for (int z = 0; z < 16; z++) {
+            pos.set(base.getMinBlockX() + x, street + 4, base.getMinBlockZ() + z);
+            if (!chunk.getBlockState(pos).isAir()) covered++;
+        }
+        out.addProperty("covered_columns_at_street_plus_4", covered);
+        out.add("door_list", doorList);
         out.addProperty("top_solid_y", topSolid);
         out.addProperty("doors", doors); out.addProperty("glass", glass); out.addProperty("containers", containers);
         JsonObject veg = new JsonObject();
@@ -167,7 +197,7 @@ public final class CityProbe {
         out.add("vegetation", veg);
         out.addProperty("vegetation_on_structure", onStructure);
         out.add("samples", samples);
-        String key = (sample.city() ? "city:" : "outside:") + (sample.building().isEmpty() ? "none" : sample.building());
+        String key = (sample.city() ? "city:" : "outside:") + (type.isEmpty() ? "none" : type);
         int[] total = totals.computeIfAbsent(key, k -> new int[3]);
         total[0]++; if (onStructure > 0) total[1]++; if (trees > 0) total[2]++;
         return out;

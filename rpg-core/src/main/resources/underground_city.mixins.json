@@ -7,7 +7,8 @@
     "GunSmithTableMenuMixin",
     "InventoryInteractionHelperMixin",
     "FeedingUpgradeWrapperMixin",
-    "GroundPathNavigationMixin"
+    "GroundPathNavigationMixin",
+    "ChunkGeneratorStructuresMixin"
   ],
   "injectors": {
     "defaultRequire": 0

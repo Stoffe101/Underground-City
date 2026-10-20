@@ -4,10 +4,12 @@
     "description": "Underground City disposable three-city survey",
     "worldStyle": "underground_city:three_city",
     "generateSpawners": false,
-    "generateLoot": true,
+    "generateLoot": false,
     "ruinChance": 0.0,
     "rubbleLayer": false,
-    "highwayGenerationMode": "INTERCITY_NETWORK_V1"
+    "highwayGenerationMode": "INTERCITY_NETWORK_V1",
+    "avoidFoliage": true,
+    "vineChance": 0.0
   },
   "cities": {
     "cityChance": 0.0,
