@@ -97,6 +97,11 @@ public final class BuildingSecurityGameTests {
         return player.gameMode.useItemOn(player, player.serverLevel(), stack, InteractionHand.MAIN_HAND, click(against, face));
     }
 
+    /** Knocks on a door with whatever the player already holds (the lockpicks stay in the inventory wherever they are). */
+    private static InteractionResult knock(ServerPlayer player, BlockPos door, Direction face) {
+        return player.gameMode.useItemOn(player, player.serverLevel(), player.getItemInHand(InteractionHand.MAIN_HAND), InteractionHand.MAIN_HAND, click(door, face));
+    }
+
     private static ItemStack picks(int n) { return new ItemStack(UndergroundCity.item("lockpick"), n); }
 
     // ------------------------------------------------------------------------------------------------ data
@@ -227,13 +232,13 @@ public final class BuildingSecurityGameTests {
 
         // 1. without a lockpick the click opens nothing
         thief.getInventory().clearContent();
-        use(thief, ItemStack.EMPTY, h.doorLower, Direction.NORTH);
+        knock(thief, h.doorLower, Direction.NORTH);
         check(!level.getBlockState(h.doorLower).getValue(DoorBlock.OPEN), "a visitor opened a locked door with an empty hand");
         check(!LockService.busy(thief.getUUID()), "a lock session started without a lockpick");
 
         // 2. with a pick the click starts the lock (and still does not open the door)
         thief.getInventory().add(picks(5));
-        use(thief, ItemStack.EMPTY, h.doorLower, Direction.NORTH);
+        knock(thief, h.doorLower, Direction.NORTH);
         check(LockService.busy(thief.getUUID()) && !level.getBlockState(h.doorLower).getValue(DoorBlock.OPEN), "the click did not start the lock");
         LockService.Active active = LockService.activeFor(thief.getUUID());
         check(active.target.profile().equals("deadbolt") && active.target.city().equals("ironhaven"), "the lock is not the class's lock: " + active.target);
@@ -254,7 +259,7 @@ public final class BuildingSecurityGameTests {
 
         // 4. somebody else may walk in while it is open (a friend following the picker), and from the inside a door always opens
         ServerPlayer friend = visitor(helper, h, "uc_bgf");
-        use(friend, ItemStack.EMPTY, h.doorLower, Direction.NORTH);   // the door is already open: a click closes it, and a closed unlocked door opens again
+        knock(friend, h.doorLower, Direction.NORTH);   // the door is already open: a click closes it, and a closed unlocked door opens again
         check(!LockService.busy(friend.getUUID()), "a click on a door inside its window started a lock");
 
         // 5. the window lapses (the saved window is moved into the past: the shared clock of this test world is left alone): the sweep shuts the door and it is locked again
@@ -262,7 +267,7 @@ public final class BuildingSecurityGameTests {
         level.setBlock(h.doorLower, level.getBlockState(h.doorLower).setValue(DoorBlock.OPEN, true), 2);   // somebody left it open
         LockService.sweep(level.getServer());
         check(!level.getBlockState(h.doorLower).getValue(DoorBlock.OPEN), "the sweep did not shut a door whose window had lapsed");
-        use(friend, ItemStack.EMPTY, h.doorLower, Direction.NORTH);
+        knock(friend, h.doorLower, Direction.NORTH);
         check(!level.getBlockState(h.doorLower).getValue(DoorBlock.OPEN), "a door opened by hand after its window lapsed");
         check(start <= WorkOrderLedger.get(level.getServer()).clock(), "the clock ran backwards");
         helper.succeed();
@@ -278,7 +283,7 @@ public final class BuildingSecurityGameTests {
         ServerLevel level = h.level;
         thief.getInventory().clearContent();
         thief.getInventory().add(picks(3));
-        use(thief, ItemStack.EMPTY, h.doorLower, Direction.NORTH);
+        knock(thief, h.doorLower, Direction.NORTH);
         LockService.Active active = LockService.activeFor(thief.getUUID());
         check(active != null, "the lock did not start");
         // a hurried player presses at the edge of the close band
@@ -294,10 +299,10 @@ public final class BuildingSecurityGameTests {
             PropertyLocks locks = PropertyLocks.get(level.getServer());
             long now = WorkOrderLedger.get(level.getServer()).clock();
             check(locks.jamRemaining(h.doorLower, now) > 0, "the lock was not jammed");
-            use(thief, ItemStack.EMPTY, h.doorLower, Direction.NORTH);
+            knock(thief, h.doorLower, Direction.NORTH);
             check(!LockService.busy(thief.getUUID()), "a jammed lock could be tried again at once");
             locks.jam(h.doorLower, now - 1);   // the lockout has run out
-            use(thief, ItemStack.EMPTY, h.doorLower, Direction.NORTH);
+            knock(thief, h.doorLower, Direction.NORTH);
             check(LockService.busy(thief.getUUID()), "the lock stayed jammed after its lockout");
         } else {
             check(LockService.picks(thief) == 3, "running out of time cost a lockpick");
@@ -312,7 +317,7 @@ public final class BuildingSecurityGameTests {
                 ServerPlayer resident = player(helper, "uc_bgr", "farmer");
                 resident.setGameMode(GameType.SURVIVAL);
                 resident.moveTo(house.doorLower.getX() + 0.5, house.doorLower.getY(), house.doorLower.getZ() + 1.5);   // in the room
-                use(resident, ItemStack.EMPTY, house.doorLower, Direction.SOUTH);
+                knock(resident, house.doorLower, Direction.SOUTH);
                 check(house.level.getBlockState(house.doorLower).getValue(DoorBlock.OPEN), "somebody inside could not open the door to leave");
                 check(!LockService.busy(resident.getUUID()), "leaving started a lock");
                 // a door with a roof on both sides is an inside door, never locked
