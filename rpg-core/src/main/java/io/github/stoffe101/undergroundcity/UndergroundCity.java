@@ -78,6 +78,11 @@ public final class UndergroundCity {
 
     private static final DeferredRegister<net.minecraft.world.level.levelgen.feature.Feature<?>> FEATURES =
         DeferredRegister.create(ForgeRegistries.FEATURES, MOD_ID);
+
+    private static final DeferredRegister<net.minecraft.world.entity.EntityType<?>> ENTITIES = DeferredRegister.create(ForgeRegistries.ENTITY_TYPES, MOD_ID);
+    /** An ambient person of a city (D-108): a body for a roster entry. Never saved, never spawned by the game itself. */
+    public static final RegistryObject<net.minecraft.world.entity.EntityType<TownspersonEntity>> TOWNSPERSON = ENTITIES.register("townsperson",
+        () -> net.minecraft.world.entity.EntityType.Builder.of(TownspersonEntity::new, net.minecraft.world.entity.MobCategory.MISC).sized(0.6f, 1.8f).clientTrackingRange(8).updateInterval(3).build(MOD_ID + ":townsperson"));
     /** Inter-city roads and bridges; only active where the world prototype datapack places it in the Overworld. */
     public static final RegistryObject<net.minecraft.world.level.levelgen.feature.Feature<?>> CORRIDOR_ROADS =
         FEATURES.register("corridor_roads", CorridorRoadFeature::new);
@@ -103,12 +108,15 @@ public final class UndergroundCity {
         BLOCKS.register(context.getModEventBus());
         BLOCK_ENTITIES.register(context.getModEventBus());
         FEATURES.register(context.getModEventBus());
+        ENTITIES.register(context.getModEventBus());
+        context.getModEventBus().addListener((net.minecraftforge.event.entity.EntityAttributeCreationEvent event) -> event.put(TOWNSPERSON.get(), TownspersonEntity.attributes().build()));
         LostCitiesLink.register(context.getModEventBus());
         RegionalWorldgen.register(context.getModEventBus());
         ITEMS.register(context.getModEventBus());
         context.getModEventBus().addListener(this::addCreativeTab);
         TerminalNetwork.register();
         CrewNetwork.register();
+        LockNetwork.register();
         MinecraftForge.EVENT_BUS.register(this);
         MinecraftForge.EVENT_BUS.register(new WorkOrderService());
         MinecraftForge.EVENT_BUS.register(new SupplierNpc());
@@ -121,6 +129,8 @@ public final class UndergroundCity {
         MinecraftForge.EVENT_BUS.register(new DevBootstrap());
         MinecraftForge.EVENT_BUS.register(new TerrainMapHarness());
         MinecraftForge.EVENT_BUS.register(new CityProbe());
+        MinecraftForge.EVENT_BUS.register(new BurglaryHarness());
+        MinecraftForge.EVENT_BUS.register(new PopulationService());
         MinecraftForge.EVENT_BUS.register(WorldLayout.INSTANCE);
         MinecraftForge.EVENT_BUS.register(new CheckpointService());
         MinecraftForge.EVENT_BUS.register(new SecureTerminalService());
@@ -129,6 +139,8 @@ public final class UndergroundCity {
         MinecraftForge.EVENT_BUS.register(new CrewCommands());
         MinecraftForge.EVENT_BUS.register(new IdentityAudit());
         MinecraftForge.EVENT_BUS.register(new ResidenceGuard());
+        MinecraftForge.EVENT_BUS.register(new BuildingGuard());
+        MinecraftForge.EVENT_BUS.register(new LockService());
         MinecraftForge.EVENT_BUS.register(new BackpackPolicy());
         // the world's rule about hostile creatures (D-094): SIMULATION unless an operator chooses CLASSIC; the default lives in code, so no file has to exist
         net.minecraftforge.fml.ModLoadingContext.get().registerConfig(net.minecraftforge.fml.config.ModConfig.Type.SERVER, SimulationWorld.SPEC, "underground_city-server.toml");
@@ -153,6 +165,9 @@ public final class UndergroundCity {
         event.addListener(CheckpointCatalog.INSTANCE);
         event.addListener(DistrictCatalog.INSTANCE);
         event.addListener(StarterKits.INSTANCE);
+        event.addListener(LockProfiles.INSTANCE);
+        event.addListener(CityBuildings.INSTANCE);
+        event.addListener(PopulationCatalog.INSTANCE);
     }
 
     private void addCreativeTab(BuildCreativeModeTabContentsEvent event) {

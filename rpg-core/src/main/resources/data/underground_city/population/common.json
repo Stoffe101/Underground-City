@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "lines": {
+    "resident": {
+      "morning": [
+        "Morning. The streets are quiet before the shift whistle.",
+        "Early walk. It is the only time the city is not shouting.",
+        "Coffee first, then the world."
+      ],
+      "day": [
+        "Out for some air. The flat gets small.",
+        "Do not mind me, I am only between errands.",
+        "If you want a bargain, ask the exchange, not the street.",
+        "The orders on the terminals change daily. Check them."
+      ],
+      "evening": [
+        "Home soon. The streets belong to the guard after dark.",
+        "Long day. Long walk home.",
+        "Heat fades if you keep your head down. That is all the advice I have."
+      ],
+      "any": [
+        "Good day."
+      ]
+    },
+    "worker": {
+      "morning": [
+        "On my way in. The shift does not wait.",
+        "Early start. Overtime pays, but not enough.",
+        "Mind the cart, I am carrying parts."
+      ],
+      "day": [
+        "Lunch is short and the foreman is long.",
+        "Orders for the foundry go up on the terminal at the Row.",
+        "If you need parts, the exchange has them. If you need them cheap, ask nicely."
+      ],
+      "evening": [
+        "Done for the day. Not done for the week.",
+        "My back says go home. My wallet says one more shift."
+      ],
+      "any": [
+        "Busy."
+      ]
+    },
+    "courier": {
+      "morning": [
+        "First run of the day. Do not stand in the road.",
+        "Parcels for Valewood this morning. Bridge was clear."
+      ],
+      "day": [
+        "Three cities, two bridges, one bicycle. You do the maths.",
+        "Package for a locked flat. They never answer the bell.",
+        "Road is quick if you keep to the left."
+      ],
+      "evening": [
+        "Last parcel. Then I sleep for a week.",
+        "The checkpoints look in the hold as well as the cab. Declare what you carry."
+      ],
+      "any": [
+        "On the move."
+      ]
+    },
+    "guard": {
+      "morning": [
+        "Quiet night. Keep it that way.",
+        "Papers in order? Good."
+      ],
+      "day": [
+        "I keep the street clear. The checkpoints on the roads search on evidence, not suspicion.",
+        "Carry what your licence covers and we will never meet twice.",
+        "Locks are for honest people. A lockpick is for everyone else, and it leaves a mark on your name."
+      ],
+      "evening": [
+        "Evening patrol. Stay in the light.",
+        "After dark the streets are ours. Go home."
+      ],
+      "any": [
+        "Move along."
+      ]
+    }
+  }
+}

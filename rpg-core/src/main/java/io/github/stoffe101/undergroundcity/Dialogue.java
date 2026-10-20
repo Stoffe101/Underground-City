@@ -167,6 +167,7 @@ final class Dialogue {
         if (!id.equals("end") && previous != null && now - previous < 3) return;
         if (!id.equals("end")) LAST_CHOICE.put(player.getUUID(), now);
         Entity entity = player.level().getEntity(entityId);
+        if (entity instanceof TownspersonEntity person) { PopulationService.choose(player, person, id); return; }
         if (!(entity instanceof Villager villager) || !CityNpcs.isCityNpc(villager) || player.distanceToSqr(villager) > REACH_SQUARED) return;
         var found = CityNpcs.definition(villager);
         if (found.isEmpty()) return;
