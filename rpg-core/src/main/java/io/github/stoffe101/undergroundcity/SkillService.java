@@ -43,6 +43,29 @@ public final class SkillService {
         return SkillRules.exchangeDiscount(SkillCatalog.INSTANCE.tree(citizen.career), citizen.skills());
     }
 
+    /** What delivering this order pays this citizen: the order's credits plus the career's contract-rate skills for its legality. */
+    public static int payout(CitizenState.Citizen citizen, WorkOrder order) {
+        return SkillRules.payout(order.credits(), order.underground(), SkillCatalog.INSTANCE.tree(citizen.career), citizen.skills());
+    }
+
+    /** Percent more Sable Leaf bales per harvest (0 for a character without the grafting skills). */
+    public static int yieldPercent(CitizenState.Citizen citizen) {
+        return SkillRules.yieldPercent(SkillCatalog.INSTANCE.tree(citizen.career), citizen.skills());
+    }
+
+    public static int yieldPercent(ServerPlayer player) {
+        return CitizenState.get(player.server).find(player.getUUID()).map(SkillService::yieldPercent).orElse(0);
+    }
+
+    /** Percent off a home upgrade for this citizen. */
+    public static int upgradeDiscountPercent(CitizenState.Citizen citizen) {
+        return SkillRules.upgradeDiscountPercent(SkillCatalog.INSTANCE.tree(citizen.career), citizen.skills());
+    }
+
+    public static int upgradeDiscountPercent(ServerPlayer player) {
+        return CitizenState.get(player.server).find(player.getUUID()).map(SkillService::upgradeDiscountPercent).orElse(0);
+    }
+
     public static boolean licensed(CitizenState.Citizen citizen, String category) {
         return SkillRules.hasLicence(SkillCatalog.INSTANCE.tree(citizen.career), citizen.skills(), category);
     }

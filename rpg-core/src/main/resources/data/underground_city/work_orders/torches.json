@@ -8,5 +8,6 @@
   "credits": 32,
   "xp": 125,
   "capacity": 4,
-  "refill_ticks": 6000
+  "refill_ticks": 6000,
+  "max_level": 5
 }

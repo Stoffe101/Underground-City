@@ -126,6 +126,9 @@ public final class UcUi {
             while (font.width(rest) > width) {
                 String part = font.plainSubstrByWidth(rest, width);
                 if (part.isEmpty()) break;
+                // a compound word ("Controlled-Crop") breaks after its hyphen, not in the middle of a part
+                int hyphen = part.lastIndexOf('-');
+                if (hyphen > 0 && hyphen < part.length() - 1 && part.length() < rest.length()) part = part.substring(0, hyphen + 1);
                 lines.add(part);
                 rest = rest.substring(part.length());
             }

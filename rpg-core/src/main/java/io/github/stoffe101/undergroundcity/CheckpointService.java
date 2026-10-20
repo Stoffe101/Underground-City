@@ -1,6 +1,7 @@
 package io.github.stoffe101.undergroundcity;
 
 import com.mojang.logging.LogUtils;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -33,6 +34,9 @@ public final class CheckpointService {
     private static final Map<UUID, String> INSIDE = new HashMap<>();
 
     public enum Outcome { NOT_CHECKED, WAVED_THROUGH, CLEARED, SEIZED }
+
+    /** Test seam: the process "dies" right after the prepared record is on disk, before anything is applied (the crash the journal exists for). */
+    static volatile boolean crashAfterPrepare;
 
     public record Result(Outcome outcome, int stacksSeized, int fine, String summary) {}
 
@@ -73,7 +77,7 @@ public final class CheckpointService {
         UUID id = player.getUUID();
         boolean searched = LawMath.roll(chance, LawMath.mix(id.getMostSignificantBits(), id.getLeastSignificantBits(), LawMath.hash(post.id()), roll));
         if (!searched) return new Result(Outcome.WAVED_THROUGH, 0, 0, "waved through");
-        return inspect(player, citizen, post, law, ledger);
+        return inspect(player, citizen, post, law, ledger, player.getVehicle(), new Why(chance, heat));
     }
 
     /** The post's guard, when the zone has a built post: they turn to the traveller and challenge them, so the search has a face. */
@@ -108,51 +112,68 @@ public final class CheckpointService {
         return found;
     }
 
+    /** Why a traveller was searched: the odds the post gave, the heat that raised them. Kept in the record of the search. */
+    public record Why(double chance, int heat) {
+        static final Why UNKNOWN = new Why(0, 0);
+    }
+
     /** Performs the search itself (the dice already said yes). */
     public static Result inspect(ServerPlayer player, CitizenState.Citizen citizen, CheckpointCatalog.Checkpoint post,
                                  CityLaws.Law law, WorkOrderLedger ledger) {
-        return inspect(player, citizen, post, law, ledger, player.getVehicle());
+        return inspect(player, citizen, post, law, ledger, player.getVehicle(), Why.UNKNOWN);
     }
 
-    /** {@code ridden} is the vehicle brought into the zone (normally the one the traveller rides); tests name one directly. */
     static Result inspect(ServerPlayer player, CitizenState.Citizen citizen, CheckpointCatalog.Checkpoint post,
                           CityLaws.Law law, WorkOrderLedger ledger, net.minecraft.world.entity.Entity ridden) {
+        return inspect(player, citizen, post, law, ledger, ridden, Why.UNKNOWN);
+    }
+
+    /**
+     * {@code ridden} is the vehicle brought into the zone (normally the one the traveller rides); tests name one directly. The search covers what the traveller
+     * carries (pockets, hands, armour slots and the packs, shulker boxes and bundles in them: see {@link CarriedStorage}) and the hold of the vehicle brought into
+     * the zone. It never reads storage that is not carried: a chest nearby, a house, somebody else's pack.
+     */
+    static Result inspect(ServerPlayer player, CitizenState.Citizen citizen, CheckpointCatalog.Checkpoint post,
+                          CityLaws.Law law, WorkOrderLedger ledger, net.minecraft.world.entity.Entity ridden, Why why) {
+        // An open container (a backpack screen) holds its own view of the pack and could write it back over the seizure, so the search closes it first.
+        if (player.containerMenu != player.inventoryMenu) player.closeContainer();
         Inventory after = new Inventory(player);
         after.load(player.getInventory().save(new ListTag()));
-        List<ItemStack> carried = new ArrayList<>(after.items);
-        carried.addAll(after.offhand);
+        List<CarriedStorage.Found> carried = CarriedStorage.scan(after);
         // A traveller who rides a vehicle with a hold (a boat, a cart, a car with a crate in its rack) brings its cargo into the zone with them, so the
         // guard searches that too. A vehicle left outside the zone is never searched: nothing is known about what is not here (D-051).
         VehicleCargo.Hold hold = VehicleCargo.of(ridden);
         String vehicleName = ridden == null ? "" : ridden.getName().getString();
-        List<ItemStack> cargo = new ArrayList<>();
-        if (hold != null) for (int slot = 0; slot < hold.size(); slot++) cargo.add(hold.get(slot));
-        List<ItemStack> everything = new ArrayList<>(carried);
-        everything.addAll(cargo);
-        Map<String, String> violations = violations(citizen, law, everything);
-        if (violations.isEmpty()) {
-            player.sendSystemMessage(Component.literal(actor(player, post) + " searches your bags" + (hold != null ? " and your " + vehicleName : "") + " and finds nothing illegal."));
-            Notice.send(player, Notice.Kind.SEARCH, "Searched, nothing found", post.title() + ". You may go.");
-            return new Result(Outcome.CLEARED, 0, 0, "searched, clean");
-        }
-        int seized = 0;
-        for (List<ItemStack> slots : List.of(after.items, after.offhand)) {
-            for (int slot = 0; slot < slots.size(); slot++) {
-                ItemStack stack = slots.get(slot);
-                String category = ContrabandCatalog.INSTANCE.classify(stack);
-                if (category != null && violations.containsKey(category)) { slots.set(slot, ItemStack.EMPTY); seized++; }
-            }
-        }
-        int fromVehicle = 0;
+        List<CarriedStorage.Found> cargo = new ArrayList<>();
         if (hold != null) {
             for (int slot = 0; slot < hold.size(); slot++) {
                 ItemStack stack = hold.get(slot);
-                String category = ContrabandCatalog.INSTANCE.classify(stack);
-                if (category != null && violations.containsKey(category)) { hold.take(slot); fromVehicle++; }
+                if (stack.isEmpty()) continue;
+                int index = slot;
+                cargo.add(CarriedStorage.inHold(stack, "the " + vehicleName, () -> hold.take(index)));
+                cargo.addAll(CarriedStorage.scanHold(stack));
             }
-            if (fromVehicle > 0) hold.changed();
         }
-        seized += fromVehicle;
+        List<CarriedStorage.Found> everything = new ArrayList<>(carried);
+        everything.addAll(cargo);
+        Map<String, String> violations = violations(citizen, law, everything.stream().map(f -> f.stack).toList());
+        if (violations.isEmpty()) {
+            player.sendSystemMessage(Component.literal(actor(player, post) + " searches your bags" + (hold != null ? " and your " + vehicleName : "") + " and finds nothing illegal."));
+            Notice.send(player, Notice.Kind.SEARCH, "Searched, nothing found", post.title() + ". You may go.");
+            ledger.recordSearch(player.getUUID(), searchRecord(post, why, "clean", 0, 0, Map.of(), List.of()));
+            return new Result(Outcome.CLEARED, 0, 0, "searched, clean");
+        }
+        // What is taken, and from where: a stack counts once, in the place it was found.
+        List<CarriedStorage.Found> takenFromPerson = new ArrayList<>(), takenFromVehicle = new ArrayList<>();
+        Map<String, Integer> whereCounts = new java.util.LinkedHashMap<>();
+        for (CarriedStorage.Found found : everything) {
+            String category = ContrabandCatalog.INSTANCE.classify(found.stack);
+            if (category == null || !violations.containsKey(category)) continue;
+            (cargo.contains(found) ? takenFromVehicle : takenFromPerson).add(found);
+            whereCounts.merge(found.where, 1, Integer::sum);
+        }
+        for (CarriedStorage.Found found : takenFromPerson) found.take();   // out of the inventory copy, or recorded as a change to a carried pack
+        int seized = takenFromPerson.size() + takenFromVehicle.size();
         int fine = violations.values().stream().mapToInt(law::fine).sum();
         boolean economy = QShopEconomy.available() && QShopEconomy.configured(player.server);
         Double balanceAfter = null;
@@ -163,17 +184,40 @@ public final class CheckpointService {
             balanceAfter = balance - paid;
         }
         int heatAfter = ledger.heatAfter(player.getUUID(), post.jurisdiction(), 2);
-        ledger.prepareSeizure(player.getUUID(), after.save(new ListTag()), balanceAfter, citizen.careerXp(), post.jurisdiction(), heatAfter);
-        WorkOrderService.recover(player, ledger);
         List<String> titles = new ArrayList<>();
         violations.forEach((category, status) -> {
             var entry = ContrabandCatalog.INSTANCE.category(category);
             titles.add((entry == null ? category : entry.title()) + " (" + status + ")");
         });
+        CompoundTag record = searchRecord(post, why, "seized", seized, paid, whereCounts, titles);
+        // One prepared record carries the inventory, the changes to carried packs, the fine, the heat and the record of the search: all or none, replayed after a crash.
+        ledger.prepareSeizure(player.getUUID(), after.save(new ListTag()), balanceAfter, citizen.careerXp(), post.jurisdiction(), heatAfter, CarriedStorage.journal(takenFromPerson), record);
+        if (crashAfterPrepare) throw new CrewService.SimulatedCrash("checkpoint_after_prepare");
+        // The vehicle's hold is not part of the journaled inventory; its stacks leave it now, after the decision is on disk (a crash here costs the traveller the fine
+        // and the heat but not the goods, which is the safe side).
+        for (CarriedStorage.Found found : takenFromVehicle) found.take();
+        if (hold != null && !takenFromVehicle.isEmpty()) hold.changed();
+        WorkOrderService.recover(player, ledger);
+        String places = whereCounts.entrySet().stream().map(e -> e.getKey() + " (" + e.getValue() + ")").collect(java.util.stream.Collectors.joining(", "));
         player.sendSystemMessage(Component.literal(actor(player, post) + " searches you" + (hold != null ? " and your " + vehicleName : "") + " and confiscates "
-            + seized + " stack" + (seized == 1 ? "" : "s") + " of contraband: " + String.join(", ", titles) + ". Fine: " + paid + " credits."));
+            + seized + " stack" + (seized == 1 ? "" : "s") + " of contraband: " + String.join(", ", titles) + ". Found in " + places + ". Fine: " + paid + " credits."));
+        if (why.chance() > 0) player.sendSystemMessage(Component.literal("This was a routine inspection: the post searches about " + Math.round(why.chance() * 100) + " in 100 travellers"
+            + (why.heat() > 0 ? " with your record in " + TerminalScreenText.capitalize(post.jurisdiction()) + " (heat " + why.heat() + ")" : "") + "."));
         player.sendSystemMessage(Component.literal("Heat in " + TerminalScreenText.capitalize(post.jurisdiction()) + " is now " + heatAfter + "; searches here become more likely until it cools."));
-        Notice.send(player, Notice.Kind.HEAT, "Contraband seized", seized + (seized == 1 ? " stack" : " stacks") + " taken, " + paid + " credits fined. Heat " + heatAfter + " in " + TerminalScreenText.capitalize(post.jurisdiction()) + ".");
+        Notice.send(player, Notice.Kind.HEAT, "Contraband seized", seized + (seized == 1 ? " stack" : " stacks") + " taken from " + places + ", " + paid + " credits fined. Heat " + heatAfter + " in " + TerminalScreenText.capitalize(post.jurisdiction()) + ".");
         return new Result(Outcome.SEIZED, seized, paid, "seized " + seized);
+    }
+
+    /** The entry a person's search history keeps: where, why, what was found and where it was, what it cost. */
+    private static CompoundTag searchRecord(CheckpointCatalog.Checkpoint post, Why why, String outcome, int stacks, int fine, Map<String, Integer> where, List<String> categories) {
+        CompoundTag tag = new CompoundTag();
+        tag.putString("post", post.id()); tag.putString("city", post.jurisdiction()); tag.putString("outcome", outcome);
+        tag.putInt("permille", (int) Math.round(why.chance() * 1000)); tag.putInt("heat", why.heat());
+        tag.putInt("stacks", stacks); tag.putInt("fine", fine);
+        ListTag places = new ListTag(), cats = new ListTag();
+        where.forEach((k, v) -> places.add(net.minecraft.nbt.StringTag.valueOf(k + " x" + v)));
+        categories.forEach(c -> cats.add(net.minecraft.nbt.StringTag.valueOf(c)));
+        tag.put("where", places); tag.put("categories", cats);
+        return tag;
     }
 }

@@ -125,7 +125,7 @@ public final class CrewService {
         return CitizenState.get(player.server).find(player.getUUID()).orElseThrow(() -> new IllegalStateException("Register as a citizen first."));
     }
 
-    private static void requireMoney(ServerPlayer player) {
+    static void requireMoney(ServerPlayer player) {
         need(player.server);
         if (!wallet.ready(player.server)) throw new IllegalStateException("The Crew bank needs Q Shop 1.8.4 with the credits currency. Ask the host.");
         if (WorkOrderLedger.get(player.server).faulted()) throw new IllegalStateException("Work-order storage failed; restart the server.");
@@ -247,7 +247,7 @@ public final class CrewService {
     // ------------------------------------------------------------------------------------------------------------ money
 
     /** Runs a transfer that needs the wallet. {@code begin} receives the wallet balance and writes the prepare record. */
-    private static void transact(ServerPlayer player, java.util.function.DoubleFunction<Pending> begin) {
+    static void transact(ServerPlayer player, java.util.function.DoubleFunction<Pending> begin) {
         requireMoney(player);
         CrewLedger ledger = need(player.server);
         double before = wallet.balance(player);
@@ -299,7 +299,7 @@ public final class CrewService {
         Notice.send(player, Notice.Kind.INFO, "Payout received", amount + " credits from your Crew are in your wallet.");
     }
 
-    private static void claimOwedQuietly(ServerPlayer player) {
+    static void claimOwedQuietly(ServerPlayer player) {
         try {
             if (moneyReady(player.server) && need(player.server).owedTo(player.getUUID()) > 0) claimOwed(player, UUID.randomUUID());
         } catch (RuntimeException error) {
@@ -406,26 +406,10 @@ public final class CrewService {
 
     // ------------------------------------------------------------------------------------------------------------ homes
 
-    /** Leases a registered home near the player, for themselves or their Crew, from the bank or from their own wallet. */
+    /** Buys a registered home near the player, for themselves or their Crew, from the bank or from their own wallet (the old word was lease; a home with a listing is
+     * sold at its listed price and then costs its upkeep, one without keeps the registered one-time price). Renting is {@link PropertyService#rent}. */
     public static void lease(ServerPlayer player, UUID tx, String residenceId, boolean forCrew, boolean fromBank) {
-        citizen(player);
-        CrewLedger ledger = need(player.server);
-        Residence r = ledger.residence(residenceId);
-        if (r == null) throw new IllegalStateException("That home does not exist.");
-        if (!r.dimension.equals(player.level().dimension().location().toString()) || r.distanceSqr(player.blockPosition()) > 64.0 * 64.0) {
-            throw new IllegalStateException("Go to the home first (within 64 blocks) to lease it.");
-        }
-        if (fromBank) {
-            requireMoney(player);
-            if (!forCrew) throw new IllegalStateException("The Crew bank pays for Crew homes only.");
-            int price = ledger.leaseForCrewFromBank(tx, player.getUUID(), player.getGameProfile().getName(), residenceId);
-            Notice.send(player, Notice.Kind.STEP, "Home leased", r.title + " now belongs to the Crew (" + price + " credits from the bank).");
-        } else {
-            transact(player, balance -> ledger.beginLeaseFromWallet(tx, player.getUUID(), forCrew, residenceId, balance));
-            Notice.send(player, Notice.Kind.STEP, "Home leased", r.title + " is " + (forCrew ? "the Crew's now." : "yours now."));
-        }
-        Crew crew = ledger.crewOf(player.getUUID());
-        if (forCrew && crew != null) broadcast(player.server, crew, player.getUUID(), Notice.Kind.INFO, "New Crew home", r.title + " is now a Crew home.");
+        PropertyService.buy(player, tx, residenceId, forCrew, fromBank);
     }
 
     /** Marks the container the player is looking at as theirs alone; the home guard then keeps everyone else out of it. */
@@ -512,6 +496,7 @@ public final class CrewService {
                 Notice.send(player, Notice.Kind.INFO, "Crew invitation", "You have a Crew invitation. Press K to answer.");
             }
             if (ledger.owedTo(player.getUUID()) > 0) claimOwedQuietly(player);
+            PropertyService.greet(player, ledger);
         } catch (RuntimeException error) {
             LOG.error("Crew login handling failed for {}", player.getGameProfile().getName(), error);
         }

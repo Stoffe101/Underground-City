@@ -1,6 +1,11 @@
 package io.github.stoffe101.undergroundcity;
 
 import io.github.stoffe101.undergroundcity.CrewRules.Mode;
+import io.github.stoffe101.undergroundcity.PropertyRules.Rules;
+import io.github.stoffe101.undergroundcity.PropertyRules.Standing;
+import io.github.stoffe101.undergroundcity.PropertyRules.Tenure;
+import io.github.stoffe101.undergroundcity.PropertyRules.Terms;
+import io.github.stoffe101.undergroundcity.PropertyRules.Upgrade;
 import io.github.stoffe101.undergroundcity.CrewRules.Perm;
 import io.github.stoffe101.undergroundcity.CrewRules.Role;
 import net.minecraft.core.BlockPos;
@@ -46,7 +51,8 @@ import java.util.function.LongSupplier;
  * banks and all owed payouts is conserved by every operation here (the GameTests check it after random operations and simulated crashes).
  */
 public final class CrewLedger {
-    public static final int SCHEMA = 1;
+    /** 2: homes carry a tenancy (rent or ownership, the billing clock, upgrades, receipts) and a welcome record; schema 1 files are read and migrated (owned homes become legacy ownership with no charge). */
+    public static final int SCHEMA = 2;
     private static final Map<MinecraftServer, CrewLedger> INSTANCES = new WeakHashMap<>();
 
     public static CrewLedger get(MinecraftServer server) {
@@ -133,6 +139,47 @@ public final class CrewLedger {
         /** Containers that one tenant keeps private: block position to claimant. */
         public final Map<Long, UUID> claims = new LinkedHashMap<>();
 
+        // ---- the tenancy (schema 2): how the home is held and what it costs to keep. Rent and ownership are different things (D-099).
+        /** NONE for an unheld home, RENT for a tenant, OWN for a buyer or a home taken before rent existed. */
+        public Tenure tenure = Tenure.NONE;
+        /** Held before rent existed (an old save): ownership with no charge, ever. */
+        public boolean legacy;
+        /** Credits per cycle, fixed at signing: the rent for a tenant, the upkeep for an owner (0 for a legacy owner). */
+        public int charge;
+        /** The deposit held for a tenant, returned when they move out less what is owed. */
+        public int deposit;
+        /** What the owner paid, which bounds what selling back can return. */
+        public int paidPrice;
+        /** Active ticks counted toward the next cycle: the clock runs once per household while a resident is online. */
+        public long progress;
+        /** Cycles that have fallen due and wait for an automatic payment from a wallet (normally 0). */
+        public int due;
+        /** Cycles paid in advance (including the free welcome hours). */
+        public int prepaid;
+        /** Of the prepaid cycles, those the city gave (a motel's welcome stay): they are used first and never refunded. */
+        public int freeCycles;
+        /** Cycles that fell due and were not paid. */
+        public int arrears;
+        public boolean autopay;
+        /** The city's price factor when the home was registered, in percent. */
+        public int factorPct = 100;
+        public final java.util.Set<String> upgrades = new LinkedHashSet<>();
+        public UUID signedBy;
+        public long signedAt;
+        /** The last receipts: rent, payments, upgrades, moves. A statement the screen can show without the Crew's history. */
+        public final ArrayDeque<Entry> receipts = new ArrayDeque<>();
+
+        public boolean rented() { return tenure == Tenure.RENT; }
+        public boolean billed() { return tenure != Tenure.NONE && charge > 0; }
+        /** Credits owed right now: the cycles due or unpaid at the stated charge. */
+        public long owedCredits() { return (long) (arrears + due) * charge; }
+        public Standing standing(Rules rules) { return PropertyRules.standing(arrears, rules); }
+
+        void receipt(long now, UUID actor, String actorName, String kind, long amount, String note) {
+            receipts.addFirst(new Entry(now, actor, actorName == null ? "" : actorName, kind, amount, note == null ? "" : note));
+            while (receipts.size() > CrewRules.RECEIPTS_MAX) receipts.removeLast();
+        }
+
         Residence(String id, String title, String kind, String dimension, String district, BlockPos min, BlockPos max, int price, int starterPrice) {
             this.id = id; this.title = title; this.kind = kind; this.dimension = dimension; this.district = district;
             this.min = min.immutable(); this.max = max.immutable(); this.price = price; this.starterPrice = starterPrice;
@@ -161,13 +208,18 @@ public final class CrewLedger {
         public boolean sameGeometry(String dim, BlockPos lo, BlockPos hi) { return dim.equals(dimension) && lo.equals(min) && hi.equals(max); }
     }
 
-    public enum Kind { DEPOSIT, WITHDRAW, LEASE_WALLET, CLAIM_OWED }
+    /** LEASE_WALLET is the purchase of a home (the old word is kept in the file); RENT_WALLET signs a tenancy; PAY_WALLET pays cycles of rent or upkeep; UPGRADE_WALLET fits an improvement. */
+    public enum Kind { DEPOSIT, WITHDRAW, LEASE_WALLET, CLAIM_OWED, RENT_WALLET, PAY_WALLET, UPGRADE_WALLET }
 
     /**
      * The one in-flight transaction a player may have. {@code before}/{@code after} are the wallet balances on either side of the change; after a
      * crash the wallet is compared with them to learn how far the transaction got (see {@link CrewService#recover}).
      */
-    public record Pending(UUID tx, UUID player, Kind kind, UUID crew, long amount, double before, double after, String residence, boolean starter) {}
+    public record Pending(UUID tx, UUID player, Kind kind, UUID crew, long amount, double before, double after, String residence, boolean starter, int count, String detail) {
+        public Pending(UUID tx, UUID player, Kind kind, UUID crew, long amount, double before, double after, String residence, boolean starter) {
+            this(tx, player, kind, crew, amount, before, after, residence, starter, 0, "");
+        }
+    }
 
     /**
      * The Crew bank's share of one exchange purchase (D-089), taken out of the bank at once and held until the purchase is decided. The decision is the
@@ -200,7 +252,8 @@ public final class CrewLedger {
             try {
                 CompoundTag root = NbtIo.read(path.toFile());
                 if (root == null) throw new IOException("Empty Crew ledger");
-                if (root.getInt("schema_version") != SCHEMA) throw new IOException("Unsupported Crew ledger schema " + root.getInt("schema_version"));
+                int version = root.getInt("schema_version");
+                if (version < 1 || version > SCHEMA) throw new IOException("Unsupported Crew ledger schema " + version + " (this build reads 1 to " + SCHEMA + "; restore the backup or use the build that wrote it)");
                 load(root);
             } catch (IOException | RuntimeException error) {
                 throw new IllegalStateException("Cannot read the Crew ledger; restore the backup of data/underground_city_crews.dat", error);
@@ -524,6 +577,8 @@ public final class CrewLedger {
             r.ownerType = OwnerType.PLAYER;
             r.owner = crew.founder;
             r.guests.clear();
+            r.autopay = false;   // the Crew bank is gone: the founder pays by hand (or switches automatic payment on from their wallet)
+            r.receipt(now(), actor, actorName, "TRANSFER", 0, "the Crew disbanded; " + r.title + " is the founder's");
         }
         invites.values().removeIf(invite -> invite.crew().equals(crew.id));
         for (UUID member : crew.members.keySet()) crewOf.remove(member);
@@ -685,7 +740,7 @@ public final class CrewLedger {
     /** The price this player would pay for a residence right now (the starter price while the entitlement is unspent). */
     public int priceFor(UUID player, Residence r) { return usesStarter(player, r) ? r.starterPrice : r.price; }
 
-    public static final int MAX_PERSONAL_HOMES = 2, MAX_CREW_HOMES = 4;
+    public static final int MAX_PERSONAL_HOMES = 3, MAX_CREW_HOMES = 4;
 
     private Residence requireLeasable(String id, UUID forPlayerOrCrew, boolean crew) {
         Residence r = residences.get(id);
@@ -697,43 +752,51 @@ public final class CrewLedger {
         return r;
     }
 
-    /** Pays a Crew lease from the bank: one atomic ledger write, nothing to recover. Returns the price. */
-    public int leaseForCrewFromBank(UUID tx, UUID actor, String actorName, String residenceId) {
+    /** Buys a home for the Crew from the bank: one atomic ledger write, nothing to recover. Returns the price. (The old word, lease, is kept for homes with no listing.) */
+    public int leaseForCrewFromBank(UUID tx, UUID actor, String actorName, String residenceId) { return buyForCrewFromBank(tx, actor, actorName, residenceId, null); }
+
+    /** {@code terms} is the home's listing (the price is the listed price in this city, with upkeep to follow) or null for a home with no listing (the registered price, no upkeep). */
+    public int buyForCrewFromBank(UUID tx, UUID actor, String actorName, String residenceId, Terms terms) {
         checkHealthy();
         Crew crew = requireCrew(actor);
         requireFreshTx(tx, actor);
-        require(crew.can(actor, Perm.MANAGE_PROPERTY), "You are not allowed to lease homes for the Crew.");
+        require(crew.can(actor, Perm.MANAGE_PROPERTY), "You are not allowed to buy homes for the Crew.");
         require(crew.can(actor, Perm.SPEND), "You are not allowed to spend Crew money.");
-        require(crew.effectiveMode() != Mode.SEPARATE, "This Crew has no bank. Lease with your own credits instead.");
+        require(crew.effectiveMode() != Mode.SEPARATE, "This Crew has no bank. Buy with your own credits instead.");
         Residence r = requireLeasable(residenceId, crew.id, true);
-        int price = priceFor(actor, r);
-        boolean starter = usesStarter(actor, r);
+        require(terms == null || terms.canBuy(), "That home is not for sale. It can only be rented.");
+        int price = terms != null ? buyPrice(r, terms) : priceFor(actor, r);
+        boolean starter = terms == null && usesStarter(actor, r);
         require(crew.bank >= price, "The bank holds " + crew.bank + " credits. This home costs " + price + ".");
         requireNoPending(crew);
         crew.bank -= price;
         if (starter) starterUsed.add(actor);
-        r.ownerType = OwnerType.CREW; r.owner = crew.id; r.since = now();
+        sign(r, Tenure.OWN, OwnerType.CREW, crew.id, actor, actorName, terms == null ? 0 : PropertyRules.scaled(terms.upkeep(), r.factorPct), 0, price, 0, false);
         crew.record(now(), actor, actorName, "LEASE", price, r.title);
         remember(tx);
         persist();
         return price;
     }
 
-    /** Lease paid from a wallet, step 1: reserves the unit and records the price. Ownership is assigned by {@link #settle}. */
-    public Pending beginLeaseFromWallet(UUID tx, UUID actor, boolean forCrew, String residenceId, double walletBefore) {
+    /** Purchase from a wallet, step 1: reserves the unit and records the price. Ownership is assigned by {@link #settle}. */
+    public Pending beginLeaseFromWallet(UUID tx, UUID actor, boolean forCrew, String residenceId, double walletBefore) { return beginBuyFromWallet(tx, actor, forCrew, residenceId, walletBefore, null); }
+
+    public Pending beginBuyFromWallet(UUID tx, UUID actor, boolean forCrew, String residenceId, double walletBefore, Terms terms) {
         checkHealthy();
         requireFreshTx(tx, actor);
         Crew crew = forCrew ? requireCrew(actor) : crewOf(actor);
         if (forCrew) {
-            require(crew.can(actor, Perm.MANAGE_PROPERTY), "You are not allowed to lease homes for the Crew.");
+            require(crew.can(actor, Perm.MANAGE_PROPERTY), "You are not allowed to buy homes for the Crew.");
             requireNoPending(crew);
         }
         Residence r = requireLeasable(residenceId, forCrew ? crew.id : actor, forCrew);
-        int price = priceFor(actor, r);
-        boolean starter = usesStarter(actor, r);
+        require(terms == null || terms.canBuy(), "That home is not for sale. It can only be rented.");
+        int price = terms != null ? buyPrice(r, terms) : priceFor(actor, r);
+        boolean starter = terms == null && usesStarter(actor, r);
         require(walletBefore >= price, "You only have " + (long) Math.floor(walletBefore) + " credits. This home costs " + price + ".");
         r.reservedBy = tx;
-        Pending p = new Pending(tx, actor, Kind.LEASE_WALLET, forCrew ? crew.id : null, price, walletBefore, walletBefore - price, residenceId, starter);
+        Pending p = new Pending(tx, actor, Kind.LEASE_WALLET, forCrew ? crew.id : null, price, walletBefore, walletBefore - price, residenceId, starter, 0,
+            "own:" + (terms == null ? 0 : PropertyRules.scaled(terms.upkeep(), r.factorPct)));
         pending.put(actor, p);
         remember(tx);
         persist();
@@ -765,10 +828,49 @@ public final class CrewLedger {
                     owed.merge(player, p.amount(), Math::addExact); // the reservation was lost: give the price back
                 } else {
                     r.reservedBy = null;
-                    if (p.crew() != null) { r.ownerType = OwnerType.CREW; r.owner = p.crew(); } else { r.ownerType = OwnerType.PLAYER; r.owner = player; }
-                    r.since = now;
+                    int upkeep = p.detail().startsWith("own:") ? Integer.parseInt(p.detail().substring(4)) : 0;
+                    sign(r, Tenure.OWN, p.crew() != null ? OwnerType.CREW : OwnerType.PLAYER, p.crew() != null ? p.crew() : player, player, actorName, upkeep, 0, (int) p.amount(), 0, false);
                     if (p.starter()) starterUsed.add(player);
                     if (crew != null) crew.record(now, player, actorName, "LEASE", p.amount(), r.title);
+                }
+            }
+            case RENT_WALLET -> {
+                Residence r = residences.get(p.residence());
+                if (r == null || !p.tx().equals(r.reservedBy) || (p.crew() != null && crew == null)) {
+                    owed.merge(player, p.amount(), Math::addExact);
+                } else {
+                    r.reservedBy = null;
+                    String[] parts = p.detail().split(":");
+                    sign(r, Tenure.RENT, p.crew() != null ? OwnerType.CREW : OwnerType.PLAYER, p.crew() != null ? p.crew() : player, player, actorName, Integer.parseInt(parts[1]), Integer.parseInt(parts[2]), 0, 1, false);
+                    if (crew != null) crew.record(now, player, actorName, "RENT", p.amount(), r.title);
+                }
+            }
+            case PAY_WALLET -> {
+                Residence r = residences.get(p.residence());
+                boolean same = r != null && r.billed() && (p.crew() == null ? r.ownerType == OwnerType.PLAYER && player.equals(r.owner) : r.ownerType == OwnerType.CREW && p.crew().equals(r.owner));
+                if (!same) {
+                    owed.merge(player, p.amount(), Math::addExact);
+                } else {
+                    int cycles = Math.min(p.count(), Math.max(0, payableCycles(r, PropertyCatalog.INSTANCE.rules())));
+                    applyPayment(r, cycles);
+                    long used = (long) cycles * r.charge;
+                    if (used < p.amount()) owed.merge(player, p.amount() - used, Math::addExact); // the home needed less than was taken
+                    r.receipt(now, player, actorName, "PAID", used, cycles + " h from " + (actorName.isEmpty() ? "a wallet" : actorName + "'s wallet"));
+                    if (crew != null) crew.record(now, player, actorName, r.rented() ? "RENT" : "UPKEEP", used, r.title + " (" + cycles + " h)");
+                }
+            }
+            case UPGRADE_WALLET -> {
+                Residence r = residences.get(p.residence());
+                Upgrade up = PropertyCatalog.INSTANCE.upgrade(p.detail());
+                boolean same = r != null && up != null && r.tenure == Tenure.OWN && !r.upgrades.contains(up.id())
+                    && (p.crew() == null ? r.ownerType == OwnerType.PLAYER && player.equals(r.owner) : r.ownerType == OwnerType.CREW && p.crew().equals(r.owner));
+                if (!same) {
+                    owed.merge(player, p.amount(), Math::addExact);
+                } else {
+                    r.upgrades.add(up.id());
+                    sunk += p.amount();   // the price actually paid (a tradesperson's discount is already in it), not the list price
+                    r.receipt(now, player, actorName, "UPGRADE", p.amount(), up.title());
+                    if (crew != null) crew.record(now, player, actorName, "UPGRADE", p.amount(), r.title + ": " + up.title());
                 }
             }
         }
@@ -789,12 +891,443 @@ public final class CrewLedger {
                 else owed.merge(player, p.amount(), Math::addExact); // the Crew ended meanwhile: the credits are owed back
             }
             case CLAIM_OWED -> owed.merge(player, p.amount(), Math::addExact);
-            case LEASE_WALLET -> {
+            case LEASE_WALLET, RENT_WALLET -> {
                 Residence r = residences.get(p.residence());
                 if (r != null && p.tx().equals(r.reservedBy)) r.reservedBy = null;
             }
+            case PAY_WALLET, UPGRADE_WALLET -> { }
         }
         pending.remove(player);
+        persist();
+    }
+
+    // ------------------------------------------------------------------------------------------------------------ the property economy (D-099)
+
+    /** People who have had the city's welcome stay in a motel (once each, so founding Crews and renting again buy nothing). */
+    final Set<UUID> welcomeUsed = new LinkedHashSet<>();
+
+    /**
+     * Credits that have left circulation through homes since this ledger was created: rent and upkeep actually consumed, purchase prices (less what a sale returned),
+     * upgrades, and the part of a deposit the city kept. With the credits in wallets, banks, owed payouts, deposits and prepaid hours it adds up to the credits that
+     * entered, which the GameTests check after random play. (It can dip below zero when a home bought before this existed is sold back.)
+     */
+    public long sunk;
+
+    /** Credits held inside homes right now: deposits and prepaid hours the city did not give. */
+    public long heldInHomes() {
+        long total = 0;
+        for (Residence r : residences.values()) total += r.deposit + (long) Math.max(0, r.prepaid - r.freeCycles) * r.charge;
+        return total;
+    }
+
+    /** One thing the billing clock did that someone should hear about. */
+    public record Event(String residence, String kind, String detail) {}
+
+    public boolean welcomeAvailable(UUID player, Terms t, Rules rules) {
+        return t != null && "motel_room".equals(t.category()) && rules.welcomeMotelCycles() > 0 && !welcomeUsed.contains(player);
+    }
+
+    /** What signing a tenancy costs this player now: the deposit and the first cycle, or nothing when the city's welcome applies. */
+    public record Quote(int deposit, int rent, int total, boolean welcome) {}
+
+    public Quote rentQuote(UUID player, Residence r, Terms t, Rules rules) {
+        require(t != null && t.canRent(), "That home is not for rent.");
+        int rent = PropertyRules.scaled(t.rent(), r.factorPct), deposit = PropertyRules.scaled(t.deposit(), r.factorPct);
+        if (welcomeAvailable(player, t, rules)) return new Quote(0, rent, 0, true);
+        return new Quote(deposit, rent, deposit + rent, false);
+    }
+
+    public int buyPrice(Residence r, Terms t) { return PropertyRules.scaled(t.buyPrice(), r.factorPct); }
+
+    /** Who may handle the money and the paperwork of a held home: the owner, or a Crew member who may manage property for a Crew home. */
+    public boolean canManage(UUID actor, Residence r) {
+        if (!r.owned()) return false;
+        if (r.ownerType == OwnerType.PLAYER) return actor.equals(r.owner);
+        Crew crew = crews.get(r.owner);
+        return crew != null && crew.can(actor, Perm.MANAGE_PROPERTY);
+    }
+
+    /** The people who live there: the owner, or every member of the owning Crew. */
+    public List<UUID> residentsOf(Residence r) {
+        if (!r.owned()) return List.of();
+        if (r.ownerType == OwnerType.PLAYER) return List.of(r.owner);
+        Crew crew = crews.get(r.owner);
+        return crew == null ? List.of() : List.copyOf(crew.members.keySet());
+    }
+
+    private Residence held(String id) {
+        Residence r = residences.get(id);
+        require(r != null, "That home does not exist.");
+        require(r.owned(), "Nobody holds that home.");
+        return r;
+    }
+
+    private void requireManager(UUID actor, Residence r) {
+        require(canManage(actor, r), r.ownerType == OwnerType.CREW ? "Your role may not handle this home for the Crew." : "This is not your home.");
+    }
+
+    private Crew bankCrew(UUID actor, Residence r) {
+        require(r.ownerType == OwnerType.CREW, "Only a Crew home is paid from the Crew bank.");
+        Crew crew = crews.get(r.owner);
+        require(crew != null && crew.members.containsKey(actor), "You are not in the Crew that holds this home.");
+        require(crew.can(actor, Perm.SPEND) && crew.can(actor, Perm.MANAGE_PROPERTY), "You are not allowed to spend Crew money on property.");
+        require(crew.effectiveMode() != Mode.SEPARATE, "This Crew has no bank. Pay with your own credits instead.");
+        requireNoPending(crew);
+        return crew;
+    }
+
+    /** Fixes the terms of a new tenancy or ownership on a home. The caller has already taken the money. */
+    private void sign(Residence r, Tenure tenure, OwnerType type, UUID owner, UUID actor, String actorName, int charge, int deposit, int paidPrice, int prepaid, boolean welcome) {
+        r.ownerType = type; r.owner = owner; r.since = now();
+        r.tenure = tenure; r.legacy = false;
+        r.charge = charge; r.deposit = deposit; r.paidPrice = paidPrice;
+        r.progress = 0; r.due = 0; r.arrears = 0; r.prepaid = prepaid; r.freeCycles = welcome ? prepaid : 0; r.autopay = false;
+        r.upgrades.clear(); r.receipts.clear(); r.claims.clear(); r.guests.clear();
+        r.signedBy = actor; r.signedAt = now();
+        if (tenure == Tenure.OWN) sunk += paidPrice;
+        if (welcome) welcomeUsed.add(actor);
+        r.receipt(now(), actor, actorName, tenure == Tenure.RENT ? "RENT" : "BUY", deposit + (tenure == Tenure.RENT ? charge : paidPrice), tenure == Tenure.RENT
+            ? (welcome ? "welcome stay: " + prepaid + " hours free" : "deposit " + deposit + " and the first hour") : "bought");
+    }
+
+    /** Clears a tenancy: the home is nobody's again. Claims and guests go with it; fixtures stay and stored items must have been taken out first. */
+    private void release(Residence r) {
+        r.ownerType = OwnerType.NONE; r.owner = null; r.since = 0; r.reservedBy = null;
+        r.tenure = Tenure.NONE; r.legacy = false; r.charge = 0; r.deposit = 0; r.paidPrice = 0; r.progress = 0; r.due = 0; r.prepaid = 0; r.freeCycles = 0; r.arrears = 0; r.autopay = false;
+        r.upgrades.clear(); r.receipts.clear(); r.claims.clear(); r.guests.clear(); r.signedBy = null; r.signedAt = 0;
+    }
+
+    private void applyPayment(Residence r, int cycles) {
+        PropertyRules.Applied a = PropertyRules.apply(cycles, r.due, r.arrears);
+        r.due -= a.due(); r.arrears -= a.arrears(); r.prepaid += a.prepaid();
+        sunk += (long) (a.due() + a.arrears()) * r.charge;   // the hours already lived are consumed; the rest is held as prepaid
+    }
+
+    /** Credits go to a person as an owed payout (claimed into their wallet by the protocol that already survives crashes) or, for a Crew home, into the bank. */
+    private void refund(Residence r, UUID actor, int credits, String kind, String note) {
+        if (credits <= 0) return;
+        if (r.ownerType == OwnerType.CREW) {
+            Crew crew = crews.get(r.owner);
+            if (crew != null && crew.effectiveMode() != Mode.SEPARATE) { crew.bank = Math.addExact(crew.bank, credits); crew.record(now(), actor, nameOf(crew, actor), kind, credits, note); return; }
+            owed.merge(crew != null ? crew.founder : actor, (long) credits, Math::addExact);
+            return;
+        }
+        owed.merge(r.owner, (long) credits, Math::addExact);
+    }
+
+    private String nameOf(Crew crew, UUID id) { Member m = crew.members.get(id); return m == null ? "" : m.name; }
+
+    private void logCrew(Residence r, UUID actor, String kind, long amount, String note) {
+        if (r.ownerType != OwnerType.CREW) return;
+        Crew crew = crews.get(r.owner);
+        if (crew != null) crew.record(now(), actor, nameOf(crew, actor), kind, amount, note);
+    }
+
+    // ---- taking a home
+
+    /** A Crew rents a home with the bank's credits: one atomic write. The welcome stay (motels only, once per person) costs nothing. Returns the credits paid. */
+    public int rentForCrewFromBank(UUID tx, UUID actor, String actorName, String residenceId, Terms terms, Rules rules) {
+        checkHealthy();
+        Crew crew = requireCrew(actor);
+        requireFreshTx(tx, actor);
+        require(crew.can(actor, Perm.MANAGE_PROPERTY), "You are not allowed to rent homes for the Crew.");
+        Residence r = requireLeasable(residenceId, crew.id, true);
+        Quote q = rentQuote(actor, r, terms, rules);
+        if (q.total() > 0) {
+            require(crew.can(actor, Perm.SPEND), "You are not allowed to spend Crew money.");
+            require(crew.effectiveMode() != Mode.SEPARATE, "This Crew has no bank. Rent with your own credits instead.");
+            require(crew.bank >= q.total(), "The bank holds " + crew.bank + " credits. This home needs " + q.total() + " (deposit " + q.deposit() + " and the first hour " + q.rent() + ").");
+            requireNoPending(crew);
+            crew.bank -= q.total();
+        }
+        sign(r, Tenure.RENT, OwnerType.CREW, crew.id, actor, actorName, q.rent(), q.deposit(), 0, q.welcome() ? rules.welcomeMotelCycles() : 1, q.welcome());
+        crew.record(now(), actor, actorName, "RENT", q.total(), r.title);
+        remember(tx);
+        persist();
+        return q.total();
+    }
+
+    /** Rent paid from a wallet, step 1. A free welcome stay needs no wallet at all and is done here ({@code null} is returned). */
+    public Pending beginRentFromWallet(UUID tx, UUID actor, String actorName, boolean forCrew, String residenceId, double walletBefore, Terms terms, Rules rules) {
+        checkHealthy();
+        requireFreshTx(tx, actor);
+        Crew crew = forCrew ? requireCrew(actor) : crewOf(actor);
+        if (forCrew) { require(crew.can(actor, Perm.MANAGE_PROPERTY), "You are not allowed to rent homes for the Crew."); requireNoPending(crew); }
+        Residence r = requireLeasable(residenceId, forCrew ? crew.id : actor, forCrew);
+        Quote q = rentQuote(actor, r, terms, rules);
+        if (q.total() == 0) {
+            sign(r, Tenure.RENT, forCrew ? OwnerType.CREW : OwnerType.PLAYER, forCrew ? crew.id : actor, actor, actorName, q.rent(), 0, 0, q.welcome() ? rules.welcomeMotelCycles() : 1, q.welcome());
+            if (forCrew) crew.record(now(), actor, actorName, "RENT", 0, r.title);
+            remember(tx);
+            persist();
+            return null;
+        }
+        require(walletBefore >= q.total(), "You only have " + (long) Math.floor(walletBefore) + " credits. This home needs " + q.total() + " (deposit " + q.deposit() + " and the first hour " + q.rent() + ").");
+        r.reservedBy = tx;
+        Pending p = new Pending(tx, actor, Kind.RENT_WALLET, forCrew ? crew.id : null, q.total(), walletBefore, walletBefore - q.total(), residenceId, false, q.rent(), "rent:" + q.rent() + ":" + q.deposit());
+        pending.put(actor, p);
+        remember(tx);
+        persist();
+        return p;
+    }
+
+    // ---- paying
+
+    /** Payable cycles right now: what is owed plus the room under the prepayment cap. */
+    public int payableCycles(Residence r, Rules rules) { return PropertyRules.payableCycles(r.due, r.arrears, r.prepaid, rules); }
+
+    /** A Crew pays rent or upkeep from the bank: one atomic write. */
+    public int payFromBank(UUID tx, UUID actor, String actorName, String residenceId, int cycles, Rules rules) {
+        checkHealthy();
+        requireFreshTx(tx, actor);
+        Residence r = held(residenceId);
+        Crew crew = bankCrew(actor, r);
+        require(r.billed(), "There is nothing to pay on this home.");
+        require(cycles >= 1 && cycles <= payableCycles(r, rules), "You can pay between 1 and " + payableCycles(r, rules) + " hours on this home.");
+        long credits = (long) cycles * r.charge;
+        require(crew.bank >= credits, "The bank holds " + crew.bank + " credits. " + cycles + " hour" + (cycles == 1 ? "" : "s") + " cost" + (cycles == 1 ? "s " : " ") + credits + ".");
+        crew.bank -= credits;
+        applyPayment(r, cycles);
+        r.receipt(now(), actor, actorName, "PAID", credits, cycles + " h from the Crew bank");
+        crew.record(now(), actor, actorName, r.rented() ? "RENT" : "UPKEEP", credits, r.title + " (" + cycles + " h)");
+        remember(tx);
+        persist();
+        return (int) credits;
+    }
+
+    /** Rent or upkeep paid from a wallet, step 1. Anyone in the Crew may pay a Crew home from their own wallet; only the owner pays a personal one. */
+    public Pending beginPayFromWallet(UUID tx, UUID actor, String residenceId, int cycles, double walletBefore, Rules rules) {
+        checkHealthy();
+        requireFreshTx(tx, actor);
+        Residence r = held(residenceId);
+        if (r.ownerType == OwnerType.PLAYER) require(actor.equals(r.owner), "This is not your home.");
+        else { Crew crew = crews.get(r.owner); require(crew != null && crew.members.containsKey(actor), "You are not in the Crew that holds this home."); requireNoPending(crew); }
+        require(r.billed(), "There is nothing to pay on this home.");
+        require(cycles >= 1 && cycles <= payableCycles(r, rules), "You can pay between 1 and " + payableCycles(r, rules) + " hours on this home.");
+        long credits = (long) cycles * r.charge;
+        require(walletBefore >= credits, "You only have " + (long) Math.floor(walletBefore) + " credits. " + cycles + " hour" + (cycles == 1 ? "" : "s") + " cost" + (cycles == 1 ? "s " : " ") + credits + ".");
+        Pending p = new Pending(tx, actor, Kind.PAY_WALLET, r.ownerType == OwnerType.CREW ? r.owner : null, credits, walletBefore, walletBefore - credits, residenceId, false, cycles, "");
+        pending.put(actor, p);
+        remember(tx);
+        persist();
+        return p;
+    }
+
+    /** Automatic payment for a home: from the Crew bank (done in the clock) or from the owner's wallet (done by the service). */
+    public void setAutopay(UUID actor, String actorName, String residenceId, boolean on) {
+        checkHealthy();
+        Residence r = held(residenceId);
+        requireManager(actor, r);
+        require(r.billed(), "There is nothing to pay on this home.");
+        if (on && r.ownerType == OwnerType.CREW) {
+            Crew crew = crews.get(r.owner);
+            require(crew.effectiveMode() != Mode.SEPARATE, "This Crew has no bank to pay from.");
+            require(crew.can(actor, Perm.SPEND), "You are not allowed to spend Crew money.");
+        }
+        if (r.autopay == on) return;
+        r.autopay = on;
+        r.receipt(now(), actor, nameOfAny(actor, r), "AUTOPAY", 0, on ? "on" : "off");
+        logCrew(r, actor, "AUTOPAY", 0, r.title + (on ? " paid from the bank" : " paid by hand"));
+        persist();
+    }
+
+    private String nameOfAny(UUID actor, Residence r) {
+        if (r.ownerType == OwnerType.CREW) { Crew crew = crews.get(r.owner); return crew == null ? "" : nameOf(crew, actor); }
+        return "";
+    }
+
+    // ---- the clock
+
+    private boolean anyOnline(Residence r, Set<UUID> online) {
+        if (r.ownerType == OwnerType.PLAYER) return online.contains(r.owner);
+        Crew crew = crews.get(r.owner);
+        if (crew == null) return false;
+        for (UUID member : crew.members.keySet()) if (online.contains(member)) return true;
+        return false;
+    }
+
+    /**
+     * Advances every held home's billing clock by {@code ticks} of ACTIVE time: a home's clock moves only if one of its residents is in {@code online}, and
+     * once however many are. Cycles that fall due are settled in order: prepaid hours first, then the Crew bank if automatic payment is on, otherwise they
+     * become arrears (a personal home with automatic payment from a wallet keeps them as {@code due} for the service to try, because only the service may touch a
+     * wallet). Nothing here deletes, empties or re-lets a home. Returns what the residents should be told.
+     */
+    public List<Event> advance(Set<UUID> online, long ticks, Rules rules) {
+        checkHealthy();
+        List<Event> events = new ArrayList<>();
+        boolean structural = false, progressed = false;
+        long cycle = rules.cycleTicks();
+        for (Residence r : residences.values()) {
+            if (!r.billed() || !anyOnline(r, online)) continue;
+            Standing before = r.standing(rules);
+            r.progress += ticks;
+            progressed = true;
+            while (r.progress >= cycle) { r.progress -= cycle; r.due++; structural = true; }
+            while (r.due > 0) {
+                if (r.prepaid > 0) {
+                    r.prepaid--; r.due--;
+                    if (r.freeCycles > 0) r.freeCycles--; else sunk += r.charge;
+                    r.receipt(now(), null, "", "RENT", r.charge, "hour paid in advance");
+                    events.add(new Event(r.id, "PAID_AHEAD", String.valueOf(r.prepaid)));
+                    continue;
+                }
+                if (r.autopay && r.ownerType == OwnerType.CREW) {
+                    Crew crew = crews.get(r.owner);
+                    if (crew != null && crew.effectiveMode() != Mode.SEPARATE && !unresolved(crew) && crew.bank >= r.charge) {
+                        crew.bank -= r.charge; r.due--; sunk += r.charge;
+                        r.receipt(now(), null, "", "PAID", r.charge, "automatic, from the Crew bank");
+                        crew.record(now(), null, "", r.rented() ? "RENT" : "UPKEEP", r.charge, r.title + " (automatic)");
+                        events.add(new Event(r.id, "PAID_BANK", String.valueOf(r.charge)));
+                        continue;
+                    }
+                }
+                if (r.autopay && r.ownerType == OwnerType.PLAYER) break;   // the service tries the owner's wallet, then calls missDue
+                r.due--; r.arrears++;
+                events.add(new Event(r.id, "MISSED", String.valueOf(r.arrears)));
+            }
+            Standing after = r.standing(rules);
+            if (after != before) events.add(new Event(r.id, "STANDING", after.name()));
+        }
+        if (structural) persist();
+        else if (progressed) dirtyProgress = true;
+        return events;
+    }
+
+    private boolean dirtyProgress;
+
+    /** Writes the clock to disk when only progress changed. Called now and then and when the last resident leaves; losing a few minutes of progress in a crash favours the tenant. */
+    public void flushProgress() {
+        if (!dirtyProgress || faulted) return;
+        dirtyProgress = false;
+        persist();
+    }
+
+    /** The service could not take a cycle from the owner's wallet (offline, not enough credits): it becomes arrears. */
+    public Event missDue(String residenceId, Rules rules) {
+        checkHealthy();
+        Residence r = residences.get(residenceId);
+        if (r == null || r.due < 1) return null;
+        Standing before = r.standing(rules);
+        r.due--; r.arrears++;
+        persist();
+        return new Event(r.id, before != r.standing(rules) ? "STANDING" : "MISSED", before != r.standing(rules) ? r.standing(rules).name() : String.valueOf(r.arrears));
+    }
+
+    // ---- leaving
+
+    /**
+     * A tenant gives the home back. The deposit returns, less what is owed; anything owed beyond the deposit is forgiven (no debt follows a person out of a
+     * home, so being short on rent is never a spiral). The caller has checked that no container in the home still holds items: stored belongings are never
+     * thrown away. Fixtures stay.
+     */
+    public int moveOut(UUID actor, String actorName, String residenceId) {
+        checkHealthy();
+        Residence r = held(residenceId);
+        requireManager(actor, r);
+        require(r.rented(), "You own this home. Sell it back instead.");
+        if (r.ownerType == OwnerType.CREW) requireNoPending(crews.get(r.owner));
+        int depositBack = PropertyRules.depositBack(r.deposit, (int) Math.min(Integer.MAX_VALUE, r.owedCredits()));
+        int unused = Math.max(0, r.prepaid - r.freeCycles) * r.charge;   // hours paid ahead and not lived come back; the welcome hours were the city's gift
+        int back = depositBack + unused;
+        sunk += r.deposit - depositBack;                                   // the part of the deposit that covered what was owed
+        String title = r.title;
+        refund(r, actor, back, "DEPOSIT_BACK", title + " (moved out)");
+        if (r.ownerType == OwnerType.CREW) logCrew(r, actor, "MOVE_OUT", back, title);
+        release(r);
+        persist();
+        return back;
+    }
+
+    /** An owner sells the home back to the city for the stated percent of what they paid, less what is owed. The caller has checked the containers are empty. */
+    public int sellBack(UUID actor, String actorName, String residenceId, Rules rules) {
+        checkHealthy();
+        Residence r = held(residenceId);
+        requireManager(actor, r);
+        require(r.tenure == Tenure.OWN, "You rent this home. Move out instead.");
+        if (r.ownerType == OwnerType.CREW) requireNoPending(crews.get(r.owner));
+        int sale = PropertyRules.sellBack(r.paidPrice, (int) Math.min(Integer.MAX_VALUE, r.owedCredits()), rules);
+        int unused = Math.max(0, r.prepaid - r.freeCycles) * r.charge;
+        int back = sale + unused;
+        sunk -= sale;                                                      // what the city pays back leaves the price it once took
+        String title = r.title;
+        refund(r, actor, back, "SELL_BACK", title);
+        if (r.ownerType == OwnerType.CREW) logCrew(r, actor, "SELL_BACK", back, title);
+        release(r);
+        persist();
+        return back;
+    }
+
+    // ---- improvements
+
+    private void requireUpgradeable(Residence r, Upgrade up, Rules rules) {
+        require(r.tenure == Tenure.OWN, "Only a home you own can be improved. Rent is for living in a home as it is.");
+        require(r.standing(rules) != Standing.LAPSED, "Pay what is owed on this home first.");
+        require(!r.upgrades.contains(up.id()), up.title() + " is already fitted.");
+    }
+
+    public int upgradeFromBank(UUID tx, UUID actor, String actorName, String residenceId, Upgrade up, Rules rules) {
+        checkHealthy();
+        requireFreshTx(tx, actor);
+        Residence r = held(residenceId);
+        Crew crew = bankCrew(actor, r);
+        requireUpgradeable(r, up, rules);
+        require(crew.bank >= up.cost(), "The bank holds " + crew.bank + " credits. " + up.title() + " costs " + up.cost() + ".");
+        crew.bank -= up.cost();
+        sunk += up.cost();
+        r.upgrades.add(up.id());
+        r.receipt(now(), actor, actorName, "UPGRADE", up.cost(), up.title());
+        crew.record(now(), actor, actorName, "UPGRADE", up.cost(), r.title + ": " + up.title());
+        remember(tx);
+        persist();
+        return up.cost();
+    }
+
+    public Pending beginUpgradeFromWallet(UUID tx, UUID actor, String residenceId, Upgrade up, double walletBefore, Rules rules) {
+        checkHealthy();
+        requireFreshTx(tx, actor);
+        Residence r = held(residenceId);
+        requireManager(actor, r);
+        if (r.ownerType == OwnerType.CREW) requireNoPending(crews.get(r.owner));
+        requireUpgradeable(r, up, rules);
+        require(walletBefore >= up.cost(), "You only have " + (long) Math.floor(walletBefore) + " credits. " + up.title() + " costs " + up.cost() + ".");
+        Pending p = new Pending(tx, actor, Kind.UPGRADE_WALLET, r.ownerType == OwnerType.CREW ? r.owner : null, up.cost(), walletBefore, walletBefore - up.cost(), residenceId, false, 0, up.id());
+        pending.put(actor, p);
+        remember(tx);
+        persist();
+        return p;
+    }
+
+    // ---- who holds it
+
+    /** A member hands one of their own homes to their Crew. Nothing owed travels with it (a debt cannot be passed on), and the Crew must have room. */
+    public void transferToCrew(UUID actor, String actorName, String residenceId) {
+        checkHealthy();
+        Residence r = held(residenceId);
+        require(r.ownerType == OwnerType.PLAYER && actor.equals(r.owner), "You can hand over only a home of your own.");
+        Crew crew = requireCrew(actor);
+        require(crew.can(actor, Perm.MANAGE_PROPERTY), "Your role may not take homes for the Crew.");
+        requireNoPending(crew);
+        require(residencesOf(OwnerType.CREW, crew.id).size() < MAX_CREW_HOMES, "The Crew already holds " + MAX_CREW_HOMES + " homes.");
+        require(r.arrears == 0 && r.due == 0, "Pay what is owed on this home first: a debt cannot be handed on.");
+        r.ownerType = OwnerType.CREW; r.owner = crew.id; r.guests.clear(); r.autopay = false;
+        r.receipt(now(), actor, actorName, "TRANSFER", 0, "to the Crew " + crew.name);
+        crew.record(now(), actor, actorName, "TRANSFER", 0, r.title + " joined the Crew");
+        persist();
+    }
+
+    /** The founder takes a Crew home back as a personal one. */
+    public void transferToFounder(UUID actor, String actorName, String residenceId) {
+        checkHealthy();
+        Residence r = held(residenceId);
+        require(r.ownerType == OwnerType.CREW, "That is not a Crew home.");
+        Crew crew = crews.get(r.owner);
+        require(crew != null && crew.roleOf(actor) == Role.FOUNDER, "Only the founder can take a Crew home back.");
+        requireNoPending(crew);
+        require(residencesOf(OwnerType.PLAYER, actor).size() < MAX_PERSONAL_HOMES, "You already hold " + MAX_PERSONAL_HOMES + " homes of your own.");
+        require(r.arrears == 0 && r.due == 0, "Pay what is owed on this home first.");
+        r.ownerType = OwnerType.PLAYER; r.owner = actor; r.guests.clear(); r.autopay = false;
+        r.receipt(now(), actor, actorName, "TRANSFER", 0, "to " + actorName);
+        crew.record(now(), actor, actorName, "TRANSFER", 0, r.title + " left the Crew");
         persist();
     }
 
@@ -802,14 +1335,23 @@ public final class CrewLedger {
 
     /** Registers (or refreshes) a leasable region. A unit that someone holds keeps its owner; a changed geometry under an owner is refused. */
     public Residence registerResidence(String id, String title, String kind, String dimension, String district, BlockPos min, BlockPos max, int price, int starterPrice) {
+        return registerResidence(id, title, kind, dimension, district, min, max, price, starterPrice, 100);
+    }
+
+    /** {@code factorPct} is the city's price factor at the home's position (100 outside every city circle); it applies to rent, deposit and purchase price. */
+    public Residence registerResidence(String id, String title, String kind, String dimension, String district, BlockPos min, BlockPos max, int price, int starterPrice, int factorPct) {
         checkHealthy();
+        require(factorPct >= 50 && factorPct <= 200, "Bad price factor");
         require(id.matches("[a-z0-9_:.\\-/]{3,64}"), "Bad residence id " + id);
         require(price >= 1 && price <= 1_000_000 && starterPrice <= price, "Bad residence price");
         BlockPos lo = new BlockPos(Math.min(min.getX(), max.getX()), Math.min(min.getY(), max.getY()), Math.min(min.getZ(), max.getZ()));
         BlockPos hi = new BlockPos(Math.max(min.getX(), max.getX()), Math.max(min.getY(), max.getY()), Math.max(min.getZ(), max.getZ()));
         Residence old = residences.get(id);
         if (old != null) {
-            if (old.sameGeometry(dimension, lo, hi)) return old;
+            if (old.sameGeometry(dimension, lo, hi)) {
+                if (!old.owned() && old.factorPct != factorPct) { old.factorPct = factorPct; persist(); }
+                return old;
+            }
             require(!old.owned() && old.reservedBy == null, "Residence " + id + " is held by somebody and cannot move.");
         }
         for (Residence other : residences.values()) {
@@ -821,6 +1363,7 @@ public final class CrewLedger {
                     lo.getX(), lo.getY(), lo.getZ(), hi.getX(), hi.getY(), hi.getZ()), "Residence " + id + " overlaps " + other.id);
         }
         Residence r = new Residence(id, title, kind, dimension, district, lo, hi, price, starterPrice);
+        r.factorPct = factorPct;
         residences.put(id, r);
         reindex();
         persist();
@@ -849,7 +1392,8 @@ public final class CrewLedger {
         long key = pos.asLong();
         require(!r.claims.containsKey(key), "That container is already private.");
         long mine = r.claims.values().stream().filter(actor::equals).count();
-        require(mine < CrewRules.MAX_CLAIMS_PER_PLAYER, "You can keep " + CrewRules.MAX_CLAIMS_PER_PLAYER + " private containers per home.");
+        int allowedClaims = PropertyService.privateClaims(r);
+        require(mine < allowedClaims, "You can keep " + allowedClaims + " private container" + (allowedClaims == 1 ? "" : "s") + " in this home.");
         r.claims.put(key, actor);
         persist();
         return true;
@@ -956,11 +1500,16 @@ public final class CrewLedger {
         ListTag seenList = new ListTag();
         for (UUID id : seen) seenList.add(net.minecraft.nbt.NbtUtils.createUUID(id));
         root.put("seen_tx", seenList);
+        ListTag welcome = new ListTag();
+        for (UUID id : welcomeUsed) welcome.add(net.minecraft.nbt.NbtUtils.createUUID(id));
+        root.put("welcome_used", welcome);
+        root.putLong("sunk", sunk);
         ListTag pendingList = new ListTag();
         for (Pending p : pending.values()) {
             CompoundTag t = new CompoundTag();
             t.putUUID("tx", p.tx()); t.putUUID("player", p.player()); t.putString("kind", p.kind().name()); if (p.crew() != null) t.putUUID("crew", p.crew());
             t.putLong("amount", p.amount()); t.putDouble("before", p.before()); t.putDouble("after", p.after()); t.putString("residence", p.residence()); t.putBoolean("starter", p.starter());
+            t.putInt("count", p.count()); t.putString("detail", p.detail());
             pendingList.add(t);
         }
         root.put("pending", pendingList);
@@ -984,6 +1533,19 @@ public final class CrewLedger {
             ListTag claims = new ListTag();
             r.claims.forEach((pos, id) -> { CompoundTag g = new CompoundTag(); g.putLong("pos", pos); g.putUUID("p", id); claims.add(g); });
             t.put("claims", claims);
+            t.putString("tenure", r.tenure.name()); t.putBoolean("legacy", r.legacy); t.putInt("charge", r.charge); t.putInt("deposit", r.deposit); t.putInt("paid_price", r.paidPrice);
+            t.putLong("progress", r.progress); t.putInt("due", r.due); t.putInt("prepaid", r.prepaid); t.putInt("free", r.freeCycles); t.putInt("arrears", r.arrears); t.putBoolean("autopay", r.autopay);
+            t.putInt("factor", r.factorPct); t.putLong("signed_at", r.signedAt); if (r.signedBy != null) t.putUUID("signed_by", r.signedBy);
+            ListTag upgradeList = new ListTag();
+            for (String id : r.upgrades) upgradeList.add(StringTag.valueOf(id));
+            t.put("upgrades", upgradeList);
+            ListTag receiptList = new ListTag();
+            for (Entry e : r.receipts) {
+                CompoundTag g = new CompoundTag();
+                g.putLong("t", e.time()); if (e.actor() != null) g.putUUID("a", e.actor()); g.putString("an", e.actorName()); g.putString("k", e.kind()); g.putLong("m", e.amount()); g.putString("n", e.note());
+                receiptList.add(g);
+            }
+            t.put("receipts", receiptList);
             residenceList.add(t);
         }
         root.put("residences", residenceList);
@@ -1026,10 +1588,12 @@ public final class CrewLedger {
         for (Tag raw : root.getList("owed", Tag.TAG_COMPOUND)) { CompoundTag t = (CompoundTag) raw; owed.put(t.getUUID("p"), t.getLong("m")); }
         for (Tag t : root.getList("starter_used", Tag.TAG_INT_ARRAY)) starterUsed.add(net.minecraft.nbt.NbtUtils.loadUUID(t));
         for (Tag t : root.getList("seen_tx", Tag.TAG_INT_ARRAY)) seen.add(net.minecraft.nbt.NbtUtils.loadUUID(t));
+        for (Tag t : root.getList("welcome_used", Tag.TAG_INT_ARRAY)) welcomeUsed.add(net.minecraft.nbt.NbtUtils.loadUUID(t));
+        sunk = root.getLong("sunk");
         for (Tag raw : root.getList("pending", Tag.TAG_COMPOUND)) {
             CompoundTag t = (CompoundTag) raw;
             Pending p = new Pending(t.getUUID("tx"), t.getUUID("player"), Kind.valueOf(t.getString("kind")), t.hasUUID("crew") ? t.getUUID("crew") : null,
-                t.getLong("amount"), t.getDouble("before"), t.getDouble("after"), t.getString("residence"), t.getBoolean("starter"));
+                t.getLong("amount"), t.getDouble("before"), t.getDouble("after"), t.getString("residence"), t.getBoolean("starter"), t.getInt("count"), t.getString("detail"));
             pending.put(p.player(), p);
         }
         for (Tag raw : root.getList("holds", Tag.TAG_COMPOUND)) {
@@ -1048,6 +1612,21 @@ public final class CrewLedger {
             r.reservedBy = t.hasUUID("reserved_by") ? t.getUUID("reserved_by") : null;
             for (Tag g : t.getList("guests", Tag.TAG_COMPOUND)) r.guests.put(((CompoundTag) g).getUUID("p"), ((CompoundTag) g).getLong("until"));
             for (Tag g : t.getList("claims", Tag.TAG_COMPOUND)) r.claims.put(((CompoundTag) g).getLong("pos"), ((CompoundTag) g).getUUID("p"));
+            if (t.contains("tenure", Tag.TAG_STRING)) {
+                r.tenure = Tenure.valueOf(t.getString("tenure")); r.legacy = t.getBoolean("legacy"); r.charge = t.getInt("charge"); r.deposit = t.getInt("deposit");
+                r.paidPrice = t.getInt("paid_price"); r.progress = t.getLong("progress"); r.due = t.getInt("due"); r.prepaid = t.getInt("prepaid"); r.freeCycles = t.getInt("free"); r.arrears = t.getInt("arrears");
+                r.autopay = t.getBoolean("autopay"); r.factorPct = t.contains("factor", Tag.TAG_INT) ? t.getInt("factor") : 100;
+                r.signedAt = t.getLong("signed_at"); r.signedBy = t.hasUUID("signed_by") ? t.getUUID("signed_by") : null;
+                for (Tag u : t.getList("upgrades", Tag.TAG_STRING)) r.upgrades.add(u.getAsString());
+                for (Tag g : t.getList("receipts", Tag.TAG_COMPOUND)) {
+                    CompoundTag c = (CompoundTag) g;
+                    r.receipts.addLast(new Entry(c.getLong("t"), c.hasUUID("a") ? c.getUUID("a") : null, c.getString("an"), c.getString("k"), c.getLong("m"), c.getString("n")));
+                }
+                if (r.charge < 0 || r.deposit < 0 || r.prepaid < 0 || r.arrears < 0 || r.due < 0 || r.progress < 0) throw new IllegalStateException("Negative tenancy figures in " + r.id);
+            } else if (r.ownerType != OwnerType.NONE) {
+                // A home held before rent existed (schema 1): it stays owned, with no charge, ever. What was paid is not known, so selling back is bounded by the cheaper registered price.
+                r.tenure = Tenure.OWN; r.legacy = true; r.paidPrice = r.starterPrice >= 0 ? r.starterPrice : r.price;
+            }
             residences.put(r.id, r);
         }
         // Referential checks: a held residence points at a real owner, a pending transaction at a player with a real record.

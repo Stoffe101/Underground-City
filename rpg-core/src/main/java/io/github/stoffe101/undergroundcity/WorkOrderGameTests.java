@@ -102,16 +102,17 @@ public final class WorkOrderGameTests {
         QShopEconomy.applyBalance(player,0);
         WorkOrderLedger ledger=WorkOrderLedger.get(player.server);
         WorkOrder harvest=WorkOrderCatalog.INSTANCE.find("underground_city:harvest");
+        final int H=harvest.credits(), B=WorkOrderCatalog.INSTANCE.find("underground_city:bread").credits();   // the data decides what an order pays; the test checks that the wallet follows it
         UUID order=ledger.accept(player.getUUID(),harvest);
         rejected(()->WorkOrderService.complete(player,order));
         check(QShopEconomy.balance(player)==0,"Missing-goods attempt paid currency");
         player.getInventory().setItem(0,new ItemStack(Items.WHEAT,16));
         WorkOrderService.complete(player,order);
         check(player.getInventory().getItem(0).isEmpty(),"Delivery did not consume wheat");
-        check(QShopEconomy.balance(player)==24,"Wrong Q Shop reward");
+        check(QShopEconomy.balance(player)==H,"Wrong Q Shop reward");
         check(CitizenState.get(player.server).find(player.getUUID()).orElseThrow().careerLevel()==2,"Bread order not unlocked by real XP");
         rejected(()->WorkOrderService.complete(player,order));
-        check(QShopEconomy.balance(player)==24,"Repeated turn-in duplicated credits");
+        check(QShopEconomy.balance(player)==H,"Repeated turn-in duplicated credits");
 
         // Actual vanilla recipe, not a simulator or invented item.
         TransientCraftingContainer crafting=new TransientCraftingContainer(player.inventoryMenu,3,3);
@@ -122,22 +123,22 @@ public final class WorkOrderGameTests {
         bread.setCount(8); player.getInventory().setItem(0,bread);
         UUID bakery=ledger.accept(player.getUUID(),WorkOrderCatalog.INSTANCE.find("underground_city:bread"));
         WorkOrderService.complete(player,bakery);
-        check(QShopEconomy.balance(player)==60,"Second profession payment failed");
+        check(QShopEconomy.balance(player)==H+B,"Second profession payment failed");
         check(player.getInventory().getItem(0).isEmpty(),"Crafted goods not consumed");
 
         // Exercise the provider's real buy and sell APIs with authored saved shop.
         var buy=QShopAddonApi.buy(player,new InvWrapper(player.getInventory()),"uc_starter_supply",0,0,1);
         check(buy.isSuccess(),"Actual Q Shop seed purchase failed: "+buy.getStatus()+" "+buy.getMessage());
-        check(QShopEconomy.balance(player)==52,"Provider did not debit purchase");
+        check(QShopEconomy.balance(player)==H+B-8,"Provider did not debit purchase");
         check(player.getInventory().countItem(Items.WHEAT_SEEDS)==4,"Provider did not grant actual seeds");
         player.getInventory().setItem(2,new ItemStack(Items.WHEAT,8));
         var sell=QShopAddonApi.sell(player,new InvWrapper(player.getInventory()),"uc_starter_supply",0,4,1);
         check(sell.isSuccess(),"Actual Q Shop wheat sale failed: "+sell.getStatus()+" "+sell.getMessage());
-        check(QShopEconomy.balance(player)==64 && player.getInventory().countItem(Items.WHEAT)==0,"Provider currency/item conservation failed");
+        check(QShopEconomy.balance(player)==H+B-8+12 && player.getInventory().countItem(Items.WHEAT)==0,"Provider currency/item conservation failed");
         CompoundTag saved=player.serializeNBT();
         FakePlayer restored=player(helper,"farmer");
         restored.deserializeNBT(saved);
-        check(QShopEconomy.balance(restored)==64,"Provider wallet capability did not survive entity NBT restore");
+        check(QShopEconomy.balance(restored)==H+B-8+12,"Provider wallet capability did not survive entity NBT restore");
         helper.succeed();
     }
 
@@ -182,6 +183,28 @@ public final class WorkOrderGameTests {
         WorkOrderService.complete(player,nonce);
         check(player.getInventory().countItem(Items.STONE_PICKAXE)==0,"Smith tools not consumed");
         check(QShopEconomy.balance(player)==24,"Smith reward missing");
+        helper.succeed();
+    }
+
+    /** Apprentice orders (max_level) are accepted and listed up to their ceiling and not above it; an order accepted earlier stays deliverable. */
+    @GameTest(template="empty")
+    public static void apprenticeOrdersFadeOut(GameTestHelper helper) {
+        FakePlayer player=player(helper,"farmer");
+        WorkOrder harvest=WorkOrderCatalog.INSTANCE.find("underground_city:harvest");
+        check(harvest.maxLevel()>=harvest.level() && harvest.maxLevel()<30,"The harvest order is an apprentice order with a ceiling");
+        WorkOrderLedger ledger=WorkOrderLedger.get(player.server);
+        CitizenState.Citizen citizen=CitizenState.get(player.server).find(player.getUUID()).orElseThrow();
+        citizen.careerXp.put("farmer",ProgressionRules.xpAtLevel(harvest.maxLevel()));
+        check(harvest.offeredAt(citizen.careerLevel()),"Offered at its ceiling");
+        check(TerminalData.snapshot(player,helper.absolutePos(new BlockPos(1,1,1))).jobs().stream().anyMatch(row->row.id().equals(harvest.id())),"Listed at its ceiling");
+        citizen.careerXp.put("farmer",ProgressionRules.xpAtLevel(harvest.maxLevel()+1));
+        check(!harvest.offeredAt(citizen.careerLevel()),"Not offered above its ceiling");
+        check(TerminalData.snapshot(player,helper.absolutePos(new BlockPos(1,1,1))).jobs().stream().noneMatch(row->row.id().equals(harvest.id())),"Still listed above its ceiling");
+        rejected(()->WorkOrderService.accept(player,ledger,citizen,harvest.id()));
+        // the ceiling survives a snapshot round trip, and an old snapshot without it means "never withdrawn"
+        check(WorkOrder.load(harvest.save()).maxLevel()==harvest.maxLevel(),"Snapshot lost the ceiling");
+        net.minecraft.nbt.CompoundTag old=harvest.save(); old.remove("max_level");
+        check(WorkOrder.load(old).maxLevel()==0,"A pre-ceiling snapshot must load as never withdrawn");
         helper.succeed();
     }
 }

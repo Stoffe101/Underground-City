@@ -45,12 +45,17 @@
     "sophisticatedbackpacks:netherite_backpack",
     "sophisticatedbackpacks:upgrade_base",
     "sophisticatedbackpacks:pickup_upgrade",
+    "sophisticatedbackpacks:advanced_pickup_upgrade",
     "sophisticatedbackpacks:filter_upgrade",
+    "sophisticatedbackpacks:advanced_filter_upgrade",
     "sophisticatedbackpacks:magnet_upgrade",
     "sophisticatedbackpacks:feeding_upgrade",
     "sophisticatedbackpacks:restock_upgrade",
+    "sophisticatedbackpacks:advanced_restock_upgrade",
     "sophisticatedbackpacks:deposit_upgrade",
+    "sophisticatedbackpacks:advanced_deposit_upgrade",
     "sophisticatedbackpacks:crafting_upgrade",
+    "sophisticatedbackpacks:tool_swapper_upgrade",
     "sophisticatedbackpacks:jukebox_upgrade",
     "sophisticatedbackpacks:stack_upgrade_starter_tier"
   ],
@@ -80,7 +85,14 @@
       "minecraft:slime_ball",
       "minecraft:string"
     ],
+    "sophisticatedbackpacks:advanced_pickup_upgrade": [
+      "minecraft:slime_ball",
+      "minecraft:string"
+    ],
     "sophisticatedbackpacks:filter_upgrade": [
+      "minecraft:string"
+    ],
+    "sophisticatedbackpacks:advanced_filter_upgrade": [
       "minecraft:string"
     ],
     "sophisticatedbackpacks:magnet_upgrade": [
@@ -96,10 +108,20 @@
       "minecraft:slime_ball",
       "minecraft:string"
     ],
+    "sophisticatedbackpacks:advanced_restock_upgrade": [
+      "minecraft:slime_ball",
+      "minecraft:string"
+    ],
     "sophisticatedbackpacks:deposit_upgrade": [
       "minecraft:string"
     ],
+    "sophisticatedbackpacks:advanced_deposit_upgrade": [
+      "minecraft:string"
+    ],
     "sophisticatedbackpacks:crafting_upgrade": [
+      "minecraft:string"
+    ],
+    "sophisticatedbackpacks:tool_swapper_upgrade": [
       "minecraft:string"
     ],
     "sophisticatedbackpacks:jukebox_upgrade": [
@@ -128,12 +150,8 @@
     "sophisticatedbackpacks:stack_upgrade_tier_2_to_tier_3_conversion",
     "sophisticatedbackpacks:stack_upgrade_tier_2_to_tier_4_conversion",
     "sophisticatedbackpacks:stack_upgrade_tier_3_to_tier_4_conversion",
-    "sophisticatedbackpacks:advanced_pickup_upgrade",
-    "sophisticatedbackpacks:advanced_filter_upgrade",
     "sophisticatedbackpacks:advanced_magnet_upgrade",
     "sophisticatedbackpacks:advanced_feeding_upgrade",
-    "sophisticatedbackpacks:advanced_restock_upgrade",
-    "sophisticatedbackpacks:advanced_deposit_upgrade",
     "sophisticatedbackpacks:advanced_void_upgrade",
     "sophisticatedbackpacks:advanced_refill_upgrade",
     "sophisticatedbackpacks:advanced_jukebox_upgrade",
@@ -154,7 +172,6 @@
     "sophisticatedbackpacks:alchemy_upgrade",
     "sophisticatedbackpacks:compacting_upgrade",
     "sophisticatedbackpacks:refill_upgrade",
-    "sophisticatedbackpacks:tool_swapper_upgrade",
     "sophisticatedbackpacks:tank_upgrade",
     "sophisticatedbackpacks:pump_upgrade",
     "sophisticatedbackpacks:xp_pump_upgrade",

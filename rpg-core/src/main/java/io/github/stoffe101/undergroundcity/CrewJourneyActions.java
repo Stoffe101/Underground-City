@@ -16,14 +16,15 @@ import java.util.List;
  * button's centre, and key events for the text boxes), in the order a pair of friends would, and records what its own screen showed. Loaded only when
  * the journey is enabled. It decides nothing: every number it reports came from the server.
  *
- * <p>Phase 1, founder (UC_Farmer): found the Crew, invite, deposit 120, lease the Row House from the Crew bank, let members withdraw.
- * Member (UC_Smith): accept, deposit 60, withdraw 10 once allowed, make the chest in front of them private.
- * Phase 2 (after the server was killed and restarted): both read their screens first, then the founder deposits 5 and the member withdraws 20.
+ * <p>Phase 1, founder (UC_Farmer): found the Crew, invite, deposit what the rent needs on top of the member's share, rent the Row House for the Crew from the Crew bank on the Find a home
+ * page (the deposit and the first hour at the home's own price), let members withdraw. Member (UC_Smith): accept, deposit 110, withdraw 10 once allowed, make the chest in front of them
+ * private. Phase 2 (after the server was killed and restarted): both read their screens first, then the founder deposits 5 and the member withdraws 20.
  */
 final class CrewJourneyActions {
     private static final int PHASE = Integer.getInteger("uc.journey.phase", 0);
     private static int ticks, step, askedAt;
     private static boolean allStepsDone;
+    private static double walletAfterRestart;
     private static final List<String> LOG = new ArrayList<>();
     private static JsonObject observed;
     private CrewJourneyActions() {}
@@ -35,6 +36,9 @@ final class CrewJourneyActions {
 
     static void tick(Minecraft mc) {
         if (mc.player == null || ++ticks % 10 != 0) return;
+        // Once every Crew step is done this script leaves the screen alone for good. Asking for the Crew screen again would race with the survival half of the combined journey: the server opens
+        // the exchange terminal in the same tick that hands over the goods, and a late request for the Crew screen replaces it (seen in the hosted combined journey: the client waited in stage 0).
+        if (allStepsDone) return;
         boolean founder = mc.getUser().getName().equals(CrewJourneyServer.FARMER);
         if (!(mc.screen instanceof CrewScreen screen)) {
             // the server opens the screen; if it was closed or never arrived, ask for it the way the K key does (not more than every 5 seconds)
@@ -72,21 +76,30 @@ final class CrewJourneyActions {
             },
             (s, v) -> v.members().size() == 2,
             (s, v) -> {
-                if (v.wallet() <= 80) return true;
+                // the founder puts in what the rent needs on top of the member's share, read from the offer the server priced for this home
+                CrewView.LeaseRow house = rowHouse(v);
+                if (house == null) return false;
+                long total = house.offer().deposit() + house.offer().rent(), amount = total + CrewJourneyServer.BANK_AFTER_RENT - CrewJourneyServer.MEMBER_DEPOSIT;
+                if (v.wallet() <= CrewJourneyServer.START - amount) return true;
                 s.showPage(CrewScreen.Page.MONEY);
-                type(s.amountField(), "120");
+                type(s.amountField(), Long.toString(amount));
                 press(s, "deposit");
                 return false;
             },
-            (s, v) -> v.bank() == 180,
+            (s, v) -> {
+                CrewView.LeaseRow house = rowHouse(v);
+                return house != null && v.bank() == house.offer().deposit() + house.offer().rent() + CrewJourneyServer.BANK_AFTER_RENT;
+            },
             (s, v) -> {
                 if (v.homes().stream().anyMatch(h -> h.title().equals("Row House") && h.owner().equals("Crew"))) return true;
                 s.showPage(CrewScreen.Page.HOME);
+                s.showHomeTab(1);
                 for (int i = 0; i < v.nearby().size(); i++) {
                     CrewView.LeaseRow lease = v.nearby().get(i);
                     if (lease.title().equals("Row House")) {
-                        say("lease offer: " + lease.title() + " " + lease.price() + " credits, starter price " + lease.starter());
-                        press(s, "lease_bank_" + i);
+                        say("rental offer: " + lease.title() + " rent " + lease.offer().rent() + " an hour, deposit " + lease.offer().deposit() + ", for the Crew " + s.forCrewChosen() + ", from the bank " + s.fromBankChosen());
+                        if (!s.forCrewChosen() || !s.fromBankChosen()) { say("the Find a home defaults are not the Crew's bank"); return false; }
+                        press(s, "rent_" + i);
                         return false;
                     }
                 }
@@ -99,7 +112,13 @@ final class CrewJourneyActions {
                 press(s, "perm_x_" + Perm.WITHDRAW.ordinal());
                 return false;
             },
-            (s, v) -> v.bank() == 30);
+            (s, v) -> v.bank() == CrewJourneyServer.BANK_AFTER_WITHDRAWAL);
+    }
+
+    /** The Row House among the homes on offer (or null before the Crew exists and the offers have arrived). */
+    private static CrewView.LeaseRow rowHouse(CrewView v) {
+        for (CrewView.LeaseRow lease : v.nearby()) if (lease.title().equals("Row House")) return lease;
+        return null;
     }
 
     private static List<Step> memberOne() {
@@ -110,17 +129,17 @@ final class CrewJourneyActions {
                 return false;
             },
             (s, v) -> {
-                if (v.wallet() <= 140) return true;
+                if (v.wallet() <= CrewJourneyServer.START - CrewJourneyServer.MEMBER_DEPOSIT) return true;
                 s.showPage(CrewScreen.Page.MONEY);
-                type(s.amountField(), "60");
+                type(s.amountField(), Integer.toString(CrewJourneyServer.MEMBER_DEPOSIT));
                 press(s, "deposit");
                 return false;
             },
             (s, v) -> v.can(Perm.WITHDRAW),
             (s, v) -> {
-                if (v.wallet() >= 150) return true;
+                if (v.wallet() >= CrewJourneyServer.START - CrewJourneyServer.MEMBER_DEPOSIT + CrewJourneyServer.FIRST_WITHDRAWAL) return true;
                 s.showPage(CrewScreen.Page.MONEY);
-                type(s.amountField(), "10");
+                type(s.amountField(), Integer.toString(CrewJourneyServer.FIRST_WITHDRAWAL));
                 press(s, "withdraw");
                 return false;
             },
@@ -139,10 +158,11 @@ final class CrewJourneyActions {
             (s, v) -> {
                 if (!v.inCrew()) return false;
                 record(Minecraft.getInstance(), v, "after_restart");
+                walletAfterRestart = v.wallet();
                 return true;
             },
             (s, v) -> {
-                if (v.wallet() <= 60) return true;
+                if (v.wallet() <= walletAfterRestart - 5) return true;
                 s.showPage(CrewScreen.Page.MONEY);
                 type(s.amountField(), "5");
                 press(s, "deposit");
@@ -155,10 +175,11 @@ final class CrewJourneyActions {
             (s, v) -> {
                 if (!v.inCrew()) return false;
                 record(Minecraft.getInstance(), v, "after_restart");
+                walletAfterRestart = v.wallet();
                 return true;
             },
             (s, v) -> {
-                if (v.wallet() >= 170) return true;
+                if (v.wallet() >= walletAfterRestart + 20) return true;
                 s.showPage(CrewScreen.Page.MONEY);
                 type(s.amountField(), "20");
                 press(s, "withdraw");
@@ -201,7 +222,7 @@ final class CrewJourneyActions {
         v.members().forEach(m -> members.add(m.name() + ":" + m.role() + ":" + m.career()));
         o.add("members", members);
         JsonArray homes = new JsonArray();
-        v.homes().forEach(h -> homes.add(h.title() + ":" + h.owner() + ":private=" + h.mine()));
+        v.homes().forEach(h -> homes.add(h.title() + ":" + h.owner() + ":private=" + h.mine() + ":" + h.tenancy().tenure() + ":" + h.tenancy().standing() + ":charge=" + h.tenancy().charge() + ":deposit=" + h.tenancy().deposit()));
         o.add("homes", homes);
         JsonArray history = new JsonArray();
         v.log().stream().limit(12).forEach(l -> history.add(l.kind() + (l.amount() > 0 ? " " + l.amount() : "")));

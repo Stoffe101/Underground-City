@@ -21,6 +21,7 @@ SCENARIO=os.environ.get('UC_JOURNEY_SCENARIO','').strip()  # '' = the economy jo
 # survival and exchange half (SurvivalJourney.java) to the Crew journey. Both need UC_JOURNEY_SCENARIO=crew; the pack sets are chosen with UC_JOURNEY_PACK as before.
 GENERATED=os.environ.get('UC_JOURNEY_WORLD','').strip()=='generated'
 SURVIVAL=os.environ.get('UC_JOURNEY_SURVIVAL','').strip().lower()=='true'
+PHASE1: dict = {}  # the server's phase-1 report: the rent, the deposits and the income the clients' screens are compared with
 BANK_SPENT=14 if SURVIVAL else 0  # the interrupted wayside purchase (2 loaves at 7 credits), paid entirely by the Crew bank, which recovery committed at login
 
 
@@ -171,6 +172,7 @@ def phase(number: int, clients: list[tuple[Path,str]]) -> dict:
         result=json.loads(marker.read_text())
         if result['status']!='passed' or result['connected_clients']!=2: raise RuntimeError('Incomplete journey report')
         if abrupt: result.update(result_extra)
+        if number==1: PHASE1.update(result)
         if SCENARIO=='crew': result['clients']=check_crew_clients(number,clients)
         if SCENARIO=='crew' and SURVIVAL: result['smith_backpack_screens']=check_survival_clients(number)
         result['logins']=login_report(number)
@@ -261,23 +263,27 @@ def need(condition: bool, what: str) -> None:
 def check_crew_clients(number: int, clients: list[tuple[Path,str]]) -> dict:
     """What each real client's own screen showed, compared with what the server was told to expect (the server asserts the ledger itself)."""
     founder,member=read_client('farmer',number),read_client('smith',number)
+    start,deposit,member_deposit,income=PHASE1['start'],PHASE1['founder_deposit'],PHASE1['member_deposit'],PHASE1['order_income']
+    after_rent=PHASE1['bank_before_injection']
     if number==1:
         need(founder['after_step_1']['in_crew'] and founder['after_step_1']['role']=='Founder' and founder['after_step_1']['crew']=='Row Harvest','the founder did not see their new Crew')
-        need(founder['after_step_5']['bank']==180 and founder['after_step_4']['wallet']==80,'the founder did not see 180 in the bank after both deposits: '+json.dumps(founder['after_step_5']))
-        need('Row House:Crew:private=0' in founder['after_step_6']['homes'] and founder['after_step_6']['bank']==40,'the founder did not see the Row House as the Crew home with 40 left in the bank')
+        need(founder['after_step_4']['wallet']==start-deposit and founder['after_step_5']['bank']==deposit+member_deposit,'the founder did not see '+str(deposit+member_deposit)+' in the bank after both deposits: '+json.dumps(founder['after_step_5']))
+        rented=[h for h in founder['after_step_6']['homes'] if h.startswith('Row House:Crew:private=0:RENT:CURRENT:')]
+        need(rented and founder['after_step_6']['bank']==after_rent+PHASE1['first_withdrawal'],'the founder did not see the Row House as a rented Crew home with '+str(after_rent+PHASE1['first_withdrawal'])+' left in the bank: '+json.dumps(founder['after_step_6']))
+        need(f"charge={PHASE1['rent_per_hour']}:deposit={PHASE1['rent_deposit']}" in rented[0],'the founder did not see the rent and the deposit the server quoted: '+rented[0])
         need(founder['after_step_7']['member_may_withdraw'],'the founder did not see the withdraw permission switched on')
         need(member['after_step_1']['in_crew'] and member['after_step_1']['role']=='Member' and len(member['after_step_1']['members'])==2,'the member did not see the Crew after accepting')
-        need(member['after_step_4']['wallet']==150,'the member did not receive the 10 withdrawn credits')
-        need('Row House:Crew:private=1' in member['after_step_5']['homes'],'the member did not see their private container: '+json.dumps(member['after_step_5']['homes']))
+        need(member['after_step_4']['wallet']==start-member_deposit+PHASE1['first_withdrawal'],'the member did not receive the '+str(PHASE1['first_withdrawal'])+' withdrawn credits')
+        need(any(h.startswith('Row House:Crew:private=1') for h in member['after_step_5']['homes']),'the member did not see their private container: '+json.dumps(member['after_step_5']['homes']))
     else:
-        for who,obs,wallet,role in (('founder',founder,65,'Founder'),('member',member,150,'Member')):
+        for who,obs,wallet,role in (('founder',founder,start-deposit-15+income,'Founder'),('member',member,start-member_deposit+PHASE1['first_withdrawal'],'Member')):
             seen=obs['after_restart']
             need(seen['in_crew'] and seen['crew']=='Row Harvest' and seen['role']==role,f'the {who} lost the Crew across the restart: '+json.dumps(seen))
-            need(seen['bank']==45-BANK_SPENT and seen['wallet']==wallet,f'the {who} saw bank {seen["bank"]} / wallet {seen["wallet"]} after the restart, expected {45-BANK_SPENT} / {wallet}')
-            need(len(seen['members'])==2 and any(h.startswith('Row House:Crew') for h in seen['homes']),f'the {who} lost members or the home across the restart')
+            need(seen['bank']==after_rent+15-BANK_SPENT and seen['wallet']==wallet,f'the {who} saw bank {seen["bank"]} / wallet {seen["wallet"]} after the restart, expected {after_rent+15-BANK_SPENT} / {wallet}')
+            need(len(seen['members'])==2 and any(h.startswith('Row House:Crew:private=') and ':RENT:CURRENT:' in h for h in seen['homes']),f'the {who} lost members, or the rented home and its standing, across the restart: '+json.dumps(seen['homes']))
             need(any(line.startswith('DEPOSIT 15') for line in seen['history_newest_first']),f'the {who} does not see the recovered deposit in the history')
         need(member['after_restart']['homes'] and 'private=1' in ''.join(member['after_restart']['homes']),'the private container was not shown after the restart')
-        need(founder['after_step_2']['wallet']==60 and member['after_step_2']['wallet']==170,'the transfers made after the restart did not reach the screens')
+        need(founder['after_step_2']['wallet']==start-deposit-15+income-5 and member['after_step_2']['wallet']==start-member_deposit+PHASE1['first_withdrawal']+20,'the transfers made after the restart did not reach the screens')
     return {'founder':founder,'member':member}
 
 

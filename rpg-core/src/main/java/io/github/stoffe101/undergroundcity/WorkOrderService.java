@@ -73,6 +73,7 @@ public final class WorkOrderService {
             throw new IllegalStateException("This order belongs to another profession");
         }
         if (citizen.careerLevel() < order.level()) throw new IllegalStateException("Career level " + order.level() + " required");
+        if (!order.offeredAt(citizen.careerLevel())) throw new IllegalStateException("This is an apprentice order (career level " + order.maxLevel() + " and below)");
         int visits = ledger.foreignVisits(player.getUUID(), citizen.city);
         if (visits < order.foreignVisits()) {
             int more = order.foreignVisits() - visits;
@@ -157,7 +158,8 @@ public final class WorkOrderService {
             after.add(stack);
             if (!stack.isEmpty()) throw new IllegalStateException("Not enough inventory space for the reward items. Free some slots and deliver again.");
         }
-        double target = QShopEconomy.balance(player) + order.credits();
+        final int credits = SkillService.payout(citizen, order);   // the order's snapshot plus the career's contract-rate skills, fixed here and journaled below
+        double target = QShopEconomy.balance(player) + credits;
         if (target > 1_000_000_000) throw new IllegalStateException("Wallet limit reached");
         int xpTarget = ProgressionRules.totalXp(citizen.careerXp(), order.xp());
         final int levelBefore = citizen.careerLevel();
@@ -175,11 +177,11 @@ public final class WorkOrderService {
         }
         ledger.prepare(player.getUUID(), nonce, after.save(new ListTag()), target, xpTarget, trustAfter, heatAfter);
         recover(player, ledger);
-        CrewService.sweepIncome(player, order.credits(), nonce); // fully shared finances only; never changes the settlement above
+        CrewService.sweepIncome(player, credits, nonce); // fully shared finances only; never changes the settlement above
         CitizenState.get(player.server).bumpJourney(player.getUUID(), "deliveries");
-        player.sendSystemMessage(Component.literal("Delivered " + order.title() + ": +" + order.credits()
-            + " credits, +" + order.xp() + " career XP. Level " + citizen.careerLevel() + "."));
-        Notice.send(player, Notice.Kind.DELIVERED, "Delivered", order.title() + ": +" + order.credits() + " credits, +" + order.xp() + " XP");
+        player.sendSystemMessage(Component.literal("Delivered " + order.title() + ": +" + credits
+            + " credits" + (credits > order.credits() ? " (" + order.credits() + " + " + (credits - order.credits()) + " for your skills)" : "") + ", +" + order.xp() + " career XP. Level " + citizen.careerLevel() + "."));
+        Notice.send(player, Notice.Kind.DELIVERED, "Delivered", order.title() + ": +" + credits + " credits, +" + order.xp() + " XP");
         if (citizen.careerLevel() > levelBefore) Notice.send(player, Notice.Kind.SKILL, "Level " + citizen.careerLevel(), TerminalScreenText.capitalize(citizen.career) + " level up. A skill point is waiting.");
         if (!terms.rewards().isEmpty()) {
             player.sendSystemMessage(Component.literal("Also received: " + terms.rewards().stream().map(r -> r.count() + " x "
@@ -206,6 +208,9 @@ public final class WorkOrderService {
         CompoundTag pending = record.getCompound("pending");
         if (pending.contains("balance")) QShopEconomy.applyBalance(player, pending.getDouble("balance"));
         player.getInventory().load(pending.getList("inventory", Tag.TAG_COMPOUND));
+        // A seizure from a carried backpack: the pack's slots live in the mod's own storage, so the prepared record carries the changes and they are replayed
+        // here, after the inventory target is in place, and idempotently (a slot that already holds the replacement is left alone).
+        if (pending.contains("packs", Tag.TAG_LIST)) CarriedStorage.apply(player, pending.getList("packs", Tag.TAG_COMPOUND));
         player.getInventory().setChanged(); player.inventoryMenu.broadcastChanges();
         citizens.restoreCareerXp(player.getUUID(), pending.getInt("xp"));
         player.server.getPlayerList().saveAll();

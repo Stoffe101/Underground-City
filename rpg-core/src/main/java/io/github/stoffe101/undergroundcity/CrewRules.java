@@ -29,7 +29,7 @@ public final class CrewRules {
         WORKSTATIONS("Use workstations", "Use crafting tables, furnaces, anvils, gun tables and other workstations inside Crew homes."),
         WITHDRAW("Withdraw from the bank", "Take credits out of the Crew bank into your own wallet."),
         SPEND("Spend Crew money", "Pay for Crew purchases from the bank."),
-        MANAGE_PROPERTY("Lease homes", "Lease a home for the Crew.");
+        MANAGE_PROPERTY("Rent and buy homes", "Rent or buy a home for the Crew, pay its rent, change how it is paid, fit upgrades and move out.");
 
         public final String title, hint;
         Perm(String title, String hint) { this.title = title; this.hint = hint; }
@@ -63,6 +63,8 @@ public final class CrewRules {
     /** How long somebody who left a Crew home may still walk in to fetch what they stored in their private containers. */
     public static final long RETRIEVAL_MILLIS = 3L * 24 * 3600 * 1000;
     public static final int MAX_CLAIMS_PER_PLAYER = 4;
+    /** Receipts kept for each home (rent, payments, upgrades, moves). */
+    public static final int RECEIPTS_MAX = 12;
 
     public static EnumSet<Perm> defaultPerms(Role role) {
         return switch (role) {

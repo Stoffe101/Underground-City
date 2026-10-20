@@ -44,6 +44,18 @@ SPRUCE = "minecraft:spruce_planks"
 FLIP = {"east": "west", "west": "east", "north": "north", "south": "south"}
 
 
+LADDER = ROOT / "rpg-core/src/main/resources/data/underground_city/properties/ladder.json"
+
+
+def ladder_price(listing_id: str) -> int:
+    """The registered one-time price of a home: the ladder's purchase price, or 1 for a home that can only be rented."""
+    ladder = json.loads(LADDER.read_text(encoding="utf-8"))
+    for listing in ladder["listings"]:
+        if listing["id"] == listing_id:
+            return max(1, listing["buy_price"])
+    raise SystemExit(f"the property ladder has no listing {listing_id}")
+
+
 def fill(a, b, block):
     return {"op": "fill", "from": list(a), "to": list(b), "block": block}
 
@@ -599,10 +611,12 @@ def row_flats() -> dict:
         ops.append(fill((x, 0, 0), (x, 3, 8), wall))
     for x in (1, 7, 13, 21):
         ops.append(fill((x, 0, 0), (x, 0, 8), "minecraft:cobblestone"))
+    # Terms (rent, deposit, purchase price) are the property ladder's (D-099); the `price` written here is only the registered one-time price a home
+    # without a listing would have, kept equal to the ladder's purchase price so the two never disagree.
     units = [
-        {"name": "flat_1", "title": "Row Flat 1", "kind": "flat", "x0": 2, "x1": 6, "price": 120, "starter": 60, "bed": "red", "beds": 1},
-        {"name": "flat_2", "title": "Row Flat 2", "kind": "flat", "x0": 8, "x1": 12, "price": 120, "starter": 60, "bed": "blue", "beds": 1},
-        {"name": "row_house", "title": "Row House", "kind": "house", "x0": 14, "x1": 20, "price": 260, "starter": 140, "bed": "green", "beds": 2},
+        {"name": "flat_1", "title": "Row Flat 1", "kind": "flat", "x0": 2, "x1": 6, "price": ladder_price("row_flats:flat_1"), "starter": -1, "bed": "red", "beds": 1},
+        {"name": "flat_2", "title": "Row Flat 2", "kind": "flat", "x0": 8, "x1": 12, "price": ladder_price("row_flats:flat_2"), "starter": -1, "bed": "blue", "beds": 1},
+        {"name": "row_house", "title": "Row House", "kind": "house", "x0": 14, "x1": 20, "price": ladder_price("row_flats:row_house"), "starter": -1, "bed": "green", "beds": 2},
     ]
     for unit in units:
         x0, x1 = unit["x0"], unit["x1"]
@@ -614,7 +628,7 @@ def row_flats() -> dict:
             put((mid, 1, 0), "minecraft:glass_pane"),
             put((mid - 1, 1, 8), "minecraft:glass_pane"), put((mid + 1, 1, 8), "minecraft:glass_pane"),
             put((mid, 3, 4), "minecraft:lantern[hanging=true]"),
-            sign((mid, 2, 9), "south", [unit["title"].upper()[:15], "For lease", "Press K nearby"]),
+            sign((mid, 2, 9), "south", [unit["title"].upper()[:15], "Rent or buy", "Press K nearby"]),
             put((mid - 2, 0, 9), "minecraft:potted_fern"), put((mid + 2, 0, 9), "minecraft:potted_azalea_bush"),
             # the furnishings: a bed, shared storage, the workstations and the home computer along the back wall
             put((x0, 0, 3), f"minecraft:{unit['bed']}_bed[facing=north,part=foot]"), put((x0, 0, 2), f"minecraft:{unit['bed']}_bed[facing=north,part=head]"),
@@ -624,7 +638,7 @@ def row_flats() -> dict:
             fill((x0 + 1, 0, 4), (x1 - 1, 0, 6), "minecraft:red_carpet" if unit["kind"] == "flat" else "minecraft:green_carpet"),
             put((mid, 0, 5), "minecraft:spruce_fence"), put((mid, 1, 5), "minecraft:spruce_slab[type=bottom]"),
             put((mid - 1, 0, 5), "minecraft:spruce_stairs[facing=east,half=bottom]"), put((mid + 1, 0, 5), "minecraft:spruce_stairs[facing=west,half=bottom]"),
-            {"op": "residence", "id": unit["name"], "title": unit["title"], "kind": unit["kind"], "price": unit["price"], "starter_price": unit["starter"],
+            {"op": "residence", "id": unit["name"], "title": unit["title"], "kind": unit["kind"], "price": unit["price"],
              "from": [x0, 0, 1], "to": [x1, 3, 7]},
         ]
         if unit["beds"] == 2:
@@ -637,8 +651,60 @@ def row_flats() -> dict:
             fill((22, 0, 10), (22, 2, 10), "minecraft:stone_brick_wall"), put((22, 3, 10), "minecraft:lantern[hanging=false]"),
             put((11, 0, 11), "minecraft:spruce_stairs[facing=north,half=bottom]"), put((12, 0, 11), "minecraft:spruce_stairs[facing=north,half=bottom]")]
     return {"schema_version": 1, "id": "row_flats", "title": "Row Flats",
-            "note": "Built east of Founders Row by the dev launch (or by hand: /uc_district build row_flats); origin is the north-west corner, extending east and south. Three homes the Crew screen can lease.",
+            "note": "Built east of Founders Row by the dev launch (or by hand: /uc_district build row_flats); origin is the north-west corner, extending east and south. Three homes the Home page can rent or sell (terms: data/underground_city/properties/ladder.json).",
             "size": [width, 10, depth], "ops": ops}
+
+
+def row_motel() -> dict:
+    """The Row Motel: four small rooms in a brick terrace, the cheapest roof in the game (D-099).
+
+    Each room is 4 wide, 5 deep and 3 high inside: a bed, a barrel, a lantern, the home terminal, a rug. No crafting table and no furnace: a motel is a place to
+    sleep and keep a few things, and its listing says so. Rooms are rented by the hour of play (the first hours of a person's first stay are the city's).
+
+    Local x runs 0..23, z runs 0..12; the building is x 1..21, z 0..6, rooms at x 2..5, 7..10, 12..15 and 17..20 with the walls at x 1, 6, 11, 16 and 21.
+    """
+    width, depth = 24, 13
+    wall, trim, floor = "minecraft:bricks", "minecraft:stone_bricks", "minecraft:spruce_planks"
+    ops = [
+        fill((0, -4, 0), (width - 1, -2, depth - 1), "minecraft:stone"),
+        fill((0, -1, 0), (width - 1, -1, depth - 1), "minecraft:grass_block"),
+        fill((0, 0, 0), (width - 1, 8, depth - 1), "minecraft:air"),
+        fill((0, -1, 7), (width - 1, -1, 10), "minecraft:stone_bricks"),
+        fill((1, -1, 0), (21, -1, 6), floor),
+        fill((1, 0, 0), (21, 3, 0), wall), fill((1, 0, 6), (21, 3, 6), wall),
+        fill((1, 4, 0), (21, 4, 6), trim),
+        fill((1, 5, 0), (21, 5, 0), "minecraft:stone_brick_wall"), fill((1, 5, 6), (21, 5, 6), "minecraft:stone_brick_wall"),
+        fill((1, 5, 1), (1, 5, 5), "minecraft:stone_brick_wall"), fill((21, 5, 1), (21, 5, 5), "minecraft:stone_brick_wall"),
+    ]
+    for x in (1, 6, 11, 16, 21):
+        ops.append(fill((x, 0, 0), (x, 3, 6), wall))
+    for x in (1, 6, 11, 16, 21):
+        ops.append(fill((x, 0, 0), (x, 0, 6), "minecraft:cobblestone"))
+    colours = ["red", "blue", "green", "yellow"]
+    for index in range(4):
+        x0 = 2 + index * 5
+        x1 = x0 + 3
+        mid = x0 + 1
+        number = index + 1
+        ops += [
+            fill((mid, 0, 6), (mid, 1, 6), "minecraft:air"),
+            put((mid, 0, 6), "minecraft:oak_door[facing=south,half=lower,hinge=left,open=false]"),
+            put((mid, 1, 6), "minecraft:oak_door[facing=south,half=upper,hinge=left,open=false]"),
+            put((x1, 1, 0), "minecraft:glass_pane"),
+            put((x1, 3, 3), "minecraft:lantern[hanging=true]"),
+            sign((mid, 2, 7), "south", [f"MOTEL ROOM {number}", "By the hour", "Press K nearby"]),
+            put((x0, 0, 3), f"minecraft:{colours[index]}_bed[facing=north,part=foot]"), put((x0, 0, 2), f"minecraft:{colours[index]}_bed[facing=north,part=head]"),
+            put((x1, 0, 1), "minecraft:barrel[facing=up]"),
+            {"op": "terminal", "at": [x1 - 1, 0, 1], "facing": "south"},
+            fill((x0 + 1, 0, 3), (x1 - 1, 0, 5), "minecraft:brown_carpet"),
+            {"op": "residence", "id": f"motel_{number}", "title": f"Row Motel Room {number}", "kind": "motel", "price": 1, "from": [x0, 0, 1], "to": [x1, 2, 5]},
+        ]
+    ops += [fill((0, 0, 8), (0, 2, 8), "minecraft:stone_brick_wall"), put((0, 3, 8), "minecraft:lantern[hanging=false]"),
+            fill((22, 0, 8), (22, 2, 8), "minecraft:stone_brick_wall"), put((22, 3, 8), "minecraft:lantern[hanging=false]"),
+            sign((11, 2, 7), "south", ["ROW MOTEL", "By the hour", "Vacancies"], color="white")]
+    return {"schema_version": 1, "id": "row_motel", "title": "Row Motel",
+            "note": "Built beside the Row Flats by the dev launch (or by hand: /uc_district build row_motel); origin is the north-west corner, extending east and south. Four rooms the Home page can rent (terms: data/underground_city/properties/ladder.json).",
+            "size": [width, 9, depth], "ops": ops}
 
 
 def checkpoint_post() -> dict:
@@ -795,7 +861,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--check", action="store_true")
     args = parser.parse_args()
-    outputs = {"founders_row": founders_row(), "firing_range": firing_range(), "row_flats": row_flats(), "checkpoint_post": checkpoint_post(), "wayside_shelter": wayside_shelter(), "wayside_well": wayside_well()}
+    outputs = {"founders_row": founders_row(), "firing_range": firing_range(), "row_flats": row_flats(), "row_motel": row_motel(), "checkpoint_post": checkpoint_post(), "wayside_shelter": wayside_shelter(), "wayside_well": wayside_well()}
     status = 0
     for name, data in outputs.items():
         out = DIR / f"{name}.json"

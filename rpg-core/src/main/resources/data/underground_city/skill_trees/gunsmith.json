@@ -16,7 +16,7 @@
       "id": "gunsmith.licensed_repairs",
       "branch": "legal",
       "title": "Licensed Repairs",
-      "description": "Maintain registered sidearms. Unlocks the licensed sidearm contract and a pistol blueprint.",
+      "description": "Maintain sidearms: unlocks the sidearm contract and a pistol blueprint.",
       "cost": 2,
       "min_level": 3,
       "requires": [
@@ -28,7 +28,7 @@
       "id": "gunsmith.dealer_licence",
       "branch": "legal",
       "title": "Arms Dealer Licence",
-      "description": "Licensed dealer. Civilian firearms are legal for you to carry where a city issues permits.",
+      "description": "Licensed dealer: civilian firearms are legal to carry where permitted.",
       "cost": 3,
       "min_level": 6,
       "requires": [
@@ -44,19 +44,36 @@
       "id": "gunsmith.security_contracts",
       "branch": "legal",
       "title": "Security Contracts",
-      "description": "Supply guard posts and hunting co-ops. Unlocks the shotgun contract and a shotgun blueprint.",
+      "description": "Supply guard posts and co-ops: unlocks the shotgun contract and blueprint.",
       "cost": 2,
       "min_level": 8,
       "requires": [
         "gunsmith.dealer_licence"
       ],
-      "effects": {}
+      "effects": {
+        "legal_payout_percent": 4
+      }
+    },
+    {
+      "id": "gunsmith.range_master",
+      "branch": "legal",
+      "title": "Range Master",
+      "description": "Run the range and the armoury for the cities.",
+      "cost": 2,
+      "min_level": 11,
+      "requires": [
+        "gunsmith.security_contracts",
+        "gunsmith.ballistics_lab"
+      ],
+      "effects": {
+        "legal_payout_percent": 4
+      }
     },
     {
       "id": "gunsmith.ballistics_lab",
       "branch": "utility",
       "title": "Ballistics Lab",
-      "description": "Range time and test rigs: 5% off goods at the regional exchange.",
+      "description": "Range time and test rigs, so less goes to waste at the exchange.",
       "cost": 2,
       "min_level": 5,
       "requires": [
@@ -67,10 +84,26 @@
       }
     },
     {
+      "id": "gunsmith.bench_discipline",
+      "branch": "utility",
+      "title": "Bench Discipline",
+      "short_title": "Bench Discipline",
+      "description": "A proper home bench, laid out once.",
+      "cost": 2,
+      "min_level": 9,
+      "requires": [
+        "gunsmith.ballistics_lab",
+        "gunsmith.licensed_repairs"
+      ],
+      "effects": {
+        "upgrade_discount_percent": 10
+      }
+    },
+    {
       "id": "gunsmith.unregistered_builds",
       "branch": "underground",
       "title": "Unregistered Builds",
-      "description": "Assemble restricted weapons that appear on no register. Unlocks restricted weapon contracts.",
+      "description": "Build restricted weapons for the restricted-weapon contracts.",
       "cost": 3,
       "min_level": 7,
       "requires": [
@@ -82,7 +115,7 @@
       "id": "gunsmith.filed_serials",
       "branch": "underground",
       "title": "Filed Serials",
-      "description": "Nothing to trace: 10 points off checkpoint search odds.",
+      "description": "Nothing to trace: a checkpoint search finds less.",
       "cost": 2,
       "min_level": 9,
       "requires": [
@@ -96,13 +129,44 @@
       "id": "gunsmith.arms_brokerage",
       "branch": "underground",
       "title": "Arms Brokerage",
-      "description": "Broker bigger orders for a trusted buyer. Unlocks the brokerage contract (needs trust 2).",
+      "description": "Broker bigger orders for a trusted buyer: unlocks the brokerage contract.",
       "cost": 3,
       "min_level": 11,
       "requires": [
         "gunsmith.unregistered_builds"
       ],
       "effects": {}
+    },
+    {
+      "id": "gunsmith.ghost_guns",
+      "branch": "underground",
+      "title": "Ghost Guns",
+      "description": "Builds nobody can trace, and buyers who know it.",
+      "cost": 2,
+      "min_level": 13,
+      "requires": [
+        "gunsmith.arms_brokerage",
+        "gunsmith.filed_serials"
+      ],
+      "effects": {
+        "underground_payout_percent": 6
+      }
+    },
+    {
+      "id": "gunsmith.dealer_front",
+      "branch": "crossover",
+      "title": "A Dealer's Front",
+      "description": "The shop window covers the back room.",
+      "cost": 2,
+      "min_level": 12,
+      "requires": [
+        "gunsmith.dealer_licence",
+        "gunsmith.unregistered_builds"
+      ],
+      "effects": {
+        "inspection_modifier": -0.06,
+        "underground_payout_percent": 3
+      }
     }
   ]
 }

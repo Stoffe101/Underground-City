@@ -2,6 +2,8 @@
 
 Status: **implemented in Core; tested by GameTests with the real Q Shop 1.8.4 wallet and by a two-client journey in which the dedicated server process is killed without a stop sequence and restarted (October 18); not yet driven by human players.** The decisions are D-081 to D-084 and, for purchases paid from the bank, **D-089** (which replaced the first design: see section 4b) in [decisions.md](../production/decisions.md). The product design is [crews.md](../design/crews.md). Nothing here is a second currency.
 
+**October 20 note (D-099):** a home can now be **rented** as well as bought, and its rent, upkeep, deposit, prepaid hours and upgrades are paid from a wallet or from the Crew bank through the same protocol described below; the rules, the clock (active household time only) and the tests are in [property-economy.md](property-economy.md). Where this document says "lease", read "the purchase at the starter or listed price"; the ledger's file is now schema 2 (it reads schema 1).
+
 ## 1. Authority
 
 | Concern | Owner | Why |

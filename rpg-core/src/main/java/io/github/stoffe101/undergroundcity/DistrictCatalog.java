@@ -124,7 +124,7 @@ public final class DistrictCatalog extends SimpleJsonResourceReloadListener {
         String title = op.get("title").getAsString();
         if (title.isBlank() || title.length() > 40) throw new IllegalArgumentException("District " + district + ": bad home title");
         String kind = op.has("kind") ? op.get("kind").getAsString() : "flat";
-        if (!Set.of("flat", "house").contains(kind)) throw new IllegalArgumentException("District " + district + ": unknown home kind " + kind);
+        if (!Set.of("motel", "flat", "house").contains(kind)) throw new IllegalArgumentException("District " + district + ": unknown home kind " + kind);
         int price = op.get("price").getAsInt(), starter = op.has("starter_price") ? op.get("starter_price").getAsInt() : -1;
         if (price < 1 || price > 1_000_000 || starter > price) throw new IllegalArgumentException("District " + district + ": bad home price for " + id);
         return new Home(id, title, kind, price, starter);

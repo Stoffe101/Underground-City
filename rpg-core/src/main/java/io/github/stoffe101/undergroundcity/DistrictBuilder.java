@@ -284,8 +284,11 @@ public final class DistrictBuilder {
         CrewLedger ledger = CrewService.need(level.getServer());
         for (DistrictCatalog.Op op : homes) {
             DistrictCatalog.Home home = op.home();
+            BlockPos from = origin.offset(op.a()), to = origin.offset(op.b());
+            // the city's price factor at the home's position (100 outside every city circle): rent, deposit and purchase price are the listing's, times this
+            int factor = PropertyService.cityFactor(level, new BlockPos((from.getX() + to.getX()) / 2, (from.getY() + to.getY()) / 2, (from.getZ() + to.getZ()) / 2));
             ledger.registerResidence(homeId(district, home), home.title(), home.kind(), level.dimension().location().toString(), district.id(),
-                origin.offset(op.a()), origin.offset(op.b()), home.price(), home.starterPrice());
+                from, to, home.price(), home.starterPrice(), factor);
             registered.add(homeId(district, home));
         }
     }

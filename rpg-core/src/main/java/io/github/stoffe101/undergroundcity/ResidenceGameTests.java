@@ -337,7 +337,7 @@ public final class ResidenceGameTests {
             for (ServerPlayer p : List.of(tenant, mate, stranger)) rig.wallet.balances.put(p.getUUID(), 500d);
             DistrictCatalog.Op flatOp = district.homeOps().get(0), houseOp = district.homeOps().get(2);
             Residence flat = l.residence(DistrictBuilder.homeId(district, flatOp.home())), house = l.residence(DistrictBuilder.homeId(district, houseOp.home()));
-            check(flat.min.equals(origin.offset(flatOp.a())) && flat.max.equals(origin.offset(flatOp.b())) && flat.price == 120 && flat.starterPrice == 60, "the registered region and price come from the data");
+            check(flat.min.equals(origin.offset(flatOp.a())) && flat.max.equals(origin.offset(flatOp.b())) && flat.price == PropertyCatalog.INSTANCE.find(flat.id).orElseThrow().buyPrice() && flat.starterPrice < 0, "the registered region and price come from the data");
             // the furnishings the data promises are really there, inside the registered interior
             BlockPos flatChest = origin.offset(flatOp.b().getX(), 0, flatOp.a().getZ()), flatDoor = origin.offset((flatOp.a().getX() + flatOp.b().getX()) / 2, 0, 8);
             check(level.getBlockState(flatChest).is(Blocks.CHEST) && flat.insideInterior(OVERWORLD, flatChest), "the flat's chest");
@@ -350,11 +350,13 @@ public final class ResidenceGameTests {
                 }
             }
 
-            // a showroom, then a personal lease with the starter price, then a Crew lease of the house from the bank
+            // a showroom, then a personal tenancy of the flat (the deposit and the first hour), then the Crew renting the house from the bank
             check(brokenBy(level, stranger, flatChest).isCanceled() && usedBy(level, stranger, flatChest).isCanceled() && !usedBy(level, stranger, flatDoor).isCanceled(), "an unleased flat: look, don't touch");
             near(flat.min, tenant);
-            CrewService.lease(tenant, id(), flat.id, false, false);
-            check(flat.ownerType == OwnerType.PLAYER && rig.wallet.balances.get(tenant.getUUID()) == 440d, "the starter price for the flat");
+            var flatTerms = PropertyCatalog.INSTANCE.find(flat.id).orElseThrow();
+            int flatCost = l.rentQuote(tenant.getUUID(), flat, flatTerms, PropertyCatalog.INSTANCE.rules()).total();
+            PropertyService.rent(tenant, id(), flat.id, false, false);
+            check(flat.ownerType == OwnerType.PLAYER && flat.tenure == PropertyRules.Tenure.RENT && rig.wallet.balances.get(tenant.getUUID()) == 500d - flatCost, "the deposit and the first hour for the flat: " + rig.wallet.balances.get(tenant.getUUID()));
             check(!usedBy(level, tenant, flatChest).isCanceled() && !usedBy(level, tenant, flatDoor).isCanceled(), "a tenant locked out of their own flat");
             check(usedBy(level, stranger, flatChest).isCanceled() && usedBy(level, stranger, flatDoor).isCanceled() && usedBy(level, mate, flatChest).isCanceled(), "a flat open to people who do not live there");
             check(brokenBy(level, tenant, flatDoor).isCanceled(), "a tenant broke their own front door out of the city's wall");
@@ -365,10 +367,12 @@ public final class ResidenceGameTests {
             Crew crew = l.create(tenant.getUUID(), "uc_tenant", "Flat Crew");
             l.accept(l.invite(tenant.getUUID(), mate.getUUID(), "uc_mate", "uc_tenant").id(), mate.getUUID(), "uc_mate");
             near(house.min, tenant, mate, stranger);
-            CrewService.deposit(tenant, id(), 150);
-            CrewService.deposit(mate, id(), 150);
-            CrewService.lease(tenant, id(), house.id, true, true);
-            check(house.ownerType == OwnerType.CREW && crew.bank == 300 - 260, "the Row House at its full price (the starter discount went on the flat): bank " + crew.bank);
+            CrewService.deposit(tenant, id(), 200);
+            CrewService.deposit(mate, id(), 200);
+            var houseTerms = PropertyCatalog.INSTANCE.find(house.id).orElseThrow();
+            int houseCost = l.rentQuote(tenant.getUUID(), house, houseTerms, PropertyCatalog.INSTANCE.rules()).total();
+            PropertyService.rent(tenant, id(), house.id, true, true);
+            check(house.ownerType == OwnerType.CREW && house.tenure == PropertyRules.Tenure.RENT && crew.bank == 400 - houseCost, "the Row House rented from the bank: bank " + crew.bank);
             BlockPos houseChest = origin.offset(houseOp.b().getX(), 0, houseOp.a().getZ());
             BlockPos houseSmith = origin.offset(houseOp.b().getX() - 3, 0, 1);
             check(level.getBlockState(houseSmith).is(Blocks.SMITHING_TABLE), "the house's smithing table");

@@ -25,6 +25,21 @@ Added since October 16 (evidence in the [October 18 sprint report](sprint-2026-1
 
 **Update, October 19, 2026** ([sprint report](sprint-2026-10-19.md)): the world is now a **simulation with no ordinary monsters** (D-094) and every item that needed a monster's drop has a route (D-095); the backpack provider is **Sophisticated Backpacks + Core** under one policy file and the Crew's home rules (D-092, D-093); the Lost Cities long-tick stall was root-caused and mostly removed (D-096); first starts of the new mods were measured (D-097); and the combined journey now has a real client buying, wearing and filling a backpack on the real screens. **P6 to P9 are unchanged and nobody has played any of it.**
 
+**Update, October 20, 2026** ([sprint report](sprint-2026-10-20.md); owner brief "Economy, Housing, Rent, Professions and Meaningful Progression"): a reproducible **economic model** ([economy-model.md](../technical/economy-model.md); D-098) with invariants that fail on a buy-sell loop, an idle profit or a vanilla delivery that beats real production; a **property economy** (rent, purchase, deposits, active-time billing, grace and lapse that never take belongings, Crew-owned bills, upgrades, migration; D-099); **skill trees with real effects** (multi-prerequisite, capped, consumed by the pay, yield, exchange, upgrade and checkpoint systems; scrolling page; D-098); **vehicle and boat price tiers** with a bicycle and a motorboat on sale (D-101; no fuel, no repair); a **checkpoint that searches what a person carries, including a Sophisticated Backpack**, and nothing else (D-100); a re-evaluated backpack price and five more enabled upgrades (D-102); and a fail-closed guard against loading a world with Traveler's Backpack items (D-103). **P6 to P9 are unchanged and nobody has played any of it.**
+
+### Phase F: what the next passes build (not started)
+
+| Next | What is missing | Why it matters |
+| --- | --- | --- |
+| Property buildings | seven of ten categories are priced but not built (comfortable and larger apartments, small house, farmhouse, commercial workshop, warehouse, premium residence) | the ladder has a middle and a top only on paper |
+| Skill tiers | each tree has 12 to 14 skills and spends 25 to 29 of the 29 points a level-30 character earns; nothing exists past level 30 (no mastery tier, no respec rule) | long-term progression |
+| Cooperative contracts | contracts that need two careers or a Crew's labour | the two-friends goal |
+| Manufacturing and facilities | workstations, power, rented production space (warehouse) | Schedule I-style growth |
+| Vehicles | a bench-built vehicle path, fuel, repair, insurance, a dealer for cars | the cars are priced as a plan, not for sale |
+| Loot, burglary, police | per-player loot, a break-in that a lapsed or empty home can suffer, patrols and raids | risk on the underground path |
+| Populated districts | daily routines, shops that restock from the economy | a living city |
+| Real play | a person plays the 40-minute test in the playtest guide, section 6d | every number here is a model's |
+
 Phases are **outcome gates, not calendar promises**. The order may change when research uncovers technical constraints.
 
 ## Critical path

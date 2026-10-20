@@ -25,7 +25,7 @@ import java.util.Set;
  * gate, a named buyer in a fixed city, trust, extra reward items and gun requirements.
  * Accepted terms (including rewards) are snapshotted, so a datapack edit cannot change them.
  */
-public record WorkOrder(String id, String title, String career, int level,
+public record WorkOrder(String id, String title, String career, int level, int maxLevel,
                         List<Requirement> requirements, int credits, int xp,
                         int capacity, int refillTicks, int foreignVisits, Terms terms) {
     /** A plain-item requirement, or a factory gun when {@code gunIds} is not empty. */
@@ -57,6 +57,9 @@ public record WorkOrder(String id, String title, String career, int level,
 
     public boolean underground() { return terms.underground(); }
 
+    /** An apprentice order stops being offered once the career is above {@link #maxLevel} (0 means it is never withdrawn): the entry rungs must not out-earn a skilled trade. */
+    public boolean offeredAt(int careerLevel) { return careerLevel >= level && (maxLevel == 0 || careerLevel <= maxLevel); }
+
     /** Null when the order is for a mod that is not installed: it is skipped, not an error. */
     public static WorkOrder fromJson(ResourceLocation id, JsonObject json) {
         int schema = json.has("schema_version") ? json.get("schema_version").getAsInt() : 0;
@@ -81,8 +84,8 @@ public record WorkOrder(String id, String title, String career, int level,
         }
         if (!terms.requiresMod().isEmpty() && !ModList.get().isLoaded(terms.requiresMod())) return null;
         return validate(new WorkOrder(id.toString(), json.get("title").getAsString(),
-            json.get("career").getAsString(), json.get("level").getAsInt(), List.copyOf(requirements),
-            json.get("credits").getAsInt(), json.get("xp").getAsInt(),
+            json.get("career").getAsString(), json.get("level").getAsInt(), json.has("max_level") ? json.get("max_level").getAsInt() : 0,
+            List.copyOf(requirements), json.get("credits").getAsInt(), json.get("xp").getAsInt(),
             json.get("capacity").getAsInt(), json.get("refill_ticks").getAsInt(), visits, terms));
     }
 
@@ -108,6 +111,7 @@ public record WorkOrder(String id, String title, String career, int level,
         Terms terms = order.terms;
         if (order.id.length() > 128 || !ProgressionRules.validCareer(order.career) || order.title.isBlank()
             || order.title.length() > 80 || order.level < 1 || order.level > 30
+            || order.maxLevel != 0 && (order.maxLevel < order.level || order.maxLevel > 30)
             || order.requirements.isEmpty() || order.requirements.size() > 4
             || order.credits < 1 || order.credits > 1000
             || order.xp < 1 || order.xp > 1000 || order.capacity < 1 || order.capacity > 16
@@ -139,7 +143,7 @@ public record WorkOrder(String id, String title, String career, int level,
     }
 
     WorkOrder withId(String newId) {
-        return new WorkOrder(newId, title, career, level, requirements, credits, xp, capacity, refillTicks, foreignVisits, terms);
+        return new WorkOrder(newId, title, career, level, maxLevel, requirements, credits, xp, capacity, refillTicks, foreignVisits, terms);
     }
 
     /** True if the stack is a plain, undamaged delivery of ANY listed requirement. */
@@ -177,7 +181,7 @@ public record WorkOrder(String id, String title, String career, int level,
     public CompoundTag save() {
         CompoundTag tag = new CompoundTag();
         tag.putString("id", id); tag.putString("title", title); tag.putString("career", career);
-        tag.putInt("level", level); tag.putInt("credits", credits); tag.putInt("xp", xp);
+        tag.putInt("level", level); if (maxLevel > 0) tag.putInt("max_level", maxLevel); tag.putInt("credits", credits); tag.putInt("xp", xp);
         tag.putInt("capacity", capacity); tag.putInt("refill_ticks", refillTicks);
         tag.putInt("foreign_visits", foreignVisits);
         ListTag list = new ListTag();
@@ -237,7 +241,7 @@ public record WorkOrder(String id, String title, String career, int level,
                 extra.getInt("min_trust"), extra.getInt("trust_gain"), extra.getString("mod"), rewards);
         }
         return validate(new WorkOrder(tag.getString("id"), tag.getString("title"),
-            tag.getString("career"), tag.getInt("level"), List.copyOf(requirements),
+            tag.getString("career"), tag.getInt("level"), tag.getInt("max_level"), List.copyOf(requirements),
             tag.getInt("credits"), tag.getInt("xp"),
             tag.getInt("capacity"), tag.getInt("refill_ticks"), tag.getInt("foreign_visits"), terms));
     }

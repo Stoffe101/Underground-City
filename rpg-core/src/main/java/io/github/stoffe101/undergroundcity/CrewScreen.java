@@ -38,6 +38,10 @@ public final class CrewScreen extends UcScreen {
     private String note = "";
     private Page page = Page.CREW;
     private int rulesTab;
+    /** Home page: 0 = the homes you hold, 1 = the homes on offer nearby. */
+    private int homeTab, findPage;
+    private String selectedHome = "", confirmLeave = "";
+    private boolean forCrew, fromBank, choicesSet, choicesInCrew;
     private UUID selected;
     private boolean busy;
     private int busyTicks;
@@ -143,17 +147,21 @@ public final class CrewScreen extends UcScreen {
         clearWidgets();
         byId.clear();
         if (!view.storageOk() || !view.citizen()) return;
-        if (!view.inCrew()) { buildNoCrew(); return; }
-        Page[] pages = Page.values();
+        Page[] pages = view.inCrew() ? Page.values() : new Page[]{Page.CREW, Page.HOME};
+        if (!view.inCrew() && page != Page.CREW && page != Page.HOME) page = Page.CREW;
+        // the default For/Pay choices follow the player into a Crew (a screen opened before the Crew was founded must not stay on "For: me")
+        if (!choicesSet || choicesInCrew != view.inCrew()) { choicesSet = true; choicesInCrew = view.inCrew(); forCrew = view.inCrew() && view.can(Perm.MANAGE_PROPERTY); fromBank = forCrew && view.can(Perm.SPEND) && !view.effectiveMode().equals(Mode.SEPARATE.name()); }
         for (int i = 0; i < pages.length; i++) {
             Page p = pages[i];
             UcButton button = add(new UcButton(px + PAD, cy + i * 30, railW, 26, p.label, b -> { page = p; build(); }).kind(UcButton.Kind.RAIL).icon(p.icon)
                 .tooltip(railW < 50 ? p.label : ""));
             button.selected(p == page).accent(UcUi.LEGAL);
             byId.put("rail_" + p.name().toLowerCase(Locale.ROOT), button);
-            if (p == Page.CREW) button.badge(view.members().size());
+            if (p == Page.CREW) button.badge(view.inCrew() ? view.members().size() : view.incoming().size());
             if (p == Page.MONEY && view.owed() > 0) button.badge(1);
+            if (p == Page.HOME && view.homes().stream().anyMatch(h -> h.tenancy().arrears() > 0)) button.badge(1);
         }
+        if (!view.inCrew() && page == Page.CREW) { buildNoCrew(); return; }
         switch (page) {
             case CREW -> buildCrew();
             case MONEY -> buildMoney();
@@ -165,7 +173,7 @@ public final class CrewScreen extends UcScreen {
     // ---- no Crew
 
     private void buildNoCrew() {
-        int x = px + PAD, w = pw - 2 * PAD, y = cy + 56;
+        int x = cx, w = cw, y = cy + 56;
         int half = Math.min(w, 300);
         place(nameBox, x, y + 20, half - 110);
         UcButton found = btn("create", x + half - 104, y + 20, 104, 20, "Found Crew", () -> send(Act.of(Op.CREATE).text(nameBox.getValue()))).kind(UcButton.Kind.PRIMARY);
@@ -175,14 +183,14 @@ public final class CrewScreen extends UcScreen {
         int i = 0;
         for (CrewView.InviteRow invite : view.incoming()) {
             int row = iy + i * 26;
-            btn("accept_" + i, px + pw - PAD - 136, row, 64, 20, "Accept", () -> send(Act.of(Op.ACCEPT).target(invite.id()))).kind(UcButton.Kind.PRIMARY);
-            btn("decline_" + i, px + pw - PAD - 68, row, 64, 20, "Decline", () -> send(Act.of(Op.DECLINE).target(invite.id())));
+            btn("accept_" + i, cx + cw - 136, row, 64, 20, "Accept", () -> send(Act.of(Op.ACCEPT).target(invite.id()))).kind(UcButton.Kind.PRIMARY);
+            btn("decline_" + i, cx + cw - 68, row, 64, 20, "Decline", () -> send(Act.of(Op.DECLINE).target(invite.id())));
             i++;
         }
     }
 
     private void renderNoCrew(GuiGraphics g) {
-        int x = px + PAD, w = pw - 2 * PAD, y = cy + 56;
+        int x = cx, w = cw, y = cy + 56;
         UcUi.display(g, font, "Start or join a Crew", x, cy + 4, UcUi.TEXT);
         UcUi.wrapped(g, font, "A Crew is a small group that can share a home and, if you all want it, a bank. You keep your own career, wallet, skills and homes. "
             + "You never need one.", x, cy + 18, w, UcUi.SOFT, 3);
@@ -434,63 +442,311 @@ public final class CrewScreen extends UcScreen {
 
     // ---- HOME
 
+    private static final int HROW = 30;
+
+    private int homeListW() { return Math.min(150, cw * 36 / 100); }
+
+    private CrewView.HomeRow home(String id) {
+        for (CrewView.HomeRow h : view.homes()) if (h.id().equals(id)) return h;
+        return null;
+    }
+
+    private CrewView.HomeRow chosenHome() {
+        CrewView.HomeRow home = home(selectedHome);
+        if (home == null && !view.homes().isEmpty()) { home = view.homes().get(0); selectedHome = home.id(); }
+        return home;
+    }
+
+    private static String hours(int minutes) { return minutes >= 60 ? (minutes / 60) + " h " + (minutes % 60) + " min" : minutes + " min"; }
+
+    /** Credits a payment from this source could use right now (the wallet, or the Crew bank when the bank is the chosen source). */
+    private long funds(boolean bank) { return bank ? view.bank() : (long) Math.floor(view.wallet()); }
+
     private void buildHome() {
-        int y = cy + 18;
-        boolean canLeaseCrew = view.can(Perm.MANAGE_PROPERTY);
-        for (CrewView.HomeRow home : view.homes()) y += ROW;
-        boolean here = view.homes().stream().anyMatch(CrewView.HomeRow::here);
-        UcButton claim = btn("claim_container", cx, y + 2, 150, 18, "Make container private", () -> send(Act.of(Op.CLAIM_CONTAINER)));
-        claim.active = claim.active && here;
-        claim.tooltip(here ? "Look at a chest or barrel in your home first. Only you can open it, and nobody else can break it." : "Stand inside one of your homes.");
-        UcButton release = btn("release_container", cx + 156, y + 2, 140, 18, "Share it again", () -> send(Act.of(Op.RELEASE_CONTAINER)));
-        release.active = release.active && here;
+        String[] tabs = {"Your homes (" + view.homes().size() + ")", "Find a home (" + view.nearby().size() + ")"};
+        int tx = cx;
+        for (int i = 0; i < tabs.length; i++) {
+            int index = i;
+            int w = UcUi.displayWidth(font, tabs[i]) + 22;
+            btn("home_tab_" + i, tx, cy, w, 16, tabs[i], () -> { homeTab = index; build(); }).kind(UcButton.Kind.CHIP).accent(UcUi.LEGAL).selected(homeTab == i);
+            tx += w + 4;
+        }
+        if (homeTab == 0) buildMine(); else buildFind();
+    }
+
+    private void buildMine() {
+        CrewView.HomeRow home = chosenHome();
+        if (home == null) return;
+        CrewView.Tenancy t = home.tenancy();
+        int lw = homeListW(), dx = cx + lw + 8, dw = cw - lw - 8;
+        boolean crewPays = t.crewHome() && fromBank && view.can(Perm.SPEND) && !view.effectiveMode().equals(Mode.SEPARATE.name());
+        boolean bankSource = t.crewHome() && crewPays;
+        int by = cy + ch - 20;
+        // bottom row: leave and the two private-container buttons; the row above it: pay buttons; above that, where a Crew home is paid from
+        int third = (dw - 8) / 3;
+        boolean leaving = confirmLeave.equals(home.id());
+        String leaveLabel = t.rented() ? "Move out" : t.legacy() || t.tenure().equals("OWN") ? "Sell back" : "Leave";
+        UcButton leave = btn("leave_home", dx, by, third, 18, leaving ? "Really?" : leaveLabel, () -> {
+            if (!leaving) { confirmLeave = home.id(); build(); }
+            else { confirmLeave = ""; send(Act.of(t.rented() ? Op.MOVE_OUT : Op.SELL_BACK).text(home.id())); }
+        }).kind(UcButton.Kind.DANGER);
+        leave.active = leave.active && t.manage();
+        leave.tooltip(t.rented() ? "You give the home back. " + t.refund() + " credits come back (the deposit and any hours paid ahead, less what is owed). Containers must be empty: nothing stored is thrown away."
+            : "You sell the home back to the city for " + t.refund() + " credits (" + view.rules().sellBackPercent() + "% of the price, less what is owed). Containers must be empty.");
+        UcButton claim = btn("claim_container", dx + third + 4, by, third, 18, "Make private", () -> send(Act.of(Op.CLAIM_CONTAINER)));
+        claim.active = claim.active && home.here();
+        claim.tooltip(home.here() ? "Make the chest or barrel you are looking at private. Only you can open it, and nobody else can break it. You may keep " + t.claimsMax() + " in this home." : "Stand inside one of your homes, looking at a chest or barrel.");
+        UcButton release = btn("release_container", dx + 2 * (third + 4), by, dw - 2 * (third + 4), 18, "Share again", () -> send(Act.of(Op.RELEASE_CONTAINER)));
+        release.active = release.active && home.here();
         release.tooltip("Look at your private container to make it shared again.");
-        int ny = y + 46;
-        for (int i = 0; i < view.nearby().size(); i++) {
-            CrewView.LeaseRow lease = view.nearby().get(i);
-            int row = ny + i * ROW;
-            UcButton bank = btn("lease_bank_" + i, cx + cw - 232, row, 76, 18, "Crew bank", () -> send(Act.of(Op.LEASE).text(lease.id()).flag(true).flag2(true)));
-            bank.active = bank.active && view.inCrew() && canLeaseCrew && view.can(Perm.SPEND) && view.moneyReady() && !view.effectiveMode().equals(Mode.SEPARATE.name()) && view.bank() >= lease.price();
-            bank.tooltip(!canLeaseCrew ? "Your role may not lease for the Crew." : view.bank() < lease.price() ? "The bank holds " + view.bank() + " credits." : "Pay " + lease.price() + " credits from the Crew bank. The home is the Crew's.");
-            UcButton crewMine = btn("lease_crew_" + i, cx + cw - 152, row, 76, 18, "Crew (mine)", () -> send(Act.of(Op.LEASE).text(lease.id()).flag(true).flag2(false)));
-            crewMine.active = crewMine.active && canLeaseCrew && view.moneyReady() && view.wallet() >= lease.price();
-            crewMine.tooltip("Pay " + lease.price() + " credits from your own wallet. The home is the Crew's.");
-            UcButton mine = btn("lease_me_" + i, cx + cw - 72, row, 72, 18, "For me", () -> send(Act.of(Op.LEASE).text(lease.id()).flag(false).flag2(false)));
-            mine.active = mine.active && view.moneyReady() && view.wallet() >= lease.price();
-            mine.tooltip("Pay " + lease.price() + " credits from your wallet. The home is yours alone; a Crew does not change that.");
+        if (t.billed()) {
+            int py = by - 22;
+            UcButton p1 = btn("pay_1", dx, py, third, 18, "Pay 1 h", () -> send(Act.of(Op.PAY).text(home.id()).amount(1).flag2(bankSource)));
+            UcButton p3 = btn("pay_3", dx + third + 4, py, third, 18, "Pay 3 h", () -> send(Act.of(Op.PAY).text(home.id()).amount(3).flag2(bankSource)));
+            for (UcButton b : List.of(p1, p3)) {
+                long cost = (long) t.charge() * (b == p1 ? 1 : 3);
+                b.active = b.active && view.moneyReady() && funds(bankSource) >= cost && (t.arrears() + t.prepaid() + (b == p1 ? 1 : 3) <= t.arrears() + view.rules().prepayMax() + 3);
+                b.tooltip(cost + " credits from " + (bankSource ? "the Crew bank (" + view.bank() + ")" : "your wallet (" + (long) view.wallet() + ")") + ". Unpaid hours are settled first; the rest is paid ahead (up to " + view.rules().prepayMax() + " h).");
+            }
+            UcButton auto = btn("autopay", dx + 2 * (third + 4), py, dw - 2 * (third + 4), 18, t.autopay() ? "Auto: on" : "Auto: off", () -> send(Act.of(Op.AUTOPAY).text(home.id()).flag(!t.autopay())));
+            auto.selected(t.autopay());
+            auto.active = auto.active && t.manage();
+            auto.tooltip(t.crewHome() ? "Each hour is paid from the Crew bank when it falls due. Needs the right to spend Crew money." : "Each hour is paid from your wallet when it falls due. If you cannot pay, it simply becomes unpaid; nothing is taken.");
+            if (sourceChoice(t)) {
+                btn("source", dx, py - 20, dw, 16, fromBank ? "Pay from: Crew bank" : "Pay from: my wallet", () -> { fromBank = !fromBank; build(); })
+                    .kind(UcButton.Kind.CHIP).accent(UcUi.AMBER).tooltip("Where Pay takes the credits from. Anyone in the Crew can pay a Crew home from their own wallet.");
+            }
+        }
+        // upgrades: only an owner can improve a home
+        if (t.tenure().equals("OWN") && !view.upgrades().isEmpty()) {
+            int uy = upgradeTop(t);
+            for (int i = 0; i < view.upgrades().size(); i++) {
+                CrewView.UpgradeRow up = view.upgrades().get(i);
+                boolean fitted = java.util.Arrays.asList(t.upgrades().split(",")).contains(up.id());
+                int index = i;
+                UcButton buy = btn("upgrade_" + i, dx + dw - UPGRADE_BTN - 2, uy + i * UPGRADE_H, UPGRADE_BTN, UPGRADE_H - 2, fitted ? "Fitted" : "Fit", () -> send(Act.of(Op.UPGRADE).text(home.id()).amount(index).flag2(bankSource)));
+                buy.active = buy.active && !fitted && t.manage() && view.moneyReady() && funds(bankSource) >= up.cost() && !t.standing().equals("LAPSED");
+                buy.tooltip(fitted ? "Already fitted." : up.cost() + " credits from " + (bankSource ? "the Crew bank" : "your wallet") + ". " + up.summary());
+            }
         }
     }
 
-    private void renderHome(GuiGraphics g) {
-        UcUi.display(g, font, "Your homes", cx, cy + 4, UcUi.SOFT);
-        int y = cy + 18;
-        if (view.homes().isEmpty()) {
-            UcUi.text(g, font, "You and your Crew hold no home yet.", cx, y + 4, UcUi.FAINT);
-            y += ROW;
+    /** Whether the home's page offers the choice of paying from the Crew bank or from the wallet. */
+    private boolean sourceChoice(CrewView.Tenancy t) {
+        return t.billed() && t.crewHome() && view.inCrew() && view.can(Perm.SPEND) && !view.effectiveMode().equals(Mode.SEPARATE.name());
+    }
+
+    /** The top of the footer (leave row, pay row and, for a Crew home, the pay-from chip) in the detail column. */
+    private int footTop(CrewView.Tenancy t) {
+        int top = cy + ch - 20;
+        if (t.billed()) top -= 22;
+        if (sourceChoice(t)) top -= 20;
+        return top;
+    }
+
+    /** Where the upgrade rows start in the detail column. */
+    private int upgradeTop(CrewView.Tenancy t) { return footTop(t) - 4 - view.upgrades().size() * UPGRADE_H; }
+
+    private static final int UPGRADE_H = 17, UPGRADE_BTN = 42;
+
+    private boolean findHasChoices() { return view.inCrew() && view.can(Perm.MANAGE_PROPERTY); }
+
+    /** Where the first offer card starts: below the tabs, and below the for/pay chips when there are any. */
+    private int findTop() { return cy + (findHasChoices() ? 42 : 24); }
+
+    private void buildFind() {
+        // who it is for and where the money comes from
+        int y = cy + 22;
+        if (findHasChoices()) {
+            btn("for_toggle", cx, y, 120, 16, forCrew ? "For: the Crew" : "For: me", () -> { forCrew = !forCrew; if (!forCrew) fromBank = false; build(); })
+                .kind(UcButton.Kind.CHIP).accent(UcUi.LEGAL).tooltip("A Crew home belongs to the Crew; a personal home stays yours when you leave or the Crew ends.");
+            if (forCrew && view.can(Perm.SPEND) && !view.effectiveMode().equals(Mode.SEPARATE.name())) {
+                btn("src_toggle", cx + 124, y, 140, 16, fromBank ? "Pay: Crew bank" : "Pay: my wallet", () -> { fromBank = !fromBank; build(); })
+                    .kind(UcButton.Kind.CHIP).accent(UcUi.AMBER).tooltip("The Crew bank pays for Crew homes; you can also pay from your own wallet.");
+            }
         }
-        for (CrewView.HomeRow home : view.homes()) {
-            g.fill(cx, y, cx + cw, y + ROW - 2, UcUi.ROW);
-            UcUi.icon(g, UcUi.Icon.KEY, cx + 4, y + 3, home.here() ? UcUi.OK : UcUi.DIM);
-            UcUi.text(g, font, UcUi.fit(font, home.title(), cw - 190), cx + 24, y + 3, UcUi.TEXT);
-            UcUi.text(g, font, capitalize(home.kind()) + "  at " + home.where() + (home.mine() > 0 ? "  |  " + home.mine() + " private" : ""), cx + 24, y + 12, UcUi.DIM);
-            String owner = home.owner().toUpperCase(Locale.ROOT);
-            int w = UcUi.displayWidth(font, owner) + 8;
-            UcUi.chip(g, font, owner, cx + cw - w - 6, y + 5, home.owner().equals("Crew") ? UcUi.AMBER : UcUi.LEGAL, null);
-            y += ROW;
+        int per = offersPerPage();
+        int pages = Math.max(1, (view.nearby().size() + per - 1) / per);
+        findPage = Math.min(findPage, pages - 1);
+        if (pages > 1) {
+            btn("find_prev", cx + cw - 56, cy + 22, 22, 16, "<", () -> { findPage = Math.max(0, findPage - 1); build(); }).kind(UcButton.Kind.CHIP).active = findPage > 0;
+            btn("find_next", cx + cw - 24, cy + 22, 22, 16, ">", () -> { findPage = Math.min(pages - 1, findPage + 1); build(); }).kind(UcButton.Kind.CHIP).active = findPage < pages - 1;
         }
-        int ny = y + 46;
-        UcUi.display(g, font, "Homes for lease nearby", cx, ny - 17, UcUi.SOFT);
-        if (view.nearby().isEmpty()) {
-            UcUi.wrapped(g, font, "No unleased home within 64 blocks. Homes are finite: each is leased once, for credits.", cx, ny, cw, UcUi.FAINT, 3);
-        }
-        for (int i = 0; i < view.nearby().size(); i++) {
+        int top = findTop();
+        for (int i = findPage * per; i < Math.min(view.nearby().size(), (findPage + 1) * per); i++) {
             CrewView.LeaseRow lease = view.nearby().get(i);
-            int row = ny + i * ROW;
-            g.fill(cx, row - 2, cx + cw, row + ROW - 4, i % 2 == 0 ? UcUi.ROW : 0xff111c27);
-            UcUi.text(g, font, UcUi.fit(font, lease.title(), cw - 250), cx + 4, row + 1, UcUi.TEXT);
-            UcUi.icon(g, UcUi.Icon.CREDITS, cx + 4, row + 8, UcUi.AMBER);
-            UcUi.text(g, font, lease.price() + " credits" + (lease.starter() ? "  starter price" : "") + "  " + lease.distance() + " m", cx + 22, row + 12, lease.starter() ? UcUi.OK : UcUi.AMBER);
+            CrewView.Offer o = lease.offer();
+            int row = top + (i - findPage * per) * OFFER_H;
+            boolean bank = forCrew && fromBank;
+            if (o.canRent()) {
+                long total = o.welcome() ? 0 : o.deposit() + o.rent();
+                UcButton rent = btn("rent_" + i, cx + cw - 128, row + 4, 60, 18, "Rent", () -> send(Act.of(Op.RENT).text(lease.id()).flag(forCrew).flag2(bank)));
+                rent.active = rent.active && (total == 0 || view.moneyReady() && funds(bank) >= total) && (!forCrew || view.can(Perm.MANAGE_PROPERTY));
+                rent.tooltip(o.welcome() ? "The city's welcome: the first " + view.rules().welcomeCycles() + " hours are free, no deposit."
+                    : total + " credits now: " + o.deposit() + " deposit (returned when you move out) and the first hour, " + o.rent() + ". Then " + o.rent() + " an hour of play.");
+            }
+            if (o.canBuy()) {
+                UcButton buy = btn("buy_" + i, cx + cw - 64, row + 4, 60, 18, "Buy", () -> send(Act.of(Op.LEASE).text(lease.id()).flag(forCrew).flag2(bank)));
+                buy.active = buy.active && view.moneyReady() && funds(bank) >= lease.price() && (!forCrew || view.can(Perm.MANAGE_PROPERTY)) && (!bank || view.can(Perm.SPEND));
+                buy.tooltip(lease.price() + " credits, once" + (o.upkeep() > 0 ? ", then " + o.upkeep() + " an hour of play in upkeep" : "") + ". Owning lets you fit upgrades and sell the home back for " + view.rules().sellBackPercent() + "% of the price.");
+            }
         }
+    }
+
+    private static final int OFFER_H = 64;
+
+    private int offersPerPage() { return Math.max(1, (ch - (findTop() - cy) - 4) / OFFER_H); }
+
+    private void renderHome(GuiGraphics g) {
+        if (homeTab == 0) renderMine(g); else renderFind(g);
+    }
+
+    private static int standingColor(String standing) {
+        return switch (standing) { case "LAPSED" -> UcUi.UNDERGROUND; case "NOTICE" -> UcUi.WARN; case "OVERDUE" -> UcUi.AMBER; default -> UcUi.OK; };
+    }
+
+    private static String standingWords(String standing) {
+        return switch (standing) { case "LAPSED" -> "LAPSED"; case "NOTICE" -> "FINAL NOTICE"; case "OVERDUE" -> "OVERDUE"; default -> "PAID UP"; };
+    }
+
+    /** One entry of the home's detail, with its icon, on up to {@code maxLines} lines; nothing is drawn that would not end above {@code limit}. Returns the y of the next entry. */
+    private int note(GuiGraphics g, UcUi.Icon icon, int iconColor, String text, int x, int y, int w, int color, int limit, int maxLines) {
+        if (y + 9 > limit) return y;
+        int lines = Math.max(1, Math.min(maxLines, (limit - y + 2) / 12));
+        if (icon != null) UcUi.icon(g, icon, x, y - 1, iconColor);
+        int end = UcUi.wrapped(g, font, text, x + (icon != null ? 18 : 0), y, w - (icon != null ? 18 : 0), color, lines);
+        return Math.max(end, y + 10) + 2;
+    }
+
+    private void renderMine(GuiGraphics g) {
+        int lw = homeListW(), dx = cx + lw + 8, dw = cw - lw - 8;
+        UcUi.display(g, font, "Your homes", cx, cy + 22, UcUi.SOFT);
+        if (view.homes().isEmpty()) {
+            UcUi.wrapped(g, font, "You hold no home yet. Open Find a home beside one: a motel room costs almost nothing, and the first hours are the city's.", cx, cy + 38, cw, UcUi.FAINT, 4);
+            return;
+        }
+        int y = cy + 22;
+        for (CrewView.HomeRow h : view.homes()) {
+            boolean sel = h.id().equals(selectedHome);
+            g.fill(cx, y + 10, cx + lw, y + 10 + HROW - 4, sel ? 0xff1f3a52 : UcUi.ROW);
+            if (sel) g.fill(cx, y + 10, cx + 3, y + 10 + HROW - 4, UcUi.LEGAL);
+            UcUi.icon(g, UcUi.Icon.KEY, cx + 6, y + 15, h.here() ? UcUi.OK : UcUi.DIM);
+            UcUi.text(g, font, UcUi.fit(font, h.title(), lw - 30), cx + 24, y + 14, UcUi.TEXT);
+            CrewView.Tenancy t = h.tenancy();
+            String line = h.owner().equals("Crew") ? "Crew" : "You";
+            line += t.rented() ? "  rented" : t.tenure().equals("OWN") ? "  owned" : "";
+            UcUi.text(g, font, UcUi.fit(font, line, lw - 30), cx + 24, y + 24, t.billed() && !t.standing().equals("CURRENT") ? standingColor(t.standing()) : UcUi.DIM);
+            y += HROW;
+        }
+        CrewView.HomeRow home = chosenHome();
+        CrewView.Tenancy t = home.tenancy();
+        boolean upgradable = t.tenure().equals("OWN") && !view.upgrades().isEmpty();
+        // the detail runs from the top; the upgrades (if any) and the buttons are fixed to the bottom, so what is drawn above them stops where they begin
+        int limit = (upgradable ? upgradeTop(t) : footTop(t)) - 4;
+        int ty = cy + 22;
+        int chipRight = cx + cw;
+        String tenure = t.rented() ? "RENTED" : "OWNED";
+        int w1 = UcUi.displayWidth(font, tenure) + 10;
+        int chipsLeft = chipRight - w1;
+        UcUi.chip(g, font, tenure, chipsLeft, ty - 2, t.rented() ? UcUi.LEGAL : UcUi.AMBER, null);
+        if (t.billed()) {
+            String standing = standingWords(t.standing());
+            int w2 = UcUi.displayWidth(font, standing) + 10;
+            chipsLeft -= 4 + w2;
+            UcUi.chip(g, font, standing, chipsLeft, ty - 2, standingColor(t.standing()), null);
+        }
+        UcUi.display(g, font, UcUi.fit(font, home.title(), Math.max(40, chipsLeft - dx - 6)), dx, ty, UcUi.TEXT);
+        ty += 14;
+        String where = (t.category().isEmpty() ? capitalize(home.kind()) : t.category()) + (t.area().isEmpty() ? "" : ", " + t.area());
+        ty = note(g, null, 0, where + "  |  " + home.where(), dx, ty, dw, UcUi.DIM, limit, 1);
+        if (t.billed()) {
+            ty = note(g, UcUi.Icon.CREDITS, UcUi.AMBER, (t.rented() ? "Rent " : "Upkeep ") + t.charge() + " credits an hour of play", dx, ty, dw, UcUi.TEXT, limit, 1);
+            if (t.arrears() > 0) {
+                int color = standingColor(t.standing());
+                ty = note(g, UcUi.Icon.WARNING, color, "Unpaid: " + t.arrears() + " h = " + t.owed() + " credits. " + (t.standing().equals("LAPSED") ? "Your things are safe; pay to restore the home."
+                    : t.standing().equals("NOTICE") ? "Pay within the hour of play or the home lapses." : "Grace period: nothing is lost."), dx, ty, dw, color, limit, 2);
+            } else {
+                ty = note(g, UcUi.Icon.CLOCK, UcUi.OK, (t.prepaid() > 0 ? "Paid ahead " + t.prepaid() + " h. Next due in " : "Next payment in ") + hours(t.minutes()) + ".", dx, ty, dw, UcUi.SOFT, limit, 1);
+            }
+            if (t.rented() && t.deposit() > 0) ty = note(g, null, 0, "Deposit " + t.deposit() + " credits, back when you move out.", dx, ty, dw, UcUi.DIM, limit, 1);
+        } else {
+            ty = note(g, UcUi.Icon.CHECK, UcUi.OK, t.legacy() ? "Bought before rent existed: no charge, ever." : "No rent or upkeep.", dx, ty, dw, UcUi.SOFT, limit, 1);
+        }
+        ty = note(g, null, 0, "Containers " + (t.maxContainers() > 0 ? t.containers() + " of " + t.maxContainers() : "no limit") + "  |  private " + t.claimsMine() + " of " + t.claimsMax() + " each", dx, ty, dw, UcUi.SOFT, limit, 1);
+        ty = note(g, null, 0, "Has: " + (t.facilities().isEmpty() ? "nothing listed" : t.facilities()), dx, ty, dw, UcUi.DIM, limit, 2);
+        ty = note(g, null, 0, "Lives here: " + t.residents(), dx, ty, dw, UcUi.DIM, limit, 1);
+        if (upgradable) {
+            int uy = upgradeTop(t);
+            for (int i = 0; i < view.upgrades().size(); i++) {
+                CrewView.UpgradeRow up = view.upgrades().get(i);
+                boolean fitted = java.util.Arrays.asList(t.upgrades().split(",")).contains(up.id());
+                int row = uy + i * UPGRADE_H;
+                g.fill(dx, row, dx + dw, row + UPGRADE_H - 2, UcUi.ROW);
+                UcUi.icon(g, fitted ? UcUi.Icon.CHECK : UcUi.Icon.GEAR, dx + 2, row, fitted ? UcUi.OK : UcUi.DIM);
+                String cost = up.cost() + " cr";
+                int costRight = dx + dw - UPGRADE_BTN - 6;
+                UcUi.text(g, font, UcUi.fit(font, up.title(), costRight - font.width(cost) - 6 - (dx + 19)), dx + 19, row + 3, fitted ? UcUi.OK : UcUi.TEXT);
+                UcUi.textRight(g, font, cost, costRight, row + 3, fitted ? UcUi.DIM : UcUi.AMBER);
+            }
+        } else if (t.rented()) {
+            ty = note(g, null, 0, "Upgrades are for homes you own. Buying also ends the rent.", dx, ty + 2, dw, UcUi.FAINT, limit, 2);
+        }
+        if (!t.tenure().equals("OWN") && !t.receipts().isEmpty() && limit - ty >= 12) {
+            UcUi.text(g, font, fitSegments("Last: " + t.receipts().get(0), dw), dx, limit - 8, UcUi.FAINT);
+        }
+    }
+
+    /** A receipt's leading segments (they are separated by two spaces) that fit the width: a receipt is cut between its parts, never in the middle of a word. */
+    private String fitSegments(String text, int width) {
+        StringBuilder out = new StringBuilder();
+        for (String part : text.split("  ")) {
+            String next = out.length() == 0 ? part : out + "  " + part;
+            if (font.width(next) > width) break;
+            out = new StringBuilder(next);
+        }
+        return out.length() == 0 ? UcUi.fit(font, text, width) : out.toString();
+    }
+
+    private void renderFind(GuiGraphics g) {
+        int per = offersPerPage();
+        if (view.nearby().isEmpty()) {
+            UcUi.wrapped(g, font, "No home on offer within 64 blocks. Each home is held by one person or Crew at a time: stand beside the Row Motel or the Row Flats.", cx, findTop() + 4, cw, UcUi.FAINT, 3);
+            return;
+        }
+        int top = findTop();
+        int textW = cw - 140;
+        for (int i = findPage * per; i < Math.min(view.nearby().size(), (findPage + 1) * per); i++) {
+            CrewView.LeaseRow lease = view.nearby().get(i);
+            CrewView.Offer o = lease.offer();
+            int row = top + (i - findPage * per) * OFFER_H;
+            UcUi.card(g, cx, row, cw, OFFER_H - 4, 0);
+            int titleW = Math.min(font.width(lease.title()), textW - 80);
+            UcUi.text(g, font, UcUi.fit(font, lease.title(), titleW), cx + 8, row + 5, UcUi.TEXT);
+            if (!o.category().isEmpty()) {
+                String category = UcUi.fit(font, o.category().toUpperCase(Locale.ROOT), Math.max(40, textW - titleW - 22));
+                UcUi.chip(g, font, category, cx + 8 + titleW + 6, row + 3, UcUi.LEGAL, null);
+            }
+            // one line for renting and one for buying: neither is cut short
+            int ty = row + 16;
+            if (o.canRent()) {
+                String rent = o.welcome() ? "Rent " + o.rent() + "/h. The first " + view.rules().welcomeCycles() + " hours are free." : "Rent " + o.rent() + "/h, deposit " + o.deposit();
+                UcUi.icon(g, UcUi.Icon.CREDITS, cx + 6, ty - 2, UcUi.AMBER);
+                UcUi.text(g, font, UcUi.fit(font, rent, textW - 20), cx + 24, ty, UcUi.AMBER);
+                ty += 11;
+            }
+            if (o.canBuy()) {
+                String buy = "Buy " + lease.price() + (lease.starter() ? " (starter price)" : "") + (o.upkeep() > 0 ? ", upkeep " + o.upkeep() + "/h" : ", no upkeep");
+                if (!o.canRent()) UcUi.icon(g, UcUi.Icon.CREDITS, cx + 6, ty - 2, UcUi.AMBER);
+                UcUi.text(g, font, UcUi.fit(font, buy, textW - 20), cx + 24, ty, UcUi.AMBER);
+                ty += 11;
+            }
+            String extra = o.summary().isEmpty() ? capitalize(lease.kind()) + ", " + lease.distance() + " m away" : o.summary();
+            int lines = Math.max(1, (row + OFFER_H - 5 - (ty + 1)) / 10);
+            UcUi.wrapped(g, font, extra, cx + 8, ty + 1, textW, UcUi.DIM, Math.min(2, lines));
+            if (o.factor() != 100) UcUi.text(g, font, "prices x" + String.format(Locale.ROOT, "%.2f", o.factor() / 100.0), cx + cw - 128, row + 28, UcUi.FAINT);
+        }
+        int pages = Math.max(1, (view.nearby().size() + per - 1) / per);
+        if (pages > 1) UcUi.textRight(g, font, (findPage + 1) + " / " + pages, cx + cw - 62, cy + 26, UcUi.FAINT);
     }
 
     // ---- RULES
@@ -630,8 +886,8 @@ public final class CrewScreen extends UcScreen {
             UcUi.wrapped(g, font, "Register as a citizen first: choose your city and trade at the registrar in Founders Row or with /uc start. Then come back.", px + PAD, cy + 6, pw - 2 * PAD, UcUi.SOFT, 4);
             return;
         }
-        if (!view.inCrew()) { renderNoCrew(g); return; }
         UcUi.well(g, px + PAD - 2, cy - 2, railW + 4, ch + 4);
+        if (!view.inCrew() && page == Page.CREW) { renderNoCrew(g); return; }
         switch (page) {
             case CREW -> renderCrew(g, mouseX, mouseY);
             case MONEY -> renderMoney(g, mouseX, mouseY);
@@ -642,6 +898,13 @@ public final class CrewScreen extends UcScreen {
 
     @Override public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (super.mouseClicked(mouseX, mouseY, button)) return true;
+        if (page == Page.HOME && homeTab == 0) {
+            int y = cy + 22;
+            for (CrewView.HomeRow home : view.homes()) {
+                if (mouseX >= cx && mouseX < cx + homeListW() && mouseY >= y && mouseY < y + HROW - 2) { selectedHome = home.id(); confirmLeave = ""; build(); return true; }
+                y += HROW;
+            }
+        }
         if (view.inCrew() && page == Page.CREW) {
             int y = cy + 18, lw = listW();
             for (CrewView.MemberRow m : view.members()) {
@@ -670,6 +933,8 @@ public final class CrewScreen extends UcScreen {
         if (message != null && !message.isEmpty()) note = message;
         busy = false;
         if (selected != null && member(selected) == null) selected = null;
+        if (!selectedHome.isEmpty() && home(selectedHome) == null) { selectedHome = ""; confirmLeave = ""; }
+        if (old.homes().size() != next.homes().size()) confirmLeave = "";
         if (!old.inCrew() && next.inCrew()) page = Page.CREW;
         if (old.inCrew() && !next.inCrew()) { page = Page.CREW; rulesTab = 0; }
         if (old.disbandArmed() && !next.disbandArmed()) confirmBox.setValue("");
@@ -693,6 +958,12 @@ public final class CrewScreen extends UcScreen {
     public void showPage(Page next) { page = next; build(); }
     public void showRulesTab(int tab) { rulesTab = tab; build(); }
     public void select(UUID member) { selected = member; build(); }
+    /** QA hooks for the Home page: its tab (0 your homes, 1 find a home) and which held home is shown. */
+    public void showHomeTab(int tab) { homeTab = tab; build(); }
+    public void selectHome(String id) { selectedHome = id; build(); }
+    /** QA hooks: who a home found on the Find tab would be for, and where its money would come from. */
+    public boolean forCrewChosen() { return forCrew; }
+    public boolean fromBankChosen() { return fromBank; }
     public EditBox nameField() { return nameBox; }
     public EditBox amountField() { return amountBox; }
     public EditBox confirmField() { return confirmBox; }

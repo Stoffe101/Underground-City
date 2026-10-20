@@ -37,6 +37,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.piston.PistonStructureResolver;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraftforge.common.Tags;
@@ -79,6 +80,11 @@ public final class ResidenceGuard {
     /** Blocks that count as a workstation inside a home. Data: {@code data/underground_city/tags/blocks/residence_workstations.json}. */
     public static final TagKey<Block> WORKSTATIONS = TagKey.create(Registries.BLOCK, ResourceLocation.fromNamespaceAndPath(UndergroundCity.MOD_ID, "residence_workstations"));
 
+    /** The heavy workstations (anvils, smithing table, grindstone, brewing stand, enchanting table, gun tables): a home needs the workshop facility to hold or use them (D-099). */
+    public static final TagKey<Block> HEAVY_WORKSTATIONS = TagKey.create(Registries.BLOCK, ResourceLocation.fromNamespaceAndPath(UndergroundCity.MOD_ID, "residence_heavy_workstations"));
+    /** Furnaces, blast furnaces and smokers: a home needs the furnace facility. Every other workstation of the tag above needs the crafting facility. */
+    public static final TagKey<Block> FURNACES = TagKey.create(Registries.BLOCK, ResourceLocation.fromNamespaceAndPath(UndergroundCity.MOD_ID, "residence_furnaces"));
+
     /** Blocks that move items between containers by themselves (hoppers, droppers, dispensers). Data: {@code tags/blocks/residence_transfer_blocks.json}. */
     public static final TagKey<Block> TRANSFER_BLOCKS = TagKey.create(Registries.BLOCK, ResourceLocation.fromNamespaceAndPath(UndergroundCity.MOD_ID, "residence_transfer_blocks"));
     /** Entities that hold or display someone's things. Data: {@code tags/entity_types/residence_protected_entities.json}; anything that is a container is protected too. */
@@ -91,14 +97,39 @@ public final class ResidenceGuard {
     // ------------------------------------------------------------------------------------------------------------ decisions
 
     /** What a player may do in a home right now. */
-    public static Rights rights(CrewLedger ledger, Residence r, UUID player) {
+    public static Rights rights(CrewLedger ledger, Residence r, UUID player) { return rights(ledger, r, player, true); }
+
+    /** The same, optionally as if the home had not lapsed: what the person's role would allow in a home in good standing. */
+    static Rights rights(CrewLedger ledger, Residence r, UUID player, boolean honourLapse) {
         if (!r.owned() || r.reservedBy != null) return Rights.NONE;
-        if (r.ownerType == OwnerType.PLAYER) return r.owner.equals(player) ? Rights.ALL : guest(ledger, r, player);
+        // A lapsed tenancy keeps the door and the containers (to take things out) and loses the comforts: building and workstations (D-099).
+        boolean lapsed = honourLapse && r.billed() && r.standing(PropertyCatalog.INSTANCE.rules()) == PropertyRules.Standing.LAPSED;
+        if (r.ownerType == OwnerType.PLAYER) return r.owner.equals(player) ? (lapsed ? new Rights(true, false, true, false) : Rights.ALL) : guest(ledger, r, player);
         Crew crew = ledger.crew(r.owner);
         if (crew == null) return Rights.NONE;
         if (crew.roleOf(player) == null) return guest(ledger, r, player);
         boolean access = crew.can(player, Perm.ACCESS_HOME);
+        if (lapsed) return new Rights(access, false, access && crew.can(player, Perm.STORAGE), false);
         return new Rights(access, access && crew.can(player, Perm.BUILD), access && crew.can(player, Perm.STORAGE), access && crew.can(player, Perm.WORKSTATIONS));
+    }
+
+    /** The facility a block needs a home to have, or null for a block that needs none. */
+    static String facilityNeeded(BlockState state) {
+        if (state.is(HEAVY_WORKSTATIONS)) return "workshop";
+        if (state.is(FURNACES)) return "furnace";
+        if (state.is(WORKSTATIONS)) return "crafting";
+        return null;
+    }
+
+    static boolean hasFacility(Residence r, String facility) { return PropertyService.facilities(r).contains(facility); }
+
+    static String noFacility(Residence r, String facility) {
+        return switch (facility) {
+            case "workshop" -> "This home has no workshop space for heavy workstations (anvil, smithing table, grindstone, brewing stand, gun tables). Rent a workshop home, or fit the Workshop upgrade to one you own.";
+            case "furnace" -> "This home has no furnace corner.";
+            case "plumbing" -> "This home has no running water. Water may only be placed in a home with the Running water upgrade.";
+            default -> "This home has no space for a crafting station.";
+        };
     }
 
     private static Rights guest(CrewLedger ledger, Residence r, UUID player) {
@@ -127,6 +158,18 @@ public final class ResidenceGuard {
             case WORKSTATION -> rights.workstations();
             case EXPLODE -> false;
         };
+    }
+
+    /**
+     * A furnace, a smoker, a blast furnace and a brewing stand are workstations and also hold things. When the home's comforts are withdrawn (it has lapsed) or it never had the
+     * facility (a home from an older save), the resident may still open such a block to take their things out: otherwise a move-out, which is refused while anything is stored,
+     * could never happen. Building, anvils, crafting tables and every other workstation stay locked, and what a person's role forbids stays forbidden.
+     */
+    static boolean takeOutOnly(CrewLedger ledger, Residence r, UUID player, BlockState state) {
+        boolean lapsedOut = rights(ledger, r, player, false).workstations() && !rights(ledger, r, player).workstations();
+        String need = facilityNeeded(state);
+        boolean withoutFacility = need != null && !hasFacility(r, need) && rights(ledger, r, player).workstations();
+        return lapsedOut || withoutFacility;
     }
 
     /** What the player is touching, from the block (workstations first: a furnace is also a container). */
@@ -235,7 +278,27 @@ public final class ResidenceGuard {
         } else if (!transferRuleAllows(ledger, r, player.getUUID(), level, event.getPos(), event.getPlacedBlock())) {
             event.setCanceled(true);
             tell(player, "A hopper, dropper or dispenser beside somebody's storage could empty it. You need the right to use shared storage, or the container must be yours.");
+        } else if (r.insideInterior(dim, event.getPos())) {
+            String need = facilityNeeded(event.getPlacedBlock());
+            if (need != null && !hasFacility(r, need)) {
+                event.setCanceled(true);
+                tell(player, noFacility(r, need));
+            } else if (isContainerBlock(level, event.getPos(), event.getPlacedBlock()) && PropertyService.containerCount(level, r) > PropertyService.maxContainers(r)) {
+                event.setCanceled(true);
+                tell(player, "This home holds at most " + PropertyService.maxContainers(r) + " containers (chests, barrels, backpacks, machines with storage). Fit the storage upgrade or take one out.");
+            }
         }
+    }
+
+    /** A container that was just placed: any block entity with storage, or one of the usual storage blocks before its block entity exists. */
+    static boolean isContainerBlock(ServerLevel level, BlockPos pos, BlockState placed) {
+        if (placed.is(WORKSTATIONS) || placed.is(TRANSFER_BLOCKS)) return false;   // a furnace or a hopper holds items but is not a place to keep things
+        return isContainer(level.getBlockEntity(pos)) || placed.is(Tags.Blocks.CHESTS) || placed.is(Tags.Blocks.BARRELS);
+    }
+
+    /** Storage proper: a container that is not a workstation or a hopper. These are what a home's container limit counts. */
+    public static boolean isStorage(BlockEntity entity) {
+        return entity != null && isContainer(entity) && !entity.getBlockState().is(WORKSTATIONS) && !entity.getBlockState().is(TRANSFER_BLOCKS);
     }
 
     @SubscribeEvent
@@ -253,13 +316,31 @@ public final class ResidenceGuard {
                 deny(event, player, refusal(ledger, home, Act.PLACE));
                 return;
             }
+            if (home != null && home.insideInterior(dim, target) && event.getItemStack().getItem() instanceof BucketItem bucket) {
+                String why = fluidRefusal(home, bucket);
+                if (why != null) { deny(event, player, why); return; }
+            }
         }
         Residence r = ledger.residenceAt(dim, pos);
         if (r == null) return;
         BlockState state = level.getBlockState(pos);
-        Act act = classify(state, level.getBlockEntity(pos));
+        var touched = level.getBlockEntity(pos);
+        Act act = classify(state, touched);
+        if (act == Act.WORKSTATION && isContainer(touched) && r.insideInterior(dim, pos) && takeOutOnly(ledger, r, player.getUUID(), state)) act = Act.CONTAINER;
         // An ender chest is the player's own; sitting on a bed, reading a sign and the like are plain interactions.
-        if (!allowed(ledger, r, player.getUUID(), dim, pos, act)) deny(event, player, refusal(ledger, r, act));
+        if (!allowed(ledger, r, player.getUUID(), dim, pos, act)) { deny(event, player, refusal(ledger, r, act)); return; }
+        if (act == Act.WORKSTATION && r.insideInterior(dim, pos)) {
+            String need = facilityNeeded(state);
+            if (need != null && !hasFacility(r, need)) deny(event, player, noFacility(r, need));
+        }
+    }
+
+    /** Lava never goes in a home; water only where the home has running water. Null when the bucket is fine (or empty). */
+    static String fluidRefusal(Residence home, BucketItem bucket) {
+        if (bucket.getFluid() == Fluids.EMPTY) return null;
+        if (bucket.getFluid().isSame(Fluids.LAVA)) return "Lava is not allowed inside a home.";
+        if (bucket.getFluid().isSame(Fluids.WATER) && !hasFacility(home, "plumbing")) return noFacility(home, "plumbing");
+        return null;
     }
 
     private static void deny(PlayerInteractEvent.RightClickBlock event, ServerPlayer player, String words) {
@@ -349,6 +430,10 @@ public final class ResidenceGuard {
                 event.setCanceled(true);
                 tell(player, refusal(ledger, r, Act.PLACE));
                 return;
+            }
+            if (r != null && r.insideInterior(dim, pos) && event.getEmptyBucket().getItem() instanceof BucketItem bucket) {
+                String why = fluidRefusal(r, bucket);
+                if (why != null) { event.setCanceled(true); tell(player, why); return; }
             }
         }
     }

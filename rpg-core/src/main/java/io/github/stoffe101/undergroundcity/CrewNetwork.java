@@ -30,7 +30,8 @@ public final class CrewNetwork {
     /** Every request the screen can make. The order is the wire format: append only. */
     public enum Op {
         REFRESH, CREATE, INVITE, ACCEPT, DECLINE, WITHDRAW_INVITE, LEAVE, KICK, SET_ROLE, TRANSFER, CLAIM_LEAD, RENAME, PERMISSION, MODE, CONSENT, PAY_OUT,
-        DISBAND_ASK, DISBAND, DEPOSIT, WITHDRAW, CLAIM_OWED, LEASE, CLAIM_CONTAINER, RELEASE_CONTAINER
+        DISBAND_ASK, DISBAND, DEPOSIT, WITHDRAW, CLAIM_OWED, LEASE, CLAIM_CONTAINER, RELEASE_CONTAINER,
+        RENT, PAY, AUTOPAY, MOVE_OUT, SELL_BACK, UPGRADE, HAND_TO_CREW, HAND_TO_FOUNDER
     }
 
     /** One request: {@code text}, {@code target}, {@code amount} and {@code flag} mean what the operation says (see {@link CrewActions}). */

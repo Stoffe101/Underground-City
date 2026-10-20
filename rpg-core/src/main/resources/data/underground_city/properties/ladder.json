@@ -1,0 +1,295 @@
+{
+  "schema_version": 1,
+  "note": "The property ladder (D-099): how homes are rented and bought. Terms live here and not in the district files, so a datapack can retune a price without rebuilding a street. The geometry of a home (where it is, what is in it) comes from the district's `residence` operation; this file says what it costs and what it allows. scripts/economy_model.py reads this same file.",
+  "rules": {
+    "cycle_minutes": 60,
+    "prepay_max_cycles": 6,
+    "grace_cycles": 2,
+    "notice_cycles": 1,
+    "deposit_cycles": 2,
+    "sell_back_percent": 60,
+    "welcome_motel_cycles": 2,
+    "retrieval": "A lapsed home is never emptied, re-let or deleted: its tenant keeps the door and every container, loses only the comfort of the home (building and workstations) until the arrears are paid, and may move out at any time.",
+    "city_price_factor": {
+      "ironhaven": 1.15,
+      "valewood": 0.9,
+      "blackwater": 1.0
+    },
+    "city_price_note": "Applied to rent, deposit and purchase price at the moment of signing, by the city circle that contains the home (CityRegions); a home outside every circle, like the development Row, costs the listed price. Location only moves the price; it never changes what a home allows.",
+    "upgrades_owners_only": true
+  },
+  "categories": [
+    {
+      "id": "motel_room",
+      "tier": 1,
+      "title": "Motel room",
+      "built": true,
+      "rent_hint": 10,
+      "buy_hint": 0
+    },
+    {
+      "id": "small_apartment",
+      "tier": 2,
+      "title": "Small apartment",
+      "built": true,
+      "rent_hint": 40,
+      "buy_hint": 2000
+    },
+    {
+      "id": "comfortable_apartment",
+      "tier": 3,
+      "title": "Comfortable apartment",
+      "built": false,
+      "rent_hint": 55,
+      "buy_hint": 3000
+    },
+    {
+      "id": "large_apartment",
+      "tier": 4,
+      "title": "Larger apartment",
+      "built": false,
+      "rent_hint": 70,
+      "buy_hint": 4200
+    },
+    {
+      "id": "small_house",
+      "tier": 5,
+      "title": "Small house",
+      "built": false,
+      "rent_hint": 85,
+      "buy_hint": 5400
+    },
+    {
+      "id": "workshop_house",
+      "tier": 6,
+      "title": "House with workshop",
+      "built": true,
+      "rent_hint": 100,
+      "buy_hint": 7000
+    },
+    {
+      "id": "farmhouse",
+      "tier": 7,
+      "title": "Farmhouse",
+      "built": false,
+      "rent_hint": 115,
+      "buy_hint": 8500
+    },
+    {
+      "id": "commercial_workshop",
+      "tier": 8,
+      "title": "Commercial workshop",
+      "built": false,
+      "rent_hint": 135,
+      "buy_hint": 10500
+    },
+    {
+      "id": "warehouse",
+      "tier": 9,
+      "title": "Warehouse or production facility",
+      "built": false,
+      "rent_hint": 170,
+      "buy_hint": 14000
+    },
+    {
+      "id": "premium_residence",
+      "tier": 10,
+      "title": "Premium residence",
+      "built": false,
+      "rent_hint": 260,
+      "buy_hint": 28000
+    }
+  ],
+  "listings": [
+    {
+      "id": "row_motel:motel_1",
+      "title": "Row Motel Room 1",
+      "category": "motel_room",
+      "area": "Row Motel",
+      "tenures": [
+        "rent"
+      ],
+      "rent": 10,
+      "deposit": 0,
+      "buy_price": 0,
+      "upkeep": 0,
+      "max_containers": 2,
+      "private_claims": 1,
+      "facilities": [
+        "bed",
+        "storage",
+        "terminal"
+      ],
+      "summary": "A bed, a barrel and the home terminal. The cheapest roof in the city, and the first two hours are the city's welcome."
+    },
+    {
+      "id": "row_motel:motel_2",
+      "title": "Row Motel Room 2",
+      "category": "motel_room",
+      "area": "Row Motel",
+      "tenures": [
+        "rent"
+      ],
+      "rent": 10,
+      "deposit": 0,
+      "buy_price": 0,
+      "upkeep": 0,
+      "max_containers": 2,
+      "private_claims": 1,
+      "facilities": [
+        "bed",
+        "storage",
+        "terminal"
+      ],
+      "summary": "A bed, a barrel and the home terminal."
+    },
+    {
+      "id": "row_motel:motel_3",
+      "title": "Row Motel Room 3",
+      "category": "motel_room",
+      "area": "Row Motel",
+      "tenures": [
+        "rent"
+      ],
+      "rent": 10,
+      "deposit": 0,
+      "buy_price": 0,
+      "upkeep": 0,
+      "max_containers": 2,
+      "private_claims": 1,
+      "facilities": [
+        "bed",
+        "storage",
+        "terminal"
+      ],
+      "summary": "A bed, a barrel and the home terminal."
+    },
+    {
+      "id": "row_motel:motel_4",
+      "title": "Row Motel Room 4",
+      "category": "motel_room",
+      "area": "Row Motel",
+      "tenures": [
+        "rent"
+      ],
+      "rent": 10,
+      "deposit": 0,
+      "buy_price": 0,
+      "upkeep": 0,
+      "max_containers": 2,
+      "private_claims": 1,
+      "facilities": [
+        "bed",
+        "storage",
+        "terminal"
+      ],
+      "summary": "A bed, a barrel and the home terminal."
+    },
+    {
+      "id": "row_flats:flat_1",
+      "title": "Row Flat 1",
+      "category": "small_apartment",
+      "area": "Row Flats",
+      "tenures": [
+        "rent",
+        "buy"
+      ],
+      "rent": 40,
+      "deposit": 80,
+      "buy_price": 2000,
+      "upkeep": 8,
+      "max_containers": 5,
+      "private_claims": 2,
+      "facilities": [
+        "bed",
+        "storage",
+        "crafting",
+        "furnace",
+        "terminal"
+      ],
+      "summary": "A real kitchen corner and room for light production: a crafting table, a furnace and five containers."
+    },
+    {
+      "id": "row_flats:flat_2",
+      "title": "Row Flat 2",
+      "category": "small_apartment",
+      "area": "Row Flats",
+      "tenures": [
+        "rent",
+        "buy"
+      ],
+      "rent": 40,
+      "deposit": 80,
+      "buy_price": 2000,
+      "upkeep": 8,
+      "max_containers": 5,
+      "private_claims": 2,
+      "facilities": [
+        "bed",
+        "storage",
+        "crafting",
+        "furnace",
+        "terminal"
+      ],
+      "summary": "A real kitchen corner and room for light production: a crafting table, a furnace and five containers."
+    },
+    {
+      "id": "row_flats:row_house",
+      "title": "Row House",
+      "category": "workshop_house",
+      "area": "Row Flats",
+      "tenures": [
+        "rent",
+        "buy"
+      ],
+      "rent": 100,
+      "deposit": 200,
+      "buy_price": 7000,
+      "upkeep": 20,
+      "max_containers": 10,
+      "private_claims": 3,
+      "facilities": [
+        "bed",
+        "storage",
+        "crafting",
+        "furnace",
+        "terminal",
+        "workshop"
+      ],
+      "summary": "Two beds, ten containers and the workshop corner: smithing table, anvil, grindstone and brewing stand."
+    }
+  ],
+  "upgrades": [
+    {
+      "id": "secure_storage",
+      "title": "Locking storage racks",
+      "cost": 260,
+      "add_containers": 3,
+      "add_private_claims": 1,
+      "add_facilities": [],
+      "summary": "Three more containers fit and each resident may keep one more of them private. The racks are fitted at once; you place the chests."
+    },
+    {
+      "id": "workshop_bench",
+      "title": "Workshop fit-out",
+      "cost": 600,
+      "add_containers": 0,
+      "add_private_claims": 0,
+      "add_facilities": [
+        "workshop"
+      ],
+      "summary": "The home may hold and use heavy workstations: anvil, smithing table, grindstone, brewing stand and gun tables."
+    },
+    {
+      "id": "plumbing",
+      "title": "Running water",
+      "cost": 320,
+      "add_containers": 0,
+      "add_private_claims": 0,
+      "add_facilities": [
+        "plumbing"
+      ],
+      "summary": "Water may be placed inside the home: a sink, a cistern, irrigated beds for a greenhouse. Lava never."
+    }
+  ]
+}

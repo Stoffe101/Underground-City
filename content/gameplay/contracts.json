@@ -90,7 +90,7 @@
       "legality": "legal",
       "requires_skill": "farmer.controlled_crop_licence",
       "buyer": "blackwater_dispensary",
-      "credits": 200,
+      "credits": 225,
       "xp": 400,
       "requirements": [
         {
@@ -110,7 +110,7 @@
       "trust_gain": 1,
       "capacity": 2,
       "refill_ticks": 18000,
-      "credits": 220,
+      "credits": 237,
       "xp": 380,
       "requirements": [
         {
@@ -132,7 +132,7 @@
       "trust_gain": 1,
       "capacity": 1,
       "refill_ticks": 24000,
-      "credits": 440,
+      "credits": 474,
       "xp": 600,
       "requirements": [
         {
@@ -410,7 +410,7 @@
       "trust_gain": 1,
       "capacity": 1,
       "refill_ticks": 24000,
-      "credits": 220,
+      "credits": 205,
       "xp": 300,
       "requirements": [
         {
@@ -472,7 +472,7 @@
       "trust_gain": 1,
       "capacity": 1,
       "refill_ticks": 24000,
-      "credits": 330,
+      "credits": 310,
       "xp": 450,
       "requirements": [
         {

@@ -50,6 +50,12 @@ public final class TerminalScreen extends UcScreen {
     // the skill tree, laid out once per snapshot and size: node cards by index
     private int[] nodeX = new int[0], nodeY = new int[0], nodeTier = new int[0], nodeCol = new int[0];
     private int nodeW, nodeH = NODE_H;
+    // the tree scrolls when it is deeper than the page: the viewport, how far it is scrolled and the end of the content, all in GUI pixels
+    private static final int SCROLLBAR_ROOM = 7;
+    private int treeTop, treeBottom, skillScroll, skillMaxScroll, skillStep = NODE_H + 7;
+    private boolean draggingTree;
+    private double dragFromY;
+    private int dragFromScroll;
 
     public TerminalScreen() { this(null, TerminalData.offline(), null); }
     public TerminalScreen(BlockPos position, TerminalData data) { this(position, data, null); }
@@ -204,8 +210,13 @@ public final class TerminalScreen extends UcScreen {
     /** QA hook: pick a skill node by id. */
     public void selectSkill(String id) {
         for (int i = 0; i < data.skills().size(); i++) if (data.skills().get(i).id().equals(id)) selectedSkill = i;
+        revealSelectedSkill();
         refresh();
     }
+    /** QA hook: scroll the skill tree to a pixel offset (clamped), as the wheel or a drag would. */
+    public void scrollSkillsTo(int pixels) { skillScroll = snapScroll(pixels); }
+    /** QA hook: how far the tree can scroll (0 when it fits). */
+    public int skillScrollRange() { return skillMaxScroll; }
     TerminalData snapshot() { return data; }
 
     private static Page pageOf(String name) {
@@ -373,8 +384,6 @@ public final class TerminalScreen extends UcScreen {
         Map<String, Integer> index = new HashMap<>();
         for (int i = 0; i < n; i++) index.put(data.skills().get(i).id(), i);
         int gap = 6;
-        int colW = (cw - 2 * gap) / 3;
-        nodeW = colW;
         for (int i = 0; i < n; i++) nodeTier[i] = depth(i, index, 0);
         // A node sits one row below its lowest parent and never on the row of another node in its own column, so two skills that follow the same
         // parent are stacked instead of drawn on top of each other (the second one used to be hidden).
@@ -395,15 +404,47 @@ public final class TerminalScreen extends UcScreen {
             lastInColumn[col] = r;
             maxRow = Math.max(maxRow, r);
         }
-        int treeTop = cy + 16, treeH = ch - 16 - 68;
-        // Up to five rows keep the full node (two title lines and the state); a deeper tree gets shorter nodes with one title line rather than a scroll.
-        nodeH = Math.max(24, Math.min(NODE_H, (treeH - 3 * maxRow) / (maxRow + 1)));
-        int step = Math.max(nodeH + 3, Math.min(42, (treeH - nodeH) / Math.max(1, maxRow)));
+        treeTop = cy + 16; treeBottom = cy + ch - 68;
+        int viewH = treeBottom - treeTop;
+        // Nodes keep their full height (two title lines and the state). A tree that is deeper than the page is scrolled, never squeezed: the viewport clips it.
+        nodeH = NODE_H;
+        int fitStep = maxRow == 0 ? NODE_H + 7 : (viewH - nodeH) / maxRow;
+        skillStep = Math.max(NODE_H + 6, Math.min(42, fitStep));
+        int contentH = maxRow * skillStep + nodeH;
+        // the tree scrolls one row at a time, so a card is never cut in half at the top; the last stop leaves a little room below the final row
+        int rawScroll = Math.max(0, contentH - viewH);
+        skillMaxScroll = (rawScroll + skillStep - 1) / skillStep * skillStep;
+        // a scroll bar takes the right edge of the page: the columns then stop short of it instead of running under it
+        int colW = (cw - (skillMaxScroll > 0 ? SCROLLBAR_ROOM : 0) - 2 * gap) / 3;
+        nodeW = colW;
         for (int i = 0; i < n; i++) {
             nodeX[i] = cx + nodeCol[i] * (colW + gap);
-            nodeY[i] = treeTop + row[i] * step;
+            nodeY[i] = treeTop + row[i] * skillStep;
         }
+        skillScroll = snapScroll(skillScroll);
+        revealSelectedSkill();
     }
+
+    /** The scroll offset nearest to the pixels asked for that lies on a row boundary, within the tree's range. */
+    private int snapScroll(int pixels) {
+        return Math.max(0, Math.min(skillMaxScroll, Math.round(pixels / (float) skillStep) * skillStep));
+    }
+
+    /** Scrolls the tree, a whole row at a time, just far enough that the chosen node is fully inside the viewport. */
+    private void revealSelectedSkill() {
+        if (nodeY.length == 0 || selectedSkill < 0 || selectedSkill >= nodeY.length) return;
+        int top = nodeY[selectedSkill] - skillScroll, bottom = top + nodeH;
+        if (top < treeTop) skillScroll = snapScroll(nodeY[selectedSkill] - treeTop);
+        else if (bottom > treeBottom) {
+            int needed = nodeY[selectedSkill] + nodeH - treeBottom;
+            skillScroll = Math.min(skillMaxScroll, (needed + skillStep - 1) / skillStep * skillStep);
+        }
+        skillScroll = Math.max(0, Math.min(skillScroll, skillMaxScroll));
+    }
+
+    private void scrollSkills(int pixels) { skillScroll = snapScroll(skillScroll + pixels); }
+
+    private boolean inTree(double mouseX, double mouseY) { return current == Page.SKILLS && mouseX >= cx && mouseX < cx + cw && mouseY >= treeTop && mouseY < treeBottom; }
 
     private int depth(int i, Map<String, Integer> index, int guard) {
         if (guard > 8) return 0;
@@ -415,12 +456,16 @@ public final class TerminalScreen extends UcScreen {
         return best;
     }
 
-    private int branchColor(TerminalData.SkillRow row) { return row.branch().equals("underground") ? UcUi.UNDERGROUND : row.branch().equals("legal") ? UcUi.LEGAL : UcUi.SOFT; }
+    private int branchColor(TerminalData.SkillRow row) {
+        return row.branch().equals("underground") ? UcUi.UNDERGROUND : row.branch().equals("legal") ? UcUi.LEGAL
+            : row.branch().equals("crossover") ? UcUi.mix(UcUi.LEGAL, UcUi.UNDERGROUND, 0.5f) : UcUi.SOFT;
+    }
 
     private int skillAt(double mouseX, double mouseY) {
-        if (current != Page.SKILLS) return -1;
+        if (!inTree(mouseX, mouseY)) return -1;
         for (int i = 0; i < nodeX.length; i++) {
-            if (mouseX >= nodeX[i] && mouseX < nodeX[i] + nodeW && mouseY >= nodeY[i] && mouseY < nodeY[i] + nodeH) return i;
+            int y = nodeY[i] - skillScroll;
+            if (mouseX >= nodeX[i] && mouseX < nodeX[i] + nodeW && mouseY >= y && mouseY < y + nodeH) return i;
         }
         return -1;
     }
@@ -441,19 +486,32 @@ public final class TerminalScreen extends UcScreen {
             int job = jobAt(mouseX, mouseY);
             if (job >= 0) { selected = job; refresh(); return true; }
             int skill = skillAt(mouseX, mouseY);
-            if (skill >= 0) { selectedSkill = skill; refresh(); return true; }
+            if (skill >= 0) { selectedSkill = skill; revealSelectedSkill(); refresh(); return true; }
+            if (inTree(mouseX, mouseY) && skillMaxScroll > 0) { draggingTree = true; dragFromY = mouseY; dragFromScroll = skillScroll; return true; }
         }
         return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    @Override public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
+        if (draggingTree) { skillScroll = Math.max(0, Math.min(skillMaxScroll, dragFromScroll - (int) Math.round(mouseY - dragFromY))); return true; }
+        return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
+    }
+
+    @Override public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        if (draggingTree) { draggingTree = false; skillScroll = snapScroll(skillScroll); return true; }
+        return super.mouseReleased(mouseX, mouseY, button);
     }
 
     @Override public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
         if (current == Page.CONTRACTS) { jobScroll = Math.max(0, Math.min(jobScroll - (int) Math.signum(delta), Math.max(0, jobs().size() - visibleRows()))); return true; }
         if (current == Page.IMPORTS) { offerScroll = Math.max(0, offerScroll - (int) Math.signum(delta)); layoutOffers(); return true; }
+        if (current == Page.SKILLS && skillMaxScroll > 0) { scrollSkills(-(int) Math.signum(delta) * skillStep); return true; }
         return super.mouseScrolled(mouseX, mouseY, delta);
     }
 
     @Override public boolean keyPressed(int key, int scan, int modifiers) {
         if (key >= 49 && key <= 53) { showPage(Page.values()[key - 49]); return true; }
+        if (current == Page.SKILLS && (key == 264 || key == 265)) { scrollSkills((key == 264 ? 1 : -1) * skillStep); return true; }
         if (current == Page.CONTRACTS && (key == 264 || key == 265)) {
             int size = jobs().size();
             if (size > 0) { selected = Math.max(0, Math.min(size - 1, selected + (key == 264 ? 1 : -1))); ensureVisible(); refresh(); }
@@ -596,7 +654,7 @@ public final class TerminalScreen extends UcScreen {
         }
         // column headings
         int gap = 6, colW = nodeW;
-        String[] titles = {"Legal", "Foundation", "Underground"};
+        String[] titles = {"Legal", "Trade", "Underground"};
         int[] colors = {UcUi.LEGAL, UcUi.SOFT, UcUi.UNDERGROUND};
         UcUi.Icon[] icons = {UcUi.Icon.LEGAL, null, UcUi.Icon.UNDERGROUND};
         for (int c = 0; c < 3; c++) {
@@ -605,6 +663,8 @@ public final class TerminalScreen extends UcScreen {
             UcUi.display(g, font, titles[c], x + 2 + (icons[c] != null ? 14 : 0), cy + 2, colors[c]);
             if (icons[c] != null) UcUi.icon(g, icons[c], x - 2, cy - 2, colors[c]);
         }
+        // the tree is clipped to its viewport and scrolled; the headings above and the detail panel below stay put
+        g.enableScissor(cx - 2, treeTop - 1, cx + cw + 2, treeBottom + 1);
         // links first, so nodes sit on top: thin and muted, brighter when the parent is owned, amber on the way to the selected skill
         Map<String, Integer> index = new HashMap<>();
         for (int i = 0; i < data.skills().size(); i++) index.put(data.skills().get(i).id(), i);
@@ -618,7 +678,7 @@ public final class TerminalScreen extends UcScreen {
                     boolean lit = data.skills().get(p).state() == 2;
                     int color = selectedLink ? UcUi.AMBER : lit ? UcUi.shade(branchColor(data.skills().get(i)), 0.7f) : 0xff2c4358;
                     int t = selectedLink ? 2 : 1;
-                    int x0 = nodeX[p] + nodeW / 2, y0 = nodeY[p] + nodeH, x1 = nodeX[i] + nodeW / 2, y1 = nodeY[i];
+                    int x0 = nodeX[p] + nodeW / 2, y0 = nodeY[p] - skillScroll + nodeH, x1 = nodeX[i] + nodeW / 2, y1 = nodeY[i] - skillScroll;
                     int mid = y1 - 5;
                     g.fill(x0, y0, x0 + t, mid + t, color);
                     g.fill(Math.min(x0, x1), mid, Math.max(x0, x1) + t, mid + t, color);
@@ -627,13 +687,29 @@ public final class TerminalScreen extends UcScreen {
             }
         }
         int hover = skillAt(mouseX, mouseY);
-        for (int i = 0; i < data.skills().size(); i++) renderNode(g, i, i == selectedSkill, i == hover);
+        for (int i = 0; i < data.skills().size(); i++) {
+            int top = nodeY[i] - skillScroll;
+            if (top + nodeH < treeTop || top > treeBottom) continue;   // not in view
+            renderNode(g, i, i == selectedSkill, i == hover);
+        }
+        g.disableScissor();
+        if (skillMaxScroll > 0) {
+            // a thin scroll bar on the right edge and a hint while there is more below
+            int track = treeBottom - treeTop, thumb = Math.max(14, track * track / (track + skillMaxScroll));
+            int thumbY = treeTop + (int) ((long) (track - thumb) * skillScroll / skillMaxScroll);
+            g.fill(cx + cw - 3, treeTop, cx + cw - 1, treeBottom, 0xff16222d);
+            g.fill(cx + cw - 3, thumbY, cx + cw - 1, thumbY + thumb, draggingTree ? UcUi.AMBER : UcUi.SOFT);
+            // the hint sits in the empty end of the middle heading, never over a heading or a card
+            String hint = skillScroll < skillMaxScroll ? "More below" : "More above";
+            int hintRight = cx + colW + gap + colW - 4;
+            UcUi.text(g, font, hint, hintRight - font.width(hint), cy + 3, UcUi.DIM);
+        }
         renderSkillDetail(g);
     }
 
     private void renderNode(GuiGraphics g, int i, boolean sel, boolean over) {
         TerminalData.SkillRow row = data.skills().get(i);
-        int x = nodeX[i], y = nodeY[i], w = nodeW, h = nodeH;
+        int x = nodeX[i], y = nodeY[i] - skillScroll, w = nodeW, h = nodeH;
         int color = branchColor(row);
         int fill = row.state() == 2 ? UcUi.mix(0xff0d1620, color, 0.26f) : row.state() == 1 ? 0xff182b3b : 0xff111a24;
         int border = row.state() == 2 ? UcUi.shade(color, 0.9f) : row.state() == 1 ? color : 0xff22323f;
@@ -641,7 +717,8 @@ public final class TerminalScreen extends UcScreen {
         g.fill(x, y, x + w, y + h, border);
         g.fill(x + 1, y + 1, x + w - 1, y + h - 1, fill);
         g.fill(x + 1, y + 1, x + 25, y + h - 1, 0xff0a121a);
-        UcUi.Icon icon = row.branch().equals("underground") ? UcUi.Icon.UNDERGROUND : row.branch().equals("legal") ? UcUi.Icon.LEGAL : UcUi.careerIcon(data.career());
+        UcUi.Icon icon = row.branch().equals("underground") ? UcUi.Icon.UNDERGROUND : row.branch().equals("legal") ? UcUi.Icon.LEGAL
+            : row.branch().equals("crossover") ? UcUi.Icon.SCALES : UcUi.careerIcon(data.career());
         UcUi.icon(g, icon, x + 5, y + 7, row.state() == 0 ? UcUi.FAINT : color);
         // the full name on up to two lines, then the state: never a truncated skill name
         List<String> lines = UcUi.wrapLines(font, row.title(), w - 32);
@@ -662,7 +739,9 @@ public final class TerminalScreen extends UcScreen {
         UcUi.display(g, font, UcUi.fit(font, row.title(), cw - 160), cx + 10, y + 6, color);
         String meta = row.state() == 2 ? "Unlocked" : row.cost() + (row.cost() == 1 ? " point" : " points") + "  |  level " + row.minLevel();
         UcUi.text(g, font, meta, cx + 10, y + 17, row.state() == 2 ? UcUi.OK : UcUi.AMBER);
-        UcUi.wrapped(g, font, row.description(), cx + 10, y + 29, cw - 156, UcUi.SOFT, 3);
+        boolean hasEffects = !row.effects().isEmpty();
+        UcUi.wrapped(g, font, row.description(), cx + 10, y + 29, cw - 156, UcUi.SOFT, hasEffects ? 2 : 3);
+        if (hasEffects) UcUi.wrapped(g, font, row.effects(), cx + 10, y + 49, cw - 156, row.state() == 2 ? UcUi.OK : UcUi.AMBER, 1);
         String note = row.state() == 2 ? "" : !row.reason().isEmpty() ? row.reason() : "Ready to unlock";
         if (!note.isEmpty()) {
             int nx = cx + cw - 8 - 130;

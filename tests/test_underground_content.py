@@ -21,7 +21,7 @@ import validate_underground_balance as balance  # noqa: E402
 DATA = ROOT / "rpg-core/src/main/resources/data/underground_city"
 CAREERS = ("farmer", "vintner", "smith", "gunsmith", "technician")
 CITIES = ("ironhaven", "valewood", "blackwater")
-BRANCHES = {"core", "legal", "underground", "utility"}
+BRANCHES = {"core", "legal", "underground", "utility", "crossover"}
 
 
 def load(name):
@@ -73,6 +73,73 @@ class SkillTreeTests(unittest.TestCase):
             self.assertTrue(first_underground, career)
             for node in first_underground:
                 self.assertTrue(node["requires"], f"{node['id']} must build on a legal or foundation skill")
+
+    def test_the_legal_line_never_needs_a_crime_and_a_crossover_joins_both(self):
+        # D-098: a character who only follows the law reaches every legal, foundation and utility skill; a crossover needs a legal and an underground skill.
+        for career, tree in self.trees.items():
+            nodes = {n["id"]: n for n in tree["nodes"]}
+
+            def ancestors(node_id, seen=None):
+                seen = set() if seen is None else seen
+                for required in nodes[node_id]["requires"]:
+                    if required not in seen:
+                        seen.add(required)
+                        ancestors(required, seen)
+                return seen
+
+            for node in nodes.values():
+                lineage = {nodes[a]["branch"] for a in ancestors(node["id"])}
+                if node["branch"] in ("legal", "core"):
+                    self.assertNotIn("underground", lineage, f"{node['id']} is a {node['branch']} skill that needs a crime")
+                if node["branch"] == "crossover":
+                    parents = {nodes[r]["branch"] for r in node["requires"]}
+                    self.assertGreaterEqual(len(node["requires"]), 2, node["id"])
+                    self.assertIn("legal", parents, f"{node['id']} needs a legal skill")
+                    self.assertTrue("underground" in parents or "underground" in lineage, f"{node['id']} needs an underground skill")
+            self.assertTrue(any(n["branch"] == "crossover" for n in nodes.values()), f"{career} has no crossover skill")
+            self.assertGreaterEqual(sum(1 for n in nodes.values() if n["requires"] and len(n["requires"]) >= 2), 3, f"{career}: the tree should have several multi-prerequisite skills")
+
+    def test_percentage_effects_have_one_consumer_each_and_stay_inside_their_ceilings(self):
+        # the whole-tree ceilings are SkillNode.MAX_*; the per-node ceilings are SkillRules.validateTree
+        ceilings = {"legal_payout_percent": 12, "underground_payout_percent": 12, "yield_percent": 40, "upgrade_discount_percent": 20}
+        per_node = {"legal_payout_percent": 6, "underground_payout_percent": 6, "yield_percent": 30, "upgrade_discount_percent": 15}
+        for career, tree in self.trees.items():
+            for key, ceiling in ceilings.items():
+                self.assertLessEqual(sum(n["effects"].get(key, 0) for n in tree["nodes"]), ceiling, f"{career} {key}")
+                for n in tree["nodes"]:
+                    self.assertLessEqual(n["effects"].get(key, 0), per_node[key], f"{n['id']} {key}")
+            unknown = {k for n in tree["nodes"] for k in n["effects"]} - {"licences", "inspection_modifier", "exchange_discount", *ceilings}
+            self.assertFalse(unknown, f"{career}: effects nothing consumes: {unknown}")
+        # the yield effect has exactly one consumer, the Sable Leaf plant, so only the Farmer's tree may carry it
+        for career, tree in self.trees.items():
+            if career != "farmer":
+                self.assertFalse(any(n["effects"].get("yield_percent") for n in tree["nodes"]), career)
+
+    def test_a_skill_that_nothing_needs_does_something(self):
+        # D-098: no dead leaves. A skill is allowed to be only a stepping stone (the foundation of a tree, the entry of an underground line) when
+        # another skill builds on it; a skill nothing builds on must carry an effect, open a work order, or be one of the two skills Core code checks directly.
+        orders = load("work_orders")
+        gated = {o.get("requires_skill") for o in orders.values() if o.get("requires_skill")}
+        checked_in_code = {"farmer.restricted_cultivation", "technician.bypass_tooling"}   # RestrictedCuttingItem, SecureTerminalService
+        percent = ("legal_payout_percent", "underground_payout_percent", "yield_percent", "upgrade_discount_percent", "inspection_modifier", "exchange_discount", "licences")
+        for career, tree in self.trees.items():
+            needed = {r for n in tree["nodes"] for r in n["requires"]}
+            for node in tree["nodes"]:
+                if node["id"] in needed:
+                    continue
+                effective = any(node["effects"].get(k) for k in percent) or node["id"] in gated or node["id"] in checked_in_code
+                self.assertTrue(effective, f"{node['id']} is a dead leaf: nothing needs it and it does nothing")
+        # and the stepping stones are exactly the foundations plus the Vintner's still
+        stones = sorted(n["id"] for tree in self.trees.values() for n in tree["nodes"]
+                        if not any(n["effects"].get(k) for k in percent) and n["id"] not in gated and n["id"] not in checked_in_code)
+        self.assertEqual(stones, sorted([f"{c}.fundamentals" for c in CAREERS] + ["vintner.still_craft"]))
+
+    def test_the_utility_branch_is_more_than_a_discount(self):
+        for career, tree in self.trees.items():
+            utility = [n for n in tree["nodes"] if n["branch"] == "utility"]
+            self.assertGreaterEqual(len(utility), 1, career)
+        for career in ("vintner", "smith", "gunsmith", "technician"):
+            self.assertTrue(any(n["branch"] == "utility" and n["effects"].get("upgrade_discount_percent") for n in self.trees[career]["nodes"]), f"{career}: no home-trade utility skill")
 
     def test_effects_stay_inside_the_design_caps(self):
         for career, tree in self.trees.items():

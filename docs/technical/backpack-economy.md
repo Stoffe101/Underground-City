@@ -15,7 +15,7 @@ Both are in the opt-in **`survival`** set (with Thirst Was Taken 2, Farmer's Del
 
 ## What a player gets
 
-* **A basic pack early.** The leather backpack (27 slots, one upgrade slot, the size of a chest) is **sold in every city for 70 credits** (about three first work orders; at most four on the shelf, one every 45 minutes) and is craftable from 4 string, 4 leather and a wooden chest. String is a trade good in the simulation world ([monster-resources.md](monster-resources.md)).
+* **A basic pack early.** The leather backpack (27 slots, one upgrade slot, the size of a chest) is **sold in every city for 70 credits** (re-evaluated against the economy model in D-102 and kept: 15 to 38 minutes of a new citizen's income, about seven motel hours; at most four on the shelf, one every 45 minutes) and is craftable from 4 string, 4 leather and a wooden chest. String is a trade good in the simulation world ([monster-resources.md](monster-resources.md)).
 * **More room costs materials, not a trade-off menu.** Each tier is the previous pack ringed with the metal. Sizes are **at or below the mod's own defaults** and the generator refuses to exceed them:
 
 | Tier | Item | Slots | Upgrade slots | Made from | Mod default |
@@ -27,22 +27,22 @@ Both are in the opt-in **`survival`** set (with Thirst Was Taken 2, Farmer's Del
 | 5 | `diamond_backpack` | 72 | 3 | the gold pack and 8 diamonds | 108 / 5 |
 | 6 | `netherite_backpack` | 90 | 4 | the diamond pack, a netherite ingot and an upgrade template | 120 / 7 |
 
-* **Convenient, not overpowered.** Sixteen items are enabled, fifty-five are switched off, each with a stated reason in `content/gameplay/backpack-policy.json` (the single source). Summary:
+* **Convenient, not overpowered.** Twenty-one items are enabled, fifty are switched off (the October 20 re-evaluation, D-102, enabled five that were off), each with a stated reason in `content/gameplay/backpack-policy.json` (the single source). Summary:
 
 | Enabled | Why it is safe |
 | --- | --- |
-| pickup, filter, restock, deposit, crafting grid, jukebox | convenience; they move what the player already has, create nothing, and the crafting grid is the plain table everyone owns |
+| pickup, filter, restock, deposit, crafting grid, jukebox, and (D-102) the **advanced** pickup, filter, restock and deposit, and the **tool swapper** | convenience and organisation; they move what the player already has, create nothing, and the crafting grid is the plain table everyone owns. The advanced variants add filter slots and modes (a gold, redstone and for three of them a diamond cost around the basic upgrade); the magnet's range is unchanged; the deposit and restock packet gate checks the target container's rights for every tier. The tool swapper picks a tool already in the pack |
 | magnet (range 3, worn pack only) | picks up what you just dropped, not the street |
 | feeding | eats real food from the pack when hungry; works **only in a worn pack** (see the gate below); creates nothing |
 | stack upgrade, first tier only, **one per pack** | doubles stacks inside the pack for 72 copper ingots; the x4 and higher tiers are off |
 
-| Switched off (55 items) | Reason |
+| Switched off (50 items) | Reason |
 | --- | --- |
 | stack tiers above x2, conversions, downgrades | multiplying storage until supply and trips stop mattering |
 | smelting, smoking, blasting and their automatic versions, compacting, anvil, smithing, stonecutter, alchemy, tool swapper | portable workstations and automation: production belongs to workstations and places (the vision's crafting pillar) |
 | void, infinity, survival infinity, everlasting, inception, XP pump, battery, mob catcher | deletes items, creates supplies, nests packs, or has no place in the economy |
 | tank and pump | fluids beside Thirst Was Taken 2's water purity are untested: deferred, not rejected |
-| every "advanced" variant | larger range and more filter slots are a later, deliberate decision |
+| the remaining "advanced" variants (magnet, feeding, void, refill, jukebox, compacting, alchemy, tool swapper, mob catcher, pump) | the larger magnet range would trivialise loot pickup; the others advance upgrades that are themselves off or untested |
 
 * **Server settings (new worlds start from them):** no other player can open the pack you wear; carrying more than two packs slows you (slowness, one level per extra pack); only the worn pack runs automatic upgrades; no container items (shulker boxes) and no packs inside packs; **no mobs wearing backpacks** (a backpack is made or bought, never farmed); no backpack loot in vanilla chests; the mod's duplicate-contents check stays on; the item fluid handler stays off (the mod itself warns that it can duplicate).
 

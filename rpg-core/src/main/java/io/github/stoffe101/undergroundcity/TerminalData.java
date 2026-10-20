@@ -32,10 +32,14 @@ public record TerminalData(String city, String career, int level, int xp, double
     public record Offer(String id, String item, int price, int stock, int capacity, int maxOrder) {}
     /** One node of the career tree. state: 0 locked, 1 can be unlocked now, 2 unlocked. */
     public record SkillRow(String id, String branch, String title, String description, int cost, int minLevel,
-                           int state, String reason, List<String> requires, String shortTitle) {
+                           int state, String reason, List<String> requires, String shortTitle, String effects) {
+        public SkillRow(String id, String branch, String title, String description, int cost, int minLevel,
+                        int state, String reason, List<String> requires, String shortTitle) {
+            this(id, branch, title, description, cost, minLevel, state, reason, requires, shortTitle, "");
+        }
         public SkillRow(String id, String branch, String title, String description, int cost, int minLevel,
                         int state, String reason, List<String> requires) {
-            this(id, branch, title, description, cost, minLevel, state, reason, requires, title);
+            this(id, branch, title, description, cost, minLevel, state, reason, requires, title, "");
         }
     }
     /** One guided-journey milestone: done or not, with the terminal page (a {@link TerminalScreen.Page} name, or empty) that helps. */
@@ -90,11 +94,12 @@ public record TerminalData(String city, String career, int level, int xp, double
         }
         final WorkOrder acceptedOrder = accepted;
         List<WorkOrder> jobs = new ArrayList<>(WorkOrderCatalog.INSTANCE.forCareer(citizen.career));
+        jobs.removeIf(job -> job.maxLevel() > 0 && citizen.careerLevel() > job.maxLevel()); // apprentice orders fade out; an accepted one is re-added below
         if (acceptedOrder != null) {
             jobs.removeIf(job -> job.id().equals(acceptedOrder.id())); jobs.add(0, acceptedOrder);
         }
         List<Row> rows = jobs.stream().limit(wayside ? 0 : MAX_ROWS).map(job -> new Row(job.id(), job.title(), job.level(),
-            job.credits(), job.xp(), ledger.available(job), acceptedOrder != null && job.id().equals(acceptedOrder.id()),
+            SkillService.payout(citizen, job), job.xp(), ledger.available(job), acceptedOrder != null && job.id().equals(acceptedOrder.id()),
             job.foreignVisits(), job.requirements().stream().map(req -> new Req(req.item().toString(), req.count(),
                 player.getInventory().items.stream().filter(stack -> job.matches(req, stack)).mapToInt(stack -> stack.getCount()).sum(), req.label())).toList(),
             extra(job, citizen, ledger, player))).toList();
@@ -136,7 +141,7 @@ public record TerminalData(String city, String career, int level, int xp, double
             int state = citizen.skills().contains(node.id()) ? 2 : blocker == null ? 1 : 0;
             List<String> requires = node.requires();   // ids; the screen resolves names and draws the links
             rows.add(new SkillRow(node.id(), node.branch(), node.title(), node.description(), node.cost(), node.minLevel(),
-                state, state == 2 || blocker == null ? "" : blocker, requires, node.shortTitle()));
+                state, state == 2 || blocker == null ? "" : blocker, requires, node.shortTitle(), node.effectSummary()));
         }
         return rows.stream().limit(MAX_SKILLS).toList();
     }
@@ -190,6 +195,7 @@ public record TerminalData(String city, String career, int level, int xp, double
             buf.writeVarInt(row.requires.size());
             for (String requirement : row.requires) buf.writeUtf(requirement, 48);
             buf.writeUtf(row.shortTitle, 48); // a node without a short title sends its full title (at most 40)
+            buf.writeUtf(row.effects, 140);
         }
         buf.writeVarInt(contacts.size());
         for (Contact contact : contacts) {
@@ -246,7 +252,7 @@ public record TerminalData(String city, String career, int level, int xp, double
             if (required < 0 || required > 4) throw new IllegalArgumentException("Invalid prerequisite count");
             List<String> requires = new ArrayList<>();
             for (int r = 0; r < required; r++) requires.add(buf.readUtf(48));
-            skills.add(new SkillRow(id, branch, skillTitle, description, cost, minLevel, state, reason, List.copyOf(requires), buf.readUtf(48)));
+            skills.add(new SkillRow(id, branch, skillTitle, description, cost, minLevel, state, reason, List.copyOf(requires), buf.readUtf(48), buf.readUtf(140)));
         }
         int contactCount = buf.readVarInt();
         if (contactCount < 0 || contactCount > MAX_CONTACTS) throw new IllegalArgumentException("Invalid contact count");

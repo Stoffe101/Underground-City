@@ -5,8 +5,9 @@
   "level": 2,
   "item": "minecraft:repeater",
   "count": 4,
-  "credits": 80,
+  "credits": 68,
   "xp": 180,
   "capacity": 4,
-  "refill_ticks": 6000
+  "refill_ticks": 6000,
+  "max_level": 6
 }

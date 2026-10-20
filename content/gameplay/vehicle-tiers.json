@@ -1,0 +1,115 @@
+{
+  "schema_version": 1,
+  "status": "tiers are a PLANNING table (October 20, 2026); two dealer lines are implemented as data and GameTested with the real Modern Life items; nothing here has been driven, ridden or sold by a person",
+  "disclaimer": "What a vehicle or a boat costs, why, and how it is acquired (D-101). The prices are the model's, not a player's: price = the larger of 1.8 times the raw materials a player could gather and the active hours of a level-appropriate wage the tier is meant to take, checked by tests/test_vehicle_tiers.py and the economy model (scripts/economy_model.py). Run scripts/generate_vehicle_supply.py to regenerate the dealer lines (data/underground_city/regional_stock/vehicles/). FUEL, REPAIR AND INSURANCE ARE NOT IMPLEMENTED and nothing here claims them: a vehicle that needs fuel in survival has no supply of fuel in this project yet.",
+  "pricing_rule": {
+    "materials_multiple_floor": 1.8,
+    "iron_value_credits": 7.7,
+    "note": "The raw-materials value of a craftable item is its iron-ingot equivalent (an iron block is nine ingots, a nugget a ninth) times iron_value_credits, plus a stated allowance for the rest. A dealer never sells for less than 1.8 times that, so buying is never cheaper than making and making never earns more than the dealer charges."
+  },
+  "tiers": [
+    {
+      "tier": 1,
+      "id": "bicycle",
+      "title": "Bicycle",
+      "examples": ["modernlife:bicycle_item"],
+      "mod": "modernlife",
+      "acquisition": "dealer",
+      "implemented": true,
+      "materials": {"iron_ingot_equivalent": 1.56, "allowance_credits": 18, "recipe": "1 iron ingot, 3 iron nuggets, 2 tires (4 black wool and a nugget each)", "value_credits": 30},
+      "target_level": 2,
+      "target_active_hours": 0.25,
+      "price": 60,
+      "note": "Human powered, needs no fuel. The first thing worth saving for after a backpack; makes the road between the cities a pleasant walk's worth faster."
+    },
+    {
+      "tier": 2,
+      "id": "motorboat",
+      "title": "Motorboat",
+      "examples": ["modernlife:motorboat_item"],
+      "mod": "modernlife",
+      "acquisition": "dealer",
+      "implemented": true,
+      "materials": {"iron_ingot_equivalent": 28, "allowance_credits": 24, "recipe": "3 iron blocks, 1 iron ingot, 1 redstone block, 1 glass pane", "value_credits": 240},
+      "target_level": 5,
+      "target_active_hours": 1.5,
+      "price": 600,
+      "note": "The short water crossing between Valewood and Blackwater (D-048) and a 27-slot hold (D-077 searches it). Sold in Valewood only, one at a time, and scarce; or crafted from about 28 iron. Whether it needs fuel was not audited and is not claimed."
+    },
+    {
+      "tier": 3,
+      "id": "quad",
+      "title": "Quad",
+      "examples": ["mts:mtsofficialpack.quad_red", "mts:mtsofficialpack.quad_tan", "mts:mtsofficialpack.quad_green"],
+      "mod": "mts",
+      "acquisition": "bench",
+      "implemented": false,
+      "materials": null,
+      "target_level": 8,
+      "target_active_hours": 3.5,
+      "price": 1450,
+      "note": "PROPOSED price. Immersive Vehicles builds a vehicle at its own Vehicle Bench from parts that the pack defines; the bench recipe is vanilla (planks, a lectern, a writable book) but the vehicle's parts and their materials are inside the pack and were not priced in this pass. Not sold by a dealer. Needs fuel, which this project does not supply."
+    },
+    {
+      "tier": 4,
+      "id": "small_car",
+      "title": "Small car",
+      "examples": ["mts:oamp.cagouille_*", "mts:oamp.escargot_*", "mts:mtsofficialpack.e500_*"],
+      "mod": "mts",
+      "acquisition": "bench",
+      "implemented": false,
+      "materials": null,
+      "target_level": 10,
+      "target_active_hours": 8,
+      "price": 3400,
+      "note": "PROPOSED price. About the cost of a bought flat: a household's first big purchase after the flat."
+    },
+    {
+      "tier": 5,
+      "id": "large_car",
+      "title": "Large car or van",
+      "examples": ["mts:oamp.camaro_*", "mts:oamp.vwbus_*", "mts:oamp.highwayman_*", "mts:oamp.luxorama_*", "mts:oamp.stationmerc_*", "mts:mtsofficialpack.fordmustang69_*", "mts:mtsofficialpack.merc230_*", "mts:mtsofficialpack.scout_*"],
+      "mod": "mts",
+      "acquisition": "bench",
+      "implemented": false,
+      "materials": null,
+      "target_level": 12,
+      "target_active_hours": 20,
+      "price": 8800,
+      "note": "PROPOSED price. Longer than the workshop house: the long-term vehicle goal."
+    },
+    {
+      "tier": 6,
+      "id": "truck",
+      "title": "Truck or bus",
+      "examples": ["mts:mtsofficialpack.gmcbrig_*", "mts:mtsofficialpack.firetruck", "mts:oamp.ecoline"],
+      "mod": "mts",
+      "acquisition": "bench",
+      "implemented": false,
+      "materials": null,
+      "target_level": 12,
+      "target_active_hours": 30,
+      "price": 13000,
+      "note": "PROPOSED price. A business asset (cargo, a crew), not a toy."
+    }
+  ],
+  "excluded": [
+    {"families": ["bell206", "bell47g", "comanche", "mc172", "pzl37los", "pzlp11", "skyhawk", "trimotor", "vulcanair"], "kind": "aircraft", "why": "A three-city region is crossed in minutes on the ground (D-048); aircraft would remove the road, the checkpoint and the ferry. Three of these are military (an attack helicopter, a bomber, a fighter)."},
+    {"families": ["ft17"], "kind": "tank", "why": "An armoured vehicle has no place in a living-world economy with a police force that has no answer to it."},
+    {"families": ["mtsofficialpack weapon parts and ammunition"], "kind": "weapons", "why": "The pack ships 24 gun-type parts (machine guns, turrets, bomb racks and rocket pods, but also spotlights and spray cans: ItemPartGun) and 24 kinds of bullet, bomb, rocket, flare and paint (ItemBullet). They are not blocked by this pass; whether the Vehicle Bench may build the weapons is an OPEN owner decision recorded in the roadmap."}
+  ],
+  "audit": {
+    "date": "2026-10-20",
+    "how": "VehicleAuditGameTests prints the registry of the running mods; run with -PucPack=vehicles,boats. Immersive Vehicles registers every item of its packs in one builder class (mcinterface1201.BuilderItem); the wrapped object says what it is.",
+    "immersive_vehicles_items": {"ItemVehicle": 244, "ItemPartGeneric": 91, "ItemPartSeat": 37, "ItemItem": 38, "ItemInstrument": 34, "ItemPartInteractable": 30, "ItemPoleComponent": 30, "ItemDecor": 29, "ItemPartGroundDevice": 28, "ItemBullet": 24, "ItemPartGun": 24, "ItemPartEngine": 16, "ItemPartPropeller": 5, "ItemPartEffector": 4},
+    "vehicle_families": {"mtsofficialpack": {"quad": 8, "fordmustang69": 13, "merc230": 17, "gmcbrig": 11, "e500": 7, "scout": 14, "firetruck": 1, "ft17": 4, "bell206": 14, "bell47g": 4, "comanche": 7, "mc172": 11, "pzl37los": 5, "pzlp11": 4, "skyhawk": 12, "trimotor": 4, "vulcanair": 16}, "oamp": {"cagouille": 19, "camaro": 14, "ecoline": 1, "escargot": 16, "highwayman": 9, "luxorama": 18, "stationmerc": 14, "vwbus": 1}},
+    "modern_life_vehicles": ["modernlife:bicycle_item", "modernlife:motorboat_item"],
+    "note": "The Automobile Pack registers its vehicles under the same mts namespace with an oamp. prefix; the namespace oamp itself holds no items."
+  },
+  "dealer": [
+    {"id": "bicycle_valewood", "city": "valewood", "tier": "bicycle", "item": "modernlife:bicycle_item", "initial": 3, "capacity": 4, "units_per_interval": 1, "interval_minutes": 60, "max_order": 1, "requires_mod": "modernlife", "why": "Valewood is the farming city: the bicycle that gets a farmer to the other cities."},
+    {"id": "bicycle_ironhaven", "city": "ironhaven", "tier": "bicycle", "item": "modernlife:bicycle_item", "initial": 3, "capacity": 4, "units_per_interval": 1, "interval_minutes": 60, "max_order": 1, "requires_mod": "modernlife", "why": "The same price in every city: location moves nothing here."},
+    {"id": "bicycle_blackwater", "city": "blackwater", "tier": "bicycle", "item": "modernlife:bicycle_item", "initial": 3, "capacity": 4, "units_per_interval": 1, "interval_minutes": 60, "max_order": 1, "requires_mod": "modernlife", "why": "The same price in every city."},
+    {"id": "motorboat_valewood", "city": "valewood", "tier": "motorboat", "item": "modernlife:motorboat_item", "initial": 1, "capacity": 2, "units_per_interval": 1, "interval_minutes": 240, "max_order": 1, "requires_mod": "modernlife", "why": "Valewood is where the water crossing to Blackwater starts (D-048); one boat in stock, a second after four active hours, shared by everybody in the world."}
+  ]
+}

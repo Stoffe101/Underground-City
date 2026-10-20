@@ -26,6 +26,8 @@ import java.util.WeakHashMap;
  */
 public final class WorkOrderLedger {
     private static final String PURCHASE = "purchase", SEIZURE = "seizure";
+    /** How many searches a person's history keeps (the latest ones; who was searched where, what was found and what it cost). */
+    static final int SEARCH_HISTORY = 12;
     /** One heat step cools every five minutes of active play. */
     static final long HEAT_DECAY_TICKS = 6000;
     static final int MAX_HEAT = 8;
@@ -184,6 +186,14 @@ public final class WorkOrderLedger {
         } else if (SEIZURE.equals(pending.getString("kind"))) {
             // A seizure never touches an accepted order or career XP either; it only cools or heats a city.
             record.putInt("seizures", Math.addExact(record.getInt("seizures"), 1));
+            if (pending.contains("search", Tag.TAG_COMPOUND)) {
+                ListTag history = record.getList("searches", Tag.TAG_COMPOUND);
+                CompoundTag entry = pending.getCompound("search").copy();
+                entry.putLong("t", clock());
+                history.add(entry);
+                while (history.size() > SEARCH_HISTORY) history.remove(0);
+                record.put("searches", history);
+            }
             applyTargets(record, pending);
             record.remove("pending");
         } else {
@@ -248,11 +258,22 @@ public final class WorkOrderLedger {
      * there is no provider) and the new city heat, all journaled before any live state changes.
      */
     void prepareSeizure(UUID player, ListTag inventoryAfter, Double balanceAfter, int xpNow, String city, int heatAfter) {
+        prepareSeizure(player, inventoryAfter, balanceAfter, xpNow, city, heatAfter, new ListTag(), null);
+    }
+
+    /**
+     * The same, with the changes to backpacks the traveller carries (their slots live in the pack mod's own storage, not in the inventory, so the journal
+     * carries them and settlement replays them idempotently; see {@link CarriedStorage}) and the record of the search, written to the player's history by the same
+     * settlement so that "what was found, where, and why" is never out of step with what was taken.
+     */
+    void prepareSeizure(UUID player, ListTag inventoryAfter, Double balanceAfter, int xpNow, String city, int heatAfter, ListTag packChanges, CompoundTag searchRecord) {
         checkHealthy();
         CompoundTag record = player(player);
         if (record.contains("pending")) throw new IllegalStateException("Finish recovery before an inspection");
         CompoundTag pending = new CompoundTag();
         pending.putString("kind", SEIZURE); pending.put("inventory", inventoryAfter.copy()); pending.putInt("xp", xpNow);
+        if (!packChanges.isEmpty()) pending.put("packs", packChanges.copy());
+        if (searchRecord != null) pending.put("search", searchRecord.copy());
         if (balanceAfter != null) {
             if (!Double.isFinite(balanceAfter) || balanceAfter < 0) throw new IllegalArgumentException("Invalid settlement");
             pending.putDouble("balance", balanceAfter);
@@ -261,6 +282,22 @@ public final class WorkOrderLedger {
         record.put("pending", pending);
         putPlayer(player, record); persist(); // BEFORE touching inventory or Q Shop
     }
+
+    /** A search that found nothing: it changes no inventory or wallet, so it is recorded at once (the seizure's record travels with its own settlement). */
+    void recordSearch(UUID player, CompoundTag entry) {
+        checkHealthy();
+        CompoundTag record = player(player);
+        ListTag history = record.getList("searches", Tag.TAG_COMPOUND);
+        CompoundTag copy = entry.copy();
+        copy.putLong("t", clock());
+        history.add(copy);
+        while (history.size() > SEARCH_HISTORY) history.remove(0);
+        record.put("searches", history);
+        putPlayer(player, record); persist();
+    }
+
+    /** The latest searches of a person, oldest first. */
+    ListTag searches(UUID player) { return player(player).getList("searches", Tag.TAG_COMPOUND); }
 
     // ---------------------------------------------------------------- regional exchange
 

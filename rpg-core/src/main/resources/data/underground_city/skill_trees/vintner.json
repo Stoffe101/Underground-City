@@ -17,7 +17,7 @@
       "id": "vintner.cellar_craft",
       "branch": "legal",
       "title": "Cellar Craft",
-      "description": "Press, ferment and bottle table wine properly. Unlocks the tavern wine contract.",
+      "description": "Press, ferment and bottle table wine: unlocks the tavern wine contract.",
       "cost": 2,
       "min_level": 3,
       "requires": [
@@ -29,19 +29,36 @@
       "id": "vintner.estate_vintages",
       "branch": "legal",
       "title": "Estate Vintages",
-      "description": "Aged and blended wines for the estates. Unlocks the estate cellar contract.",
-      "cost": 3,
+      "description": "Aged and blended wines: unlocks the estate cellar contract.",
+      "cost": 2,
       "min_level": 6,
       "requires": [
         "vintner.cellar_craft"
       ],
-      "effects": {}
+      "effects": {
+        "legal_payout_percent": 4
+      }
+    },
+    {
+      "id": "vintner.cellar_masters_label",
+      "branch": "legal",
+      "title": "Cellar Master's Label",
+      "short_title": "Master's Label",
+      "description": "Your own label on the shelf.",
+      "cost": 2,
+      "min_level": 11,
+      "requires": [
+        "vintner.estate_vintages"
+      ],
+      "effects": {
+        "legal_payout_percent": 4
+      }
     },
     {
       "id": "vintner.cellar_logistics",
       "branch": "utility",
       "title": "Cellar Logistics",
-      "description": "Buy in bulk: 5% off goods at the regional exchange.",
+      "description": "Buy in bulk at the regional exchange.",
       "cost": 1,
       "min_level": 4,
       "requires": [
@@ -52,28 +69,31 @@
       }
     },
     {
-      "id": "vintner.still_craft",
-      "branch": "underground",
-      "title": "Home Distilling",
-      "description": "Brew strong spirit off the books. The craft is the same one a licensed distiller learns.",
-      "cost": 3,
-      "min_level": 6,
+      "id": "vintner.cellar_fitout",
+      "branch": "utility",
+      "title": "Cellar Fit-Out",
+      "description": "You fit racks, a drain and a cold room yourself.",
+      "cost": 2,
+      "min_level": 7,
       "requires": [
-        "vintner.fundamentals"
+        "vintner.cellar_logistics",
+        "vintner.cellar_craft"
       ],
-      "effects": {},
-      "short_title": "Home Distilling"
+      "effects": {
+        "upgrade_discount_percent": 10
+      }
     },
     {
       "id": "vintner.distillers_licence",
-      "branch": "legal",
+      "branch": "crossover",
       "title": "Distiller's Licence",
       "short_title": "Distiller Licence",
-      "description": "A distiller's licence. Where a city issues permits, spirits are legal for you to carry and to sell to licensed bars.",
+      "description": "A distiller's licence: spirits are legal where a city issues permits.",
       "cost": 2,
       "min_level": 10,
       "requires": [
-        "vintner.still_craft"
+        "vintner.still_craft",
+        "vintner.cellar_craft"
       ],
       "effects": {
         "licences": [
@@ -82,10 +102,23 @@
       }
     },
     {
+      "id": "vintner.still_craft",
+      "branch": "underground",
+      "title": "Home Distilling",
+      "short_title": "Home Distilling",
+      "description": "Brew strong spirit off the books, the craft a licensed distiller learns.",
+      "cost": 3,
+      "min_level": 6,
+      "requires": [
+        "vintner.fundamentals"
+      ],
+      "effects": {}
+    },
+    {
       "id": "vintner.concealed_stores",
       "branch": "underground",
       "title": "Concealed Stores",
-      "description": "Bottles behind false staves in an honest barrel: 12 points off the chance that a checkpoint search finds anything.",
+      "description": "Bottles behind false staves in an honest barrel.",
       "cost": 2,
       "min_level": 8,
       "requires": [
@@ -99,7 +132,7 @@
       "id": "vintner.bootleg_trade",
       "branch": "underground",
       "title": "Bootleg Trade",
-      "description": "Open a line to an Ironhaven back bar. Unlocks quiet bottle delivery contracts.",
+      "description": "Open a line to an Ironhaven back bar: unlocks quiet bottle contracts.",
       "cost": 3,
       "min_level": 9,
       "requires": [
@@ -112,13 +145,44 @@
       "branch": "underground",
       "title": "Grey Market Contacts",
       "short_title": "Market Contacts",
-      "description": "A trusted landlord takes bigger loads. Unlocks the reserve run (needs trust 2).",
+      "description": "A trusted landlord takes bigger loads: unlocks the reserve run.",
       "cost": 3,
       "min_level": 12,
       "requires": [
         "vintner.bootleg_trade"
       ],
       "effects": {}
+    },
+    {
+      "id": "vintner.quiet_cellar",
+      "branch": "underground",
+      "title": "Quiet Cellar",
+      "description": "A cellar nobody asks about, and buyers who pay for it.",
+      "cost": 2,
+      "min_level": 13,
+      "requires": [
+        "vintner.grey_market_contacts",
+        "vintner.concealed_stores"
+      ],
+      "effects": {
+        "underground_payout_percent": 6
+      }
+    },
+    {
+      "id": "vintner.house_label",
+      "branch": "crossover",
+      "title": "House Label",
+      "description": "A respectable label hides the quiet bottles.",
+      "cost": 2,
+      "min_level": 13,
+      "requires": [
+        "vintner.estate_vintages",
+        "vintner.bootleg_trade"
+      ],
+      "effects": {
+        "inspection_modifier": -0.05,
+        "underground_payout_percent": 3
+      }
     }
   ]
 }
