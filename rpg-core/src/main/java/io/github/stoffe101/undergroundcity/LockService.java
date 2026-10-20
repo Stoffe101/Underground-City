@@ -87,12 +87,13 @@ public final class LockService {
 
     static long clock(MinecraftServer server) { return WorkOrderLedger.get(server).clock(); }
 
-    public static boolean busy(UUID player) { return ACTIVE.containsKey(player); }
+    /** True while the player has a lock in their hands; a session that has ended and not yet been swept away does not count. */
+    public static boolean busy(UUID player) { Active active = ACTIVE.get(player); return active != null && active.session.active(); }
     public static int activeSessions() { return ACTIVE.size(); }
 
     /** Starts a pick. Returns the reason it cannot start, or {@code null} when the player now has a lock in their hands (the client has been told to show it). */
     public static String begin(ServerPlayer player, ServerLevel level, Target target) {
-        if (ACTIVE.containsKey(player.getUUID())) return "You are already working a lock.";
+        if (busy(player.getUUID())) return "You are already working a lock.";
         if (picks(player) < target.picksNeeded()) {
             return target.picksNeeded() <= 1 ? "Locked. A lockpick would open it." : "Locked. Forcing this needs " + target.picksNeeded() + " lockpicks.";
         }
