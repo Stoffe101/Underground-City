@@ -31,7 +31,13 @@ public final class LockpickSessionGameTests {
      * Sweeps the bar once at a hand's pace (about four seconds end to end) reading the feel, smooths the readings (the middle steps are deliberately wrong now and then) and presses in the middle of the
      * longest stretch that mostly reads "close"; repeats for every pin. Returns the final state. A real sweep costs time on the lock's clock, so this solver is not given a faster hand than a person has.
      */
-    static LockpickSession.State solve(LockpickSession session, boolean careless) {
+    static LockpickSession.State solve(LockpickSession session, boolean careless) { return solve(session, careless, session::tick); }
+
+    /** One server tick of a lock being worked: the position of the pick and whether the button is down. */
+    interface Hand { void tick(double position, boolean pressing); }
+
+    /** The same honest player, but the ticks go through {@code hand} (for example the server's own per-tick handling, with its endings), the feel is still read from the session. */
+    static LockpickSession.State solve(LockpickSession session, boolean careless, Hand hand) {
         final double step = 0.012;
         int guard = 0;
         while (session.active() && guard++ < 6000) {
@@ -39,7 +45,7 @@ public final class LockpickSessionGameTests {
             List<Double> positions = new ArrayList<>();
             List<Boolean> close = new ArrayList<>();
             for (double p = 0.0; p <= 1.0 && session.active() && session.pin() == pin; p += step) {
-                session.tick(p, false);
+                hand.tick(p, false);
                 positions.add(p);
                 close.add(session.feel() >= LockpickSession.CLOSE);
             }
@@ -56,7 +62,7 @@ public final class LockpickSessionGameTests {
             if (runStart >= 0 && (best == null || last - runStart > best[1] - best[0])) best = new double[] {runStart, last};
             if (best == null) continue;
             double aim = careless ? best[0] : (best[0] + best[1]) / 2;
-            for (int t = 0; t < 40 && session.active() && session.pin() == pin; t++) session.tick(aim, true);
+            for (int t = 0; t < 40 && session.active() && session.pin() == pin; t++) hand.tick(aim, true);
         }
         return session.state();
     }

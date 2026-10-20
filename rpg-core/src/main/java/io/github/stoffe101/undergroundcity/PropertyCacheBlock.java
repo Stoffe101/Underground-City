@@ -52,9 +52,16 @@ public final class PropertyCacheBlock extends BaseEntityBlock {
             serverPlayer.sendSystemMessage(Component.literal("Property storage is unavailable until the server is restarted."));
             return InteractionResult.CONSUME;
         }
-        String refusal = cache.access(serverLevel, serverPlayer, WorkOrderLedger.get(serverPlayer.server).clock());
-        if (refusal != null) {
-            serverPlayer.sendSystemMessage(Component.literal(refusal));
+        long now = WorkOrderLedger.get(serverPlayer.server).clock();
+        PropertyCacheBlockEntity.Entry entry = cache.entry(serverLevel, serverPlayer, now);
+        if (entry.kind() == PropertyCacheBlockEntity.Entry.Kind.REFUSED) {
+            serverPlayer.sendSystemMessage(Component.literal(entry.text()));
+            return InteractionResult.CONSUME;
+        }
+        if (entry.kind() == PropertyCacheBlockEntity.Entry.Kind.PICK) {
+            var city = CityRegions.INSTANCE.nearest(serverLevel, pos).orElse("");
+            String refusal = LockService.begin(serverPlayer, serverLevel, new LockService.Target(LockService.Kind.SAFE, pos.immutable(), entry.profile(), city, "safe", "Household safe", entry.picksNeeded()));
+            if (refusal != null) serverPlayer.sendSystemMessage(Component.literal(refusal));
             return InteractionResult.CONSUME;
         }
         serverPlayer.openMenu(cache);

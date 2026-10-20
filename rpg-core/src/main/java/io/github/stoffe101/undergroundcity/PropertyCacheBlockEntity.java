@@ -32,7 +32,7 @@ import java.util.UUID;
 /**
  * One shared physical household inventory (both players see the same items). Stock is topped up
  * lazily when opened, one policy-sized step per active interval, into EMPTY slots only. Opening a
- * locked safe costs lockpicks, raises resident vigilance and posts a PropertyForcedEntryEvent.
+ * locked safe is a lockpicking game on the server (a snapped pick costs a lockpick), raises resident vigilance and posts a PropertyForcedEntryEvent.
  */
 public final class PropertyCacheBlockEntity extends RandomizableContainerBlockEntity implements WorldlyContainer {
     public static final int SLOTS = 9;
@@ -136,32 +136,33 @@ public final class PropertyCacheBlockEntity extends RandomizableContainerBlockEn
         return -1;
     }
 
+    /** What a click on the safe does: open it, refuse with a reason, or start a lockpick on it. */
+    public record Entry(Kind kind, String text, String profile, int picksNeeded) {
+        public enum Kind { OPEN, REFUSED, PICK }
+        static Entry refused(String text) { return new Entry(Kind.REFUSED, text, "", 0); }
+    }
+
     /**
-     * Server-side access decision. Returns null when the safe may open now, otherwise the refusal text.
-     * Forced entry consumes lockpicks exactly once per forced window.
+     * Server-side access decision, taken before anything is spent. A safe that was forced recently stays open for its window ({@link #FORCED_WINDOW_TICKS}), to whoever comes next as well;
+     * a closed one is picked by the player on the lockpicking screen ({@link LockService}), which needs the policy's number of lockpicks in the inventory and costs one when the pick snaps.
      */
-    public String access(ServerLevel level, ServerPlayer player, long now) {
+    public Entry entry(ServerLevel level, ServerPlayer player, long now) {
         PropertyPolicy active = PropertyPolicies.INSTANCE.find(policy);
-        if (active == null) return registered() ? "This safe's profile is unavailable." : "This safe is not part of a property yet. Ask an operator to register it.";
-        if (CitizenState.get(player.server).find(player.getUUID()).isEmpty()) return "Register as a citizen first.";
+        if (active == null) return Entry.refused(registered() ? "This safe's profile is unavailable." : "This safe is not part of a property yet. Ask an operator to register it.");
+        if (CitizenState.get(player.server).find(player.getUUID()).isEmpty()) return Entry.refused("Register as a citizen first.");
         restock(level, now);
-        if (forcedAt(now)) { cue(level, player, false); return null; }
-        int have = player.getInventory().countItem(UndergroundCity.item("lockpick"));
-        if (have < active.lockpicks()) return "Locked. Forcing this safe needs " + active.lockpicks() + " lockpick" + (active.lockpicks() == 1 ? "" : "s") + ".";
-        int remaining = active.lockpicks();
-        for (ItemStack stack : player.getInventory().items) {
-            if (remaining > 0 && stack.is(UndergroundCity.item("lockpick"))) {
-                int take = Math.min(remaining, stack.getCount());
-                stack.shrink(take); remaining -= take;
-            }
-        }
+        if (forcedAt(now)) { cue(level, player, false); return new Entry(Entry.Kind.OPEN, "", active.lockProfile(), 0); }
+        return new Entry(Entry.Kind.PICK, "", active.lockProfile(), active.lockpicks());
+    }
+
+    /** The lock gave way: the safe stays open for its window, its residents grow more watchful and the break-in is posted for witness and evidence systems. */
+    public void forcedOpenBy(ServerLevel level, ServerPlayer player, long now) {
         forcedUntil = now + FORCED_WINDOW_TICKS;
         vigilance = Math.min(PropertyRestock.MAX_VIGILANCE, vigilance + 1);
         vigilanceAnchor = now; breakins++; lastIntruder = player.getUUID();
         setChanged();
         MinecraftForge.EVENT_BUS.post(new PropertyForcedEntryEvent(player.getUUID(), worldPosition, policy, vigilance, now));
         cue(level, player, true);
-        return null;
     }
 
     /**

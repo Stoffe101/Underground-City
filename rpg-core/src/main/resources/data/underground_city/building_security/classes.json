@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "classes": {
+    "cottage": {
+      "label": "cottage",
+      "lock_profile": "latch",
+      "locked_exterior": true,
+      "stash_policy": "underground_city:apartment_common",
+      "stash_chance": 0.55
+    },
+    "flat_block": {
+      "label": "apartment block",
+      "lock_profile": "deadbolt",
+      "locked_exterior": true,
+      "stash_policy": "underground_city:apartment_common",
+      "stash_chance": 0.7
+    },
+    "flat_tower": {
+      "label": "apartment tower",
+      "lock_profile": "commercial",
+      "locked_exterior": true,
+      "stash_policy": "underground_city:apartment_affluent",
+      "stash_chance": 0.7
+    },
+    "workshop": {
+      "label": "workshop",
+      "lock_profile": "commercial",
+      "locked_exterior": true,
+      "stash_policy": "underground_city:industrial",
+      "stash_chance": 0.6
+    },
+    "office": {
+      "label": "office",
+      "lock_profile": "commercial",
+      "locked_exterior": true,
+      "stash_policy": "underground_city:office",
+      "stash_chance": 0.6
+    },
+    "vault": {
+      "label": "high-value premises",
+      "lock_profile": "high_security",
+      "locked_exterior": true,
+      "stash_policy": "underground_city:illegal_cache",
+      "stash_chance": 1.0
+    },
+    "public": {
+      "label": "public building",
+      "locked_exterior": false
+    }
+  },
+  "rules": [
+    { "type_prefix": "center", "class": "vault" },
+    { "type_prefix": "shopping", "class": "public" },
+    { "type_prefix": "town", "class": "cottage" },
+    { "city": "ironhaven", "floors_max": 3, "class": "workshop" },
+    { "city": "ironhaven", "floors_min": 4, "class": "flat_block" },
+    { "city": "valewood", "floors_max": 2, "class": "cottage" },
+    { "city": "valewood", "floors_min": 3, "class": "flat_block" },
+    { "city": "blackwater", "floors_max": 2, "class": "workshop" },
+    { "city": "blackwater", "floors_min": 3, "floors_max": 4, "class": "office" },
+    { "city": "blackwater", "floors_min": 5, "class": "flat_tower" },
+    { "class": "flat_block" }
+  ]
+}
