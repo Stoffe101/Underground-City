@@ -18,6 +18,8 @@ import java.util.List;
 @Mod.EventBusSubscriber(modid=UndergroundCity.MOD_ID)
 public final class CloudJourneyServer {
     private static final int PHASE=Integer.getInteger("uc.journey.phase",0);
+    /** The credits a fresh citizen of this fixture holds before the first delivery (the journey used to expect 28 = 4 + a 24 credit order; the Farmer's order now pays 30, so the sum is read from the catalog). */
+    private static final int START_WALLET=4;
     private static boolean initialized,finished,reopened;
     private static BlockPos terminal;
     private CloudJourneyServer() {}
@@ -58,7 +60,8 @@ public final class CloudJourneyServer {
             RegionalStock parts=RegionalCatalog.INSTANCE.find("underground_city:machined_parts");
             for(ServerPlayer player:players) {
                 var citizen=CitizenState.get(server).find(player.getUUID()).orElseThrow();
-                double expected=PHASE==1 && !regionalDone(server,players)?28:28-parts.unitPrice();
+                double earned=START_WALLET+WorkOrderCatalog.INSTANCE.find(player.getGameProfile().getName().equals("UC_Farmer")?"underground_city:harvest":"underground_city:stone_tools").credits();
+                double expected=PHASE==1 && !regionalDone(server,players)?earned:earned-parts.unitPrice();
                 if(QShopEconomy.balance(player)!=expected || citizen.careerXp()!=125
                         || player.getInventory().countItem(Items.WHEAT_SEEDS)!=4) return;
             }
@@ -85,7 +88,7 @@ public final class CloudJourneyServer {
             server.getPlayerList().saveAll();server.overworld().getDataStorage().save();
             WorkOrderLedger.get(server).persist();
             Files.writeString(folder.resolve("journey-phase"+PHASE+".json"),
-                "{\"phase\":"+PHASE+",\"connected_clients\":2,\"each_balance\":"+(28-parts.unitPrice())+",\"each_career_xp\":125,\"each_seed_count\":4,\"each_receipt_count\":1,\"each_regional_purchase_count\":1,\"shared_machined_parts_stock\":"+ledger.regionalUnits(parts)+",\"status\":\"passed\"}\n");
+                "{\"phase\":"+PHASE+",\"connected_clients\":2,\"farmer_balance\":"+(START_WALLET+WorkOrderCatalog.INSTANCE.find("underground_city:harvest").credits()-parts.unitPrice())+",\"smith_balance\":"+(START_WALLET+WorkOrderCatalog.INSTANCE.find("underground_city:stone_tools").credits()-parts.unitPrice())+",\"each_career_xp\":125,\"each_seed_count\":4,\"each_receipt_count\":1,\"each_regional_purchase_count\":1,\"shared_machined_parts_stock\":"+ledger.regionalUnits(parts)+",\"status\":\"passed\"}\n");
             System.out.println("[UC-JOURNEY] PHASE "+PHASE+" PASSED with two real connected clients");
             finished=true;server.halt(false);
         } catch(Exception error) {
