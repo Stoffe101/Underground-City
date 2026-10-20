@@ -320,6 +320,37 @@ public final class PropertyGameTests {
     }
 
     @GameTest(template = "empty")
+    public static void aLapsedTenantCanEmptyAFurnaceAndThenMoveOut(GameTestHelper helper) throws Exception {
+        try (Fix f = new Fix(helper, listings(flatTerms("test:furnace")))) {
+            ServerPlayer a = f.person(helper, "uc_fu", "smith", 1000);
+            Residence r = f.home("test:furnace", 0);
+            PropertyService.rent(a, id(), "test:furnace", false, false);
+            BlockPos furnace = f.in(0, 1, 0, 1), bench = f.in(0, 3, 0, 1);
+            f.level.setBlockAndUpdate(f.in(0, 0, -1, 0), Blocks.STONE.defaultBlockState());
+            f.level.setBlockAndUpdate(furnace, Blocks.FURNACE.defaultBlockState());
+            f.level.setBlockAndUpdate(bench, Blocks.CRAFTING_TABLE.defaultBlockState());
+            ((net.minecraft.world.level.block.entity.AbstractFurnaceBlockEntity) f.level.getBlockEntity(furnace)).setItem(0, new ItemStack(Items.IRON_ORE, 12));
+            f.tick(f.rules.cycleTicks() * 6, a);   // the prepaid hour, then four unpaid ones and more: lapsed
+            check(r.standing(f.rules) == Standing.LAPSED, "setup: " + r.standing(f.rules));
+            check(!ResidenceGuard.allowed(f.l, r, a.getUUID(), OVERWORLD, furnace, ResidenceGuard.Act.WORKSTATION), "a lapsed home has no workstations");
+            // through the real interaction: the furnace opens (to take things out), the crafting table does not
+            var furnaceHit = new BlockHitResult(Vec3.atCenterOf(furnace), Direction.UP, furnace, false);
+            a.gameMode.useItemOn(a, f.level, ItemStack.EMPTY, InteractionHand.MAIN_HAND, furnaceHit);
+            check(a.containerMenu instanceof net.minecraft.world.inventory.FurnaceMenu, "a lapsed tenant can open a furnace to take their things out: " + a.containerMenu.getClass().getSimpleName());
+            a.closeContainer();
+            var benchHit = new BlockHitResult(Vec3.atCenterOf(bench), Direction.UP, bench, false);
+            a.gameMode.useItemOn(a, f.level, ItemStack.EMPTY, InteractionHand.MAIN_HAND, benchHit);
+            check(a.containerMenu == a.inventoryMenu, "a crafting table stays locked in a lapsed home: " + a.containerMenu.getClass().getSimpleName());
+            // the same tenant cannot move out while the furnace holds iron ore, and can once it is empty
+            rejected(() -> PropertyService.moveOut(a, "test:furnace"), "moving out while a furnace still holds ore");
+            ((net.minecraft.world.level.block.entity.AbstractFurnaceBlockEntity) f.level.getBlockEntity(furnace)).setItem(0, ItemStack.EMPTY);
+            PropertyService.moveOut(a, "test:furnace");
+            check(!r.owned(), "the tenant moved out once the furnace was empty");
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty")
     public static void payingAppliesToWhatIsOwedFirstAndIsCapped(GameTestHelper helper) throws Exception {
         try (Fix f = new Fix(helper, listings(flatTerms("test:pay")))) {
             ServerPlayer a = f.person(helper, "uc_ya", "smith", 5000);

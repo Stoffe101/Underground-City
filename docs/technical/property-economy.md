@@ -1,6 +1,6 @@
 # The property economy: rent, ownership, upkeep, storage and upgrades (D-099)
 
-**Status (October 20, 2026): implemented in Core and tested by scripts and Forge GameTests (21 in `PropertyGameTests`, plus the Crew, home-guard and migration tests they sit beside). No person has rented, paid for, upgraded or been evicted from a home in a session of play.** The numbers are the model's, not a player's: see [economy-model.md](economy-model.md). This replaces the "rent is an open question" note of [crew-economy.md](crew-economy.md) and extends [crews.md](../design/crews.md).
+**Status (October 20, 2026): implemented in Core and tested by scripts and Forge GameTests (23 in `PropertyGameTests`, plus the Crew, home-guard and migration tests they sit beside). No person has rented, paid for, upgraded or been evicted from a home in a session of play.** The numbers are the model's, not a player's: see [economy-model.md](economy-model.md). This replaces the "rent is an open question" note of [crew-economy.md](crew-economy.md) and extends [crews.md](../design/crews.md).
 
 ## The player's view in one paragraph
 
@@ -37,7 +37,7 @@ Ten categories are *priced*; **three have a building**. The model can say whethe
 ## Time: rent runs on active household time (D-012, D-099)
 
 * A home has one clock. It advances while **at least one resident is online** and **never while all are offline**, and by exactly the same amount whether one resident is online or four (a unit test with two residents shows the clock moved once). A resident is the owner or tenant, or **any member of the owning Crew** (`CrewLedger.residentsOf`), so a Crew home's clock runs while any member is online.
-* A cycle that falls due is paid, in this order, from **prepaid hours**, then (if switched on) the **Crew bank**, then it becomes **arrears**. Automatic payment from a *wallet* is not a ledger action: it goes through the wallet-first money protocol (`CrewService.transact`), so a crash between the wallet and the ledger recovers to "paid" or "not paid", never both.
+* A cycle that falls due is paid, in this order, from **prepaid hours**, then (if switched on) the **Crew bank**, then it becomes **arrears**. Automatic payment from a *wallet* is not a ledger action: it goes through the wallet-first money protocol (`CrewService.transact`), so a crash between the wallet and the ledger recovers to "paid" or "not paid", never both. Only a wallet that is short makes the hour unpaid; if the wallet has the credits but the money layer says not now (a recovery or another transaction of the same player is in flight) the hour stays due and is tried again at the next five-second step, so a transient refusal can never lapse a home.
 * **No offline taxation or punishment**: rent, upkeep and every notice run only on active time. A player who is away loses nothing and owes nothing for the time they were away; an owner who is away while a roommate plays is billed for the time the roommate plays (the household is active).
 * Reminders arrive as notices at login and at each step: due soon, overdue, final notice, lapsed.
 
@@ -48,7 +48,7 @@ Ten categories are *priced*; **three have a building**. The model can say whethe
 | Current | 0 | nothing |
 | Overdue | 1 to 2 | a reminder; everything works |
 | Final notice | 3 | a loud warning; everything works |
-| Lapsed | 4 and beyond | the home loses its **comfort**: you cannot build or break blocks or use workstations (the Home page and every payment option keep working, because that is how a lapsed home is put right). **You keep the door and every container, and nothing is emptied, re-let or deleted.** You may pay, or move out, at any time |
+| Lapsed | 4 and beyond | the home loses its **comfort**: you cannot build or break blocks or use workstations (the Home page and every payment option keep working, because that is how a lapsed home is put right). **You keep the door and every container, and nothing is emptied, re-let or deleted.** A furnace, smoker, blast furnace or brewing stand can still be opened to take things out of it (they are workstations that also hold things, and a move-out is refused while anything is stored: found by an independent review, tested). You may pay, or move out, at any time |
 
 A move-out or a sale is **refused while the home still holds stored things** (containers, frames, stands with items): belongings are never thrown away with a home. The count and the reason are shown.
 

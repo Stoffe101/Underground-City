@@ -353,6 +353,7 @@ public final class PropertyService {
                 ServerPlayer owner = lookup.apply(server, r.owner);
                 CrewLedger.Event miss;
                 if (owner == null || !online.contains(owner.getUUID()) || !CrewService.moneyReady(server)) { miss = ledger.missDue(r.id, rules); }
+                else if (Math.floor(CrewService.wallet.balance(owner)) < r.charge) { miss = ledger.missDue(r.id, rules); }   // the wallet is short: the hour becomes unpaid
                 else {
                     try {
                         CrewService.transact(owner, balance -> ledger.beginPayFromWallet(UUID.randomUUID(), owner.getUUID(), r.id, 1, balance, rules));
@@ -361,7 +362,10 @@ public final class PropertyService {
                     } catch (CrewService.SimulatedCrash crash) {
                         throw crash;
                     } catch (RuntimeException refused) {
-                        miss = ledger.missDue(r.id, rules);
+                        // The wallet has the credits but the money layer said not now (a recovery or another transaction of this player is in flight). That is not the tenant's failure to pay:
+                        // the hour stays due and the next step tries again; four such refusals must never lapse a home.
+                        LOG.debug("Automatic rent for {} will be retried: {}", r.id, refused.getMessage());
+                        break;
                     }
                 }
                 if (miss != null) events.add(miss);

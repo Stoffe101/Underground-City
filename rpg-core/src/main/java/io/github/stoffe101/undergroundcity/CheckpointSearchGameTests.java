@@ -279,4 +279,20 @@ public final class CheckpointSearchGameTests {
         }
         helper.succeed();
     }
+    @GameTest(template = "empty")
+    public static void aStackTooBigForAByteSurvivesTheJournal(GameTestHelper helper) {
+        // A stack upgrade doubles a slot of a 64-stacking item to 128; the journal must read back exactly what the search saw, or the settlement would find the slot "changed" and take nothing.
+        for (int count : new int[] {1, 64, 127, 128, 200, 255, 1000}) {
+            ItemStack stack = new ItemStack(Items.WHEAT, count);
+            ItemStack back = CarriedStorage.loadStack(CarriedStorage.saveStack(stack));
+            check(ItemStack.matches(back, stack), "a stack of " + count + " came back as " + back.getCount());
+        }
+        check(CarriedStorage.loadStack(CarriedStorage.saveStack(ItemStack.EMPTY)).isEmpty(), "an empty stack stays empty");
+        ItemStack withTag = new ItemStack(Items.SHULKER_BOX, 1);
+        withTag.getOrCreateTag().putString("uc_marker", "kept");
+        check(ItemStack.matches(CarriedStorage.loadStack(CarriedStorage.saveStack(withTag)), withTag), "a stack with data lost it");
+        // what the plain format does, recorded so that a change in the game's own format is noticed
+        System.out.println("[UC-SEARCH-AUDIT] ItemStack.save/of keeps a stack of 128 as " + ItemStack.of(new ItemStack(Items.WHEAT, 128).save(new CompoundTag())).getCount());
+        helper.succeed();
+    }
 }

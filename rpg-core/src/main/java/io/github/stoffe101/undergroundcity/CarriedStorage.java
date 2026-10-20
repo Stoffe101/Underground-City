@@ -66,8 +66,8 @@ public final class CarriedStorage {
         CompoundTag save() {
             CompoundTag tag = new CompoundTag();
             tag.putUUID("pack", pack.contents); tag.putInt("slot", slot);
-            tag.put("expected", expected.save(new CompoundTag()));
-            tag.put("replacement", replacement.save(new CompoundTag()));
+            tag.put("expected", saveStack(expected));
+            tag.put("replacement", saveStack(replacement));
             return tag;
         }
     }
@@ -201,6 +201,22 @@ public final class CarriedStorage {
     }
 
     /**
+     * A stack as the journal keeps it. {@code ItemStack.save} writes the count as a single signed byte, so a slot of a Sophisticated Backpack with a stack upgrade (128 of a 64-stacking item)
+     * would be read back as -128 and never match the live slot: the seizure would be fined, announced and never carried out. The count is therefore also kept as a whole number.
+     */
+    static CompoundTag saveStack(ItemStack stack) {
+        CompoundTag tag = stack.save(new CompoundTag());
+        tag.putInt("UcCount", stack.getCount());
+        return tag;
+    }
+
+    static ItemStack loadStack(CompoundTag tag) {
+        ItemStack stack = ItemStack.of(tag);
+        if (tag.contains("UcCount", net.minecraft.nbt.Tag.TAG_INT) && !stack.isEmpty()) stack.setCount(tag.getInt("UcCount"));
+        return stack;
+    }
+
+    /**
      * Replays a prepared seizure's pack changes on the packs the player carries. For each: find the pack by its contents id; if the slot still holds the stack that
      * was seen there, put the replacement in; if it holds anything else (a replay found the change already made), leave it alone. Idempotent.
      */
@@ -210,7 +226,7 @@ public final class CarriedStorage {
             CompoundTag tag = removals.getCompound(i);
             UUID id = tag.getUUID("pack");
             int slot = tag.getInt("slot");
-            ItemStack expected = ItemStack.of(tag.getCompound("expected")), replacement = ItemStack.of(tag.getCompound("replacement"));
+            ItemStack expected = loadStack(tag.getCompound("expected")), replacement = loadStack(tag.getCompound("replacement"));
             Optional<Pack> live = findCarried(player, id);
             if (live.isEmpty()) { LOGGER.warn("[UC] a prepared seizure names a backpack ({}) the player no longer carries; slot {} was not changed", id, slot); continue; }
             if (!ItemStack.matches(live.get().inventory.getStackInSlot(slot), expected)) continue;

@@ -97,10 +97,13 @@ public final class ResidenceGuard {
     // ------------------------------------------------------------------------------------------------------------ decisions
 
     /** What a player may do in a home right now. */
-    public static Rights rights(CrewLedger ledger, Residence r, UUID player) {
+    public static Rights rights(CrewLedger ledger, Residence r, UUID player) { return rights(ledger, r, player, true); }
+
+    /** The same, optionally as if the home had not lapsed: what the person's role would allow in a home in good standing. */
+    static Rights rights(CrewLedger ledger, Residence r, UUID player, boolean honourLapse) {
         if (!r.owned() || r.reservedBy != null) return Rights.NONE;
         // A lapsed tenancy keeps the door and the containers (to take things out) and loses the comforts: building and workstations (D-099).
-        boolean lapsed = r.billed() && r.standing(PropertyCatalog.INSTANCE.rules()) == PropertyRules.Standing.LAPSED;
+        boolean lapsed = honourLapse && r.billed() && r.standing(PropertyCatalog.INSTANCE.rules()) == PropertyRules.Standing.LAPSED;
         if (r.ownerType == OwnerType.PLAYER) return r.owner.equals(player) ? (lapsed ? new Rights(true, false, true, false) : Rights.ALL) : guest(ledger, r, player);
         Crew crew = ledger.crew(r.owner);
         if (crew == null) return Rights.NONE;
@@ -155,6 +158,18 @@ public final class ResidenceGuard {
             case WORKSTATION -> rights.workstations();
             case EXPLODE -> false;
         };
+    }
+
+    /**
+     * A furnace, a smoker, a blast furnace and a brewing stand are workstations and also hold things. When the home's comforts are withdrawn (it has lapsed) or it never had the
+     * facility (a home from an older save), the resident may still open such a block to take their things out: otherwise a move-out, which is refused while anything is stored,
+     * could never happen. Building, anvils, crafting tables and every other workstation stay locked, and what a person's role forbids stays forbidden.
+     */
+    static boolean takeOutOnly(CrewLedger ledger, Residence r, UUID player, BlockState state) {
+        boolean lapsedOut = rights(ledger, r, player, false).workstations() && !rights(ledger, r, player).workstations();
+        String need = facilityNeeded(state);
+        boolean withoutFacility = need != null && !hasFacility(r, need) && rights(ledger, r, player).workstations();
+        return lapsedOut || withoutFacility;
     }
 
     /** What the player is touching, from the block (workstations first: a furnace is also a container). */
@@ -309,7 +324,9 @@ public final class ResidenceGuard {
         Residence r = ledger.residenceAt(dim, pos);
         if (r == null) return;
         BlockState state = level.getBlockState(pos);
-        Act act = classify(state, level.getBlockEntity(pos));
+        var touched = level.getBlockEntity(pos);
+        Act act = classify(state, touched);
+        if (act == Act.WORKSTATION && isContainer(touched) && r.insideInterior(dim, pos) && takeOutOnly(ledger, r, player.getUUID(), state)) act = Act.CONTAINER;
         // An ender chest is the player's own; sitting on a bed, reading a sign and the like are plain interactions.
         if (!allowed(ledger, r, player.getUUID(), dim, pos, act)) { deny(event, player, refusal(ledger, r, act)); return; }
         if (act == Act.WORKSTATION && r.insideInterior(dim, pos)) {

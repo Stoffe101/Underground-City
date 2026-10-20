@@ -66,6 +66,9 @@ public final class LegacyBackpackNotice {
     static java.nio.file.Path worldFolder() {
         var server = ServerLifecycleHooks.getCurrentServer();
         if (server != null) return server.getWorldPath(net.minecraft.world.level.storage.LevelResource.ROOT);
+        // A server started with --world or --universe keeps its world somewhere server.properties does not say; guessing could back up (and then "protect") the wrong folder, so the override refuses instead.
+        String command = System.getProperty("sun.java.command", "");
+        if (command.contains("--world") || command.contains("--universe")) return null;
         java.nio.file.Path game = FMLPaths.GAMEDIR.get();
         String level = "world";
         java.nio.file.Path properties = game.resolve("server.properties");
@@ -85,6 +88,8 @@ public final class LegacyBackpackNotice {
         try (var walk = java.nio.file.Files.walk(world)) {
             for (java.nio.file.Path source : (Iterable<java.nio.file.Path>) walk::iterator) {
                 java.nio.file.Path copy = target.resolve(world.relativize(source).toString());
+                // The server holds a lock on session.lock while it runs (on Windows a locked file cannot be read, and Minecraft's own backups leave it out): it holds no world data.
+                if (source.getFileName() != null && source.getFileName().toString().equals("session.lock")) continue;
                 if (java.nio.file.Files.isDirectory(source)) java.nio.file.Files.createDirectories(copy);
                 else java.nio.file.Files.copy(source, copy, java.nio.file.StandardCopyOption.COPY_ATTRIBUTES);
             }
