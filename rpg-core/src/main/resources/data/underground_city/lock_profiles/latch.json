@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "pins": 2,
+  "tolerance": 0.115,
+  "hold_ticks": 6,
+  "strain_limit": 100,
+  "strain_per_tick": 2.6,
+  "ease_per_tick": 2.2,
+  "time_limit_ticks": 700,
+  "feel_noise": 0.1,
+  "tremor": 0.004,
+  "lockout_ticks": 600,
+  "alarm_chance": 0.0
+}
