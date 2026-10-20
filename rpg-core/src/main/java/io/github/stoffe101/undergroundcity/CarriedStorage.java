@@ -212,7 +212,10 @@ public final class CarriedStorage {
 
     static ItemStack loadStack(CompoundTag tag) {
         ItemStack stack = ItemStack.of(tag);
-        if (tag.contains("UcCount", net.minecraft.nbt.Tag.TAG_INT) && !stack.isEmpty()) stack.setCount(tag.getInt("UcCount"));
+        // the byte count of a stack of 128 or more reads back as zero or negative, which the game treats as an empty stack although the item is still named: restore the real count
+        // (ItemStack.getItem() already answers air for such a stack, so the item is read from the saved id)
+        String id = tag.getString("id");
+        if (tag.contains("UcCount", net.minecraft.nbt.Tag.TAG_INT) && !id.isEmpty() && !id.equals("minecraft:air")) stack.setCount(tag.getInt("UcCount"));
         return stack;
     }
 
