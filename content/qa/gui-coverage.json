@@ -435,6 +435,76 @@
       "owner": "underground_city",
       "group": "crew",
       "description": "Rules page, Crew tab: rename and the typed-name disband confirmation"
+    },
+    {
+      "id": "trade.overflow",
+      "expected_file": "uc-exchange-overflow.png",
+      "owner": "underground_city",
+      "group": "operations_terminal",
+      "description": "Trade tab with twenty-four lines of goods (short and very long names, prices from 3 to 9,800, every stock state) and a balance that buys only some of them: nothing overlaps or runs off, the scroll bar shows"
+    },
+    {
+      "id": "trade.overflow_scrolled",
+      "expected_file": "uc-exchange-overflow-scrolled.png",
+      "owner": "underground_city",
+      "group": "operations_terminal",
+      "description": "Trade tab scrolled to the end of a long list with a large balance"
+    },
+    {
+      "id": "trade.sold_out",
+      "expected_file": "uc-exchange-sold-out.png",
+      "owner": "underground_city",
+      "group": "operations_terminal",
+      "description": "Trade tab where every line is sold out: the status text replaces the stock bar and the buttons are off"
+    },
+    {
+      "id": "lock.idle",
+      "expected_file": "uc-lock-idle.png",
+      "owner": "underground_city",
+      "group": "lockpicking",
+      "description": "Lockpicking screen at the start: three pins unset, the pick far from anything, time and strain meters"
+    },
+    {
+      "id": "lock.close",
+      "expected_file": "uc-lock-close.png",
+      "owner": "underground_city",
+      "group": "lockpicking",
+      "description": "Lockpicking screen with one pin set and the pick close to the next sweet spot (words and brightness, not colour alone)"
+    },
+    {
+      "id": "lock.pressing",
+      "expected_file": "uc-lock-pressing.png",
+      "owner": "underground_city",
+      "group": "lockpicking",
+      "description": "Lockpicking screen pressing on the sweet spot of a four-pin lock: the pick is down, 'It gives'"
+    },
+    {
+      "id": "lock.strain",
+      "expected_file": "uc-lock-strain.png",
+      "owner": "underground_city",
+      "group": "lockpicking",
+      "description": "Lockpicking screen pressing far off the spot with the pick strained to 88 percent and the warning lit"
+    },
+    {
+      "id": "lock.opened",
+      "expected_file": "uc-lock-opened.png",
+      "owner": "underground_city",
+      "group": "lockpicking",
+      "description": "Lockpicking screen after the lock opened"
+    },
+    {
+      "id": "lock.snapped",
+      "expected_file": "uc-lock-snapped.png",
+      "owner": "underground_city",
+      "group": "lockpicking",
+      "description": "Lockpicking screen after the pick snapped"
+    },
+    {
+      "id": "lock.timeout",
+      "expected_file": "uc-lock-timeout.png",
+      "owner": "underground_city",
+      "group": "lockpicking",
+      "description": "Lockpicking screen after time ran out (nothing lost)"
     }
   ],
   "unintegrated_future_interfaces": [
@@ -446,7 +516,6 @@
     "FTB Quests chapters and quest inspector",
     "TaCZ weapon UI, attachments and gun workbenches",
     "NPC dialogue and interactions",
-    "Locks Reforged lockpicking GUI",
     "Property safe inventory (reuses the vanilla chest screen; needs an in-world client capture)",
     "Inventory and item inspector",
     "Future vehicle controls",

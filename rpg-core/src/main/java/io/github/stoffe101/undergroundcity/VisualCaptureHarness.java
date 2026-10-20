@@ -33,6 +33,8 @@ public final class VisualCaptureHarness {
         static Case notices(String name) { return new Case(name,null,null,0,false,null,"notices-stack"); }
         /** The Crew screen in one of its states (CrewCaptures). */
         static Case crew(String name,String pose) { return new Case(name,null,null,0,false,null,"crew-"+pose); }
+        /** The lockpicking screen in one of its poses (D-105). */
+        static Case lock(String name,String pose) { return new Case(name,null,null,0,false,null,"lock-"+pose); }
     }
     private static List<Case> cases;
     private static int current,frames;
@@ -60,6 +62,27 @@ public final class VisualCaptureHarness {
     private static TerminalData exchange(String region,double balance) {
         return new TerminalData("valewood","farmer",3,520,balance,true,null,region.isEmpty()?0:1,region,
             List.of(),region.isEmpty()?List.of():IRONHAVEN_OFFERS);
+    }
+    /** A long Trade list: twenty-four lines (the most the page holds) of goods with short and very long names, prices up to four digits and every stock state, to prove that nothing overlaps or runs off. */
+    private static TerminalData manyOffers(int count,boolean soldOut,double balance) {
+        String[] goods={"minecraft:bread","minecraft:enchanted_golden_apple","minecraft:iron_ingot","minecraft:netherite_upgrade_smithing_template","minecraft:copper_ingot","minecraft:redstone","minecraft:coal","minecraft:paper","minecraft:leather","minecraft:gold_nugget","minecraft:emerald","minecraft:clock",
+            "minecraft:compass","minecraft:book","minecraft:string","minecraft:torch","minecraft:potion","minecraft:lapis_lazuli","minecraft:glass_bottle","minecraft:honey_bottle","minecraft:fermented_spider_eye","minecraft:music_disc_pigstep","minecraft:diamond","minecraft:armor_stand"};
+        int[] prices={3,1250,28,9800,18,12,5,4,22,60,140,95,410,36,8,2,6,25,7,31,300,2400,1999,64};
+        int[] stocks={40,2,12,0,30,24,16,40,1,5,3,8,0,20,12,40,9,7,0,3,2,1,6,11};
+        List<TerminalData.Offer> offers=new ArrayList<>();
+        for(int i=0;i<Math.min(count,goods.length);i++) offers.add(new TerminalData.Offer("underground_city:capture_"+i,goods[i],prices[i],soldOut?0:stocks[i],40,8));
+        return new TerminalData("valewood","farmer",3,520,balance,true,null,1,"ironhaven",List.of(),offers);
+    }
+    private static LockpickScreen lockCapture(String pose) {
+        return switch(pose) {
+            case "lock-idle" -> LockpickScreen.forCapture("Deadbolt",3,0,0,4,0.92,0.18,false);
+            case "lock-close" -> LockpickScreen.forCapture("Deadbolt",3,1,2,10,0.7,0.52,false);
+            case "lock-pressing" -> LockpickScreen.forCapture("Commercial",4,2,3,24,0.55,0.61,true);
+            case "lock-strain" -> LockpickScreen.forCapture("High-security",5,2,0,88,0.3,0.9,true);
+            case "lock-opened" -> LockpickScreen.forCapture("Deadbolt",3,3,3,10,0.5,0.4,false).poseResult(LockpickSession.State.OPENED,"Click. It is open.");
+            case "lock-snapped" -> LockpickScreen.forCapture("Commercial",4,1,0,100,0.4,0.77,true).poseResult(LockpickSession.State.BROKEN,"The pick snapped in the lock.");
+            default -> LockpickScreen.forCapture("Latch",2,1,1,0,0.0,0.3,false).poseResult(LockpickSession.State.TIMED_OUT,"You ran out of time. The lock is as it was.");
+        };
     }
     private static TerminalData regionalContract(boolean accepted,int held,int visits) {
         return new TerminalData("valewood","farmer",3,520,230,true,
@@ -209,6 +232,9 @@ public final class VisualCaptureHarness {
         cases.add(new Case("uc-exchange-low-funds",TerminalScreen.Page.IMPORTS,exchange("ironhaven",20),0));
         cases.add(new Case("uc-imports-outside-city",TerminalScreen.Page.IMPORTS,exchange("",120),0));
         cases.add(new Case("uc-exchange-wayside-desk",TerminalScreen.Page.IMPORTS,waysideDesk(120),0));
+        cases.add(new Case("uc-exchange-overflow",TerminalScreen.Page.IMPORTS,manyOffers(24,false,60),0));
+        cases.add(new Case("uc-exchange-overflow-scrolled",TerminalScreen.Page.IMPORTS,manyOffers(24,false,2500),0));
+        cases.add(new Case("uc-exchange-sold-out",TerminalScreen.Page.IMPORTS,manyOffers(12,true,500),0));
         cases.add(new Case("uc-contract-regional",TerminalScreen.Page.CONTRACTS,regionalContract(true,2,1),0));
         cases.add(new Case("uc-contract-visit-locked",TerminalScreen.Page.CONTRACTS,regionalContract(false,0,0),0));
         if(!QShopEconomy.available()) throw new IllegalStateException("Visual coverage requires installed Q Shop 1.8.4");
@@ -223,6 +249,7 @@ public final class VisualCaptureHarness {
         for(String pose:new String[]{"nocrew","nocrew-invited","unregistered","unavailable","members","members-member","money","money-consent","money-shared","money-shared-nospend","home","home-notice","home-owned","home-find","home-solo","rules-permissions","rules-mode","rules-mode-active","rules-disband"}) {
             cases.add(Case.crew("uc-crew-"+pose,pose));
         }
+        for(String pose:new String[]{"idle","close","pressing","strain","opened","snapped","timeout"}) cases.add(Case.lock("uc-lock-"+pose,pose));
         cases.add(Case.dialogue("uc-dialogue-registrar","registrar"));
         cases.add(Case.dialogue("uc-dialogue-employer","employer"));
         cases.add(Case.dialogue("uc-dialogue-guard","guard"));
@@ -245,6 +272,8 @@ public final class VisualCaptureHarness {
             });
         } else if(capture.challenge!=null && capture.challenge.startsWith("crew-")) {
             mc.setScreen(CrewCaptures.screen(capture.challenge.substring("crew-".length())));
+        } else if(capture.challenge!=null && capture.challenge.startsWith("lock-")) {
+            mc.setScreen(lockCapture(capture.challenge));
         } else if(capture.challenge!=null && capture.challenge.startsWith("notices-")) {
             // the corner notices over a terminal: an order taken, a delivery paid with a level-up, a search at a checkpoint and a rare find
             TerminalScreen screen=new TerminalScreen(BlockPos.ZERO,fixture(2,8,true,true));
@@ -275,6 +304,7 @@ public final class VisualCaptureHarness {
             if(capture.skill!=null) screen.selectSkill(capture.skill);
             // The "legal with rewards" case selects the heirloom contract (index 1 of the legal list).
             if(capture.name.equals("uc-contract-legal-rewards")) screen.selectJob(1);
+            if(capture.name.equals("uc-exchange-overflow-scrolled")) for(int i=0;i<8;i++) screen.mouseScrolled(0,0,-1.0);
         }
         frames=0;
     }
