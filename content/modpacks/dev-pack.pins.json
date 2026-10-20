@@ -301,22 +301,22 @@
    "slug": "entityculling",
    "version_id": "HUUJcFnt",
    "mod_id": "entityculling",
-   "role": "rendering: skips entities and block entities the player cannot see (matters for a populated city)",
+   "role": "rendering: skips entities and block entities the player cannot see (matters for a populated city) (DEFERRED, D-113: see notes)",
    "sets": [
-    "performance"
+    "performance_deferred"
    ],
-   "notes": "Entity Culling 1.11.3 (2026-10-08, release). tr7zw Protective License: the author's own download only, never committed or redistributed. Client only."
+   "notes": "DEFERRED (D-113): crashes the development-environment client at load (its bundled TRansition library is a nested jar that ForgeGradle does not remap, NoSuchMethodError Minecraft.m_91087_). Untested in a production-style client, which this project cannot launch yet. Not in any default set."
   },
   {
    "id": "immediatelyfast",
    "slug": "immediatelyfast",
    "version_id": "rvsLEEZU",
    "mod_id": "immediatelyfast",
-   "role": "rendering: faster immediate-mode drawing (GUI text, HUD, entities); client only",
+   "role": "rendering: faster immediate-mode drawing (GUI text, HUD, entities); client only (DEFERRED, D-113: see notes)",
    "sets": [
-    "performance"
+    "performance_deferred"
    ],
-   "notes": "ImmediatelyFast 1.5.5 (a multi-version build that lists 1.20.1 through 1.20.4). LGPL-3.0-or-later. Client only."
+   "notes": "DEFERRED (D-113): 1.5.5 is a 1.20.4-labelled build; its hud_batching mixin could not find GuiGraphics.fillIntoBuffer's target and aborted the development-environment client (MixinTransformerError). Untested in a production-style client. Not in any default set."
   },
   {
    "id": "searchables",
