@@ -41,7 +41,7 @@ class DevClientInputs(unittest.TestCase):
         sets = {s for m in MANIFEST["mods"] for s in m["sets"]}
         # "vintner", "farming", "qol" and "survival" are opt-in candidate sets (-PucPack=...,vintner,farming,qol,survival); the default pack stays the four above.
         # "legacy_travelers" holds only the retired Traveler's Backpack (D-092), for opening an old world once; it is never combined with "survival".
-        self.assertEqual(sets, {"world", "firearms", "vehicles", "boats", "vintner", "farming", "qol", "survival", "legacy_travelers"})
+        self.assertEqual(sets, {"world", "firearms", "vehicles", "boats", "vintner", "farming", "qol", "survival", "legacy_travelers", "performance", "navigation", "citytweaks"})
         legacy = {m["id"] for m in MANIFEST["mods"] if "legacy_travelers" in m["sets"]}
         # exactly the October 18 survival set: the same three mods and the retired backpack, and never a Sophisticated mod beside it
         self.assertEqual(legacy, {"travelers_backpack", "thirst_was_taken_2", "farmers_delight", "comforts"})

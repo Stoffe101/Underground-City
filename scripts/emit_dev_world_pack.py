@@ -30,6 +30,9 @@ LAYOUTS = {
 }
 
 
+OUT = LAYOUTS["legacy"][1]   # the legacy package's folder, as before the archipelago existed (tests and tools import it)
+
+
 def expected(data: dict, layout: str = "legacy") -> dict[str, bytes]:
     files = {f"pack/{name}": content for name, content in render(data, layout).items()}
     files.update({f"game-config/{name}": text.encode("utf-8") for name, text in config_files(data, layout).items()})

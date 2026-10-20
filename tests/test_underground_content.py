@@ -305,6 +305,11 @@ class GuiCoverageTests(unittest.TestCase):
         self.assertIsNotNone(loop, "the Crew poses loop was not found in the capture harness")
         names |= {"uc-crew-" + pose for pose in re.findall(r'"([a-z-]+)"', loop.group(1))}
         names.discard("uc-crew-")
+        # the lockpicking screen's poses are generated the same way
+        locks = re.search(r'for\(String pose:new String\[\]\{([^}]*)\}\)\s*cases\.add\(Case\.lock\(', source)
+        self.assertIsNotNone(locks, "the lock poses loop was not found in the capture harness")
+        names |= {"uc-lock-" + pose for pose in re.findall(r'"([a-z-]+)"', locks.group(1))}
+        names.discard("uc-lock-")
         manifest = json.loads((ROOT / "content/qa/gui-coverage.json").read_text(encoding="utf-8"))
         expected = {s["expected_file"][:-4] for s in manifest["integrated_surfaces"]}
         self.assertEqual(names, expected)

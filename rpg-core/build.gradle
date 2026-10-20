@@ -62,7 +62,7 @@ if (!devPackSets.isEmpty()) {
         chosen[id] = mod
     }
     manifest.mods.findAll { mod -> mod.sets.any { devPackSets.contains(it) } }.each { include(it.id) }
-    if (chosen.isEmpty()) throw new GradleException('No dev-pack mods in sets ' + devPackSets + ' (known sets: world, firearms, vehicles, boats, vintner, farming, qol, survival, legacy_travelers)')
+    if (chosen.isEmpty()) throw new GradleException('No dev-pack mods in sets ' + devPackSets + ' (known sets: world, firearms, vehicles, boats, vintner, farming, qol, survival, legacy_travelers, performance, navigation, citytweaks)')
     devPackMods = chosen.values().toList()
 }
 
