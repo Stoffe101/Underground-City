@@ -5,6 +5,7 @@
   "block.underground_city.sable_leaf_crop": "Sable Leaf Plant",
   "block.underground_city.secure_data_terminal": "Secured Data Terminal",
   "container.underground_city.property_cache": "Household Safe",
+  "generator.underground_city.archipelago": "Underground City: Archipelago",
   "item.underground_city.agri_sensor_repair": "Agricultural Sensor Repair Pack",
   "item.underground_city.agro_catalyst": "Agricultural Catalyst",
   "item.underground_city.biopolymer": "Biopolymer Sheet",
@@ -46,6 +47,5 @@
   "item.underground_city.unstamped_plate": "Unstamped Plate",
   "key.categories.underground_city": "Underground City",
   "key.underground_city.crew": "Open the Crew screen",
-  "key.underground_city.tracker": "Show or hide the active order",
-  "generator.underground_city.archipelago": "Underground City: Archipelago"
+  "key.underground_city.tracker": "Show or hide the active order"
 }

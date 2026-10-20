@@ -88,6 +88,8 @@ def validate(data: dict) -> None:
 
 
 SECURITY_LOCKPICKS = {"low": 1, "medium": 2, "high": 3, "faction": 4}
+# the lockpicking game a safe of each security level plays (data/underground_city/lock_profiles): more pins, a tighter sweet spot, a harsher snap
+SECURITY_LOCK_PROFILE = {"low": "deadbolt", "medium": "safe", "high": "commercial", "faction": "high_security"}
 
 
 def load_property() -> tuple[dict, dict]:
@@ -326,6 +328,7 @@ def build(data: dict, contracts: dict) -> dict[Path, bytes]:
              "entries": [{"type": "minecraft:item", "name": f"{NAMESPACE}:sable_cutting"}]}]}).encode()
     lang["block.underground_city.sable_leaf_crop"] = "Sable Leaf Plant"
     lang["key.underground_city.tracker"] = "Show or hide the active order"
+    lang["generator.underground_city.archipelago"] = "Underground City: Archipelago"   # the world type list at world creation (D-104)
     lang["key.underground_city.crew"] = "Open the Crew screen"
     lang["key.categories.underground_city"] = "Underground City"
     corridors = json.loads(CORRIDORS.read_text(encoding="utf-8"))
@@ -351,6 +354,7 @@ def build(data: dict, contracts: dict) -> dict[Path, bytes]:
             "schema_version": 1, "capacity": policy["capacity"], "initial_stock": policy["initial_stock"],
             "interval_ticks": policy["interval_minutes"] * 1200, "items_per_interval": policy["items_per_interval"],
             "lockpicks": SECURITY_LOCKPICKS[policy["security"]],
+            "lock_profile": SECURITY_LOCK_PROFILE[policy["security"]],
             "loot_table": f"{NAMESPACE}:property/{policy['id']}"}).encode()
     for name, entries in loot["tables"].items():
         pool = []
