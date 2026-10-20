@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "title": "Sugar for the must",
+  "career": "vintner",
+  "level": 2,
+  "item": "minecraft:sugar",
+  "count": 24,
+  "credits": 44,
+  "xp": 180,
+  "capacity": 4,
+  "refill_ticks": 6000,
+  "max_level": 6
+}

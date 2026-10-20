@@ -69,9 +69,10 @@ public final class RegionalGameTests {
 
     @GameTest(template = "empty")
     public static void regionalDataLoadsAndEconomyCannotPrintMoney(GameTestHelper helper) {
-        // the three specialist commodities of each city (the survival goods of D-091 are separate lines under survival/ and are checked by SurvivalSupplyGameTests)
+        // the three specialist commodities of each city (the survival goods of D-091 are separate lines under survival/ and are checked by SurvivalSupplyGameTests; the vehicle dealer of D-101 is under vehicles/)
         for (String city : List.of("ironhaven", "valewood", "blackwater")) {
-            check(RegionalCatalog.INSTANCE.forCity(city).stream().filter(stock -> !stock.id().contains("/survival/") && !stock.id().startsWith(UndergroundCity.MOD_ID + ":survival/")).count() == 3,
+            check(RegionalCatalog.INSTANCE.forCity(city).stream().filter(stock -> !stock.id().contains("/survival/") && !stock.id().startsWith(UndergroundCity.MOD_ID + ":survival/")
+                && !stock.id().startsWith(UndergroundCity.MOD_ID + ":vehicles/")).count() == 3,
                 city + " must sell three specialist lines");
         }
         check(CityRegions.INSTANCE.all().size() == 3, "Three data-defined city regions expected");
@@ -392,20 +393,20 @@ public final class RegionalGameTests {
             a.getInventory().setItem(0, new ItemStack(Items.WHEAT, 16)); b.getInventory().setItem(0, new ItemStack(Items.WHEAT, 16));
             // A is mid-settlement (prepared, not applied) when B completes in full: no cross-contamination.
             var after = new net.minecraft.world.entity.player.Inventory(a);
-            fixture.ledger.prepare(a.getUUID(), nonceA, after.save(new net.minecraft.nbt.ListTag()), 24, 125);
+            fixture.ledger.prepare(a.getUUID(), nonceA, after.save(new net.minecraft.nbt.ListTag()), harvest.credits(), 125);
             WorkOrderService.complete(b, fixture.ledger, nonceB);
-            check(QShopEconomy.balance(b) == 24 && b.getInventory().countItem(Items.WHEAT) == 0, "Second player settlement wrong");
+            check(QShopEconomy.balance(b) == harvest.credits() && b.getInventory().countItem(Items.WHEAT) == 0, "Second player settlement wrong");
             check(QShopEconomy.balance(a) == 0 && a.getInventory().countItem(Items.WHEAT) == 16, "A prepared settlement leaked before recovery");
             rejected(() -> WorkOrderService.complete(a, fixture.ledger, nonceA)); // pending blocks a second concurrent delivery
             WorkOrderService.recover(a, fixture.ledger);
-            check(QShopEconomy.balance(a) == 24 && a.getInventory().countItem(Items.WHEAT) == 0, "Recovery of the first settlement wrong");
+            check(QShopEconomy.balance(a) == harvest.credits() && a.getInventory().countItem(Items.WHEAT) == 0, "Recovery of the first settlement wrong");
             // Old receipts cannot pay again, even after a new order is accepted.
             UUID next = fixture.ledger.accept(a.getUUID(), harvest);
             check(!next.equals(nonceA), "Order IDs must be server-generated and fresh");
             a.getInventory().setItem(0, new ItemStack(Items.WHEAT, 16));
             rejected(() -> WorkOrderService.complete(a, fixture.ledger, nonceA));
             rejected(() -> fixture.ledger.cancel(a.getUUID(), nonceA));
-            check(QShopEconomy.balance(a) == 24 && a.getInventory().countItem(Items.WHEAT) == 16, "Stale receipt paid or consumed goods");
+            check(QShopEconomy.balance(a) == harvest.credits() && a.getInventory().countItem(Items.WHEAT) == 16, "Stale receipt paid or consumed goods");
         } finally { fixture.close(); }
         helper.succeed();
     }

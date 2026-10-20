@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "city": "valewood",
+  "item": "modernlife:motorboat_item",
+  "unit_price": 600,
+  "initial": 1,
+  "capacity": 2,
+  "units_per_interval": 1,
+  "interval_ticks": 288000,
+  "max_order": 1,
+  "outlets": [
+    "city"
+  ],
+  "requires_mod": "modernlife"
+}

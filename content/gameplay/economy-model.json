@@ -1,0 +1,147 @@
+{
+  "schema_version": 1,
+  "status": "provisional planning model (October 20, 2026). Every number below is an ASSUMPTION about how long a competent player needs for a Minecraft task. Nobody has timed a person. scripts/economy_model.py reads this file and the real game data (work orders, exchange prices, recipes, properties) and prints what the data implies; replace these numbers with measurements from a played session and the whole model updates.",
+  "active_minute": "one minute with at least one human online; the clock of work-order demand, exchange restocking and rent (D-012, D-099)",
+  "session_minutes": 30,
+  "overhead": {
+    "terminal_minutes_per_order": 1.5,
+    "craft_operation_minutes": 0.3,
+    "exchange_run_round_trip_minutes": 12,
+    "exchange_run_orders_per_trip": 4,
+    "note": "Accepting and delivering are two terminal interactions with a short walk; a trip to a city exchange is a round trip of about twelve minutes between a home near Founders Row and a city terminal (docs/design/cities-and-world.md: 6-8 minutes one way), shared by the orders one trip's purchases cover.",
+    "buyer_trip_round_trip_minutes": 12
+  },
+  "hands_on_minutes_each": {
+    "note": "Hands-on minutes to obtain ONE of the item from the world with starter tools, including crafting it. Waiting (crops, smelting) is parallel and listed separately in wait_minutes.",
+    "minecraft:wheat": 0.3,
+    "minecraft:carrot": 0.3,
+    "minecraft:potato": 0.3,
+    "minecraft:bread": 1.0,
+    "minecraft:pumpkin_pie": 1.6,
+    "minecraft:arrow": 0.22,
+    "minecraft:crossbow": 3.5,
+    "minecraft:target": 4.1,
+    "minecraft:stone_pickaxe": 0.35,
+    "minecraft:iron_pickaxe": 3.0,
+    "minecraft:hopper": 5.2,
+    "minecraft:redstone_torch": 0.45,
+    "minecraft:repeater": 1.5,
+    "minecraft:daylight_detector": 6.5,
+    "minecraft:comparator": 3.2,
+    "minecraft:piston": 2.6,
+    "minecraft:observer": 3.0,
+    "minecraft:iron_ingot": 0.9,
+    "minecraft:copper_ingot": 0.8,
+    "minecraft:stone_bricks": 0.08,
+    "minecraft:iron_chestplate": 7.4,
+    "minecraft:iron_helmet": 4.6,
+    "minecraft:bucket": 2.8,
+    "minecraft:stick": 0.05,
+    "minecraft:glass": 0.3,
+    "minecraft:paper": 0.25,
+    "minecraft:redstone": 0.35,
+    "minecraft:bone_meal": 0.6,
+    "minecraft:glass_bottle": 0.35,
+    "minecraft:wheat_seeds": 0.1,
+    "underground_city:sable_leaf_bale": 2.6,
+    "underground_city:data_ledger": 6.0,
+    "vinery:red_wine": 2.2,
+    "vinery:noir_wine": 2.6,
+    "vinery:cherry_wine": 2.4,
+    "kaleidoscope_tavern:vodka": 1.5,
+    "minecraft:sugar": 0.25
+  },
+  "wait_minutes": {
+    "note": "Latency before the FIRST delivery of an order that needs growing or ageing; later cycles overlap with other work.",
+    "minecraft:wheat": 25,
+    "minecraft:carrot": 25,
+    "minecraft:potato": 25,
+    "minecraft:pumpkin_pie": 30,
+    "underground_city:sable_leaf_bale": 24,
+    "vinery:red_wine": 20,
+    "vinery:noir_wine": 22,
+    "vinery:cherry_wine": 22,
+    "kaleidoscope_tavern:vodka": 12,
+    "minecraft:sugar": 15
+  },
+  "gun_minutes": {
+    "iron_value_credits": 7.7,
+    "minutes_per_iron": 0.9,
+    "bench_minutes": 1.5,
+    "note": "A gun costs its recipe's iron-equivalent value (contracts.json reference_values.guns); gathering that iron takes minutes_per_iron per ingot, assembly at the Gun Smith Table bench_minutes."
+  },
+  "starting_state": {
+    "credits": 0,
+    "note": "A new citizen starts with the starter kit and no credits (RegistrationService). The motel's first two billing cycles are a welcome gift of the city (D-099)."
+  },
+  "scenarios": {
+    "solo": [
+      "farmer",
+      "vintner",
+      "smith",
+      "gunsmith",
+      "technician"
+    ],
+    "crew_two": [
+      [
+        "farmer",
+        "gunsmith"
+      ],
+      [
+        "smith",
+        "technician"
+      ]
+    ],
+    "crew_three": [
+      [
+        "farmer",
+        "smith",
+        "gunsmith"
+      ],
+      [
+        "vintner",
+        "technician",
+        "farmer"
+      ]
+    ]
+  },
+  "targets": {
+    "note": "Provisional targets from the owner's brief (section 3.2 and 4.3), tuned against the model, not hard-coded game rules.",
+    "first_payout_minutes_max": 45,
+    "first_profit_minutes_max_prepared": 30,
+    "rent_share_of_net_income": [
+      0.1,
+      0.2
+    ],
+    "single_sale_vs_next_tier_price_max": 0.55,
+    "single_sale_vs_top_tier_price_max": 0.2,
+    "upgrade_cycles_between": [
+      4,
+      40
+    ],
+    "sensitivity": [
+      0.7,
+      1.0,
+      1.4
+    ]
+  },
+  "efficiency": {
+    "hands_on_share_of_active_time": 0.5,
+    "note": "Only about half of an active hour is hands-on production: the rest is walking to a terminal, finding things, inventory, waiting for a furnace, talking to a friend. A 30 minute session is roughly 5 minutes of setting up, 8 of travel and trading and 17 of work. Every income figure is multiplied by this; rent, upkeep and living costs are not."
+  },
+  "living_costs": {
+    "credits_per_player_hour": 5,
+    "note": "Torches, food and water bought on the road (wayside desk prices in survival-supply.json) for a player who eats and drinks mostly from their own farm and wells."
+  },
+  "supply_horizon_hours": 3.0,
+  "courier_orders": {
+    "ids": [
+      "dray_parts_run",
+      "dray_rifle_run",
+      "heirloom_seeds"
+    ],
+    "max_margin": 1.7,
+    "note": "Errands that carry exchange goods to a buyer unchanged. They pay a courier's margin (not a crafter's) and are bounded by the shelf: the exchange restocks a few units an hour for everyone, so the profit per hour is capped no matter how fast the player walks. The underground errands also carry the seizure risk of contraband (D-052). The cap compares the errand's net credits per hour (the smaller of what the shelf and the employer allow, times its margin) with the best crafting careers' 400-480: a courier is never the best hour.",
+    "max_net_per_hour": 250
+  }
+}
