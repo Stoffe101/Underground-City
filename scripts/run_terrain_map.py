@@ -38,6 +38,8 @@ def main() -> int:
     parser.add_argument("--city-continents", help="calibration: the continentalness given to the flat ground under a city")
     parser.add_argument("--flat-erosion", help="calibration: the erosion given to the flat ground under a city")
     parser.add_argument("--plateau-ridges", help="calibration: the peaks-and-valleys value of the flat ground under a city (decides its height)")
+    parser.add_argument("--humidity-shrink", help="calibration: how many blocks less than the plateau the plains-humidity under a city reaches")
+    parser.add_argument("--humidity-ease", help="calibration: the share of the plateau's easing the plains-humidity fades over")
     args = parser.parse_args()
 
     run_name = f"run-terrain-{args.name}"
@@ -55,6 +57,10 @@ def main() -> int:
                f"-PucTerrainMap={args.output.resolve()}", f"-PucTmX0={args.x0}", f"-PucTmX1={args.x1}", f"-PucTmZ0={args.z0}", f"-PucTmZ1={args.z1}", f"-PucTmStep={args.step}"]
     if args.city_continents:
         command.append(f"-PucIslandCityContinents={args.city_continents}")
+    if args.humidity_shrink:
+        command.append(f"-PucIslandHumidityShrink={args.humidity_shrink}")
+    if args.humidity_ease:
+        command.append(f"-PucIslandHumidityEase={args.humidity_ease}")
     if args.flat_erosion:
         command.append(f"-PucIslandFlatErosion={args.flat_erosion}")
     if args.plateau_ridges:

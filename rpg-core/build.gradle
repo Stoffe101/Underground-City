@@ -26,7 +26,7 @@ java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 // GitHub release), are SHA-512/SHA-256 verified against content/modpacks/dev-pack.json, and are never committed.
 // ---------------------------------------------------------------------------------------------------------------
 def harnessFlags = ['ucPack', 'ucEconomyTest', 'ucScreeningMod', 'ucWorldCandidate', 'ucWorldTour', 'ucJourneyClient',
-                    'ucVisualCapture', 'ucWorldSurvey', 'ucSeedScan', 'ucJourneyPhase', 'ucJourneyScenario', 'ucJourneySurvival', 'ucJourneyWorld', 'ucPerfProbe', 'ucStallProbe', 'ucTerrainMap', 'ucCityProbe', 'ucBurglary', 'ucPhotoTour']
+                    'ucVisualCapture', 'ucWorldSurvey', 'ucSeedScan', 'ucJourneyPhase', 'ucJourneyScenario', 'ucJourneySurvival', 'ucJourneyWorld', 'ucPerfProbe', 'ucStallProbe', 'ucTerrainMap', 'ucCityProbe', 'ucRoadCheck', 'ucBurglary', 'ucPhotoTour']
 def requestedTasks = gradle.startParameter.taskNames.collect { it.tokenize(':').last() }
 def userLaunch = requestedTasks.any { it in ['runClient', 'runServer'] } &&
         !harnessFlags.any { providers.gradleProperty(it).isPresent() }
@@ -162,9 +162,7 @@ minecraft {
                 project.properties.each { name, value ->
                     if (name.startsWith('ucTm') && name.length() > 4) jvmArgs "-Duc.terrainMap.${name.substring(4).toLowerCase()}=${value}"
                     // calibration knobs of the archipelago terrain (IslandField); only a survey sets them
-                    if (name == 'ucIslandCityContinents') jvmArgs "-Duc.island.cityContinents=${value}"
-                    if (name == 'ucIslandFlatErosion') jvmArgs "-Duc.island.flatErosion=${value}"
-                    if (name == 'ucIslandPlateauRidges') jvmArgs "-Duc.island.plateauRidges=${value}"
+                    if (name.startsWith('ucIsland') && name.length() > 8) jvmArgs "-Duc.island.${name.substring(8, 9).toLowerCase()}${name.substring(9)}=${value}"
                 }
             }
             if (providers.gradleProperty('ucCityProbe').isPresent()) {
@@ -173,6 +171,10 @@ minecraft {
                 project.properties.each { name, value ->
                     if (name.startsWith('ucCp') && name.length() > 4) jvmArgs "-Duc.cityProbe.${name.substring(4).toLowerCase()}=${value}"
                 }
+            }
+            if (providers.gradleProperty('ucRoadCheck').isPresent()) {
+                // reads the real blocks along every generated corridor road and bridge of the layout the game carries (RoadCheck); the world is a disposable dedicated server
+                jvmArgs "-Duc.roadCheck=${providers.gradleProperty('ucRoadCheck').get()}", "-Xmx${providers.gradleProperty('ucServerHeap').orElse('3G').get()}"
             }
             if (providers.gradleProperty('ucBurglary').isPresent()) {
                 // the building guard and the lock proved on one real generated apartment block (BurglaryHarness); -PucBgPhase=a|b -PucBgState=<file>

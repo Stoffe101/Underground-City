@@ -106,11 +106,17 @@ public record IslandPlan(Shore shore, double openSea, double straitSea, List<Sha
     // ------------------------------------------------------------------------------------------------------ plateaus and climate
 
     /** 1 on the flat ground under a city (and the arrival site), easing to 0. */
-    public double plateau(double x, double z) {
+    public double plateau(double x, double z) { return plateau(x, z, 0, 1.0); }
+
+    /**
+     * The same, tighter: the plateau's radius reduced by {@code shrink} blocks and its easing multiplied by {@code easeScale}. The climate under a city is held at plains (so that no forest
+     * grows over streets and roofs), but only over the built ground and a short margin: the countryside beyond keeps its island's own climate, which is what makes the three islands look different.
+     */
+    public double plateau(double x, double z, double shrink, double easeScale) {
         double best = 0;
         for (Plateau plateau : plateaus) {
             double distance = Math.hypot(x - plateau.center().get(0), z - plateau.center().get(1));
-            double t = Math.max(0, Math.min(1, 1 - (distance - plateau.radius()) / plateau.ease()));
+            double t = Math.max(0, Math.min(1, 1 - (distance - (plateau.radius() - shrink)) / (plateau.ease() * easeScale)));
             best = Math.max(best, t * t * (3 - 2 * t));
         }
         return best;

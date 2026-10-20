@@ -38,6 +38,9 @@ public final class IslandField implements DensityFunction {
      */
     public static final double CITY_HUMIDITY = Double.parseDouble(System.getProperty("uc.island.cityHumidity", "-0.22"));
 
+    /** How far the plains-humidity under a city reaches: the plateau's radius less this many blocks (so about 20 beyond the city circle), easing out over this share of the plateau's own easing. */
+    public static final double HUMIDITY_SHRINK = Double.parseDouble(System.getProperty("uc.island.humidityShrink", "20")), HUMIDITY_EASE = Double.parseDouble(System.getProperty("uc.island.humidityEase", "0.5"));
+
     public enum Channel {
         CONTINENTS(-1.2, 1.0), EROSION(-1.0, 1.0), TEMPERATURE(-0.2, 0.7), HUMIDITY(-1.0, 1.0), RIDGES(-1.0, 1.0);
         final double min, max;
@@ -91,7 +94,7 @@ public final class IslandField implements DensityFunction {
             }
             case TEMPERATURE -> clamp(plan.climate(x, z, true, 0.06) + 0.10 * clamp(base, -1, 1), Channel.TEMPERATURE.min, Channel.TEMPERATURE.max);
             case HUMIDITY -> {
-                double p = plan.plateau(x, z);
+                double p = plan.plateau(x, z, HUMIDITY_SHRINK, HUMIDITY_EASE);
                 double island = plan.climate(x, z, false, 0.0) + 0.12 * clamp(base, -1, 1);
                 yield clamp(island * (1 - p) + CITY_HUMIDITY * p, Channel.HUMIDITY.min, Channel.HUMIDITY.max);
             }
