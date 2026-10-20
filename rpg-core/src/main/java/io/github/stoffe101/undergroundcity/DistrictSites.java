@@ -28,17 +28,45 @@ final class DistrictSites {
      * more than {@code maxRelief} blocks between the highest and lowest ground, nearest first among equally level candidates. Empty when none fits.
      */
     static java.util.Optional<Site> find(Ground ground, int aroundX, int aroundZ, int width, int depth, int maxRelief, int radius) {
-        List<Site> fits = new ArrayList<>();
+        // A column is asked about by every candidate lot that overlaps it (the lots are a few blocks apart and ninety wide), and a chunk generator's height costs
+        // a whole noise column: ask each column once.
+        Ground cached = new Cached(ground);
+        // Nearest first. A site costs 12 per block of relief plus its distance, so once the best cost found is no more than a candidate's own distance nothing
+        // from there on can win: on level ground the search ends at the first lot instead of reading all of them (the exhaustive search took more than nine
+        // minutes on the archipelago's flat landing, with the server held back on its first start).
+        List<int[]> offsets = new ArrayList<>();
         for (int dx = -radius; dx <= radius; dx += STEP) {
             for (int dz = -radius; dz <= radius; dz += STEP) {
-                double distance = Math.hypot(dx, dz);
-                if (distance > radius) continue;
-                Site site = evaluate(ground, aroundX + dx - width / 2, aroundZ + dz - depth / 2, width, depth, distance);
-                if (site != null && site.relief() <= maxRelief) fits.add(site);
+                if (Math.hypot(dx, dz) <= radius) offsets.add(new int[]{dx, dz});
             }
         }
-        // Level first (each block of relief costs as much as 12 blocks of walking), then near.
-        return fits.stream().min(Comparator.comparingDouble(site -> site.relief() * 12.0 + site.distance()));
+        offsets.sort(Comparator.comparingDouble(o -> Math.hypot(o[0], o[1])));
+        Site best = null;
+        double bestCost = Double.MAX_VALUE;
+        for (int[] o : offsets) {
+            double distance = Math.hypot(o[0], o[1]);
+            if (distance >= bestCost) break;
+            Site site = evaluate(cached, aroundX + o[0] - width / 2, aroundZ + o[1] - depth / 2, width, depth, distance);
+            if (site == null || site.relief() > maxRelief) continue;
+            double cost = site.relief() * 12.0 + site.distance();
+            if (cost < bestCost) { best = site; bestCost = cost; }
+        }
+        return java.util.Optional.ofNullable(best);
+    }
+
+    /** Remembers each column's answers for one search. */
+    private static final class Cached implements Ground {
+        private final Ground inner;
+        private final java.util.Map<Long, Integer> heights = new java.util.HashMap<>();
+        private final java.util.Map<Long, Boolean> wet = new java.util.HashMap<>(), reserved = new java.util.HashMap<>();
+
+        Cached(Ground inner) { this.inner = inner; }
+
+        private static long key(int x, int z) { return ((long) x << 32) ^ (z & 0xffffffffL); }
+
+        @Override public int height(int x, int z) { return heights.computeIfAbsent(key(x, z), k -> inner.height(x, z)); }
+        @Override public boolean wet(int x, int z) { return wet.computeIfAbsent(key(x, z), k -> inner.wet(x, z)); }
+        @Override public boolean reserved(int x, int z) { return reserved.computeIfAbsent(key(x, z), k -> inner.reserved(x, z)); }
     }
 
     static Site evaluate(Ground ground, int x0, int z0, int width, int depth, double distance) {

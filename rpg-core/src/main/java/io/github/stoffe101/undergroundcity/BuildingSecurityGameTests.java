@@ -53,7 +53,11 @@ public final class BuildingSecurityGameTests {
 
         House(GameTestHelper helper) {
             level = helper.getLevel();
-            base = helper.absolutePos(new BlockPos(0, 2, 0));
+            // Lost Cities' plan, and so a building's volume, is per chunk: the building takes its chunk, its north wall on the chunk's edge, so that the street in front of the door is the
+            // neighbouring chunk (a street chunk is not a building). Wherever the test runner put this test (its place moves with the number of tests) the fixture is put there, which is what
+            // the tests assumed and what they only got by luck of the layout. Each fixture has a batch to itself, so nothing else builds here at the same time.
+            BlockPos placed = helper.absolutePos(new BlockPos(0, 2, 0));
+            base = new BlockPos(Math.floorDiv(placed.getX(), 16) * 16 + 4, placed.getY(), Math.floorDiv(placed.getZ(), 16) * 16);
             for (int x = -2; x <= 9; x++) for (int z = -3; z <= 8; z++) for (int y = -1; y <= 14; y++) level.setBlock(base.offset(x, y, z), y == -1 ? Blocks.STONE.defaultBlockState() : Blocks.AIR.defaultBlockState(), 2);
             for (int x = 0; x <= 6; x++) for (int z = 0; z <= 6; z++) for (int y = 0; y <= 3; y++) {
                 boolean wall = x == 0 || x == 6 || z == 0 || z == 6;
@@ -202,7 +206,7 @@ public final class BuildingSecurityGameTests {
         // positions covered by a registered residence are answered by ResidenceGuard, never by this guard (two guards must not fight over the same block)
         try (House h = new House(helper)) {
             check(BuildingGuard.covers(h.level, h.in(0, 1, 3)), "the wall is not covered");
-            check(!BuildingGuard.covers(h.level, h.in(0, 1, -2)), "the street is covered");
+            check(!BuildingGuard.covers(h.level, h.in(0, 1, -2)), "the street is covered (first solid above it: " + firstSolidAbove(h.level, h.in(0, 1, -2)) + "; base " + h.base + ")");
             check(!BuildingGuard.covers(h.level, h.in(0, 40, 3)), "the sky over the roof is covered");
             helper.succeed();
         }

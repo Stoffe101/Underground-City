@@ -1168,6 +1168,55 @@ public final class UndergroundGameTests {
     }
 
     @GameTest(template = "empty")
+    public static void aDistrictSiteSearchStopsWhereNothingNearerCanWin(GameTestHelper helper) {
+        // The archipelago's landing is a flat plateau: every lot fits. The first start must not read the terrain under all of them (an exhaustive search took
+        // more than nine minutes with the real chunk generator).
+        int[] calls = {0};
+        DistrictSites.Ground flat = new DistrictSites.Ground() {
+            @Override public int height(int x, int z) { calls[0]++; return 70; }
+            @Override public boolean wet(int x, int z) { calls[0]++; return false; }
+            @Override public boolean reserved(int x, int z) { return false; }
+        };
+        var site = DistrictSites.find(flat, 0, 0, 94, 60, 3, 160).orElseThrow(() -> new IllegalStateException("no site on flat ground"));
+        check(site.relief() == 0 && site.distance() == 0, "On flat ground the nearest lot wins: " + site);
+        check(calls[0] < 4000, "The search stopped at the first lot (" + calls[0] + " terrain reads)");
+        // The answer is still the best one: a bump at the origin pushes the winner out, to the cheapest of all candidates.
+        DistrictSites.Ground bump = new DistrictSites.Ground() {
+            @Override public int height(int x, int z) { return Math.abs(x) < 20 && Math.abs(z) < 20 ? 78 : 70; }
+            @Override public boolean wet(int x, int z) { return false; }
+            @Override public boolean reserved(int x, int z) { return false; }
+        };
+        var pushed = DistrictSites.find(bump, 0, 0, 25, 41, 3, 160).orElseThrow(() -> new IllegalStateException("no site beside the bump"));
+        double best = Double.MAX_VALUE;
+        for (int dx = -160; dx <= 160; dx += DistrictSites.STEP) for (int dz = -160; dz <= 160; dz += DistrictSites.STEP) {
+            double distance = Math.hypot(dx, dz);
+            if (distance > 160) continue;
+            var other = DistrictSites.evaluate(bump, dx - 12, dz - 20, 25, 41, distance);
+            if (other != null && other.relief() <= 3) best = Math.min(best, other.relief() * 12.0 + other.distance());
+        }
+        check(Math.abs(pushed.relief() * 12.0 + pushed.distance() - best) < 1e-9, "The early exit finds the same cost as an exhaustive search: " + pushed + " vs " + best);
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty")
+    public static void theLandingIsLevelInsideTheLotAndEasesBackOverTheRamp(GameTestHelper helper) {
+        var lot = new LandingGrader.Rect(0, 0, 100, 50);
+        check(LandingGrader.target(lot, 72, 85, 50, 25) == 72 && LandingGrader.target(lot, 72, 60, 0, 0) == 72 && LandingGrader.target(lot, 72, 60, 100, 50) == 72, "Inside the lot (corners included) the ground is the level");
+        check(LandingGrader.target(lot, 72, 85, 100 + LandingGrader.RAMP, 25) == 85 && LandingGrader.target(lot, 72, 85, -LandingGrader.RAMP - 5, 25) == 85, "Beyond the ramp the ground is as it was made");
+        int previous = 72;
+        for (int d = 1; d <= LandingGrader.RAMP; d++) {
+            int height = LandingGrader.target(lot, 72, 85, 100 + d, 25);
+            check(height >= previous && height - previous <= 2, "The ramp climbs without a cliff: " + previous + " to " + height + " at " + d);
+            previous = height;
+        }
+        check(previous == 85, "The ramp ends at the natural height");
+        var footprint = DevBootstrap.footprint(33, 49);
+        check(footprint.width() == footprint.left() + footprint.right() && footprint.depth() == 57, "The footprint is the range, the Row, the flats and the motel and the lane's gate: " + footprint);
+        check(footprint.left() == 40 && footprint.right() == 33 + 3 + 24 + 3 + 24, "The footprint matches the district catalogue's sizes: " + footprint);
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty")
     public static void aDistrictSiteIsLevelDryAndClearOfCitiesAndTheNearestOneWins(GameTestHelper helper) {
         // Flat ground at 70 with a hill (height 80) east of x=40, a pond around (0, 0) and a reserved city circle south of z=100.
         DistrictSites.Ground ground = new DistrictSites.Ground() {

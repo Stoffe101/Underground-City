@@ -24,6 +24,8 @@ public final class DevBootstrap {
     private static final Logger LOGGER = LogUtils.getLogger();
     static final String DISTRICT = "founders_row", RANGE = "firing_range", FLATS = "row_flats", MOTEL = "row_motel";
     static final int SEARCH_RADIUS = 160, MAX_RELIEF = 3;
+    /** The landing is graded (LandingGrader), so a lot may be this uneven before grading and still be the least work. */
+    static final int LANDING_RELIEF = 24, LANDING_SEARCH_RADIUS = 200;
 
     /** A new archipelago world starts at its landing, not at the vanilla spawn point (which would be inside a city). Runs once, when the world is created. */
     @SubscribeEvent
@@ -74,33 +76,34 @@ public final class DevBootstrap {
      * The firing range goes west of the Row, its firing line meeting the gunsmith's back door (the Row's west building has it at local z 11, and the
      * range's path at its own local z 7). It is skipped, with a log line, where the ground there is not level enough for a lawn: the Row works without it.
      */
-    static void placeRange(ServerLevel level, BlockPos rowOrigin) {
+    static void placeRange(ServerLevel level, BlockPos rowOrigin, boolean graded) {
         DistrictCatalog.District range = DistrictCatalog.INSTANCE.find(RANGE);
         if (range == null) return;
         int width = range.max().getX() - range.min().getX() + 1;
-        placeBeside(level, range, rowOrigin.offset(-width, 0, 4), "firing range", "west");
+        placeBeside(level, range, rowOrigin.offset(-width, 0, 4), "firing range", "west", graded);
     }
 
     /** The Row Flats go east of the Row: the first homes a player or a Crew can lease. Skipped, with a log line, on ground that is not level enough. */
-    static void placeFlats(ServerLevel level, BlockPos rowOrigin) {
+    static void placeFlats(ServerLevel level, BlockPos rowOrigin, boolean graded) {
         DistrictCatalog.District flats = DistrictCatalog.INSTANCE.find(FLATS);
         DistrictCatalog.District row = DistrictCatalog.INSTANCE.find(DISTRICT);
         if (flats == null || row == null) return;
         int rowWidth = row.max().getX() - row.min().getX() + 1;
-        placeBeside(level, flats, rowOrigin.offset(rowWidth + 3, 0, 4), "Row Flats", "east");
+        placeBeside(level, flats, rowOrigin.offset(rowWidth + 3, 0, 4), "Row Flats", "east", graded);
         // The Row Motel goes beside the flats: the cheapest rooms, where a new citizen with no credits at all can sleep (the first hours are the city's).
         DistrictCatalog.District motel = DistrictCatalog.INSTANCE.find(MOTEL);
         if (motel != null) {
             int flatsWidth = flats.max().getX() - flats.min().getX() + 1;
-            placeBeside(level, motel, rowOrigin.offset(rowWidth + 3 + flatsWidth + 3, 0, 4), "Row Motel", "east");
+            placeBeside(level, motel, rowOrigin.offset(rowWidth + 3 + flatsWidth + 3, 0, 4), "Row Motel", "east", graded);
         }
     }
 
-    private static void placeBeside(ServerLevel level, DistrictCatalog.District district, BlockPos origin, String what, String side) {
+    private static void placeBeside(ServerLevel level, DistrictCatalog.District district, BlockPos origin, String what, String side, boolean graded) {
         if (DistrictBuilder.isBuilt(level, district.id())) return;
         int width = district.max().getX() - district.min().getX() + 1, depth = district.max().getZ() - district.min().getZ() + 1;
         var ground = ground(level);
-        for (int x = 0; x < width; x += 8) for (int z = 0; z < depth; z += 7) {
+        // The levelled landing is no longer what the generator would make, so its columns are not asked.
+        for (int x = 0; x < width && !graded; x += 8) for (int z = 0; z < depth; z += 7) {
             int wx = origin.getX() + x, wz = origin.getZ() + z;
             if (ground.wet(wx, wz) || Math.abs(ground.height(wx, wz) - origin.getY()) > MAX_RELIEF + 2) {
                 LOGGER.info("[UC-DEV] the {} was not placed: the ground {} of the Row is not level and dry enough at {} {}", what, side, wx, wz);
@@ -118,19 +121,46 @@ public final class DevBootstrap {
         }
     }
 
+    /** What the landing needs level: the range west of the Row, the Row, the flats and the motel east of it, and the lane's gate south of it. */
+    record Footprint(int left, int right, int width, int depth) {}
+
+    static Footprint footprint(int rowWidth, int rowDepth) {
+        int left = 0, right = rowWidth;
+        DistrictCatalog.District range = DistrictCatalog.INSTANCE.find(RANGE), flats = DistrictCatalog.INSTANCE.find(FLATS), motel = DistrictCatalog.INSTANCE.find(MOTEL);
+        if (range != null) left = range.max().getX() - range.min().getX() + 1;
+        if (flats != null) right += 3 + flats.max().getX() - flats.min().getX() + 1;
+        if (motel != null) right += 3 + motel.max().getX() - motel.min().getX() + 1;
+        return new Footprint(left, right, left + right, rowDepth + 8);
+    }
+
     static BlockPos place(ServerLevel level, DistrictCatalog.District district) {
         int width = district.max().getX() - district.min().getX() + 1, depth = district.max().getZ() - district.min().getZ() + 1;
         BlockPos spawn = level.getSharedSpawnPos();
-        var site = DistrictSites.find(ground(level), spawn.getX(), spawn.getZ(), width, depth, MAX_RELIEF, SEARCH_RADIUS)
-            .orElseThrow(() -> new IllegalStateException("no level, dry ground within " + SEARCH_RADIUS + " blocks of the spawn point"));
+        boolean landing = WorldLayout.INSTANCE.arrivalAnchor().isPresent();
+        DistrictSites.Site site;
+        if (landing) {
+            // The archipelago's landing is rolling plains: the whole footprint (range, Row, flats, motel and the lane's gate) is levelled once, on the flattest ground near the anchor.
+            Footprint footprint = footprint(width, depth);
+            site = DistrictSites.find(ground(level), spawn.getX(), spawn.getZ(), footprint.width(), footprint.depth(), LANDING_RELIEF, LANDING_SEARCH_RADIUS)
+                .orElseThrow(() -> new IllegalStateException("no dry ground within " + LANDING_SEARCH_RADIUS + " blocks of the landing"));
+            // find() returns the north-west corner of the footprint; the Row's own origin is the range's width further east.
+            LandingGrader.Rect lot = new LandingGrader.Rect(site.x(), site.z(), site.x() + footprint.width() - 1, site.z() + footprint.depth() - 1);
+            LandingGrader.Result graded = LandingGrader.grade(level, lot, site.y());
+            LOGGER.info("[UC-DEV] landing levelled at y {}: {} columns, {} blocks changed, up to {} cut and {} filled, {} water columns left alone, {} ms (natural relief {})",
+                site.y(), graded.columns(), graded.changed(), graded.maxCut(), graded.maxFill(), graded.skippedWet(), graded.millis(), site.relief());
+            site = new DistrictSites.Site(site.x() + footprint.left(), site.z(), site.y(), site.relief(), site.distance());
+        } else {
+            site = DistrictSites.find(ground(level), spawn.getX(), spawn.getZ(), width, depth, MAX_RELIEF, SEARCH_RADIUS)
+                .orElseThrow(() -> new IllegalStateException("no level, dry ground within " + SEARCH_RADIUS + " blocks of the spawn point"));
+        }
         BlockPos origin = new BlockPos(site.x(), site.y(), site.z());
         // The lot's chunks must exist before the builder looks at them; loading them here is the one-time cost of the first start.
         for (int cx = (origin.getX() + district.min().getX()) >> 4; cx <= (origin.getX() + district.max().getX()) >> 4; cx++) {
             for (int cz = (origin.getZ() + district.min().getZ()) >> 4; cz <= (origin.getZ() + district.max().getZ()) >> 4; cz++) level.getChunk(cx, cz);
         }
         DistrictBuilder.build(level, district, origin);
-        placeRange(level, origin);
-        placeFlats(level, origin);
+        placeRange(level, origin, landing);
+        placeFlats(level, origin, landing);
         // The gate is the middle of the lane's far (south) end; stand a few blocks outside it, facing the lane.
         BlockPos gate = origin.offset(district.min().getX() + width / 2, 0, depth + 2);
         level.setDefaultSpawnPos(gate, 180.0f);

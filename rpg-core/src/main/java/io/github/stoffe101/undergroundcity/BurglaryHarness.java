@@ -14,6 +14,7 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.block.DoorBlock;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.phys.BlockHitResult;
@@ -159,8 +160,26 @@ public final class BurglaryHarness {
             if (level.getBlockState(pos).isAir()) broken++;
         }
         fact("a visitor cannot break the building's walls", tried > 0 && broken == 0, "tried " + tried + " blocks around the door, " + broken + " broke");
-        BlockPos free = new BlockPos(building.chunkX() * 16 + 8, level.getSeaLevel(), (building.chunkZ() + 6) * 16 + 8);
-        fact("outside the volume the same player is not stopped", !CityBuildings.INSTANCE.at(level, free).isPresent(), "the control position " + free.toShortString() + " belongs to no building");
+        // the control: the same player, in survival, on a lot that is not a building, breaks a block he has just put there
+        BlockPos free = null;
+        search:
+        for (int ring = 2; ring <= 9 && free == null; ring++) {
+            for (int dx = -ring; dx <= ring && free == null; dx++) {
+                for (int dz = -ring; dz <= ring; dz++) {
+                    if (Math.max(Math.abs(dx), Math.abs(dz)) != ring) continue;
+                    BlockPos spot = new BlockPos((building.chunkX() + dx) * 16 + 8, building.streetY() + 1, (building.chunkZ() + dz) * 16 + 8);
+                    if (CityBuildings.INSTANCE.at(level, spot).isEmpty()) { free = spot; continue search; }
+                }
+            }
+        }
+        if (free == null) {
+            fact("outside the volume the same player is not stopped", false, "no lot without a building within nine chunks");
+        } else {
+            level.getChunk(free.getX() >> 4, free.getZ() >> 4);
+            level.setBlock(free, Blocks.DIRT.defaultBlockState(), 3);
+            thief.gameMode.destroyBlock(free);
+            fact("outside the volume the same player is not stopped", level.getBlockState(free).isAir(), "the control block at " + free.toShortString() + " belongs to no building and broke");
+        }
 
         // the door by hand, without a pick
         thief.getInventory().clearContent();
