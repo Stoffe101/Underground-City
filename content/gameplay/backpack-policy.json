@@ -142,8 +142,23 @@
         ]
       },
       {
+        "item": "sophisticatedbackpacks:advanced_pickup_upgrade",
+        "why": "More pickup filter slots, one diamond and gold around a pickup upgrade: the same convenience with a longer list; the magnet's range stays at the basic upgrade's three blocks (D-102).",
+        "monster_inputs": [
+          "minecraft:slime_ball",
+          "minecraft:string"
+        ]
+      },
+      {
         "item": "sophisticatedbackpacks:filter_upgrade",
         "why": "decides what goes in and out of the pack's openings",
+        "monster_inputs": [
+          "minecraft:string"
+        ]
+      },
+      {
+        "item": "sophisticatedbackpacks:advanced_filter_upgrade",
+        "why": "More filter slots and the extra modes of the filter, for 2 gold ingots and 3 redstone dust around a filter upgrade: pure organisation of what the pack already holds, nothing created and nothing automated (re-evaluated in D-102; was off as an unexamined variant).",
         "monster_inputs": [
           "minecraft:string"
         ]
@@ -174,6 +189,14 @@
         ]
       },
       {
+        "item": "sophisticatedbackpacks:advanced_restock_upgrade",
+        "why": "More restock filter slots, one diamond and gold around a restock upgrade: keeps the hotbar stocked from the pack, creates nothing (D-102).",
+        "monster_inputs": [
+          "minecraft:slime_ball",
+          "minecraft:string"
+        ]
+      },
+      {
         "item": "sophisticatedbackpacks:deposit_upgrade",
         "why": "puts chosen items into a chest you are standing at (respects home storage rights)",
         "monster_inputs": [
@@ -181,8 +204,22 @@
         ]
       },
       {
+        "item": "sophisticatedbackpacks:advanced_deposit_upgrade",
+        "why": "More deposit filter slots, one diamond and gold around a deposit upgrade: moves what the player already carries into a chest they may open, and the packet gate checks the chest's rights exactly as for the basic upgrade (D-102).",
+        "monster_inputs": [
+          "minecraft:string"
+        ]
+      },
+      {
         "item": "sophisticatedbackpacks:crafting_upgrade",
         "why": "a crafting grid in the pack: the plain table everyone already has at home, not a workstation",
+        "monster_inputs": [
+          "minecraft:string"
+        ]
+      },
+      {
+        "item": "sophisticatedbackpacks:tool_swapper_upgrade",
+        "why": "Picks the right held tool for the block being mined, from tools already in the pack: a keypress saved, a recipe of wooden tools, iron and redstone around an upgrade base, no new tool and no durability gained (D-102; was off as 'not needed for the first sessions').",
         "monster_inputs": [
           "minecraft:string"
         ]
@@ -276,28 +313,12 @@
         "why": "part of the disabled stack ladder"
       },
       {
-        "item": "sophisticatedbackpacks:advanced_pickup_upgrade",
-        "why": "the basic upgrades are the supported ones; advanced variants only add filter slots and strength"
-      },
-      {
-        "item": "sophisticatedbackpacks:advanced_filter_upgrade",
-        "why": "The advanced variant of the filter upgrade (larger range, more filter slots, extra modes); only the basic version is part of the economy, so the stronger one is a later, deliberate decision (D-093)."
-      },
-      {
         "item": "sophisticatedbackpacks:advanced_magnet_upgrade",
         "why": "The advanced variant of the magnet upgrade (larger range, more filter slots, extra modes); only the basic version is part of the economy, so the stronger one is a later, deliberate decision (D-093)."
       },
       {
         "item": "sophisticatedbackpacks:advanced_feeding_upgrade",
         "why": "The advanced variant of the feeding upgrade (larger range, more filter slots, extra modes); only the basic version is part of the economy, so the stronger one is a later, deliberate decision (D-093)."
-      },
-      {
-        "item": "sophisticatedbackpacks:advanced_restock_upgrade",
-        "why": "The advanced variant of the restock upgrade (larger range, more filter slots, extra modes); only the basic version is part of the economy, so the stronger one is a later, deliberate decision (D-093)."
-      },
-      {
-        "item": "sophisticatedbackpacks:advanced_deposit_upgrade",
-        "why": "The advanced variant of the deposit upgrade (larger range, more filter slots, extra modes); only the basic version is part of the economy, so the stronger one is a later, deliberate decision (D-093)."
       },
       {
         "item": "sophisticatedbackpacks:advanced_void_upgrade",
@@ -378,10 +399,6 @@
       {
         "item": "sophisticatedbackpacks:refill_upgrade",
         "why": "the restock upgrade already covers keeping the hotbar full"
-      },
-      {
-        "item": "sophisticatedbackpacks:tool_swapper_upgrade",
-        "why": "not needed for the first sessions; fewer upgrades to balance"
       },
       {
         "item": "sophisticatedbackpacks:tank_upgrade",

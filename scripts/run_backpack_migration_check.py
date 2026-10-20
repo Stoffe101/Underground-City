@@ -11,6 +11,14 @@ does not convert anything. It **measures** what Forge 47.4.10 does on a producti
   3. Start the same world once more with the retired provider. Did the items come back?
   4. As a control, restore the world copy taken after step 1 and open it with the retired provider only (the documented way to get the contents out).
 
+Since D-103 Core **refuses** to load such a world unless the operator overrides it on purpose, so the script now measures the guard as well (the steps are renumbered):
+
+  2. the same world, current provider, default settings: the server must REFUSE to start (no "Done"), say why, and leave every file of the world byte-for-byte as it was;
+  3. the same, with ``-Duc.acceptLegacyBackpackLoss=true``: the server starts, a backup of the world appears in ``uc-backups/`` first, and the loss Forge warns about happens (as measured before);
+  4. reopen with the retired provider: nothing came back (the loss is permanent once saved);
+  5. restore the **automatic backup** (not our own copy) and open it with the retired provider: the contents are back;
+  6. control: the manual copy from after step 1.
+
 Nothing is committed. The jars are downloaded from the authors' pages and hash-verified as for every other pinned mod. Run it in Claude's cloud environment or a hosted runner.
 
     gradle -p rpg-core build
@@ -40,12 +48,12 @@ MARKER = "uc_migration_marker"
 class Console:
     """A dedicated server process whose console we can type into and whose output we can wait on."""
 
-    def __init__(self, server: Path, label: str, log_dir: Path):
+    def __init__(self, server: Path, label: str, log_dir: Path, extra_jvm: tuple[str, ...] = ()):
         self.log_path = log_dir / f"{label}.log"
         self.sink = self.log_path.open("w", encoding="utf-8")
         args = server / "libraries" / "net" / "minecraftforge" / "forge" / boot.FORGE / "unix_args.txt"
         jvm = server / "user_jvm_args.txt"
-        jvm.write_text("-Xms512M\n-Xmx3G\n", encoding="utf-8")
+        jvm.write_text("-Xms512M\n-Xmx3G\n" + "".join(flag + "\n" for flag in extra_jvm), encoding="utf-8")
         self.process = subprocess.Popen(["java", f"@{jvm}", f"@{args}", "nogui"], cwd=server, stdin=subprocess.PIPE, stdout=self.sink, stderr=subprocess.STDOUT, text=True)
 
     def text(self) -> str:
@@ -139,6 +147,16 @@ def region_mentions_dir(folder: Path, needle: str) -> int:
     return hits
 
 
+def digest(folder: Path) -> str:
+    """One hash over the names and bytes of every file under ``folder`` (the guard must leave a refused world exactly as it was)."""
+    import hashlib
+    h = hashlib.sha256()
+    for path in sorted(p for p in folder.rglob("*") if p.is_file()):
+        h.update(str(path.relative_to(folder)).encode())
+        h.update(path.read_bytes())
+    return h.hexdigest()
+
+
 def snapshot(server: Path) -> dict:
     world = server / "world"
     return {
@@ -186,50 +204,83 @@ def main() -> int:
         shutil.rmtree(backup)
     shutil.copytree(server / "world", backup)
 
-    # 2. the same world, current provider, no Traveler's Backpack -----------------------------------------------------------------------------------------
+    # 2. the same world, current provider, default settings: the guard must refuse ------------------------------------------------------------------------------
     swap_mods(server, ["survival"], core)
     boot.stage_survival_config(server)
-    c = Console(server, "2-open-with-sophisticated", logs)
-    started = c.wait_for(r"Done \(", 240)
+    before_digest = digest(server / "world")
+    c = Console(server, "2-open-with-sophisticated-default", logs)
+    started = c.wait_for(r"Done \(", 150)
+    refused = c.wait_for(r"REFUSING TO LOAD THIS WORLD", 5) or "REFUSING TO LOAD THIS WORLD" in c.text()
+    code2 = c.stop(timeout=60)
     log2 = c.text()
-    step2: dict = {"reached_done": started, "core_notice_logged_before_anything_was_saved": "THIS WORLD WAS SAVED WITH TRAVELER'S BACKPACK, WHICH IS NOT INSTALLED" in log2}
-    for pattern in ("Missing registry|missing registry|Unknown registry|Registry Mismatch|registry mismatch|mismatch", "travelersbackpack", "confirm|Confirm", "Failed to start|Exception caught"):
-        step2["log_lines_matching_" + pattern.split("|")[0].replace(" ", "_")] = [line.strip()[:220] for line in log2.splitlines() if re.search(pattern, line)][:8]
-    if started:
-        step2["chest_after"] = c.send("data get block 2 100 0 Items", r"has the following block data|Found no|The target block", 20).strip()[-200:]
-        step2["block_after"] = c.send("execute if block 0 100 0 minecraft:air run say AIR_AT_0", r"AIR_AT_0|Test failed", 20).strip()[-120:]
-        step2["items_in_world"] = c.send("execute as @e[type=minecraft:item] run data get entity @s Item", r"has the following entity data|No entity was found", 20).strip()[-300:]
-        c.send("save-all flush", r"Saved", 60)
-    code2 = c.stop()
-    step2["exit_code"] = code2
-    step2["world"] = snapshot(server)
-    report["steps"]["2_open_without_the_mod"] = step2
-    print(json.dumps(step2, indent=2), flush=True)
+    report["steps"]["2_default_settings_are_refused"] = {
+        "reached_done": started, "refusal_logged": refused, "exit_code": code2,
+        "world_unchanged_byte_for_byte": digest(server / "world") == before_digest,
+        "no_backup_made": not (server / "uc-backups").exists(),
+        "log_lines": [line.strip()[:200] for line in log2.splitlines() if "UC-BACKPACKS" in line][:6]}
+    print(json.dumps(report["steps"]["2_default_settings_are_refused"], indent=2), flush=True)
 
-    # 3. back to the retired provider on the world that step 2 saved ------------------------------------------------------------------------------------------
-    swap_mods(server, ["legacy_travelers"], core)
-    c = Console(server, "3-reopen-with-travelers", logs)
-    started3 = c.wait_for(r"Done \(", 240)
-    step3: dict = {"reached_done": started3}
-    if started3:
+    # 3. the same, with the deliberate override: a backup first, then the loss Forge warns about ---------------------------------------------------------------------
+    c = Console(server, "3-open-with-override", logs, ("-Duc.acceptLegacyBackpackLoss=true",))
+    started = c.wait_for(r"Done \(", 240)
+    log3 = c.text()
+    step3: dict = {"reached_done": started, "override_logged": "Override accepted" in log3, "core_notice_logged_before_anything_was_saved": "THIS WORLD WAS SAVED WITH TRAVELER'S BACKPACK, WHICH IS NOT INSTALLED" in log3}
+    backups = sorted((server / "uc-backups").glob("*")) if (server / "uc-backups").exists() else []
+    step3["backup_folders"] = [b.name for b in backups]
+    if backups:
+        step3["backup_chunks_naming_the_mod"] = region_mentions_dir(backups[0] / "region", "travelersbackpack")
+        step3["backup_level_dat_names_the_mod"] = fml_registry_mentions(backups[0], "travelersbackpack")
+    for pattern in ("Missing registry|missing registry|Unknown registry|Registry Mismatch|registry mismatch|mismatch", "travelersbackpack", "confirm|Confirm", "Failed to start|Exception caught"):
+        step3["log_lines_matching_" + pattern.split("|")[0].replace(" ", "_")] = [line.strip()[:220] for line in log3.splitlines() if re.search(pattern, line)][:8]
+    if started:
         step3["chest_after"] = c.send("data get block 2 100 0 Items", r"has the following block data|Found no|The target block", 20).strip()[-200:]
-        step3["block_after"] = c.send(f"execute if block 0 100 0 {TRAVELER_BLOCK} run say TRAVELER_AT_0", r"TRAVELER_AT_0|Test failed", 20).strip()[-120:]
+        step3["block_after"] = c.send("execute if block 0 100 0 minecraft:air run say AIR_AT_0", r"AIR_AT_0|Test failed", 20).strip()[-120:]
+        step3["items_in_world"] = c.send("execute as @e[type=minecraft:item] run data get entity @s Item", r"has the following entity data|No entity was found", 20).strip()[-300:]
+        c.send("save-all flush", r"Saved", 60)
     step3["exit_code"] = c.stop()
-    report["steps"]["3_reopen_with_the_mod_after_step_2"] = step3
+    step3["world"] = snapshot(server)
+    report["steps"]["3_override_backs_up_then_loses_the_packs"] = step3
     print(json.dumps(step3, indent=2), flush=True)
 
-    # 4. control: the copy from after step 1, retired provider only ------------------------------------------------------------------------------------------
-    shutil.rmtree(server / "world")
-    shutil.copytree(backup, server / "world")
-    c = Console(server, "4-control-copy-from-step-1", logs)
+    # 4. back to the retired provider on the world that step 3 saved ------------------------------------------------------------------------------------------
+    swap_mods(server, ["legacy_travelers"], core)
+    c = Console(server, "4-reopen-with-travelers", logs)
     started4 = c.wait_for(r"Done \(", 240)
     step4: dict = {"reached_done": started4}
     if started4:
         step4["chest_after"] = c.send("data get block 2 100 0 Items", r"has the following block data|Found no|The target block", 20).strip()[-200:]
         step4["block_after"] = c.send(f"execute if block 0 100 0 {TRAVELER_BLOCK} run say TRAVELER_AT_0", r"TRAVELER_AT_0|Test failed", 20).strip()[-120:]
     step4["exit_code"] = c.stop()
-    report["steps"]["4_control_original_copy"] = step4
+    report["steps"]["4_reopen_with_the_mod_after_step_3"] = step4
     print(json.dumps(step4, indent=2), flush=True)
+
+    # 5. restore the AUTOMATIC backup and open it with the retired provider --------------------------------------------------------------------------------------
+    step5: dict = {"backup_available": bool(backups)}
+    if backups:
+        shutil.rmtree(server / "world")
+        shutil.copytree(backups[0], server / "world")
+        c = Console(server, "5-automatic-backup-with-travelers", logs)
+        started5 = c.wait_for(r"Done \(", 240)
+        step5["reached_done"] = started5
+        if started5:
+            step5["chest_after"] = c.send("data get block 2 100 0 Items", r"has the following block data|Found no|The target block", 20).strip()[-200:]
+            step5["block_after"] = c.send(f"execute if block 0 100 0 {TRAVELER_BLOCK} run say TRAVELER_AT_0", r"TRAVELER_AT_0|Test failed", 20).strip()[-120:]
+        step5["exit_code"] = c.stop()
+    report["steps"]["5_the_automatic_backup_restores_everything"] = step5
+    print(json.dumps(step5, indent=2), flush=True)
+
+    # 6. control: the manual copy from after step 1, retired provider only ------------------------------------------------------------------------------------------
+    shutil.rmtree(server / "world")
+    shutil.copytree(backup, server / "world")
+    c = Console(server, "6-control-copy-from-step-1", logs)
+    started6 = c.wait_for(r"Done \(", 240)
+    step6: dict = {"reached_done": started6}
+    if started6:
+        step6["chest_after"] = c.send("data get block 2 100 0 Items", r"has the following block data|Found no|The target block", 20).strip()[-200:]
+        step6["block_after"] = c.send(f"execute if block 0 100 0 {TRAVELER_BLOCK} run say TRAVELER_AT_0", r"TRAVELER_AT_0|Test failed", 20).strip()[-120:]
+    step6["exit_code"] = c.stop()
+    report["steps"]["6_control_original_copy"] = step6
+    print(json.dumps(step6, indent=2), flush=True)
 
     (args.work / "migration-report.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
     print("report:", args.work / "migration-report.json")

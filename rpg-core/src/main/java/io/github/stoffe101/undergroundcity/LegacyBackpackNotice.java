@@ -9,6 +9,8 @@ import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.loading.FMLPaths;
+import net.minecraftforge.server.ServerLifecycleHooks;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,6 +26,11 @@ import org.slf4j.LoggerFactory;
  * <p>Forge asks every mod about registry entries a world names but the game no longer has ({@link MissingMappingsEvent}) before it rewrites anything. This class only <em>listens</em>: it
  * leaves every mapping at Forge's default, logs an error and remembers, so that every operator who logs in is told too. The world may hold no Traveler's item at all (the registry list names
  * every item of a mod that was installed), so the wording says what happens <em>if</em> there is one.
+ *
+ * <p><b>Fail closed (D-103).</b> Warning is not enough: a server that starts unattended loses the packs five minutes later. So by default this class <em>refuses to load</em> a world
+ * whose registry list names the retired mod: it throws from the event, which aborts the start before a chunk or a player file is read. The way past it is deliberate and documented:
+ * start with {@code -Duc.acceptLegacyBackpackLoss=true} (or the environment variable {@code UC_ACCEPT_LEGACY_BACKPACK_LOSS=true}). Even then it first <b>copies the whole world folder</b>
+ * to {@code uc-backups/} beside the game directory and refuses if it cannot. Nothing is converted. After one save the world no longer names the mod and the guard stops firing.
  */
 @Mod.EventBusSubscriber(modid = UndergroundCity.MOD_ID)
 public final class LegacyBackpackNotice {
@@ -40,13 +47,77 @@ public final class LegacyBackpackNotice {
 
     static boolean detected() { return detected; }
 
+    static final String OVERRIDE_PROPERTY = "uc.acceptLegacyBackpackLoss", OVERRIDE_ENVIRONMENT = "UC_ACCEPT_LEGACY_BACKPACK_LOSS";
+
+    /** What to do when the world names the retired mod. */
+    enum Verdict { LOAD, REFUSE, BACK_UP_AND_LOAD }
+
+    /** The decision, kept pure so it can be tested: nothing named, nothing to guard; named and not overridden, refuse; named and overridden, back up first. */
+    static Verdict verdict(boolean worldNamesTheRetiredMod, boolean overridden) {
+        if (!worldNamesTheRetiredMod) return Verdict.LOAD;
+        return overridden ? Verdict.BACK_UP_AND_LOAD : Verdict.REFUSE;
+    }
+
+    static boolean overridden() {
+        return Boolean.getBoolean(OVERRIDE_PROPERTY) || "true".equalsIgnoreCase(System.getenv(OVERRIDE_ENVIRONMENT));
+    }
+
+    /** The world folder being opened, or null if it cannot be told yet (the dedicated server has no server object when Forge asks about registries). */
+    static java.nio.file.Path worldFolder() {
+        var server = ServerLifecycleHooks.getCurrentServer();
+        if (server != null) return server.getWorldPath(net.minecraft.world.level.storage.LevelResource.ROOT);
+        java.nio.file.Path game = FMLPaths.GAMEDIR.get();
+        String level = "world";
+        java.nio.file.Path properties = game.resolve("server.properties");
+        try {
+            if (java.nio.file.Files.isRegularFile(properties)) {
+                for (String line : java.nio.file.Files.readAllLines(properties)) if (line.startsWith("level-name=")) level = line.substring("level-name=".length()).trim();
+            }
+        } catch (java.io.IOException unreadable) { return null; }
+        java.nio.file.Path folder = game.resolve(level);
+        return java.nio.file.Files.isDirectory(folder) ? folder : null;
+    }
+
+    /** Copies the world to {@code uc-backups/<name>-before-legacy-backpack-loss-<time>} and returns that folder; throws if it cannot. */
+    static java.nio.file.Path backUp(java.nio.file.Path world) throws java.io.IOException {
+        java.nio.file.Path target = FMLPaths.GAMEDIR.get().resolve("uc-backups").resolve(world.getFileName() + "-before-legacy-backpack-loss-" + java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss").format(java.time.LocalDateTime.now()));
+        java.nio.file.Files.createDirectories(target);
+        try (var walk = java.nio.file.Files.walk(world)) {
+            for (java.nio.file.Path source : (Iterable<java.nio.file.Path>) walk::iterator) {
+                java.nio.file.Path copy = target.resolve(world.relativize(source).toString());
+                if (java.nio.file.Files.isDirectory(source)) java.nio.file.Files.createDirectories(copy);
+                else java.nio.file.Files.copy(source, copy, java.nio.file.StandardCopyOption.COPY_ATTRIBUTES);
+            }
+        }
+        return target;
+    }
+
     @SubscribeEvent
     public static void missing(MissingMappingsEvent event) {
         if (detected) return;
         boolean found = false;
         for (var mapping : event.getAllMappings(ForgeRegistries.Keys.ITEMS)) found |= concerns(mapping.getKey());
         for (var mapping : event.getAllMappings(ForgeRegistries.Keys.BLOCKS)) found |= concerns(mapping.getKey());
-        if (!found) return;
+        Verdict verdict = verdict(found, overridden());
+        if (verdict == Verdict.LOAD) return;
+        if (verdict == Verdict.REFUSE) {
+            LOG.error("[UC-BACKPACKS] REFUSING TO LOAD THIS WORLD: it was saved with Traveler's Backpack, which is not installed, and Forge would delete every Traveler's Backpack in it at the next save.");
+            LOG.error("[UC-BACKPACKS] Nothing has been read or changed. Copy the world folder first. To keep the contents, follow docs/technical/backpack-migration.md (start once with the retired provider and empty the packs).");
+            LOG.error("[UC-BACKPACKS] To load the world anyway and lose the packs, start with -D" + OVERRIDE_PROPERTY + "=true (or set " + OVERRIDE_ENVIRONMENT + "=true). A backup is made first.");
+            throw new IllegalStateException("Refusing to load a world that holds Traveler's Backpack data without the mod (Underground City, D-103). See the log lines tagged [UC-BACKPACKS] and docs/technical/backpack-migration.md.");
+        }
+        java.nio.file.Path world = worldFolder();
+        if (world == null) {
+            LOG.error("[UC-BACKPACKS] The override is set but the world folder cannot be found to back it up, so the world is NOT loaded. Copy the world by hand and start the server from its folder.");
+            throw new IllegalStateException("Cannot back up the world before overriding the Traveler's Backpack guard (Underground City, D-103).");
+        }
+        try {
+            java.nio.file.Path backup = backUp(world);
+            LOG.error("[UC-BACKPACKS] Override accepted. The world was copied to {} before anything is loaded. Traveler's Backpack items WILL be removed at the next save; nothing is converted.", backup);
+        } catch (java.io.IOException failed) {
+            LOG.error("[UC-BACKPACKS] The backup of {} failed ({}), so the world is NOT loaded.", world, failed.toString());
+            throw new IllegalStateException("The backup before overriding the Traveler's Backpack guard failed (Underground City, D-103).", failed);
+        }
         detected = true;
         LOG.error("[UC-BACKPACKS] THIS WORLD WAS SAVED WITH TRAVELER'S BACKPACK, WHICH IS NOT INSTALLED.");
         LOG.error("[UC-BACKPACKS] If it holds any Traveler's Backpack (in a chest or an inventory, placed in the world, or dropped), Forge removes it permanently at the next save");

@@ -28,4 +28,13 @@ public final class LegacyBackpackNoticeGameTests {
         check(!LegacyBackpackNotice.detected(), "the test world is a fresh world and must not carry the legacy notice");
         helper.succeed();
     }
+
+    @GameTest(template = "empty", batch = "uc_legacy_notice")
+    public static void theGuardRefusesByDefaultAndOnlyADeliberateOverrideBacksUpAndLoads(GameTestHelper helper) {
+        check(LegacyBackpackNotice.verdict(false, false) == LegacyBackpackNotice.Verdict.LOAD && LegacyBackpackNotice.verdict(false, true) == LegacyBackpackNotice.Verdict.LOAD, "a world that never named the mod loads, override or not");
+        check(LegacyBackpackNotice.verdict(true, false) == LegacyBackpackNotice.Verdict.REFUSE, "a world that names the retired mod is refused by default (fail closed)");
+        check(LegacyBackpackNotice.verdict(true, true) == LegacyBackpackNotice.Verdict.BACK_UP_AND_LOAD, "a deliberate override backs up first");
+        check(!LegacyBackpackNotice.overridden() || Boolean.getBoolean(LegacyBackpackNotice.OVERRIDE_PROPERTY) || "true".equalsIgnoreCase(System.getenv(LegacyBackpackNotice.OVERRIDE_ENVIRONMENT)), "the override is only ever the property or the environment variable");
+        helper.succeed();
+    }
 }
