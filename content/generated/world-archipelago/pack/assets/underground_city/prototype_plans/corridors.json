@@ -1,0 +1,254 @@
+{
+  "construction_policy": {
+    "avoid_player_structures": true,
+    "bridge_width_blocks": 9,
+    "generate_working_crossings": true,
+    "protect_story_regions": true,
+    "require_review_before_paste": false,
+    "requires_in_game_terrain_heightmap": true,
+    "road_width_blocks": 7
+  },
+  "coordinate_units": "overworld_blocks",
+  "layout": "archipelago",
+  "prototype_only": true,
+  "road_generation": {
+    "build_route_kinds": [
+      "guarded_highway",
+      "militarized_highway",
+      "frontier_highway"
+    ],
+    "feature": "underground_city:corridor_roads",
+    "mode": "worldgen_feature",
+    "new_chunks_only": true,
+    "reference_seed": 5908,
+    "stops_at_city_circles": true,
+    "unpaved_route_kinds": [],
+    "water_policy": "the islands are separated by straits; every road ends at a cape on each island and crosses its strait by a bridge whose deck stays four free blocks above the water so boats can pass beneath; a boat is the alternative to a bridge"
+  },
+  "routes": [
+    {
+      "checkpoints": [
+        {
+          "faction": "ironhaven",
+          "id": "ironhaven_valewood_gate_ironhaven",
+          "position": [
+            404,
+            63
+          ],
+          "risk": "inspection"
+        },
+        {
+          "faction": "valewood",
+          "id": "ironhaven_valewood_gate_valewood",
+          "position": [
+            1301,
+            189
+          ],
+          "risk": "inspection"
+        }
+      ],
+      "crossings": [
+        {
+          "between_waypoints": [
+            1,
+            2
+          ],
+          "id": "east_causeway",
+          "kind": "proposed_bridge",
+          "requires_water_or_ravine_survey": true
+        }
+      ],
+      "from": "ironhaven",
+      "id": "ironhaven_valewood",
+      "kind": "guarded_highway",
+      "lore": "Ironhaven manufactured goods reach Valewood's crop-and-vineyard exporters across the East Causeway.",
+      "security": "patrolled",
+      "to": "valewood",
+      "travel_modes": [
+        "walking",
+        "vehicle",
+        "boat",
+        "licensed_convoy"
+      ],
+      "waypoints": [
+        [
+          323,
+          52
+        ],
+        [
+          588,
+          89
+        ],
+        [
+          853,
+          126
+        ],
+        [
+          1117,
+          163
+        ],
+        [
+          1382,
+          200
+        ]
+      ]
+    },
+    {
+      "checkpoints": [
+        {
+          "faction": "ironhaven",
+          "id": "ironhaven_blackwater_gate_ironhaven",
+          "position": [
+            169,
+            374
+          ],
+          "risk": "high"
+        },
+        {
+          "faction": "blackwater",
+          "id": "ironhaven_blackwater_gate_blackwater",
+          "position": [
+            499,
+            1125
+          ],
+          "risk": "high"
+        }
+      ],
+      "crossings": [
+        {
+          "between_waypoints": [
+            1,
+            2
+          ],
+          "id": "south_viaduct",
+          "kind": "proposed_bridge",
+          "requires_water_or_ravine_survey": true
+        }
+      ],
+      "from": "ironhaven",
+      "id": "ironhaven_blackwater",
+      "kind": "militarized_highway",
+      "lore": "The South Viaduct is Ironhaven's lifeline to the port; everyone on it is watched.",
+      "security": "contested",
+      "to": "blackwater",
+      "travel_modes": [
+        "walking",
+        "vehicle",
+        "boat",
+        "licensed_convoy"
+      ],
+      "waypoints": [
+        [
+          136,
+          299
+        ],
+        [
+          235,
+          524
+        ],
+        [
+          334,
+          750
+        ],
+        [
+          433,
+          975
+        ],
+        [
+          532,
+          1200
+        ]
+      ]
+    },
+    {
+      "checkpoints": [
+        {
+          "faction": "valewood",
+          "id": "valewood_blackwater_gate_valewood",
+          "position": [
+            1417,
+            477
+          ],
+          "risk": "inspection"
+        },
+        {
+          "faction": "blackwater",
+          "id": "valewood_blackwater_gate_blackwater",
+          "position": [
+            875,
+            1172
+          ],
+          "risk": "low"
+        }
+      ],
+      "crossings": [
+        {
+          "between_waypoints": [
+            1,
+            2
+          ],
+          "id": "harbour_span",
+          "kind": "proposed_bridge",
+          "requires_water_or_ravine_survey": true
+        }
+      ],
+      "from": "valewood",
+      "id": "valewood_blackwater",
+      "kind": "frontier_highway",
+      "lore": "The Harbour Span carries Valewood's wine to Blackwater's markets, and sometimes other things.",
+      "security": "unpredictable",
+      "to": "blackwater",
+      "travel_modes": [
+        "walking",
+        "vehicle",
+        "boat",
+        "licensed_convoy"
+      ],
+      "waypoints": [
+        [
+          1468,
+          412
+        ],
+        [
+          1307,
+          618
+        ],
+        [
+          1146,
+          824
+        ],
+        [
+          986,
+          1031
+        ],
+        [
+          825,
+          1237
+        ]
+      ]
+    }
+  ],
+  "schema_version": 1,
+  "terrain_verified": false,
+  "transport": {
+    "convoys_work_for_noncombat_players": true,
+    "inter_city_fast_travel": "licensed_convoys_after_discovery",
+    "on_foot_viable_before_vehicle_unlock": true,
+    "routine_travel_budget": {
+      "all_three_routes_walkable_within_budget": true,
+      "design_note": "Walking and sprinting are viable defaults; stops provide optional activities, never mandatory empty-road delay. Estimate is static; benchmark actual 2-player traversal before accepting a release.",
+      "estimated_walking_blocks_per_second": 4.317,
+      "intermediate_points_of_interest_spacing_blocks": [
+        300,
+        450
+      ],
+      "mandatory_route_must_not_require_vehicle": true,
+      "maximum_routine_door_to_door_minutes": 10,
+      "preferred_between_city_edges_minutes": [
+        3,
+        5
+      ],
+      "reserved_city_access_minutes": 2
+    }
+  }
+}

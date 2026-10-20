@@ -11,7 +11,6 @@ import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.LevelSettings;
 import net.minecraft.world.level.WorldDataConfiguration;
 import net.minecraft.world.level.levelgen.WorldOptions;
-import net.minecraft.world.level.levelgen.presets.WorldPresets;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -159,8 +158,7 @@ public final class Playtest {
                 mc.createWorldOpenFlows().loadLevel(mc.screen, name);
             } else {
                 LevelSettings settings = new LevelSettings(name, GameType.CREATIVE, false, Difficulty.NORMAL, true, new GameRules(), WorldDataConfiguration.DEFAULT);
-                mc.createWorldOpenFlows().createFreshLevel(name, settings, new WorldOptions(5908L, true, false),
-                    registries -> registries.registryOrThrow(Registries.WORLD_PRESET).getHolderOrThrow(WorldPresets.NORMAL).value().createWorldDimensions());
+                mc.createWorldOpenFlows().createFreshLevel(name, settings, new WorldOptions(5908L, true, false), DevWorldLauncher::dimensions);
             }
             log("opening world " + name + " for scenario " + SCENARIO);
         } catch (RuntimeException error) {

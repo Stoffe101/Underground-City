@@ -104,6 +104,7 @@ public final class UndergroundCity {
         BLOCK_ENTITIES.register(context.getModEventBus());
         FEATURES.register(context.getModEventBus());
         LostCitiesLink.register(context.getModEventBus());
+        RegionalWorldgen.register(context.getModEventBus());
         ITEMS.register(context.getModEventBus());
         context.getModEventBus().addListener(this::addCreativeTab);
         TerminalNetwork.register();
@@ -118,6 +119,9 @@ public final class UndergroundCity {
         MinecraftForge.EVENT_BUS.register(new OrderTracker());
         MinecraftForge.EVENT_BUS.register(new Journey());
         MinecraftForge.EVENT_BUS.register(new DevBootstrap());
+        MinecraftForge.EVENT_BUS.register(new TerrainMapHarness());
+        MinecraftForge.EVENT_BUS.register(new CityProbe());
+        MinecraftForge.EVENT_BUS.register(WorldLayout.INSTANCE);
         MinecraftForge.EVENT_BUS.register(new CheckpointService());
         MinecraftForge.EVENT_BUS.register(new SecureTerminalService());
         MinecraftForge.EVENT_BUS.register(new CrewService());
@@ -138,6 +142,7 @@ public final class UndergroundCity {
         event.addListener(WorkOrderCatalog.INSTANCE);
         event.addListener(RegionalCatalog.INSTANCE);
         event.addListener(CityRegions.INSTANCE);
+        event.addListener(WorldLayout.INSTANCE);
         event.addListener(PropertyPolicies.INSTANCE);
         event.addListener(ExceptionalLoot.INSTANCE);
         event.addListener(SkillCatalog.INSTANCE);

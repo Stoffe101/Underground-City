@@ -45,7 +45,7 @@ public final class DevBootstrap {
             @Override public boolean reserved(int x, int z) {
                 // Inside a city circle Lost Cities owns the ground; keep well clear of the circle and of the roads' region of influence.
                 return CityRegions.INSTANCE.all().stream().anyMatch(city -> city.dimension().equals(level.dimension().location().toString())
-                    && Math.hypot(x - city.centerX(), z - city.centerZ()) < city.radius() + 48);
+                    && Math.hypot(x - city.centerX(), z - city.centerZ()) < city.cityRadius() + 48);
             }
         };
     }

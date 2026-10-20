@@ -1,0 +1,40 @@
+{
+  "arrival": {
+    "anchor": [
+      -361,
+      -223
+    ],
+    "bearing_degrees": 212,
+    "ground_y": 71,
+    "island": "ironhaven",
+    "plateau_radius": 95
+  },
+  "cities": {
+    "blackwater": {
+      "center_chunk": [
+        40,
+        91
+      ],
+      "radius_blocks": 300,
+      "shore_radius": 500
+    },
+    "ironhaven": {
+      "center_chunk": [
+        0,
+        0
+      ],
+      "radius_blocks": 330,
+      "shore_radius": 560
+    },
+    "valewood": {
+      "center_chunk": [
+        100,
+        14
+      ],
+      "radius_blocks": 240,
+      "shore_radius": 570
+    }
+  },
+  "layout": "archipelago",
+  "schema_version": 1
+}

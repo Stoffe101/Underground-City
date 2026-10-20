@@ -26,7 +26,7 @@ java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 // GitHub release), are SHA-512/SHA-256 verified against content/modpacks/dev-pack.json, and are never committed.
 // ---------------------------------------------------------------------------------------------------------------
 def harnessFlags = ['ucPack', 'ucEconomyTest', 'ucScreeningMod', 'ucWorldCandidate', 'ucWorldTour', 'ucJourneyClient',
-                    'ucVisualCapture', 'ucWorldSurvey', 'ucSeedScan', 'ucJourneyPhase', 'ucJourneyScenario', 'ucJourneySurvival', 'ucJourneyWorld', 'ucPerfProbe', 'ucStallProbe']
+                    'ucVisualCapture', 'ucWorldSurvey', 'ucSeedScan', 'ucJourneyPhase', 'ucJourneyScenario', 'ucJourneySurvival', 'ucJourneyWorld', 'ucPerfProbe', 'ucStallProbe', 'ucTerrainMap', 'ucCityProbe', 'ucPhotoTour']
 def requestedTasks = gradle.startParameter.taskNames.collect { it.tokenize(':').last() }
 def userLaunch = requestedTasks.any { it in ['runClient', 'runServer'] } &&
         !harnessFlags.any { providers.gradleProperty(it).isPresent() }
@@ -40,7 +40,14 @@ def devWorldWanted = userLaunch || providers.gradleProperty('ucDevWorld').orNull
 def autoWorld = devWorldWanted && providers.gradleProperty('ucAutoWorld').orNull != 'false' && !providers.gradleProperty('ucPlaytest').isPresent()
 def economyRuntime = providers.gradleProperty('ucEconomyTest').orNull == 'true' || userLaunch
 def runDirName = providers.gradleProperty('ucRunDir').orElse(userLaunch ? 'run-dev' : 'run').get()
-def devWorldName = 'UC-Dev-5908'
+// Two world layouts exist (D-104) and a launch carries exactly one of them (WorldLayout refuses a mismatch): a plain runClient or runServer starts the ARCHIPELAGO
+// (the world type "Underground City: Archipelago", dev world UC-Archipelago); -PucWorldLayout=legacy starts the original seed-5908 triangle and its saved dev world UC-Dev-5908
+// exactly as before, and every scripted run (playtest, launch smoke, CI harness) keeps the legacy layout unless it asks otherwise.
+def interactiveLaunch = userLaunch && !providers.gradleProperty('ucPlaytest').isPresent() && !providers.gradleProperty('ucLaunchSmoke').isPresent()
+def worldLayout = providers.gradleProperty('ucWorldLayout').orElse(interactiveLaunch ? 'archipelago' : 'legacy').get()
+if (!(worldLayout in ['legacy', 'archipelago'])) throw new GradleException('ucWorldLayout must be legacy or archipelago')
+def worldPackName = worldLayout == 'archipelago' ? 'world-archipelago' : 'world-prototype'
+def devWorldName = worldLayout == 'archipelago' ? 'UC-Archipelago' : 'UC-Dev-5908'
 
 def devPackMods = []
 if (!devPackSets.isEmpty()) {
@@ -91,6 +98,7 @@ minecraft {
             if (userLaunch) {
                 jvmArgs '-Xmx4G'
                 if (autoWorld) jvmArgs "-Duc.devWorld=${devWorldName}", '-Duc.devBootstrap=true'
+                if (autoWorld && worldLayout == 'archipelago') jvmArgs '-Duc.devPreset=underground_city:archipelago'
                 // Two developers testing together need different offline names (the default profile is "Dev").
                 if (providers.gradleProperty('ucUsername').isPresent()) args '--username', providers.gradleProperty('ucUsername').get()
             }
@@ -102,6 +110,13 @@ minecraft {
                     if (name.startsWith('ucPt') && name.length() > 4) jvmArgs "-Duc.playtest.${name.substring(4).toLowerCase()}=${value}"
                 }
                 args '--width', '1280', '--height', '720'
+                if (worldLayout == 'archipelago') jvmArgs '-Duc.devPreset=underground_city:archipelago'
+            }
+            if (providers.gradleProperty('ucPhotoTour').isPresent()) {
+                // a spectator camera flies to each viewpoint of a shot list (PhotoTour) in the world the development launcher creates; frames land in <run dir>/screenshots
+                jvmArgs "-Duc.photoTour=${providers.gradleProperty('ucPhotoTour').get()}", "-Duc.devWorld=${providers.gradleProperty('ucPhotoWorld').orElse(devWorldName).get()}", '-XX:ActiveProcessorCount=2', "-Xmx${providers.gradleProperty('ucClientHeap').orElse('3G').get()}"
+                if (worldLayout == 'archipelago') jvmArgs '-Duc.devPreset=underground_city:archipelago'
+                args '--username', 'UC_Photographer', '--width', providers.gradleProperty('ucPhotoWidth').orElse('1920').get(), '--height', providers.gradleProperty('ucPhotoHeight').orElse('1080').get()
             }
             if (providers.gradleProperty('ucLaunchSmoke').orNull == 'true') {
                 // CI / verification: join the dev world, report facts, take a screenshot, quit.
@@ -140,6 +155,24 @@ minecraft {
             if (providers.gradleProperty('ucPerfProbe').orNull == 'true') {
                 // a dedicated server that measures the cost of a tick with and without Founders Row (PerfProbe.java), then stops
                 jvmArgs '-Duc.perfProbe=true', '-Xmx2G'
+            }
+            if (providers.gradleProperty('ucTerrainMap').isPresent()) {
+                // samples the world's own chunk generator and biome source on a grid and writes a CSV (TerrainMapHarness); -PucTmX0=-900 -PucTmX1=2500 -PucTmZ0 -PucTmZ1 -PucTmStep=16
+                jvmArgs "-Duc.terrainMap=${providers.gradleProperty('ucTerrainMap').get()}", "-Xmx${providers.gradleProperty('ucServerHeap').orElse('3G').get()}", '-Duc.layoutGuard=off' // a disposable survey server, no package: WorldLayout would otherwise refuse the archipelago terrain without its cities
+                project.properties.each { name, value ->
+                    if (name.startsWith('ucTm') && name.length() > 4) jvmArgs "-Duc.terrainMap.${name.substring(4).toLowerCase()}=${value}"
+                    // calibration knobs of the archipelago terrain (IslandField); only a survey sets them
+                    if (name == 'ucIslandCityContinents') jvmArgs "-Duc.island.cityContinents=${value}"
+                    if (name == 'ucIslandFlatErosion') jvmArgs "-Duc.island.flatErosion=${value}"
+                    if (name == 'ucIslandPlateauRidges') jvmArgs "-Duc.island.plateauRidges=${value}"
+                }
+            }
+            if (providers.gradleProperty('ucCityProbe').isPresent()) {
+                // generates the chunks around each city and reports the real vegetation, doors, glass and containers (CityProbe); -PucCpRadius=6 -PucCpCities=ironhaven,valewood -PucCpExtra=x:z,x:z
+                jvmArgs "-Duc.cityProbe=${providers.gradleProperty('ucCityProbe').get()}", "-Xmx${providers.gradleProperty('ucServerHeap').orElse('3G').get()}"
+                project.properties.each { name, value ->
+                    if (name.startsWith('ucCp') && name.length() > 4) jvmArgs "-Duc.cityProbe.${name.substring(4).toLowerCase()}=${value}"
+                }
             }
             if (providers.gradleProperty('ucStallProbe').orNull == 'true') {
                 // reproduces and measures the long server ticks after bulk chunk generation on a Lost Cities world (StallProbe.java); -PucStallRadius=8 -PucStallMode=bulk|paced -PucStallCenter=0,0 -PucStallSettle=1200
@@ -298,12 +331,12 @@ def prepareDevRun = tasks.register('prepareDevRun') {
             wanted << jar.name
         }
         if (devWorldWanted && devPackSets.contains('world')) {
-            def pack = file('../content/generated/world-prototype/pack')
-            def runConfig = file('../content/generated/world-prototype/game-config')
+            def pack = file("../content/generated/${worldPackName}/pack")
+            def runConfig = file("../content/generated/${worldPackName}/game-config")
             if (!pack.isDirectory() || !runConfig.isDirectory()) {
-                throw new GradleException('content/generated/world-prototype is missing; run python scripts/emit_dev_world_pack.py')
+                throw new GradleException("content/generated/${worldPackName} is missing; run python scripts/emit_dev_world_pack.py --layout ${worldLayout}")
             }
-            def worldJar = new File(modsDir, 'underground-city-world-prototype.jar')
+            def worldJar = new File(modsDir, worldLayout == 'archipelago' ? 'underground-city-world-archipelago.jar' : 'underground-city-world-prototype.jar')
             ant.zip(destfile: worldJar, basedir: pack, whenempty: 'fail', level: 9)
             wanted << worldJar.name
             fileTree(runConfig).visit { entry ->

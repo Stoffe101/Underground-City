@@ -23,9 +23,17 @@ FILES = {
 }
 
 
-def load(root: Path = ROOT) -> dict[str, dict]:
+# A second world layout keeps its own cities and corridors; everything else (supply, restock, conflict, catalog) is shared.
+LAYOUT_FILES = {
+    "legacy": {},
+    "archipelago": {"cities": "content/region-blueprints/archipelago/cities.json", "routes": "content/region-blueprints/archipelago/corridors.json"},
+}
+
+
+def load(root: Path = ROOT, layout: str = "legacy") -> dict[str, dict]:
+    files = {**FILES, **LAYOUT_FILES[layout]}
     return {key: json.loads((root / path).read_text(encoding="utf-8"))
-            for key, path in FILES.items()}
+            for key, path in files.items()}
 
 
 def _distance(point, anchor) -> float:

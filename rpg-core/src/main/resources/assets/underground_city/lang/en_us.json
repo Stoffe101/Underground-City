@@ -46,5 +46,6 @@
   "item.underground_city.unstamped_plate": "Unstamped Plate",
   "key.categories.underground_city": "Underground City",
   "key.underground_city.crew": "Open the Crew screen",
-  "key.underground_city.tracker": "Show or hide the active order"
+  "key.underground_city.tracker": "Show or hide the active order",
+  "generator.underground_city.archipelago": "Underground City: Archipelago"
 }

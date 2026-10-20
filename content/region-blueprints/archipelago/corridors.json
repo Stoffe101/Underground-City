@@ -1,0 +1,254 @@
+{
+  "schema_version": 1,
+  "prototype_only": true,
+  "coordinate_units": "overworld_blocks",
+  "terrain_verified": false,
+  "routes": [
+    {
+      "id": "ironhaven_valewood",
+      "from": "ironhaven",
+      "to": "valewood",
+      "kind": "guarded_highway",
+      "waypoints": [
+        [
+          323,
+          52
+        ],
+        [
+          588,
+          89
+        ],
+        [
+          853,
+          126
+        ],
+        [
+          1117,
+          163
+        ],
+        [
+          1382,
+          200
+        ]
+      ],
+      "crossings": [
+        {
+          "id": "east_causeway",
+          "kind": "proposed_bridge",
+          "between_waypoints": [
+            1,
+            2
+          ],
+          "requires_water_or_ravine_survey": true
+        }
+      ],
+      "checkpoints": [
+        {
+          "id": "ironhaven_valewood_gate_ironhaven",
+          "position": [
+            404,
+            63
+          ],
+          "faction": "ironhaven",
+          "risk": "inspection"
+        },
+        {
+          "id": "ironhaven_valewood_gate_valewood",
+          "position": [
+            1301,
+            189
+          ],
+          "faction": "valewood",
+          "risk": "inspection"
+        }
+      ],
+      "travel_modes": [
+        "walking",
+        "vehicle",
+        "boat",
+        "licensed_convoy"
+      ],
+      "security": "patrolled",
+      "lore": "Ironhaven manufactured goods reach Valewood's crop-and-vineyard exporters across the East Causeway."
+    },
+    {
+      "id": "ironhaven_blackwater",
+      "from": "ironhaven",
+      "to": "blackwater",
+      "kind": "militarized_highway",
+      "waypoints": [
+        [
+          136,
+          299
+        ],
+        [
+          235,
+          524
+        ],
+        [
+          334,
+          750
+        ],
+        [
+          433,
+          975
+        ],
+        [
+          532,
+          1200
+        ]
+      ],
+      "crossings": [
+        {
+          "id": "south_viaduct",
+          "kind": "proposed_bridge",
+          "between_waypoints": [
+            1,
+            2
+          ],
+          "requires_water_or_ravine_survey": true
+        }
+      ],
+      "checkpoints": [
+        {
+          "id": "ironhaven_blackwater_gate_ironhaven",
+          "position": [
+            169,
+            374
+          ],
+          "faction": "ironhaven",
+          "risk": "high"
+        },
+        {
+          "id": "ironhaven_blackwater_gate_blackwater",
+          "position": [
+            499,
+            1125
+          ],
+          "faction": "blackwater",
+          "risk": "high"
+        }
+      ],
+      "travel_modes": [
+        "walking",
+        "vehicle",
+        "boat",
+        "licensed_convoy"
+      ],
+      "security": "contested",
+      "lore": "The South Viaduct is Ironhaven's lifeline to the port; everyone on it is watched."
+    },
+    {
+      "id": "valewood_blackwater",
+      "from": "valewood",
+      "to": "blackwater",
+      "kind": "frontier_highway",
+      "waypoints": [
+        [
+          1468,
+          412
+        ],
+        [
+          1307,
+          618
+        ],
+        [
+          1146,
+          824
+        ],
+        [
+          986,
+          1031
+        ],
+        [
+          825,
+          1237
+        ]
+      ],
+      "crossings": [
+        {
+          "id": "harbour_span",
+          "kind": "proposed_bridge",
+          "between_waypoints": [
+            1,
+            2
+          ],
+          "requires_water_or_ravine_survey": true
+        }
+      ],
+      "checkpoints": [
+        {
+          "id": "valewood_blackwater_gate_valewood",
+          "position": [
+            1417,
+            477
+          ],
+          "faction": "valewood",
+          "risk": "inspection"
+        },
+        {
+          "id": "valewood_blackwater_gate_blackwater",
+          "position": [
+            875,
+            1172
+          ],
+          "faction": "blackwater",
+          "risk": "low"
+        }
+      ],
+      "travel_modes": [
+        "walking",
+        "vehicle",
+        "boat",
+        "licensed_convoy"
+      ],
+      "security": "unpredictable",
+      "lore": "The Harbour Span carries Valewood's wine to Blackwater's markets, and sometimes other things."
+    }
+  ],
+  "construction_policy": {
+    "requires_in_game_terrain_heightmap": true,
+    "require_review_before_paste": false,
+    "avoid_player_structures": true,
+    "protect_story_regions": true,
+    "road_width_blocks": 7,
+    "bridge_width_blocks": 9,
+    "generate_working_crossings": true
+  },
+  "road_generation": {
+    "mode": "worldgen_feature",
+    "feature": "underground_city:corridor_roads",
+    "new_chunks_only": true,
+    "build_route_kinds": [
+      "guarded_highway",
+      "militarized_highway",
+      "frontier_highway"
+    ],
+    "unpaved_route_kinds": [],
+    "reference_seed": 5908,
+    "water_policy": "the islands are separated by straits; every road ends at a cape on each island and crosses its strait by a bridge whose deck stays four free blocks above the water so boats can pass beneath; a boat is the alternative to a bridge",
+    "stops_at_city_circles": true
+  },
+  "transport": {
+    "on_foot_viable_before_vehicle_unlock": true,
+    "inter_city_fast_travel": "licensed_convoys_after_discovery",
+    "convoys_work_for_noncombat_players": true,
+    "routine_travel_budget": {
+      "estimated_walking_blocks_per_second": 4.317,
+      "preferred_between_city_edges_minutes": [
+        3,
+        5
+      ],
+      "maximum_routine_door_to_door_minutes": 10,
+      "reserved_city_access_minutes": 2,
+      "mandatory_route_must_not_require_vehicle": true,
+      "intermediate_points_of_interest_spacing_blocks": [
+        300,
+        450
+      ],
+      "design_note": "Walking and sprinting are viable defaults; stops provide optional activities, never mandatory empty-road delay. Estimate is static; benchmark actual 2-player traversal before accepting a release.",
+      "all_three_routes_walkable_within_budget": true
+    }
+  },
+  "layout": "archipelago"
+}

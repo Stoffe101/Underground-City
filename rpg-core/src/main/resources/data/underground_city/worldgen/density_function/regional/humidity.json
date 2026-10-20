@@ -1,0 +1,231 @@
+{
+ "type": "minecraft:flat_cache",
+ "argument": {
+  "type": "underground_city:island",
+  "channel": "humidity",
+  "plan": {
+   "shore": {
+    "amplitude": 38.0,
+    "scale": 210.0,
+    "seed": 5908
+   },
+   "open_sea": -0.9,
+   "strait_sea": -0.38,
+   "shapes": [
+    {
+     "island": "ironhaven",
+     "op": "add",
+     "type": "disc",
+     "center": [
+      8,
+      8
+     ],
+     "radius": 560
+    },
+    {
+     "island": "valewood",
+     "op": "add",
+     "type": "disc",
+     "center": [
+      1608,
+      232
+     ],
+     "radius": 570
+    },
+    {
+     "island": "blackwater",
+     "op": "add",
+     "type": "disc",
+     "center": [
+      648,
+      1464
+     ],
+     "radius": 500
+    },
+    {
+     "island": "ironhaven",
+     "op": "add",
+     "type": "capsule",
+     "toward": "valewood",
+     "from": [
+      473,
+      73
+     ],
+     "to": [
+      619,
+      93
+     ],
+     "radius": 70
+    },
+    {
+     "island": "valewood",
+     "op": "add",
+     "type": "capsule",
+     "toward": "ironhaven",
+     "from": [
+      1133,
+      165
+     ],
+     "to": [
+      988,
+      145
+     ],
+     "radius": 70
+    },
+    {
+     "island": "ironhaven",
+     "op": "add",
+     "type": "capsule",
+     "toward": "blackwater",
+     "from": [
+      197,
+      438
+     ],
+     "to": [
+      256,
+      572
+     ],
+     "radius": 70
+    },
+    {
+     "island": "blackwater",
+     "op": "add",
+     "type": "capsule",
+     "toward": "ironhaven",
+     "from": [
+      483,
+      1089
+     ],
+     "to": [
+      424,
+      955
+     ],
+     "radius": 70
+    },
+    {
+     "island": "valewood",
+     "op": "add",
+     "type": "capsule",
+     "toward": "blackwater",
+     "from": [
+      1313,
+      611
+     ],
+     "to": [
+      1223,
+      726
+     ],
+     "radius": 70
+    },
+    {
+     "island": "blackwater",
+     "op": "add",
+     "type": "capsule",
+     "toward": "valewood",
+     "from": [
+      900,
+      1141
+     ],
+     "to": [
+      990,
+      1025
+     ],
+     "radius": 70
+    },
+    {
+     "island": "blackwater",
+     "op": "carve",
+     "type": "disc",
+     "center": [
+      589,
+      1960
+     ],
+     "radius": 130
+    }
+   ],
+   "plateaus": [
+    {
+     "id": "ironhaven_city",
+     "center": [
+      8,
+      8
+     ],
+     "radius": 370,
+     "ease": 140,
+     "ground_y": 71
+    },
+    {
+     "id": "valewood_city",
+     "center": [
+      1608,
+      232
+     ],
+     "radius": 280,
+     "ease": 140,
+     "ground_y": 71
+    },
+    {
+     "id": "blackwater_city",
+     "center": [
+      648,
+      1464
+     ],
+     "radius": 340,
+     "ease": 140,
+     "ground_y": 71
+    },
+    {
+     "id": "arrival_landing",
+     "center": [
+      -361,
+      -223
+     ],
+     "radius": 95,
+     "ease": 90,
+     "ground_y": 71
+    }
+   ],
+   "climate": [
+    {
+     "island": "ironhaven",
+     "center": [
+      8,
+      8
+     ],
+     "radius": 655,
+     "temperature": 0.02,
+     "humidity": -0.1
+    },
+    {
+     "island": "valewood",
+     "center": [
+      1608,
+      232
+     ],
+     "radius": 665,
+     "temperature": 0.07,
+     "humidity": 0.05
+    },
+    {
+     "island": "blackwater",
+     "center": [
+      648,
+      1464
+     ],
+     "radius": 595,
+     "temperature": 0.05,
+     "humidity": 0.46
+    }
+   ]
+  },
+  "input": {
+   "type": "minecraft:shifted_noise",
+   "noise": "minecraft:vegetation",
+   "shift_x": "minecraft:shift_x",
+   "shift_y": 0.0,
+   "shift_z": "minecraft:shift_z",
+   "xz_scale": 0.25,
+   "y_scale": 0.0
+  }
+ }
+}

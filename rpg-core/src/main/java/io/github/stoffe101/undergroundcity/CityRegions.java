@@ -25,14 +25,17 @@ public final class CityRegions extends SimpleJsonResourceReloadListener {
     private static final Logger LOGGER = LogUtils.getLogger();
     public static final CityRegions INSTANCE = new CityRegions();
 
-    public record Region(String id, String dimension, int centerChunkX, int centerChunkZ, int radius) {
+    /** {@code radius} is the civic region (law, exchange, "In Ironhaven"); {@code cityRadius} is the Lost Cities circle, equal to it in the legacy layout. */
+    public record Region(String id, String dimension, int centerChunkX, int centerChunkZ, int radius, int cityRadius) {
+        Region(String id, String dimension, int centerChunkX, int centerChunkZ, int radius) { this(id, dimension, centerChunkX, centerChunkZ, radius, radius); }
         static Region fromJson(ResourceLocation id, JsonObject json) {
             if (!json.has("schema_version") || json.get("schema_version").getAsInt() != 1) {
                 throw new IllegalArgumentException("Unsupported city-region schema: " + id);
             }
             var chunk = json.getAsJsonArray("center_chunk");
             Region region = new Region(json.get("id").getAsString(), json.get("dimension").getAsString(),
-                chunk.get(0).getAsInt(), chunk.get(1).getAsInt(), json.get("radius_blocks").getAsInt());
+                chunk.get(0).getAsInt(), chunk.get(1).getAsInt(), json.get("radius_blocks").getAsInt(),
+                json.has("city_radius_blocks") ? json.get("city_radius_blocks").getAsInt() : json.get("radius_blocks").getAsInt());
             if (!ProgressionRules.validCity(region.id) || region.radius < 16 || region.radius > 4096
                 || Math.abs(region.centerChunkX) > 1_000_000 || Math.abs(region.centerChunkZ) > 1_000_000) {
                 throw new IllegalArgumentException("Invalid city region " + id);

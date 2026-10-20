@@ -1,0 +1,2 @@
+[profiles]
+dimensionsWithProfiles = ["minecraft:overworld=uc_three_city", "lostcities:lostcity=biosphere", "lostworlds:abyss=biosphere_caves"]

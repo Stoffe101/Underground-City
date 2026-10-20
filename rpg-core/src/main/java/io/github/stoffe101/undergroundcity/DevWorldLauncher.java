@@ -66,6 +66,17 @@ public final class DevWorldLauncher {
 
     private static String worldName() { return WORLD != null ? WORLD : "UC-Dev-5908"; }
 
+    /**
+     * The dimensions of a world this development code creates: the vanilla Normal preset, or the preset named by {@code -Duc.devPreset} (the archipelago, D-104). The preset
+     * is looked up by id in the registries of the world being created, so a launch whose data does not carry it fails with the preset's name instead of a vanilla world.
+     */
+    static net.minecraft.world.level.levelgen.WorldDimensions dimensions(net.minecraft.core.RegistryAccess registries) {
+        String preset = System.getProperty("uc.devPreset");
+        var key = preset == null || preset.isBlank() ? WorldPresets.NORMAL
+            : net.minecraft.resources.ResourceKey.create(Registries.WORLD_PRESET, new net.minecraft.resources.ResourceLocation(preset));
+        return registries.registryOrThrow(Registries.WORLD_PRESET).getHolderOrThrow(key).value().createWorldDimensions();
+    }
+
     @SubscribeEvent
     public static void render(TickEvent.RenderTickEvent event) {
         if (event.phase != TickEvent.Phase.END || (WORLD == null && !SMOKE) || opened) return;
@@ -80,8 +91,7 @@ public final class DevWorldLauncher {
             } else {
                 System.out.println("[UC-LAUNCH] creating the development world " + name + " with seed " + SEED);
                 LevelSettings settings = new LevelSettings(name, GameType.SURVIVAL, false, Difficulty.NORMAL, true, new GameRules(), WorldDataConfiguration.DEFAULT);
-                mc.createWorldOpenFlows().createFreshLevel(name, settings, new WorldOptions(SEED, true, false),
-                    registries -> registries.registryOrThrow(Registries.WORLD_PRESET).getHolderOrThrow(WorldPresets.NORMAL).value().createWorldDimensions());
+                mc.createWorldOpenFlows().createFreshLevel(name, settings, new WorldOptions(SEED, true, false), DevWorldLauncher::dimensions);
             }
             stage = Stage.WORLD;
         } catch (RuntimeException error) {
