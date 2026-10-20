@@ -36,6 +36,9 @@ final class CrewJourneyActions {
 
     static void tick(Minecraft mc) {
         if (mc.player == null || ++ticks % 10 != 0) return;
+        // Once every Crew step is done this script leaves the screen alone for good. Asking for the Crew screen again would race with the survival half of the combined journey: the server opens
+        // the exchange terminal in the same tick that hands over the goods, and a late request for the Crew screen replaces it (seen in the hosted combined journey: the client waited in stage 0).
+        if (allStepsDone) return;
         boolean founder = mc.getUser().getName().equals(CrewJourneyServer.FARMER);
         if (!(mc.screen instanceof CrewScreen screen)) {
             // the server opens the screen; if it was closed or never arrived, ask for it the way the K key does (not more than every 5 seconds)
