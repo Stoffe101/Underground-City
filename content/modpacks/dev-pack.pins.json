@@ -237,6 +237,147 @@
     "legacy_travelers"
    ],
    "notes": "Comforts 6.4.0+1.20.1 (2024-07-05, release). LGPL-3.0-or-later; no mandatory dependency. Matches D-079: resting is never an automatic change of respawn. Also in the legacy_travelers set so that a world saved with the October 18 survival set (D-085) can be opened once with exactly that set; see docs/technical/backpack-migration.md."
+  },
+  {
+   "id": "xaero_minimap",
+   "slug": "xaeros-minimap",
+   "version_id": "dB6E0CY9",
+   "mod_id": "xaerominimap",
+   "role": "navigation: a minimap in the corner of the screen (client only; the server may carry it)",
+   "sets": [
+    "navigation"
+   ],
+   "notes": "Xaero's Minimap 26.6.0 (2026-10-05, release). All Rights Reserved; the author's own download only, never committed or redistributed. Client required, server optional. Pairs with Xaero's World Map; do not add a second minimap (the persistent Underground City HUD is placed on the opposite edge of the screen). Optional compat hook for Open Parties and Claims is not installed."
+  },
+  {
+   "id": "xaero_worldmap",
+   "slug": "xaeros-world-map",
+   "version_id": "KtEupJvB",
+   "mod_id": "xaeroworldmap",
+   "role": "navigation: a full-screen world map that records explored terrain",
+   "sets": [
+    "navigation"
+   ],
+   "requires": [
+    "xaero_minimap"
+   ],
+   "notes": "Xaero's World Map 1.47.0 (2026-10-05, release). All Rights Reserved; the author's own download only. Pairs with Xaero's Minimap."
+  },
+  {
+   "id": "embeddium",
+   "slug": "embeddium",
+   "version_id": "UTbfe5d1",
+   "mod_id": "embeddium",
+   "role": "rendering: the Forge-side Sodium alternative (chunk meshing and rendering performance); client only",
+   "sets": [
+    "performance"
+   ],
+   "notes": "Embeddium 0.3.31+mc1.20.1 (the last 1.20.1 release). LGPL-3.0. Client only. Incompatible with Rubidium and TexTrue's Embeddium Options (neither is installed). The only renderer replacement in the pack."
+  },
+  {
+   "id": "modernfix",
+   "slug": "modernfix",
+   "version_id": "bDP3S7Vh",
+   "mod_id": "modernfix",
+   "role": "performance: faster start-up and lower memory on the client and the dedicated server",
+   "sets": [
+    "performance"
+   ],
+   "notes": "ModernFix 5.27.88+mc1.20.1 (2026-10-11, release; 5.27.89 is a day old and not adopted). LGPL-3.0. Client and server."
+  },
+  {
+   "id": "ferritecore",
+   "slug": "ferrite-core",
+   "version_id": "DG5Fn9Sz",
+   "mod_id": "ferritecore",
+   "role": "performance: lower memory use (block state and model deduplication)",
+   "sets": [
+    "performance"
+   ],
+   "notes": "FerriteCore 6.0.1 (the 1.20.1 Forge release). MIT. Client and server."
+  },
+  {
+   "id": "entityculling",
+   "slug": "entityculling",
+   "version_id": "HUUJcFnt",
+   "mod_id": "entityculling",
+   "role": "rendering: skips entities and block entities the player cannot see (matters for a populated city)",
+   "sets": [
+    "performance"
+   ],
+   "notes": "Entity Culling 1.11.3 (2026-10-08, release). tr7zw Protective License: the author's own download only, never committed or redistributed. Client only."
+  },
+  {
+   "id": "immediatelyfast",
+   "slug": "immediatelyfast",
+   "version_id": "rvsLEEZU",
+   "mod_id": "immediatelyfast",
+   "role": "rendering: faster immediate-mode drawing (GUI text, HUD, entities); client only",
+   "sets": [
+    "performance"
+   ],
+   "notes": "ImmediatelyFast 1.5.5 (a multi-version build that lists 1.20.1 through 1.20.4). LGPL-3.0-or-later. Client only."
+  },
+  {
+   "id": "searchables",
+   "slug": "searchables",
+   "version_id": "PM9yAW1G",
+   "mod_id": "searchables",
+   "role": "library required by Controlling",
+   "sets": [
+    "qol"
+   ],
+   "notes": "Searchables 1.0.3. MIT. Client only."
+  },
+  {
+   "id": "controlling",
+   "slug": "controlling",
+   "version_id": "LH6Bi6Am",
+   "mod_id": "controlling",
+   "role": "quality of life: a searchable, conflict-highlighting key bindings screen (the pack adds a dozen keys)",
+   "sets": [
+    "qol"
+   ],
+   "requires": [
+    "searchables"
+   ],
+   "notes": "Controlling 12.0.2. MIT. Client only."
+  },
+  {
+   "id": "appleskin",
+   "slug": "appleskin",
+   "version_id": "XdXDExVF",
+   "mod_id": "appleskin",
+   "role": "quality of life: shows what food will restore on the hunger bar (works with the survival set's thirst bar)",
+   "sets": [
+    "qol"
+   ],
+   "notes": "AppleSkin 2.5.1+mc1.20.1. Unlicense. Client required for the overlay; the server may carry it."
+  },
+  {
+   "id": "mousetweaks",
+   "slug": "mouse-tweaks",
+   "version_id": "7JVXOe3K",
+   "mod_id": "mousetweaks",
+   "role": "quality of life: drag and scroll item moving in inventories (the pack's stock-and-shelf screens are inventory heavy)",
+   "sets": [
+    "qol"
+   ],
+   "notes": "Mouse Tweaks 2.25.1. BSD-3-Clause. Client only."
+  },
+  {
+   "id": "lostcities_modern_tweaks",
+   "slug": "lost-cities-modern-tweaks",
+   "version_id": "BWJEXXxe",
+   "mod_id": "lostcities_modern_tweaks",
+   "role": "world: street furniture, new building designs and palettes, more roofs and parks, a factory multi-building (a datapack packaged as a mod; vanilla blocks only)",
+   "sets": [
+    "citytweaks"
+   ],
+   "requires": [
+    "lostcities"
+   ],
+   "notes": "Lost Cities Modern Tweaks 1.1.2 (2026-09-13). MIT. Replaces torches with lanterns, adds lamp posts to the streets and about a hundred building parts to the standard city style that our three styles inherit; judged by real frames (docs/technical/archipelago-world.md)."
   }
  ],
  "external": [
