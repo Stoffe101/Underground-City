@@ -5,7 +5,7 @@ The table answers the owner's three complaints directly: how much of each island
 biomes, and how far apart the cities really are across land and water. The picture overlays the city circles and the planned roads of
 the chosen layout. Needs Pillow only.
 
-    python scripts/render_terrain_map.py build/terrain/arch-a.csv --layout archipelago --png docs/images/world/arch-a.png
+    python scripts/render_terrain_map.py build/terrain/arch-a.csv --layout archipelago --png docs/images/terrain-maps/arch-a.png
 """
 from __future__ import annotations
 

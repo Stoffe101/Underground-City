@@ -310,6 +310,16 @@ class GuiCoverageTests(unittest.TestCase):
         self.assertIsNotNone(locks, "the lock poses loop was not found in the capture harness")
         names |= {"uc-lock-" + pose for pose in re.findall(r'"([a-z-]+)"', locks.group(1))}
         names.discard("uc-lock-")
+        # and the civilian counter's
+        civilian = re.search(r'for\(String pose:new String\[\]\{([^}]*)\}\)\s*cases\.add\(Case\.civilian\(', source)
+        self.assertIsNotNone(civilian, "the civilian counter poses loop was not found in the capture harness")
+        names |= {"uc-civilian-shop-" + pose for pose in re.findall(r'"([a-z-]+)"', civilian.group(1))}
+        names.discard("uc-civilian-shop-")
+        # and the status display settings'
+        hud = re.search(r'for\(String pose:new String\[\]\{([^}]*)\}\)\s*cases\.add\(Case\.hud\(', source)
+        self.assertIsNotNone(hud, "the status display poses loop was not found in the capture harness")
+        names |= {"uc-hud-" + pose for pose in re.findall(r'"([a-z-]+)"', hud.group(1))}
+        names.discard("uc-hud-")
         manifest = json.loads((ROOT / "content/qa/gui-coverage.json").read_text(encoding="utf-8"))
         expected = {s["expected_file"][:-4] for s in manifest["integrated_surfaces"]}
         self.assertEqual(names, expected)

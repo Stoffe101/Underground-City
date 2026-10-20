@@ -129,8 +129,11 @@ public final class UndergroundCity {
         MinecraftForge.EVENT_BUS.register(new DevBootstrap());
         MinecraftForge.EVENT_BUS.register(new TerrainMapHarness());
         MinecraftForge.EVENT_BUS.register(new CityProbe());
+        MinecraftForge.EVENT_BUS.register(new RoadCheck());
         MinecraftForge.EVENT_BUS.register(new BurglaryHarness());
         MinecraftForge.EVENT_BUS.register(new PopulationService());
+        MinecraftForge.EVENT_BUS.register(new HudService());
+        if (net.minecraftforge.fml.ModList.get().isLoaded("qshop")) MinecraftForge.EVENT_BUS.register(new QShopTradeWatcher());
         MinecraftForge.EVENT_BUS.register(WorldLayout.INSTANCE);
         MinecraftForge.EVENT_BUS.register(new CheckpointService());
         MinecraftForge.EVENT_BUS.register(new SecureTerminalService());
@@ -144,6 +147,9 @@ public final class UndergroundCity {
         MinecraftForge.EVENT_BUS.register(new BackpackPolicy());
         // the world's rule about hostile creatures (D-094): SIMULATION unless an operator chooses CLASSIC; the default lives in code, so no file has to exist
         net.minecraftforge.fml.ModLoadingContext.get().registerConfig(net.minecraftforge.fml.config.ModConfig.Type.SERVER, SimulationWorld.SPEC, "underground_city-server.toml");
+        // the player's own choices for the on-screen status (client side only; the file is never read by a server)
+        net.minecraftforge.fml.ModLoadingContext.get().registerConfig(net.minecraftforge.fml.config.ModConfig.Type.CLIENT, HudConfig.SPEC, "underground_city-client.toml");
+        net.minecraftforge.fml.DistExecutor.unsafeRunWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT, () -> ClientHud::registerSettingsScreen);
         context.getModEventBus().addListener(SimulationWorld::reloaded);
         MinecraftForge.EVENT_BUS.register(new SimulationWorld());
         RangeService.register();

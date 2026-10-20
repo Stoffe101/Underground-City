@@ -12,9 +12,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.client.event.RegisterGuiOverlaysEvent;
 import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
-import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -22,10 +20,10 @@ import net.minecraftforge.registries.ForgeRegistries;
 import org.lwjgl.glfw.GLFW;
 
 /**
- * The on-screen guidance (client display only; the server owns the order, its progress and the journey): a card at the top left for the accepted
- * work order (title, one line per requirement with what is carried against what is needed, the reward and where to deliver) and, below it, the
- * next step of the guided first half hour with a direction arrow and a distance when it is a place. Drawn only while no screen is open; the key
- * (default O) hides both when they are in the way.
+ * The on-screen guidance cards (client display only; the server owns the order, its progress and the journey): the accepted work order (title, one
+ * line per requirement with what is carried against what is needed, the reward and where to deliver) and the next step of the guided first hours
+ * with a direction arrow and a distance when it is a place. {@link ClientHud} stacks them under the status, where the player put it; they are drawn
+ * only while no screen is open, and the key (default O) hides both when they are in the way.
  */
 @OnlyIn(Dist.CLIENT)
 @Mod.EventBusSubscriber(modid = UndergroundCity.MOD_ID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.MOD)
@@ -45,12 +43,6 @@ public final class ClientOrderTracker {
     @SubscribeEvent
     public static void keys(RegisterKeyMappingsEvent event) { event.register(TOGGLE); }
 
-    @SubscribeEvent
-    public static void overlay(RegisterGuiOverlaysEvent event) {
-        event.registerAbove(VanillaGuiOverlay.HOTBAR.id(), "order_tracker",
-            (gui, graphics, partialTick, width, height) -> draw(graphics));
-    }
-
     /** Toggling is polled on the client tick (the key is only a convenience, never part of any rule). */
     @Mod.EventBusSubscriber(modid = UndergroundCity.MOD_ID, value = Dist.CLIENT)
     public static final class Toggle {
@@ -63,15 +55,16 @@ public final class ClientOrderTracker {
 
     private static final int WIDTH = 176;
 
-    static void draw(GuiGraphics g) {
-        Minecraft mc = Minecraft.getInstance();
-        if (!visible || mc.screen != null || mc.options.hideGui || mc.player == null) return;
-        Font font = mc.font;
-        int y = 6;
-        OrderTracker.Tracked tracked = current;
-        if (tracked != null) y = drawOrder(g, font, tracked, 6, y) + 5;
-        Journey.Objective next = objective;
-        if (next != null) drawObjective(g, mc, font, next, 6, y);
+    /** True while the order and next-step cards are switched on (key O); the stack that draws them is {@link ClientHud}. */
+    static boolean guidanceVisible() { return visible; }
+
+    /** The height of the accepted-order card, at scale 1. */
+    static int orderHeight(OrderTracker.Tracked tracked) { return 14 + 12 + tracked.lines().size() * 17 + 14 + 6; }
+
+    /** The height of the next-step card, at scale 1. */
+    static int objectiveHeight(Font font, Journey.Objective next) {
+        int lines = Math.min(3, UcUi.wrapLines(font, next.hint(), WIDTH - 30).size());
+        return 14 + 12 + lines * 10 + (next.target() != null ? 12 : 0) + 6;
     }
 
     private static void card(GuiGraphics g, int x, int y, int w, int h, int accent) {
@@ -81,7 +74,7 @@ public final class ClientOrderTracker {
         g.fill(x, y + 2, x + w, y + 3, UcUi.shade(accent, 0.45f));
     }
 
-    private static int drawOrder(GuiGraphics g, Font font, OrderTracker.Tracked tracked, int x, int y) {
+    static int drawOrder(GuiGraphics g, Font font, OrderTracker.Tracked tracked, int x, int y) {
         int accent = tracked.underground() ? UcUi.UNDERGROUND : UcUi.LEGAL;
         boolean ready = true;
         for (OrderTracker.Line line : tracked.lines()) ready &= line.held() >= line.count();
@@ -110,10 +103,8 @@ public final class ClientOrderTracker {
         return y + h;
     }
 
-    private static void drawObjective(GuiGraphics g, Minecraft mc, Font font, Journey.Objective next, int x, int y) {
-        int textW = WIDTH - 30;
-        int lines = Math.min(3, UcUi.wrapLines(font, next.hint(), textW).size());
-        int h = 14 + 12 + lines * 10 + (next.target() != null ? 12 : 0) + 6;
+    static void drawObjective(GuiGraphics g, Minecraft mc, Font font, Journey.Objective next, int x, int y) {
+        int h = objectiveHeight(font, next);
         card(g, x, y, WIDTH, h, UcUi.AMBER);
         UcUi.chip(g, font, "Next", x + 4, y + 6, UcUi.AMBER, null);
         UcUi.display(g, font, UcUi.fit(font, next.title(), WIDTH - 50), x + 38, y + 9, UcUi.TEXT);

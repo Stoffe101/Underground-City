@@ -328,6 +328,8 @@ def build(data: dict, contracts: dict) -> dict[Path, bytes]:
              "entries": [{"type": "minecraft:item", "name": f"{NAMESPACE}:sable_cutting"}]}]}).encode()
     lang["block.underground_city.sable_leaf_crop"] = "Sable Leaf Plant"
     lang["key.underground_city.tracker"] = "Show or hide the active order"
+    lang["key.underground_city.hud"] = "Show or hide the status display"
+    lang["key.underground_city.hud_settings"] = "Open the status display settings"
     lang["generator.underground_city.archipelago"] = "Underground City: Archipelago"   # the world type list at world creation (D-104)
     lang["key.underground_city.crew"] = "Open the Crew screen"
     lang["key.categories.underground_city"] = "Underground City"

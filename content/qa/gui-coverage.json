@@ -129,11 +129,74 @@
       "description": "Notice plates stacked beside the terminal (drawn by hand for review, the game draws them in the screen corner): order accepted, delivered, contraband seized and a rare find, each with its icon, accent and words"
     },
     {
+      "id": "civilian_shop.counter",
+      "expected_file": "uc-civilian-shop-counter.png",
+      "owner": "underground_city",
+      "group": "civilian_shop",
+      "description": "The civilian counter: goods for sale (rows with the same layout as the Trade page), two sections on the rail, the wallet and a daily-limit text"
+    },
+    {
+      "id": "hud.settings",
+      "expected_file": "uc-hud-settings.png",
+      "owner": "underground_city",
+      "group": "hud",
+      "description": "Status display settings with the real stack drawn at the top right below the status-effect row: place and clock, wallet and Crew bank, home and next rent, trade progress, heat, the accepted order and the next step"
+    },
+    {
+      "id": "hud.left",
+      "expected_file": "uc-hud-left.png",
+      "owner": "underground_city",
+      "group": "hud",
+      "description": "The same stack anchored to the left side at 120 percent, clear of the top-left corner Xaero's minimap uses and of the bottom-left chat"
+    },
+    {
+      "id": "hud.minimal",
+      "expected_file": "uc-hud-minimal.png",
+      "owner": "underground_city",
+      "group": "hud",
+      "description": "The stack reduced to location and wallet at 80 percent and 60 percent solidity, with the order and next-step cards switched off"
+    },
+    {
       "id": "dialogue.registrar",
       "expected_file": "uc-dialogue-registrar.png",
       "owner": "underground_city",
       "group": "dialogue",
       "description": "Registrar conversation for a citizen already on the rolls"
+    },
+    {
+      "id": "civilian_shop.poor",
+      "expected_file": "uc-civilian-shop-poor.png",
+      "owner": "underground_city",
+      "group": "civilian_shop",
+      "description": "The counter with a wallet too small for most goods: the status 'Need N more' replaces the limit text and the buy buttons are disabled"
+    },
+    {
+      "id": "civilian_shop.scrolled",
+      "expected_file": "uc-civilian-shop-scrolled.png",
+      "owner": "underground_city",
+      "group": "civilian_shop",
+      "description": "A long list (18 goods, very long names, prices up to four digits) scrolled: nothing overlaps, the name is cut with an ellipsis, the scroll bar shows the position"
+    },
+    {
+      "id": "civilian_shop.deliveries",
+      "expected_file": "uc-civilian-shop-deliveries.png",
+      "owner": "underground_city",
+      "group": "civilian_shop",
+      "description": "The deliveries section: goods the shop buys from the citizen, with 'paid' prices and what the player is missing"
+    },
+    {
+      "id": "civilian_shop.empty",
+      "expected_file": "uc-civilian-shop-empty.png",
+      "owner": "underground_city",
+      "group": "civilian_shop",
+      "description": "An empty counter: one plain sentence, no broken rows"
+    },
+    {
+      "id": "civilian_shop.limited",
+      "expected_file": "uc-civilian-shop-limited.png",
+      "owner": "underground_city",
+      "group": "civilian_shop",
+      "description": "Entries on their last units of a daily limit: 'N left today', and a lot button that never asks for more than is left"
     },
     {
       "id": "dialogue.employer",

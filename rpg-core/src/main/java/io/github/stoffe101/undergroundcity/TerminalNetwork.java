@@ -24,7 +24,7 @@ import java.util.function.Supplier;
  * This is NOT a remote city supplier, contraband order, or raid service.
  */
 public final class TerminalNetwork {
-    private static final String VERSION = "9";
+    private static final String VERSION = "10";
     private static final String STARTER_SHOP_ID = "uc_starter_supply";
     private static final double MAX_TERMINAL_DISTANCE_SQUARED = 64.0;
     private static final java.util.Map<ServerPlayer, Integer> REQUEST_TIMES = new java.util.WeakHashMap<>();
@@ -43,6 +43,7 @@ public final class TerminalNetwork {
         registerDialogue();
         registerLedger();
         registerNotice();
+        registerHud();
         CHANNEL.registerMessage(0, OpenTerminal.class,
             (packet, buffer) -> { buffer.writeBlockPos(packet.pos); packet.data.write(buffer); },
             buffer -> new OpenTerminal(buffer.readBlockPos(), TerminalData.read(buffer)),
@@ -101,6 +102,27 @@ public final class TerminalNetwork {
                 }
                 context.setPacketHandled(true);
             }, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+    }
+
+    private static void registerHud() {
+        CHANNEL.registerMessage(18, HudPacket.class,
+            (packet, buffer) -> packet.state.write(buffer),
+            buffer -> new HudPacket(HudState.read(buffer)),
+            (packet, supplier) -> {
+                NetworkEvent.Context context = supplier.get();
+                if (context.getDirection().getReceptionSide().isClient()) {
+                    context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> ClientHud.update(packet.state)));
+                }
+                context.setPacketHandled(true);
+            }, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+    }
+
+    /** The on-screen status of one player (see {@link HudService}). */
+    static void sendHud(ServerPlayer player, HudState state) { CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new HudPacket(state)); }
+
+    public static final class HudPacket {
+        final HudState state;
+        HudPacket(HudState state) { this.state = state; }
     }
 
     static void sendNotice(ServerPlayer player, Notice.Kind kind, String title, String body) {
@@ -460,7 +482,6 @@ public final class TerminalNetwork {
         // Fixed server-authored ID, never arbitrary strings from a client packet.
         // QShop owns currency, inventory checks, shop stock and actual trades.
         // Only common civilian items are configured in this starter shop.
-        CitizenState.get(player.server).markJourney(player.getUUID(), "bought");
         player.server.getCommands().performPrefixedCommand(
             player.createCommandSourceStack(), "qshop open " + STARTER_SHOP_ID);
     }

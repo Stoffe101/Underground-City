@@ -35,6 +35,8 @@ public final class VisualCaptureHarness {
         static Case crew(String name,String pose) { return new Case(name,null,null,0,false,null,"crew-"+pose); }
         /** The lockpicking screen in one of its poses (D-105). */
         static Case lock(String name,String pose) { return new Case(name,null,null,0,false,null,"lock-"+pose); }
+        static Case civilian(String name,String pose) { return new Case(name,null,null,0,false,null,"civilian-"+pose); }
+        static Case hud(String name,String pose) { return new Case(name,null,null,0,false,null,"hud-"+pose); }
     }
     private static List<Case> cases;
     private static int current,frames;
@@ -72,6 +74,43 @@ public final class VisualCaptureHarness {
         List<TerminalData.Offer> offers=new ArrayList<>();
         for(int i=0;i<Math.min(count,goods.length);i++) offers.add(new TerminalData.Offer("underground_city:capture_"+i,goods[i],prices[i],soldOut?0:stocks[i],40,8));
         return new TerminalData("valewood","farmer",3,520,balance,true,null,1,"ironhaven",List.of(),offers);
+    }
+    /** The civilian counter in Core's own types (no Q Shop class, no transaction): a short counter, a poor wallet, a long scrolled list with very long names, the deliveries section, nothing at all and a daily limit. */
+    private static CivilianShopScreen civilianCapture(String pose) {
+        java.util.function.BiFunction<String,Integer,net.minecraft.world.item.ItemStack> stack=(id,count)->new net.minecraft.world.item.ItemStack(TerminalScreen.item(id),count);
+        List<CivilianShopData.Entry> goods=new ArrayList<>(List.of(
+            new CivilianShopData.Entry(0,false,"Basic seeds (x4)",stack.apply("minecraft:wheat_seeds",4),8,32,16,"DAILY"),
+            new CivilianShopData.Entry(1,false,"Rations (x4)",stack.apply("minecraft:bread",4),20,-1,-1,"NEVER"),
+            new CivilianShopData.Entry(2,false,"Materials (x16)",stack.apply("minecraft:cobblestone",16),24,32,3,"DAILY"),
+            new CivilianShopData.Entry(3,false,"Workbench",stack.apply("minecraft:crafting_table",1),18,-1,-1,"NEVER")));
+        List<CivilianShopData.Entry> wanted=List.of(
+            new CivilianShopData.Entry(4,true,"Deliver wheat (x8)",stack.apply("minecraft:wheat",8),12,16,8,"DAILY"),
+            new CivilianShopData.Entry(5,true,"Deliver logs (x8)",stack.apply("minecraft:oak_log",8),12,16,8,"DAILY"),
+            new CivilianShopData.Entry(6,true,"Deliver basic stone (x16)",stack.apply("minecraft:cobblestone",16),6,16,8,"DAILY"));
+        List<CivilianShopData.Entry> many=new ArrayList<>();
+        String[] ids={"minecraft:bread","minecraft:enchanted_golden_apple","minecraft:iron_ingot","minecraft:netherite_upgrade_smithing_template","minecraft:copper_ingot","minecraft:redstone","minecraft:coal","minecraft:paper","minecraft:leather","minecraft:gold_nugget","minecraft:emerald","minecraft:clock","minecraft:compass","minecraft:book","minecraft:string","minecraft:torch","minecraft:potion","minecraft:lapis_lazuli"};
+        String[] names={"Rations (x4)","Enchanted golden apple, a very long name for one apple that should be cut with an ellipsis","Iron ingot (x2)","Netherite upgrade smithing template","Copper ingot (x8)","Redstone dust (x16)","Coal (x8)","Paper (x8)","Leather (x4)","Gold nugget (x9)","Emerald","Clock","Compass","Book","String (x8)","Torches (x16)","Water bottle (x2)","Lapis lazuli (x8)"};
+        int[] prices={20,1250,28,9800,18,12,5,4,22,60,140,95,410,36,8,2,6,25};
+        for(int i=0;i<ids.length;i++) many.add(new CivilianShopData.Entry(i,false,names[i],stack.apply(ids[i],i%4==0?4:1),prices[i],i%5==2?4:-1,-1,"DAILY"));
+        String id="uc_starter_supply";
+        CivilianShopData data=switch(pose) {
+            case "poor" -> new CivilianShopData(id,"Supply","credits",9,List.of(new CivilianShopData.Tab(0,"Goods",new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.PAPER),goods)));
+            case "scrolled" -> new CivilianShopData(id,"Supply","credits",400,List.of(new CivilianShopData.Tab(0,"Goods",new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.PAPER),many)));
+            case "deliveries" -> new CivilianShopData(id,"Supply","credits",72,List.of(
+                new CivilianShopData.Tab(0,"Goods",new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.PAPER),goods),
+                new CivilianShopData.Tab(1,"Deliver",new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.WHEAT),wanted)));
+            case "empty" -> new CivilianShopData(id,"Supply","credits",72,List.of(new CivilianShopData.Tab(0,"Goods",new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.PAPER),List.of())));
+            case "limited" -> new CivilianShopData(id,"Supply","credits",72,List.of(
+                new CivilianShopData.Tab(0,"Goods",new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.PAPER),List.of(
+                    new CivilianShopData.Entry(0,false,"Basic seeds (x4)",stack.apply("minecraft:wheat_seeds",4),8,1,16,"DAILY"),
+                    new CivilianShopData.Entry(1,false,"Workbench",stack.apply("minecraft:crafting_table",1),18,2,1,"DAILY"))),
+                new CivilianShopData.Tab(1,"Deliver",new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.WHEAT),wanted)));
+            default -> new CivilianShopData(id,"Supply","credits",72,List.of(
+                new CivilianShopData.Tab(0,"Goods",new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.PAPER),goods),
+                new CivilianShopData.Tab(1,"Deliver",new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.WHEAT),wanted)));
+        };
+        CivilianShopScreen.forgetCarried();
+        return new CivilianShopScreen(data,(shop,tab,entry,units)->{});
     }
     private static LockpickScreen lockCapture(String pose) {
         return switch(pose) {
@@ -250,6 +289,8 @@ public final class VisualCaptureHarness {
             cases.add(Case.crew("uc-crew-"+pose,pose));
         }
         for(String pose:new String[]{"idle","close","pressing","strain","opened","snapped","timeout"}) cases.add(Case.lock("uc-lock-"+pose,pose));
+        for(String pose:new String[]{"counter","poor","scrolled","deliveries","empty","limited"}) cases.add(Case.civilian("uc-civilian-shop-"+pose,pose));
+        for(String pose:new String[]{"settings","left","minimal"}) cases.add(Case.hud("uc-hud-"+pose,pose));
         cases.add(Case.dialogue("uc-dialogue-registrar","registrar"));
         cases.add(Case.dialogue("uc-dialogue-employer","employer"));
         cases.add(Case.dialogue("uc-dialogue-guard","guard"));
@@ -262,7 +303,8 @@ public final class VisualCaptureHarness {
         Case capture=cases.get(current);
         if(capture.shop>0) {
             Screen screen=QShopVisualCases.shop(capture.shop==1);
-            mc.setScreen(screen);
+            CivilianShopHook.suspended=true; // these three are the provider's own screens, kept as evidence of them
+            try { mc.setScreen(screen); } finally { CivilianShopHook.suspended=false; }
             if(capture.shop==3) QShopVisualCases.openLowFundsModal(screen);
         } else if(capture.challenge!=null && capture.challenge.startsWith("register-")) {
             mc.setScreen(switch(capture.challenge) {
@@ -272,6 +314,21 @@ public final class VisualCaptureHarness {
             });
         } else if(capture.challenge!=null && capture.challenge.startsWith("crew-")) {
             mc.setScreen(CrewCaptures.screen(capture.challenge.substring("crew-".length())));
+        } else if(capture.challenge!=null && capture.challenge.startsWith("civilian-")) {
+            String pose=capture.challenge.substring("civilian-".length());
+            CivilianShopScreen screen=civilianCapture(pose);
+            mc.setScreen(screen);
+            if(pose.equals("deliveries")) screen.showTab(1);
+            if(pose.equals("scrolled")) screen.scrollTo(1);
+        } else if(capture.challenge!=null && capture.challenge.startsWith("hud-")) {
+            // the status display's settings, with the real stack drawn at the real place beside the panel; the choices are the capture's own, never read from or written to the config file
+            String pose=capture.challenge.substring("hud-".length());
+            HudConfig.Settings choices=new HudConfig.Settings();
+            choices.anchor=pose.equals("left")?HudLayout.Anchor.MIDDLE_LEFT:HudLayout.Anchor.TOP_RIGHT;
+            choices.scale=pose.equals("left")?1.2:pose.equals("minimal")?0.8:1.0;
+            choices.opacity=pose.equals("minimal")?0.6:0.9;
+            if(pose.equals("minimal")) { choices.guidance=false; choices.clock=false; choices.crew=false; choices.home=false; choices.career=false; choices.heat=false; }
+            mc.setScreen(HudSettingsScreen.forCapture(choices));
         } else if(capture.challenge!=null && capture.challenge.startsWith("lock-")) {
             mc.setScreen(lockCapture(capture.challenge));
         } else if(capture.challenge!=null && capture.challenge.startsWith("notices-")) {

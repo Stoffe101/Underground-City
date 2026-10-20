@@ -363,7 +363,7 @@ public final class TerminalScreen extends UcScreen {
         Item value = location == null ? null : ForgeRegistries.ITEMS.getValue(location);
         return value == null ? Items.BARRIER : value;
     }
-    static String itemName(String id) { return item(id).getDescription().getString(); }
+    static String itemName(String id) { return new ItemStack(item(id)).getHoverName().getString(); }
     static String capitalize(String id) { return id.isEmpty() ? id : Character.toUpperCase(id.charAt(0)) + id.substring(1); }
 
     /** Journey/QA hook: a real mouse click at the centre of the work page's primary button (Accept order, or Deliver once the goods are in hand). */

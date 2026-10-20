@@ -33,10 +33,11 @@ public final class Journey {
         new Def("registered", "Register as a citizen", "Speak to the registrar by the gate of Founders Row and choose your city and trade.", ""),
         new Def("employer", "Meet your employer", "Employers work at their desks in Founders Row. Walk up and speak to yours.", ""),
         new Def("accept", "Take your first order", "Open WORK on an Operations Terminal, pick an order and accept it.", "CONTRACTS"),
-        new Def("deliver", "Deliver it", "Gather the goods, then use DELIVER on a terminal in the right city.", "CONTRACTS"),
+        new Def("deliver", "Deliver it", "Gather the goods, then use DELIVER on a terminal in the right city. You are paid in credits and experience.", "CONTRACTS"),
+        new Def("trade", "Buy something", "On TRADE, open the civilian shop for seeds and rations, or buy goods on the exchange. A purchase counts, a look does not.", "IMPORTS"),
+        new Def("home", "Find a place to sleep", "Walk into the Row Flats or the Motel beside Founders Row, press K and open Home to rent a flat. The motel's first hours are free.", ""),
         new Def("skill", "Learn a skill", "Spend your first skill point on the SKILLS tab. Legal and underground branches are both open.", "SKILLS"),
-        new Def("trade", "Visit the exchange", "TRADE sells city goods and tools. Buy something that helps your next order.", "IMPORTS"),
-        new Def("travel", "Travel to a rival city", "Use a terminal inside another city. A road links all three, about four minutes each way.", "BLACK_MARKET"),
+        new Def("travel", "Travel to a rival city", "Use a terminal inside another city. A road and a bridge link all three, about four minutes each way.", "BLACK_MARKET"),
         new Def("second", "Finish a second order", "A second delivery shows how employer demand refills as you play.", "CONTRACTS"));
 
     private static final Map<UUID, Integer> SENT = new HashMap<>();
@@ -52,6 +53,7 @@ public final class Journey {
             case "deliver" -> citizen.journey("deliveries") > 0 || citizen.careerXp() > 0;
             case "skill" -> !citizen.skills().isEmpty();
             case "trade" -> citizen.journey("bought") > 0;
+            case "home" -> citizen.journey("home") > 0;
             case "travel" -> ledger.foreignVisits(uuid, citizen.city) >= 1;
             case "second" -> citizen.journey("deliveries") >= 2;
             default -> false;
@@ -76,6 +78,7 @@ public final class Journey {
         }
         WorkOrderLedger ledger = WorkOrderLedger.get(player.server);
         if (ledger.faulted()) return null;
+        backfillHome(player, citizens, citizen.get());
         for (Def def : STEPS) {
             if (def.id().equals("registered") || done(citizen.get(), ledger, player.getUUID(), def.id())) continue;
             BlockPos target = null;
@@ -86,7 +89,30 @@ public final class Journey {
             }
             return new Objective(def.title(), def.hint(), def.page(), target, name);
         }
-        return null;
+        return goal(player, citizen.get());
+    }
+
+    /** A household that held a home before the home milestone existed (or got one by an operator's hand) has done that step. */
+    private static void backfillHome(ServerPlayer player, CitizenState citizens, CitizenState.Citizen citizen) {
+        if (citizen.journey("home") > 0) return;
+        CrewLedger crews = CrewService.ledger(player.server);
+        if (crews == null || crews.faulted()) return;
+        CrewLedger.Crew crew = crews.crewOf(player.getUUID());
+        if (!crews.residencesOf(CrewLedger.OwnerType.PLAYER, player.getUUID()).isEmpty() || (crew != null && !crews.residencesOf(CrewLedger.OwnerType.CREW, crew.id).isEmpty())) citizens.markJourney(player.getUUID(), "home");
+    }
+
+    /**
+     * What to do once the checklist is done: not a task, a direction, chosen from the state of the citizen (the same words in the guide). It ends by itself at career level 5; it is the one thing on the
+     * screen that says "and then what", for a player who has found their feet and has not yet found the next thing.
+     */
+    static Objective goal(ServerPlayer player, CitizenState.Citizen citizen) {
+        int level = citizen.careerLevel();
+        if (level >= 5) return null;
+        if (level < 3) return new Objective("Reach level " + (level + 1), "Keep taking apprentice orders. Level 3 opens the regional orders, which need a trip to another city.", "CONTRACTS", null, "");
+        CrewLedger crews = CrewService.ledger(player.server);
+        boolean crew = crews != null && !crews.faulted() && crews.crewOf(player.getUUID()) != null;
+        if (!crew) return new Objective("Share a home with a friend", "Press K to start a Crew: a shared bank and home. Everything also works alone.", "", null, "");
+        return new Objective("Grow your trade", "Learn the next skill, rent a better home, or look at the underground branch of your trade. The LAW page shows what it risks.", "SKILLS", null, "");
     }
 
     /** A citizen of the given role (and career, for an employer) near the first district that has one, or null. */
@@ -123,9 +149,10 @@ public final class Journey {
         }
     }
 
+    /** The step's place in the checklist; a goal (what comes after it) is past the end of it. */
     private static int indexOf(String title) {
         for (int i = 0; i < STEPS.size(); i++) if (STEPS.get(i).title().equals(title)) return i;
-        return -1;
+        return STEPS.size();
     }
 
     @SubscribeEvent public void loggedIn(net.minecraftforge.event.entity.player.PlayerEvent.PlayerLoggedInEvent event) { SENT.remove(event.getEntity().getUUID()); LAST_TITLE.remove(event.getEntity().getUUID()); }
