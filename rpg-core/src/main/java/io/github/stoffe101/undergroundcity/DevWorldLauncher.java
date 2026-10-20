@@ -52,6 +52,10 @@ public final class DevWorldLauncher {
     private static final List<String> MODS = List.of("minecraft", "forge", "underground_city", "qshop", "lostcities", "tacz", "taczblueprints",
         "modernlife", "mts", "mtsofficialpack", "oamp");
 
+    /** The quality-of-life and performance sets (D-112): reported when present, never required (a launch with only some sets is a legitimate launch). */
+    private static final List<String> OPTIONAL_MODS = List.of("xaerominimap", "xaeroworldmap", "embeddium", "modernfix", "ferritecore", "entityculling", "immediatelyfast", "searchables", "controlling",
+        "appleskin", "mousetweaks", "jei", "jade", "lostcities_modern_tweaks", "sophisticatedbackpacks", "thirstwastaken2");
+
     private enum Stage { TITLE, WORLD, SETTLE, TERMINAL_COMMAND, TERMINAL_USE, SCREEN, SHOT, DONE }
 
     private static Stage stage = Stage.TITLE;
@@ -183,6 +187,12 @@ public final class DevWorldLauncher {
             System.out.println("[UC-LAUNCH] mod " + id + "=" + container.map(c -> c.getModInfo().getVersion().toString()).orElse("MISSING"));
             if (container.isEmpty() && !id.equals("minecraft") && !id.equals("forge")) failures.append("mod ").append(id).append(" is not loaded; ");
         }
+        for (String id : OPTIONAL_MODS) {
+            ModList.get().getModContainerById(id).ifPresent(c -> System.out.println("[UC-LAUNCH] optional mod " + id + "=" + c.getModInfo().getVersion()));
+        }
+        Runtime runtime = Runtime.getRuntime();
+        System.out.println("[UC-LAUNCH] memory heap_used_mb=" + (runtime.totalMemory() - runtime.freeMemory()) / (1024 * 1024) + " heap_committed_mb=" + runtime.totalMemory() / (1024 * 1024)
+            + " heap_max_mb=" + runtime.maxMemory() / (1024 * 1024) + " seconds_since_jvm_start=" + (System.currentTimeMillis() - java.lang.management.ManagementFactory.getRuntimeMXBean().getStartTime()) / 1000);
         for (String ns : List.of("tacz", "taczblueprints", "modernlife", "mts")) {
             long items = ForgeRegistries.ITEMS.getKeys().stream().filter(key -> key.getNamespace().equals(ns)).count();
             System.out.println("[UC-LAUNCH] registry " + ns + " items=" + items);

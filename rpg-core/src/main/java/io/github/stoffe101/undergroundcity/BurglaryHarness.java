@@ -109,10 +109,13 @@ public final class BurglaryHarness {
     /** A ground-floor exterior door of a building of a lockable class: where a visitor would knock. */
     private record Candidate(CityBuildings.Building building, BlockPos door) {}
 
+    /** The security class the owner's brief names: an apartment (the harness looks for a block of flats first, then anything lockable). */
+    private static final String PREFERRED_CLASS = System.getProperty("uc.burglary.class", "flat_block");
+
     private Optional<Candidate> find(ServerLevel level) {
         var region = CityRegions.INSTANCE.all().stream().filter(r -> r.id().equals("ironhaven")).findFirst().orElseThrow();
         List<Candidate> found = new ArrayList<>();
-        for (int radius = 1; radius <= 9 && found.isEmpty(); radius++) {
+        for (int radius = 1; radius <= 18; radius++) {
             for (int dx = -radius; dx <= radius; dx++) for (int dz = -radius; dz <= radius; dz++) {
                 if (Math.max(Math.abs(dx), Math.abs(dz)) != radius) continue;
                 int cx = region.centerChunkX() + dx, cz = region.centerChunkZ() + dz;
@@ -126,8 +129,10 @@ public final class BurglaryHarness {
                         && BuildingGuard.exterior(level, pos, state)) found.add(new Candidate(building.get(), pos));
                 }
             }
+            // stop at the first ring that holds an apartment; keep looking outward only while none has been found
+            if (found.stream().anyMatch(c -> c.building().security().id().equals(PREFERRED_CLASS))) break;
         }
-        return found.stream().findFirst();
+        return found.stream().filter(c -> c.building().security().id().equals(PREFERRED_CLASS)).findFirst().or(() -> found.stream().findFirst());
     }
 
     private void phaseA(MinecraftServer server, ServerLevel level) {
