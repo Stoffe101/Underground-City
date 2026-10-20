@@ -9,6 +9,7 @@ import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.fml.loading.FMLPaths;
 import net.minecraftforge.server.ServerLifecycleHooks;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -28,7 +29,9 @@ import org.slf4j.LoggerFactory;
  * every item of a mod that was installed), so the wording says what happens <em>if</em> there is one.
  *
  * <p><b>Fail closed (D-103).</b> Warning is not enough: a server that starts unattended loses the packs five minutes later. So by default this class <em>refuses to load</em> a world
- * whose registry list names the retired mod: it throws from the event, which aborts the start before a chunk or a player file is read. The way past it is deliberate and documented:
+ * whose registry list names the retired mod. <b>Measured (October 20, 2026):</b> throwing an exception from the event does not do it, because vanilla's level reading catches any
+ * {@code Exception}, logs it and carries on, so the first version of this guard logged its refusal and the server still reached "Done" and saved the world without the packs. The refusal
+ * now ends the process itself ({@link #stop}) before a chunk or a player file is read. The way past it is deliberate and documented:
  * start with {@code -Duc.acceptLegacyBackpackLoss=true} (or the environment variable {@code UC_ACCEPT_LEGACY_BACKPACK_LOSS=true}). Even then it first <b>copies the whole world folder</b>
  * to {@code uc-backups/} beside the game directory and refuses if it cannot. Nothing is converted. After one save the world no longer names the mod and the guard stops firing.
  */
@@ -97,6 +100,24 @@ public final class LegacyBackpackNotice {
         return target;
     }
 
+    /** Thrown on a client (single-player), where ending the process from here would close the game without a word: an Error is not caught by vanilla's reading of the world, so the game stops with a crash report. */
+    static final class LegacyBackpackRefusal extends Error {
+        LegacyBackpackRefusal(String message, Throwable cause) { super(message, cause); }
+    }
+
+    /**
+     * Ends the start of the game; never returns. A dedicated server exits at once (nothing of the world has been read or written yet, and the server's own shutdown hook is not
+     * registered this early, so nothing is saved). Anything that merely throws would be swallowed by vanilla's level reading, which is exactly what the first version did.
+     */
+    private static void stop(String message, Throwable cause) {
+        LOG.error("[UC-BACKPACKS] {}", message);
+        if (FMLEnvironment.dist.isDedicatedServer()) {
+            LOG.error("[UC-BACKPACKS] The server is stopping now without loading the world.");
+            System.exit(1);
+        }
+        throw new LegacyBackpackRefusal(message, cause);
+    }
+
     @SubscribeEvent
     public static void missing(MissingMappingsEvent event) {
         if (detected) return;
@@ -109,19 +130,19 @@ public final class LegacyBackpackNotice {
             LOG.error("[UC-BACKPACKS] REFUSING TO LOAD THIS WORLD: it was saved with Traveler's Backpack, which is not installed, and Forge would delete every Traveler's Backpack in it at the next save.");
             LOG.error("[UC-BACKPACKS] Nothing has been read or changed. Copy the world folder first. To keep the contents, follow docs/technical/backpack-migration.md (start once with the retired provider and empty the packs).");
             LOG.error("[UC-BACKPACKS] To load the world anyway and lose the packs, start with -D" + OVERRIDE_PROPERTY + "=true (or set " + OVERRIDE_ENVIRONMENT + "=true). A backup is made first.");
-            throw new IllegalStateException("Refusing to load a world that holds Traveler's Backpack data without the mod (Underground City, D-103). See the log lines tagged [UC-BACKPACKS] and docs/technical/backpack-migration.md.");
+            stop("Refusing to load a world that holds Traveler's Backpack data without the mod (Underground City, D-103). See the log lines above and docs/technical/backpack-migration.md.", null);
         }
         java.nio.file.Path world = worldFolder();
         if (world == null) {
             LOG.error("[UC-BACKPACKS] The override is set but the world folder cannot be found to back it up, so the world is NOT loaded. Copy the world by hand and start the server from its folder.");
-            throw new IllegalStateException("Cannot back up the world before overriding the Traveler's Backpack guard (Underground City, D-103).");
+            stop("Cannot back up the world before overriding the Traveler's Backpack guard (Underground City, D-103).", null);
         }
         try {
             java.nio.file.Path backup = backUp(world);
             LOG.error("[UC-BACKPACKS] Override accepted. The world was copied to {} before anything is loaded. Traveler's Backpack items WILL be removed at the next save; nothing is converted.", backup);
         } catch (java.io.IOException failed) {
             LOG.error("[UC-BACKPACKS] The backup of {} failed ({}), so the world is NOT loaded.", world, failed.toString());
-            throw new IllegalStateException("The backup before overriding the Traveler's Backpack guard failed (Underground City, D-103).", failed);
+            stop("The backup before overriding the Traveler's Backpack guard failed (Underground City, D-103).", failed);
         }
         detected = true;
         LOG.error("[UC-BACKPACKS] THIS WORLD WAS SAVED WITH TRAVELER'S BACKPACK, WHICH IS NOT INSTALLED.");
