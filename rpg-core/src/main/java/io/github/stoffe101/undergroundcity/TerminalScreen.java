@@ -36,7 +36,7 @@ public final class TerminalScreen extends UcScreen {
     /** What survives a server refresh of an open terminal. */
     public record Carry(Page page, boolean underground, String jobId, String skillId) {}
 
-    private static final int LOT = 4, ROW_H = 28, MAX_OFFERS = 16, NODE_H = 33;
+    private static final int LOT = 4, ROW_H = 28, MAX_OFFERS = 24, NODE_H = 33;
 
     private Page current = Page.CONTRACTS;
     private boolean undergroundView;
@@ -104,7 +104,8 @@ public final class TerminalScreen extends UcScreen {
             x -= w;
             UcUi.chip(g, font, career, x, py + 9, UcUi.careerColor(data.career()), UcUi.careerIcon(data.career()));
             x -= 4;
-            String city = capitalize(data.city()).toUpperCase(Locale.ROOT);
+            // the header says whose citizen you are; the footer says where you are standing (the two used to read as one unlabelled pair: VALEWOOD above, "In Ironhaven" below)
+            String city = "HOME " + capitalize(data.city()).toUpperCase(Locale.ROOT);
             w = UcUi.displayWidth(font, city) + 10;
             x -= w;
             UcUi.chip(g, font, city, x, py + 9, UcUi.cityColor(data.city()), null);
@@ -140,7 +141,7 @@ public final class TerminalScreen extends UcScreen {
         int cw2 = UcUi.displayWidth(font, credits);
         UcUi.displayRight(g, font, credits, right - 0, ty, data.economy() ? UcUi.AMBER : UcUi.UNDERGROUND_TEXT);
         UcUi.icon(g, UcUi.Icon.CREDITS, right - cw2 - 19, y + 4, data.economy() ? UcUi.AMBER : UcUi.UNDERGROUND_TEXT);
-        String where = data.wayside() ? "Wayside desk" : data.region().isEmpty() ? "Outside a city" : "In " + capitalize(data.region());
+        String where = data.wayside() ? "Now at a wayside desk" : data.region().isEmpty() ? "Now outside a city" : "Now in " + capitalize(data.region());
         int wx = right - cw2 - 19 - 14 - font.width(where);
         if (wx > px + pw / 2) {
             UcUi.text(g, font, where, wx, ty, UcUi.DIM);
@@ -317,22 +318,25 @@ public final class TerminalScreen extends UcScreen {
     }
 
     // ------------------------------------------------------------------------------------------------ trade rows
-    /** Rows that fit under the heading, with 14 pixels kept free at the bottom for the "Scroll for N more lines" hint, which used to be drawn over the last row's price (seen in the combined journey's captures at 720p and 1440p). */
-    private int offerRows() { return Math.max(1, (ch - 56 - 14) / 26); }
+    /** The rows that fit under the heading; the well starts 40 pixels below the page top and the list 6 pixels inside it. */
+    private int offerRows() { return Math.max(1, (ch - 46 - 6) / TradeLayout.ROW_H); }
+    private int offerTop() { return cy + 46; }
+    private TradeLayout tradeLayout() { return TradeLayout.of(cw); }
 
     private void layoutOffers() {
         boolean exchange = current == Page.IMPORTS && exchangeOpen();
-        int rows = offerRows();
+        int rows = Math.min(MAX_OFFERS, offerRows());
         offerScroll = Math.max(0, Math.min(offerScroll, Math.max(0, data.offers().size() - rows)));
+        TradeLayout layout = tradeLayout();
         for (int i = 0; i < MAX_OFFERS; i++) {
             boolean present = exchange && i < rows && i + offerScroll < data.offers().size();
             buyOne[i].visible = buyLot[i].visible = present;
             if (!present) continue;
             TerminalData.Offer offer = data.offers().get(i + offerScroll);
             buyLot[i].visible = Math.min(LOT, offer.maxOrder()) > 1;   // a line that sells one unit per order has one button, not two that say the same
-            int y = cy + 56 + i * 26;
-            buyOne[i].setX(cx + cw - 100); buyOne[i].setY(y + 2);
-            buyLot[i].setX(cx + cw - 52); buyLot[i].setY(y + 2);
+            int y = offerTop() + i * TradeLayout.ROW_H + (TradeLayout.ROW_H - TradeLayout.BUTTON_H) / 2;
+            buyOne[i].setX(cx + layout.buyOne.x()); buyOne[i].setY(y); buyOne[i].setWidth(layout.buyOne.w()); buyOne[i].setHeight(TradeLayout.BUTTON_H);
+            buyLot[i].setX(cx + layout.buyLot.x()); buyLot[i].setY(y); buyLot[i].setWidth(layout.buyLot.w()); buyLot[i].setHeight(TradeLayout.BUTTON_H);
             int lot = Math.min(LOT, offer.maxOrder());
             buyLot[i].label("Buy " + lot);
             applyBuy(buyOne[i], offer, 1);
@@ -340,9 +344,16 @@ public final class TerminalScreen extends UcScreen {
         }
     }
 
+    /** Why this offer cannot be bought in this quantity right now, or "" when it can. */
+    private String buyRefusal(TerminalData.Offer offer, int quantity) {
+        if (!data.economy()) return "Q Shop 1.8.4 required";
+        if (offer.stock() < quantity) return offer.stock() == 0 ? "Sold out; stock replenishes during active play" : "Only " + offer.stock() + " left";
+        if (data.balance() < (double) offer.price() * quantity) return "Needs " + (offer.price() * quantity) + " credits; you have " + (int) data.balance();
+        return "";
+    }
+
     private void applyBuy(UcButton button, TerminalData.Offer offer, int quantity) {
-        String reason = !data.economy() ? "Q Shop 1.8.4 required" : offer.stock() < quantity ? (offer.stock() == 0 ? "Sold out; stock replenishes during active play" : "Only " + offer.stock() + " left")
-            : data.balance() < (double) offer.price() * quantity ? "Needs " + (offer.price() * quantity) + " credits" : "";
+        String reason = buyRefusal(offer, quantity);
         button.active = terminalPosition != null && reason.isEmpty();
         button.tooltip(reason.isEmpty() ? quantity + " x " + itemName(offer.item()) + " for " + offer.price() * quantity + " credits" : reason);
     }
@@ -527,7 +538,7 @@ public final class TerminalScreen extends UcScreen {
         switch (current) {
             case CONTRACTS -> renderWork(g, mouseX, mouseY);
             case SKILLS -> renderSkills(g, mouseX, mouseY);
-            case IMPORTS -> renderTrade(g);
+            case IMPORTS -> renderTrade(g, mouseX, mouseY);
             case BLACK_MARKET -> renderLaw(g);
             case GUIDE -> renderGuide(g);
         }
@@ -750,7 +761,7 @@ public final class TerminalScreen extends UcScreen {
     }
 
     // ---- TRADE
-    private void renderTrade(GuiGraphics g) {
+    private void renderTrade(GuiGraphics g, int mouseX, int mouseY) {
         boolean exchange = exchangeOpen();
         int y = cy + 26;
         String heading = data.wayside() ? "WAYSIDE PROVISIONS" : exchange ? capitalize(data.region()).toUpperCase(Locale.ROOT) + " EXCHANGE" : "REGIONAL EXCHANGE";
@@ -767,23 +778,57 @@ public final class TerminalScreen extends UcScreen {
                 : "No regional stock is listed for this city.", cx + 28, ty, cw - 40, UcUi.SOFT, 4);
             return;
         }
-        int rows = offerRows();
+        TradeLayout layout = tradeLayout();
+        int rows = Math.min(MAX_OFFERS, offerRows());
         for (int i = 0; i < rows && i + offerScroll < data.offers().size(); i++) {
             TerminalData.Offer offer = data.offers().get(i + offerScroll);
-            int ry = cy + 56 + i * 26;
-            if (i % 2 == 0) g.fill(cx + 2, ry - 2, cx + cw - 2, ry + 22, 0xff111c27);
-            g.renderItem(new ItemStack(item(offer.item())), cx + 8, ry + 1);
-            g.drawString(font, UcUi.fit(font, itemName(offer.item()), cw - 250), cx + 30, ry, UcUi.TEXT, false);
+            int ry = offerTop() + i * TradeLayout.ROW_H;
+            if (i % 2 == 0) g.fill(cx + 2, ry, cx + cw - 2, ry + TradeLayout.ROW_H, 0xff111c27);
+            g.renderItem(new ItemStack(item(offer.item())), cx + layout.icon.x(), ry + (TradeLayout.ROW_H - 16) / 2);
             boolean soldOut = offer.stock() == 0, poor = data.economy() && data.balance() < offer.price();
-            UcUi.icon(g, UcUi.Icon.CREDITS, cx + 28, ry + 7, poor ? UcUi.UNDERGROUND_TEXT : UcUi.AMBER);
-            g.drawString(font, offer.price() + " each", cx + 44, ry + 11, poor ? UcUi.UNDERGROUND_TEXT : UcUi.AMBER, false);
-            int bx = cx + cw - 250 + 90;
-            UcUi.bar(g, bx, ry + 4, 70, 5, offer.capacity() == 0 ? 0f : (float) offer.stock() / offer.capacity(), soldOut ? UcUi.UNDERGROUND : UcUi.LEGAL);
-            String stock = soldOut ? "SOLD OUT" : offer.stock() + "/" + offer.capacity();
-            g.drawString(font, stock, bx, ry + 11, soldOut ? UcUi.UNDERGROUND_TEXT : UcUi.DIM, false);
-            if (!soldOut && poor) g.drawString(font, "need " + (int) Math.ceil(offer.price() - data.balance()) + " more", bx + 52, ry + 11, UcUi.WARN, false);
+            // line one: the name, cut to its own place
+            g.drawString(font, UcUi.fit(font, itemName(offer.item()), layout.name.w()), cx + layout.name.x(), ry + 5, soldOut ? UcUi.FAINT : UcUi.TEXT, false);
+            // line two, left: the price; right: the stock, or one status in its place
+            int priceColor = poor ? UcUi.UNDERGROUND_TEXT : UcUi.AMBER;
+            UcUi.icon(g, UcUi.Icon.CREDITS, cx + layout.price.x() - 3, ry + 13, priceColor);
+            g.drawString(font, UcUi.fit(font, offer.price() + " each", layout.price.w() - 12), cx + layout.price.x() + 12, ry + 17, priceColor, false);
+            int sx = cx + layout.stockOrStatus.x(), sw = layout.stockOrStatus.w();
+            String status = soldOut ? "Sold out" : data.economy() && poor ? "Need " + (int) Math.ceil(offer.price() - data.balance()) + " more" : "";
+            if (!status.isEmpty()) {
+                g.drawString(font, UcUi.fit(font, status, sw), sx, ry + 17, soldOut ? UcUi.UNDERGROUND_TEXT : UcUi.WARN, false);
+            } else {
+                int barW = Math.min(TradeLayout.BAR_W, Math.max(0, sw - 40));
+                if (barW >= 12) UcUi.bar(g, sx, ry + 19, barW, 5, offer.capacity() == 0 ? 0f : (float) offer.stock() / offer.capacity(), UcUi.LEGAL);
+                g.drawString(font, UcUi.fit(font, offer.stock() + "/" + offer.capacity(), Math.max(0, sw - (barW >= 12 ? barW + 4 : 0))), sx + (barW >= 12 ? barW + 4 : 0), ry + 17, UcUi.DIM, false);
+            }
         }
-        if (data.offers().size() > rows) UcUi.text(g, font, "Scroll for " + (data.offers().size() - rows) + " more lines", cx + 8, cy + ch - 12, UcUi.DIM);
+        int more = data.offers().size() - rows;
+        if (more > 0) {
+            // a real scroll bar in the well's right edge, and the count in the heading row where nothing else is drawn
+            int trackTop = offerTop(), trackH = rows * TradeLayout.ROW_H, trackX = cx + cw - 5;
+            g.fill(trackX, trackTop, trackX + 3, trackTop + trackH, 0xff0a1017);
+            int thumbH = Math.max(14, trackH * rows / data.offers().size());
+            int thumbY = trackTop + (trackH - thumbH) * offerScroll / Math.max(1, more);
+            g.fill(trackX, thumbY, trackX + 3, thumbY + thumbH, UcUi.LEGAL);
+        }
+    }
+
+    /** The goods under the mouse get the whole name, the price and why they cannot be bought, in one tooltip; the Buy buttons keep their own. */
+    @Override protected void renderOverlay(GuiGraphics g, int mouseX, int mouseY, float partial) {
+        if (current != Page.IMPORTS || !exchangeOpen()) return;
+        for (int i = 0; i < Math.min(MAX_OFFERS, offerRows()) && i + offerScroll < data.offers().size(); i++) {
+            int ry = offerTop() + i * TradeLayout.ROW_H;
+            TradeLayout layout = tradeLayout();
+            if (mouseX < cx + 2 || mouseX >= cx + layout.buyOne.x() - 4 || mouseY < ry || mouseY >= ry + TradeLayout.ROW_H) continue;
+            TerminalData.Offer offer = data.offers().get(i + offerScroll);
+            java.util.List<net.minecraft.network.chat.Component> lines = new java.util.ArrayList<>();
+            lines.add(net.minecraft.network.chat.Component.literal(itemName(offer.item())));
+            lines.add(net.minecraft.network.chat.Component.literal(offer.price() + " credits each, " + offer.stock() + " of " + offer.capacity() + " in stock"));
+            String reason = buyRefusal(offer, 1);
+            if (!reason.isEmpty()) lines.add(net.minecraft.network.chat.Component.literal(reason));
+            UcUi.tooltip(g, font, lines, mouseX, mouseY, width, height);
+            return;
+        }
     }
 
     // ---- LAW
