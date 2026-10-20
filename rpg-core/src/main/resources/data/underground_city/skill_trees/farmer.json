@@ -29,7 +29,7 @@
       "id": "farmer.cultivar_broker",
       "branch": "legal",
       "title": "Cultivar Broker",
-      "description": "Trade premium cultivars. Unlocks the heirloom seed contract and its seed-packet reward.",
+      "description": "Trade premium cultivars: unlocks the heirloom seed contract.",
       "cost": 2,
       "min_level": 5,
       "requires": [
@@ -41,24 +41,72 @@
       "id": "farmer.estate_wholesale",
       "branch": "legal",
       "title": "Estate Wholesale",
-      "description": "Supply estates and kitchens at contract rates. Unlocks the estate pantry contract.",
-      "cost": 3,
+      "description": "Supply estates and kitchens. Unlocks the estate pantry contract.",
+      "cost": 2,
       "min_level": 8,
       "requires": [
         "farmer.cultivar_broker"
       ],
-      "effects": {}
+      "effects": {
+        "legal_payout_percent": 4
+      }
+    },
+    {
+      "id": "farmer.farm_cooperative",
+      "branch": "legal",
+      "title": "Farm Cooperative",
+      "short_title": "Farm Co-op",
+      "description": "Join the district cooperative: steady buyers for every legal contract.",
+      "cost": 2,
+      "min_level": 11,
+      "requires": [
+        "farmer.estate_wholesale"
+      ],
+      "effects": {
+        "legal_payout_percent": 4
+      }
+    },
+    {
+      "id": "farmer.field_logistics",
+      "branch": "utility",
+      "title": "Field Logistics",
+      "description": "Buy in bulk at the regional exchange.",
+      "cost": 1,
+      "min_level": 4,
+      "requires": [
+        "farmer.fundamentals"
+      ],
+      "effects": {
+        "exchange_discount": 0.05
+      }
+    },
+    {
+      "id": "farmer.selective_grafting",
+      "branch": "crossover",
+      "title": "Selective Grafting",
+      "short_title": "Sel. Grafting",
+      "description": "Graft Sable Leaf the way a nursery does: more bales from every plant.",
+      "cost": 2,
+      "min_level": 9,
+      "requires": [
+        "farmer.greenhouse_management",
+        "farmer.restricted_cultivation"
+      ],
+      "effects": {
+        "yield_percent": 30
+      }
     },
     {
       "id": "farmer.controlled_crop_licence",
-      "branch": "legal",
+      "branch": "crossover",
       "title": "Controlled-Crop Licence",
       "short_title": "Crop Licence",
-      "description": "A handler's licence. Where a city issues permits, controlled crops are legal for you to carry.",
+      "description": "A handler's licence: controlled crops are legal to carry where permitted.",
       "cost": 2,
       "min_level": 10,
       "requires": [
-        "farmer.restricted_cultivation"
+        "farmer.restricted_cultivation",
+        "farmer.greenhouse_management"
       ],
       "effects": {
         "licences": [
@@ -70,7 +118,7 @@
       "id": "farmer.restricted_cultivation",
       "branch": "underground",
       "title": "Restricted Cultivation",
-      "description": "Raise controlled cultivars under grow lamps. Needed to plant Sable Leaf cuttings.",
+      "description": "Raise controlled cultivars under lamps. Needed to plant Sable Leaf.",
       "cost": 3,
       "min_level": 6,
       "requires": [
@@ -82,7 +130,7 @@
       "id": "farmer.concealed_stores",
       "branch": "underground",
       "title": "Concealed Stores",
-      "description": "False-bottomed crates: 12 points off the chance that a checkpoint search finds anything.",
+      "description": "False-bottomed crates: a checkpoint search finds less.",
       "cost": 2,
       "min_level": 8,
       "requires": [
@@ -109,7 +157,7 @@
       "branch": "underground",
       "title": "Grey Market Contacts",
       "short_title": "Market Contacts",
-      "description": "A trusted buyer takes bigger loads. Unlocks the reserve contract (needs trust 2).",
+      "description": "A trusted buyer takes bigger loads: unlocks the reserve contract.",
       "cost": 3,
       "min_level": 12,
       "requires": [
@@ -118,17 +166,36 @@
       "effects": {}
     },
     {
-      "id": "farmer.field_logistics",
-      "branch": "utility",
-      "title": "Field Logistics",
-      "description": "Buy in bulk: 5% off goods at the regional exchange.",
-      "cost": 1,
-      "min_level": 4,
+      "id": "farmer.back_lot_network",
+      "branch": "underground",
+      "title": "Back-Lot Network",
+      "short_title": "Back-Lot Network",
+      "description": "Couriers and lookouts who know your face: better underground pay.",
+      "cost": 2,
+      "min_level": 14,
       "requires": [
-        "farmer.fundamentals"
+        "farmer.grey_market_contacts",
+        "farmer.concealed_stores"
       ],
       "effects": {
-        "exchange_discount": 0.05
+        "underground_payout_percent": 6
+      }
+    },
+    {
+      "id": "farmer.dual_books",
+      "branch": "crossover",
+      "title": "Two Sets of Books",
+      "short_title": "Two Sets of Books",
+      "description": "A legal estate account covers the quiet one.",
+      "cost": 2,
+      "min_level": 13,
+      "requires": [
+        "farmer.estate_wholesale",
+        "farmer.underground_trade"
+      ],
+      "effects": {
+        "inspection_modifier": -0.05,
+        "underground_payout_percent": 3
       }
     }
   ]

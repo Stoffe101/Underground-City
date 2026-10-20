@@ -16,7 +16,7 @@
       "id": "smith.structural_works",
       "branch": "legal",
       "title": "Structural Works",
-      "description": "Fabricate structural steel for city works. Unlocks the municipal structural contract.",
+      "description": "Fabricate structural steel: unlocks the municipal structural contract.",
       "cost": 2,
       "min_level": 3,
       "requires": [
@@ -28,19 +28,21 @@
       "id": "smith.armoury_contracts",
       "branch": "legal",
       "title": "Armoury Contracts",
-      "description": "Armour for the guard and the docks. Unlocks the guard plating contract.",
+      "description": "Armour for the guard and the docks: unlocks the guard plating contract.",
       "cost": 2,
       "min_level": 5,
       "requires": [
         "smith.structural_works"
       ],
-      "effects": {}
+      "effects": {
+        "legal_payout_percent": 4
+      }
     },
     {
       "id": "smith.industrial_licence",
       "branch": "legal",
       "title": "Industrial Licence",
-      "description": "Licensed industrial fabricator. Components that need a permit are legal for you to carry.",
+      "description": "Licensed fabricator: permit-bound components are legal to carry.",
       "cost": 2,
       "min_level": 8,
       "requires": [
@@ -53,10 +55,25 @@
       }
     },
     {
+      "id": "smith.foundry_partnerships",
+      "branch": "legal",
+      "title": "Foundry Partnerships",
+      "short_title": "Foundry Partners",
+      "description": "Standing orders from the foundries.",
+      "cost": 2,
+      "min_level": 11,
+      "requires": [
+        "smith.industrial_licence"
+      ],
+      "effects": {
+        "legal_payout_percent": 4
+      }
+    },
+    {
       "id": "smith.precision_machining",
       "branch": "utility",
       "title": "Precision Machining",
-      "description": "Tight tolerances, less waste: 5% off goods at the regional exchange.",
+      "description": "Tight tolerances, less waste at the exchange.",
       "cost": 2,
       "min_level": 6,
       "requires": [
@@ -64,6 +81,22 @@
       ],
       "effects": {
         "exchange_discount": 0.05
+      }
+    },
+    {
+      "id": "smith.fit_out_trade",
+      "branch": "utility",
+      "title": "Fit-Out Trade",
+      "short_title": "Fit-Out Trade",
+      "description": "You fit shelving, benches and plumbing yourself.",
+      "cost": 2,
+      "min_level": 9,
+      "requires": [
+        "smith.precision_machining",
+        "smith.structural_works"
+      ],
+      "effects": {
+        "upgrade_discount_percent": 15
       }
     },
     {
@@ -83,7 +116,7 @@
       "branch": "underground",
       "title": "Unstamped Production",
       "short_title": "Unstamped Output",
-      "description": "Rework markings and ship in ordinary crates: 15 points off checkpoint search odds.",
+      "description": "Rework markings and ship in ordinary crates.",
       "cost": 2,
       "min_level": 9,
       "requires": [
@@ -97,13 +130,45 @@
       "id": "smith.contraband_armoury",
       "branch": "underground",
       "title": "Contraband Armoury",
-      "description": "Restricted plating for a trusted buyer. Unlocks the armoury contract (needs trust 2).",
+      "description": "Restricted plating for a trusted buyer: unlocks the armoury contract.",
       "cost": 3,
       "min_level": 11,
       "requires": [
         "smith.unlisted_fabrication"
       ],
       "effects": {}
+    },
+    {
+      "id": "smith.foundry_fence",
+      "branch": "underground",
+      "title": "Foundry Fence",
+      "description": "A fence who moves the heavy work.",
+      "cost": 2,
+      "min_level": 13,
+      "requires": [
+        "smith.contraband_armoury",
+        "smith.unstamped_production"
+      ],
+      "effects": {
+        "underground_payout_percent": 6
+      }
+    },
+    {
+      "id": "smith.trade_stamp",
+      "branch": "crossover",
+      "title": "A Real Maker's Stamp",
+      "short_title": "Maker's Stamp",
+      "description": "A registered stamp lends the quiet work a legal face.",
+      "cost": 2,
+      "min_level": 12,
+      "requires": [
+        "smith.industrial_licence",
+        "smith.unlisted_fabrication"
+      ],
+      "effects": {
+        "inspection_modifier": -0.06,
+        "underground_payout_percent": 3
+      }
     }
   ]
 }

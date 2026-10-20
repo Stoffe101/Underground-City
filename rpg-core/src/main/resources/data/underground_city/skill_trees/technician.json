@@ -28,19 +28,21 @@
       "id": "technician.automation_install",
       "branch": "legal",
       "title": "Automation Installer",
-      "description": "Fit automation to businesses. Unlocks commercial automation contracts.",
+      "description": "Fit automation to businesses: unlocks commercial automation contracts.",
       "cost": 2,
       "min_level": 5,
       "requires": [
         "technician.municipal_repairs"
       ],
-      "effects": {}
+      "effects": {
+        "legal_payout_percent": 4
+      }
     },
     {
       "id": "technician.security_systems",
       "branch": "legal",
       "title": "Security Systems",
-      "description": "Licensed alarm and access installer. Restricted electronics are legal for you to carry where permitted.",
+      "description": "Licensed alarm and access installer: restricted electronics are legal.",
       "cost": 3,
       "min_level": 8,
       "requires": [
@@ -53,10 +55,25 @@
       }
     },
     {
+      "id": "technician.systems_integrator",
+      "branch": "legal",
+      "title": "Systems Integrator",
+      "short_title": "Sys. Integrator",
+      "description": "Whole-building contracts.",
+      "cost": 2,
+      "min_level": 11,
+      "requires": [
+        "technician.security_systems"
+      ],
+      "effects": {
+        "legal_payout_percent": 4
+      }
+    },
+    {
       "id": "technician.signal_analysis",
       "branch": "utility",
       "title": "Signal Analysis",
-      "description": "Diagnose faster, waste less: 5% off goods at the regional exchange.",
+      "description": "Diagnose faster, waste less at the exchange.",
       "cost": 2,
       "min_level": 6,
       "requires": [
@@ -67,10 +84,25 @@
       }
     },
     {
+      "id": "technician.home_wiring",
+      "branch": "utility",
+      "title": "Home Wiring",
+      "description": "You run the cabling and fit the secure storage yourself.",
+      "cost": 2,
+      "min_level": 8,
+      "requires": [
+        "technician.signal_analysis",
+        "technician.municipal_repairs"
+      ],
+      "effects": {
+        "upgrade_discount_percent": 15
+      }
+    },
+    {
       "id": "technician.bypass_tooling",
       "branch": "underground",
       "title": "Bypass Tooling",
-      "description": "Build tools that defeat secured terminals. Unlocks data recovery contracts and the Bypass Kit.",
+      "description": "Defeat secured terminals: unlocks data recovery and the Bypass Kit.",
       "cost": 3,
       "min_level": 7,
       "requires": [
@@ -82,7 +114,7 @@
       "id": "technician.signal_scrubbing",
       "branch": "underground",
       "title": "Signal Scrubbing",
-      "description": "Leave no trace on the wire: 10 points off checkpoint search odds.",
+      "description": "Leave no trace on the wire.",
       "cost": 2,
       "min_level": 9,
       "requires": [
@@ -96,13 +128,45 @@
       "id": "technician.data_brokerage",
       "branch": "underground",
       "title": "Data Brokerage",
-      "description": "Sell recovered ledgers to a trusted buyer. Unlocks the brokerage contract (needs trust 2).",
+      "description": "Sell recovered ledgers to a trusted buyer: unlocks the brokerage contract.",
       "cost": 3,
       "min_level": 11,
       "requires": [
         "technician.bypass_tooling"
       ],
       "effects": {}
+    },
+    {
+      "id": "technician.ghost_traffic",
+      "branch": "underground",
+      "title": "Ghost Traffic",
+      "description": "Traffic nobody logs, buyers who prize it.",
+      "cost": 2,
+      "min_level": 13,
+      "requires": [
+        "technician.data_brokerage",
+        "technician.signal_scrubbing"
+      ],
+      "effects": {
+        "underground_payout_percent": 6
+      }
+    },
+    {
+      "id": "technician.compliance_consultant",
+      "branch": "crossover",
+      "title": "Compliance Consultant",
+      "short_title": "Compliance Cons.",
+      "description": "An audit badge opens doors.",
+      "cost": 2,
+      "min_level": 12,
+      "requires": [
+        "technician.security_systems",
+        "technician.bypass_tooling"
+      ],
+      "effects": {
+        "inspection_modifier": -0.06,
+        "underground_payout_percent": 3
+      }
     }
   ]
 }

@@ -2,6 +2,8 @@ package io.github.stoffe101.undergroundcity;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -55,6 +57,26 @@ public final class RestrictedCropBlock extends CropBlock {
         if (random.nextInt(GROWTH_ODDS) != 0) return;
         int age = getAge(state);
         if (age < getMaxAge()) level.setBlock(pos, state.setValue(AGE, age + 1).setValue(NOURISHED, false), 2);
+    }
+
+    /** The loot table pays 2 or 3 bales; a grafting skill adds this share of the average harvest on top, as whole bales plus a chance of one more. */
+    static final double AVERAGE_BALES = 2.5;
+
+    /** Extra bales for one mature harvest at the given yield percent. {@code roll} is a uniform [0,1) number; the function is pure so the odds can be pinned in a test. */
+    static int extraBales(int yieldPercent, double roll) {
+        if (yieldPercent <= 0) return 0;
+        double expected = AVERAGE_BALES * yieldPercent / 100.0;
+        int whole = (int) expected;
+        return whole + (roll < expected - whole ? 1 : 0);
+    }
+
+    /** A player harvesting a mature plant gets the loot table plus the extra bales their grafting skills earn. Pistons, water and creative mode earn nothing extra. */
+    @Override
+    public void playerDestroy(Level level, Player player, BlockPos pos, BlockState state, @javax.annotation.Nullable BlockEntity blockEntity, ItemStack tool) {
+        super.playerDestroy(level, player, pos, state, blockEntity, tool);
+        if (level.isClientSide || !(player instanceof ServerPlayer serverPlayer) || !isMaxAge(state)) return;
+        int extra = extraBales(SkillService.yieldPercent(serverPlayer), level.getRandom().nextDouble());
+        if (extra > 0) popResource(level, pos, new ItemStack(UndergroundCity.item("sable_leaf_bale"), extra));
     }
 
     /** Right-click with Cultivation Nutrient: feeds the next growth step. */
