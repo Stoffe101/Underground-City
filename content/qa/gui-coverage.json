@@ -14,7 +14,7 @@
       "expected_file": "uc-terminal-skills.png",
       "owner": "underground_city",
       "group": "operations_terminal",
-      "description": "Skills tab: three branch columns (legal, foundation, underground), selected node detail and unlock button"
+      "description": "Skills tab: three columns (legal, trade with the foundation, utility and crossover skills, underground), up to six rows that scroll, selected node detail with its effect line and the unlock button"
     },
     {
       "id": "operations_terminal.imports",
@@ -276,6 +276,13 @@
       "description": "Skills tab for a level-11 Technician built from the real skill tree"
     },
     {
+      "id": "skills.farmer_deep",
+      "expected_file": "uc-skills-farmer-deep.png",
+      "owner": "underground_city",
+      "group": "skills",
+      "description": "Skills tab for a level-14 Farmer built from the real 14-skill tree, scrolled to its deepest row (Back-Lot Network selected): the scroll bar and the hint that more is above"
+    },
+    {
       "id": "register.city",
       "expected_file": "uc-register-city.png",
       "owner": "underground_city",
@@ -371,7 +378,35 @@
       "expected_file": "uc-crew-home.png",
       "owner": "underground_city",
       "group": "crew",
-      "description": "Home page: held homes with private-container controls and a home for lease nearby with its three ways to pay"
+      "description": "Home page, Your homes tab: a rented flat in good standing (hours until the next payment, hours paid ahead, deposit, storage, facilities, residents), Pay 1 h / Pay 3 h, automatic payment, Move out and the private-container controls"
+    },
+    {
+      "id": "crew.home_notice",
+      "expected_file": "uc-crew-home-notice.png",
+      "owner": "underground_city",
+      "group": "crew",
+      "description": "Home page after three unpaid hours: final-notice standing, what is owed, the footer saying nothing is lost, payment still possible"
+    },
+    {
+      "id": "crew.home_owned",
+      "expected_file": "uc-crew-home-owned.png",
+      "owner": "underground_city",
+      "group": "crew",
+      "description": "Home page for a house the Crew owns: residents, containers against the cap, the sell-back figure and the three upgrades with their prices, one fitted"
+    },
+    {
+      "id": "crew.home_find",
+      "expected_file": "uc-crew-home-find.png",
+      "owner": "underground_city",
+      "group": "crew",
+      "description": "Home page, Find a home tab: a motel room with the city's welcome, a flat and a house to rent or buy, with the Ironhaven price factor, For me / For the Crew and Pay from toggles"
+    },
+    {
+      "id": "crew.home_solo",
+      "expected_file": "uc-crew-home-solo.png",
+      "owner": "underground_city",
+      "group": "crew",
+      "description": "Home page for a player with no Crew: a rented motel room, and homes to rent or buy; the page works for everybody"
     },
     {
       "id": "crew.rules_permissions",

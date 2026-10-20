@@ -41,7 +41,7 @@ public final class VisualCaptureHarness {
     private static TerminalData fixture(int level,int held,boolean active,boolean online) {
         return new TerminalData("valewood","farmer",level,level==1?0:125,60,online,
             active?UUID.fromString("00000000-0000-0000-0000-000000000001"):null,0,"",
-            List.of(new TerminalData.Row("underground_city:bread","Bake the canteen bread order",2,36,180,4,active,0,
+            List.of(new TerminalData.Row("underground_city:bread","Bake the canteen bread order",2,38,180,4,active,0,
                 List.of(new TerminalData.Req("minecraft:bread",8,held)))),List.of());
     }
     private static final List<TerminalData.Offer> IRONHAVEN_OFFERS=List.of(
@@ -76,13 +76,6 @@ public final class VisualCaptureHarness {
             return nodes;
         } catch(java.io.IOException error) { throw new IllegalStateException("Cannot read the "+career+" skill tree",error); }
     }
-    private static final java.util.Map<String,String> SHORT_TITLES=new java.util.HashMap<>();
-    static { for(SkillNode node:realTree("farmer")) SHORT_TITLES.put(node.id(),node.shortTitle()); }
-    private static TerminalData.SkillRow node(String id,String branch,String title,String text,int cost,int level,int state,String reason,String... requires) {
-        java.util.Map<String,String> ids=java.util.Map.of("Greenhouse Management","farmer.greenhouse_management","Cultivar Broker","farmer.cultivar_broker",
-            "Restricted Cultivation","farmer.restricted_cultivation","Underground Trade","farmer.underground_trade","Field Fundamentals","farmer.fundamentals");
-        return new TerminalData.SkillRow("farmer."+id,branch,title,text,cost,level,state,reason,java.util.Arrays.stream(requires).map(name->ids.getOrDefault(name,name)).toList(),SHORT_TITLES.getOrDefault("farmer."+id,title));
-    }
     /** A whole career page built from the real tree: the states come from the same pure rules the server uses. */
     private static TerminalData careerSkills(String career,int level,java.util.Set<String> learned) {
         List<SkillNode> tree=realTree(career);
@@ -95,23 +88,14 @@ public final class VisualCaptureHarness {
             int state=learned.contains(node.id())?2:blocker==null?1:0;
             List<String> requires=node.requires();
             rows.add(new TerminalData.SkillRow(node.id(),node.branch(),node.title(),node.description(),node.cost(),node.minLevel(),
-                state,state==2||blocker==null?"":blocker,requires,node.shortTitle()));
+                state,state==2||blocker==null?"":blocker,requires,node.shortTitle(),node.effectSummary()));
         }
-        return new TerminalData("valewood",career,level,5200,230,true,null,1,"valewood",List.of(),List.of(),free,rows,List.of(),VALEWOOD_LAW,0,"");
+        if(free<0) throw new IllegalStateException("The capture fixture spends more skill points than level "+level+" earns");
+        return new TerminalData("valewood",career,level,125*(level-1)*(level-1),230,true,null,1,"valewood",List.of(),List.of(),free,rows,List.of(),VALEWOOD_LAW,0,"");
     }
-    /** A level-9 farmer with six of eight points spent: legal and underground branches both partly learned. */
-    private static List<TerminalData.SkillRow> farmerTree() {
-        return List.of(
-            node("greenhouse_management","legal","Greenhouse Management","Run a proper greenhouse. Unlocks wholesale greenhouse supply contracts.",2,3,2,""),
-            node("cultivar_broker","legal","Cultivar Broker","Trade premium cultivars. Unlocks the heirloom seed contract and its seed-packet reward.",2,5,1,"","Greenhouse Management"),
-            node("estate_wholesale","legal","Estate Wholesale","Supply estates and kitchens at contract rates. Unlocks the estate pantry contract.",3,8,0,"Requires Cultivar Broker","Cultivar Broker"),
-            node("controlled_crop_licence","legal","Controlled-Crop Licence","A handler's licence. Where a city issues permits, controlled crops are legal for you to carry.",2,10,0,"Career level 10 required","Restricted Cultivation"),
-            node("fundamentals","core","Field Fundamentals","Soil, seed and season. Opens every other farming skill.",1,2,2,""),
-            node("restricted_cultivation","underground","Restricted Cultivation","Raise controlled cultivars under grow lamps. Needed to plant Sable Leaf cuttings.",3,6,2,"","Greenhouse Management"),
-            node("concealed_stores","underground","Concealed Stores","False-bottomed crates: 12 points off the chance that a checkpoint search finds anything.",2,8,1,"","Restricted Cultivation"),
-            node("underground_trade","underground","Underground Trade","Open a line to a Blackwater buyer. Unlocks quiet bale delivery contracts.",3,9,0,"Needs 3 skill points (2 available)","Restricted Cultivation"),
-            node("grey_market_contacts","underground","Grey Market Contacts","A trusted buyer takes bigger loads. Unlocks the reserve contract (needs trust 2).",3,12,0,"Requires Underground Trade","Underground Trade"),
-            node("field_logistics","utility","Field Logistics","Buy in bulk: 5% off goods at the regional exchange.",1,4,1,"","Field Fundamentals"));
+    /** A level-9 farmer built from the real tree: the foundation, a legal skill, the controlled crop and the logistics skill learned, one point free. */
+    private static TerminalData farmerData() {
+        return careerSkills("farmer",9,java.util.Set.of("farmer.fundamentals","farmer.greenhouse_management","farmer.restricted_cultivation","farmer.field_logistics"));
     }
     private static final List<TerminalData.LawRow> VALEWOOD_LAW=List.of(
         new TerminalData.LawRow("restricted_cultivar","Controlled crops","prohibited",false),
@@ -132,7 +116,7 @@ public final class VisualCaptureHarness {
         return new TerminalData.Row("underground_city:"+id,title,level,credits,xp,2,accepted,0,
             List.of(new TerminalData.Req("underground_city:sable_leaf_bale",count,held)),extra);
     }
-    private static final TerminalData.Row LICENSED_ROW=new TerminalData.Row("underground_city:licensed_cultivar_supply","Licensed controlled-crop supply",10,200,400,2,false,0,
+    private static final TerminalData.Row LICENSED_ROW=new TerminalData.Row("underground_city:licensed_cultivar_supply","Licensed controlled-crop supply",10,225,400,2,false,0,
         List.of(new TerminalData.Req("underground_city:sable_leaf_bale",6,0)),
         new TerminalData.Extra(false,"Controlled-Crop Licence",false,"Blackwater Licensed Dispensary","blackwater",0,0,List.of()));
     /** The first half hour part way through: registered, met the employer, accepted an order. */
@@ -157,10 +141,10 @@ public final class VisualCaptureHarness {
                 List.of(new TerminalData.Req("underground_city:rare_seeds",8,3)),
                 new TerminalData.Extra(false,"Cultivar Broker",false,"","",0,0,List.of("1 x Heirloom Seed Packet"))),
             LICENSED_ROW,
-            undergroundRow("quiet_bales","Quiet bale delivery",9,330,380,6,accepted?held:0,accepted,QUIET_BALES),
-            undergroundRow("reserve_load","Reserve load for the estate trade",12,700,600,12,0,false,RESERVE_LOAD));
+            undergroundRow("quiet_bales","Quiet bale delivery",9,237,380,6,accepted?held:0,accepted,QUIET_BALES),
+            undergroundRow("reserve_load","Reserve load for the estate trade",12,474,600,12,0,false,RESERVE_LOAD));
         return new TerminalData("valewood","farmer",9,10125,230,true,accepted?UUID.fromString("00000000-0000-0000-0000-000000000003"):null,
-            1,region,jobs,List.of(),2,farmerTree(),contacts,laws,region.isEmpty()?0:2,
+            1,region,jobs,List.of(),farmerData().skillPoints(),farmerData().skills(),contacts,laws,region.isEmpty()?0:2,
             blackwater?"Uneven enforcement. Most trade is tolerated if you hold the right licence; the buyers here pay for discretion."
                 :"Modest patrols. Hunting arms are licensed; controlled crops and unregistered parts are prohibited.",
             journeyFixture());
@@ -181,7 +165,7 @@ public final class VisualCaptureHarness {
     }
     private static LedgerData ledgerFixture() {
         var p=new java.util.ArrayList<LedgerData.Posting>();
-        p.add(new LedgerData.Posting("farmer","Bake the canteen bread order",2,36,180,4,6,false));
+        p.add(new LedgerData.Posting("farmer","Bake the canteen bread order",2,38,180,4,6,false));
         p.add(new LedgerData.Posting("farmer","Greenhouse wholesale: carrots and potatoes",3,100,260,4,4,false));
         p.add(new LedgerData.Posting("farmer","Broker heirloom seed stock",5,150,330,2,3,false));
         p.add(new LedgerData.Posting("farmer","Reserve harvest for the co-op",8,240,500,0,3,true));
@@ -207,6 +191,7 @@ public final class VisualCaptureHarness {
         cases.add(new Case("uc-skills-smith",TerminalScreen.Page.SKILLS,careerSkills("smith",11,java.util.Set.of("smith.fundamentals","smith.structural_works","smith.armoury_contracts","smith.unlisted_fabrication")),0,false,"smith.contraband_armoury"));
         cases.add(new Case("uc-skills-gunsmith",TerminalScreen.Page.SKILLS,careerSkills("gunsmith",11,java.util.Set.of("gunsmith.fundamentals","gunsmith.licensed_repairs","gunsmith.dealer_licence")),0,false,"gunsmith.unregistered_builds"));
         cases.add(new Case("uc-skills-technician",TerminalScreen.Page.SKILLS,careerSkills("technician",11,java.util.Set.of("technician.fundamentals","technician.municipal_repairs","technician.automation_install")),0,false,"technician.bypass_tooling"));
+        cases.add(new Case("uc-skills-farmer-deep",TerminalScreen.Page.SKILLS,careerSkills("farmer",22,java.util.Set.of("farmer.fundamentals","farmer.greenhouse_management","farmer.cultivar_broker","farmer.estate_wholesale","farmer.restricted_cultivation","farmer.concealed_stores","farmer.underground_trade","farmer.grey_market_contacts","farmer.field_logistics")),0,false,"farmer.back_lot_network"));
         cases.add(new Case("uc-skills-available",TerminalScreen.Page.SKILLS,rich("valewood",false,0,VALEWOOD_LAW),0,false,"farmer.concealed_stores"));
         cases.add(new Case("uc-skills-locked",TerminalScreen.Page.SKILLS,rich("valewood",false,0,VALEWOOD_LAW),0,false,"farmer.underground_trade"));
         cases.add(new Case("uc-skills-legal-locked",TerminalScreen.Page.SKILLS,rich("valewood",false,0,VALEWOOD_LAW),0,false,"farmer.controlled_crop_licence"));
@@ -235,7 +220,7 @@ public final class VisualCaptureHarness {
         cases.add(Case.challenge("uc-challenge-urgent","urgent"));
         cases.add(Case.ledger("uc-ledger"));
         cases.add(Case.notices("uc-notices"));
-        for(String pose:new String[]{"nocrew","nocrew-invited","unregistered","unavailable","members","members-member","money","money-consent","money-shared","money-shared-nospend","home","rules-permissions","rules-mode","rules-mode-active","rules-disband"}) {
+        for(String pose:new String[]{"nocrew","nocrew-invited","unregistered","unavailable","members","members-member","money","money-consent","money-shared","money-shared-nospend","home","home-notice","home-owned","home-find","home-solo","rules-permissions","rules-mode","rules-mode-active","rules-disband"}) {
             cases.add(Case.crew("uc-crew-"+pose,pose));
         }
         cases.add(Case.dialogue("uc-dialogue-registrar","registrar"));
@@ -268,7 +253,7 @@ public final class VisualCaptureHarness {
             // drawn by hand, stacked, at a fixed moment. (In the game itself at most two of these fit on screen at once and the others wait their turn.)
             noticeCaptures.clear();
             noticeCaptures.add(new UcToast(Notice.Kind.ORDER,"Order accepted","Bake the canteen bread order"));
-            noticeCaptures.add(new UcToast(Notice.Kind.DELIVERED,"Delivered","Bake the canteen bread order: +36 credits, +180 XP"));
+            noticeCaptures.add(new UcToast(Notice.Kind.DELIVERED,"Delivered","Bake the canteen bread order: +38 credits, +180 XP"));
             noticeCaptures.add(new UcToast(Notice.Kind.HEAT,"Contraband seized","1 stack taken, 40 credits fined. Heat 2 in Valewood."));
             noticeCaptures.add(new UcToast(Notice.Kind.LOOT,"A rare find","Worth more than the rest. Take it and go."));
         } else if(capture.challenge!=null && capture.challenge.startsWith("ledger-")) {

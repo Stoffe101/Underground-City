@@ -16,6 +16,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.storage.LevelResource;
@@ -38,7 +40,7 @@ import java.util.UUID;
 /**
  * Server half of the two-client Crew journey (scenario {@code crew}); a disposable fixture that never runs in normal play.
  *
- * <p>Phase 1: two real clients found a Crew, invite, accept, deposit, lease the Row House from the Crew bank, grant a permission, withdraw and make a
+ * <p>Phase 1: two real clients found a Crew, invite, accept, deposit, RENT the Row House for the Crew from the Crew bank (the deposit and the first hour at the home's own price), grant a permission, withdraw and make a
  * container private, all by pressing buttons of the real Crew screen. This class only builds the Row Flats, puts both players in the house, opens their
  * screens and then watches the ledger. When the last step has happened it checks every number, leaves two transfers <em>unfinished on purpose</em> (one that
  * reached the wallet and the player file, one that stopped right after its prepare record), flushes the world and halts the JVM without a stop sequence.
@@ -53,7 +55,12 @@ public final class CrewJourneyServer {
     static final String CREW = "Row Harvest";
     static final String FARMER = "UC_Farmer", SMITH = "UC_Smith";
     private static final int STALL_TICKS = 20 * 240;
-    private static final double START = 200;
+    static final double START = 400;
+    /** What the member puts in the bank, what is left in it after the rent, and the member's first withdrawal: the founder's deposit is whatever the rent needs on top. */
+    static final int MEMBER_DEPOSIT = 110, BANK_AFTER_RENT = 40, FIRST_WITHDRAWAL = 10, BANK_AFTER_WITHDRAWAL = BANK_AFTER_RENT - FIRST_WITHDRAWAL;
+    /** The one verified work order the fixture delivers for the farmer (its credits are income, not part of the conserved total). */
+    private static final String ORDER = "underground_city:harvest";
+    private static final int ORDER_XP_TARGET = 125;
 
     private static boolean initialized, finished, opened;
     private static int stalled, seenTicks, lastStepSeenAt = -1;
@@ -174,13 +181,15 @@ public final class CrewJourneyServer {
         expect(crew.perms.get(Role.MEMBER).contains(Perm.WITHDRAW) && !crew.perms.get(Role.MANAGER).isEmpty(), "the founder allowed members to withdraw");
         expect(crew.mode == Mode.BANK && crew.effectiveMode() == Mode.BANK, "default finance mode");
         expect(house.ownerType == OwnerType.CREW && crew.id.equals(house.owner), "the Row House belongs to the Crew, not to a person");
-        expect(crew.bank == 30, "bank 30, was " + crew.bank);
+        long rentTotal = rentTotal(house), founderDeposit = rentTotal + BANK_AFTER_RENT - MEMBER_DEPOSIT;
+        expect(house.tenure == PropertyRules.Tenure.RENT && house.deposit == PropertyRules.scaled(terms(house).deposit(), house.factorPct), "the Row House is rented, with its deposit in escrow: " + house.tenure + " deposit " + house.deposit);
+        expect(crew.bank == BANK_AFTER_WITHDRAWAL, "bank " + BANK_AFTER_WITHDRAWAL + ", was " + crew.bank);
         double farmerWallet = QShopEconomy.balance(farmer), smithWallet = QShopEconomy.balance(smith);
-        expect(farmerWallet == 80 && smithWallet == 150, "wallets " + farmerWallet + " / " + smithWallet);
-        expect(farmerWallet + smithWallet + crew.bank + 140 == 2 * START, "every credit is accounted for (the lease at the starter price, 140, is the one sink)");
+        expect(farmerWallet == START - founderDeposit && smithWallet == START - MEMBER_DEPOSIT + FIRST_WITHDRAWAL, "wallets " + farmerWallet + " / " + smithWallet);
+        expect(farmerWallet + smithWallet + crew.bank + rentTotal == 2 * START, "every credit is accounted for (the deposit of the rent, held in escrow, and its first hour, " + rentTotal + " together, are the one sink)");
         expect(ledger.allPending().isEmpty(), "nothing unresolved before the injected transfers");
         List<String> kinds = crew.log.stream().map(e -> e.kind() + (e.amount() > 0 ? ":" + e.amount() : "")).toList();
-        for (String want : List.of("CREATED", "JOINED", "DEPOSIT:120", "DEPOSIT:60", "LEASE:140", "PERM", "WITHDRAW:10")) expect(kinds.contains(want), "history has " + want + ": " + kinds);
+        for (String want : List.of("CREATED", "JOINED", "DEPOSIT:" + founderDeposit, "DEPOSIT:" + MEMBER_DEPOSIT, "RENT:" + rentTotal, "PERM", "WITHDRAW:" + FIRST_WITHDRAWAL)) expect(kinds.contains(want), "history has " + want + ": " + kinds);
         expect(!ResidenceGuard.allowed(ledger, house, farmer.getUUID(), house.dimension, chest, Act.CONTAINER), "the founder opened a container the member made private");
         expect(ResidenceGuard.allowed(ledger, house, smith.getUUID(), house.dimension, chest, Act.CONTAINER), "the member cannot open their own private container");
         expect(ResidenceGuard.allowed(ledger, house, farmer.getUUID(), house.dimension, table, Act.WORKSTATION) && ResidenceGuard.allowed(ledger, house, smith.getUUID(), house.dimension, table, Act.WORKSTATION), "the Crew's smithing table");
@@ -197,7 +206,29 @@ public final class CrewJourneyServer {
         if (SurvivalJourney.ON) {
             survival = SurvivalJourney.prepare(server, level, farmer, smith, table, ledger);
             held = SurvivalJourney.CRASH_COST;
-            expect(ledger.allHolds().size() == 1 && ledger.totalInFlight() == held && crew.bank == 30 - held, "the interrupted purchase's hold is in the ledger: " + ledger.allHolds() + ", bank " + crew.bank);
+            expect(ledger.allHolds().size() == 1 && ledger.totalInFlight() == held && crew.bank == BANK_AFTER_WITHDRAWAL - held, "the interrupted purchase's hold is in the ledger: " + ledger.allHolds() + ", bank " + crew.bank);
+        }
+
+        // The economic milestones, driven by the server through the same functions the terminal and the clock call (not by clicks): the farmer delivers a real work order for
+        // credits and career XP, spends the point it earned on a skill, and the household clock of the rented Row House runs for 30 active minutes with both players online.
+        // Phase 2 checks that every one of them survived the abrupt halt, and that the time the server was dead was not billed.
+        {
+            WorkOrderLedger orders = WorkOrderLedger.get(server);
+            WorkOrder harvest = WorkOrderCatalog.INSTANCE.find(ORDER);
+            double walletBeforeOrder = QShopEconomy.balance(farmer);
+            farmer.getInventory().add(new ItemStack(Items.WHEAT, harvest.requirements().get(0).count()));
+            WorkOrderService.accept(farmer, orders, CitizenState.get(server).find(farmer.getUUID()).orElseThrow(), harvest.id());
+            WorkOrderService.complete(farmer, orders, orders.player(farmer.getUUID()).getUUID("order"));
+            expect(QShopEconomy.balance(farmer) == walletBeforeOrder + orderIncome() && farmer.getInventory().countItem(Items.WHEAT) == 0, "the delivery paid " + orderIncome() + " and took the wheat");
+            CitizenState.Citizen citizen = CitizenState.get(server).find(farmer.getUUID()).orElseThrow();
+            expect(citizen.careerXp() == ORDER_XP_TARGET && citizen.careerLevel() == 2 && SkillService.pointsAvailable(citizen) == 1, "the delivery earned level 2 and one skill point: " + citizen.careerXp());
+            SkillService.learn(farmer, "farmer.fundamentals");
+            expect(SkillService.has(farmer, "farmer.fundamentals") && SkillService.pointsAvailable(citizen) == 0, "the point bought the foundation skill");
+            long before = house.progress;
+            PropertyService.tickClock(server, 30L * PropertyRules.TICKS_PER_MINUTE, java.util.Set.of(farmer.getUUID(), smith.getUUID()));
+            expect(house.progress == before + 30L * PropertyRules.TICKS_PER_MINUTE && house.due == 0 && house.arrears == 0, "30 active minutes of the household clock, counted once for two residents online: progress " + house.progress);
+            ledger.flushProgress();   // the clock is written every five minutes and on logout; the fixture writes it now so the abrupt halt below cannot lose part of what it asserts
+            System.out.println("[UC-JOURNEY] economy milestones: order delivered (+" + orderIncome() + "), skill learned, rent clock at " + house.progress / PropertyRules.TICKS_PER_MINUTE + " active minutes");
         }
 
         // Two transfers the process never finishes. The deposit reached the wallet and the saved player file; the withdrawal stopped right after its prepare record.
@@ -206,7 +237,7 @@ public final class CrewJourneyServer {
         CrewService.wallet.set(farmer, deposit.after());
         PlayerStore.saveVerified(farmer);
         Pending withdraw = ledger.beginWithdraw(withdrawTx, smith.getUUID(), 10, QShopEconomy.balance(smith));
-        expect(ledger.allPending().size() == 2 && ledger.totalInFlight() == 10 + held && crew.bank == 20 - held, "the withdrawal's hold is taken from the bank at once");
+        expect(ledger.allPending().size() == 2 && ledger.totalInFlight() == 10 + held && crew.bank == BANK_AFTER_WITHDRAWAL - 10 - held, "the withdrawal's hold is taken from the bank at once");
 
         JsonObject state = new JsonObject();
         state.addProperty("origin_x", origin.getX());
@@ -214,6 +245,7 @@ public final class CrewJourneyServer {
         state.addProperty("origin_z", origin.getZ());
         state.addProperty("deposit_tx", depositTx.toString());
         state.addProperty("withdraw_tx", withdrawTx.toString());
+        state.addProperty("rent_progress_ticks", house.progress);
         if (survival != null) state.add("survival", survival);
         Files.writeString(folder.resolve("crew-journey-state.json"), state + "\n");
         server.saveEverything(false, true, true); // the world, the Row Flats and both player files are on disk; the ledger is already
@@ -223,12 +255,22 @@ public final class CrewJourneyServer {
         marker.addProperty("connected_clients", 2);
         marker.addProperty("crew", crew.name);
         marker.addProperty("members", crew.members.size());
-        marker.addProperty("bank_before_injection", 30);
+        marker.addProperty("bank_before_injection", BANK_AFTER_WITHDRAWAL);
         marker.addProperty("injected_deposit_reached_wallet_and_player_file", 15);
         marker.addProperty("injected_withdrawal_stopped_after_prepare_record", 10);
         marker.addProperty("farmer_wallet_at_halt", QShopEconomy.balance(farmer));
         marker.addProperty("smith_wallet_at_halt", QShopEconomy.balance(smith));
         marker.addProperty("history_lines", crew.log.size());
+        marker.addProperty("rent_total_paid_by_the_bank", rentTotal);
+        marker.addProperty("start", (long) START);
+        marker.addProperty("founder_deposit", founderDeposit);
+        marker.addProperty("member_deposit", MEMBER_DEPOSIT);
+        marker.addProperty("first_withdrawal", FIRST_WITHDRAWAL);
+        marker.addProperty("rent_per_hour", house.charge);
+        marker.addProperty("rent_deposit", house.deposit);
+        marker.addProperty("order_income", orderIncome());
+        marker.addProperty("rent_clock_active_minutes_at_halt", house.progress / PropertyRules.TICKS_PER_MINUTE);
+        marker.addProperty("farmer_career_xp", CitizenState.get(server).find(farmer.getUUID()).orElseThrow().careerXp());
         marker.addProperty("bank_at_halt", crew.bank);
         marker.addProperty("purchase_hold_at_halt", held);
         if (survival != null) marker.add("survival", survival);
@@ -331,6 +373,19 @@ public final class CrewJourneyServer {
             "the Row House's chest, smithing table and terminal are where the data says");
     }
 
+    /** What renting the Row House costs the Crew at once: the deposit and the first hour at the price the home was registered with (its city factor included). */
+    static long rentTotal(Residence house) {
+        PropertyRules.Terms terms = terms(house);
+        return PropertyRules.scaled(terms.deposit(), house.factorPct) + PropertyRules.scaled(terms.rent(), house.factorPct);
+    }
+
+    private static PropertyRules.Terms terms(Residence house) {
+        return PropertyCatalog.INSTANCE.find(house.id).orElseThrow(() -> new IllegalStateException("The Row House has no property terms in the catalogue"));
+    }
+
+    /** The credits the fixture's one work order paid the farmer: income, which is why the conserved total below grows by exactly this. */
+    private static long orderIncome() { return WorkOrderCatalog.INSTANCE.find(ORDER).credits(); }
+
     private static String houseId() {
         return DistrictBuilder.homeId(DistrictCatalog.INSTANCE.find("row_flats"), DistrictCatalog.INSTANCE.find("row_flats").homeOps().get(2).home());
     }
@@ -373,10 +428,17 @@ public final class CrewJourneyServer {
             expect(house != null && house.ownerType == OwnerType.CREW && crew.id.equals(house.owner), "the Row House is still the Crew's");
             expect(smith.getUUID().equals(house.claims.get(chest.asLong())), "the private container survived");
             // the deposit had reached the wallet and the player file: recovery settled it. The withdrawal had not touched the wallet: recovery cancelled it.
-            expect(crew.bank == 45 - SPENT, "bank " + (45 - SPENT) + " (30 + the settled deposit of 15; the cancelled withdrawal's hold returned" + (SPENT > 0 ? "; less the " + SPENT + " the interrupted purchase spent" : "") + "), was " + crew.bank);
+            long rentTotal = rentTotal(house), founderDeposit = rentTotal + BANK_AFTER_RENT - MEMBER_DEPOSIT, income = orderIncome();
+            expect(house.tenure == PropertyRules.Tenure.RENT && house.ownerType == OwnerType.CREW && house.charge == PropertyRules.scaled(terms(house).rent(), house.factorPct), "the tenancy survived the restart: " + house.tenure + " charge " + house.charge);
+            long startTicks = state.get("rent_progress_ticks").getAsLong();
+            expect(house.progress >= startTicks && house.progress <= startTicks + 6000L, "the rent clock kept its 30 active minutes and the dead server was not billed: " + house.progress + " ticks, was " + startTicks);
+            expect(house.due == 0 && house.arrears == 0, "no hour fell due while the server was down");
+            var after = CitizenState.get(server).find(farmer.getUUID()).orElseThrow();
+            expect(after.careerXp() == ORDER_XP_TARGET && SkillService.has(after, "farmer.fundamentals"), "the career XP and the learned skill survived the restart");
+            expect(crew.bank == BANK_AFTER_WITHDRAWAL + 15 - SPENT, "bank " + (BANK_AFTER_WITHDRAWAL + 15 - SPENT) + " (" + BANK_AFTER_WITHDRAWAL + " + the settled deposit of 15; the cancelled withdrawal's hold returned" + (SPENT > 0 ? "; less the " + SPENT + " the interrupted purchase spent" : "") + "), was " + crew.bank);
             double farmerWallet = QShopEconomy.balance(farmer), smithWallet = QShopEconomy.balance(smith);
-            expect(farmerWallet == 65 && smithWallet == 150, "wallets after recovery " + farmerWallet + " / " + smithWallet);
-            expect(farmerWallet + smithWallet + crew.bank + 140 + SPENT == 400, "conservation after recovery");
+            expect(farmerWallet == START - founderDeposit - 15 + income && smithWallet == START - MEMBER_DEPOSIT + FIRST_WITHDRAWAL, "wallets after recovery " + farmerWallet + " / " + smithWallet);
+            expect(farmerWallet + smithWallet + crew.bank + rentTotal + SPENT == 2 * START + income, "conservation after recovery");
             expect(crew.log.stream().anyMatch(e -> e.kind().equals("DEPOSIT") && e.amount() == 15), "the settled deposit is in the history");
             expect(crew.log.stream().filter(e -> e.kind().equals("WITHDRAW")).count() == 1, "the cancelled withdrawal must not appear as a second withdrawal in the history");
             var citizens = CitizenState.get(server);
@@ -388,7 +450,7 @@ public final class CrewJourneyServer {
                 survivalFacts = SurvivalJourney.verifyAfterRestart(server, level, farmer, smith, state, ledger);
                 System.out.println("[UC-JOURNEY] survival state verified after the restart: " + survivalFacts);
             }
-            System.out.println("[UC-JOURNEY] Crew state verified after the restart: bank " + (45 - SPENT) + ", wallets 65/150, nothing unresolved");
+            System.out.println("[UC-JOURNEY] Crew state verified after the restart: bank " + (BANK_AFTER_WITHDRAWAL + 15 - SPENT) + ", wallets " + (long) farmerWallet + "/" + (long) smithWallet + ", tenancy and rent clock kept, nothing unresolved");
             CrewNetwork.sendView(farmer, true);
             CrewNetwork.sendView(smith, true);
             return;
@@ -413,12 +475,15 @@ public final class CrewJourneyServer {
         if (!text.equals(lastProgress)) { lastProgress = text; stalled = 0; System.out.println("[UC-JOURNEY] " + text); }
         else if (++stalled * 10 > STALL_TICKS) throw new IllegalStateException("No progress for " + STALL_TICKS / 20 + " seconds; last state: " + text);
         // the clients now continue with the screen: the founder deposits 5, the member withdraws 20
-        if (crew.bank != 30 - SPENT || QShopEconomy.balance(farmer) != 60 || QShopEconomy.balance(smith) != 170 || !ledger.allPending().isEmpty()) return;
+        Residence houseNow = ledger.residence(houseId());
+        long rentTotal = rentTotal(houseNow), founderDeposit = rentTotal + BANK_AFTER_RENT - MEMBER_DEPOSIT, income = orderIncome();
+        if (crew.bank != BANK_AFTER_WITHDRAWAL - SPENT || QShopEconomy.balance(farmer) != START - founderDeposit - 15 + income - 5 || QShopEconomy.balance(smith) != START - MEMBER_DEPOSIT + FIRST_WITHDRAWAL + 20 || !ledger.allPending().isEmpty()) return;
         // the numbers are final; give the clients a few seconds to take the server's answer into their screens and write down what they show before the server ends the run
         if (++settled * 10 < 20 * 5) return;
         // the second client opens the backpack the restart gave back, with the mod's key, looks at it (screenshots) and closes it; the pack's own container must be seen open and then closed
         if (SurvivalJourney.ON && !SurvivalJourney.packLookedAt(smith)) { lastProgress = text + " | waiting for the client to open and close the backpack"; return; }
-        expect(QShopEconomy.balance(farmer) + QShopEconomy.balance(smith) + crew.bank + 140 + SPENT == 400, "conservation at the end");
+        expect(QShopEconomy.balance(farmer) + QShopEconomy.balance(smith) + crew.bank + rentTotal + SPENT == 2 * START + income, "conservation at the end");
+        expect(houseNow.progress > ledgerStartTicks(), "the household clock ran while both players were online after the restart: " + houseNow.progress);
         expect(crew.log.stream().filter(e -> e.kind().equals("DEPOSIT") && e.amount() == 5).count() == 1 && crew.log.stream().filter(e -> e.kind().equals("WITHDRAW") && e.amount() == 20).count() == 1,
             "the two transfers made after the restart are in the history once each");
         long bankAtClients = crew.bank;
@@ -429,8 +494,8 @@ public final class CrewJourneyServer {
             // wallet, one paid by a wallet alone, and one nobody can pay (refused, nothing moves)
             exchangeSpent = SurvivalJourney.purchasesAfterRestart(server, level, farmer, smith, table, ledger, survivalFacts);
             expect(crew.bank == 0 && ledger.allHolds().isEmpty() && ledger.allPending().isEmpty(), "the Crew bank and holds after the exchange purchases: bank " + crew.bank + ", holds " + ledger.allHolds());
-            expect(QShopEconomy.balance(farmer) + QShopEconomy.balance(smith) + crew.bank + 140 + SPENT + exchangeSpent == 400,
-                "conservation after the exchange purchases: " + QShopEconomy.balance(farmer) + " + " + QShopEconomy.balance(smith) + " + " + crew.bank + " + 140 + " + SPENT + " + " + exchangeSpent);
+            expect(QShopEconomy.balance(farmer) + QShopEconomy.balance(smith) + crew.bank + rentTotal + SPENT + exchangeSpent == 2 * START + income,
+                "conservation after the exchange purchases: " + QShopEconomy.balance(farmer) + " + " + QShopEconomy.balance(smith) + " + " + crew.bank + " + " + rentTotal + " + " + SPENT + " + " + exchangeSpent);
             System.out.println("[UC-JOURNEY] exchange purchases after the restart passed: " + survivalFacts);
         }
         server.getPlayerList().saveAll();
@@ -440,7 +505,8 @@ public final class CrewJourneyServer {
         marker.addProperty("connected_clients", 2);
         marker.addProperty("unresolved_transfers_found_in_file_at_start", pendingBeforeStart);
         marker.addProperty("unresolved_after_recovery_at_server_start", pendingAfterStart);
-        marker.addProperty("bank_after_recovery", 45 - SPENT);
+        marker.addProperty("bank_after_recovery", BANK_AFTER_WITHDRAWAL + 15 - SPENT);
+        marker.addProperty("rent_clock_active_minutes_at_end", houseNow.progress / PropertyRules.TICKS_PER_MINUTE);
         marker.addProperty("bank_when_the_clients_looked", bankAtClients);
         marker.addProperty("bank_final", crew.bank);
         marker.addProperty("farmer_wallet_when_the_clients_looked", farmerAtClients);
@@ -459,6 +525,8 @@ public final class CrewJourneyServer {
         finished = true;
         server.halt(false);
     }
+
+    private static long ledgerStartTicks() { return state.get("rent_progress_ticks").getAsLong(); }
 
     private static void refuses(Runnable action, String what) {
         try {
