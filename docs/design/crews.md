@@ -100,7 +100,7 @@ See [crew-economy.md](../technical/crew-economy.md). In short: three modes (sepa
 ## 8. Open questions for the owner
 
 1. Should leaving a *fully shared* Crew return the leaver's share of what their income put in? Today it does not (they keep their wallet; the bank stays with the Crew), and the Rules page says so.
-2. Rent: a one-time lease, or a periodic charge paid in **active play time** only (never while offline)? The design rule is no offline punishment, so a rent that ticks only while a member is online is the candidate.
+2. ~~Rent: a one-time lease, or a periodic charge?~~ **Decided (owner brief of October 20, D-099):** renting and buying are different things; rent is charged in **active household time** only (once per home, however many residents are online, never while all are offline) and unpaid rent withdraws comforts but never belongings. See [property-economy.md](../technical/property-economy.md); implemented and tested by scripts, not played.
 3. Should a Manager be allowed to promote? Today only the founder can (fewer ways to lose control of a shared bank).
 4. Should Crew homes be shareable with a friend outside the Crew (a guest list)? The retrieval window already works that way for a departing member.
 5. Open Parties and Claims bridge (shared chunk claims for rural properties), or Core-only protection?

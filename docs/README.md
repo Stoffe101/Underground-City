@@ -9,6 +9,7 @@ The docs here distinguish **confirmed product direction**, **design proposals**,
 - [Cities, factions, and world](design/cities-and-world.md)
 - [Professions and research](design/professions.md)
 - [General skills and progression](design/general-skills.md)
+- [Skill trees: depth, effects and what each skill is for (D-098)](design/skill-trees.md)
 - [Economy and civic systems](design/economy.md)
 - [NPC population and simulation](design/npcs.md)
 - [Crime, policing, and conflict](design/crime-and-war.md)
@@ -44,6 +45,10 @@ The docs here distinguish **confirmed product direction**, **design proposals**,
 - [Lost Cities and long server ticks (D-096)](technical/lost-cities-stalls.md)
 - [First-start and restart stability of the pack (D-097)](technical/first-start-stability.md)
 - [Opening an old world that holds Traveler's Backpack items](technical/backpack-migration.md)
+- [The economy model: net profit, timelines, exploit checks (D-098)](technical/economy-model.md)
+- [The property economy: rent, ownership, upkeep, storage and upgrades (D-099)](technical/property-economy.md)
+- [Checkpoint searches of carried storage, including backpacks (D-100)](technical/checkpoint-search.md)
+- [Vehicle and boat price tiers and the two dealer lines (D-101)](technical/vehicle-tiers.md)
 - [AI-assisted development, docs and PR workflow](technical/agent-workflow.md)
 - [Claude Code cloud MCP setup](technical/claude-cloud-tools.md)
 
@@ -62,6 +67,7 @@ The docs here distinguish **confirmed product direction**, **design proposals**,
 - [Sprint report, October 18, 2026: Crews, shared homes and finances, survival, the Gunsmith's component loop](production/sprint-2026-10-18.md)
 - [PR #23 follow-up: the shared-finance bug, authentication, home security, survival supply, the combined journey](production/pr23-playtest-readiness.md)
 - [Sprint report, October 19, 2026: simulation world, Sophisticated Backpacks, progression without monsters, Lost Cities stalls, first-start stability](production/sprint-2026-10-19.md)
+- [Sprint report, October 20, 2026: economy model, property and rent, skill effects, checkpoint searches of carried storage, vehicle tiers](production/sprint-2026-10-20.md)
 
 ## Legal and assets
 
