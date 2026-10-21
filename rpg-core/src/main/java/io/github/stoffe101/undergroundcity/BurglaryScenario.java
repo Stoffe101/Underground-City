@@ -209,6 +209,8 @@ final class BurglaryScenario {
             double nearest = list.stream().mapToDouble(o -> o.distanceTo(mc.player)).min().orElse(-1);
             Playtest.log("BURGLARY officers in view: " + list.size() + ", the nearest " + String.format(java.util.Locale.ROOT, "%.1f", nearest) + " blocks away; " + PoliceResponse.status());
         });
+        Playtest.queue("turn to face the nearest officer", () -> lookAtNearestOfficer());
+        Playtest.wait("the view turns", 6);
         Playtest.queue("screenshot of the officers arriving", () -> Playtest.screenshotNextFrame("uc-burglary-5-officers"));
         Playtest.wait("frame", 8);
         final int[] waited = {0};
@@ -232,6 +234,8 @@ final class BurglaryScenario {
             return false;
         }, 2400);
         Playtest.wait("the notice arrives", 15);
+        Playtest.queue("turn to face the officer who made the arrest", () -> lookAtNearestOfficer());
+        Playtest.wait("the view turns", 6);
         Playtest.queue("screenshot of the arrest", () -> Playtest.screenshotNextFrame("uc-burglary-6-arrest"));
         Playtest.wait("frame", 8);
         Playtest.queue("what the arrest did", () -> {
@@ -244,6 +248,20 @@ final class BurglaryScenario {
             if (stolen != 0) Playtest.fail("stolen goods survived an arrest");
             if (bread != 5) Playtest.fail("honest goods were taken in the arrest (" + bread + " of 5 bread left)");
             if (heat < f.heatBefore + PoliceResponse.ARREST_HEAT) Playtest.fail("an arrest did not raise the city's heat by " + PoliceResponse.ARREST_HEAT);
+        });
+    }
+
+    /** Turns the player's view to the nearest officer so that a photograph shows who is coming (the officers arrive from wherever the street spot was found, usually behind the camera). */
+    private static void lookAtNearestOfficer() {
+        var mc = Minecraft.getInstance();
+        var server = mc.getSingleplayerServer();
+        server.execute(() -> {
+            var thief = server.getPlayerList().getPlayer(mc.player.getUUID());
+            TownspersonEntity nearest = null;
+            for (var o : server.overworld().getEntitiesOfClass(TownspersonEntity.class, thief.getBoundingBox().inflate(80), e -> e.police())) {
+                if (nearest == null || o.distanceTo(thief) < nearest.distanceTo(thief)) nearest = o;
+            }
+            if (nearest != null) thief.lookAt(net.minecraft.commands.arguments.EntityAnchorArgument.Anchor.EYES, nearest.getEyePosition());
         });
     }
 
