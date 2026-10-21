@@ -13,6 +13,7 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.pathfinder.Path;
 import net.minecraft.world.phys.AABB;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.event.TickEvent;
@@ -50,7 +51,7 @@ public final class PoliceResponse {
     static final int RING_SECONDS = 20, RING_EVERY_TICKS = 40, ALARM_SALT = 3;
     /** Officers close in from this far, speak from this far, and arrest from this far; the thief is lost beyond the escape range. */
     static final double CHASE_RANGE = 40, CHALLENGE_RANGE = 14, ARREST_RANGE = 3.0, ESCAPE_RANGE = 110;
-    static final int ARREST_HEAT = 3, LEAVE_TICKS = 160, MAX_TRIES = 5;
+    static final int ARREST_HEAT = 3, LEAVE_TICKS = 160, MAX_TRIES = 5, CANDIDATE_SPOTS = 6;
     /** A clean pick does not trip an armed alarm whose chance is below this (an alarm in every building of its class is too good to slip past). */
     static final double QUIET_BYPASS_MAX_CHANCE = 0.9;
 
@@ -246,12 +247,13 @@ public final class PoliceResponse {
         chunks.sort(java.util.Comparator.comparingInt(c -> Math.abs(c.x - home.x) + Math.abs(c.z - home.z)));
         RandomSource random = RandomSource.create(PopulationPlan.mix(d.buildingKey ^ player.getUUID().getLeastSignificantBits() ^ d.arriveAt));
         List<ServerPlayer> thief = List.of(player);
-        BlockPos first = null;
+        List<BlockPos> candidates = new ArrayList<>();
         for (ChunkPos chunk : chunks) {
             Optional<BlockPos> spot = spots.find(level, chunk, random, thief);
-            if (spot.isPresent()) { first = spot.get(); break; }
+            if (spot.isPresent() && !candidates.contains(spot.get())) { candidates.add(spot.get()); if (candidates.size() >= CANDIDATE_SPOTS) break; }
         }
-        if (first == null) return false;
+        if (candidates.isEmpty()) return false;
+        BlockPos first = reachableSpot(level, player, d, candidates);
         List<PopulationPlan.Person> guards = new ArrayList<>();
         for (PopulationPlan.Person person : PopulationService.roster(level, d.city)) if (person.role().equals("guard")) guards.add(person);
         for (int i = 0; i < d.officersWanted; i++) {
@@ -267,6 +269,25 @@ public final class PoliceResponse {
             if (level.addFreshEntity(officer)) d.officers.add(officer.getUUID());
         }
         return !d.officers.isEmpty();
+    }
+
+    /**
+     * The first of the street spots from which an officer can walk all the way to the thief, or the nearest spot when none can. A real client showed why this matters: the nearest street spot was behind the
+     * building, an officer's path to the thief in front of it ended at a wall, and the officer stood there until the window closed.
+     */
+    private static BlockPos reachableSpot(ServerLevel level, ServerPlayer player, Dispatch d, List<BlockPos> candidates) {
+        if (candidates.size() == 1) return candidates.get(0);
+        TownspersonEntity probe = UndergroundCity.TOWNSPERSON.get().create(level);
+        if (probe == null) return candidates.get(0);
+        probe.becomeOfficer(d.city, "Officer", 0);
+        probe.setOnGround(true);   // a body that has not ticked yet is not "on the ground" and its navigation would refuse to plan
+        BlockPos target = player.blockPosition();
+        for (BlockPos at : candidates) {
+            probe.moveTo(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, 0f, 0f);
+            Path path = probe.getNavigation().createPath(target, 0);
+            if (path != null && path.canReach()) return at;
+        }
+        return candidates.get(0);
     }
 
     private static List<TownspersonEntity> officers(ServerLevel level, Dispatch d) {

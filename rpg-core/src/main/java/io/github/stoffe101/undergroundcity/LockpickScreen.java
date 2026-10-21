@@ -249,7 +249,8 @@ public final class LockpickScreen extends UcScreen {
         "Slide: mouse or arrows   Press: hold left button or Space",
         "Slide: mouse or arrows   Press: hold click or Space",
         "Slide: mouse or arrows   Press: click or Space",
-        "Mouse or arrows slide   Click presses",
+        "Mouse or arrows slide   Hold click or Space",
+        "Mouse or arrows slide   Hold click",
     };
 
     @Override protected void renderFooter(GuiGraphics g, int y) {

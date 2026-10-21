@@ -262,6 +262,41 @@ public final class PoliceResponseGameTests {
         helper.succeed();
     }
 
+    /** A real client: the nearest street spot lay behind the building, the officer's path to the thief ended at a wall, and nobody was arrested. Built in the sky, clear of the other tests. */
+    @GameTest(template = "empty")
+    public static void officersAppearWhereTheyCanWalkToTheThiefAndNotInsideAWall(GameTestHelper helper) {
+        try (Scene s = new Scene(helper, "uc_pol_reach", ALARMED)) {
+            ServerLevel level = s.level;
+            int cx = s.door.getX(), cz = s.door.getZ(), y = level.getMaxBuildHeight() - 50;
+            var stone = net.minecraft.world.level.block.Blocks.STONE.defaultBlockState();
+            var air = net.minecraft.world.level.block.Blocks.AIR.defaultBlockState();
+            for (int dx = -14; dx <= 14; dx++) for (int dz = -14; dz <= 14; dz++) {
+                level.setBlock(new BlockPos(cx + dx, y, cz + dz), stone, 2);
+                for (int dy = 1; dy <= 5; dy++) level.setBlock(new BlockPos(cx + dx, y + dy, cz + dz), air, 2);
+            }
+            BlockPos sealed = new BlockPos(cx - 9, y + 1, cz), open = new BlockPos(cx + 9, y + 1, cz);
+            for (int dx = -1; dx <= 1; dx++) for (int dz = -1; dz <= 1; dz++) {
+                if (dx == 0 && dz == 0) continue;
+                for (int dy = 1; dy <= 3; dy++) level.setBlock(sealed.offset(dx, dy - 1, dz), stone, 2);
+            }
+            for (int dx = -1; dx <= 1; dx++) for (int dz = -1; dz <= 1; dz++) level.setBlock(sealed.offset(dx, 3, dz), stone, 2);
+            try {
+                s.thief.setPos(cx + 0.5, y + 1, cz + 0.5);
+                final int[] calls = {0};
+                PoliceResponse.spots = (lvl, chunk, random, players) -> Optional.of(calls[0]++ == 0 ? sealed : open);
+                arrive(s);
+                var officers = s.officers();
+                check(officers.size() == 2, "two officers were due and " + officers.size() + " came");
+                for (TownspersonEntity officer : officers) {
+                    check(officer.position().distanceTo(net.minecraft.world.phys.Vec3.atBottomCenterOf(open)) < 3.0, "an officer was put at " + officer.blockPosition() + ", not at the open spot " + open + " (the other is walled in)");
+                }
+            } finally {
+                for (int dx = -14; dx <= 14; dx++) for (int dz = -14; dz <= 14; dz++) for (int dy = 0; dy <= 5; dy++) level.setBlock(new BlockPos(cx + dx, y + dy, cz + dz), air, 2);
+            }
+        }
+        helper.succeed();
+    }
+
     @GameTest(template = "empty")
     public static void anOfficerWhoReachesTheThiefArrestsThemAndTakesOnlyWhatIsStolen(GameTestHelper helper) {
         try (Scene s = new Scene(helper, "uc_pol_f", ALARMED)) {
