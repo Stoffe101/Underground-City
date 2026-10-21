@@ -1,0 +1,122 @@
+{
+  "schema_version": 1,
+  "id": "ironhaven_quarry",
+  "title": "Ironhaven old quarry",
+  "district": "old_quarry",
+  "interval_minutes": 20,
+  "note": "Mined seams grow back after interval_minutes of ACTIVE play time (never while nobody is online), unless somebody stands in the cell; a cell somebody built in is never overwritten. Gold, diamond, redstone and lapis are deliberately not here.",
+  "veins": [
+    {
+      "at": [
+        2,
+        -3,
+        6
+      ],
+      "block": "minecraft:iron_ore"
+    },
+    {
+      "at": [
+        15,
+        -4,
+        10
+      ],
+      "block": "minecraft:iron_ore"
+    },
+    {
+      "at": [
+        4,
+        -5,
+        12
+      ],
+      "block": "minecraft:iron_ore"
+    },
+    {
+      "at": [
+        13,
+        -6,
+        5
+      ],
+      "block": "minecraft:iron_ore"
+    },
+    {
+      "at": [
+        3,
+        -4,
+        4
+      ],
+      "block": "minecraft:iron_ore"
+    },
+    {
+      "at": [
+        14,
+        -5,
+        8
+      ],
+      "block": "minecraft:iron_ore"
+    },
+    {
+      "at": [
+        1,
+        -2,
+        9
+      ],
+      "block": "minecraft:coal_ore"
+    },
+    {
+      "at": [
+        17,
+        -2,
+        9
+      ],
+      "block": "minecraft:coal_ore"
+    },
+    {
+      "at": [
+        16,
+        -3,
+        12
+      ],
+      "block": "minecraft:coal_ore"
+    },
+    {
+      "at": [
+        5,
+        -6,
+        9
+      ],
+      "block": "minecraft:coal_ore"
+    },
+    {
+      "at": [
+        3,
+        -4,
+        14
+      ],
+      "block": "minecraft:coal_ore"
+    },
+    {
+      "at": [
+        4,
+        -5,
+        6
+      ],
+      "block": "minecraft:copper_ore"
+    },
+    {
+      "at": [
+        13,
+        -6,
+        11
+      ],
+      "block": "minecraft:copper_ore"
+    },
+    {
+      "at": [
+        2,
+        -3,
+        14
+      ],
+      "block": "minecraft:copper_ore"
+    }
+  ]
+}

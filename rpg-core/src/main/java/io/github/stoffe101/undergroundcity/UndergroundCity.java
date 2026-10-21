@@ -135,6 +135,8 @@ public final class UndergroundCity {
         MinecraftForge.EVENT_BUS.register(new BurglaryHarness());
         MinecraftForge.EVENT_BUS.register(new PopulationService());
         MinecraftForge.EVENT_BUS.register(new PoliceResponse());
+        MinecraftForge.EVENT_BUS.register(new ResourceSites());
+        MinecraftForge.EVENT_BUS.register(new HouseholdService());
         MinecraftForge.EVENT_BUS.register(new HudService());
         if (net.minecraftforge.fml.ModList.get().isLoaded("qshop")) MinecraftForge.EVENT_BUS.register(new QShopTradeWatcher());
         MinecraftForge.EVENT_BUS.register(WorldLayout.INSTANCE);
@@ -166,6 +168,8 @@ public final class UndergroundCity {
         event.addListener(RegionalCatalog.INSTANCE);
         event.addListener(CityRegions.INSTANCE);
         event.addListener(CityCharacter.INSTANCE);
+        event.addListener(ResourceSiteCatalog.INSTANCE);
+        event.addListener(BuildingSpots.INSTANCE);
         event.addListener(WorldLayout.INSTANCE);
         event.addListener(PropertyPolicies.INSTANCE);
         event.addListener(ExceptionalLoot.INSTANCE);

@@ -22,7 +22,7 @@ import org.slf4j.Logger;
  */
 public final class DevBootstrap {
     private static final Logger LOGGER = LogUtils.getLogger();
-    static final String DISTRICT = "founders_row", RANGE = "firing_range", FLATS = "row_flats", MOTEL = "row_motel";
+    static final String DISTRICT = "founders_row", RANGE = "firing_range", FLATS = "row_flats", MOTEL = "row_motel", QUARRY = "old_quarry";
     static final int SEARCH_RADIUS = 160, MAX_RELIEF = 3;
     /** The landing is graded (LandingGrader), so a lot may be this uneven before grading and still be the least work. */
     static final int LANDING_RELIEF = 24, LANDING_SEARCH_RADIUS = 200;
@@ -108,6 +108,32 @@ public final class DevBootstrap {
         }
     }
 
+    /**
+     * The old quarry (D-123, the one regenerating resource site) goes on natural ground east of the landing, beyond the graded footprint: a level, dry lot looked for 90 blocks past the motel, within 60 blocks of that
+     * point and never overlapping the footprint. Skipped, with a log line, where nothing fits: the world works without it (the cities' shelves still sell the same metals).
+     */
+    static void placeQuarry(ServerLevel level, BlockPos rowOrigin, Footprint footprint) {
+        DistrictCatalog.District quarry = DistrictCatalog.INSTANCE.find(QUARRY);
+        if (quarry == null || DistrictBuilder.isBuilt(level, QUARRY)) return;
+        int width = quarry.max().getX() - quarry.min().getX() + 1, depth = quarry.max().getZ() - quarry.min().getZ() + 1;
+        try {
+            var found = DistrictSites.find(ground(level), rowOrigin.getX() + footprint.right() + 90, rowOrigin.getZ(), width, depth, MAX_RELIEF, 60);
+            if (found.isEmpty()) { LOGGER.info("[UC-DEV] the old quarry was not placed: no level, dry ground within 60 blocks of {} {}", rowOrigin.getX() + footprint.right() + 90, rowOrigin.getZ()); return; }
+            var site = found.get();
+            int west = rowOrigin.getX() - footprint.left(), east = rowOrigin.getX() + footprint.right();
+            boolean overlapsRow = site.x() <= east + 8 && site.x() + width >= west - 8 && site.z() <= rowOrigin.getZ() + footprint.depth() + 8 && site.z() + depth >= rowOrigin.getZ() - 8;
+            if (overlapsRow) { LOGGER.info("[UC-DEV] the old quarry was not placed: the only lot found overlaps the landing"); return; }
+            BlockPos origin = new BlockPos(site.x(), site.y(), site.z());
+            for (int cx = (origin.getX() + quarry.min().getX()) >> 4; cx <= (origin.getX() + quarry.max().getX()) >> 4; cx++) {
+                for (int cz = (origin.getZ() + quarry.min().getZ()) >> 4; cz <= (origin.getZ() + quarry.max().getZ()) >> 4; cz++) level.getChunk(cx, cz);
+            }
+            DistrictBuilder.build(level, quarry, origin);
+            LOGGER.info("[UC-DEV] old quarry built at {} (relief {}, {} blocks from the search point)", origin.toShortString(), site.relief(), Math.round(site.distance()));
+        } catch (RuntimeException error) {
+            LOGGER.warn("[UC-DEV] the old quarry could not be placed: {}", error.toString());
+        }
+    }
+
     private static void placeBeside(ServerLevel level, DistrictCatalog.District district, BlockPos origin, String what, String side, boolean graded) {
         if (DistrictBuilder.isBuilt(level, district.id())) return;
         int width = district.max().getX() - district.min().getX() + 1, depth = district.max().getZ() - district.min().getZ() + 1;
@@ -174,6 +200,7 @@ public final class DevBootstrap {
         DistrictBuilder.build(level, district, origin);
         placeRange(level, origin, landing);
         placeFlats(level, origin, landing);
+        if (landing) placeQuarry(level, origin, footprint(width, depth));
         // The gate is the middle of the lane's far (south) end; stand a few blocks outside it, facing the lane.
         BlockPos gate = origin.offset(district.min().getX() + width / 2, 0, depth + 2);
         level.setDefaultSpawnPos(gate, 180.0f);

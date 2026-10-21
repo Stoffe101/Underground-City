@@ -148,6 +148,9 @@ public final class CityBuildings extends SimpleJsonResourceReloadListener {
         return building.filter(b -> pos.getY() >= b.minY() && pos.getY() < b.maxY());
     }
 
+    /** True when the plan of a chunk is already known, so asking about it costs nothing (a first question to Lost Cities costs tens of milliseconds). */
+    public boolean known(int cx, int cz) { return override != null || cache.containsKey(ChunkPos.asLong(cx, cz)); }
+
     /** The building plan of a chunk (cached). Empty for a chunk that is not a city building. */
     public Optional<Building> ofChunk(ServerLevel level, int cx, int cz) {
         BiFunction<Integer, Integer, Optional<Building>> seam = override;

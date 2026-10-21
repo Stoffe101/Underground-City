@@ -34,7 +34,7 @@ import net.minecraft.world.level.Level;
  */
 public final class TownspersonEntity extends PathfinderMob {
     private static final EntityDataAccessor<Integer> SKIN = SynchedEntityData.defineId(TownspersonEntity.class, EntityDataSerializers.INT);
-    private long person;
+    private long person, homeKey;
     private String city = "", role = "resident";
     /** An officer's errand: where to go and how fast, and the game time at which the officer leaves (both only ever set by {@link PoliceResponse}; none of it is saved). */
     private BlockPos errand;
@@ -84,6 +84,16 @@ public final class TownspersonEntity extends PathfinderMob {
         getAttribute(Attributes.FOLLOW_RANGE).setBaseValue(48.0);
         clearRestriction();
     }
+
+    /** Makes this body a resident or a worker of a furnished building ({@link HouseholdService}): it stays within two blocks of where it was put and remembers which building is its own. */
+    void becomeResident(PopulationPlan.Person who, BlockPos anchor, long building) {
+        become(who, anchor);
+        homeKey = building;
+        restrictTo(anchor, 2);
+    }
+
+    /** The key of the building this body lives or works in ({@link CityBuildings.Building#key}), or 0 for a street person or an officer. */
+    long homeKey() { return homeKey; }
 
     boolean police() { return role.equals("police"); }
 

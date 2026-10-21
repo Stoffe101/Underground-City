@@ -211,6 +211,22 @@ class OreRoutes(unittest.TestCase):
             if not root.get("route"):
                 self.assertIs(root.get("needed_by_approved_gameplay"), False, item)
 
+    def test_a_site_route_needs_a_real_site_with_a_vein_of_that_ore(self):
+        # the quarry is a second source of iron, coal and copper (D-123): the audit checks the site is really there and really grows the ore
+        data = audit.ore_catalogue()
+        for item, ore in (("minecraft:iron_ingot", "minecraft:iron_ore"), ("minecraft:coal", "minecraft:coal_ore"), ("minecraft:copper_ingot", "minecraft:copper_ore")):
+            self.assertEqual(data["roots"][item]["route"]["also_from_site"], {"id": "ironhaven_quarry", "ore": ore})
+        site = audit.DATA / "resource_sites/ironhaven_quarry.json"
+        saved = site.read_text()
+        site.unlink()
+        self.assertIn(("BROKEN ROUTE", "minecraft:coal"), self.kinds())
+        content = json.loads(saved)
+        content["veins"] = [v for v in content["veins"] if v["block"] != "minecraft:copper_ore"]
+        site.write_text(json.dumps(content))
+        kinds = self.kinds()
+        self.assertIn(("BROKEN ROUTE", "minecraft:copper_ingot"), kinds)
+        self.assertNotIn(("BROKEN ROUTE", "minecraft:iron_ingot"), kinds)
+
     def test_a_route_to_a_missing_line_is_caught(self):
         (audit.DATA / "regional_stock/materials/diamond_blackwater.json").unlink()
         self.assertIn(("BROKEN ROUTE", "minecraft:diamond"), self.kinds())

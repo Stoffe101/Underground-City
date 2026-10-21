@@ -122,9 +122,11 @@ public final class PoliceResponse {
         raised++;
         if (armed) { byAlarm++; ring(level, dispatch, now); }
         if (seen) byWitness++;
-        Notice.send(player, Notice.Kind.HEAT, armed ? (lockAlarm ? "The alarm is ringing" : "An alarm went off") : "Somebody saw you",
+        // somebody who lives or works in the building and is in it now is a witness too (the households of D-124): a night break-in of an occupied house is seen from the bed
+        boolean resident = seen && !level.getEntitiesOfClass(TownspersonEntity.class, new AABB(event.door()).inflate(WITNESS_RADIUS), person -> person.homeKey() == building.key() && person.isAlive()).isEmpty();
+        Notice.send(player, Notice.Kind.HEAT, armed ? (lockAlarm ? "The alarm is ringing" : "An alarm went off") : resident ? "A resident saw you" : "Somebody saw you",
             "The police have been called. Get away from the building, and out of sight, before they arrive.");
-        player.sendSystemMessage(Component.literal(armed ? (lockAlarm ? "The pick snapped and the alarm is ringing." : "An alarm sounds inside the building.") : "A passer-by sees you at the door and hurries off.")
+        player.sendSystemMessage(Component.literal(armed ? (lockAlarm ? "The pick snapped and the alarm is ringing." : "An alarm sounds inside the building.") : resident ? "Somebody is at home, and has seen you." : "A passer-by sees you at the door and hurries off.")
             .withStyle(ChatFormatting.RED));
     }
 

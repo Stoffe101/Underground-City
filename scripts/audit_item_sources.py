@@ -181,6 +181,13 @@ def catalogue_findings(catalogue: dict, only_kind: str, orders: dict[str, dict],
                     problem('BROKEN ROUTE', item, f'the exchange line {line_id} does not exist')
                 elif line['item'] != item or 'city' not in line.get('outlets', ['city']) or line['capacity'] < 1 or line['capacity'] * line['unit_price'] > 1200:
                     problem('BROKEN ROUTE', item, f'{line_id} must sell {item} in a city from a small finite shelf: {line}')
+            site = route.get('also_from_site')
+            if site:
+                site_file = DATA / f"resource_sites/{site['id']}.json"
+                if not site_file.is_file():
+                    problem('BROKEN ROUTE', item, f"the resource site {site['id']} does not exist")
+                elif not any(vein['block'] == site['ore'] for vein in json.loads(site_file.read_text())['veins']):
+                    problem('BROKEN ROUTE', item, f"the resource site {site['id']} has no vein of {site['ore']}")
         elif kind == 'derived':
             if route['from'] not in routed:
                 problem('BROKEN ROUTE', item, f"derived from {route['from']}, which has no route")

@@ -224,11 +224,11 @@ public final class PopulationService {
 
     static String subtitle(TownspersonEntity body) {
         return switch (body.role()) {
-            case "worker" -> "Worker";
+            case "worker" -> body.homeKey() != 0 ? "Works here" : "Worker";
             case "courier" -> "Courier";
             case "guard" -> "City guard";
             case "police" -> "Police";
-            default -> "Resident";
+            default -> body.homeKey() != 0 ? "Lives here" : "Resident";
         };
     }
 
@@ -248,7 +248,7 @@ public final class PopulationService {
         java.util.Set<Long> met = MET.computeIfAbsent(player.getUUID(), k -> new java.util.LinkedHashSet<>());
         boolean returning = !met.add(body.person());
         while (met.size() > 64) { Long first = met.iterator().next(); met.remove(first); }
-        String text = say(player, body, returning, met.size());
+        String text = body.homeKey() != 0 ? HouseholdService.say(player, body, returning) : say(player, body, returning, met.size());
         body.getLookControl().setLookAt(player);
         body.getNavigation().stop();
         TerminalNetwork.sendDialogue(player, body.getId(), body.getName().getString(), subtitle(body), body.city(), text, List.of(new Dialogue.Choice("bye", "Goodbye", true, "")));

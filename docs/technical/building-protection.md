@@ -21,7 +21,7 @@ Nothing stopped a player from walking up to a generated city building and diggin
 | `LockService.sweep` | Once a second, shuts every door whose window has lapsed (unless somebody is standing in it) so it is locked again. | GameTest; `BurglaryHarness` after a server restart |
 | `BuildingStash` | The first time anybody gets into a building it is **furnished once** with a stash (a Household Safe of the class's policy, at the class's chance) on a sound spot of its first three floors. Decided once per building, ever, as a pure function of the building and the world seed. The safe is the existing one: one shared finite inventory, slow restock in active time, vigilance after a break-in, never free. | GameTest: placed, registered, once only, inside the room |
 | The safe's own lock | Opening a locked safe is the same game on the server (profile from the safe's policy: 3 to 5 pins), needs the policy's number of lockpicks in the inventory and costs one when the pick snaps. | GameTest |
-| Heat | A picked door adds 1 heat in the building's city, a snapped pick that rang an alarm adds 2 (existing heat rules: decays with active time, search chances). A `BuildingBreachEvent` is posted for later witness, evidence and police systems. | GameTest checks heat rose |
+| Heat | A picked door adds 1 heat in the building's city, a snapped pick that rang an alarm adds 2 (existing heat rules: decays with active time, search chances). A `BuildingBreachEvent` is posted; `PoliceResponse` listens (D-122). | GameTest checks heat rose |
 
 ## The survival bypass found by the second playtest
 
@@ -77,7 +77,7 @@ At 3440x1440 GUI 2 the bar is 680 device pixels wide inside a 3440-pixel window,
 
 ## What it does not do (read this before telling anyone it works)
 
-* **No police or witness responds to a break-in.** Heat is recorded and an event is posted; nobody reacts to it yet. Say "burglary raises your heat", not "police respond".
+* **Police respond only to an observed break-in** (an armed alarm or a witness in sight; [alarms, witnesses, police and stolen goods](police-response.md), D-122). A break-in nobody observed raises heat and posts the event and nothing more. The response is tested headlessly with fake players and has not been seen in a real street; say "an alarm or a witness can bring officers", never "the police stop burglars".
 * **About two thirds of Lost Cities' buildings have no exterior door at all** (the probe found a ground-floor exterior door in 30 to 50 percent of the chunks of each building type, and 41 of 123 building chunks had no door of any kind). Those are sealed boxes: with the guard on, a player cannot get into them. They are not burglary targets and they are not public buildings; they are scenery until an entrance generator exists. The playable interiors of this version are the buildings Core places itself (Founders Row, the Row Flats and Motel, wayside shelters) and the buildings that do have a door.
 * A roof reached by a stair of placed blocks from an adjacent open lot is inside the volume but is not guarded; a roof stair door is locked like any other exterior door, and an open stairwell without a door is a way in that this version does not close.
 * A mod that changes blocks without firing Forge's events (a gun that shatters glass by its own rule, a vehicle that breaks a wall) is not covered until measured. TaCZ and Immersive Vehicles are in the development pack; neither has been tested against the guard.
