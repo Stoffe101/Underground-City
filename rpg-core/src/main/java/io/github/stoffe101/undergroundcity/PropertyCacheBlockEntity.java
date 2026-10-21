@@ -176,7 +176,7 @@ public final class PropertyCacheBlockEntity extends RandomizableContainerBlockEn
         if (forced) {
             level.playSound(null, worldPosition, net.minecraft.sounds.SoundEvents.IRON_TRAPDOOR_OPEN, net.minecraft.sounds.SoundSource.BLOCKS, 0.9f, 0.6f);
             level.sendParticles(net.minecraft.core.particles.ParticleTypes.CRIT, worldPosition.getX() + 0.5, worldPosition.getY() + 1.0, worldPosition.getZ() + 0.5, 8, 0.25, 0.1, 0.25, 0.1);
-            Notice.send(player, Notice.Kind.WARN, "Lock forced", "The residents grow more watchful, and whatever you take is marked as stolen goods. Do not stay long.");
+            Notice.send(player, Notice.Kind.WARN, "Lock forced", "The residents are on alert. Whatever you take is marked as stolen.");
         }
         if (exceptional && !revealed) {
             revealed = true;

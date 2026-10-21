@@ -245,11 +245,24 @@ public final class LockpickScreen extends UcScreen {
         };
     }
 
+    private static final String[] HOW_TO = {
+        "Slide: mouse or arrows   Press: hold left button or Space",
+        "Slide: mouse or arrows   Press: hold click or Space",
+        "Slide: mouse or arrows   Press: click or Space",
+        "Mouse or arrows slide   Click presses",
+    };
+
     @Override protected void renderFooter(GuiGraphics g, int y) {
-        String how = "Slide: mouse or arrows   Press: hold left button or Space";
-        UcUi.icon(g, UcUi.Icon.KEY, px + PAD, y + 4, UcUi.DIM);
-        UcUi.text(g, font, UcUi.fit(font, how, pw - 2 * PAD - 100), px + PAD + 20, y + 9, UcUi.DIM);
         String stop = "Esc stops";
+        int room = pw - 2 * PAD - 28 - font.width(stop);
+        // the first wording that fits whole: a real 1280 by 720 client at GUI scale 2 cut the long one at "hold l..."
+        String how = HOW_TO[0];
+        for (String option : HOW_TO) {
+            how = option;
+            if (font.width(option) <= room) break;
+        }
+        UcUi.icon(g, UcUi.Icon.KEY, px + PAD, y + 4, UcUi.DIM);
+        UcUi.text(g, font, UcUi.fit(font, how, room), px + PAD + 20, y + 9, UcUi.DIM);
         UcUi.text(g, font, stop, px + pw - PAD - font.width(stop), y + 9, UcUi.SOFT);
     }
 }
