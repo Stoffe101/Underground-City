@@ -1,6 +1,6 @@
 # Alarms, witnesses, police and stolen goods (D-122)
 
-Status: **implemented; arithmetic, the rules and the settlement are GameTested headlessly (`PoliceResponseGameTests`, 13 cases); the response has not yet been seen in a real generated street by a client; nobody has been chased by it.** This document says what exists, what it deliberately does not do, and what was evaluated and not adopted. It replaces the sentence "no police or witness responds to a break-in" in [building protection](building-protection.md) and [population](population.md): since this change one does, in the ways below and no others.
+Status: **implemented; arithmetic, the rules and the settlement are GameTested headlessly (`PoliceResponseGameTests`, 14 cases); one scripted real client has run the whole sequence once in a generated street (a pick on the real lock screen, an alarm, a forced safe, an officer who walked to the thief and arrested them); no person has played it and nobody has been chased by it.** This document says what exists, what it deliberately does not do, and what was evaluated and not adopted. It replaces the sentence "no police or witness responds to a break-in" in [building protection](building-protection.md) and [population](population.md): since this change one does, in the ways below and no others.
 
 ## The rule: the police are not psychic
 
@@ -62,7 +62,7 @@ What marking does not do: it does not stop a person using the goods, and **no fe
 
 ## Evidence
 
-`PoliceResponseGameTests` (13 cases; the whole `runGameTestServer` suite passed at 297 tests in a copy of the checkout with the quiet-entry case and the households in, and every GameTest job of the hosted run on the head of this branch passed):
+`PoliceResponseGameTests` (14 cases; the whole `runGameTestServer` suite passed at 297 tests in a copy of the checkout with the quiet-entry case and the households in, and every GameTest job of the hosted run on the head of this branch passed):
 
 * the stock classes carry profiles and the order of levels holds; an out-of-range profile is refused;
 * an alarm is a fixed function of the building (certain for chance 1, never for 0, 200 to 250 of 400 for an even chance, the same every time);
@@ -77,14 +77,27 @@ What marking does not do: it does not stop a person using the goods, and **no fe
 * a response ends when its thief logs out; a dead player is not arrested;
 * the arrest survives a simulated crash after the decision is on disk and is settled exactly once by login recovery, even if recovery runs twice;
 * a forced safe marks every stack in it, none before; marking is idempotent across cities; a checkpoint seizes the marked emeralds and not the honest ones.
+* officers are put at a street spot from which a path to the thief exists, not inside a wall (a sealed spot and an open one: the officers appear at the open one).
+
+### One scripted real-client burglary (October 21)
+
+`-PucPlaytest=burglary` (`BurglaryScenario`): a real client at 1280 by 720, GUI scale 2, a fresh archipelago world in a software-rendered virtual display, a new character in Survival with five picks and five bread. The script registers, finds an Ironhaven flat block with an armed alarm and a stash, walks at the door holding W and right-clicking, and works the **real lock screen with the pointer**, pin by pin (a sloppy press first, to strain the pick to about 48 percent and trip the alarm). It then forces the stash lock the same way, takes the first stack through the real container screen, steps into the street, lets the shared clock run to the dispatch time, and waits for the arrest. Result of the third run: **pass.** The door opened and an alarm raised one response (alarm 1, witness 0); the stash gave 3 bread, marked stolen; one officer arrived 18 blocks away and walked to the thief; the arrest took the 3 marked bread and left the 5 honest ones; heat in Ironhaven went from 0 to 4 (1 for the forced door and 3 for the arrest). The fine was 0 credits because the new character's wallet was empty (a fine is capped at the wallet).
+
+What the run found, and what was fixed because of it:
+
+* **The first two runs did not reach an arrest** (the first timed out after 2400 ticks; the second, with a log of each officer's position and path, was stopped after 600 once the state was clear). The nearest street spot to the building was behind it; the officer's path to the thief standing in front of it ended at a wall ("path 7 nodes, does not reach"), and the officer stood there until the window closed. No headless test could have shown this, because the tests use a spot in an open arena. Fix: an officer appears at the first of up to six street spots from which a full path to the thief exists (`PoliceResponse.reachableSpot`), and falls back to the nearest when none does (then the officers may stand there until the window closes, as before, with nobody arrested).
+* **Two notices were cut off** at this resolution ("...before the..." and "...marked as stolen goo..."); both were shortened. **The lock screen's hint line was cut** ("Press: hold l...") and now takes the first of four wordings that fits.
+* The side tracker is partly covered by the stacked notices at the top right at this size, and the officer is behind the camera in the first frames; the script now turns to face the nearest officer before its photographs.
+
+What the run does not show: a thief who moves (the script stands still), two officers, a witness-raised response, a quiet entry, a clean pick through a real screen, a second dispatch, anything at 1920 by 1080 or 3440 by 1440, and any human reaction to being arrested.
 
 ## What is not done
 
-* **No real-client evidence.** The headless tests use fake players and a fixed street spot. Whether officers find a way through a real Lost Cities street, whether they arrive from somewhere believable, and whether being chased is fun or merely irritating have not been seen by anyone. `PoliceResponse.status()` (`/uc_police status`, operators) counts raised responses, arrivals, arrests, escapes and "no street found" so a real run can report them.
+* **Little real-client evidence.** One scripted run (above) has seen an officer find a way through a real Lost Cities street and make an arrest, after a path bug it exposed was fixed. Nobody has seen whether officers arrive from somewhere believable in other streets, whether a *moving* thief is caught or escapes, or whether being chased is fun or merely irritating. `PoliceResponse.status()` (`/uc_police status`, operators) counts raised responses, arrivals, arrests, escapes and "no street found" so a real run can report them.
 * No jail, warrant, bail, wanted level, vehicle pursuit, SWAT or lethal force. A response is bounded and reversible: a fine up to the wallet, goods lost, heat that decays.
 * Officers do not enter buildings. A thief who stays inside is not arrested; the officers wait at the door until the window ends. Whether that reads as "a standoff" or "the AI is stuck" needs a person.
 * Alarms are a hash, not blocks: there is no alarm panel, camera or siren a thief can find, disable or avoid by seeing it. (Modern Life ships `warning_alarm` and `cctv_camera` blocks which a later pass could place in the furnished buildings as visible tells; nothing here depends on them.)
-* No resident, shop owner or crew mate reacts to a break-in; a witness is a roll, not a person who runs to a phone. That belongs with the residents' work (Phase E of the same brief).
+* A shop owner or crew mate does not react to a break-in; a witness is a roll, not a person who runs to a phone. A resident who is at home in a furnished building counts as a witness (see [households](households.md)) and remembers the thief for three active hours, but does not chase, shout or phone anybody.
 * Striking a civilian still raises 2 heat and nothing else (see [population](population.md)).
 
 ## Evaluated and not adopted: SecurityCraft

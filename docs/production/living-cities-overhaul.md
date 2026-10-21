@@ -42,7 +42,7 @@ See the frames named in section "What the photographs showed" below. They are in
 
 **SecurityCraft: researched, read from its jar, not adopted, not run.** MIT, Forge 1.20.1, Forge 47.3.30 and later, no Create dependency, 608 blocks, 54 items, 4 entities; it would be a second lock and owner system beside Core's (single authority) and its sentries and mines do not respect "nobody is punished for being offline". Kept as a candidate for an opt-in home-defence set. [police-response.md](../technical/police-response.md).
 
-**Alarm and police response: implemented and tested headlessly; one scripted real-client burglary (below).** Observed events only: an armed alarm (a hash per building against the class's chance; the cheap flat block 25 percent, a tower 60, an office 70, a club 80, the city-centre vault always) or a witness in sight (a city person within 20 blocks with line of sight, rolled against the city's own witness chance and the thief's heat; a night break-in is seen less). A response brings officers from a street nearby after the class's time (45 to 150 seconds), who walk to the building and then after a thief who is within 40 blocks; one within three blocks arrests them through the crash-safe seizure record: stolen or forbidden goods taken, the city's fine up to the wallet, heat +3. A clean pick is a quiet pick and slips past an alarm that is not certain; a witness is not affected. Nobody is policed while away, creative or dead, and nothing is pending after a restart. **Not done:** disabling or bypassing an alarm by a skill or a tool, cameras and sensors, a fence who buys marked goods, jail, officers entering buildings, owner-installed security upgrades.
+**Alarm and police response: implemented and GameTested headlessly (14 cases); one scripted real-client burglary passed on its third run (see Evidence): real lock screen, alarm, forced safe, an officer who walked to the thief and arrested them. Nobody has played it.** Observed events only: an armed alarm (a hash per building against the class's chance; the cheap flat block 25 percent, a tower 60, an office 70, a club 80, the city-centre vault always) or a witness in sight (a city person within 20 blocks with line of sight, rolled against the city's own witness chance and the thief's heat; a night break-in is seen less). A response brings officers from a street nearby after the class's time (45 to 150 seconds), who walk to the building and then after a thief who is within 40 blocks; one within three blocks arrests them through the crash-safe seizure record: stolen or forbidden goods taken, the city's fine up to the wallet, heat +3. A clean pick is a quiet pick and slips past an alarm that is not certain; a witness is not affected. Nobody is policed while away, creative or dead, and nothing is pending after a restart. **Not done:** disabling or bypassing an alarm by a skill or a tool, cameras and sensors, a fence who buys marked goods, jail, officers entering buildings, owner-installed security upgrades.
 
 ### 10. NPC housing, work, schedules and persistence
 
@@ -71,7 +71,34 @@ See "Next" below.
 
 ## Evidence
 
-(filled in at the end of the pass)
+What was run, in the cloud, and what each result does and does not say.
+
+| Check | Result | What it does not show |
+| --- | --- | --- |
+| Python unit tests (`python -m unittest discover -s tests`) | 287 tests, OK | Nothing about the game itself |
+| `python scripts/validate_repo.py` | passed | Documentation and register consistency only |
+| Forge GameTests (`runGameTestServer`, in a copy of the checkout) | **298 of 298 passed** after the fixes below (297 before the reachable-arrival test was added) | Headless: fake players, test rooms, no client, no real street for most cases |
+| Hosted CI on the branch | every job of the run on the head of the previous pass was green; on the heads of this pass several GameTest jobs failed on test defects that are named below and fixed | The hosted run of the final head is read in the pull request, not here |
+| Furnished package against the real game | every block of every palette checked against the registry; 675 chunks generated in a disposable world, 0 Lost Cities errors, every building generated as planned (one covered below the judge's threshold, named in the probe report) | Nobody has walked through a building |
+| Real-client photographs (`-PucPhotoTour`) | 15 frames of the furnished buildings, outside and inside, at 1920 by 1080 | Software rendering; a spectator camera placed from each building's own plan; the frames are private (Modern Life furniture) and not committed |
+| Real-client burglary (`-PucPlaytest=burglary`, 1280 by 720, GUI scale 2) | **pass on the third run:** real lock screen, alarm, forced safe, stolen goods marked, an officer walked to the thief and arrested them, stolen goods seized, honest goods kept, heat 0 to 4 | A thief who stands still, one officer, one building, one resolution, no person |
+
+### Defects found by these checks and fixed in this pass
+
+* A real client showed an officer standing behind a building with no path to the thief, for the whole window. Officers now appear at a street spot with a walkable path to the thief ([police-response.md](../technical/police-response.md)).
+* The same client showed two notices and the lock screen's hint line cut off at 1280 by 720. All three now fit.
+* The first photographs were taken at the wrong places (probe dumps from different worlds) and with the camera inside the ceiling; the photo tour now places each shot from the building's own plan and sets the camera's height above the floor.
+* Test defects (not game defects) that failed hosted GameTest jobs: a test whose result depended on the world seed (households), a builder-door test that did not give a freshly added player time to be tracked and, in its first fix, re-registered a delayed action from inside itself so the test helper erased it and the test never ended, leaving a player in the world to break two unrelated tests; a leaked player in the population test. Each was reproduced from the hosted log, fixed, and the whole suite re-run.
+* Earlier in the pass: a wrong block name that had silently emptied a whole building's chunk, crops that vanished at generation, an unpowered ceiling lamp that left interiors dark, and a `maxcount 0` override that crashed every chunk.
+
+### Photographs: what they showed, and what is wrong
+
+Looked at, in a private gallery (not committed): Valewood (a shop with an awning and a window display, a cottage with fenced gardens, a house's living room, kitchen and bedroom, the shop's counter); Ironhaven (a workshop from outside and its bench, a bare room of the tenement); Blackwater (an office from outside and its desk, the apartment block's lobby, the club's bar). The three cities do look different, from their materials and their buildings. Frames that are **not** good: the Ironhaven tenement "front" (the camera ended inside a wall, so it was left out), the tenement bedroom (a bare room; no bed in frame), the Valewood kitchen (crowded between two chairs), the "night" frame of the living room (it differs from the day frame only outside the window), and the Blackwater club (almost black inside, which no player would accept). The garden beds in Valewood are trenches in the grass, not planted rows.
+
+### Not run, or run only once
+
+* The scarcity package in a real generated world (`scripts/run_ore_audit.py` was not run for this report), the quarry placed by a real new-world start and dug, anything at 1920 by 1080 or 3440 by 1440 GUI scale 2 for the burglary, a resident seen in a real furnished house, two officers, a witness-raised response, a moving thief, the economy model with the shelves and the quarry, and any of it with a human.
+* The private content (the C70 buildings): no file was available, so nothing was integrated or tested (item 4).
 
 ## Next
 
