@@ -75,4 +75,11 @@ See "Next" below.
 
 ## Next
 
-(filled in at the end of the pass)
+Recommended order for the next milestone, each one small and finishable:
+
+1. **A person walks it.** Follow [the Windows 11 guide](playtest-guide-windows11.md) section 6e once, on a furnished new world, and write down what felt wrong. Nothing below should be tuned before this: every number in this report is a first guess.
+2. **Run what was only written.** The scarcity package against a real generated world (`scripts/run_ore_audit.py` baseline against scarcity), the quarry placed by a real new-world start and dug, a resident seen in a real furnished house (`/uc_household status` spot misses), and the burglary scenario repeated at 1920 by 1080, GUI scale 3.
+3. **Give the thief tools.** A way to bypass or disable an alarm that is a choice (a skill or a device, not luck), and a fence who buys marked goods at a discount. Today stolen goods can only be lost, and nothing turns them into money.
+4. **Furnish more than ten buildings.** More types per city, street furniture, lit clubs, planted gardens, and shops whose counters sell through the existing civilian shop. The share of a city that is furnished is still small.
+5. **Bring the economy model up to date** with the shelves and the quarry, and re-run its income tables with the quarry's 42-an-hour ceiling.
+6. **The private content.** Only when the owner places the files in the configured folder on their own machine and runs the documented check; the cloud cannot do this step, and nothing in this repository may fetch them.
