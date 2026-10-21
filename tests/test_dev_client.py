@@ -18,6 +18,11 @@ class DevClientInputs(unittest.TestCase):
         result = subprocess.run([sys.executable, str(ROOT / "scripts/emit_dev_world_pack.py"), "--check"], capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)
 
+    def test_the_furnished_and_scarcity_packages_are_current(self):
+        for layout in ("furnished", "scarcity"):
+            result = subprocess.run([sys.executable, str(ROOT / "scripts/emit_dev_world_pack.py"), "--layout", layout, "--check"], capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, f"{layout}: {result.stderr}")
+
     def test_generated_world_package_selects_the_three_city_profile(self):
         files = expected(CITIES)
         self.assertIn("pack/META-INF/mods.toml", files)

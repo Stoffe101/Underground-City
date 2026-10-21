@@ -69,10 +69,10 @@ public final class RegionalGameTests {
 
     @GameTest(template = "empty")
     public static void regionalDataLoadsAndEconomyCannotPrintMoney(GameTestHelper helper) {
-        // the three specialist commodities of each city (the survival goods of D-091 are separate lines under survival/ and are checked by SurvivalSupplyGameTests; the vehicle dealer of D-101 is under vehicles/)
+        // the three specialist commodities of each city (the survival goods of D-091 are separate lines under survival/ and are checked by SurvivalSupplyGameTests; the vehicle dealer of D-101 is under vehicles/ and the raw-material shelves of D-120 under materials/, checked by MaterialsSupplyGameTests)
         for (String city : List.of("ironhaven", "valewood", "blackwater")) {
             check(RegionalCatalog.INSTANCE.forCity(city).stream().filter(stock -> !stock.id().contains("/survival/") && !stock.id().startsWith(UndergroundCity.MOD_ID + ":survival/")
-                && !stock.id().startsWith(UndergroundCity.MOD_ID + ":vehicles/")).count() == 3,
+                && !stock.id().startsWith(UndergroundCity.MOD_ID + ":vehicles/") && !stock.id().startsWith(UndergroundCity.MOD_ID + ":materials/")).count() == 3,
                 city + " must sell three specialist lines");
         }
         check(CityRegions.INSTANCE.all().size() == 3, "Three data-defined city regions expected");
