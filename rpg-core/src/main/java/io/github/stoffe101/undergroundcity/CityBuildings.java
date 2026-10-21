@@ -45,7 +45,9 @@ public final class CityBuildings extends SimpleJsonResourceReloadListener {
     public record SecurityClass(String id, String lockProfile, boolean lockedExterior, String stashPolicy, double stashChance, String label) {}
 
     /** One rule of the heuristic: a city (or "*"), a building type prefix (or "") and a floor range choose a class; the first rule that fits wins. */
-    public record Rule(String city, String typePrefix, int floorsMin, int floorsMax, String securityClass) {}
+    public record Rule(String city, String typePrefix, int floorsMin, int floorsMax, String securityClass, int priority) {
+        public Rule(String city, String typePrefix, int floorsMin, int floorsMax, String securityClass) { this(city, typePrefix, floorsMin, floorsMax, securityClass, 0); }
+    }
 
     /** A generated building: its chunk, what Lost Cities says it is, and the volume that belongs to it. */
     public record Building(String city, int chunkX, int chunkZ, String type, String buildingId, int floors, int cellars, int streetY, SecurityClass security) {
@@ -72,7 +74,10 @@ public final class CityBuildings extends SimpleJsonResourceReloadListener {
     protected void apply(Map<ResourceLocation, JsonElement> data, ResourceManager resources, ProfilerFiller profiler) {
         Map<String, SecurityClass> nextClasses = new TreeMap<>();
         List<Rule> nextRules = new ArrayList<>();
-        data.forEach((key, element) -> {
+        // files in name order and rules by descending priority, ties in file order: the answer must not depend on a hash map's order (D-117: a furnished building's own rule outranks the generic fallback)
+        data.entrySet().stream().sorted(Map.Entry.comparingByKey()).forEach(entryOf -> {
+            var key = entryOf.getKey();
+            var element = entryOf.getValue();
             JsonObject json = element.getAsJsonObject();
             if (!json.has("schema_version") || json.get("schema_version").getAsInt() != 1) throw new IllegalArgumentException("Unsupported building-security schema: " + key);
             if (json.has("classes")) for (var entry : json.getAsJsonObject("classes").entrySet()) {
@@ -84,15 +89,22 @@ public final class CityBuildings extends SimpleJsonResourceReloadListener {
             if (json.has("rules")) for (var entry : json.getAsJsonArray("rules")) {
                 JsonObject r = entry.getAsJsonObject();
                 nextRules.add(new Rule(r.has("city") ? r.get("city").getAsString() : "*", r.has("type_prefix") ? r.get("type_prefix").getAsString() : "",
-                    r.has("floors_min") ? r.get("floors_min").getAsInt() : 0, r.has("floors_max") ? r.get("floors_max").getAsInt() : 99, r.get("class").getAsString()));
+                    r.has("floors_min") ? r.get("floors_min").getAsInt() : 0, r.has("floors_max") ? r.get("floors_max").getAsInt() : 99, r.get("class").getAsString(), r.has("priority") ? r.get("priority").getAsInt() : 0));
             }
         });
         for (Rule rule : nextRules) if (!nextClasses.containsKey(rule.securityClass())) throw new IllegalArgumentException("A building rule names the unknown class " + rule.securityClass());
         for (SecurityClass c : nextClasses.values()) if (c.stashChance() < 0 || c.stashChance() > 1) throw new IllegalArgumentException("Stash chance of " + c.id() + " must be between 0 and 1");
         classes = Map.copyOf(nextClasses);
-        rules = List.copyOf(nextRules);
+        rules = List.copyOf(ordered(nextRules));
         cache.clear();
         LOGGER.info("Loaded {} building security classes and {} rules", classes.size(), rules.size());
+    }
+
+    /** Rules by descending priority; equal priorities keep their order (the file order). */
+    static List<Rule> ordered(List<Rule> rules) {
+        List<Rule> copy = new ArrayList<>(rules);
+        copy.sort(java.util.Comparator.comparingInt(Rule::priority).reversed());
+        return copy;
     }
 
     public SecurityClass securityClass(String id) { return classes.get(id); }

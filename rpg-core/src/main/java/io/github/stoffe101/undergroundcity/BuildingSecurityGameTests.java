@@ -115,6 +115,18 @@ public final class BuildingSecurityGameTests {
     // ------------------------------------------------------------------------------------------------ data
 
     @GameTest(template = "empty", batch = "uc_building")
+    public static void aRuleWithAHigherPriorityOutranksTheGenericFallback(GameTestHelper helper) {
+        var unordered = List.of(
+            new CityBuildings.Rule("*", "", 0, 99, "cottage"),
+            new CityBuildings.Rule("*", "underground_city:vw_shop", 0, 99, "storefront", 10),
+            new CityBuildings.Rule("valewood", "", 0, 99, "workshop"));
+        var ordered = CityBuildings.ordered(unordered);
+        check(ordered.get(0).securityClass().equals("storefront"), "the priority rule is not first: " + ordered);
+        check(ordered.get(1).securityClass().equals("cottage") && ordered.get(2).securityClass().equals("workshop"), "equal priorities lost their file order: " + ordered);
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty", batch = "uc_building")
     public static void theClassesAndRulesLoadAndAssignEveryKindOfBuilding(GameTestHelper helper) {
         CityBuildings b = CityBuildings.INSTANCE;
         check(!b.classes().isEmpty(), "no building security classes loaded");

@@ -42,6 +42,15 @@ def citystyles(buildings: list[citykit.Building]) -> dict[str, dict]:
     return out
 
 
+# classes the furnished buildings need beyond the stock ones (cottage, flat_block, flat_tower, workshop, office, vault, public)
+NEW_SECURITY_CLASSES = {
+    "storefront": {"label": "shop", "lock_profile": "commercial", "locked_exterior": True, "stash_policy": "underground_city:office", "stash_chance": 0.5},
+    "warehouse": {"label": "warehouse", "lock_profile": "commercial", "locked_exterior": True, "stash_policy": "underground_city:industrial", "stash_chance": 0.7},
+    "club": {"label": "club", "lock_profile": "high_security", "locked_exterior": True, "stash_policy": "underground_city:illegal_cache", "stash_chance": 0.6},
+}
+STOCK_SECURITY_CLASSES = {"cottage", "flat_block", "flat_tower", "workshop", "office", "vault", "public"}
+
+
 def package() -> dict[str, bytes]:
     import city_valewood, city_ironhaven, city_blackwater   # noqa: E401
     files: dict[str, bytes] = {}
@@ -66,6 +75,21 @@ def package() -> dict[str, bytes]:
     for city, style in citystyles(buildings).items():
         files[f"data/{NAMESPACE}/lostcities/citystyles/{city}.json"] = json_bytes(style)
     ids = {b.id for b in buildings}
+    rules = []
+    used = set()
+    for b in buildings:
+        if not b.security:
+            raise ValueError(f"{b.id}: no security class")
+        if b.security not in STOCK_SECURITY_CLASSES and b.security not in NEW_SECURITY_CLASSES:
+            raise ValueError(f"{b.id}: unknown security class {b.security}")
+        used.add(b.security)
+        # the full type string Core sees, with a priority that outranks the stock fallback rule
+        rules.append({"type_prefix": f"{NAMESPACE}:{b.id}", "class": b.security, "priority": 10})
+    files[f"data/{NAMESPACE}/building_security/furnished.json"] = json_bytes({
+        "schema_version": 1,
+        "classes": {name: spec for name, spec in NEW_SECURITY_CLASSES.items() if name in used},
+        "rules": rules,
+    })
     for module in (city_valewood, city_ironhaven, city_blackwater):
         zones = module.zones()
         if not zones:

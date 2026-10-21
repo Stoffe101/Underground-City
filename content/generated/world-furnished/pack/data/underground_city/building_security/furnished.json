@@ -1,0 +1,11 @@
+{
+  "classes": {},
+  "rules": [
+    {
+      "class": "cottage",
+      "priority": 10,
+      "type_prefix": "underground_city:vw_house_a"
+    }
+  ],
+  "schema_version": 1
+}

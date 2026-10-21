@@ -103,7 +103,7 @@ def stair_run(lower: Part, upper: Part, x: int, z_bottom: int, material: str = "
 
 def house_a() -> Building:
     p = Palette("vw_house_a")
-    b = Building("vw_house_a", p, use="house", city=CITY, min_floors=2, max_floors=2, filler="minecraft:stone_bricks",
+    b = Building("vw_house_a", p, use="house", city=CITY, min_floors=2, max_floors=2, filler="minecraft:stone_bricks", security="cottage",
                  notes="A detached two-storey house: living room and kitchen below, two bedrooms and a bathroom above, a garden all round.")
     X0, Z0, X1, Z1 = 3, 4, 12, 11    # the footprint, walls included
     # ------------------------------------------------------------------ ground floor
@@ -202,6 +202,7 @@ def citystyle(all_buildings: list[Building]) -> dict:
     style = {
         "inherit": "lostcities:citystyle_standard",
         "buildingsettings": {"buildingchance": 0.44, "maxfloors": 3},
+        "streetblocks": {"frontchance": 0.0},   # no stock "front" (entrance steps and doors on the street line): the lot is a garden with a gap in its fence
         "parkblocks": {"parkchance": 0.26},
     }
     return style

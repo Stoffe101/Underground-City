@@ -251,6 +251,7 @@ class Building:
     spots: list[Spot] = field(default_factory=list)
     notes: str = ""
     allow_doors: bool = False
+    security: str = ""                       # the building-security class (data/underground_city/building_security): how its doors are locked and what its stash holds
 
     def add(self, part: Part, **flags) -> Part:
         self.parts.append((part, flags))
