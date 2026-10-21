@@ -101,7 +101,7 @@ def tenement(bid: str, city: str, floors: int, look: TenementLook, yard_fn: Call
         door_x = 11 if i % 2 == 0 else 4
         flat(part, True, door_x, look.colours[(2 * i) % len(look.colours)])
         flat(part, False, door_x, look.colours[(2 * i + 1) % len(look.colours)])
-        part.put(8, 3, 7, ml("light_bulb", face="ceiling", facing="north"))
+        part.put(8, 3, 7, ml("light_bulb", face="ceiling", facing="north", powered=True))
     for i in range(floors - 1):
         if i % 2 == 0:
             k.stair_run(parts[i], parts[i + 1], 3, 7, "east")

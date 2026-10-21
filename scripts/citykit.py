@@ -287,7 +287,7 @@ def chair(part: Part, x: int, y: int, z: int, facing: str, wood: str = "oak") ->
 
 def lamp_ceiling(part: Part, x: int, z: int) -> None:
     """A ceiling light in the top room layer (y 3) below a ceiling of layers 4 and 5."""
-    part.put(x, 3, z, ml("light_bulb", face="ceiling", facing="north"))
+    part.put(x, 3, z, ml("light_bulb", face="ceiling", facing="north", powered=True))
 
 
 def tv(part: Part, x: int, y: int, z: int, facing: str) -> None:

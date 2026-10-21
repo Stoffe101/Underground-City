@@ -122,7 +122,7 @@
       "char": "r"
     },
     {
-      "block": "modernlife:light_bulb[face=ceiling,facing=north]",
+      "block": "modernlife:light_bulb[face=ceiling,facing=north,powered=true]",
       "char": "s"
     },
     {

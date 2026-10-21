@@ -110,7 +110,7 @@ def workshop() -> Building:
     g.put(12, 1, 13, "minecraft:chest[facing=north,type=single,waterlogged=false]"); g.put(11, 1, 13, "minecraft:chest[facing=north,type=single,waterlogged=false]")
     g.put(6, 1, 12, ml("metal_duct", axis="y")); g.put(6, 2, 12, ml("metal_duct", axis="y")); g.put(6, 3, 12, ml("metal_duct", axis="y"))
     for (x, z) in ((5, 7), (10, 7), (5, 11), (10, 11)):
-        g.put(x, 5, z, ml("light_bulb", face="ceiling", facing="north"))
+        g.put(x, 5, z, ml("light_bulb", face="ceiling", facing="north", powered=True))
     # the mezzanine over the north half (z 3..7): its slab is the upper floor's own; the stair climbs along the east wall to it
     u = b.new_part("floor", floor=1)
     u.floor(0, 0, 15, 15, "air")
@@ -133,7 +133,7 @@ def workshop() -> Building:
     u.put(9, 1, 3, ml("oak_small_table", type="single")); u.put(9, 2, 3, ml("old_tv", facing="south"))
     u.put(10, 1, 3, ml("oak_chair", facing="west"))
     for (x, z) in ((4, 4), (10, 4)):
-        u.put(x, 3, z, ml("light_bulb", face="ceiling", facing="north"))
+        u.put(x, 3, z, ml("light_bulb", face="ceiling", facing="north", powered=True))
     t = b.new_part("top", top=True)
     # a flat roof over everything, a sawtooth of skylights over the south half, a stack
     t.floor(X0, Z0, X1, Z1, CONCRETE, y=0)
@@ -183,7 +183,7 @@ def warehouse() -> Building:
             g.put(x, 1, z, "minecraft:hay_block[axis=y]" if (x + z) % 2 else "minecraft:barrel[facing=up,open=false]")
             g.put(x, 2, z, "minecraft:barrel[facing=up,open=false]" if (x * z) % 3 == 0 else "air")
     for (x, z) in ((6, 6), (9, 6), (6, 10), (9, 10), (4, 7), (11, 7)):
-        g.put(x, 4, z, ml("light_bulb", face="ceiling", facing="north"))
+        g.put(x, 4, z, ml("light_bulb", face="ceiling", facing="north", powered=True))
     # the office in the north-east corner: a glazed box with a desk
     g.put(13, 1, 2, ml("oak_small_table", type="single")); g.put(13, 2, 2, ml("monitor", facing="west")); g.put(12, 1, 2, ml("oak_chair", facing="east"))
     g.put(13, 1, 4, ml("modern_oak_bookshelf", facing="west")); g.put(13, 1, 3, ml("printer", facing="west"))
