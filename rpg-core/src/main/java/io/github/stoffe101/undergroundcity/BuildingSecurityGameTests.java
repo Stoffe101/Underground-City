@@ -353,7 +353,9 @@ public final class BuildingSecurityGameTests {
         int before = BuildingGuard.shutByWatch;
         helper.runAfterDelay(4, () -> {
             try {
-                check(!h.level.getBlockState(h.doorLower).getValue(DoorBlock.OPEN), "a locked door stood open after redstone powered it");
+                var near = h.level.getEntitiesOfClass(net.minecraft.world.entity.player.Player.class, new net.minecraft.world.phys.AABB(h.doorLower).inflate(8.0));
+                check(!h.level.getBlockState(h.doorLower).getValue(DoorBlock.OPEN), "a locked door stood open after redstone powered it; players within 8 blocks: "
+                    + near.stream().map(p -> p.getGameProfile().getName() + (p.isCreative() ? " (creative)" : "")).toList());
                 check(BuildingGuard.shutByWatch > before, "the door closed but not by the watch");
                 helper.succeed();
             } finally { h.close(); }
