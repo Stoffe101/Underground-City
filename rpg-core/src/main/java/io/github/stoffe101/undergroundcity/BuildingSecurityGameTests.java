@@ -78,6 +78,7 @@ public final class BuildingSecurityGameTests {
             building = new CityBuildings.Building("ironhaven", chunk.x, chunk.z, "building1", "lostcities:building1", 2, 0, base.getY() - 1, flats);
             CityBuildings.INSTANCE.overrideForTest((cx, cz) -> cx == chunk.x && cz == chunk.z ? Optional.of(building) : Optional.empty());
             LockService.resetForTest();
+            PropertyLocks.get(level.getServer()).forgetForTest(doorLower);   // a window an earlier test left on this very door is not this test's
             BuildingGuard.roofReach = 10;   // the house is five high; other tests build above it in this crowded world
         }
 
@@ -85,6 +86,7 @@ public final class BuildingSecurityGameTests {
         BlockPos outside(int x, int y, int z) { return base.offset(x, y, -z); }
 
         @Override public void close() {
+            PropertyLocks.get(level.getServer()).forgetForTest(doorLower);
             CityBuildings.INSTANCE.overrideForTest(null);
             LockService.resetForTest();
             BuildingGuard.roofReach = BuildingGuard.ROOF_REACH;

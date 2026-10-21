@@ -66,6 +66,9 @@ public final class PropertyLocks extends SavedData {
         setDirty();
     }
 
+    /** Test seam: forgets everything remembered about a door. Every fixture of the building tests is put at the same place, in a batch of its own, so a window an earlier test left on that door (somebody leaving by it) would otherwise make the guard treat a door standing open in the next test as opened on purpose. */
+    void forgetForTest(BlockPos pos) { if (doors.remove(pos.asLong()) != null) setDirty(); }
+
     /** True when this door is being looked after by the sweep (picked, or opened from inside, and not shut again yet): it standing open is not a fault. */
     public boolean openOnPurpose(BlockPos pos) { Door d = doors.get(pos.asLong()); return d != null && !d.closed(); }
 
