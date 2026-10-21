@@ -174,6 +174,46 @@ public final class PoliceResponseGameTests {
     }
 
     @GameTest(template = "empty")
+    public static void aCleanPickSlipsPastAnAlarmThatCanBeSlippedPastAndNotPastOneInEveryBuilding(GameTestHelper helper) {
+        var half = new CityBuildings.Response(0.75, 60, 1, 120);
+        try (Scene s = new Scene(helper, "uc_pol_q", half)) {
+            // any chunk is a building of this class; look for one whose alarm is armed (a hash of its place) and one whose is not
+            CityBuildings.INSTANCE.overrideForTest((cx, cz) -> Optional.of(new CityBuildings.Building("valewood", cx, cz, "test", "test_building", 2, 0, s.door.getY() - 1,
+                new CityBuildings.SecurityClass("test_alarmed", "commercial", true, "", 0, "test premises", half))));
+            ChunkPosPick armed = null, unarmed = null;
+            for (int k = 0; k < 200 && (armed == null || unarmed == null); k++) {
+                int cx = (s.door.getX() >> 4) + k, cz = s.door.getZ() >> 4;
+                var b = new CityBuildings.Building("valewood", cx, cz, "test", "test_building", 2, 0, s.door.getY() - 1, null);
+                if (PoliceResponse.armed(s.level, b, half)) { if (armed == null) armed = new ChunkPosPick(cx, cz); } else if (unarmed == null) unarmed = new ChunkPosPick(cx, cz);
+            }
+            check(armed != null && unarmed != null, "setup: no armed and unarmed building among two hundred");
+            BlockPos inArmed = new BlockPos(armed.cx * 16 + 2, s.door.getY(), armed.cz * 16 + 2), inUnarmed = new BlockPos(unarmed.cx * 16 + 2, s.door.getY(), unarmed.cz * 16 + 2);
+            long now = LockService.clock(s.level.getServer());
+            // a noisy pick trips it, a clean one slips past it
+            PoliceResponse.noticed(s.thief, new BuildingBreachEvent(s.thief.getUUID(), inArmed, "valewood", "test_alarmed", BuildingBreachEvent.Outcome.OPENED, now, false, s.thief).quiet(false));
+            check(PoliceResponse.dispatches() == 1 && PoliceResponse.dispatchAt(0).why.equals("alarm"), "a noisy pick did not trip an armed alarm");
+            PoliceResponse.resetForTest();
+            PoliceResponse.noticed(s.thief, new BuildingBreachEvent(s.thief.getUUID(), inArmed, "valewood", "test_alarmed", BuildingBreachEvent.Outcome.OPENED, now, false, s.thief).quiet(true));
+            check(PoliceResponse.dispatches() == 0, "a clean pick still tripped an alarm that can be slipped past");
+            // an unarmed building is nothing either way
+            PoliceResponse.noticed(s.thief, new BuildingBreachEvent(s.thief.getUUID(), inUnarmed, "valewood", "test_alarmed", BuildingBreachEvent.Outcome.OPENED, now, false, s.thief).quiet(false));
+            check(PoliceResponse.dispatches() == 0, "an unarmed building raised an alarm");
+            // a pick that snapped and rang the lock's own bell is not quiet whatever it did before
+            PoliceResponse.noticed(s.thief, new BuildingBreachEvent(s.thief.getUUID(), inUnarmed, "valewood", "test_alarmed", BuildingBreachEvent.Outcome.SNAPPED, now, true, s.thief).quiet(true));
+            check(PoliceResponse.dispatches() == 1, "a snapped pick that rang a bell was forgiven because it had been clean before");
+        }
+        // an alarm in every building of its class cannot be slipped past
+        try (Scene s = new Scene(helper, "uc_pol_q2", ALARMED)) {
+            long now = LockService.clock(s.level.getServer());
+            PoliceResponse.noticed(s.thief, new BuildingBreachEvent(s.thief.getUUID(), s.door, "valewood", "test_alarmed", BuildingBreachEvent.Outcome.OPENED, now, false, s.thief).quiet(true));
+            check(PoliceResponse.dispatches() == 1, "a clean pick slipped past the alarm of a certain class");
+        }
+        helper.succeed();
+    }
+
+    private record ChunkPosPick(int cx, int cz) {}
+
+    @GameTest(template = "empty")
     public static void creativeAndSpectatorPlayersAreNeverPoliced(GameTestHelper helper) {
         try (Scene s = new Scene(helper, "uc_pol_d", ALARMED)) {
             long now = LockService.clock(s.level.getServer());

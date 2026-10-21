@@ -31,7 +31,7 @@ import java.util.List;
 public final class PhotoTour {
     private static final String LIST = System.getProperty("uc.photoTour");
     private static final long STAGE_LIMIT_NANOS = Long.getLong("uc.photoTour.limitSeconds", 420L) * 1_000_000_000L;
-    /** A building-relative shot names a furnished building and one of its spots instead of coordinates: {@code building} (its type), {@code nth} (which instance, nearest to the city centre first), {@code spot} (a kind) and {@code spot_nth}, a camera {@code back} blocks in front of the spot at {@code eye} above the floor, looking at it. */
+    /** A building-relative shot names a furnished building and one of its spots instead of coordinates: {@code building} (its type), {@code nth} (which instance, nearest to the city centre first), {@code spot} (a kind) and {@code spot_nth}, a camera {@code back} blocks in front of the spot, {@code eye} blocks above the floor (the camera, not the feet), looking at it. */
     private record Shot(String name, double x, Double y, double z, double dy, float yaw, float pitch, int settle, boolean gui, int hour,
                         String building, int nth, String spot, int spotNth, double back, double eye, Float yawOverride) {}
 
@@ -149,7 +149,8 @@ public final class PhotoTour {
                     if (facing == null || facing.getAxis().isVertical()) facing = net.minecraft.core.Direction.SOUTH;
                     x = building.chunkX() * 16 + spot.x() + 0.5 + facing.getStepX() * shot.back();
                     z = building.chunkZ() * 16 + spot.z() + 0.5 + facing.getStepZ() * shot.back();
-                    y = building.streetY() + spot.y() + shot.eye();
+                    // the player's position is their feet; the camera is 1.62 above them, so a camera {@code eye} above the floor needs the feet at eye - 1.62 above it
+                    y = building.streetY() + spot.y() + shot.eye() - 1.62;
                     if (shot.yawOverride() == null) yaw = facing.getOpposite().toYRot();
                     System.out.println("[UC-PHOTO] " + shot.name() + ": " + shot.building() + " #" + shot.nth() + " at chunk " + building.chunkX() + "," + building.chunkZ() + " street y " + building.streetY() + ", spot " + spot.kind() + " " + spot.x() + "," + spot.y() + "," + spot.z());
                     for (int cx = (int) Math.floor(x / 16) - 1; cx <= (int) Math.floor(x / 16) + 1; cx++) for (int cz = (int) Math.floor(z / 16) - 1; cz <= (int) Math.floor(z / 16) + 1; cz++) level.getChunk(cx, cz);

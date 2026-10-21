@@ -44,7 +44,7 @@ public final class LockpickSession {
     private final double phase, errorA, errorB;
     private State state = State.ACTIVE;
     private int pin, held, timeLeft, tick;
-    private double strain;
+    private double strain, peakStrain;
     private int feel;
     private boolean broke;
 
@@ -87,6 +87,8 @@ public final class LockpickSession {
         return profile.feelNoise() * profile.tolerance() * (Math.sin(at * 31.0 + errorA) + 0.5 * Math.sin(at * 71.0 + errorB)) / 1.5;
     }
     /** Strain as a share of the limit, 0 to 100. */
+    /** The most strain the pick has been under at any moment of this lock, as a percent of its limit: how cleanly it has been worked (a quiet pick never goes far above the floor). */
+    public int peakStrainPercent() { return (int) Math.min(100, Math.round(100 * Math.max(peakStrain, strain) / profile.strainLimit())); }
     public int strainPercent() { return (int) Math.min(100, Math.round(100 * strain / profile.strainLimit())); }
     public boolean pickBroke() { return broke; }
 
@@ -121,6 +123,7 @@ public final class LockpickSession {
                 // further off, more strain; right beside the sweet spot hardly any
                 double off = Math.min(1.0, (distance - profile.tolerance()) / 0.35);
                 strain += profile.strainPerTick() * (0.35 + 1.2 * off);
+                peakStrain = Math.max(peakStrain, strain);
                 if (strain >= profile.strainLimit()) { state = State.BROKEN; broke = true; return state; }
             }
         } else {

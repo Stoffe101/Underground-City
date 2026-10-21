@@ -192,6 +192,39 @@ Things to write down: did the pack feel like a convenience or like a trap; was 7
 
 Things to write down: was rent a pleasant pressure or an annoyance; was the motel's welcome enough to understand it; did *LAPSED* feel fair or frightening; did you ever not know who paid; did a skill's effect feel real or like a number; did the checkpoint ever take something that was legal.
 
+## 6e. Furnished cities, burglary, police, quarry and residents (about 45 minutes, a NEW world only)
+
+**Written for the October 21 pass (D-117 to D-124). Everything below passed as GameTests, a scripted client or photographs in the cloud; no person has done any of it, no furnished building has been walked through by a person, and the numbers (alarm odds, police times, quarry yield) are first guesses.** The furnished and scarcity packages change how *new chunks* generate, so they need a **new world with its own name**. The game refuses to start an existing world with different packages (`uc_generation_packs.json`), so an old world cannot be altered by mistake, but make a backup of `run-dev` first anyway (section 2) and use a different `-PucDevWorldName`.
+
+Start (Windows spelling; the extra sets are the furnished cities with their Modern Life furniture, and the world with no natural ore):
+
+```text
+.\gradlew.bat runClient -PucWorldLayout=archipelago -PucPack=world,furnished,scarcity -PucDevWorldName=UC-Living-Test
+```
+
+(For two players, start the dedicated server with the same `-PucPack` and the same world, as in section 3, and both clients with the same sets.)
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Arrive, register, walk to Valewood (a bridge away from the landing) and along its streets by day | houses of two storeys with fenced gardens, a shop with a striped awning, cottages; different from Ironhaven's brick tenements and workshops and Blackwater's concrete apartments, offices and club. Note anything that looks empty, floating or wrong |
+| 2 | Look through a house window; stand at its door | furniture inside, lit lamps; a locked door (two thirds of the buildings are sealed). Nobody is inside by day unless a resident is at home |
+| 3 | Return to the same house **at night** (let the day pass, or use `/time set 18000`) and look through the window | a resident beside a bed, if one is home tonight (not every night). Speak to a resident you can reach: a line about their evening |
+| 4 | In **survival**, with 5 lockpicks, pick the front door of a house or a flat block (**read the lock screen**: press where the needle feels *close*, hold until the pin sets) | the lock opens; the notice says *Lock picked cleanly* if your pick never strained far, *Lock picked* if it did |
+| 5 | Try buildings until you hear a **bell** and see *An alarm went off* (or: *Something in here is wired to an alarm. Your pick was clean and it did not hear you*) | the bell rings at the door for twenty seconds; the notice says the police have been called |
+| 6 | Find the stash (a safe, if the building has one), pick it, take something | the item has a red line *Stolen goods (Valewood)* |
+| 7 | Leave and stand in the street. Count the time since the alarm | officers (named "Officer ...", in a guard's outfit) come from a street nearby: about two minutes after the alarm in a flat block, less in a tower, an office or a club. They say "Police! Stay where you are." |
+| 8 | Stand still: let an officer reach you | an arrest: the stolen item is gone, honest goods stay, a fine (up to your wallet), heat rises by 3 in that city. *Heat* shows on the status display |
+| 9 | Repeat, but **run** (sprint) away from the officers, or hide out of sight for two to three minutes | *You got away* / *The police have gone*; nothing is taken |
+| 10 | Repeat, but go in **at night** and again **by day while people are in the street** | by day, a passer-by or a resident may *see you* and call the police without any alarm; at night in the street, fewer do |
+| 11 | Log out while officers are on the way, log back in | nothing is pending: **nobody is punished for being away** |
+| 12 | Walk east from the landing about 150 blocks to **the old quarry** (a stepped pit with a sign). Mine an iron, a coal and a copper seam with a pickaxe; smelt them | ore and ingots. Come back after **20 minutes of play** (not 20 minutes away): the seams you mined have grown back. `/uc_site status` (operator) shows how many are waiting |
+| 13 | Buy raw materials from the shelves (the Operations Terminal's trade page: iron, coal, copper, redstone, lapis, gold, diamond), then try to buy more than the shelf holds | prices from 2 credits (charcoal) to 150 (a diamond); the shelf is small and refills slowly; it is shared with every player |
+| 14 | Dig anywhere in the countryside for ore | none: the new world has no natural ore (caves, stone and everything else are normal) |
+
+Operator commands that help: `/uc_police status`, `/uc_household status`, `/uc_site status`, `/uc_population status`. Do not use an old world for any of this.
+
+Things to write down: was the lock screen readable; did a quiet pick feel like a skill; was the alarm a surprise or fair; was two minutes too long or too short; did the officers look like police and arrive from somewhere believable; did being arrested feel fair, annoying or ignorable; did anything look empty, floating or broken in the furnished houses; did a resident look like they lived there; was the quarry worth the walk; did the shelves make you feel you could not get iron.
+
 ## 7. Logs, screenshots and bug reports
 
 * Server log: `rpg-core\run-dev\logs\latest.log` (authenticated pack: `build\server-pack\server\logs\latest.log`); crash reports: `rpg-core\run-dev\crash-reports\`.

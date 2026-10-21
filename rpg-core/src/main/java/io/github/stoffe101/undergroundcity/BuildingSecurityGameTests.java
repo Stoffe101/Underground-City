@@ -423,8 +423,10 @@ public final class BuildingSecurityGameTests {
 
     @GameTest(template = "empty", batch = "uc_building_watch", timeoutTicks = 200)
     public static void aDoorFoundOpenWithoutAReasonIsShutExceptWhereABuilderWorks(GameTestHelper helper) {
-        try (House h = new House(helper, Direction.NORTH)) {
-            ServerLevel level = h.level;
+        House h = new House(helper, Direction.NORTH);
+        ServerLevel level = h.level;
+        ServerPlayer builder = visitor(helper, h, "uc_bgb");
+        try {
             level.setBlock(h.doorLower, level.getBlockState(h.doorLower).setValue(DoorBlock.OPEN, true), 2);
             check(BuildingGuard.watchAround(level, h.doorLower.north(2)) == 1, "a door that stood open for no reason was not found within six blocks");
             check(!level.getBlockState(h.doorLower).getValue(DoorBlock.OPEN), "the door was found but not shut");
@@ -434,15 +436,29 @@ public final class BuildingSecurityGameTests {
             check(BuildingGuard.watchAround(level, h.doorLower.north(2)) == 0 && level.getBlockState(h.doorLower).getValue(DoorBlock.OPEN), "the watch shut a door inside its picked window");
             PropertyLocks.get(level.getServer()).breach(h.doorLower, WorkOrderLedger.get(level.getServer()).clock() - 1);
             PropertyLocks.get(level.getServer()).closed(h.doorLower);
-            // a builder in creative mode is not fought
-            ServerPlayer builder = visitor(helper, h, "uc_bgb");
+            // a builder in creative mode is not fought. The builder is added to the level and given a few ticks to be tracked there (a fresh entity in a fresh chunk is not found by an
+            // area query at once: on a slow runner the guard looked, found nobody and shut the door); the failure is reported through the helper, since an error thrown in a delayed
+            // lambda would end the server loop, and the builder and the fixture are always cleaned up so that no player is left standing in the test world for the next test to find.
             builder.setGameMode(GameType.CREATIVE);
             level.addFreshEntity(builder);
             builder.moveTo(h.doorLower.getX() + 0.5, h.doorLower.getY(), h.doorLower.getZ() - 1.5);
-            check(BuildingGuard.enforce(level, h.doorLower) == false, "a creative builder's open door was shut");
-            builder.discard();
-            helper.succeed();
+        } catch (AssertionError | RuntimeException error) {
+            h.close();
+            throw error;
         }
+        helper.runAfterDelay(10, () -> {
+            try {
+                int seen = level.getEntitiesOfClass(net.minecraft.world.entity.player.Player.class, new net.minecraft.world.phys.AABB(h.doorLower).inflate(8.0)).size();
+                check(seen >= 1, "the builder was not visible to an area query ten ticks after being added");
+                check(BuildingGuard.enforce(level, h.doorLower) == false, "a creative builder's open door was shut (the guard saw " + seen + " players)");
+                helper.succeed();
+            } catch (AssertionError error) {
+                helper.fail(String.valueOf(error.getMessage()));
+            } finally {
+                builder.discard();
+                h.close();
+            }
+        });
     }
 
     @GameTest(template = "empty", batch = "uc_building")

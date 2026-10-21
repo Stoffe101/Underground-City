@@ -29,15 +29,18 @@ final class DoorWalk {
     }
 
     /** The first ground-floor exterior door, nearest Ironhaven's centre, with exactly one sky side whose street cells are clear for four blocks. */
-    static Optional<Spot> find(ServerLevel level, boolean frontIsStreet, String preferredClass) {
+    static Optional<Spot> find(ServerLevel level, boolean frontIsStreet, String preferredClass) { return find(level, frontIsStreet, preferredClass, b -> true); }
+
+    /** The same, among the buildings {@code accept} approves (the burglary scenario wants one whose alarm is armed and whose stash exists). */
+    static Optional<Spot> find(ServerLevel level, boolean frontIsStreet, String preferredClass, java.util.function.Predicate<CityBuildings.Building> accept) {
         var region = CityRegions.INSTANCE.all().stream().filter(r -> r.id().equals("ironhaven")).findFirst().orElseThrow();
         Spot fallback = null;
-        for (int radius = 1; radius <= 12; radius++) {
+        for (int radius = 1; radius <= 16; radius++) {
             for (int dx = -radius; dx <= radius; dx++) for (int dz = -radius; dz <= radius; dz++) {
                 if (Math.max(Math.abs(dx), Math.abs(dz)) != radius) continue;
                 int cx = region.centerChunkX() + dx, cz = region.centerChunkZ() + dz;
                 Optional<CityBuildings.Building> building = CityBuildings.INSTANCE.ofChunk(level, cx, cz);
-                if (building.isEmpty() || !building.get().locked()) continue;
+                if (building.isEmpty() || !building.get().locked() || !accept.test(building.get())) continue;
                 LevelChunk chunk = level.getChunk(cx, cz);
                 for (int x = 0; x < 16; x++) for (int z = 0; z < 16; z++) {
                     BlockPos pos = new BlockPos(cx * 16 + x, building.get().streetY() + 1, cz * 16 + z);

@@ -133,15 +133,28 @@ public final class HouseholdGameTests {
 
     private static final long NIGHT = (23 - 6) * 1000L, NOON = (12 - 6) * 1000L;
 
+    /** The world clock for {@code hour} on {@code day}. */
+    private static long clock(long day, int hour) { return day * 24000L + (hour - 6) * 1000L; }
+
+    /** A day on which the arithmetic gives the case a test needs, found by looking, so that no test depends on what this world's seed happens to give. */
+    private static long dayWhere(java.util.function.LongPredicate suits) {
+        for (long day = 0; day < 400; day++) if (suits.test(day)) return day;
+        throw new AssertionError("no day in four hundred suits the case: the schedule never gives it");
+    }
+
+    private static long presentAt(Room room, BuildingSpots.Plan plan, int hour, long day) {
+        return HouseholdPlan.residents("valewood", room.level.getSeed(), room.building.key(), plan, names()).stream().filter(who -> HouseholdPlan.where(who, plan, room.level.getSeed(), hour, day) != HouseholdPlan.AWAY).count();
+    }
+
     @GameTest(template = "empty")
     public static void residentsAppearIndoorsAtTheirBedsWhenAPlayerIsNearAndLeaveWhenNobodyIs(GameTestHelper helper) {
         BuildingSpots.INSTANCE.replaceForTest(Map.of(TYPE, house()));
         try (Room room = new Room(helper, "uc_hh_a", TYPE, null)) {
-            HouseholdService.dayTimeOverride = NIGHT;
+            long day = dayWhere(d -> presentAt(room, house(), 23, d) >= 1);
+            HouseholdService.dayTimeOverride = clock(day, 23);
             for (int pass = 0; pass < 6; pass++) HouseholdService.pass(room.level, List.of(room.visitor));
             var bodies = room.bodies();
-            var expected = HouseholdPlan.residents("valewood", room.level.getSeed(), room.building.key(), house(), names()).stream()
-                .filter(who -> HouseholdPlan.where(who, house(), room.level.getSeed(), 23, 0) != HouseholdPlan.AWAY).count();
+            var expected = presentAt(room, house(), 23, day);
             check(bodies.size() == expected && expected >= 1, "at night " + bodies.size() + " residents stood where " + expected + " were due");
             Set<String> names = new HashSet<>();
             for (TownspersonEntity body : bodies) {
@@ -164,11 +177,14 @@ public final class HouseholdGameTests {
     public static void thoseWhoHaveGoneOutLeaveOnceNobodyIsLookingCloselyAndNeverBeforeAPlayersEyes(GameTestHelper helper) {
         BuildingSpots.INSTANCE.replaceForTest(Map.of(TYPE, house()));
         try (Room room = new Room(helper, "uc_hh_b", TYPE, null)) {
-            HouseholdService.dayTimeOverride = NIGHT;
+            // a day on which somebody who is home at night is out at noon
+            long day = dayWhere(d -> HouseholdPlan.residents("valewood", room.level.getSeed(), room.building.key(), house(), names()).stream()
+                .anyMatch(who -> HouseholdPlan.where(who, house(), room.level.getSeed(), 23, d) != HouseholdPlan.AWAY && HouseholdPlan.where(who, house(), room.level.getSeed(), 12, d) == HouseholdPlan.AWAY));
+            HouseholdService.dayTimeOverride = clock(day, 23);
             for (int pass = 0; pass < 6; pass++) HouseholdService.pass(room.level, List.of(room.visitor));
             int before = room.bodies().size();
             check(before >= 1, "setup: nobody was at home at night");
-            HouseholdService.dayTimeOverride = NOON;
+            HouseholdService.dayTimeOverride = clock(day, 12);
             // the visitor is in the room, so nobody leaves in front of them whatever their day holds
             HouseholdService.pass(room.level, List.of(room.visitor));
             check(room.bodies().size() == before, "a resident left in front of a player's eyes");
@@ -176,9 +192,7 @@ public final class HouseholdGameTests {
             room.visitor.setPos(room.chunk.getMinBlockX() + 7.5, room.streetY + 1, room.chunk.getMinBlockZ() + 7.5 + 30);
             HouseholdService.pass(room.level, List.of(room.visitor));
             var left = before - room.bodies().size();
-            var due = HouseholdPlan.residents("valewood", room.level.getSeed(), room.building.key(), house(), names()).stream()
-                .filter(who -> HouseholdPlan.where(who, house(), room.level.getSeed(), 12, 0) == HouseholdPlan.AWAY).count();
-            check(left >= 1 && HouseholdService.removed >= left, "nobody went out for the working day: " + before + " before, " + room.bodies().size() + " after (" + due + " away at noon)");
+            check(left >= 1 && HouseholdService.removed >= left, "nobody went out for the working day: " + before + " before, " + room.bodies().size() + " after");
         }
         helper.succeed();
     }
@@ -187,14 +201,13 @@ public final class HouseholdGameTests {
     public static void theShopkeeperStandsAtTheCounterByDayAndTheShopIsEmptyAtNight(GameTestHelper helper) {
         BuildingSpots.INSTANCE.replaceForTest(Map.of(SHOP, shop()));
         try (Room room = new Room(helper, "uc_hh_c", SHOP, null)) {
-            HouseholdService.dayTimeOverride = NIGHT;
+            long day = dayWhere(d -> presentAt(room, shop(), 10, d) == 1);
+            HouseholdService.dayTimeOverride = clock(day, 23);
             for (int pass = 0; pass < 4; pass++) HouseholdService.pass(room.level, List.of(room.visitor));
             check(room.bodies().isEmpty(), "a shop was staffed at night");
-            HouseholdService.dayTimeOverride = (10 - 6) * 1000L;
+            HouseholdService.dayTimeOverride = clock(day, 10);
             for (int pass = 0; pass < 4; pass++) HouseholdService.pass(room.level, List.of(room.visitor));
-            var keeper = HouseholdPlan.residents("valewood", room.level.getSeed(), room.building.key(), shop(), names()).get(0);
-            boolean due = HouseholdPlan.where(keeper, shop(), room.level.getSeed(), 10, 0) != HouseholdPlan.AWAY;
-            check(room.bodies().size() == (due ? 1 : 0), "the shopkeeper's presence at ten does not match the plan (due " + due + ", present " + room.bodies().size() + ")");
+            check(room.bodies().size() == 1, "the shopkeeper was not at the counter at ten on a day the plan has them in: " + room.bodies().size());
             for (TownspersonEntity body : room.bodies()) {
                 check(body.role().equals("worker") && room.spot(shop().spots().get(1)).distSqr(body.blockPosition()) <= 9, "the shopkeeper is not at the counter: " + body.blockPosition());
             }
@@ -207,7 +220,8 @@ public final class HouseholdGameTests {
         BuildingSpots.INSTANCE.replaceForTest(Map.of(TYPE, house()));
         var noAlarm = new CityBuildings.SecurityClass("test_house", "deadbolt", true, "", 0, "test house", new CityBuildings.Response(0.0, 60, 1, 60));
         try (Room room = new Room(helper, "uc_hh_d", TYPE, noAlarm)) {
-            HouseholdService.dayTimeOverride = NIGHT;
+            long day = dayWhere(d -> presentAt(room, house(), 23, d) >= 1);
+            HouseholdService.dayTimeOverride = clock(day, 23);
             for (int pass = 0; pass < 6; pass++) HouseholdService.pass(room.level, List.of(room.visitor));
             check(!room.bodies().isEmpty(), "setup: nobody was home");
             BlockPos door = new BlockPos(room.chunk.getMinBlockX() + 7, room.streetY + 1, room.chunk.getMinBlockZ() + 2);
@@ -241,6 +255,24 @@ public final class HouseholdGameTests {
             check(big.byBuilding.size() == HouseholdService.MEMORY_LIMIT && !big.byBuilding.containsKey(0L) && big.byBuilding.containsKey((long) HouseholdService.MEMORY_LIMIT + 19), "the memory is not bounded to its newest entries");
             HouseholdService.memory(room.level).byBuilding.remove(room.building.key());
             for (TownspersonEntity body : room.bodies()) body.discard();
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty")
+    public static void aBreachPostedOnTheRealBusReachesBothThePoliceAndTheHousehold(GameTestHelper helper) {
+        // the other cases call the handlers directly; this one posts the event the lock posts, on the Forge bus the game registered its listeners on
+        BuildingSpots.INSTANCE.replaceForTest(Map.of(TYPE, house()));
+        var alarmed = new CityBuildings.SecurityClass("test_house", "deadbolt", true, "", 0, "test house", new CityBuildings.Response(1.0, 60, 1, 60));
+        try (Room room = new Room(helper, "uc_hh_g", TYPE, alarmed)) {
+            BlockPos door = new BlockPos(room.chunk.getMinBlockX() + 7, room.streetY + 1, room.chunk.getMinBlockZ() + 2);
+            room.visitor.setPos(door.getX() + 0.5, door.getY(), door.getZ() + 1.5);
+            long now = LockService.clock(room.level.getServer());
+            net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(new BuildingBreachEvent(room.visitor.getUUID(), door, "valewood", "test_house", BuildingBreachEvent.Outcome.OPENED, now, false, room.visitor));
+            check(PoliceResponse.dispatches() == 1 && PoliceResponse.dispatchAt(0).why.equals("alarm"), "the police did not hear a breach posted on the bus: " + PoliceResponse.status());
+            var mem = HouseholdService.memory(room.level).byBuilding.get(room.building.key());
+            check(mem != null && mem.intruder().equals(room.visitor.getUUID()), "the household did not hear a breach posted on the bus");
+            HouseholdService.memory(room.level).byBuilding.remove(room.building.key());
         }
         helper.succeed();
     }

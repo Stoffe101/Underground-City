@@ -51,6 +51,8 @@ public final class PoliceResponse {
     /** Officers close in from this far, speak from this far, and arrest from this far; the thief is lost beyond the escape range. */
     static final double CHASE_RANGE = 40, CHALLENGE_RANGE = 14, ARREST_RANGE = 3.0, ESCAPE_RANGE = 110;
     static final int ARREST_HEAT = 3, LEAVE_TICKS = 160, MAX_TRIES = 5;
+    /** A clean pick does not trip an armed alarm whose chance is below this (an alarm in every building of its class is too good to slip past). */
+    static final double QUIET_BYPASS_MAX_CHANCE = 0.9;
 
     @FunctionalInterface
     interface SpotFinder { Optional<BlockPos> find(ServerLevel level, ChunkPos chunk, RandomSource random, List<ServerPlayer> players); }
@@ -101,7 +103,11 @@ public final class PoliceResponse {
         CityBuildings.Building building = found.get();
         CityBuildings.Response response = building.security() == null ? null : building.security().response();
         boolean lockAlarm = event.alarm();
-        boolean armed = lockAlarm || (response != null && event.outcome() == BuildingBreachEvent.Outcome.OPENED && armed(level, building, response));
+        boolean wired = response != null && event.outcome() == BuildingBreachEvent.Outcome.OPENED && armed(level, building, response);
+        // entering quietly: a clean pick does not trip an alarm that can be slipped past, and tells the thief something was there to slip past
+        boolean slipped = wired && event.quiet() && response.alarmChance() < QUIET_BYPASS_MAX_CHANCE;
+        if (slipped) Notice.send(player, Notice.Kind.INFO, "Quiet entry", "Something in here is wired to an alarm. Your pick was clean and it did not hear you.");
+        boolean armed = lockAlarm || (wired && !slipped);
         boolean seen = witnessed(level, player, event);
         if (!armed && !seen) return;
         CityBuildings.Response used = response != null ? response : NEIGHBOUR;

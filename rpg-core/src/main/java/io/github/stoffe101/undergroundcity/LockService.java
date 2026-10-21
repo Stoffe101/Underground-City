@@ -179,7 +179,7 @@ public final class LockService {
         switch (session.state()) {
             case OPENED -> {
                 LockNetwork.finished(player, LockpickSession.State.OPENED, "Click. It is open.");
-                if (target.kind() == Kind.DOOR) openedDoor(server, level, player, target, now, random);
+                if (target.kind() == Kind.DOOR) openedDoor(server, level, player, target, now, random, session.peakStrainPercent() < QUIET_STRAIN_PERCENT);
                 else openedSafe(level, player, target, now, random);
             }
             case BROKEN -> {
@@ -211,7 +211,10 @@ public final class LockService {
         if (random.nextDouble() < WEAR_ON_SUCCESS && consumePicks(player, 1) == 1) Notice.send(player, Notice.Kind.INFO, "Worn pick", "The pick bent in that lock and is no use again.");
     }
 
-    private static void openedDoor(MinecraftServer server, ServerLevel level, ServerPlayer player, Target target, long now, RandomSource random) {
+    /** A door picked without the pick ever coming under more than this percent of its strain limit was picked quietly (D-122): an alarm built into the building does not hear it. */
+    static final int QUIET_STRAIN_PERCENT = 40;
+
+    private static void openedDoor(MinecraftServer server, ServerLevel level, ServerPlayer player, Target target, long now, RandomSource random, boolean quiet) {
         BlockState state = level.getBlockState(target.pos());
         if (state.getBlock() instanceof DoorBlock door) {
             PropertyLocks.get(server).breach(target.pos(), now + BREACH_TICKS);
@@ -221,8 +224,8 @@ public final class LockService {
         heat(server, player, target.city(), HEAT_OPENED);
         // the building's stash is decided once, the first time anybody gets in
         CityBuildings.INSTANCE.at(level, target.pos()).ifPresent(building -> BuildingStash.furnish(level, building, target.pos(), now));
-        MinecraftForge.EVENT_BUS.post(new BuildingBreachEvent(player.getUUID(), target.pos(), target.city(), target.securityClass(), BuildingBreachEvent.Outcome.OPENED, now, false, player));
-        Notice.send(player, Notice.Kind.HEAT, "Lock picked", "The door is open for a moment. Whoever lives here will notice.");
+        MinecraftForge.EVENT_BUS.post(new BuildingBreachEvent(player.getUUID(), target.pos(), target.city(), target.securityClass(), BuildingBreachEvent.Outcome.OPENED, now, false, player).quiet(quiet));
+        Notice.send(player, Notice.Kind.HEAT, quiet ? "Lock picked cleanly" : "Lock picked", quiet ? "The door is open for a moment. A clean pick is a quiet one." : "The door is open for a moment. Whoever lives here will notice.");
     }
 
     private static void openedSafe(ServerLevel level, ServerPlayer player, Target target, long now, RandomSource random) {

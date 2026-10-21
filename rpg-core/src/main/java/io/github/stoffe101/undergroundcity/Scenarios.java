@@ -14,6 +14,7 @@ final class Scenarios {
             case "register" -> register();
             case "arrival" -> arrival();
             case "doorwalk" -> doorwalk();
+            case "burglary" -> BurglaryScenario.build();
             case "lockjitter" -> lockjitter();
             case "walk" -> walk();
             case "row" -> row();
@@ -584,7 +585,7 @@ final class Scenarios {
     }
 
     /** True once the chunk under the player has reached the client and the block below their feet is not air (so a survival player will not fall). */
-    private static boolean groundBelowPlayer() {
+    static boolean groundBelowPlayer() {
         var mc = Minecraft.getInstance();
         if (mc.player == null || mc.level == null) return false;
         BlockPos feet = mc.player.blockPosition();

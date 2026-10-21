@@ -19,6 +19,7 @@ public final class BuildingBreachEvent extends Event {
     private final Outcome outcome;
     private final long activeTick;
     private final boolean alarm;
+    private boolean quiet;
     private final net.minecraft.server.level.ServerPlayer actor;
 
     public BuildingBreachEvent(UUID player, BlockPos door, String city, String securityClass, Outcome outcome, long activeTick) {
@@ -42,4 +43,8 @@ public final class BuildingBreachEvent extends Event {
     /** True when a snapped pick rang the lock's own alarm bell (an opened door never carries this: a building's armed alarm is decided by {@link PoliceResponse}). */
     public boolean alarm() { return alarm; }
     public net.minecraft.server.level.ServerPlayer actor() { return actor; }
+
+    /** Marks a door picked cleanly (the pick never came under much strain): a quiet entry does not trip a building's armed alarm, except where the alarm is too good to be bypassed ({@link PoliceResponse#QUIET_BYPASS_MAX_CHANCE}). */
+    public BuildingBreachEvent quiet(boolean value) { quiet = value; return this; }
+    public boolean quiet() { return quiet; }
 }

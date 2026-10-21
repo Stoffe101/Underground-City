@@ -114,6 +114,29 @@ public final class LockpickSessionGameTests {
     }
 
     @GameTest(template = "empty", batch = "uc_lockpick")
+    public static void aCleanPickIsAQuietOneAndACarelessPickIsNot(GameTestHelper helper) {
+        // D-122: a door picked with the pick never above LockService.QUIET_STRAIN_PERCENT of its strain limit does not trip an alarm built into the building
+        int quietCareful = 0, quietCareless = 0, openedCareful = 0, openedCareless = 0, trials = 40;
+        int worstCareful = 0;
+        for (int seed = 0; seed < trials; seed++) {
+            LockpickSession careful = new LockpickSession(profile("deadbolt"), 4000L + seed), careless = new LockpickSession(profile("deadbolt"), 4000L + seed);
+            if (solve(careful, false) == LockpickSession.State.OPENED) { openedCareful++; if (careful.peakStrainPercent() < LockService.QUIET_STRAIN_PERCENT) quietCareful++; worstCareful = Math.max(worstCareful, careful.peakStrainPercent()); }
+            if (solve(careless, true) == LockpickSession.State.OPENED) { openedCareless++; if (careless.peakStrainPercent() < LockService.QUIET_STRAIN_PERCENT) quietCareless++; }
+        }
+        check(openedCareful >= trials * 8 / 10, "setup: the careful solver opened only " + openedCareful + " of " + trials);
+        check(quietCareful >= openedCareful * 7 / 10, "a careful hand's picks are rarely quiet: " + quietCareful + " of " + openedCareful + " opened were quiet (worst peak " + worstCareful + " percent)");
+        check(quietCareless * 2 <= Math.max(1, openedCareless), "a careless hand's picks are often quiet: " + quietCareless + " of " + openedCareless + " opened");
+        // the measure is the most the pick was ever strained, not what it ended at
+        LockpickSession session = new LockpickSession(profile("deadbolt"), 8L);
+        double away = session.sweetSpot() < 0.5 ? 0.97 : 0.03;
+        for (int t = 0; t < 12; t++) session.tick(away, true);
+        int peak = session.peakStrainPercent();
+        for (int t = 0; t < 60; t++) session.tick(away, false);
+        check(peak > 0 && session.strainPercent() < peak && session.peakStrainPercent() == peak, "the peak is not the most the pick was strained: peak " + peak + ", now " + session.strainPercent() + ", peak after easing " + session.peakStrainPercent());
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty", batch = "uc_lockpick")
     public static void pressingAwayFromTheSweetSpotBreaksThePickAndNeverOpensTheLock(GameTestHelper helper) {
         LockpickSession session = new LockpickSession(profile("deadbolt"), 5L);
         double away = session.sweetSpot() < 0.5 ? 0.97 : 0.03;

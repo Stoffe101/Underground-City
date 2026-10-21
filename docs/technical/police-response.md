@@ -1,6 +1,6 @@
 # Alarms, witnesses, police and stolen goods (D-122)
 
-Status: **implemented; arithmetic, the rules and the settlement are GameTested headlessly (`PoliceResponseGameTests`, 12 cases, in a run of 285); the response has not yet been seen in a real generated street by a client; nobody has been chased by it.** This document says what exists, what it deliberately does not do, and what was evaluated and not adopted. It replaces the sentence "no police or witness responds to a break-in" in [building protection](building-protection.md) and [population](population.md): since this change one does, in the ways below and no others.
+Status: **implemented; arithmetic, the rules and the settlement are GameTested headlessly (`PoliceResponseGameTests`, 13 cases); the response has not yet been seen in a real generated street by a client; nobody has been chased by it.** This document says what exists, what it deliberately does not do, and what was evaluated and not adopted. It replaces the sentence "no police or witness responds to a break-in" in [building protection](building-protection.md) and [population](population.md): since this change one does, in the ways below and no others.
 
 ## The rule: the police are not psychic
 
@@ -10,6 +10,14 @@ A response starts only from an **observed event**. There are exactly two ways a 
 2. **A witness.** At the moment a door is picked open (or a pick snaps) any person of the city (`TownspersonEntity`, not a police officer) within 20 blocks of the door and with a line of sight to the thief is a witness. One roll is made for the group, using the city's own `witness_chance` from `city_laws/<city>.json`, three points more for each point of the thief's heat there, less for concealment skills, and a little more for a second and third witness. A person is only out in the street at the hours the roster says (nobody but guards between ten at night and six in the morning), so **a night break-in is seen less often than one at noon**: that is a real choice and it falls out of the existing schedule, not from a special rule.
 
 Nothing else raises a response. A creative or spectating player is never policed (the same rule as checkpoint searches).
+
+### Entering quietly, and what a thief can choose
+
+* **A clean pick is a quiet one.** `LockpickSession` now records the most strain the pick was ever under (`peakStrainPercent`). A door picked without the pick ever passing **40 percent** of its strain limit (`LockService.QUIET_STRAIN_PERCENT`) is a *quiet* entry: it does not trip a building's armed alarm, unless that class's alarm chance is 0.9 or more (the high-value premises have one in every building and it cannot be slipped past). The thief is told when it worked ("Something in here is wired to an alarm. Your pick was clean and it did not hear you"), which is also how they learn which buildings are wired. A pick that snaps and rings the lock's own bell is never quiet. A *witness* is not affected by a clean pick. This makes the lockpicking skill of the player, not a number, the thing that decides how loud a burglary is: a careful hand's picks are mostly quiet, a careless hand's rarely (`LockpickSessionGameTests`, 40 seeds each).
+* **Choose when:** a witness needs a person in sight, and the people of a city are in the street by day, so a night break-in is seen less often.
+* **Choose how long:** the arrival time is the class's, so a thief decides whether the rooms of an alarmed building are worth the minutes they cost; the stash's vigilance (existing) rises with each forcing.
+* **Choose where to be:** officers wait at the door and chase on foot at a sprinting pace; the response ends when the thief is out of reach for the class's window.
+* **Not available yet:** disabling an alarm by a skill, a tool or hacking a panel; cameras and motion sensors; cutting power; a fence who buys marked goods; a disguise. They are the obvious next steps and none exists.
 
 ## What a response does
 
@@ -54,13 +62,14 @@ What marking does not do: it does not stop a person using the goods, and **no fe
 
 ## Evidence
 
-`PoliceResponseGameTests` (12 cases, all passing in two consecutive 285-test runs of `runGameTestServer`):
+`PoliceResponseGameTests` (13 cases; the whole `runGameTestServer` suite passed twice in a row at 285 tests before the quiet-entry case and the later households were added):
 
 * the stock classes carry profiles and the order of levels holds; an out-of-range profile is refused;
 * an alarm is a fixed function of the building (certain for chance 1, never for 0, 200 to 250 of 400 for an even chance, the same every time);
 * an armed alarm raises one response, a second noise never adds one and only brings it sooner; no officer is there before the arrival time;
 * no alarm and nobody watching raises nothing in 300 tries; a class with no profile raises nothing by itself;
 * a resident in sight raises a witness response, slower than any class's own; a police officer in sight does not count as a witness;
+* a clean pick slips past an alarm that can be slipped past (and tells the thief so), a noisy one does not, a snapped pick that rang the bell is never forgiven, and the certain alarm of the high-value class cannot be slipped past;
 * creative and spectator players are never policed;
 * officers appear at the street spot, two as the class says, dressed and named as officers, unsaved, invulnerable, sent to the door, unable to open doors;
 * an officer beside the thief arrests them: the marked gold goes, the honest gold of the same item and the bread stay, heat rises by exactly 3 (never above the ceiling), the arrest is in the search history, the officers leave;
