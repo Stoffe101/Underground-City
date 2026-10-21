@@ -58,7 +58,8 @@ public final class BuildingSecurityGameTests {
             // the tests assumed and what they only got by luck of the layout. Each fixture has a batch to itself, so nothing else builds here at the same time.
             BlockPos placed = helper.absolutePos(new BlockPos(0, 2, 0));
             base = new BlockPos(Math.floorDiv(placed.getX(), 16) * 16 + 4, placed.getY(), Math.floorDiv(placed.getZ(), 16) * 16);
-            for (int x = -2; x <= 9; x++) for (int z = -3; z <= 8; z++) for (int y = -1; y <= 14; y++) level.setBlock(base.offset(x, y, z), y == -1 ? Blocks.STONE.defaultBlockState() : Blocks.AIR.defaultBlockState(), 2);
+            // the whole chunk is cleared, not only the house: the stash search looks at every column of the chunk, and what earlier batches left standing in it (the survival set's tests build here too) is a place for a stash
+            for (int x = -4; x <= 11; x++) for (int z = -3; z <= 15; z++) for (int y = -1; y <= 14; y++) level.setBlock(base.offset(x, y, z), y == -1 ? Blocks.STONE.defaultBlockState() : Blocks.AIR.defaultBlockState(), 2);
             for (int x = 0; x <= 6; x++) for (int z = 0; z <= 6; z++) for (int y = 0; y <= 3; y++) {
                 boolean wall = x == 0 || x == 6 || z == 0 || z == 6;
                 if (wall) level.setBlock(base.offset(x, y, z), Blocks.STONE_BRICKS.defaultBlockState(), 2);
