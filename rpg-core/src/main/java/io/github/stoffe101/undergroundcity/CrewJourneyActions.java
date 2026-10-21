@@ -163,6 +163,7 @@ final class CrewJourneyActions {
             },
             (s, v) -> {
                 if (v.wallet() <= walletAfterRestart - 5) return true;
+                if (!everyoneOnline(v)) return false;
                 s.showPage(CrewScreen.Page.MONEY);
                 type(s.amountField(), "5");
                 press(s, "deposit");
@@ -180,6 +181,7 @@ final class CrewJourneyActions {
             },
             (s, v) -> {
                 if (v.wallet() >= walletAfterRestart + 20) return true;
+                if (!everyoneOnline(v)) return false;
                 s.showPage(CrewScreen.Page.MONEY);
                 type(s.amountField(), "20");
                 press(s, "withdraw");
@@ -188,6 +190,14 @@ final class CrewJourneyActions {
     }
 
     // ------------------------------------------------------------------------------------------------------------ helpers
+
+    /**
+     * The server checks what recovery left once both players are in; a deposit or a withdrawal before that changes the very numbers it is checking. When the second client's first
+     * connection attempt fails and is retried (a slow login on a hosted runner), the first client used to act alone and the check saw a bank 5 credits off.
+     */
+    private static boolean everyoneOnline(CrewView v) {
+        return v.members().stream().allMatch(CrewView.MemberRow::online);
+    }
 
     private static void press(CrewScreen screen, String id) {
         if (!screen.press(id)) say("button " + id + " is not available now (inactive or absent); trying again");
