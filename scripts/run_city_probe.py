@@ -28,6 +28,7 @@ def main() -> int:
     parser.add_argument("--radius", default="6")
     parser.add_argument("--cities", default="ironhaven,valewood,blackwater")
     parser.add_argument("--extra", default="", help="more chunks as x:z,x:z")
+    parser.add_argument("--sets", default="world", help="dev-pack sets to load, comma separated (world is the Lost Cities profile the probe needs); e.g. world,citytweaks")
     parser.add_argument("--timeout", type=int, default=3000)
     args = parser.parse_args()
     run_name = f"run-cityprobe-{args.name}"
@@ -42,7 +43,7 @@ def main() -> int:
         f"level-type={preset}", f"level-seed={args.seed}", "online-mode=false", "spawn-protection=0", "view-distance=4", "simulation-distance=4", "max-tick-time=-1",
         "level-name=world", "white-list=false"]) + "\n", encoding="utf-8")
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    command = [str(ROOT / "gradlew"), "--no-daemon", ":rpg-core:runServer", f"-PucRunDir={run_name}", "-PucPack=world", "-PucDevWorld=true", "-PucAutoWorld=false",
+    command = [str(ROOT / "gradlew"), "--no-daemon", ":rpg-core:runServer", f"-PucRunDir={run_name}", f"-PucPack={args.sets}", "-PucDevWorld=true", "-PucAutoWorld=false",
                f"-PucWorldLayout={args.layout}", f"-PucCityProbe={args.output.resolve()}", f"-PucCpRadius={args.radius}", f"-PucCpCities={args.cities}"]
     if args.extra:
         command.append(f"-PucCpExtra={args.extra}")
