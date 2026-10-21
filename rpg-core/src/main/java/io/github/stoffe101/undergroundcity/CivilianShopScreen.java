@@ -300,13 +300,17 @@ public final class CivilianShopScreen extends UcScreen {
         return mouseClicked(button.getX() + button.getWidth() / 2.0, button.getY() + button.getHeight() / 2.0, 0);
     }
 
-    /** Journey hook: scrolls the current section to the entry with Q Shop's index and clicks its first button as the mouse would. False when the entry is not listed or cannot be used right now. */
+    /** Journey hook: opens the section that lists the entry with Q Shop's index, scrolls to it and clicks its first button as the mouse would. False when no section lists it or it cannot be used right now. */
     boolean clickEntry(int serverIndex) {
-        for (int i = 0; i < entries().size(); i++) {
-            if (entries().get(i).serverIndex() != serverIndex) continue;
-            scrollTo(i);
-            int row = i - scroll;
-            return row >= 0 && row < rows() && buyOne[row].visible && buyOne[row].active && clickBuy(row, false);
+        for (int t = 0; t < data.tabs().size(); t++) {
+            var list = data.tabs().get(t).entries();
+            for (int i = 0; i < list.size(); i++) {
+                if (list.get(i).serverIndex() != serverIndex) continue;
+                if (t != tab) select(t);
+                scrollTo(i);
+                int row = i - scroll;
+                return row >= 0 && row < rows() && buyOne[row].visible && buyOne[row].active && clickBuy(row, false);
+            }
         }
         return false;
     }
