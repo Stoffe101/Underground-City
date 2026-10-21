@@ -1,6 +1,6 @@
 # The people who live and work in the furnished buildings (D-124)
 
-Status: **implemented; the arithmetic, the bodies, the witness link and the memory are GameTested headlessly (`HouseholdGameTests`, 7 cases, in a run of 294); the real furnished buildings have not been entered by a person, and no resident has been seen in a real house.** This document says what exists, what it costs and what it is not.
+Status: **implemented; the arithmetic, the bodies, the witness link and the memory are GameTested headlessly (`HouseholdGameTests`, 8 cases, in a run of 297); the real furnished buildings have not been entered by a person, and no resident has been seen in a real house.** This document says what exists, what it costs and what it is not.
 
 ## What the owner asked for
 

@@ -62,7 +62,7 @@ What marking does not do: it does not stop a person using the goods, and **no fe
 
 ## Evidence
 
-`PoliceResponseGameTests` (13 cases; the whole `runGameTestServer` suite passed twice in a row at 285 tests before the quiet-entry case and the later households were added):
+`PoliceResponseGameTests` (13 cases; the whole `runGameTestServer` suite passed at 297 tests in a copy of the checkout with the quiet-entry case and the households in, and every GameTest job of the hosted run on the head of this branch passed):
 
 * the stock classes carry profiles and the order of levels holds; an out-of-range profile is refused;
 * an alarm is a fixed function of the building (certain for chance 1, never for 0, 200 to 250 of 400 for an even chance, the same every time);
