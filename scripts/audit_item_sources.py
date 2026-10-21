@@ -144,9 +144,21 @@ def stock_lines() -> dict[str, dict]:
     return lines
 
 
+def ore_catalogue() -> dict:
+    return json.loads((DATA / 'progression/ore_resources.json').read_text())
+
+
 def monster_findings(orders: dict[str, dict], recipes: dict[str, dict]) -> list[dict]:
     """D-095: every root a route is promised for must have a real route, and nothing Core offers may need a root that has none."""
-    catalogue = monster_catalogue()
+    return catalogue_findings(monster_catalogue(), 'MONSTER ONLY', orders, recipes, 'an item only a hostile creature drops')
+
+
+def ore_findings(orders: dict[str, dict], recipes: dict[str, dict]) -> list[dict]:
+    """D-120: the same check for the items that are, in the base game, mined from ore (a scarcity world has none)."""
+    return catalogue_findings(ore_catalogue(), 'ORE ONLY', orders, recipes, 'an item that is only mined from ore')
+
+
+def catalogue_findings(catalogue: dict, only_kind: str, orders: dict[str, dict], recipes: dict[str, dict], what: str) -> list[dict]:
     roots = catalogue['roots']
     lines = stock_lines()
     findings: list[dict] = []
@@ -159,7 +171,7 @@ def monster_findings(orders: dict[str, dict], recipes: dict[str, dict]) -> list[
         route = root.get('route')
         if not route:
             if root.get('needed_by_approved_gameplay') is not False:
-                problem('MONSTER ONLY', item, 'no route, and the catalogue does not say that nothing needs it (needed_by_approved_gameplay: false)')
+                problem(only_kind, item, 'no route, and the catalogue does not say that nothing needs it (needed_by_approved_gameplay: false)')
             continue
         kind = route['kind']
         if kind == 'exchange':
@@ -178,21 +190,21 @@ def monster_findings(orders: dict[str, dict], recipes: dict[str, dict]) -> list[
     for name, order in orders.items():
         for need in requirements(order):
             if need['item'] in roots and need['item'] not in routed:
-                problem('MONSTER ONLY', need['item'], 'a work order asks for an item only a hostile creature drops, and it has no route', name)
+                problem(only_kind, need['item'], f'a work order asks for {what}, and it has no route', name)
     for name, recipe in recipes.items():
         for options in ingredients(recipe):
             if all(option in roots and option not in routed for option in options):
-                problem('MONSTER ONLY', options[0], f'Core recipe {name} needs it and it has no route')
+                problem(only_kind, options[0], f'Core recipe {name} needs it and it has no route')
     # the enabled backpack items declare what they need; each must have a route
     policy_file = DATA / 'backpack_policy/policy.json'
-    if policy_file.is_file():
+    if policy_file.is_file() and only_kind == 'MONSTER ONLY':
         policy = json.loads(policy_file.read_text())
         for item, inputs in policy.get('monster_inputs', {}).items():
             for root in inputs:
                 if root not in roots:
-                    problem('MONSTER ONLY', root, f'{item} needs it but the catalogue does not know it')
+                    problem(only_kind, root, f'{item} needs it but the catalogue does not know it')
                 elif root not in routed:
-                    problem('MONSTER ONLY', root, f'{item} needs it and it has no route')
+                    problem(only_kind, root, f'{item} needs it and it has no route')
     return findings
 
 
@@ -248,6 +260,7 @@ def audit() -> dict:
                 findings.append({'order': name, 'career': order['career'], 'level': order['level'], 'kind': 'TOO LATE', 'item': item,
                                  'detail': f'first obtainable at career level {have}, the order needs level {order["level"]}'})
     findings += monster_findings(orders, recipes)
+    findings += ore_findings(orders, recipes)
     return {'orders': len(orders), 'recipes': len(recipes), 'findings': findings, 'external': external,
             'items_with_a_deterministic_source': len(level), 'loot_only_items': sorted(i for i in loot_items if i not in level and i.startswith('underground_city:'))}
 

@@ -74,6 +74,10 @@ def package() -> dict[str, bytes]:
         files[f"data/{NAMESPACE}/city_buildings/{b.id}.json"] = json_bytes(b.core_data())
     for city, style in citystyles(buildings).items():
         files[f"data/{NAMESPACE}/lostcities/citystyles/{city}.json"] = json_bytes(style)
+    # Lost Cities scatters 5 to 10 chains and 5 to 20 cobwebs through every building of a style that carries the "rubble" tag, which the standard style does and no child can remove; a lived-in
+    # home has none. The two stuff objects are replaced by ones that place nothing (a count of zero: Lost Cities draws min + nextInt(max - min), so max must be above min; and only in the Nether), in this package only (it exists only in a world made with it, GenerationPackGuard).
+    for name, column in (("chains", "{"), ("cobweb", "\\")):
+        files[f"data/lostcities/lostcities/stuff/{name}.json"] = json_bytes({"tags": ["rubble"], "column": column, "mincount": 0, "maxcount": 1, "attempts": 1, "inbuilding": True, "biomes": {"if_any": ["#minecraft:is_nether"]}})
     ids = {b.id for b in buildings}
     rules = []
     used = set()

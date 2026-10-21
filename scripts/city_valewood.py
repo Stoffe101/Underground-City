@@ -216,13 +216,18 @@ def cottage(bid: str, look: Look) -> Building:
     lawn(g)
     fence_with_gaps(g)
     walkway(g, X0, Z0, X1, Z1)
-    # two vegetable beds south of the cottage: farmland round a water cell, wheat and carrots
-    for bx, crop in ((2, "minecraft:wheat[age=7]"), (10, "minecraft:carrots[age=7]")):
-        for z in range(12, 15):
-            for x in range(bx, bx + 3):
-                g.put(x, 0, z, "minecraft:farmland[moisture=7]")
-                g.put(x, 1, z, crop)
-        g.put(bx + 1, 0, 13, "minecraft:water[level=0]"); g.put(bx + 1, 1, 13, "air")
+    # two beds south of the cottage: a ploughed one (farmland round a water cell; a crop would not survive world generation, it needs light and the chunk has none yet, so it is left for
+    # the people who live here to plant) and a market bed of coarse dirt with pumpkins, melons and hay, and a scarecrow
+    for z in range(12, 15):
+        for x in range(2, 5):
+            g.put(x, 0, z, "minecraft:farmland[moisture=7]")
+    g.put(3, 0, 13, "minecraft:water[level=0]")
+    for z in range(12, 15):
+        for x in range(10, 13):
+            g.put(x, 0, z, "minecraft:coarse_dirt")
+    for (x, z, block) in ((10, 12, "minecraft:pumpkin"), (12, 12, "minecraft:melon"), (11, 13, "minecraft:hay_block[axis=y]"), (10, 14, "minecraft:melon"), (12, 14, "minecraft:pumpkin")):
+        g.put(x, 1, z, block)
+    g.put(14, 1, 12, FENCE); g.put(14, 2, 12, FENCE); g.put(14, 3, 12, "minecraft:carved_pumpkin[facing=west]"); g.put(13, 2, 12, "minecraft:hay_block[axis=x]"); g.put(15, 2, 12, "air")
     for z in range(10, 15):                                                    # the path between the beds, from the door to the gap in the south fence
         g.put(7, 0, z, PATH); g.put(8, 0, z, PATH)
     shell(g, look, X0, Z0, X1, Z1)

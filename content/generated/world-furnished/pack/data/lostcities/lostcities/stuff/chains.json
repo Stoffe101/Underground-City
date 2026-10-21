@@ -1,0 +1,15 @@
+{
+  "attempts": 1,
+  "biomes": {
+    "if_any": [
+      "#minecraft:is_nether"
+    ]
+  },
+  "column": "{",
+  "inbuilding": true,
+  "maxcount": 1,
+  "mincount": 0,
+  "tags": [
+    "rubble"
+  ]
+}

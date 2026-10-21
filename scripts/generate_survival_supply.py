@@ -19,6 +19,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "content/gameplay/survival-supply.json"
 OUT = ROOT / "rpg-core/src/main/resources/data/underground_city/regional_stock/survival"
+# the raw materials of the hybrid economy (D-120): the same kind of finite, shared, slowly refilling line, sold in the cities only
+MATERIALS_SOURCE = ROOT / "content/gameplay/materials-supply.json"
+MATERIALS_OUT = ROOT / "rpg-core/src/main/resources/data/underground_city/regional_stock/materials"
 CITIES = {"valewood", "ironhaven", "blackwater"}
 OUTLETS = {"city", "wayside"}
 MAX_LINES_IN_GAME = 64          # RegionalCatalog.apply refuses more
@@ -30,14 +33,14 @@ def load() -> dict:
     return json.loads(SOURCE.read_text(encoding="utf-8"))
 
 
-def problems(data: dict) -> list[str]:
+def problems(data: dict, wayside: bool = True, other_lines: int = 0) -> list[str]:
     found: list[str] = []
     lines = data["lines"]
     ids = [line["id"] for line in lines]
     if len(ids) != len(set(ids)):
         found.append("duplicate line ids")
-    if len(lines) + EXISTING_REGIONAL_LINES > MAX_LINES_IN_GAME:
-        found.append(f"{len(lines)} survival lines plus {EXISTING_REGIONAL_LINES} commodities exceed the {MAX_LINES_IN_GAME} the game loads")
+    if len(lines) + other_lines + EXISTING_REGIONAL_LINES > MAX_LINES_IN_GAME:
+        found.append(f"{len(lines)} lines plus {other_lines} others and {EXISTING_REGIONAL_LINES} commodities exceed the {MAX_LINES_IN_GAME} the game loads")
     city_price: dict[str, int] = {}
     for line in lines:
         name = line["id"]
@@ -76,13 +79,13 @@ def problems(data: dict) -> list[str]:
         if cheapest < 10**9 and line["price"] < cheapest * 1.2:
             found.append(f"{line['id']}: the wayside price {line['price']} must be at least 20% above the usual {cheapest}")
     # every wayside outlet of one city offers the same short list, and every city has one
-    for city in CITIES:
+    for city in CITIES if wayside else ():
         if not [line for line in lines if line["city"] == city and "wayside" in line["outlets"]]:
             found.append(f"{city} has no wayside lines")
     return found
 
 
-def build(data: dict) -> dict[Path, str]:
+def build(data: dict, out: Path = OUT) -> dict[Path, str]:
     files: dict[Path, str] = {}
     for line in data["lines"]:
         body = {
@@ -99,7 +102,7 @@ def build(data: dict) -> dict[Path, str]:
         }
         if line.get("requires_mod"):
             body["requires_mod"] = line["requires_mod"]
-        files[OUT / f"{line['id']}.json"] = json.dumps(body, indent=2) + "\n"
+        files[out / f"{line['id']}.json"] = json.dumps(body, indent=2) + "\n"
     return files
 
 
@@ -107,34 +110,40 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--check", action="store_true")
     args = parser.parse_args()
-    data = load()
-    found = problems(data)
+    survival = load()
+    materials = json.loads(MATERIALS_SOURCE.read_text(encoding="utf-8"))
+    found = problems(survival, True, len(materials["lines"])) + problems(materials, False, len(survival["lines"]))
+    # an item sold by both sources would give one shelf two owners
+    overlap = {line["id"] for line in survival["lines"]} & {line["id"] for line in materials["lines"]}
+    found += [f"line id {name} is in both supply files" for name in sorted(overlap)]
     if found:
-        print("Survival supply is invalid:")
+        print("Supply data is invalid:")
         for item in found:
             print(" -", item)
         return 1
-    files = build(data)
-    stale = []
+    groups = [(build(survival, OUT), OUT, "survival"), (build(materials, MATERIALS_OUT), MATERIALS_OUT, "materials")]
     if args.check:
-        for path, text in files.items():
-            if not path.is_file() or path.read_text(encoding="utf-8") != text:
-                stale.append(str(path.relative_to(ROOT)))
-        extra = sorted(p.name for p in OUT.glob("*.json") if p not in files) if OUT.is_dir() else []
-        if stale or extra:
-            print("Survival supply files differ from the source; run scripts/generate_survival_supply.py:")
-            for item in stale + [f"(orphan) {name}" for name in extra]:
+        bad = []
+        for files, out, label in groups:
+            for path, text in files.items():
+                if not path.is_file() or path.read_text(encoding="utf-8") != text:
+                    bad.append(str(path.relative_to(ROOT)))
+            bad += [f"(orphan) {label}/{p.name}" for p in (sorted(out.glob("*.json")) if out.is_dir() else []) if p not in files]
+        if bad:
+            print("Supply files differ from the source; run scripts/generate_survival_supply.py:")
+            for item in bad:
                 print(" -", item)
             return 1
-        print(f"Checked {len(files)} survival supply files")
+        print(f"Checked {sum(len(files) for files, _, _ in groups)} supply files")
         return 0
-    OUT.mkdir(parents=True, exist_ok=True)
-    for path in OUT.glob("*.json"):
-        if path not in files:
-            path.unlink()
-    for path, text in files.items():
-        path.write_text(text, encoding="utf-8")
-    print(f"Wrote {len(files)} survival supply files")
+    for files, out, label in groups:
+        out.mkdir(parents=True, exist_ok=True)
+        for path in out.glob("*.json"):
+            if path not in files:
+                path.unlink()
+        for path, text in files.items():
+            path.write_text(text, encoding="utf-8")
+        print(f"Wrote {len(files)} {label} supply files")
     return 0
 
 

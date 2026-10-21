@@ -180,5 +180,72 @@ class MonsterDrops(unittest.TestCase):
             self.assertGreaterEqual(line["unit_price"], 100, line_id)
 
 
+
+class OreRoutes(unittest.TestCase):
+    """D-120: a world made with the scarcity package has no natural ore, so what is only mined needs a route, and the audit notices when one is missing."""
+
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp())
+        shutil.copytree(audit.DATA, self.tmp / "data")
+        self.real = audit.DATA
+        audit.DATA = self.tmp / "data"
+        self.addCleanup(lambda: (setattr(audit, "DATA", self.real), shutil.rmtree(self.tmp)))
+
+    def kinds(self):
+        return {(f["kind"], f["item"]) for f in audit.audit()["findings"]}
+
+    def edit(self, change):
+        path = audit.DATA / "progression/ore_resources.json"
+        data = json.loads(path.read_text())
+        change(data)
+        path.write_text(json.dumps(data))
+
+    def test_every_ore_material_the_economy_uses_has_a_route(self):
+        data = audit.ore_catalogue()
+        for item in ("minecraft:iron_ingot", "minecraft:coal", "minecraft:copper_ingot", "minecraft:redstone", "minecraft:lapis_lazuli", "minecraft:gold_ingot", "minecraft:diamond", "minecraft:iron_nugget"):
+            self.assertTrue(data["roots"][item]["route"], item)
+        self.assertEqual([], [f for f in audit.audit()["findings"] if f["kind"] in ("ORE ONLY", "BROKEN ROUTE")])
+
+    def test_every_root_without_a_route_says_nothing_needs_it(self):
+        for item, root in audit.ore_catalogue()["roots"].items():
+            if not root.get("route"):
+                self.assertIs(root.get("needed_by_approved_gameplay"), False, item)
+
+    def test_a_route_to_a_missing_line_is_caught(self):
+        (audit.DATA / "regional_stock/materials/diamond_blackwater.json").unlink()
+        self.assertIn(("BROKEN ROUTE", "minecraft:diamond"), self.kinds())
+
+    def test_a_stockpile_or_another_item_is_caught(self):
+        path = audit.DATA / "regional_stock/materials/gold_ingot_blackwater.json"
+        line = json.loads(path.read_text())
+        line["capacity"] = 200
+        path.write_text(json.dumps(line))
+        self.assertIn(("BROKEN ROUTE", "minecraft:gold_ingot"), self.kinds())
+        line.update(capacity=4, item="minecraft:iron_ingot")
+        path.write_text(json.dumps(line))
+        self.assertIn(("BROKEN ROUTE", "minecraft:gold_ingot"), self.kinds())
+
+    def test_a_derived_root_whose_source_lost_its_route_is_caught(self):
+        self.edit(lambda d: d["roots"]["minecraft:iron_ingot"].update(route=None, needed_by_approved_gameplay=False))
+        self.assertIn(("BROKEN ROUTE", "minecraft:iron_nugget"), self.kinds())
+
+    def test_a_work_order_that_needs_an_unrouted_ore_is_caught(self):
+        self.edit(lambda d: d["roots"]["minecraft:redstone"].update(route=None, needed_by_approved_gameplay=False))
+        (audit.DATA / "work_orders/t_dust.json").write_text(json.dumps({"schema_version": 3, "title": "t", "career": "smith", "level": 2, "foreign_visits": 0, "credits": 10, "xp": 10,
+                                                                       "capacity": 1, "refill_ticks": 100, "requirements": [{"item": "minecraft:redstone", "count": 4}]}))
+        self.assertIn(("ORE ONLY", "minecraft:redstone"), self.kinds())
+
+    def test_the_material_shelves_are_small_slow_and_the_precious_ones_slower(self):
+        lines = {line_id: line for line_id, line in audit.stock_lines().items() if line_id.startswith("underground_city:materials/")}
+        self.assertGreaterEqual(len(lines), 10)
+        hourly = lambda l: l["units_per_interval"] * 72000 / l["interval_ticks"]
+        for line_id, line in lines.items():
+            self.assertLessEqual(line["capacity"] * line["unit_price"], 1200, line_id)
+            self.assertLessEqual(line["max_order"], 24, line_id)
+        diamond = lines["underground_city:materials/diamond_blackwater"]
+        self.assertLessEqual(hourly(diamond), 1.0)
+        self.assertGreaterEqual(diamond["unit_price"], 100)
+
+
 if __name__ == "__main__":
     unittest.main()
