@@ -23,7 +23,7 @@ which project.
 | `qol` | Just Enough Items 15.56.0.205, Jade 11.13.3, AppleSkin 2.5.1, Mouse Tweaks 2.25.1, Controlling 12.0.2 (+ Searchables 1.0.3) | **candidate** (opt-in) interface helpers: a recipe viewer, look-at tooltips, food values on the hunger bar, drag and scroll item moving, a searchable key-binding screen; Core does not depend on them |
 | `navigation` | Xaero's Minimap 26.6.0, Xaero's World Map 1.47.0 | **candidate** (opt-in, D-113): a minimap and a full-screen map for a three-island world; the Underground City status display starts below the minimap's default corner and can be moved (D-109) |
 | `performance` | Embeddium 0.3.31, ModernFix 5.27.88, FerriteCore 6.0.1 | **candidate** (opt-in, D-113): a renderer replacement, faster start and lower memory; client first, ModernFix and FerriteCore also run on a server |
-| `citytweaks` | Lost Cities Modern Tweaks 1.1.2 | **candidate** (opt-in, D-113): street furniture and about a hundred building parts for the city style the three cities inherit; vanilla blocks only; a server-side datapack |
+| `citytweaks_deferred` | Lost Cities Modern Tweaks 1.1.2 | **rejected for now** (D-113): in a fresh archipelago world Lost Cities logs a chunk generation error for 249 of the 507 city chunks probed with it loaded and for none without it; no launch, test or workflow names the set |
 | `performance_deferred` | Entity Culling 1.11.3, ImmediatelyFast 1.5.5 | **parked** (D-113): both crash the ForgeGradle development client at load; no launch, test or workflow names this set, so nothing loads them. They stay pinned so the exact release is on record |
 
 ## Using it
@@ -50,8 +50,10 @@ a performance benchmark** and say nothing about a player's graphics card.
 | Run | Sets | Result |
 | --- | --- | --- |
 | `runClient` launch smoke (world, firearms, vehicles, boats) | none of the helpers | reached the Operations terminal; 181 s from JVM start to the memory sample taken as the terminal opened, heap in use then 2,756 MB of 4,096 MB (a point sample, not a post-collection figure) |
-| the same smoke with `-PucExtraSets=navigation,performance,qol,citytweaks` | all twelve helper mods | reached the Operations terminal on a freshly generated archipelago world; 137 s to the same sample, heap in use 1,311 MB (also a point sample); ModernFix reported its own start at 129.9 s; `RESULT pass` (the screenshot was looked at: the terminal draws normally with the helpers loaded) |
+| the same smoke with `-PucExtraSets=navigation,performance,qol,citytweaks` | all twelve helper mods (Lost Cities Modern Tweaks among them; see below) | reached the Operations terminal on a freshly generated archipelago world; 137 s to the same sample, heap in use 1,311 MB (also a point sample); ModernFix reported its own start at 129.9 s; `RESULT pass` (the screenshot was looked at: the terminal draws normally with the helpers loaded) |
 | first attempts with Entity Culling and ImmediatelyFast in `performance` | | **both crashed the client at load** (see below), which is why they are parked |
+
+**That boot did not generate a city, and a boot is all it showed:** the same set, run in a world where the player arrived next to Ironhaven, made Lost Cities log `Error generating chunk` (a `NullPointerException` in `ChunkDriver.correct`) 26 times in the first minutes, and the city probe with `world,citytweaks` logged it for 249 of 507 city chunks, against none for `world` alone. Lost Cities Modern Tweaks is therefore parked (D-113).
 
 The two runs differ in more than the helpers (a shared machine, one run each), so the lower numbers are **not** attributed to ModernFix or FerriteCore.
 

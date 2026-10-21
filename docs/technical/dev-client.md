@@ -63,7 +63,7 @@ Result in the development environment: all nine mods load; Immersive Vehicles re
 | --- | --- |
 | `gradlew runClient` | the complete pack (sets `world`, `firearms`, `vehicles`, `boats`) |
 | `gradlew runClient -PucPack=none` | Core alone |
-| `gradlew runClient -PucExtraSets=navigation,performance,qol` | the complete pack plus the client helpers of D-113: Xaero's minimap and world map, Embeddium, ModernFix, FerriteCore, JEI, Jade, AppleSkin, Mouse Tweaks and Controlling (shared run configuration "full dev pack + client helpers"). Booted to the terminal in the cloud; **never used by a person**. Add `citytweaks` for Lost Cities Modern Tweaks street furniture only on a **new** world: it changes how chunks that are not yet generated look, so an old save would be expected to show seams where old and new chunks meet (reasoned, not tested) |
+| `gradlew runClient -PucExtraSets=navigation,performance,qol` | the complete pack plus the client helpers of D-113: Xaero's minimap and world map, Embeddium, ModernFix, FerriteCore, JEI, Jade, AppleSkin, Mouse Tweaks and Controlling (shared run configuration "full dev pack + client helpers"). Booted to the terminal in the cloud; **never used by a person**. Do **not** add Lost Cities Modern Tweaks (parked as `citytweaks_deferred`): it breaks Lost Cities' chunk generation in this world's city styles (D-113) |
 | `gradlew runClient -PucPack=firearms,vehicles` | only those sets (add `-PucDevWorld=true` for the world package and the dev world) |
 | `gradlew runClient -PucAutoWorld=false` | the full pack but stay on the title screen |
 | `gradlew runClient -PucUsername=Alice` | another offline player name (two developers need different names) |

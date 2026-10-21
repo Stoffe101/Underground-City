@@ -370,14 +370,14 @@
    "slug": "lost-cities-modern-tweaks",
    "version_id": "BWJEXXxe",
    "mod_id": "lostcities_modern_tweaks",
-   "role": "world: street furniture, new building designs and palettes, more roofs and parks, a factory multi-building (a datapack packaged as a mod; vanilla blocks only)",
+   "role": "world: street furniture, new building designs and palettes, more roofs and parks, a factory multi-building (a datapack packaged as a mod; vanilla blocks only) (REJECTED for now, D-113: see notes)",
    "sets": [
-    "citytweaks"
+    "citytweaks_deferred"
    ],
    "requires": [
     "lostcities"
    ],
-   "notes": "Lost Cities Modern Tweaks 1.1.2 (2026-09-13). MIT. Replaces torches with lanterns, adds lamp posts to the streets and about a hundred building parts to the standard city style that our three styles inherit; judged by real frames (docs/technical/archipelago-world.md)."
+   "notes": "Lost Cities Modern Tweaks 1.1.2 (2026-09-13). MIT. REJECTED for now (D-113): on a fresh archipelago world it made Lost Cities log 'Error generating chunk' (a NullPointerException in ChunkDriver.correct) for 249 of the 507 city chunks probed, against none without it (scripts/run_city_probe.py --sets world,citytweaks). Probable cause, read from the jar and not proven: its global 'hanging_root' stuff draws the palette character ' which only its own styles define, and our three styles do not. It is pinned only so that its exact release is on record; no launch, test or workflow names the set."
   }
  ],
  "external": [
