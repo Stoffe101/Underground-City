@@ -12,6 +12,7 @@ final class Scenarios {
         switch (scenario) {
             case "input" -> input();
             case "register" -> register();
+            case "arrival" -> arrival();
             case "walk" -> walk();
             case "row" -> row();
             case "posts" -> posts();
@@ -71,6 +72,149 @@ final class Scenarios {
             }
             if (!terminal || !seeds) Playtest.fail("the welcome pack did not arrive (terminal=" + terminal + ", seeds=" + seeds + ")");
         });
+    }
+
+    /**
+     * The first minutes of a brand-new archipelago world through real input (D-107, D-109, D-111): where the player arrives, the first-login registration by mouse, the welcome pack, the
+     * status display in a real world beside the other mods' screen furniture (the minimap, the survival bars), the next step of the first hours after registering, a walk up the Row's lane with
+     * the keys, and a minute in an Ironhaven street (who comes out, what the passes cost). What the harness does that a player does not: it creates the world, sets the game mode (a command, so
+     * that the survival bars are on screen) and moves the player to the street. It is a scripted client in a software-rendered virtual display, not a person.
+     */
+    private static void arrival() {
+        Playtest.keepScreens = true;
+        Playtest.queue("the client has the ground under the player", () -> { }, Scenarios::groundBelowPlayer, 1200);
+        Playtest.queue("the player arrived on dry, open ground near the landing and Founders Row", Scenarios::checkArrival);
+        Playtest.queue("the first-login registration screen opens by itself", () -> { }, () -> Minecraft.getInstance().screen instanceof RegistrationScreen, 900);
+        Playtest.wait("let the screen render", 20);
+        Playtest.queue("screenshot of the first screen", () -> Playtest.screenshotNextFrame("uc-arrival-register-1"));
+        Playtest.wait("frame", 8);
+        Playtest.queue("click the first city", () -> {
+            Playtest.focusWindow();
+            int[] at = ((RegistrationScreen) Minecraft.getInstance().screen).cardCentre(0);
+            Playtest.clickGui(at[0], at[1]);
+        }, () -> ((RegistrationScreen) Minecraft.getInstance().screen).step() == 1, 100);
+        Playtest.queue("click the first profession", () -> {
+            int[] at = ((RegistrationScreen) Minecraft.getInstance().screen).cardCentre(0);
+            Playtest.clickGui(at[0], at[1]);
+        }, () -> ((RegistrationScreen) Minecraft.getInstance().screen).step() == 2, 100);
+        Playtest.wait("settle", 10);
+        Playtest.queue("click CONFIRM", () -> {
+            int[] at = ((RegistrationScreen) Minecraft.getInstance().screen).confirmCentre();
+            Playtest.clickGui(at[0], at[1]);
+        }, () -> !(Minecraft.getInstance().screen instanceof RegistrationScreen), 200);
+        Playtest.queue("the server created the citizen and the welcome pack arrived", () -> {
+            var mc = Minecraft.getInstance();
+            var citizen = CitizenState.get(mc.getSingleplayerServer()).find(mc.player.getUUID());
+            if (citizen.isEmpty()) { Playtest.fail("the server has no citizen record after the click path"); return; }
+            Playtest.log("citizen " + citizen.get().city + "/" + citizen.get().career);
+            boolean terminal = false;
+            for (var stack : mc.player.getInventory().items) if (stack.is(UndergroundCity.TERMINAL_ITEM.get())) terminal = true;
+            if (!terminal) Playtest.fail("the welcome pack did not arrive");
+            expectStep("after registering", "Meet your employer");
+        });
+        Playtest.queue("survival mode, as a player would be", () -> Playtest.command("gamemode survival"));
+        Playtest.queue("the status display has the citizen's state", () -> { }, () -> ClientHud.state().registered(), 400);
+        Playtest.queue("the status display's own words, as the client holds them", () -> {
+            var state = ClientHud.state();
+            Playtest.log("status: place '" + state.place() + "' kind " + state.placeKind() + ", home city " + state.homeCity() + ", trade " + state.career() + " level " + state.level() + ", credits " + state.credits());
+        });
+        Playtest.wait("let the display and the world draw", 40);
+        Playtest.queue("screenshot of the status display in the real world", () -> Playtest.screenshotNextFrame("uc-arrival-hud-1"));
+        Playtest.wait("frame", 8);
+
+        // the walk from the arrival to the registrar by the Row's gate, with the keys, in survival. The player arrives at the foot of the Row's lane: the route goes up the lane first and only
+        // then across to the registrar (a straight line would walk into the buildings beside the lane). The heading is set on the client each tick; the keys do the moving.
+        final Vec3[] gate = new Vec3[1], from = new Vec3[1];
+        final int[] ticks = {0};
+        Playtest.queue("walk from the arrival to the registrar with the keys", () -> {
+            var mc = Minecraft.getInstance();
+            var registrar = citizen(null, citizenIndex("registrar", null));
+            if (registrar == null) { Playtest.fail("the registrar is not in the world"); return; }
+            gate[0] = registrar.position();
+            from[0] = mc.player.position();
+            Playtest.log("walking " + String.format(java.util.Locale.ROOT, "%.1f", Math.hypot(gate[0].x - from[0].x, gate[0].z - from[0].z)) + " blocks, from " + mc.player.blockPosition().toShortString() + " to the registrar at " + registrar.blockPosition().toShortString());
+            Playtest.focusWindow();
+            Playtest.keyDown("w");
+            Playtest.keyDown("ctrl");
+        }, () -> {
+            var mc = Minecraft.getInstance();
+            if (gate[0] == null) return true;
+            var me = mc.player;
+            double distance = Math.hypot(gate[0].x - me.getX(), gate[0].z - me.getZ());
+            // up the lane (the arrival's own x) until level with the registrar, then across
+            double aimX = Math.abs(gate[0].z - me.getZ()) > 3.0 ? from[0].x : gate[0].x, aimZ = gate[0].z;
+            me.setYRot((float) Math.toDegrees(Math.atan2(-(aimX - me.getX()), aimZ - me.getZ())));
+            me.setXRot(0);
+            ticks[0]++;
+            if (ticks[0] % 100 == 0) Playtest.log("walking: at " + me.blockPosition().toShortString() + ", " + String.format(java.util.Locale.ROOT, "%.1f", distance) + " blocks from the registrar, on ground " + me.onGround() + ", horizontal collision " + me.horizontalCollision);
+            if (ticks[0] == 500) Playtest.screenshotNextFrame("uc-arrival-walk-stuck");
+            if (distance < 6.5) { Playtest.log("reached the lane beside the registrar after " + ticks[0] + " ticks (" + String.format(java.util.Locale.ROOT, "%.0f", ticks[0] / 20.0) + " s), " + me.blockPosition().toShortString()); return true; }
+            return false;
+        }, 1600);
+        Playtest.queue("stop walking", () -> { Playtest.keyUp("ctrl"); Playtest.keyUp("w"); });
+        Playtest.queue("the walk ended at the gate", () -> {
+            var mc = Minecraft.getInstance();
+            if (gate[0] == null) return;
+            double distance = Math.hypot(gate[0].x - mc.player.getX(), gate[0].z - mc.player.getZ());
+            if (distance >= 6.5) Playtest.fail("the walk from the arrival did not reach the registrar by the gate (" + String.format(java.util.Locale.ROOT, "%.1f", distance) + " blocks left after " + ticks[0] / 20 + " s)");
+        });
+        Playtest.wait("settle", 20);
+        Playtest.queue("screenshot at the gate", () -> Playtest.screenshotNextFrame("uc-arrival-gate"));
+        Playtest.wait("frame", 8);
+
+        // the city's people: stand in a street of Ironhaven for a minute of play and count who came out, and what the passes cost
+        Playtest.queue("stand in an Ironhaven street", () -> Playtest.command("tp @s 8 72 40 0 4"));
+        Playtest.wait("a minute of play for the people to come out", 1200);
+        Playtest.queue("who is about, and what the passes cost", () -> {
+            var mc = Minecraft.getInstance();
+            var box = mc.player.getBoundingBox().inflate(64);
+            int about = level().getEntitiesOfClass(TownspersonEntity.class, box).size();
+            Playtest.log("people within 64 blocks of the player: " + about);
+            Playtest.log("population: " + PopulationService.status(mc.getSingleplayerServer()));
+        });
+        Playtest.queue("screenshot of the street", () -> Playtest.screenshotNextFrame("uc-arrival-street"));
+        Playtest.wait("frame", 8);
+        Playtest.queue("turn to the nearest person, if anybody is about", () -> {
+            var mc = Minecraft.getInstance();
+            TownspersonEntity nearest = null;
+            for (TownspersonEntity person : level().getEntitiesOfClass(TownspersonEntity.class, mc.player.getBoundingBox().inflate(64))) {
+                if (nearest == null || person.distanceToSqr(mc.player) < nearest.distanceToSqr(mc.player)) nearest = person;
+            }
+            if (nearest == null) { Playtest.log("nobody to look at"); return; }
+            Playtest.log("the nearest person is " + nearest.getName().getString() + " (" + nearest.role() + "), " + String.format(java.util.Locale.ROOT, "%.0f", Math.sqrt(nearest.distanceToSqr(mc.player))) + " blocks away");
+            standLooking(mc.player.position(), nearest.position().add(0, nearest.getBbHeight() * 0.85, 0));
+        });
+        Playtest.wait("settle", 20);
+        Playtest.queue("screenshot of a person in the street", () -> Playtest.screenshotNextFrame("uc-arrival-person"));
+        Playtest.wait("frame", 8);
+    }
+
+    /** The first-minutes checks: dry, open ground, near the layout's landing anchor, with Founders Row built beside it. */
+    private static void checkArrival() {
+        var mc = Minecraft.getInstance();
+        BlockPos feet = mc.player.blockPosition();
+        var anchor = WorldLayout.INSTANCE.arrivalAnchor();
+        BlockPos row = DistrictBuilder.originOf(level(), "founders_row");
+        Playtest.log("arrived at " + feet.toShortString() + ", landing anchor " + anchor.map(BlockPos::toShortString).orElse("none") + ", Founders Row origin " + (row == null ? "none" : row.toShortString()));
+        if (anchor.isEmpty()) { Playtest.fail("the world has no landing (run with -PucWorldLayout=archipelago)"); return; }
+        if (!mc.level.getFluidState(feet.below()).isEmpty() || !mc.level.getFluidState(feet).isEmpty()) Playtest.fail("the player arrived in or on water");
+        if (!mc.level.canSeeSky(feet)) Playtest.fail("the player arrived under cover");
+        double fromAnchor = Math.hypot(feet.getX() - anchor.get().getX(), feet.getZ() - anchor.get().getZ());
+        if (fromAnchor > 120) Playtest.fail("the player arrived " + Math.round(fromAnchor) + " blocks from the landing anchor");
+        if (row == null) { Playtest.fail("Founders Row was not built at the landing"); return; }
+        double fromRow = Math.hypot(feet.getX() - row.getX(), feet.getZ() - row.getZ());
+        Playtest.log("the arrival is " + Math.round(fromRow) + " blocks from the Row's origin");
+        if (fromRow > 90) Playtest.fail("Founders Row is " + Math.round(fromRow) + " blocks from the arrival");
+    }
+
+    /** The title of the next step of the first hours, as the server computes it for the real player. */
+    private static void expectStep(String when, String expected) {
+        var mc = Minecraft.getInstance();
+        var player = mc.getSingleplayerServer().getPlayerList().getPlayer(mc.player.getUUID());
+        var objective = Journey.next(player);
+        String title = objective == null ? "(finished)" : objective.title();
+        Playtest.log("next step " + when + ": " + title);
+        if (!title.equals(expected)) Playtest.fail("the next step " + when + " is '" + title + "', not '" + expected + "'");
     }
 
     /**
@@ -242,6 +386,11 @@ final class Scenarios {
      * {@code expect} says what should open: "dialogue", "registration", "terminal" or "ledger".
      */
     private static void talkTo(String label, int index, String expect, String shot) {
+        talkTo(label, () -> citizen(null, index), expect, shot);
+    }
+
+    /** As above, for a citizen found by what they do (the way the guided journey finds them), not by their place in the district's list. */
+    private static void talkTo(String label, java.util.function.Supplier<net.minecraft.world.entity.npc.Villager> who, String expect, String shot) {
         final int[] phase = {0}, tick = {0}, attempts = {0};
         final Vec3[] stand = new Vec3[1];
         Playtest.queue("talk to " + label + " (expecting " + expect + ")", () -> Playtest.focusWindow(), () -> {
@@ -249,14 +398,14 @@ final class Scenarios {
             if (matches(mc.screen, expect)) return true;
             switch (phase[0]) {
                 case 0 -> {
-                    var villager = citizen(null, index);
+                    var villager = who.get();
                     if (villager == null) { Playtest.fail(label + " is not in the world"); return true; }
                     Vec3 where = standingSpot(villager);
                     stand[0] = where;
                     standLooking(where, villager.position().add(0, villager.getBbHeight() * 0.85, 0));
                     tick[0] = 0; phase[0] = 1;
                 }
-                case 1 -> { if (++tick[0] >= 3) { var v = citizen(null, index); if (v != null) standLooking(stand[0], v.position().add(0, v.getBbHeight() * 0.85, 0)); Playtest.mouseButton(3, true); tick[0] = 0; phase[0] = 2; } }
+                case 1 -> { if (++tick[0] >= 3) { var v = who.get(); if (v != null) standLooking(stand[0], v.position().add(0, v.getBbHeight() * 0.85, 0)); Playtest.mouseButton(3, true); tick[0] = 0; phase[0] = 2; } }
                 case 2 -> { if (++tick[0] >= 3) { Playtest.mouseButton(3, false); tick[0] = 0; phase[0] = 3; } }
                 default -> {
                     if (++tick[0] >= 14) {
