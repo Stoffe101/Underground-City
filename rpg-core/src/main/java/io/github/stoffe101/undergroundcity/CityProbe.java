@@ -54,6 +54,9 @@ public final class CityProbe {
     public void started(ServerStartedEvent event) {
         if (OUTPUT == null || OUTPUT.isBlank()) return;
         started = System.nanoTime();
+        // the registered blocks of some namespaces with every block state property and its values: the ground truth that a palette is checked against (scripts/validate_city_blocks.py)
+        String registryOut = System.getProperty("uc.cityProbe.registry", "");
+        if (!registryOut.isBlank()) writeRegistry(Path.of(registryOut), System.getProperty("uc.cityProbe.namespaces", "modernlife,minecraft"));
         // which data packs carry the same file, lowest priority first: the answer to "whose citystyle does Lost Cities read?"
         for (String path : System.getProperty("uc.cityProbe.stack", "").split(",")) {
             if (path.isBlank()) continue;
@@ -61,6 +64,29 @@ public final class CityProbe {
             if (location == null) continue;
             var stack = event.getServer().getResourceManager().getResourceStack(location);
             LOGGER.info("[UC-PROBE] resource stack of {}: {}", location, stack.stream().map(r -> r.sourcePackId()).toList());
+        }
+    }
+
+    private static void writeRegistry(Path file, String namespaces) {
+        java.util.Set<String> wanted = new java.util.HashSet<>(java.util.Arrays.asList(namespaces.split(",")));
+        JsonObject all = new JsonObject();
+        for (var entry : ForgeRegistries.BLOCKS.getEntries()) {
+            var key = entry.getKey().location();
+            if (!wanted.contains(key.getNamespace())) continue;
+            JsonObject properties = new JsonObject();
+            for (var property : entry.getValue().getStateDefinition().getProperties()) {
+                JsonArray values = new JsonArray();
+                for (var value : property.getPossibleValues()) values.add(net.minecraft.Util.getPropertyName(property, value));
+                properties.add(property.getName(), values);
+            }
+            all.add(key.toString(), properties);
+        }
+        try {
+            Files.createDirectories(file.toAbsolutePath().getParent());
+            Files.writeString(file, all + "\n", StandardCharsets.UTF_8);
+            LOGGER.info("[UC-PROBE] wrote {} registered blocks to {}", all.size(), file);
+        } catch (IOException error) {
+            LOGGER.error("[UC-PROBE] could not write the block registry: {}", error.toString());
         }
     }
 
