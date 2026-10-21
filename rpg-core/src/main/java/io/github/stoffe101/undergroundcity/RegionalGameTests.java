@@ -62,6 +62,10 @@ public final class RegionalGameTests {
         return new Fixture(new WorkOrderLedger(path), path, original, pos);
     }
 
+    private static boolean isShelf(RegionalStock stock) {
+        return stock.id().startsWith(UndergroundCity.MOD_ID + ":materials/");
+    }
+
     private static void purchase(FakePlayer player, Fixture fixture, String commodity, int quantity, UUID nonce) {
         RegionalMarket.purchase(player, fixture.pos, fixture.ledger, CitizenState.get(player.server).find(player.getUUID()).orElseThrow(),
             UndergroundCity.MOD_ID + ":" + commodity, quantity, nonce);
@@ -81,28 +85,41 @@ public final class RegionalGameTests {
             for (WorkOrder order : WorkOrderCatalog.INSTANCE.forCareer(career)) {
                 if (order.foreignVisits() == 0) continue;
                 regional++;
-                double cost = 0;
+                double cost = 0, withShelves = 0;
                 for (WorkOrder.Requirement requirement : order.requirements()) {
                     var recipes = helper.getLevel().getRecipeManager().getAllRecipesFor(RecipeType.CRAFTING).stream()
                         .filter(recipe -> recipe.getResultItem(helper.getLevel().registryAccess()).is(requirement.registryItem())).toList();
                     check(recipes.size() == 1, "Every regional product needs exactly one crafting recipe: " + requirement.item());
                     var recipe = recipes.get(0);
                     check(recipe.getIngredients().size() <= 9, "Recipe does not fit the crafting grid");
-                    double batch = 0;
+                    double batch = 0, batchWithShelves = 0;
                     for (Ingredient ingredient : recipe.getIngredients()) {
                         for (ItemStack option : ingredient.getItems()) {
                             RegionalStock line = RegionalCatalog.INSTANCE.forCity("ironhaven").stream()
-                                .filter(stock -> stock.registryItem() == option.getItem()).findFirst()
-                                .or(() -> RegionalCatalog.INSTANCE.forCity("valewood").stream().filter(stock -> stock.registryItem() == option.getItem()).findFirst())
-                                .or(() -> RegionalCatalog.INSTANCE.forCity("blackwater").stream().filter(stock -> stock.registryItem() == option.getItem()).findFirst())
+                                .filter(stock -> stock.registryItem() == option.getItem() && !isShelf(stock)).findFirst()
+                                .or(() -> RegionalCatalog.INSTANCE.forCity("valewood").stream().filter(stock -> stock.registryItem() == option.getItem() && !isShelf(stock)).findFirst())
+                                .or(() -> RegionalCatalog.INSTANCE.forCity("blackwater").stream().filter(stock -> stock.registryItem() == option.getItem() && !isShelf(stock)).findFirst())
                                 .orElse(null);
-                            if (line != null) batch += line.unitPrice();
+                            if (line != null) { batch += line.unitPrice(); batchWithShelves += line.unitPrice(); continue; }
+                            // the cheapest raw-material shelf (D-120), counted only in the all-in cost
+                            double shelf = 0;
+                            for (String city : List.of("ironhaven", "valewood", "blackwater")) {
+                                for (RegionalStock stock : RegionalCatalog.INSTANCE.forCity(city)) {
+                                    if (isShelf(stock) && stock.registryItem() == option.getItem() && (shelf == 0 || stock.unitPrice() < shelf)) shelf = stock.unitPrice();
+                                }
+                            }
+                            batchWithShelves += shelf;
                         }
                     }
-                    cost += batch / recipe.getResultItem(helper.getLevel().registryAccess()).getCount() * requirement.count();
+                    int yield = recipe.getResultItem(helper.getLevel().registryAccess()).getCount();
+                    cost += batch / yield * requirement.count();
+                    withShelves += batchWithShelves / yield * requirement.count();
                 }
                 double margin = order.credits() / cost;
                 check(cost > 0 && margin >= 1.3 && margin <= 2.1, order.id() + " margin " + margin + " is outside the balanced band");
+                // buying every raw material from the exchange as well must still leave the order worth doing (never a loss-making loop)
+                double allIn = order.credits() / withShelves;
+                check(allIn >= 1.1, order.id() + " all-in margin " + allIn + " with the raw-material shelves is below break-even plus 10 percent");
             }
         }
         check(regional == 15, "Fifteen recurring regional orders expected, found " + regional);
