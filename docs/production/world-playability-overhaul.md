@@ -121,7 +121,7 @@ The nine steps the game itself lists (`Journey.STEPS`) and the evidence for each
 | 8 Travel to a rival city | The economy journey has a foreign visit; nobody has crossed a bridge |
 | 9 Finish a second order | GameTests |
 
-What a new player does see in a real client on the archipelago: arrival on dry, open ground 53 blocks from the Row's origin, **no water, not under cover**; registration by mouse; the status stack with the next step; the Row's lane walked in about five seconds with the real keys up to the registrar's booth (a fence stands between the lane and her, the walk ended 5.2 blocks from her; the registration screen opens by itself, so she is not needed for step 1); a street of Ironhaven with its buildings, verges and a minimap. A first 15 to 30 minutes with a person at the keys has **not** been run.
+What a new player does see in a real client on the archipelago: arrival on dry, open ground 53 blocks from the Row's origin, **no water, not under cover**; registration by mouse; the status stack with the next step; the Row's lane walked in about five seconds with the real keys up to the registrar's booth (a fence stands between the lane and her, the 23-block walk took 4 seconds and ended about 6 blocks from her; the registration screen opens by itself, so she is not needed for step 1); a street of Ironhaven with its buildings, verges and a minimap. A first 15 to 30 minutes with a person at the keys has **not** been run.
 
 ## 8. Test results and the limits of the evidence
 
@@ -142,7 +142,7 @@ What a new player does see in a real client on the archipelago: arrival on dry, 
 
 ## 9. Performance and known problems
 
-* **World start:** about two minutes the first time on the cloud container (spawn preparation, the landing levelled in about 300 ms for 20,113 columns, the Row built). The first start used to exceed nine minutes (a site search that evaluated every candidate); found on a fresh world and fixed.
+* **World start:** about two minutes the first time on the cloud container (spawn preparation, the Row built). On a dedicated server the start region is generated before "Done" (83 to 92 seconds on three measured starts here); the landing site is then found in 4 to 27 seconds and levelled in about 0.3 seconds, because its chunks already exist. In a single-player client world the start region is tiny, so levelling generates the footprint's chunks itself and took 32 to 37 seconds in twelve runs. The first start used to exceed nine minutes (a site search that evaluated every candidate), and a dedicated server was killed by its own 60 second watchdog on a slow CI runner when the search took 58 seconds; both found on fresh worlds and fixed (D-111).
 * **Population:** see section 4.
 * **Lost Cities Modern Tweaks** breaks city generation in this world's styles (parked); the probable cause is a palette character that only its own styles define.
 * **Two thirds of city buildings are sealed**; **no police response**; **no ports, harbours or gate guards**; **Blackwater has no swamp**; two chunks of 507 still had a tree on a structure (cause not traced); a ring of chunks at each city's edge was not probed after the climate change.
