@@ -211,7 +211,26 @@ final class BurglaryScenario {
         });
         Playtest.queue("screenshot of the officers arriving", () -> Playtest.screenshotNextFrame("uc-burglary-5-officers"));
         Playtest.wait("frame", 8);
-        Playtest.queue("the thief stands still and waits to be arrested", () -> { }, () -> PoliceResponse.arrests > f.arrestsBefore, 2400);
+        final int[] waited = {0};
+        Playtest.queue("the thief stands still and waits to be arrested", () -> { }, () -> {
+            if (PoliceResponse.arrests > f.arrestsBefore) return true;
+            if (++waited[0] % 100 == 1) {
+                var mc = Minecraft.getInstance();
+                var server = mc.getSingleplayerServer();
+                server.execute(() -> {
+                    var thief = server.getPlayerList().getPlayer(mc.player.getUUID());
+                    var found = server.overworld().getEntitiesOfClass(TownspersonEntity.class, thief.getBoundingBox().inflate(120), e -> e.police());
+                    StringBuilder what = new StringBuilder();
+                    for (var o : found) {
+                        var path = o.getNavigation().getPath();
+                        what.append(String.format(java.util.Locale.ROOT, " [%s at %.1f %.1f %.1f, %.1f blocks from the thief, errand %s, navigation %s, path %s, on ground %s]", o.getName().getString(), o.getX(), o.getY(), o.getZ(),
+                            o.distanceTo(thief), o.errandPlace(), o.getNavigation().isDone() ? "idle" : "walking", path == null ? "none" : path.getNodeCount() + " nodes ending " + path.getEndNode() + (path.canReach() ? " (reaches)" : " (does not reach)"), o.onGround()));
+                    }
+                    Playtest.log("BURGLARY wait " + waited[0] + ": thief at " + thief.blockPosition() + ", officers " + found.size() + what + "; " + PoliceResponse.status());
+                });
+            }
+            return false;
+        }, 2400);
         Playtest.wait("the notice arrives", 15);
         Playtest.queue("screenshot of the arrest", () -> Playtest.screenshotNextFrame("uc-burglary-6-arrest"));
         Playtest.wait("frame", 8);
