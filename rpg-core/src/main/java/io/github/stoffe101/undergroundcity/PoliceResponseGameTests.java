@@ -1,0 +1,362 @@
+package io.github.stoffe101.undergroundcity;
+
+import net.minecraft.core.BlockPos;
+import net.minecraft.gametest.framework.GameTest;
+import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.phys.AABB;
+import net.minecraftforge.event.entity.player.PlayerEvent;
+import net.minecraftforge.gametest.GameTestHolder;
+import net.minecraftforge.gametest.PrefixGameTestTemplate;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+import static io.github.stoffe101.undergroundcity.CrewGameTests.check;
+import static io.github.stoffe101.undergroundcity.CrewGameTests.player;
+
+/**
+ * The police response to a noticed break-in (D-122). Headless, on the real server loop with fake players: it proves the rules (an alarm or a witness is needed, one dispatch per thief and building,
+ * officers arrive at a street spot and wait at the door, an officer who reaches the thief arrests them through the crash-safe settlement, a thief who gets away or leaves is never caught, nobody is policed
+ * while away or in creative) and the evidence mark on goods from a forced safe. It does not show a person being chased through a real street, nor what any of it feels like.
+ */
+@GameTestHolder(UndergroundCity.MOD_ID)
+@PrefixGameTestTemplate(false)
+public final class PoliceResponseGameTests {
+    private static final CityBuildings.Response ALARMED = new CityBuildings.Response(1.0, 60, 2, 120);
+
+    private static CityBuildings.Building building(GameTestHelper helper, BlockPos door, CityBuildings.Response response) {
+        var security = new CityBuildings.SecurityClass("test_alarmed", "commercial", true, "", 0, "test premises", response);
+        return new CityBuildings.Building("valewood", door.getX() >> 4, door.getZ() >> 4, "test", "test_building", 2, 0, door.getY() - 1, security);
+    }
+
+    private static BuildingBreachEvent opened(ServerPlayer p, BlockPos door, long tick) {
+        return new BuildingBreachEvent(p.getUUID(), door, "valewood", "test_alarmed", BuildingBreachEvent.Outcome.OPENED, tick, false, p);
+    }
+
+    private static final class Scene implements AutoCloseable {
+        final GameTestHelper helper;
+        final ServerLevel level;
+        final BlockPos door, street;
+        final ServerPlayer thief;
+        final CityBuildings.Building building;
+        Scene(GameTestHelper helper, String name, CityBuildings.Response response) {
+            this.helper = helper;
+            level = helper.getLevel();
+            door = helper.absolutePos(new BlockPos(2, 2, 2));
+            street = helper.absolutePos(new BlockPos(9, 2, 9));
+            thief = player(helper, name, "farmer");
+            thief.setPos(door.getX() + 0.5, door.getY(), door.getZ() + 1.5);
+            building = building(helper, door, response);
+            PoliceResponse.resetForTest();
+            CityBuildings.INSTANCE.overrideForTest((cx, cz) -> Optional.of(building));
+            PoliceResponse.spots = (lvl, chunk, random, players) -> Optional.of(street);
+        }
+        List<TownspersonEntity> officers() {
+            return level.getEntitiesOfClass(TownspersonEntity.class, new AABB(door).inflate(64), TownspersonEntity::police);
+        }
+        @Override public void close() {
+            for (TownspersonEntity officer : officers()) officer.discard();
+            PoliceResponse.resetForTest();
+            CityBuildings.INSTANCE.overrideForTest(null);
+            CheckpointService.crashAfterPrepare = false;
+        }
+    }
+
+    // ------------------------------------------------------------------------------------------------ the data
+
+    @GameTest(template = "empty")
+    public static void everyClassWithAnAlarmHasAnAnswerAndTheMoreValuableTheQuicker(GameTestHelper helper) {
+        var cottage = CityBuildings.INSTANCE.securityClass("cottage");
+        var flats = CityBuildings.INSTANCE.securityClass("flat_block").response();
+        var tower = CityBuildings.INSTANCE.securityClass("flat_tower").response();
+        var office = CityBuildings.INSTANCE.securityClass("office").response();
+        var vault = CityBuildings.INSTANCE.securityClass("vault").response();
+        check(cottage != null && cottage.response() == null, "a cottage has no alarm of its own (only a neighbour can call the police)");
+        check(flats != null && tower != null && office != null && vault != null, "the stock classes lost their response profiles");
+        check(vault.alarmChance() == 1.0 && vault.alarmChance() > office.alarmChance() && office.alarmChance() > flats.alarmChance(), "alarms are not more likely the more valuable the premises");
+        check(vault.dispatchSeconds() < office.dispatchSeconds() && office.dispatchSeconds() < tower.dispatchSeconds() && tower.dispatchSeconds() < flats.dispatchSeconds(), "police are not quicker the more valuable the premises");
+        check(vault.officers() > flats.officers(), "high-value premises do not draw more officers");
+        for (var c : CityBuildings.INSTANCE.classes().values()) {
+            if (c.response() == null) continue;
+            check(c.response().dispatchSeconds() >= 30, c.id() + ": police arrive before a thief has had half a minute to work");
+        }
+        boolean refused = false;
+        try { new CityBuildings.Response(1.5, 60, 1, 60); } catch (IllegalArgumentException expected) { refused = true; }
+        check(refused, "an alarm chance above 1 must be refused");
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty")
+    public static void whetherAnAlarmIsArmedIsAFixedFunctionOfTheBuildingAndTheChance(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        var sure = new CityBuildings.Response(1.0, 60, 1, 60);
+        var never = new CityBuildings.Response(0.0, 60, 1, 60);
+        var half = new CityBuildings.Response(0.5, 60, 1, 60);
+        int armed = 0;
+        for (int x = 0; x < 400; x++) {
+            var b = new CityBuildings.Building("valewood", x, x * 7 - 13, "t", "t", 2, 0, 70, null);
+            check(PoliceResponse.armed(level, b, sure) && !PoliceResponse.armed(level, b, never), "a certain alarm must always be armed and an impossible one never");
+            boolean once = PoliceResponse.armed(level, b, half);
+            check(once == PoliceResponse.armed(level, b, half), "the same building must give the same answer every time");
+            if (once) armed++;
+        }
+        check(armed > 150 && armed < 250, "an even chance armed " + armed + " of 400 buildings");
+        helper.succeed();
+    }
+
+    // ------------------------------------------------------------------------------------------------ noticing
+
+    @GameTest(template = "empty")
+    public static void anArmedAlarmRaisesOneResponseAndAnotherNoiseOnlyBringsItSooner(GameTestHelper helper) {
+        try (Scene s = new Scene(helper, "uc_pol_a", ALARMED)) {
+            long now = LockService.clock(s.level.getServer());
+            PoliceResponse.noticed(s.thief, opened(s.thief, s.door, now));
+            check(PoliceResponse.dispatches() == 1, "an armed alarm raised " + PoliceResponse.dispatches() + " responses");
+            var d = PoliceResponse.dispatchAt(0);
+            check(d.why.equals("alarm") && d.arriveAt == now + 60 * 20L && d.officersWanted == 2, "the response is not the class's: " + d.why + " " + (d.arriveAt - now) + " " + d.officersWanted);
+            long first = d.arriveAt;
+            PoliceResponse.noticed(s.thief, new BuildingBreachEvent(s.thief.getUUID(), s.door, "valewood", "test_alarmed", BuildingBreachEvent.Outcome.SNAPPED, now + 100, true, s.thief));
+            check(PoliceResponse.dispatches() == 1 && PoliceResponse.dispatchAt(0).arriveAt <= first, "a second noise raised a second response or delayed the first");
+            check(s.officers().isEmpty(), "officers were there before anybody could have arrived");
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty")
+    public static void withNoAlarmAndNobodyWatchingNothingHappens(GameTestHelper helper) {
+        var none = new CityBuildings.Response(0.0, 60, 1, 60);
+        try (Scene s = new Scene(helper, "uc_pol_b", none)) {
+            long now = LockService.clock(s.level.getServer());
+            for (int t = 0; t < 300; t++) PoliceResponse.noticed(s.thief, opened(s.thief, s.door, now + t));
+            check(PoliceResponse.dispatches() == 0, "the police came to a break-in that nobody noticed");
+        }
+        try (Scene s = new Scene(helper, "uc_pol_b2", null)) {
+            long now = LockService.clock(s.level.getServer());
+            for (int t = 0; t < 100; t++) PoliceResponse.noticed(s.thief, opened(s.thief, s.door, now + t));
+            check(PoliceResponse.dispatches() == 0, "a building with no alarm class raised a response by itself");
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty")
+    public static void aPersonWhoSawTheThiefCallsThePoliceButAnOfficerWhoSawDoesNotNeedTo(GameTestHelper helper) {
+        var none = new CityBuildings.Response(0.0, 60, 1, 60);
+        try (Scene s = new Scene(helper, "uc_pol_c", none)) {
+            TownspersonEntity seer = UndergroundCity.TOWNSPERSON.get().create(s.level);
+            seer.moveTo(s.door.getX() + 6.5, s.door.getY(), s.door.getZ() + 1.5, 0, 0);
+            s.level.addFreshEntity(seer);
+            long now = LockService.clock(s.level.getServer());
+            int tries = 0;
+            while (PoliceResponse.dispatches() == 0 && tries < 400) PoliceResponse.noticed(s.thief, opened(s.thief, s.door, now + tries++));
+            check(PoliceResponse.dispatches() == 1 && PoliceResponse.dispatchAt(0).why.equals("witness"), "a person in plain sight never called the police in " + tries + " tries");
+            check(PoliceResponse.dispatchAt(0).arriveAt >= now + 150 * 20L, "a neighbour's call arrived faster than the slowest class");
+            seer.discard();
+        }
+        // the control: the same street with only a police officer in it raises nothing, since officers are the response and not the audience
+        try (Scene s = new Scene(helper, "uc_pol_c2", new CityBuildings.Response(0.0, 60, 1, 60))) {
+            TownspersonEntity officer = UndergroundCity.TOWNSPERSON.get().create(s.level);
+            officer.becomeOfficer("valewood", "Test Officer", 10);
+            officer.moveTo(s.door.getX() + 6.5, s.door.getY(), s.door.getZ() + 1.5, 0, 0);
+            s.level.addFreshEntity(officer);
+            long now = LockService.clock(s.level.getServer());
+            for (int t = 0; t < 200; t++) PoliceResponse.noticed(s.thief, opened(s.thief, s.door, now + t));
+            check(PoliceResponse.dispatches() == 0, "an officer already on the scene counted as a witness");
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty")
+    public static void creativeAndSpectatorPlayersAreNeverPoliced(GameTestHelper helper) {
+        try (Scene s = new Scene(helper, "uc_pol_d", ALARMED)) {
+            long now = LockService.clock(s.level.getServer());
+            s.thief.setGameMode(GameType.CREATIVE);
+            PoliceResponse.noticed(s.thief, opened(s.thief, s.door, now));
+            s.thief.setGameMode(GameType.SPECTATOR);
+            PoliceResponse.noticed(s.thief, opened(s.thief, s.door, now));
+            s.thief.setGameMode(GameType.SURVIVAL);
+            check(PoliceResponse.dispatches() == 0, "a creative or spectating player was policed");
+        }
+        helper.succeed();
+    }
+
+    // ------------------------------------------------------------------------------------------------ arriving, arresting, escaping
+
+    private static boolean arrestRecorded(net.minecraft.nbt.ListTag searches) {
+        for (int i = 0; i < searches.size(); i++) {
+            var record = searches.getCompound(i);
+            if (record.getString("outcome").equals("arrested") && record.getInt("stacks") == 1) return true;
+        }
+        return false;
+    }
+
+    private static void arrive(Scene s) {
+        long now = LockService.clock(s.level.getServer());
+        PoliceResponse.noticed(s.thief, opened(s.thief, s.door, now));
+        PoliceResponse.dispatchAt(0).arriveAt = 0;
+        PoliceResponse.pass(s.level.getServer());
+    }
+
+    @GameTest(template = "empty")
+    public static void officersArriveAtAStreetSpotAndAreInvulnerableAndUnsaved(GameTestHelper helper) {
+        try (Scene s = new Scene(helper, "uc_pol_e", ALARMED)) {
+            arrive(s);
+            var officers = s.officers();
+            check(officers.size() == 2 && PoliceResponse.dispatchAt(0).arrived, "two officers were due and " + officers.size() + " came");
+            for (TownspersonEntity officer : officers) {
+                check(officer.getName().getString().startsWith("Officer ") && officer.city().equals("valewood") && officer.skin() % PopulationPlan.OUTFITS == 10, "an officer is not dressed or named as one: " + officer.getName().getString() + " skin " + officer.skin());
+                check(!officer.shouldBeSaved(), "an officer would be written to the world");
+                check(officer.isInvulnerableTo(s.level.damageSources().generic()), "an officer can be hurt by an ordinary blow");
+                check(officer.errandPlace() != null && officer.errandPlace().equals(s.door), "an officer was not sent to the door");
+                check(!officer.getNavigation().getNodeEvaluator().canOpenDoors(), "an officer may open a building's doors");
+            }
+            check(PoliceResponse.status().contains("arrived 1"), "the status does not count the arrival: " + PoliceResponse.status());
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty")
+    public static void anOfficerWhoReachesTheThiefArrestsThemAndTakesOnlyWhatIsStolen(GameTestHelper helper) {
+        try (Scene s = new Scene(helper, "uc_pol_f", ALARMED)) {
+            arrive(s);
+            WorkOrderLedger ledger = WorkOrderLedger.get(s.level.getServer());
+            int heatBefore = ledger.heat(s.thief.getUUID(), "valewood");
+            ItemStack loot = new ItemStack(Items.GOLD_INGOT, 5);
+            StolenGoods.mark(loot, "valewood");
+            s.thief.getInventory().setItem(0, loot);
+            s.thief.getInventory().setItem(1, new ItemStack(Items.BREAD, 7));
+            s.thief.getInventory().setItem(2, new ItemStack(Items.GOLD_INGOT, 3));   // honest gold, same item: the control
+            var officer = s.officers().get(0);
+            officer.moveTo(s.thief.getX() + 1.0, s.thief.getY(), s.thief.getZ(), 0, 0);
+            PoliceResponse.pass(s.level.getServer());
+            check(PoliceResponse.dispatches() == 0 && PoliceResponse.arrests == 1, "the officer beside the thief did not arrest them: " + PoliceResponse.status());
+            check(s.thief.getInventory().countItem(Items.GOLD_INGOT) == 3, "the honest gold was taken with the stolen gold (or the stolen gold was not taken): " + s.thief.getInventory().countItem(Items.GOLD_INGOT));
+            check(s.thief.getInventory().countItem(Items.BREAD) == 7, "honest goods were taken in an arrest");
+            check(ledger.heat(s.thief.getUUID(), "valewood") == Math.min(WorkOrderLedger.MAX_HEAT, heatBefore + PoliceResponse.ARREST_HEAT), "an arrest did not raise the city's heat by exactly " + PoliceResponse.ARREST_HEAT);
+            check(arrestRecorded(ledger.searches(s.thief.getUUID())), "the arrest was not written into the search history");
+            check(s.officers().stream().allMatch(TownspersonEntity::leaving), "officers stayed on the street after the arrest");
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty")
+    public static void aThiefWhoGetsAwayOrWhoseTimeRunsOutIsNotCaught(GameTestHelper helper) {
+        try (Scene s = new Scene(helper, "uc_pol_g", ALARMED)) {
+            arrive(s);
+            WorkOrderLedger ledger = WorkOrderLedger.get(s.level.getServer());
+            int heatBefore = ledger.heat(s.thief.getUUID(), "valewood");
+            ItemStack loot = new ItemStack(Items.GOLD_INGOT, 5);
+            StolenGoods.mark(loot, "valewood");
+            s.thief.getInventory().setItem(0, loot);
+            s.thief.setPos(s.door.getX() + 400.5, s.door.getY(), s.door.getZ() + 0.5);
+            PoliceResponse.pass(s.level.getServer());
+            check(PoliceResponse.dispatches() == 0 && PoliceResponse.escapes == 1 && PoliceResponse.arrests == 0, "a thief 400 blocks away was not recorded as gone: " + PoliceResponse.status());
+            check(s.thief.getInventory().countItem(Items.GOLD_INGOT) == 5 && ledger.heat(s.thief.getUUID(), "valewood") == heatBefore, "a thief who got away was searched or had their heat raised by the police");
+        }
+        try (Scene s = new Scene(helper, "uc_pol_g2", ALARMED)) {
+            arrive(s);
+            s.thief.setPos(s.door.getX() + 60.5, s.door.getY(), s.door.getZ() + 60.5);   // out of reach, but not out of the district
+            PoliceResponse.dispatchAt(0).windowEnds = 0;
+            PoliceResponse.pass(s.level.getServer());
+            check(PoliceResponse.dispatches() == 0 && PoliceResponse.escapes == 1 && PoliceResponse.arrests == 0, "when the police gave up the thief was still caught: " + PoliceResponse.status());
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty")
+    public static void nobodyIsArrestedWhileAwayAndADeadPlayerIsLeftAlone(GameTestHelper helper) {
+        try (Scene s = new Scene(helper, "uc_pol_h", ALARMED)) {
+            arrive(s);
+            new PoliceResponse().loggedOut(new PlayerEvent.PlayerLoggedOutEvent(s.thief));
+            check(PoliceResponse.dispatches() == 0, "a response outlived its thief's session");
+            check(s.officers().stream().allMatch(TownspersonEntity::leaving), "officers were left waiting for somebody who had gone");
+        }
+        try (Scene s = new Scene(helper, "uc_pol_h2", ALARMED)) {
+            arrive(s);
+            s.thief.setHealth(0.0f);
+            PoliceResponse.pass(s.level.getServer());
+            check(PoliceResponse.dispatches() == 0 && PoliceResponse.arrests == 0, "the police arrested a dead player");
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty")
+    public static void anArrestIsSettledOnceEvenIfTheProcessDiesAfterTheDecisionIsOnDisk(GameTestHelper helper) throws Exception {
+        Path path = helper.getLevel().getServer().getWorldPath(net.minecraft.world.level.storage.LevelResource.ROOT).resolve("uc-test-journals/arrest-" + UUID.randomUUID() + ".dat");
+        try (Scene s = new Scene(helper, "uc_pol_i", ALARMED)) {
+            WorkOrderLedger ledger = new WorkOrderLedger(path);
+            ItemStack loot = new ItemStack(Items.GOLD_INGOT, 5);
+            StolenGoods.mark(loot, "valewood");
+            s.thief.getInventory().setItem(0, loot);
+            s.thief.getInventory().setItem(1, new ItemStack(Items.BREAD, 2));
+            var citizen = CitizenState.get(s.level.getServer()).find(s.thief.getUUID()).orElseThrow();
+            var law = CityLaws.INSTANCE.find("valewood");
+            CheckpointService.crashAfterPrepare = true;
+            try { CheckpointService.arrest(s.thief, citizen, "police:test", "valewood", law, ledger, 40, 3); throw new AssertionError("the simulated crash did not happen"); }
+            catch (CrewService.SimulatedCrash died) { /* the process died with the decision on disk and nothing applied */ }
+            CheckpointService.crashAfterPrepare = false;
+            check(ledger.player(s.thief.getUUID()).contains("pending"), "the arrest was not journaled before the crash");
+            WorkOrderService.recover(s.thief, ledger);
+            check(s.thief.getInventory().countItem(Items.GOLD_INGOT) == 0 && s.thief.getInventory().countItem(Items.BREAD) == 2, "recovery did not complete the arrest exactly");
+            check(ledger.heat(s.thief.getUUID(), "valewood") == 3 && ledger.player(s.thief.getUUID()).getInt("seizures") == 1, "recovery settled the arrest not exactly once");
+            WorkOrderService.recover(s.thief, ledger);
+            check(ledger.heat(s.thief.getUUID(), "valewood") == 3 && ledger.searches(s.thief.getUUID()).size() == 1, "a second recovery changed something");
+        } finally {
+            Files.deleteIfExists(path);
+        }
+        helper.succeed();
+    }
+
+    // ------------------------------------------------------------------------------------------------ the evidence mark
+
+    @GameTest(template = "empty")
+    public static void aForcedSafeMarksWhatIsInItAndACheckpointSeizesMarkedGoodsWhateverTheLaw(GameTestHelper helper) throws Exception {
+        ServerLevel level = helper.getLevel();
+        BlockPos at = helper.absolutePos(new BlockPos(4, 2, 4));
+        PropertyPolicy policy = PropertyPolicies.INSTANCE.find("underground_city:apartment_common");
+        check(policy != null, "the stock apartment policy is missing");
+        ServerPlayer thief = player(helper, "uc_pol_j", "farmer");
+        long now = LockService.clock(level.getServer());
+        BuildingStash.place(level, at, policy, now);
+        var safe = (PropertyCacheBlockEntity) level.getBlockEntity(at);
+        check(safe != null && safe.stock() > 0, "the stash has nothing in it to mark");
+        for (int i = 0; i < safe.getContainerSize(); i++) check(!StolenGoods.is(safe.getItem(i)), "goods were marked before anybody forced the safe");
+        safe.forcedOpenBy(level, thief, now);
+        int marked = 0;
+        for (int i = 0; i < safe.getContainerSize(); i++) {
+            ItemStack stack = safe.getItem(i);
+            if (stack.isEmpty()) continue;
+            check(StolenGoods.is(stack), "a stack in a forced safe was not marked: " + stack);
+            marked++;
+        }
+        check(marked == safe.stock(), "not every stack was marked");
+        Path path = level.getServer().getWorldPath(net.minecraft.world.level.storage.LevelResource.ROOT).resolve("uc-test-journals/stolen-" + UUID.randomUUID() + ".dat");
+        try {
+            WorkOrderLedger ledger = new WorkOrderLedger(path);
+            ItemStack hot = new ItemStack(Items.EMERALD, 4);
+            StolenGoods.mark(hot, "valewood");
+            check(StolenGoods.is(hot) && StolenGoods.city(hot).equals("valewood"), "marking is not readable");
+            ItemStack twice = hot.copy();
+            StolenGoods.mark(twice, "ironhaven");
+            check(StolenGoods.city(twice).equals("valewood"), "a stack already marked was marked again in another city");
+            thief.getInventory().setItem(0, hot);
+            thief.getInventory().setItem(1, new ItemStack(Items.EMERALD, 2));   // the same item, honest
+            thief.getInventory().setItem(2, new ItemStack(Items.BREAD, 3));
+            var gate = new CheckpointCatalog.Checkpoint("test_gate", "Test gate", "valewood", "minecraft:overworld", 0, 0, 48, "inspection");
+            var result = CheckpointService.inspect(thief, CitizenState.get(level.getServer()).find(thief.getUUID()).orElseThrow(), gate, CityLaws.INSTANCE.find("valewood"), ledger);
+            check(result.outcome() == CheckpointService.Outcome.SEIZED && result.stacksSeized() == 1, "a checkpoint did not seize the marked goods: " + result);
+            check(thief.getInventory().countItem(Items.EMERALD) == 2 && thief.getInventory().countItem(Items.BREAD) == 3, "the honest emeralds or the bread were taken");
+        } finally {
+            Files.deleteIfExists(path);
+        }
+        level.removeBlock(at, false);
+        helper.succeed();
+    }
+}

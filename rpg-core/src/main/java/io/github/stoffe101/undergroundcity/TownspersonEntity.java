@@ -17,6 +17,7 @@ import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.FloatGoal;
+import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.ai.goal.LookAtPlayerGoal;
 import net.minecraft.world.entity.ai.goal.PanicGoal;
 import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
@@ -26,7 +27,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 
 /**
- * One of a city's ambient people (D-108): a body for a {@link PopulationPlan.Person}. It is deliberately small. It walks a short leash around where it was put, looks at players who come
+ * One of a city's ambient people (D-108), or, for the minutes after a noticed break-in, a police officer sent by {@link PoliceResponse} (D-122; role "police"): a body for a {@link PopulationPlan.Person}. It is deliberately small. It walks a short leash around where it was put, looks at players who come
  * near, flees if it is struck, never opens a door (so it can never walk into a building that is locked) and is never saved: when nobody is near it is removed and the roster, which is
  * arithmetic, decides afresh who is out in the street the next time somebody comes. Who it is (name, face, trade) comes from the roster; this class only carries the identity, so that
  * speaking to the same person twice is speaking to the same person.
@@ -35,6 +36,10 @@ public final class TownspersonEntity extends PathfinderMob {
     private static final EntityDataAccessor<Integer> SKIN = SynchedEntityData.defineId(TownspersonEntity.class, EntityDataSerializers.INT);
     private long person;
     private String city = "", role = "resident";
+    /** An officer's errand: where to go and how fast, and the game time at which the officer leaves (both only ever set by {@link PoliceResponse}; none of it is saved). */
+    private BlockPos errand;
+    private double errandSpeed = 1.0;
+    private long leaveAt = Long.MAX_VALUE;
 
     public TownspersonEntity(EntityType<? extends TownspersonEntity> type, Level level) {
         super(type, level);
@@ -50,8 +55,9 @@ public final class TownspersonEntity extends PathfinderMob {
 
     @Override protected void registerGoals() {
         goalSelector.addGoal(0, new FloatGoal(this));
-        goalSelector.addGoal(1, new PanicGoal(this, 1.35));
-        goalSelector.addGoal(5, new WaterAvoidingRandomStrollGoal(this, 0.55, 0.002f));
+        goalSelector.addGoal(1, new PanicGoal(this, 1.35) { @Override public boolean canUse() { return !police() && super.canUse(); } });
+        goalSelector.addGoal(2, new ErrandGoal());
+        goalSelector.addGoal(5, new WaterAvoidingRandomStrollGoal(this, 0.55, 0.002f) { @Override public boolean canUse() { return !police() && super.canUse(); } });
         goalSelector.addGoal(6, new LookAtPlayerGoal(this, Player.class, 8.0f));
         goalSelector.addGoal(7, new RandomLookAroundGoal(this));
     }
@@ -65,6 +71,49 @@ public final class TownspersonEntity extends PathfinderMob {
         setCustomName(Component.literal(who.name()));
         setCustomNameVisible(false);   // the name shows when the crosshair rests on them, as for any named creature
         restrictTo(anchor, role.equals("guard") ? 3 : 14);
+    }
+
+    /** Makes this body a police officer of {@code city}: a guard's outfit, a rank and a surname, quicker on their feet than a stroller and with no leash. */
+    void becomeOfficer(String city, String name, int skin) {
+        this.city = city; role = "police"; person = 0;
+        entityData.set(SKIN, skin);
+        String surname = name.contains(" ") ? name.substring(name.lastIndexOf(' ') + 1) : name;
+        setCustomName(Component.literal("Officer " + surname));
+        setCustomNameVisible(true);
+        getAttribute(Attributes.MOVEMENT_SPEED).setBaseValue(0.3);
+        getAttribute(Attributes.FOLLOW_RANGE).setBaseValue(48.0);
+        clearRestriction();
+    }
+
+    boolean police() { return role.equals("police"); }
+
+    /** True once an officer has been told to leave. */
+    boolean leaving() { return leaveAt != Long.MAX_VALUE; }
+    BlockPos errandPlace() { return errand; }
+
+    /** Sends an officer to a place at a speed (a multiple of their walking speed); null stands them still. */
+    void errand(BlockPos where, double speed) { errand = where; errandSpeed = speed; if (where == null) getNavigation().stop(); }
+
+    /** An officer leaves (is removed) this many ticks from now; nobody is left standing in a street for good. */
+    void leaveIn(long ticks) { leaveAt = level().getGameTime() + ticks; }
+
+    @Override public void tick() {
+        super.tick();
+        if (!level().isClientSide && police() && level().getGameTime() >= leaveAt) discard();
+    }
+
+    /** Walks to the errand's place while there is one; stands and watches when there is none. */
+    private final class ErrandGoal extends Goal {
+        private int repath;
+        ErrandGoal() { setFlags(java.util.EnumSet.of(Flag.MOVE)); }
+        @Override public boolean canUse() { return police() && errand != null; }
+        @Override public boolean canContinueToUse() { return police() && errand != null; }
+        @Override public void tick() {
+            if (errand == null) return;
+            if (--repath > 0 && !getNavigation().isDone()) return;
+            repath = 10;
+            if (distanceToSqr(errand.getX() + 0.5, errand.getY(), errand.getZ() + 0.5) > 2.5 * 2.5) getNavigation().moveTo(errand.getX() + 0.5, errand.getY(), errand.getZ() + 0.5, errandSpeed);
+        }
     }
 
     public long person() { return person; }

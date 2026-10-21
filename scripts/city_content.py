@@ -44,9 +44,12 @@ def citystyles(buildings: list[citykit.Building]) -> dict[str, dict]:
 
 # classes the furnished buildings need beyond the stock ones (cottage, flat_block, flat_tower, workshop, office, vault, public)
 NEW_SECURITY_CLASSES = {
-    "storefront": {"label": "shop", "lock_profile": "commercial", "locked_exterior": True, "stash_policy": "underground_city:office", "stash_chance": 0.5},
-    "warehouse": {"label": "warehouse", "lock_profile": "commercial", "locked_exterior": True, "stash_policy": "underground_city:industrial", "stash_chance": 0.7},
-    "club": {"label": "club", "lock_profile": "high_security", "locked_exterior": True, "stash_policy": "underground_city:illegal_cache", "stash_chance": 0.6},
+    "storefront": {"label": "shop", "lock_profile": "commercial", "locked_exterior": True, "stash_policy": "underground_city:office", "stash_chance": 0.5,
+                   "response": {"alarm_chance": 0.5, "dispatch_seconds": 90, "officers": 1, "window_seconds": 120}},
+    "warehouse": {"label": "warehouse", "lock_profile": "commercial", "locked_exterior": True, "stash_policy": "underground_city:industrial", "stash_chance": 0.7,
+                  "response": {"alarm_chance": 0.4, "dispatch_seconds": 100, "officers": 1, "window_seconds": 120}},
+    "club": {"label": "club", "lock_profile": "high_security", "locked_exterior": True, "stash_policy": "underground_city:illegal_cache", "stash_chance": 0.6,
+             "response": {"alarm_chance": 0.8, "dispatch_seconds": 60, "officers": 2, "window_seconds": 150}},
 }
 STOCK_SECURITY_CLASSES = {"cottage", "flat_block", "flat_tower", "workshop", "office", "vault", "public"}
 

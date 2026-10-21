@@ -227,12 +227,14 @@ public final class PopulationService {
             case "worker" -> "Worker";
             case "courier" -> "Courier";
             case "guard" -> "City guard";
+            case "police" -> "Police";
             default -> "Resident";
         };
     }
 
     /** What this person says now: a line of their role for the time of day, now and then a line about their city, and a different greeting for somebody they have spoken to before. */
     static String say(ServerPlayer player, TownspersonEntity body, boolean returning, int spoken) {
+        if (body.police()) return "On a call. Keep clear, please.";
         int hour = PopulationPlan.hourOf(player.level().getDayTime());
         List<String> own = PopulationCatalog.INSTANCE.lines(body.role(), period(hour));
         PopulationCatalog.Def def = PopulationCatalog.INSTANCE.city(body.city());

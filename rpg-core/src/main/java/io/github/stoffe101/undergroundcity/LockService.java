@@ -193,7 +193,7 @@ public final class LockService {
                     heat(server, player, target.city(), HEAT_ALARM);
                     Notice.send(player, Notice.Kind.HEAT, "An alarm rang", "Somebody may have heard it. Leave the area.");
                 }
-                if (target.kind() == Kind.DOOR) MinecraftForge.EVENT_BUS.post(new BuildingBreachEvent(player.getUUID(), target.pos(), target.city(), target.securityClass(), BuildingBreachEvent.Outcome.SNAPPED, now));
+                if (target.kind() == Kind.DOOR) MinecraftForge.EVENT_BUS.post(new BuildingBreachEvent(player.getUUID(), target.pos(), target.city(), target.securityClass(), BuildingBreachEvent.Outcome.SNAPPED, now, alarm, player));
             }
             case TIMED_OUT -> LockNetwork.finished(player, LockpickSession.State.TIMED_OUT, "You ran out of time. The lock is as it was.");
             case ABORTED -> LockNetwork.finished(player, LockpickSession.State.ABORTED, "");
@@ -221,7 +221,7 @@ public final class LockService {
         heat(server, player, target.city(), HEAT_OPENED);
         // the building's stash is decided once, the first time anybody gets in
         CityBuildings.INSTANCE.at(level, target.pos()).ifPresent(building -> BuildingStash.furnish(level, building, target.pos(), now));
-        MinecraftForge.EVENT_BUS.post(new BuildingBreachEvent(player.getUUID(), target.pos(), target.city(), target.securityClass(), BuildingBreachEvent.Outcome.OPENED, now));
+        MinecraftForge.EVENT_BUS.post(new BuildingBreachEvent(player.getUUID(), target.pos(), target.city(), target.securityClass(), BuildingBreachEvent.Outcome.OPENED, now, false, player));
         Notice.send(player, Notice.Kind.HEAT, "Lock picked", "The door is open for a moment. Whoever lives here will notice.");
     }
 

@@ -79,6 +79,7 @@ public final class BuildingSecurityGameTests {
             CityBuildings.INSTANCE.overrideForTest((cx, cz) -> cx == chunk.x && cz == chunk.z ? Optional.of(building) : Optional.empty());
             LockService.resetForTest();
             PropertyLocks.get(level.getServer()).forgetForTest(doorLower);   // a window an earlier test left on this very door is not this test's
+            PropertyLocks.get(level.getServer()).unfurnishForTest(building.key());   // nor is a stash decision an earlier test took for this chunk
             BuildingGuard.roofReach = 10;   // the house is five high; other tests build above it in this crowded world
         }
 
@@ -87,6 +88,7 @@ public final class BuildingSecurityGameTests {
 
         @Override public void close() {
             PropertyLocks.get(level.getServer()).forgetForTest(doorLower);
+            PropertyLocks.get(level.getServer()).unfurnishForTest(building.key());
             CityBuildings.INSTANCE.overrideForTest(null);
             LockService.resetForTest();
             BuildingGuard.roofReach = BuildingGuard.ROOF_REACH;

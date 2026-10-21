@@ -134,6 +134,7 @@ public final class UndergroundCity {
         MinecraftForge.EVENT_BUS.register(new RoadCheck());
         MinecraftForge.EVENT_BUS.register(new BurglaryHarness());
         MinecraftForge.EVENT_BUS.register(new PopulationService());
+        MinecraftForge.EVENT_BUS.register(new PoliceResponse());
         MinecraftForge.EVENT_BUS.register(new HudService());
         if (net.minecraftforge.fml.ModList.get().isLoaded("qshop")) MinecraftForge.EVENT_BUS.register(new QShopTradeWatcher());
         MinecraftForge.EVENT_BUS.register(WorldLayout.INSTANCE);

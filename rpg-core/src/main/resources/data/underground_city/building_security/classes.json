@@ -13,35 +13,40 @@
       "lock_profile": "deadbolt",
       "locked_exterior": true,
       "stash_policy": "underground_city:apartment_common",
-      "stash_chance": 0.7
+      "stash_chance": 0.7,
+      "response": { "alarm_chance": 0.25, "dispatch_seconds": 120, "officers": 1, "window_seconds": 120 }
     },
     "flat_tower": {
       "label": "apartment tower",
       "lock_profile": "commercial",
       "locked_exterior": true,
       "stash_policy": "underground_city:apartment_affluent",
-      "stash_chance": 0.7
+      "stash_chance": 0.7,
+      "response": { "alarm_chance": 0.6, "dispatch_seconds": 90, "officers": 2, "window_seconds": 150 }
     },
     "workshop": {
       "label": "workshop",
       "lock_profile": "commercial",
       "locked_exterior": true,
       "stash_policy": "underground_city:industrial",
-      "stash_chance": 0.6
+      "stash_chance": 0.6,
+      "response": { "alarm_chance": 0.35, "dispatch_seconds": 100, "officers": 1, "window_seconds": 120 }
     },
     "office": {
       "label": "office",
       "lock_profile": "commercial",
       "locked_exterior": true,
       "stash_policy": "underground_city:office",
-      "stash_chance": 0.6
+      "stash_chance": 0.6,
+      "response": { "alarm_chance": 0.7, "dispatch_seconds": 75, "officers": 2, "window_seconds": 150 }
     },
     "vault": {
       "label": "high-value premises",
       "lock_profile": "high_security",
       "locked_exterior": true,
       "stash_policy": "underground_city:illegal_cache",
-      "stash_chance": 1.0
+      "stash_chance": 1.0,
+      "response": { "alarm_chance": 1.0, "dispatch_seconds": 45, "officers": 3, "window_seconds": 180 }
     },
     "public": {
       "label": "public building",

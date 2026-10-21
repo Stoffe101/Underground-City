@@ -160,6 +160,9 @@ public final class PropertyCacheBlockEntity extends RandomizableContainerBlockEn
         forcedUntil = now + FORCED_WINDOW_TICKS;
         vigilance = Math.min(PropertyRestock.MAX_VIGILANCE, vigilance + 1);
         vigilanceAnchor = now; breakins++; lastIntruder = player.getUUID();
+        // what is in the safe when its lock gives way is stolen goods for whoever carries it out (D-122); stock that arrives later is not marked until the next forcing
+        String city = CityRegions.INSTANCE.cityAt(level, worldPosition).orElse("");
+        for (ItemStack stack : items) StolenGoods.mark(stack, city);
         setChanged();
         MinecraftForge.EVENT_BUS.post(new PropertyForcedEntryEvent(player.getUUID(), worldPosition, policy, vigilance, now));
         cue(level, player, true);
@@ -173,7 +176,7 @@ public final class PropertyCacheBlockEntity extends RandomizableContainerBlockEn
         if (forced) {
             level.playSound(null, worldPosition, net.minecraft.sounds.SoundEvents.IRON_TRAPDOOR_OPEN, net.minecraft.sounds.SoundSource.BLOCKS, 0.9f, 0.6f);
             level.sendParticles(net.minecraft.core.particles.ParticleTypes.CRIT, worldPosition.getX() + 0.5, worldPosition.getY() + 1.0, worldPosition.getZ() + 0.5, 8, 0.25, 0.1, 0.25, 0.1);
-            Notice.send(player, Notice.Kind.WARN, "Lock forced", "The residents grow more watchful. Do not stay long.");
+            Notice.send(player, Notice.Kind.WARN, "Lock forced", "The residents grow more watchful, and whatever you take is marked as stolen goods. Do not stay long.");
         }
         if (exceptional && !revealed) {
             revealed = true;

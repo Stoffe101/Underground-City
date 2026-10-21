@@ -6,8 +6,8 @@ import net.minecraftforge.eventbus.api.Event;
 import java.util.UUID;
 
 /**
- * Posted on the Forge event bus when a lock of a city building is dealt with: a door picked open, or a pick snapped in it. Witnesses, alarms, police and evidence systems listen here;
- * today the only listener is {@link LockService}'s own heat rule, so <b>no police or witness responds to a break-in yet</b> and the documents say so.
+ * Posted on the Forge event bus when a lock of a city building is dealt with: a door picked open, or a pick snapped in it ({@code alarm} says the snapped lock rang a bell). Witnesses, alarms,
+ * police and evidence systems listen here: {@link LockService}'s own heat rule, and {@link PoliceResponse}, which decides whether anybody noticed and, if so, sends officers (D-122).
  */
 public final class BuildingBreachEvent extends Event {
     public enum Outcome { OPENED, SNAPPED }
@@ -18,9 +18,20 @@ public final class BuildingBreachEvent extends Event {
     private final String securityClass;
     private final Outcome outcome;
     private final long activeTick;
+    private final boolean alarm;
+    private final net.minecraft.server.level.ServerPlayer actor;
 
     public BuildingBreachEvent(UUID player, BlockPos door, String city, String securityClass, Outcome outcome, long activeTick) {
-        this.player = player; this.door = door; this.city = city; this.securityClass = securityClass; this.outcome = outcome; this.activeTick = activeTick;
+        this(player, door, city, securityClass, outcome, activeTick, false);
+    }
+
+    public BuildingBreachEvent(UUID player, BlockPos door, String city, String securityClass, Outcome outcome, long activeTick, boolean alarm) {
+        this(player, door, city, securityClass, outcome, activeTick, alarm, null);
+    }
+
+    /** {@code actor} is the player's live object when the poster has it (tests that act through a fake player have no other way to be found); null otherwise. */
+    public BuildingBreachEvent(UUID player, BlockPos door, String city, String securityClass, Outcome outcome, long activeTick, boolean alarm, net.minecraft.server.level.ServerPlayer actor) {
+        this.player = player; this.door = door; this.city = city; this.securityClass = securityClass; this.outcome = outcome; this.activeTick = activeTick; this.alarm = alarm; this.actor = actor;
     }
     public UUID player() { return player; }
     public BlockPos door() { return door; }
@@ -28,4 +39,7 @@ public final class BuildingBreachEvent extends Event {
     public String securityClass() { return securityClass; }
     public Outcome outcome() { return outcome; }
     public long activeTick() { return activeTick; }
+    /** True when a snapped pick rang the lock's own alarm bell (an opened door never carries this: a building's armed alarm is decided by {@link PoliceResponse}). */
+    public boolean alarm() { return alarm; }
+    public net.minecraft.server.level.ServerPlayer actor() { return actor; }
 }

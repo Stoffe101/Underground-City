@@ -98,13 +98,19 @@ public final class CheckpointService {
         return "The " + TerminalScreenText.capitalize(post.jurisdiction()) + " guard";
     }
 
+    /** The category a stack counts under: marked stolen goods, else the contraband catalogue's answer (null for an ordinary item). */
+    static String categoryOf(ItemStack stack) {
+        return StolenGoods.is(stack) ? StolenGoods.CATEGORY : ContrabandCatalog.INSTANCE.classify(stack);
+    }
+
     /** What the traveller carries that this city's law forbids them (category to worst status). Pure inspection, no changes. */
     public static Map<String, String> violations(CitizenState.Citizen citizen, CityLaws.Law law, Iterable<ItemStack> stacks) {
         Map<String, String> found = new LinkedHashMap<>();
         for (ItemStack stack : stacks) {
-            String category = ContrabandCatalog.INSTANCE.classify(stack);
+            String category = categoryOf(stack);
             if (category == null) continue;
-            String status = law.status(category);
+            // marked goods are prohibited in every city, whatever its law says about the item itself (D-122)
+            String status = category.equals(StolenGoods.CATEGORY) ? CityLaws.PROHIBITED : law.status(category);
             if (status.equals(CityLaws.LEGAL)) continue;
             if (status.equals(CityLaws.PERMIT) && SkillService.licensed(citizen, category)) continue;
             found.merge(category, status, (a, b) -> a.equals(CityLaws.PROHIBITED) || b.equals(CityLaws.PROHIBITED) ? CityLaws.PROHIBITED : a);
@@ -167,7 +173,7 @@ public final class CheckpointService {
         List<CarriedStorage.Found> takenFromPerson = new ArrayList<>(), takenFromVehicle = new ArrayList<>();
         Map<String, Integer> whereCounts = new java.util.LinkedHashMap<>();
         for (CarriedStorage.Found found : everything) {
-            String category = ContrabandCatalog.INSTANCE.classify(found.stack);
+            String category = categoryOf(found.stack);
             if (category == null || !violations.containsKey(category)) continue;
             (cargo.contains(found) ? takenFromVehicle : takenFromPerson).add(found);
             whereCounts.merge(found.where, 1, Integer::sum);
@@ -187,7 +193,7 @@ public final class CheckpointService {
         List<String> titles = new ArrayList<>();
         violations.forEach((category, status) -> {
             var entry = ContrabandCatalog.INSTANCE.category(category);
-            titles.add((entry == null ? category : entry.title()) + " (" + status + ")");
+            titles.add((entry == null ? (category.equals(StolenGoods.CATEGORY) ? "Stolen goods" : category) : entry.title()) + " (" + status + ")");
         });
         CompoundTag record = searchRecord(post, why, "seized", seized, paid, whereCounts, titles);
         // One prepared record carries the inventory, the changes to carried packs, the fine, the heat and the record of the search: all or none, replayed after a crash.
@@ -208,10 +214,54 @@ public final class CheckpointService {
         return new Result(Outcome.SEIZED, seized, paid, "seized " + seized);
     }
 
+    /**
+     * An arrest after a break-in somebody noticed (D-122), settled through the same prepared record as a checkpoint search, so a crash cannot leave a fine without the seizure or the other way round.
+     * What the officers take is what the person carries (pockets, hands, armour and the packs in them, never storage that is not carried) that is marked as stolen goods or that this city's law forbids
+     * this person; the fine is {@code fine} credits, never more than the wallet holds; the heat is {@code heat} more in {@code city}. {@code postId} names the building in the record of the search.
+     */
+    static Result arrest(ServerPlayer player, CitizenState.Citizen citizen, String postId, String city, CityLaws.Law law, WorkOrderLedger ledger, int fine, int heat) {
+        if (player.containerMenu != player.inventoryMenu) player.closeContainer();
+        Inventory after = new Inventory(player);
+        after.load(player.getInventory().save(new ListTag()));
+        List<CarriedStorage.Found> carried = CarriedStorage.scan(after);
+        Map<String, String> violations = violations(citizen, law, carried.stream().map(f -> f.stack).toList());
+        List<CarriedStorage.Found> taken = new ArrayList<>();
+        Map<String, Integer> whereCounts = new LinkedHashMap<>();
+        for (CarriedStorage.Found found : carried) {
+            String category = categoryOf(found.stack);
+            if (category == null || !violations.containsKey(category)) continue;
+            taken.add(found);
+            whereCounts.merge(found.where, 1, Integer::sum);
+        }
+        for (CarriedStorage.Found found : taken) found.take();
+        Double balanceAfter = null;
+        int paid = 0;
+        if (QShopEconomy.available() && QShopEconomy.configured(player.server)) {
+            double balance = QShopEconomy.balance(player);
+            paid = (int) Math.min(balance, Math.max(0, fine));
+            balanceAfter = balance - paid;
+        }
+        int heatAfter = ledger.heatAfter(player.getUUID(), city, heat);
+        List<String> titles = new ArrayList<>();
+        violations.forEach((category, status) -> {
+            var entry = ContrabandCatalog.INSTANCE.category(category);
+            titles.add((entry == null ? (category.equals(StolenGoods.CATEGORY) ? "Stolen goods" : category) : entry.title()) + " (" + status + ")");
+        });
+        CompoundTag record = searchRecord(postId, city, Why.UNKNOWN, "arrested", taken.size(), paid, whereCounts, titles);
+        ledger.prepareSeizure(player.getUUID(), after.save(new ListTag()), balanceAfter, citizen.careerXp(), city, heatAfter, CarriedStorage.journal(taken), record);
+        if (crashAfterPrepare) throw new CrewService.SimulatedCrash("checkpoint_after_prepare");
+        WorkOrderService.recover(player, ledger);
+        return new Result(Outcome.SEIZED, taken.size(), paid, heatAfter + " heat");
+    }
+
     /** The entry a person's search history keeps: where, why, what was found and where it was, what it cost. */
     private static CompoundTag searchRecord(CheckpointCatalog.Checkpoint post, Why why, String outcome, int stacks, int fine, Map<String, Integer> where, List<String> categories) {
+        return searchRecord(post.id(), post.jurisdiction(), why, outcome, stacks, fine, where, categories);
+    }
+
+    private static CompoundTag searchRecord(String postId, String city, Why why, String outcome, int stacks, int fine, Map<String, Integer> where, List<String> categories) {
         CompoundTag tag = new CompoundTag();
-        tag.putString("post", post.id()); tag.putString("city", post.jurisdiction()); tag.putString("outcome", outcome);
+        tag.putString("post", postId); tag.putString("city", city); tag.putString("outcome", outcome);
         tag.putInt("permille", (int) Math.round(why.chance() * 1000)); tag.putInt("heat", why.heat());
         tag.putInt("stacks", stacks); tag.putInt("fine", fine);
         ListTag places = new ListTag(), cats = new ListTag();

@@ -41,8 +41,23 @@ public final class CityBuildings extends SimpleJsonResourceReloadListener {
     /** Lost Cities' default ground level (a fallback when its API cannot answer). */
     private static final int GROUND_FALLBACK = 71;
 
-    /** A class of building: how its doors are locked and what its stash holds. */
-    public record SecurityClass(String id, String lockProfile, boolean lockedExterior, String stashPolicy, double stashChance, String label) {}
+    /**
+     * How a building answers a break-in that somebody notices (D-122): the chance its alarm is armed (decided once per building, by a hash, so a thief who has learned a building keeps what they learned),
+     * how long the police take to arrive in active seconds, how many officers come, and how long they stay and look before they give up.
+     */
+    public record Response(double alarmChance, int dispatchSeconds, int officers, int windowSeconds) {
+        public Response {
+            if (alarmChance < 0 || alarmChance > 1) throw new IllegalArgumentException("alarm chance must be between 0 and 1");
+            if (dispatchSeconds < 10 || dispatchSeconds > 600) throw new IllegalArgumentException("dispatch seconds must be between 10 and 600");
+            if (officers < 1 || officers > 4) throw new IllegalArgumentException("officers must be between 1 and 4");
+            if (windowSeconds < 30 || windowSeconds > 600) throw new IllegalArgumentException("window seconds must be between 30 and 600");
+        }
+    }
+
+    /** A class of building: how its doors are locked, what its stash holds and how it answers a noticed break-in ({@code response} is null for a building with no alarm of its own). */
+    public record SecurityClass(String id, String lockProfile, boolean lockedExterior, String stashPolicy, double stashChance, String label, Response response) {
+        public SecurityClass(String id, String lockProfile, boolean lockedExterior, String stashPolicy, double stashChance, String label) { this(id, lockProfile, lockedExterior, stashPolicy, stashChance, label, null); }
+    }
 
     /** One rule of the heuristic: a city (or "*"), a building type prefix (or "") and a floor range choose a class; the first rule that fits wins. */
     public record Rule(String city, String typePrefix, int floorsMin, int floorsMax, String securityClass, int priority) {
@@ -84,7 +99,7 @@ public final class CityBuildings extends SimpleJsonResourceReloadListener {
                 JsonObject c = entry.getValue().getAsJsonObject();
                 nextClasses.put(entry.getKey(), new SecurityClass(entry.getKey(), c.has("lock_profile") ? c.get("lock_profile").getAsString() : "deadbolt",
                     c.has("locked_exterior") && c.get("locked_exterior").getAsBoolean(), c.has("stash_policy") ? c.get("stash_policy").getAsString() : "",
-                    c.has("stash_chance") ? c.get("stash_chance").getAsDouble() : 0, c.has("label") ? c.get("label").getAsString() : entry.getKey()));
+                    c.has("stash_chance") ? c.get("stash_chance").getAsDouble() : 0, c.has("label") ? c.get("label").getAsString() : entry.getKey(), response(c)));
             }
             if (json.has("rules")) for (var entry : json.getAsJsonArray("rules")) {
                 JsonObject r = entry.getAsJsonObject();
@@ -98,6 +113,12 @@ public final class CityBuildings extends SimpleJsonResourceReloadListener {
         rules = List.copyOf(ordered(nextRules));
         cache.clear();
         LOGGER.info("Loaded {} building security classes and {} rules", classes.size(), rules.size());
+    }
+
+    private static Response response(JsonObject c) {
+        if (!c.has("response")) return null;
+        JsonObject r = c.getAsJsonObject("response");
+        return new Response(r.get("alarm_chance").getAsDouble(), r.get("dispatch_seconds").getAsInt(), r.get("officers").getAsInt(), r.get("window_seconds").getAsInt());
     }
 
     /** Rules by descending priority; equal priorities keep their order (the file order). */
