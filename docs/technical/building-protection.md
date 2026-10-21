@@ -41,6 +41,11 @@ Locks Reforged 1.7.3 (Attribution-NonCommercial, 15 mixins, locks stored in chun
 ## Evidence
 
 * GameTests: `BuildingSecurityGameTests` (guard with controls, door by hand, with a pick, honest solver, careless snap and jam, the lockout lapsing, inside doors, the stash, persistence round trip, seeded locks) and `LockpickSessionGameTests`.
-* A scripted run on a **real generated** apartment block, across a server restart: `scripts/run_burglary_check.py` (results in [archipelago-world.md](archipelago-world.md) once run).
+* A scripted run on a **real generated** apartment block, across a server restart: `scripts/run_burglary_check.py`, on a brand-new disposable archipelago world each time. **October 21, 2026, two seeds, both passed in full:**
+  seed 5908, `building1` of Ironhaven (a six-floor `flat_block`, deadbolt lock with three pins, door at -25 72 0) and seed 777, `building5` of Ironhaven (a six-floor `flat_block`, door at 16 78 23).
+  In each: the door is locked from the street and does not open by hand; a survival visitor breaks none of four wall blocks around it, while the same player breaks a control block that belongs to no building; a lockpick starts the lock and the honest solver opens it; the door stands open for its window and the heat rises by one; the building is furnished. On seed 777 the
+  building rolled a stash (an `apartment_common` safe at 21 84 29): the safe asks for a pick, the solver opens it and one take moves the stock from 5 to 4 (3 bread). After a server stop and start: the door state, the furnished flag, the safe and its stock of 4, the
+  break-in (vigilance 1) are all remembered, the lapsed door is locked again and a stranger cannot open it by hand. On seed 5908 the apartment rolled no stash (chance 0.7), so the stash steps ran only on seed 777.
+  The earlier run on a workshop (`bg1`) is superseded. **The "player" in these runs is a scripted survival player and a solver, not a hand on a mouse.**
 * Screens: `uc-lock-*` captures at the four supported viewports, listed in `content/qa/gui-coverage.json`.
 * Not shown: a person picking a lock, two players at one door, a vehicle or a gun against the guard, the real client picking a real door (the screen is photographed in poses and the server logic is driven by a solver, not by the mouse).

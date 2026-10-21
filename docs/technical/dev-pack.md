@@ -20,7 +20,11 @@ which project.
 | `boats` | Modern Life 1.75 | a motorboat with a persistent 27-slot hold and fuel (needs `-Dproduction=true` in a ForgeGradle run) |
 | `farming` | [Let's Do] Farm & Charm 1.0.14, Architectury 9.2.14 | **candidate** (opt-in, not in the default pack): crops with real growth stages, a stove, pots, silos and a scarecrow for the Farmer |
 | `vintner` | [Let's Do] Vinery 1.4.41, Kaleidoscope Tavern 1.2.0, Architectury 9.2.14 | **candidate** (opt-in): vineyards, a press, barrels and racks (Vinery) and barrel-brewed spirits and cocktails (Kaleidoscope) for the Vintner |
-| `qol` | Just Enough Items 15.56.0.205, Jade 11.13.3 | **candidate** (opt-in) interface helpers: a recipe viewer and look-at tooltips; Core does not depend on them |
+| `qol` | Just Enough Items 15.56.0.205, Jade 11.13.3, AppleSkin 2.5.1, Mouse Tweaks 2.25.1, Controlling 12.0.2 (+ Searchables 1.0.3) | **candidate** (opt-in) interface helpers: a recipe viewer, look-at tooltips, food values on the hunger bar, drag and scroll item moving, a searchable key-binding screen; Core does not depend on them |
+| `navigation` | Xaero's Minimap 26.6.0, Xaero's World Map 1.47.0 | **candidate** (opt-in, D-113): a minimap and a full-screen map for a three-island world; the Underground City status display starts below the minimap's default corner and can be moved (D-109) |
+| `performance` | Embeddium 0.3.31, ModernFix 5.27.88, FerriteCore 6.0.1 | **candidate** (opt-in, D-113): a renderer replacement, faster start and lower memory; client first, ModernFix and FerriteCore also run on a server |
+| `citytweaks` | Lost Cities Modern Tweaks 1.1.2 | **candidate** (opt-in, D-113): street furniture and about a hundred building parts for the city style the three cities inherit; vanilla blocks only; a server-side datapack |
+| `performance_deferred` | Entity Culling 1.11.3, ImmediatelyFast 1.5.5 | **parked** (D-113): both crash the ForgeGradle development client at load; no launch, test or workflow names this set, so nothing loads them. They stay pinned so the exact release is on record |
 
 ## Using it
 
@@ -36,6 +40,34 @@ which project.
 - The `dev-pack-smoke` workflow runs the Core GameTests once per set, so optional-mod cases (real TaCZ gun NBT in
   loot, firearm contracts and blueprint rewards, the motorboat's cargo round trip) actually execute instead of
   skipping; `dev-client-smoke` runs `./gradlew runClient` itself.
+
+## The client helper sets (October 21, 2026, D-113)
+
+What was run, and what that does and does not show. All of it was run in Claude's cloud container with the ForgeGradle development client under a software OpenGL
+renderer (`LIBGL_ALWAYS_SOFTWARE`, 1920x1080 virtual screen), so **timings and memory below are single samples for comparison between two runs on the same machine, not
+a performance benchmark** and say nothing about a player's graphics card.
+
+| Run | Sets | Result |
+| --- | --- | --- |
+| `runClient` launch smoke (world, firearms, vehicles, boats) | none of the helpers | reached the Operations terminal; 181 s from JVM start to the memory sample taken as the terminal opened, heap in use then 2,756 MB of 4,096 MB (a point sample, not a post-collection figure) |
+| the same smoke with `-PucExtraSets=navigation,performance,qol,citytweaks` | all twelve helper mods | reached the Operations terminal on a freshly generated archipelago world; 137 s to the same sample, heap in use 1,311 MB (also a point sample); ModernFix reported its own start at 129.9 s; `RESULT pass` (the screenshot was looked at: the terminal draws normally with the helpers loaded) |
+| first attempts with Entity Culling and ImmediatelyFast in `performance` | | **both crashed the client at load** (see below), which is why they are parked |
+
+The two runs differ in more than the helpers (a shared machine, one run each), so the lower numbers are **not** attributed to ModernFix or FerriteCore.
+
+- **Entity Culling 1.11.3** bundles its TRansition library as a nested jar; the ForgeGradle environment does not remap nested jars, so the client dies with `NoSuchMethodError`
+  on a Minecraft method that exists only under its obfuscated name. It may run fine in a production-style client, which this project cannot launch in the cloud.
+- **ImmediatelyFast 1.5.5** is a build labelled 1.20.4 that was published for 1.20.1 Forge; its `hud_batching` mixin cannot find `GuiGraphics.fillIntoBuffer` and the mixin transformer aborts.
+- A populated city is exactly where entity culling matters, so both stay on the list for a retry when a production-style client can be run; until then the pack makes no performance claim about them.
+
+**Not shown by any of this:** that a helper works while a person uses it (the minimap was not opened, the world map was not explored, JEI was not searched, Jade was not looked
+through), that Xaero and the Underground City status display never overlap in a real world (only the default corners were read from the jar and the display was made movable), a
+dedicated server booting with these sets (the manifest marks Embeddium, Controlling, Searchables and Mouse Tweaks as unsupported on a server; ModernFix, FerriteCore and Lost Cities
+Modern Tweaks are meant to run on one, and no boot with them was run in this pass), or the frame rate.
+
+**Single authority.** None of these mods owns a game mechanic: no second map or minimap beside Xaero, no second recipe viewer, no second HUD. Create is not used and none of them needs it.
+Terrain and biome mods (Terralith, Biomes O' Plenty and similar) are deliberately not added in this pass: the archipelago is derived from vanilla noise and its islands, cities and
+climate were measured on that terrain (D-104, D-112), so such a mod would invalidate those measurements. Not evaluated, not rejected.
 
 ## Licences, honestly
 
