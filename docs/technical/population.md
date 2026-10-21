@@ -1,6 +1,6 @@
 # The people of the cities (D-108)
 
-Status: **implemented; GameTested as arithmetic and bodies; nobody has met one.** This document says what exists, what it costs, what it deliberately is not, and what was evaluated and not adopted.
+Status: **implemented; GameTested as arithmetic and bodies; its cost measured once in a real street (below); nobody has met one.** This document says what exists, what it costs, what it deliberately is not, and what was evaluated and not adopted.
 
 ## What the owner's first playtest found
 
@@ -36,4 +36,5 @@ The generated cities were empty: Lost Cities builds streets and buildings and no
 
 * `PopulationGameTests`: a roster is the same every time, names unique, outfits match roles, the mix is followed, a bad mix is refused; a city is busy by day and quiet at night with only guards at three in the morning; the catalogue loads all three cities and every role has lines for every period; a body is never saved, cannot be hurt by an ordinary blow or a fall, but dies to `/kill` and the void, and cannot open doors; striking raises heat by exactly 2 in the right city and not for creative mode; a returning player is greeted by name and one person says many different things; bodies with nobody near are removed.
 * The 48 skins: `tools/art/gen_citizens.py` (`build_all.py --check` in CI); looked at in a contact sheet during this work.
-* Not shown: a real street with people in it (a photo tour with the service on is the next measurement), the cost of a pass in a real city, two players in one street.
+* A real street (October 21, scripted client, a minute of play in an Ironhaven street of a brand-new archipelago world; `PopulationService.status`): before the fix below, a pass cost a mean 25.3 ms and a worst 465 ms, 98 percent of it in 50 Lost Cities street lookups of a mean 37 ms, 55 of 74 passes found no spot, and 2 people were about; after it, a mean 0.49 ms and a worst 6.6 ms, 11 lookups, 21 misses in 75 passes and 6 people. The fix: the street level of a chunk is asked of Lost Cities once (`streetOf`, bounded to 4,096 chunks), and a person whose spot search failed waits 15 seconds while the next is tried. These are single samples of one process holding the client (under a software renderer) and the server; they say what dominated the cost, not what a dedicated server pays. One GameTest covers the cache.
+* Not shown: a person in a photograph of a real street beyond the scripted frame, two players in one street, the cost on a dedicated server, how many people look right.

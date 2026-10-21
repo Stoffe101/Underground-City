@@ -53,6 +53,8 @@ public final class PopulationService {
 
     // measurements, for /uc_population status and the performance notes
     static long passes, nanosTotal, nanosWorst, spawned, removed, spotMisses, activePeak;
+    /** Where a pass spends its time: the first pass, the Lost Cities plan lookups (count, total, worst). */
+    static long nanosFirst, lcCalls, lcNanos, lcWorst;
 
     // ------------------------------------------------------------------------------------------------ rosters
 
@@ -63,7 +65,7 @@ public final class PopulationService {
         return ROSTERS.computeIfAbsent(key, k -> PopulationPlan.roster(city, level.getSeed(), def.count(), def.mix(), def.names(), def.reachChunks()));
     }
 
-    static void clearCaches() { ROSTERS.clear(); ACTIVE.clear(); MET.clear(); passes = nanosTotal = nanosWorst = spawned = removed = spotMisses = activePeak = 0; }
+    static void clearCaches() { ROSTERS.clear(); ACTIVE.clear(); MET.clear(); STREETS.clear(); RETRY_AFTER.clear(); passes = nanosTotal = nanosWorst = spawned = removed = spotMisses = activePeak = 0; nanosFirst = lcCalls = lcNanos = lcWorst = 0; }
 
     // ------------------------------------------------------------------------------------------------ the pass
 
@@ -76,6 +78,7 @@ public final class PopulationService {
         try { pass(level); }
         catch (RuntimeException error) { LOGGER.warn("[UC-POPULATION] a pass failed and was skipped: {}", error.toString()); }
         long took = System.nanoTime() - start;
+        if (passes == 0) nanosFirst = took;
         passes++; nanosTotal += took; nanosWorst = Math.max(nanosWorst, took);
     }
 
@@ -137,6 +140,8 @@ public final class PopulationService {
         List<PopulationPlan.Person> candidates = new ArrayList<>();
         for (PopulationPlan.Person who : roster(level, city)) {
             if (alreadyOut.contains(who.id()) || PopulationPlan.place(who, level.getSeed(), hour, day) == PopulationPlan.Place.HOME) continue;
+            Long retryAfter = RETRY_AFTER.get(who.id());
+            if (retryAfter != null && retryAfter > level.getGameTime()) continue;
             int dx = region.get().centerChunkX() + who.districtX() - here.x, dz = region.get().centerChunkZ() + who.districtZ() - here.z;
             if (Math.max(Math.abs(dx), Math.abs(dz)) <= NEAR_CHUNKS) candidates.add(who);
         }
@@ -147,7 +152,7 @@ public final class PopulationService {
         PopulationPlan.Person chosen = candidates.get(0);
         ChunkPos district = new ChunkPos(region.get().centerChunkX() + chosen.districtX(), region.get().centerChunkZ() + chosen.districtZ());
         Optional<BlockPos> spot = findSpot(level, district, RandomSource.create(PopulationPlan.mix(chosen.id() ^ salt)), everyone);
-        if (spot.isEmpty()) { spotMisses++; return; }
+        if (spot.isEmpty()) { spotMisses++; if (RETRY_AFTER.size() >= 4096) RETRY_AFTER.clear(); RETRY_AFTER.put(chosen.id(), level.getGameTime() + RETRY_TICKS); return; }
         TownspersonEntity body = UndergroundCity.TOWNSPERSON.get().create(level);
         if (body == null) return;
         body.moveTo(spot.get().getX() + 0.5, spot.get().getY(), spot.get().getZ() + 0.5, level.random.nextFloat() * 360f, 0f);
@@ -157,6 +162,30 @@ public final class PopulationService {
 
     // ------------------------------------------------------------------------------------------------ where to stand
 
+    private static final Map<Long, Integer> STREETS = new HashMap<>();
+    private static long streetsSeed;
+    /** A person whose spot search found nothing is not tried again for this many ticks; the next candidate is tried instead. */
+    static final long RETRY_TICKS = 300;
+    private static final Map<Long, Long> RETRY_AFTER = new HashMap<>();
+
+    /**
+     * The street level of a city chunk, or -1 when the chunk is not city (or Lost Cities cannot say): Lost Cities' own answer, asked once per chunk. The plan is fixed by the seed, and one lookup
+     * costs tens of milliseconds, so asking again every second was nearly the whole cost of a pass (measured: 98 percent of it in a real street, 50 lookups of 37 ms in 74 passes).
+     */
+    static int streetOf(ServerLevel level, ChunkPos chunk) {
+        if (streetsSeed != level.getSeed()) { STREETS.clear(); RETRY_AFTER.clear(); streetsSeed = level.getSeed(); }
+        Integer known = STREETS.get(chunk.toLong());
+        if (known != null) return known;
+        long started = System.nanoTime();
+        var sample = LostCitiesLink.chunk(level, chunk.x, chunk.z);
+        int street = sample.isPresent() && sample.get().city() ? LostCitiesLink.realHeight(level, sample.get().cityLevel()) : -1;
+        long took = System.nanoTime() - started;
+        lcCalls++; lcNanos += took; lcWorst = Math.max(lcWorst, took);
+        if (STREETS.size() >= 4096) STREETS.clear();
+        STREETS.put(chunk.toLong(), street);
+        return street;
+    }
+
     /**
      * A spot in the district's chunk where a person could be standing in a street: loaded, at the street level Lost Cities gave this chunk, solid and sturdy underfoot, two blocks of air above, open to the
      * sky (so not inside a building and not under a bridge), not in water, and between {@link #MIN_SPOT_DISTANCE} and {@link #MAX_SPOT_DISTANCE} blocks from every player (outside their nose, inside their sight).
@@ -164,9 +193,7 @@ public final class PopulationService {
      */
     static Optional<BlockPos> findSpot(ServerLevel level, ChunkPos chunk, RandomSource random, List<ServerPlayer> players) {
         if (level.getChunkSource().getChunkNow(chunk.x, chunk.z) == null) return Optional.empty();
-        var sample = LostCitiesLink.chunk(level, chunk.x, chunk.z);
-        if (sample.isEmpty() || !sample.get().city()) return Optional.empty();
-        int street = LostCitiesLink.realHeight(level, sample.get().cityLevel());
+        int street = streetOf(level, chunk);
         if (street < 0) return Optional.empty();
         BlockPos.MutableBlockPos feet = new BlockPos.MutableBlockPos();
         for (int attempt = 0; attempt < 16; attempt++) {
@@ -251,8 +278,8 @@ public final class PopulationService {
 
     static String status(MinecraftServer server) {
         double average = passes == 0 ? 0 : nanosTotal / (double) passes / 1000.0;
-        return String.format(Locale.ROOT, "people out now %d (peak %d, cap %d total / %d per player); passes %d, mean %.0f us, worst %d us; spawned %d, removed %d, spots missed %d; players met kept %d",
-            ACTIVE.size(), activePeak, MAX_ACTIVE, MAX_PER_PLAYER, passes, average, nanosWorst / 1000, spawned, removed, spotMisses, MET.size());
+        return String.format(Locale.ROOT, "people out now %d (peak %d, cap %d total / %d per player); passes %d, mean %.0f us, worst %d us, first %d us; Lost Cities lookups %d (mean %.0f us, worst %d us); spawned %d, removed %d, spots missed %d; players met kept %d",
+            ACTIVE.size(), activePeak, MAX_ACTIVE, MAX_PER_PLAYER, passes, average, nanosWorst / 1000, nanosFirst / 1000, lcCalls, lcCalls == 0 ? 0.0 : lcNanos / (double) lcCalls / 1000.0, lcWorst / 1000, spawned, removed, spotMisses, MET.size());
     }
 
     @SubscribeEvent

@@ -162,4 +162,19 @@ public final class PopulationGameTests {
         check(PopulationService.MAX_PER_PLAYER <= PopulationService.MAX_ACTIVE && PopulationService.MAX_ACTIVE <= 64, "the budget is not bounded");
         helper.succeed();
     }
+    @GameTest(template = "empty", batch = "uc_population")
+    public static void aChunksStreetIsAskedOfLostCitiesOnceNotEverySecond(GameTestHelper helper) {
+        PopulationService.clearCaches();
+        ServerLevel level = helper.getLevel();
+        net.minecraft.world.level.ChunkPos chunk = new net.minecraft.world.level.ChunkPos(helper.absolutePos(BlockPos.ZERO));
+        int first = PopulationService.streetOf(level, chunk);
+        long lookups = PopulationService.lcCalls;
+        check(lookups == 1, "the first question was not asked of Lost Cities exactly once: " + lookups);
+        for (int i = 0; i < 20; i++) check(PopulationService.streetOf(level, chunk) == first, "the answer changed between two asks");
+        check(PopulationService.lcCalls == lookups, "a chunk that was answered was asked again: " + PopulationService.lcCalls + " lookups");
+        PopulationService.streetOf(level, new net.minecraft.world.level.ChunkPos(chunk.x + 1, chunk.z));
+        check(PopulationService.lcCalls == lookups + 1, "another chunk was not asked");
+        PopulationService.clearCaches();
+        helper.succeed();
+    }
 }
