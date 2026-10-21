@@ -123,6 +123,21 @@ The two chunks with a tree are one `building4` chunk and one `center11` chunk; t
 
 All three routes are continuous (`continuous: true`), on both the plains-only and the retuned climate (the same numbers; the corridor builder clears its own band). At 4.317 blocks per second the routes are 3.8 to 4.1 minutes on foot. **No person has driven, ridden or boated them**, and boats under the bridges (three free blocks over the water) are not tested.
 
+### Roadside stops (the existing wayside shelters, run on the new corridors)
+
+`WaysideShelters` places a shelter or a well every 300 to 450 blocks of open road, when a player comes near; it had only ever been run on the legacy roads. `RoadCheck` now serves every planned stop of the three corridors as a player's approach would (the same `serve` the level tick runs, in a disposable world, after the chunks around each stop are generated):
+
+| Stop | Kind | Result |
+| --- | --- | --- |
+| Ironhaven to Valewood, stop 0 (680, 102) | shelter | built at 672, 70, 112 |
+| Ironhaven to Valewood, stop 1 (1025, 150) | well | built at 1021, 70, 130 |
+| Ironhaven to Blackwater, stop 0 (271, 605) | well | built at 257, 69, 621 |
+| Ironhaven to Blackwater, stop 1 (399, 897) | shelter | **given up**: no level, dry, unbuilt ground within 64 blocks |
+| Valewood to Blackwater, stop 0 (1252, 689) | shelter | built at 1244, 63, 662 |
+| Valewood to Blackwater, stop 1 (1043, 957) | well | **given up**: no level, dry, unbuilt ground within 64 blocks |
+
+Four of six stops were built, at least one on every corridor; each build took 9 to 30 ms once its chunks existed. The two that were given up lie on or beside the water near the Blackwater end, where the bridges run; the code reports them as given up and does not retry them by itself. **There are no ports, marinas or harbour landings**: nothing in this version stands at a bridge's shore end, and a boat has nowhere to be bought or tied up. A person has not walked to any of these stops, and the warden at each was not talked to.
+
 ### Starting a new world, and keeping the old one
 
 * A plain `gradlew runClient` or `runServer` now carries the archipelago and creates the dev world `UC-Archipelago`; a dedicated server uses `level-type=underground_city:archipelago` in `server.properties` (the world type is also in the World Type list of the Create World screen). The legacy dev world `UC-Dev-5908` is untouched and opened with `-PucWorldLayout=legacy`. The two cannot share a world: a mismatch stops the game before a chunk is read (D-104).

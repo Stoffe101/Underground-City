@@ -71,6 +71,7 @@ The docs here distinguish **confirmed product direction**, **design proposals**,
 - [PR #23 follow-up: the shared-finance bug, authentication, home security, survival supply, the combined journey](production/pr23-playtest-readiness.md)
 - [Sprint report, October 19, 2026: simulation world, Sophisticated Backpacks, progression without monsters, Lost Cities stalls, first-start stability](production/sprint-2026-10-19.md)
 - [Sprint report, October 20, 2026: economy model, property and rent, skill effects, checkpoint searches of carried storage, vehicle tiers](production/sprint-2026-10-20.md)
+- [Sprint report, October 20 to 21, 2026: world, playability and modpack overhaul after the first human playtest](production/world-playability-overhaul.md)
 
 ## Legal and assets
 
