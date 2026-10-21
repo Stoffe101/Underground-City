@@ -285,12 +285,13 @@ public final class PoliceResponseGameTests {
                 final int[] calls = {0};
                 PoliceResponse.spots = (lvl, chunk, random, players) -> Optional.of(calls[0]++ == 0 ? sealed : open);
                 arrive(s);
-                var officers = s.officers();
+                var officers = level.getEntitiesOfClass(TownspersonEntity.class, new AABB(open).inflate(40), TownspersonEntity::police);   // the arena is in the sky, far from the scene's own search box
                 check(officers.size() == 2, "two officers were due and " + officers.size() + " came");
                 for (TownspersonEntity officer : officers) {
                     check(officer.position().distanceTo(net.minecraft.world.phys.Vec3.atBottomCenterOf(open)) < 3.0, "an officer was put at " + officer.blockPosition() + ", not at the open spot " + open + " (the other is walled in)");
                 }
             } finally {
+                for (TownspersonEntity officer : level.getEntitiesOfClass(TownspersonEntity.class, new AABB(open).inflate(40), TownspersonEntity::police)) officer.discard();
                 for (int dx = -14; dx <= 14; dx++) for (int dz = -14; dz <= 14; dz++) for (int dy = 0; dy <= 5; dy++) level.setBlock(new BlockPos(cx + dx, y + dy, cz + dz), air, 2);
             }
         }
