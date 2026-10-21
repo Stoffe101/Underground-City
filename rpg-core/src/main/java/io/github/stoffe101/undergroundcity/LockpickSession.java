@@ -9,7 +9,10 @@ import java.util.Random;
  * (the left mouse button or space). Pressing on the sweet spot, steadily, for {@code holdTicks} sets that pin and moves on to the next; pressing anywhere else strains the pick, more the
  * further off it is, and a pick that is strained past its limit snaps. Letting go lets the strain ease. The lock also has a time limit. What the client is told is a coarse {@link #feel}
  * (how close the pick is, in four steps, sometimes wrong by one on the middle steps so a lock cannot be solved by a binary search of the bar) and the progress; <b>the sweet spots never
- * leave the server</b>. A small hand tremor moves the effective position of the pick, so a pin cannot be set with the mouse parked and the button held.
+ * leave the server</b>. A small hand tremor moves the effective position of the pick while the button is held, so a pin cannot be set with the mouse parked and the button held. The tremor is a slow wobble
+ * (one swing in a second and a half) that the screen draws too ({@link #tremorOffset}): it is a feature of the lock that the player can see and play against, and not noise. Nothing else in what the
+ * player reads changes unless the pick moves: the feel is a function of where the pick is (shifted by a smooth, fixed error that differs from lock to lock, see {@link #readError}), so a pick that is
+ * held still reads the same every tick. (The first version drew a new random error every tick and let the tremor move the reading while the button was up; the first human playtest called the screen jittery.)
  *
  * <p>It is a skill game and not a button: a careful player with a good pick opens a three-pin deadbolt in ten to twenty seconds; a hurried one snaps picks. Nothing about it is random
  * once it has started (it is seeded), so a test can replay a session exactly.
@@ -30,9 +33,15 @@ public final class LockpickSession {
     /** What the pick feels like: 0 far, 1 near, 2 close, 3 on the sweet spot. */
     public static final int FAR = 0, NEAR = 1, CLOSE = 2, ON = 3;
 
+    /** Radians the hand's tremor advances each server tick: one swing in 30 ticks (a second and a half), slow enough to be seen and played against. */
+    public static final double TREMOR_RATE = 0.21;
+
+    /** The tremor's offset of the pick, in bar units, at a server tick; zero when the button is up. The screen draws the same offset so what is shown is what the server uses. */
+    public static double tremorOffset(double amplitude, double phase, double tick, boolean pressing) { return pressing ? amplitude * Math.sin(tick * TREMOR_RATE + phase) : 0.0; }
+
     private final Profile profile;
     private final double[] sweet;
-    private final Random noise;
+    private final double phase, errorA, errorB;
     private State state = State.ACTIVE;
     private int pin, held, timeLeft, tick;
     private double strain;
@@ -50,7 +59,11 @@ public final class LockpickSession {
             do { candidate = 0.06 + random.nextDouble() * 0.88; guard++; } while (guard < 50 && i > 0 && Math.abs(candidate - sweet[i - 1]) < 0.18);
             sweet[i] = candidate;
         }
-        noise = new Random(seed ^ 0x5DEECE66DL);
+        // the tremor's phase and the error of the reading are drawn apart from the sweet spots, so that neither can be used to find one
+        Random apart = new Random(seed ^ 0x5DEECE66DL);
+        phase = apart.nextDouble() * Math.PI * 2;
+        errorA = apart.nextDouble() * Math.PI * 2;
+        errorB = apart.nextDouble() * Math.PI * 2;
         timeLeft = profile.timeLimitTicks();
     }
 
@@ -61,6 +74,18 @@ public final class LockpickSession {
     public int pinsSet() { return pin; }
     public int timeLeft() { return timeLeft; }
     public int feel() { return feel; }
+    /** The tremor's phase for the screen (independent of every sweet spot). */
+    public double tremorPhase() { return phase; }
+    /** Server ticks this lock has been worked (the screen keeps its wobble in step with it). */
+    public int ticks() { return tick; }
+
+    /**
+     * How much the reading is off at a place on the bar, in bar units: a smooth curve (swings 0.2 and 0.09 of the bar long, never steeper than the bar itself for any lock, so sliding the pick toward the spot never makes the reading worse) scaled by the lock's feel noise and tolerance. It is fixed for a lock, so the
+     * same place always reads the same, and it moves the edges of the near and close bands by up to a fifth of the tolerance, so the bar cannot be bisected by reading them.
+     */
+    private double readError(double at) {
+        return profile.feelNoise() * profile.tolerance() * (Math.sin(at * 31.0 + errorA) + 0.5 * Math.sin(at * 71.0 + errorB)) / 1.5;
+    }
     /** Strain as a share of the limit, 0 to 100. */
     public int strainPercent() { return (int) Math.min(100, Math.round(100 * strain / profile.strainLimit())); }
     public boolean pickBroke() { return broke; }
@@ -74,13 +99,14 @@ public final class LockpickSession {
     public State tick(double position, boolean pressing) {
         if (state != State.ACTIVE) return state;
         tick++;
-        double effective = position + profile.tremor() * Math.sin(tick * 0.37 + sweet[0] * 9.0) * (pressing ? 1.0 : 0.4);
+        double effective = position + tremorOffset(profile.tremor(), phase, tick, pressing);
         double distance = Math.abs(effective - sweet[pin]);
-        int truth = distance <= profile.tolerance() ? ON : distance <= profile.tolerance() * 2.6 ? CLOSE : distance <= 0.28 ? NEAR : FAR;
+        boolean on = distance <= profile.tolerance();
+        // what the player reads comes from where the pick is, shifted by the lock's fixed error; the sweet spot itself (the press) is exact
+        double read = Math.abs(effective - sweet[pin] + readError(effective));
+        int truth = on ? ON : read <= profile.tolerance() * 2.6 ? CLOSE : read <= 0.28 ? NEAR : FAR;
         // Not pressing, the pick can tell "close" at best: the sweet spot only gives (ON) under a press, so the player must judge the middle of the close band and press there.
-        // The two middle steps can also be off by one, so the bar cannot be bisected.
         feel = !pressing && truth == ON ? CLOSE : truth;
-        if ((feel == NEAR || feel == CLOSE) && noise.nextDouble() < profile.feelNoise()) feel = feel == NEAR ? CLOSE : NEAR;
         if (pressing) {
             if (truth == ON) {
                 held++;

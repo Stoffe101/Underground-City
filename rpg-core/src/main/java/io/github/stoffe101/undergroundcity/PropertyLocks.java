@@ -27,10 +27,13 @@ public final class PropertyLocks extends SavedData {
     public static final String NAME = "underground_city_property_locks";
     /** A cap on remembered doors; the oldest entries that have nothing left to say are dropped first. */
     static final int MAX_DOORS = 2048;
-    static final int SCHEMA = 1;
+    static final int SCHEMA = 2;
 
-    /** One door's remembered state. {@code closed} is false while an opened door still has to be shut again by the sweep. */
-    public record Door(long breachedUntil, long jammedUntil, boolean closed, int breaches) {}
+    /**
+     * One door's remembered state. {@code closed} is false while an opened door still has to be shut again by the sweep, which does it at {@code closeAt}: that is the end of a picked door's window,
+     * or a few seconds after somebody inside opened the door to leave (the door was never unlocked for anybody outside; it only stands open while it is shut again).
+     */
+    public record Door(long breachedUntil, long jammedUntil, boolean closed, int breaches, long closeAt) {}
 
     private final Map<Long, Door> doors = new LinkedHashMap<>();
     private final Set<Long> furnished = new HashSet<>();
@@ -49,15 +52,27 @@ public final class PropertyLocks extends SavedData {
     /** The door was picked: it stays unlocked until {@code until}. */
     public void breach(BlockPos pos, long until) {
         Door d = doors.get(pos.asLong());
-        doors.put(pos.asLong(), new Door(until, d == null ? 0 : d.jammedUntil(), false, (d == null ? 0 : d.breaches()) + 1));
+        doors.put(pos.asLong(), new Door(until, d == null ? 0 : d.jammedUntil(), false, (d == null ? 0 : d.breaches()) + 1, until));
         trim();
         setDirty();
     }
 
+    /** Somebody inside opened the door to leave: it may stand open until {@code until}, then it is shut again. It stays locked against anybody on the outside. */
+    public void exitOpen(BlockPos pos, long until) {
+        Door d = doors.get(pos.asLong());
+        long closeAt = d != null && !d.closed() ? Math.max(until, d.closeAt()) : until;
+        doors.put(pos.asLong(), new Door(d == null ? 0 : d.breachedUntil(), d == null ? 0 : d.jammedUntil(), false, d == null ? 0 : d.breaches(), closeAt));
+        trim();
+        setDirty();
+    }
+
+    /** True when this door is being looked after by the sweep (picked, or opened from inside, and not shut again yet): it standing open is not a fault. */
+    public boolean openOnPurpose(BlockPos pos) { Door d = doors.get(pos.asLong()); return d != null && !d.closed(); }
+
     /** A pick snapped in the lock: nobody can try it again until {@code until}. */
     public void jam(BlockPos pos, long until) {
         Door d = doors.get(pos.asLong());
-        doors.put(pos.asLong(), new Door(d == null ? 0 : d.breachedUntil(), until, d == null || d.closed(), d == null ? 0 : d.breaches()));
+        doors.put(pos.asLong(), new Door(d == null ? 0 : d.breachedUntil(), until, d == null || d.closed(), d == null ? 0 : d.breaches(), d == null ? 0 : d.closeAt()));
         trim();
         setDirty();
     }
@@ -65,7 +80,7 @@ public final class PropertyLocks extends SavedData {
     /** Doors whose unlocked time has run out and that have not been shut again yet. */
     public List<BlockPos> dueToClose(long now) {
         List<BlockPos> due = new ArrayList<>();
-        for (var entry : doors.entrySet()) if (!entry.getValue().closed() && now >= entry.getValue().breachedUntil()) due.add(BlockPos.of(entry.getKey()));
+        for (var entry : doors.entrySet()) if (!entry.getValue().closed() && now >= entry.getValue().closeAt()) due.add(BlockPos.of(entry.getKey()));
         return due;
     }
 
@@ -73,7 +88,7 @@ public final class PropertyLocks extends SavedData {
     public void closed(BlockPos pos) {
         Door d = doors.get(pos.asLong());
         if (d == null) return;
-        doors.put(pos.asLong(), new Door(d.breachedUntil(), d.jammedUntil(), true, d.breaches()));
+        doors.put(pos.asLong(), new Door(d.breachedUntil(), d.jammedUntil(), true, d.breaches(), d.closeAt()));
         setDirty();
     }
 
@@ -91,7 +106,7 @@ public final class PropertyLocks extends SavedData {
 
     /** Housekeeping: a closed door whose jam is over carries nothing worth saving. */
     public void prune(long now) {
-        if (doors.values().removeIf(d -> d.closed() && now >= d.breachedUntil() && now >= d.jammedUntil())) setDirty();
+        if (doors.values().removeIf(d -> d.closed() && now >= d.breachedUntil() && now >= d.jammedUntil() && now >= d.closeAt())) setDirty();
     }
 
     // ------------------------------------------------------------------------------------------------ buildings
@@ -114,6 +129,7 @@ public final class PropertyLocks extends SavedData {
             d.putLong("jammed_until", entry.getValue().jammedUntil());
             d.putBoolean("closed", entry.getValue().closed());
             d.putInt("breaches", entry.getValue().breaches());
+            d.putLong("close_at", entry.getValue().closeAt());
             list.add(d);
         }
         tag.put("doors", list);
@@ -128,7 +144,10 @@ public final class PropertyLocks extends SavedData {
         }
         for (Tag raw : tag.getList("doors", Tag.TAG_COMPOUND)) {
             CompoundTag d = (CompoundTag) raw;
-            locks.doors.put(d.getLong("pos"), new Door(Math.max(0, d.getLong("breached_until")), Math.max(0, d.getLong("jammed_until")), d.getBoolean("closed"), Math.max(0, d.getInt("breaches"))));
+            long breachedUntil = Math.max(0, d.getLong("breached_until"));
+            // schema 1 had no separate close time: a picked door was shut when its window ended
+            long closeAt = d.contains("close_at") ? Math.max(0, d.getLong("close_at")) : breachedUntil;
+            locks.doors.put(d.getLong("pos"), new Door(breachedUntil, Math.max(0, d.getLong("jammed_until")), d.getBoolean("closed"), Math.max(0, d.getInt("breaches")), closeAt));
         }
         for (long key : tag.getLongArray("furnished")) locks.furnished.add(key);
         return locks;

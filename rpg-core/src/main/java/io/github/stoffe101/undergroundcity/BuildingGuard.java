@@ -81,7 +81,28 @@ public final class BuildingGuard {
         if (protectedAt(level, event.getPos()).isPresent()) {
             event.setCanceled(true);
             tell(player, "You cannot build inside someone else's building.");
+        } else if (event.getPlacedBlock().isSignalSource() && nearLockedDoor(level, event.getPos())) {
+            // the street in front of a door is not part of the building, but a button, a plate or a block of redstone put against the door opens it as surely as a hand
+            event.setCanceled(true);
+            tell(player, "You cannot rig a signal next to somebody else's locked door.");
         }
+    }
+
+    /** How near to a locked door a visitor may not put anything that gives a redstone signal. */
+    static final int SIGNAL_REACH = 2;
+
+    /** True when a locked exterior door of a building stands within {@link #SIGNAL_REACH} blocks of the position. */
+    static boolean nearLockedDoor(ServerLevel level, BlockPos pos) {
+        BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos();
+        for (int dx = -SIGNAL_REACH; dx <= SIGNAL_REACH; dx++) for (int dz = -SIGNAL_REACH; dz <= SIGNAL_REACH; dz++) for (int dy = -2; dy <= 1; dy++) {
+            p.set(pos.getX() + dx, pos.getY() + dy, pos.getZ() + dz);
+            if (!level.isLoaded(p)) continue;
+            BlockState state = level.getBlockState(p);
+            if (!(state.getBlock() instanceof DoorBlock) || state.getValue(DoorBlock.HALF) != DoubleBlockHalf.LOWER) continue;
+            Optional<CityBuildings.Building> found = protectedAt(level, p);
+            if (found.isPresent() && found.get().locked() && exterior(level, p.immutable(), state)) return true;
+        }
+        return false;
     }
 
     /** A bucket empties or fills only outside a building's volume. */
@@ -122,15 +143,31 @@ public final class BuildingGuard {
         return exposed(level, lower.relative(facing).above()) || exposed(level, lower.relative(facing.getOpposite()).above());
     }
 
+    /**
+     * A closed door's leaf is 3/16 of a block thick and fills the edge of its block that lies opposite the door's facing; the plane that divides "in front of the door" from "behind it" is the middle of
+     * that slab, this far from the block's centre toward that edge. The first human playtest found that this used to be the block's <i>centre</i>: a player who walks into a door and stops against
+     * its leaf stands 0.3 from the leaf's face, which is 0.0125 past the centre, so holding W made the street side look like the room side and the door opened by hand.
+     */
+    static final double LEAF_PLANE = 0.5 - 1.5 / 16.0;
+
+    /** True when the point is on the side the door faces (its front), measured against the leaf and not against the middle of the block. */
+    static boolean inFront(BlockPos lower, BlockState state, Vec3 at) {
+        Direction facing = state.getValue(DoorBlock.FACING);
+        Vec3 centre = Vec3.atCenterOf(lower);
+        double along = (at.x - centre.x) * facing.getStepX() + (at.z - centre.z) * facing.getStepZ();
+        return along > -LEAF_PLANE;
+    }
+
     /** True when the player stands on the sky side of the door (a visitor); a person on the inside can always leave. */
     static boolean outsideSide(ServerLevel level, BlockPos lower, BlockState state, Vec3 at) {
         Direction facing = state.getValue(DoorBlock.FACING);
         boolean frontSky = exposed(level, lower.relative(facing).above()), backSky = exposed(level, lower.relative(facing.getOpposite()).above());
         if (frontSky && backSky) return true;
-        Vec3 centre = Vec3.atCenterOf(lower);
-        double along = (at.x - centre.x) * facing.getStepX() + (at.z - centre.z) * facing.getStepZ();   // positive: on the front side
-        return along >= 0 ? frontSky : backSky;
+        return inFront(lower, state, at) ? frontSky : backSky;
     }
+
+    /** How long a locked door that somebody inside opened to leave stands open before it is shut again (five seconds of active time): long enough to walk out, too short to be a way in. */
+    static final long EXIT_TICKS = 100;
 
     /** The lower half of a door block, whichever half was clicked. */
     static BlockPos lowerOf(BlockPos pos, BlockState state) { return state.getValue(DoorBlock.HALF) == DoubleBlockHalf.UPPER ? pos.below() : pos; }
@@ -147,7 +184,11 @@ public final class BuildingGuard {
         if (!(lowerState.getBlock() instanceof DoorBlock) || !exterior(level, lower, lowerState)) return;
         long now = LockService.clock(level.getServer());
         if (PropertyLocks.get(level.getServer()).breached(lower, now)) return;               // somebody picked it a moment ago
-        if (!outsideSide(level, lower, lowerState, player.position())) return;                // from the inside a door always opens
+        if (lowerState.getValue(DoorBlock.OPEN)) return;                                      // a click on a door that stands open only shuts it
+        if (!outsideSide(level, lower, lowerState, player.position())) {                      // from the inside a door always opens, and shuts itself again a few seconds later
+            PropertyLocks.get(level.getServer()).exitOpen(lower, now + EXIT_TICKS);
+            return;
+        }
         // locked: the click does not open it; with a lockpick it starts the lock instead
         event.setCanceled(true);
         event.setCancellationResult(InteractionResult.SUCCESS);
@@ -158,6 +199,79 @@ public final class BuildingGuard {
         String label = security.label().isEmpty() ? "Door" : Character.toUpperCase(security.label().charAt(0)) + security.label().substring(1);
         String refusal = LockService.begin(player, level, new LockService.Target(LockService.Kind.DOOR, lower, profile, building.city(), security.id(), label, 1));
         if (refusal != null) tell(player, refusal);
+    }
+
+    // ------------------------------------------------------------------------------------------------ the door itself
+
+    /**
+     * The click is one way a door opens; it is not the only one. A door answers to redstone, to a mod that calls {@code setOpen}, to a command, and a client that predicts the click shows it open for a
+     * moment whatever the server decides. The lock is therefore also a rule about the door's <i>state</i>: a locked exterior door of a building stands closed unless somebody picked it, or somebody
+     * inside opened it to leave a moment ago ({@link PropertyLocks#openOnPurpose}), or a builder in creative mode is standing by. Anything else found open is shut, within a tick of a block update
+     * next to it and within half a second for any door close to a player.
+     */
+    private static final java.util.Set<Long> RECHECK = new java.util.LinkedHashSet<>();
+    /** Doors this watch has shut (a test and the burglary report read it). */
+    static volatile int shutByWatch;
+
+    /** Shuts the door at this lower half when it stands open without a reason. Returns whether it did. */
+    static boolean enforce(ServerLevel level, BlockPos lower) {
+        BlockState state = level.getBlockState(lower);
+        if (!(state.getBlock() instanceof DoorBlock door) || state.getValue(DoorBlock.HALF) != DoubleBlockHalf.LOWER || !state.getValue(DoorBlock.OPEN)) return false;
+        Optional<CityBuildings.Building> found = protectedAt(level, lower);
+        if (found.isEmpty() || !found.get().locked() || !exterior(level, lower, state)) return false;
+        if (PropertyLocks.get(level.getServer()).openOnPurpose(lower)) return false;
+        for (Player near : level.getEntitiesOfClass(Player.class, new net.minecraft.world.phys.AABB(lower).inflate(8.0))) if (near.isCreative()) return false;
+        door.setOpen(null, level, state, lower, false);
+        shutByWatch++;
+        return true;
+    }
+
+    /** A block next to a door changed: look at the door once the update has run. */
+    @SubscribeEvent
+    public void neighbourChanged(BlockEvent.NeighborNotifyEvent event) {
+        if (!(event.getLevel() instanceof ServerLevel level) || level.dimension() != net.minecraft.world.level.Level.OVERWORLD) return;
+        BlockPos pos = event.getPos();
+        for (Direction side : event.getNotifiedSides()) {
+            BlockPos near = pos.relative(side);
+            if (level.isLoaded(near) && level.getBlockState(near).getBlock() instanceof DoorBlock) synchronized (RECHECK) { if (RECHECK.size() < 256) RECHECK.add(near.asLong()); }
+        }
+    }
+
+    private static int watchClock;
+
+    @SubscribeEvent
+    public void watchTick(net.minecraftforge.event.TickEvent.ServerTickEvent event) {
+        if (event.phase != net.minecraftforge.event.TickEvent.Phase.END) return;
+        ServerLevel level = event.getServer().overworld();
+        if (level == null) return;
+        long[] due;
+        synchronized (RECHECK) {
+            if (RECHECK.isEmpty()) due = new long[0];
+            else { due = RECHECK.stream().mapToLong(Long::longValue).toArray(); RECHECK.clear(); }
+        }
+        for (long key : due) {
+            BlockPos pos = BlockPos.of(key);
+            if (!level.isLoaded(pos)) continue;
+            BlockState state = level.getBlockState(pos);
+            if (state.getBlock() instanceof DoorBlock) enforce(level, lowerOf(pos, state));
+        }
+        if (++watchClock < 10) return;
+        watchClock = 0;
+        for (ServerPlayer player : level.players()) watchAround(level, player.blockPosition());
+    }
+
+    /** Shuts every door standing open without a reason within six blocks of a position (and three above, two below); returns how many it shut. */
+    static int watchAround(ServerLevel level, BlockPos at) {
+        if (CityBuildings.INSTANCE.at(level, at).isEmpty() && CityBuildings.INSTANCE.at(level, at.offset(6, 0, 6)).isEmpty() && CityBuildings.INSTANCE.at(level, at.offset(-6, 0, -6)).isEmpty()) return 0;
+        int shut = 0;
+        BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos();
+        for (int dx = -6; dx <= 6; dx++) for (int dz = -6; dz <= 6; dz++) for (int dy = -2; dy <= 3; dy++) {
+            p.set(at.getX() + dx, at.getY() + dy, at.getZ() + dz);
+            if (!level.isLoaded(p)) continue;
+            BlockState state = level.getBlockState(p);
+            if (state.getBlock() instanceof DoorBlock && state.getValue(DoorBlock.OPEN) && state.getValue(DoorBlock.HALF) == DoubleBlockHalf.LOWER && enforce(level, p.immutable())) shut++;
+        }
+        return shut;
     }
 
     // ------------------------------------------------------------------------------------------------ everything else that changes blocks

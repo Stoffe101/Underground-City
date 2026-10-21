@@ -13,6 +13,8 @@ final class Scenarios {
             case "input" -> input();
             case "register" -> register();
             case "arrival" -> arrival();
+            case "doorwalk" -> doorwalk();
+            case "lockjitter" -> lockjitter();
             case "walk" -> walk();
             case "row" -> row();
             case "posts" -> posts();
@@ -187,6 +189,316 @@ final class Scenarios {
         Playtest.wait("settle", 20);
         Playtest.queue("screenshot of a person in the street", () -> Playtest.screenshotNextFrame("uc-arrival-person"));
         Playtest.wait("frame", 8);
+    }
+
+    /**
+     * The survival bypass of the first human playtest, through real input: in survival, hold W toward a locked door of a generated building and right-click it while walking, with and without
+     * lockpicks, for a door that faces the street and one that faces the room. The player must end up outside, the door shut, and (with picks) in front of the lock screen.
+     */
+    private static void doorwalk() {
+        Playtest.keepScreens = true;
+        Playtest.queue("the client has the ground under the player", () -> { }, Scenarios::groundBelowPlayer, 1200);
+        Playtest.queue("the first-login registration screen opens by itself", () -> { }, () -> Minecraft.getInstance().screen instanceof RegistrationScreen, 900);
+        Playtest.wait("let the screen render", 20);
+        Playtest.queue("click the first city", () -> {
+            Playtest.focusWindow();
+            int[] at = ((RegistrationScreen) Minecraft.getInstance().screen).cardCentre(0);
+            Playtest.clickGui(at[0], at[1]);
+        }, () -> ((RegistrationScreen) Minecraft.getInstance().screen).step() == 1, 100);
+        Playtest.queue("click the first profession", () -> {
+            int[] at = ((RegistrationScreen) Minecraft.getInstance().screen).cardCentre(0);
+            Playtest.clickGui(at[0], at[1]);
+        }, () -> ((RegistrationScreen) Minecraft.getInstance().screen).step() == 2, 100);
+        Playtest.wait("settle", 10);
+        Playtest.queue("click CONFIRM", () -> {
+            int[] at = ((RegistrationScreen) Minecraft.getInstance().screen).confirmCentre();
+            Playtest.clickGui(at[0], at[1]);
+        }, () -> !(Minecraft.getInstance().screen instanceof RegistrationScreen), 200);
+        Playtest.wait("let the server answer", 20);
+        Playtest.queue("survival mode, as a player would be", () -> Playtest.command("gamemode survival"));
+        Playtest.wait("settle", 10);
+
+        final DoorWalk.Spot[] spots = new DoorWalk.Spot[2];   // [0] a door that faces the street, [1] one that faces the room
+        final boolean[] searched = {false};
+        Playtest.queue("find a real exterior door of each orientation (on the server thread)", () -> {
+            var server = Minecraft.getInstance().getSingleplayerServer();
+            server.execute(() -> {
+                try {
+                    spots[0] = DoorWalk.find(server.overworld(), true, "flat_block").orElse(null);
+                    spots[1] = DoorWalk.find(server.overworld(), false, "flat_block").orElse(null);
+                } finally { searched[0] = true; }
+            });
+        }, () -> searched[0], 12000);
+        Playtest.queue("which doors", () -> {
+            for (int i = 0; i < 2; i++) {
+                DoorWalk.Spot spot = spots[i];
+                Playtest.log("door " + (i == 0 ? "facing the street" : "facing the room") + ": " + (spot == null ? "none found" : spot.type() + " class " + spot.securityClass() + " at " + spot.door().toShortString() + " facing " + spot.facing() + ", street to the " + spot.out()));
+                if (spot == null) Playtest.fail("no generated exterior door " + (i == 0 ? "facing the street" : "facing the room") + " near Ironhaven's centre");
+            }
+        });
+        for (int i = 0; i < 2; i++) for (boolean armed : new boolean[] {false, true}) walkIntoDoor(spots, i, armed);
+        for (int i = 0; i < 2; i++) walkOutOfDoor(spots, i);
+    }
+
+    /**
+     * The lock screen under a real mouse: a lock in the player's hands, the pointer slid across the bar the way a hand does, held still near the edge of a band, then pressed on the spot. It reports what the
+     * first human playtest called jitter as numbers: does the pick follow the pointer exactly, does the reading change by itself, how far does the needle wobble under a press, and how long a press takes to
+     * set a pin (with {@code -PucLockLatency=<ticks>} the client's reports are held back to play it against a slow connection). Window size: {@code -PucPtWidth/-PucPtHeight}, GUI scale: {@code -PucPtGuiscale}.
+     */
+    private static void lockjitter() {
+        Playtest.keepScreens = true;
+        Playtest.queue("the client has the ground under the player", () -> { }, Scenarios::groundBelowPlayer, 1200);
+        Playtest.queue("the first-login registration screen opens by itself", () -> { }, () -> Minecraft.getInstance().screen instanceof RegistrationScreen, 900);
+        Playtest.wait("let the screen render", 20);
+        Playtest.queue("click the first city", () -> {
+            Playtest.focusWindow();
+            int[] at = ((RegistrationScreen) Minecraft.getInstance().screen).cardCentre(0);
+            Playtest.clickGui(at[0], at[1]);
+        }, () -> ((RegistrationScreen) Minecraft.getInstance().screen).step() == 1, 100);
+        Playtest.queue("click the first profession", () -> {
+            int[] at = ((RegistrationScreen) Minecraft.getInstance().screen).cardCentre(0);
+            Playtest.clickGui(at[0], at[1]);
+        }, () -> ((RegistrationScreen) Minecraft.getInstance().screen).step() == 2, 100);
+        Playtest.wait("settle", 10);
+        Playtest.queue("click CONFIRM", () -> {
+            int[] at = ((RegistrationScreen) Minecraft.getInstance().screen).confirmCentre();
+            Playtest.clickGui(at[0], at[1]);
+        }, () -> !(Minecraft.getInstance().screen instanceof RegistrationScreen), 200);
+        Playtest.wait("let the server answer", 20);
+        Playtest.queue("survival, and the GUI scale the run asks for", () -> {
+            Playtest.command("gamemode survival");
+            var mc = Minecraft.getInstance();
+            int scale = Integer.getInteger("uc.playtest.guiscale", 2);
+            mc.options.guiScale().set(scale);
+            mc.resizeDisplay();
+        });
+        Playtest.wait("settle", 20);
+        final double[] sweet = {-1};
+        final double[] tolerance = {0};
+        Playtest.queue("put a deadbolt in the player's hands (server side)", () -> {
+            var mc = Minecraft.getInstance();
+            var server = mc.getSingleplayerServer();
+            server.execute(() -> {
+                var player = server.getPlayerList().getPlayer(mc.player.getUUID());
+                player.getInventory().add(new net.minecraft.world.item.ItemStack(UndergroundCity.item("lockpick"), 30));
+                String refusal = LockService.begin(player, server.overworld(), new LockService.Target(LockService.Kind.DOOR, player.blockPosition(), "deadbolt", "ironhaven", "flat_block", "Deadbolt", 1));
+                if (refusal != null) Playtest.fail("the lock did not start: " + refusal);
+                var active = LockService.activeFor(player.getUUID());
+                if (active != null) { sweet[0] = active.session.sweetSpot(); tolerance[0] = active.session.profile().tolerance(); }
+            });
+        }, () -> Minecraft.getInstance().screen instanceof LockpickScreen && sweet[0] >= 0, 400);
+        Playtest.wait("let the screen draw", 20);
+        final int[] geometry = new int[3];
+        final double[] scale = {1};
+        Playtest.queue("the bar, in GUI pixels and in device pixels", () -> {
+            var mc = Minecraft.getInstance();
+            var screen = (LockpickScreen) mc.screen;
+            System.arraycopy(screen.debugBar(), 0, geometry, 0, 3);
+            scale[0] = mc.getWindow().getGuiScale();
+            Playtest.log("LOCKJITTER window " + mc.getWindow().getScreenWidth() + "x" + mc.getWindow().getScreenHeight() + ", GUI scale " + (int) scale[0] + ", bar " + geometry[2] + " GUI px = " + Math.round(geometry[2] * scale[0])
+                + " device px wide; one device pixel of the mouse moves the pick by " + String.format(java.util.Locale.ROOT, "%.4f", 1.0 / (geometry[2] * scale[0])) + " of the bar (the band the pick must hold is " + String.format(java.util.Locale.ROOT, "%.3f", tolerance[0] * 2) + " wide, "
+                + Math.round(tolerance[0] * 2 * geometry[2] * scale[0]) + " device px); latency " + Integer.getInteger("uc.lock.latency", 0) + " ticks");
+        });
+
+        // 1. slide across the bar like a hand: a smooth start and stop over six seconds
+        final int[] t = {0};
+        final double[] expected = {0};
+        final double[] maxGap = {0}, maxStep = {0}, lastPosition = {-1};
+        final int[] reversals = {0}, feelChanges = {0}, lastFeel = {-1};
+        Playtest.queue("put the pointer at the left end of the bar", () -> Playtest.moveGui(geometry[0], geometry[1] + 10));
+        Playtest.wait("the pointer arrives", 15);
+        Playtest.queue("slide the pointer across the bar", () -> { }, () -> {
+            var mc = Minecraft.getInstance();
+            if (!(mc.screen instanceof LockpickScreen screen)) return true;
+            t[0]++;
+            double x = t[0] / 120.0, eased = x * x * (3 - 2 * x);
+            int deviceX = (int) Math.round((geometry[0] + eased * geometry[2]) * scale[0]);
+            Playtest.input("move " + deviceX + " " + Math.round((geometry[1] + 10) * scale[0]));
+            double position = screen.debugPosition();
+            if (lastPosition[0] >= 0) {
+                if (position < lastPosition[0] - 0.0005) reversals[0]++;
+                maxStep[0] = Math.max(maxStep[0], Math.abs(position - lastPosition[0]));
+            }
+            lastPosition[0] = position;
+            expected[0] = ((double) deviceX / scale[0] - geometry[0]) / geometry[2];
+            if (lastFeel[0] >= 0 && screen.debugShownFeel() != lastFeel[0]) feelChanges[0]++;
+            lastFeel[0] = screen.debugShownFeel();
+            return t[0] >= 120;
+        }, 400);
+        Playtest.wait("the last events arrive", 6);
+        Playtest.queue("the slide's numbers", () -> {
+            var screen = (LockpickScreen) Minecraft.getInstance().screen;
+            double gap = Math.abs(screen.debugPosition() - expected[0]);
+            Playtest.log("LOCKJITTER slide: the pick ended " + String.format(java.util.Locale.ROOT, "%.4f", gap) + " of the bar (" + String.format(java.util.Locale.ROOT, "%.1f", gap * geometry[2] * scale[0]) + " device px) from where the pointer is; "
+                + reversals[0] + " reversals while the pointer only moved forward; largest step in one tick " + String.format(java.util.Locale.ROOT, "%.4f", maxStep[0]) + " of the bar; the reading changed " + feelChanges[0] + " times in six seconds");
+            if (gap > 0.004) Playtest.fail("the pick is not where the pointer is after a slide: " + gap);
+            if (reversals[0] > 0) Playtest.fail("the pick moved backwards while the pointer moved forward " + reversals[0] + " times");
+            if (feelChanges[0] > 12) Playtest.fail("the reading changed " + feelChanges[0] + " times in one slide across the bar");
+        });
+
+        // 2. hold still at the very edge of the close band: the reading must not flicker
+        final int[] still = {0}, stillChanges = {0}, stillFeel = {-1};
+        Playtest.queue("rest the pick at the edge of the close band", () -> {
+            double edge = Math.min(0.99, sweet[0] + tolerance[0] * 2.6 + 0.002);
+            if (edge >= 0.99) edge = Math.max(0.01, sweet[0] - tolerance[0] * 2.6 - 0.002);
+            Playtest.input("move " + Math.round((geometry[0] + edge * geometry[2]) * scale[0]) + " " + Math.round((geometry[1] + 10) * scale[0]));
+        });
+        Playtest.wait("settle", 10);
+        Playtest.queue("hold still for four seconds, counting how often the reading changes", () -> { }, () -> {
+            if (!(Minecraft.getInstance().screen instanceof LockpickScreen screen)) return true;
+            if (stillFeel[0] >= 0 && screen.debugShownFeel() != stillFeel[0]) stillChanges[0]++;
+            stillFeel[0] = screen.debugShownFeel();
+            return ++still[0] >= 80;
+        }, 200);
+        Playtest.queue("the stillness numbers", () -> {
+            Playtest.log("LOCKJITTER still: at the edge of the close band the reading changed " + stillChanges[0] + " times in four seconds");
+            if (stillChanges[0] > 0) Playtest.fail("the reading changed " + stillChanges[0] + " times while the pick was held still");
+        });
+
+        // 3. press on the spot: the needle wobbles with the hand's tremor, and the pin sets after the hold
+        final int[] pressed = {0}, pinSetAfter = {-1};
+        final float[] wobbleMin = {0}, wobbleMax = {0};
+        Playtest.queue("move onto the sweet spot and press", () -> {
+            Playtest.input("move " + Math.round((geometry[0] + sweet[0] * geometry[2]) * scale[0]) + " " + Math.round((geometry[1] + 10) * scale[0]));
+        });
+        Playtest.wait("settle", 12);
+        Playtest.queue("press and hold", () -> Playtest.mouseButton(1, true), () -> {
+            if (!(Minecraft.getInstance().screen instanceof LockpickScreen screen)) return true;
+            pressed[0]++;
+            wobbleMin[0] = Math.min(wobbleMin[0], screen.debugWobblePixels());
+            wobbleMax[0] = Math.max(wobbleMax[0], screen.debugWobblePixels());
+            if (pinSetAfter[0] < 0 && screen.debugPinsSet() > 0) pinSetAfter[0] = pressed[0];
+            return pinSetAfter[0] >= 0 || pressed[0] >= 120;
+        }, 300);
+        Playtest.queue("let go", () -> Playtest.mouseButton(1, false));
+        Playtest.queue("the press numbers", () -> {
+            Playtest.log("LOCKJITTER press: pin 1 set " + (pinSetAfter[0] < 0 ? "never (in 6 s)" : pinSetAfter[0] + " ticks after the press began (the hold takes 8; " + Integer.getInteger("uc.lock.latency", 0) + " ticks of latency were played)")
+                + "; the needle wobbled between " + String.format(java.util.Locale.ROOT, "%.1f", wobbleMin[0]) + " and " + String.format(java.util.Locale.ROOT, "%.1f", wobbleMax[0]) + " GUI px while pressed");
+            if (pinSetAfter[0] < 0) Playtest.fail("pressing on the sweet spot did not set the pin");
+        });
+        Playtest.queue("screenshot of the lock", () -> Playtest.screenshotNextFrame("uc-lockjitter-" + Minecraft.getInstance().getWindow().getScreenWidth() + "x" + Minecraft.getInstance().getWindow().getScreenHeight() + "-gui" + (int) scale[0]));
+        Playtest.wait("frame", 8);
+        Playtest.queue("close the lock screen", () -> { if (Minecraft.getInstance().screen instanceof LockpickScreen) Playtest.tap("escape"); });
+        Playtest.wait("settle", 10);
+    }
+
+    /** One try: stand three blocks from the door, hold W, right-click it every few ticks for three and a half seconds, then read what the server says. */
+    private static void walkIntoDoor(DoorWalk.Spot[] spots, int index, boolean armed) {
+        String label = (index == 0 ? "street" : "room") + "-" + (armed ? "pick" : "bare");
+        final int[] ticks = {0};
+        final boolean[] screen = {false};
+        Playtest.queue("[" + label + "] stand in front of the door", () -> {
+            DoorWalk.Spot spot = spots[index];
+            if (spot == null) return;
+            var mc = Minecraft.getInstance();
+            var server = mc.getSingleplayerServer();
+            server.execute(() -> DoorWalk.prepare(server.getPlayerList().getPlayer(mc.player.getUUID()), spot, armed));
+        }, () -> {
+            DoorWalk.Spot spot = spots[index];
+            if (spot == null) return true;
+            var mc = Minecraft.getInstance();
+            return mc.player.position().distanceTo(spot.stand()) < 1.5 && mc.level.getBlockState(spot.door()).getBlock() instanceof net.minecraft.world.level.block.DoorBlock;
+        }, 600);
+        Playtest.wait("[" + label + "] settle", 25);
+        Playtest.queue("[" + label + "] hold W and right-click the door", () -> {
+            if (spots[index] == null) return;
+            if (index == 0 && !armed) Playtest.focusWindow();   // later tries must not warp the pointer: a warp over a grabbed cursor turns the camera
+            Playtest.keyDown("w");
+        }, () -> {
+            if (spots[index] == null) return true;
+            var mc = Minecraft.getInstance();
+            ticks[0]++;
+            mc.player.setYRot(spots[index].yaw());   // the door stays in the crosshair, as a person aiming at it would keep it
+            mc.player.setXRot(0);
+            if (mc.screen instanceof LockpickScreen) { screen[0] = true; return true; }
+            // with a pick the first click would start the lock three blocks away, so the clicking starts when the player is standing against the door (still holding W): that is the case the playtest found
+            boolean against = spots[index].past(mc.player.position()) > -1.0;
+            if (!armed || against) {
+                if (ticks[0] % 4 == 1) Playtest.mouseButton(3, true);
+                else if (ticks[0] % 4 == 2) Playtest.mouseButton(3, false);
+            }
+            if (ticks[0] == 12) Playtest.screenshotNextFrame("uc-doorwalk-" + label);
+            return ticks[0] >= 70;
+        }, 300);
+        Playtest.queue("[" + label + "] let go", () -> { Playtest.keyUp("w"); Playtest.mouseButton(3, false); });
+        Playtest.wait("[" + label + "] let the server settle", 10);
+        Playtest.queue("[" + label + "] the server's account", () -> {
+            DoorWalk.Spot spot = spots[index];
+            if (spot == null) return;
+            var mc = Minecraft.getInstance();
+            var server = mc.getSingleplayerServer();
+            var player = server.getPlayerList().getPlayer(mc.player.getUUID());
+            double past = spot.past(player.position());
+            boolean open = DoorWalk.doorOpen(server.overworld(), spot);
+            boolean walkedIn = past > 0.6;
+            Playtest.log("DOORWALK " + label + ": door facing " + spot.facing() + ", " + (spot.frontIsStreet() ? "front on the street" : "front on the room side") + "; after " + ticks[0] + " ticks the player is "
+                + String.format(java.util.Locale.ROOT, "%.2f", past) + " blocks past the door's centre (server), the door is " + (open ? "OPEN" : "closed") + ", the lock screen " + (screen[0] ? "opened" : "did not open") + ", client sees the door " + (mc.level.getBlockState(spot.door()).getValue(net.minecraft.world.level.block.DoorBlock.OPEN) ? "open" : "closed"));
+            if (walkedIn) Playtest.fail(label + ": the player walked into the building through a locked door");
+            if (open) Playtest.fail(label + ": the locked door stood open at the end");
+            if (armed && !screen[0] && !open) Playtest.fail(label + ": with a lockpick the click did not start the lock");
+            if (!armed && screen[0]) Playtest.fail(label + ": the lock screen opened without a lockpick");
+        });
+        Playtest.queue("[" + label + "] close the lock screen", () -> { if (Minecraft.getInstance().screen instanceof LockpickScreen) Playtest.tap("escape"); });
+        Playtest.wait("[" + label + "] settle", 15);
+    }
+
+    /** The other way: somebody inside stands against the same door, holds W and right-clicks. They must get out, and the door must be shut again a few seconds later. */
+    private static void walkOutOfDoor(DoorWalk.Spot[] spots, int index) {
+        String label = (index == 0 ? "street" : "room") + "-exit";
+        final int[] ticks = {0};
+        Playtest.queue("[" + label + "] stand inside, against the door, facing out", () -> {
+            DoorWalk.Spot spot = spots[index];
+            if (spot == null) return;
+            var mc = Minecraft.getInstance();
+            var server = mc.getSingleplayerServer();
+            Vec3 at = BuildingSecurityGameTests.flush(spot.door(), spot.facing(), false);
+            float yaw = (float) Math.toDegrees(Math.atan2(-spot.out().getStepX(), spot.out().getStepZ()));
+            server.execute(() -> {
+                var player = server.getPlayerList().getPlayer(mc.player.getUUID());
+                DoorWalk.prepare(player, spot, false);
+                player.teleportTo(server.overworld(), at.x, spot.door().getY(), at.z, yaw, 0f);
+            });
+        }, () -> {
+            DoorWalk.Spot spot = spots[index];
+            if (spot == null) return true;
+            var mc = Minecraft.getInstance();
+            return spot.past(mc.player.position()) > 0.0 && mc.player.position().distanceTo(Vec3.atBottomCenterOf(spot.door())) < 2.0;
+        }, 600);
+        Playtest.wait("[" + label + "] settle", 25);
+        Playtest.queue("[" + label + "] hold W and right-click the door from the inside", () -> {
+            if (spots[index] != null) Playtest.keyDown("w");
+        }, () -> {
+            DoorWalk.Spot spot = spots[index];
+            if (spot == null) return true;
+            var mc = Minecraft.getInstance();
+            ticks[0]++;
+            mc.player.setYRot((float) Math.toDegrees(Math.atan2(-spot.out().getStepX(), spot.out().getStepZ())));
+            mc.player.setXRot(0);
+            if (ticks[0] % 4 == 1) Playtest.mouseButton(3, true);
+            else if (ticks[0] % 4 == 2) Playtest.mouseButton(3, false);
+            return ticks[0] >= 60;
+        }, 300);
+        Playtest.queue("[" + label + "] let go", () -> { Playtest.keyUp("w"); Playtest.mouseButton(3, false); });
+        Playtest.queue("[" + label + "] the server's account of the way out", () -> {
+            DoorWalk.Spot spot = spots[index];
+            if (spot == null) return;
+            var mc = Minecraft.getInstance();
+            var server = mc.getSingleplayerServer();
+            var player = server.getPlayerList().getPlayer(mc.player.getUUID());
+            double past = spot.past(player.position());
+            boolean open = DoorWalk.doorOpen(server.overworld(), spot);
+            Playtest.log("DOORWALK " + label + ": the player is " + String.format(java.util.Locale.ROOT, "%.2f", past) + " blocks past the door's centre toward the street side (negative: outside), the door is " + (open ? "open" : "closed"));
+            if (past > -1.0) Playtest.fail(label + ": somebody inside could not get out through their own door");
+        });
+        Playtest.wait("[" + label + "] the door's few seconds", 160);
+        Playtest.queue("[" + label + "] the door shut behind them", () -> {
+            DoorWalk.Spot spot = spots[index];
+            if (spot == null) return;
+            var server = Minecraft.getInstance().getSingleplayerServer();
+            boolean open = DoorWalk.doorOpen(server.overworld(), spot);
+            Playtest.log("DOORWALK " + label + ": eight seconds later the door is " + (open ? "OPEN" : "closed"));
+            if (open) Playtest.fail(label + ": the door that somebody left through stood open eight seconds later");
+        });
     }
 
     /** The first-minutes checks: dry, open ground, near the layout's landing anchor, with Founders Row built beside it. */

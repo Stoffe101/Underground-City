@@ -24,7 +24,16 @@ public final class LockpickScreen extends UcScreen {
 
     private final String label;
     private final int pins, timeLimit, holdTicks;
-    private double position = 0.5;
+    private final float tremor, phase;
+    private double position = 0.5, prevPosition = 0.5;
+    /** The feel as it is shown: a better reading shows at once, a worse one only after it has held for {@link #DWELL} ticks, and the glow fades between readings, so a reading that flickers on the server does not flicker here. */
+    private int shownFeel, pendingFeel, feelChangedAge, serverTickAtReceive, ageAtReceive;
+    private float glow, prevGlow;
+    private static final int DWELL = 3;
+    /** Test only ({@code -Duc.lock.latency=<ticks>}): the client's reports reach the server this many ticks late, to play the screen against a slow connection. */
+    private static final int LATENCY = Integer.getInteger("uc.lock.latency", 0);
+    private final java.util.ArrayDeque<float[]> late = new java.util.ArrayDeque<>();
+    private float lastNeedleOffset;
     private boolean mouseDown, spaceDown, left, right, keyboardMode;
     private int feel, pinsSet, strain, timeLeft, age, closeIn = -1, lastSentTick = -100, pulse;
     private float lastSentPosition = -1;
@@ -34,9 +43,11 @@ public final class LockpickScreen extends UcScreen {
     private boolean qa;
     private int barX, barY, barW;
 
-    LockpickScreen(String label, int pins, int timeLimit, int holdTicks) {
+    LockpickScreen(String label, int pins, int timeLimit, int holdTicks, float tremor, float phase) {
         super(Component.literal("Underground City | Lock"));
         this.label = label;
+        this.tremor = tremor;
+        this.phase = phase;
         this.pins = pins;
         this.timeLimit = Math.max(1, timeLimit);
         this.holdTicks = Math.max(1, holdTicks);
@@ -45,9 +56,9 @@ public final class LockpickScreen extends UcScreen {
 
     /** Capture harness: a fixed pose that never talks to a server. */
     static LockpickScreen forCapture(String label, int pins, int set, int feel, int strain, double timeLeftShare, double position, boolean pressing) {
-        LockpickScreen screen = new LockpickScreen(label, pins, 900, 10);
+        LockpickScreen screen = new LockpickScreen(label, pins, 900, 10, 0.006f, 0f);
         screen.qa = true;
-        screen.pinsSet = set; screen.feel = feel; screen.strain = strain; screen.timeLeft = (int) (900 * timeLeftShare);
+        screen.pinsSet = set; screen.feel = feel; screen.shownFeel = feel; screen.pendingFeel = feel; screen.glow = feel; screen.prevGlow = feel; screen.strain = strain; screen.timeLeft = (int) (900 * timeLeftShare);
         screen.position = position; screen.mouseDown = pressing;
         return screen;
     }
@@ -55,11 +66,14 @@ public final class LockpickScreen extends UcScreen {
     /** Capture harness: the screen after the server ended the pick. */
     LockpickScreen poseResult(LockpickSession.State state, String words) { result = state; note = words; return this; }
 
-    void update(int feel, int pinsSet, int strain, int timeLeft) {
+    void update(int feel, int pinsSet, int strain, int timeLeft, int serverTick) {
         if (pinsSet > this.pinsSet && minecraft != null) {
             minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK.value(), 0.7f + 0.15f * pinsSet, 0.9f));
         }
         this.feel = Mth.clamp(feel, 0, 3); this.pinsSet = pinsSet; this.strain = Mth.clamp(strain, 0, 100); this.timeLeft = timeLeft;
+        this.serverTickAtReceive = serverTick; this.ageAtReceive = age;
+        pendingFeel = this.feel;
+        if (pendingFeel > shownFeel) { shownFeel = pendingFeel; feelChangedAge = age; }
     }
 
     void finish(LockpickSession.State state, String words) {
@@ -67,6 +81,13 @@ public final class LockpickScreen extends UcScreen {
         if (minecraft != null && state == LockpickSession.State.BROKEN) minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.ITEM_BREAK, 1.0f, 1.0f));
         if (closeIn == 0) onClose();
     }
+
+    // ---- measurement: the scripted playtest ("lockjitter") reads these; nothing else does
+    double debugPosition() { return position; }
+    int debugShownFeel() { return shownFeel; }
+    int debugPinsSet() { return pinsSet; }
+    int[] debugBar() { return new int[] {barX, barY, barW}; }
+    float debugWobblePixels() { return lastNeedleOffset; }
 
     @Override protected int accent() { return UcUi.UNDERGROUND; }
     @Override protected String titleText() { return "Pick the lock"; }
@@ -83,15 +104,22 @@ public final class LockpickScreen extends UcScreen {
 
     @Override public void tick() {
         age++; pulse++;
+        prevPosition = position;
+        prevGlow = glow;
+        glow += (shownFeel - glow) * 0.45f;   // the glow settles in about a tenth of a second whatever the frame rate
+        if (Math.abs(shownFeel - glow) < 0.03f) glow = shownFeel;
+        if (pendingFeel < shownFeel && age - feelChangedAge >= DWELL) { shownFeel = pendingFeel; feelChangedAge = age; }
         if (closeIn > 0 && --closeIn == 0) { onClose(); return; }
         if (qa || result != null) return;
         if (keyboardMode) position = Mth.clamp(position + ((right ? 1 : 0) - (left ? 1 : 0)) * 0.012, 0.0, 1.0);
         boolean pressing = mouseDown || spaceDown;
         // a report whenever something changed, and a heartbeat so the server never works on an old position
         if (Math.abs(position - lastSentPosition) > 0.0009 || pressing != lastSentPress || age - lastSentTick >= 4) {
-            LockNetwork.sendInput((float) position, pressing);
+            if (LATENCY > 0) late.addLast(new float[] {age + LATENCY, (float) position, pressing ? 1 : 0});
+            else LockNetwork.sendInput((float) position, pressing);
             lastSentPosition = (float) position; lastSentPress = pressing; lastSentTick = age;
         }
+        while (!late.isEmpty() && late.peekFirst()[0] <= age) { float[] m = late.pollFirst(); LockNetwork.sendInput(m[1], m[2] > 0); }
     }
 
     @Override public void mouseMoved(double mouseX, double mouseY) {
@@ -160,22 +188,34 @@ public final class LockpickScreen extends UcScreen {
         g.fill(barX - 2, by - 2, barX + barW + 2, by + bh + 2, 0xff2a4259);
         g.fill(barX, by, barX + barW, by + bh, 0xff0d1620);
         for (int t = 1; t < 10; t++) g.fill(barX + barW * t / 10, by + bh - 5, barX + barW * t / 10 + 1, by + bh, 0xff22364a);
-        int px0 = barX + Math.round((float) (position * barW));
-        int glow = FEEL_COLOUR[feel];
-        if (feel > 0 && result == null) {
-            int spread = feel == 1 ? 34 : feel == 2 ? 22 : 14;
-            g.fillGradient(Math.max(barX, px0 - spread), by, px0, by + bh, 0x00000000, UcUi.mix(0xff0d1620, glow, feel == 3 ? 0.7f : 0.45f));
-            g.fillGradient(px0, by, Math.min(barX + barW, px0 + spread), by + bh, UcUi.mix(0xff0d1620, glow, feel == 3 ? 0.7f : 0.45f), 0x00000000);
+        // where the pick is drawn: the mouse's place at once (it is exact), the keys' place between ticks (they move in steps of a tick), plus the hand's tremor while the button is down, the same wobble the server uses
+        double shown = keyboardMode ? Mth.lerp(partial, prevPosition, position) : position;
+        double wobble = LockpickSession.tremorOffset(tremor, phase, serverTickAtReceive + (age - ageAtReceive) + partial, pressing && !qa);
+        float needle = barX + (float) ((shown + wobble) * barW);
+        int px0 = Math.round(needle);
+        lastNeedleOffset = (float) (wobble * barW);
+        float level = Mth.lerp(partial, prevGlow, glow);
+        int low = Mth.clamp((int) Math.floor(level), 0, 3), high = Math.min(3, low + 1);
+        float blend = level - low;
+        int glowColour = UcUi.mix(FEEL_COLOUR[low], FEEL_COLOUR[high], blend);
+        if (level > 0.05f && result == null) {
+            int spread = level < 1.5f ? 34 : level < 2.5f ? 22 : 14;
+            int edge = UcUi.mix(0xff0d1620, glowColour, Math.min(0.7f, 0.15f + 0.18f * level));
+            g.fillGradient(Math.max(barX, px0 - spread), by, px0, by + bh, 0x00000000, edge);
+            g.fillGradient(px0, by, Math.min(barX + barW, px0 + spread), by + bh, edge, 0x00000000);
         }
-        // the pick: a needle with a head; it presses down when the button is held
+        // the pick: a needle with a head; it presses down when the button is held. It is drawn at a fraction of a GUI pixel, so at a high GUI scale it still moves in device pixels.
+        g.pose().pushPose();
+        g.pose().translate(needle - px0, 0, 0);
         int tip = by + (pressing ? 8 : 4);
         g.fill(px0 - 1, tip, px0 + 2, by + bh + 3, pressing ? 0xffffffff : 0xffd5dde5);
         g.fill(px0 - 4, tip - 4, px0 + 5, tip, pressing ? UcUi.AMBER : 0xffb9cbd9);
         g.fill(px0 - 3, tip - 5, px0 + 4, tip - 4, pressing ? UcUi.shade(UcUi.AMBER, 1.2f) : 0xffeaf2f8);
+        g.pose().popPose();
 
         // what it feels like, in words
-        String feelText = FEEL[feel];
-        UcUi.display(g, font, feelText, cx - UcUi.displayWidth(font, feelText) / 2, by + bh + 10, result == null ? (feel == 0 ? UcUi.DIM : glow) : UcUi.FAINT);
+        String feelText = FEEL[shownFeel];
+        UcUi.display(g, font, feelText, cx - UcUi.displayWidth(font, feelText) / 2, by + bh + 10, result == null ? (shownFeel == 0 ? UcUi.DIM : FEEL_COLOUR[shownFeel]) : UcUi.FAINT);
 
         // strain and time
         int meterW = Math.min(barW, 280), meterX = cx - meterW / 2, my = by + bh + 28;

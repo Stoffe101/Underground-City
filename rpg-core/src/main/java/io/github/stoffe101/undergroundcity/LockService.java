@@ -104,7 +104,7 @@ public final class LockService {
         LockpickSession.Profile profile = LockProfiles.INSTANCE.find(target.profile());
         Active active = new Active(player.getUUID(), target, new LockpickSession(profile, seedFor(level, target.pos())));
         ACTIVE.put(player.getUUID(), active);
-        LockNetwork.open(player, target.label(), profile);
+        LockNetwork.open(player, target.label(), active.session);
         return null;
     }
 

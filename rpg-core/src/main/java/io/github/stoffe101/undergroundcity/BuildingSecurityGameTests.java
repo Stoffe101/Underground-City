@@ -51,7 +51,10 @@ public final class BuildingSecurityGameTests {
         final BlockPos base, doorLower;
         final CityBuildings.Building building;
 
-        House(GameTestHelper helper) {
+        House(GameTestHelper helper) { this(helper, Direction.NORTH); }
+
+        /** {@code doorFacing} NORTH: the door's open side faces the street, so its leaf stands on the room side of its block; SOUTH: the other way round (both occur in generated buildings). */
+        House(GameTestHelper helper, Direction doorFacing) {
             level = helper.getLevel();
             // Lost Cities' plan, and so a building's volume, is per chunk: the building takes its chunk, its north wall on the chunk's edge, so that the street in front of the door is the
             // neighbouring chunk (a street chunk is not a building). Wherever the test runner put this test (its place moves with the number of tests) the fixture is put there, which is what
@@ -67,8 +70,8 @@ public final class BuildingSecurityGameTests {
             for (int x = 0; x <= 6; x++) for (int z = 0; z <= 6; z++) level.setBlock(base.offset(x, 4, z), Blocks.STONE.defaultBlockState(), 2);   // the roof
             for (int x = 1; x <= 5; x++) for (int z = 1; z <= 5; z++) level.setBlock(base.offset(x, -1, z), Blocks.OAK_PLANKS.defaultBlockState(), 2);   // the floor of the room
             doorLower = base.offset(3, 0, 0);
-            level.setBlock(doorLower, Blocks.OAK_DOOR.defaultBlockState().setValue(DoorBlock.FACING, Direction.NORTH).setValue(DoorBlock.HALF, DoubleBlockHalf.LOWER), 2);
-            level.setBlock(doorLower.above(), Blocks.OAK_DOOR.defaultBlockState().setValue(DoorBlock.FACING, Direction.NORTH).setValue(DoorBlock.HALF, DoubleBlockHalf.UPPER), 2);
+            level.setBlock(doorLower, Blocks.OAK_DOOR.defaultBlockState().setValue(DoorBlock.FACING, doorFacing).setValue(DoorBlock.HALF, DoubleBlockHalf.LOWER), 2);
+            level.setBlock(doorLower.above(), Blocks.OAK_DOOR.defaultBlockState().setValue(DoorBlock.FACING, doorFacing).setValue(DoorBlock.HALF, DoubleBlockHalf.UPPER), 2);
             CityBuildings.SecurityClass flats = CityBuildings.INSTANCE.securityClass("flat_block");
             check(flats != null && flats.lockedExterior(), "the flat_block class did not load from data");
             ChunkPos chunk = new ChunkPos(base);
@@ -275,6 +278,174 @@ public final class BuildingSecurityGameTests {
         knock(friend, h.doorLower, Direction.NORTH);
         check(!level.getBlockState(h.doorLower).getValue(DoorBlock.OPEN), "a door opened by hand after its window lapsed");
         check(start <= WorkOrderLedger.get(level.getServer()).clock(), "the clock ran backwards");
+        helper.succeed();
+    }
+
+    // ------------------------------------------------------------------------------------------------ the doorway (the survival bypass found in the first human playtest)
+
+    /**
+     * Where a person's feet stand when they walk into a closed door and stop against its leaf (holding W): the leaf is 3/16 thick and fills the edge of its block opposite the door's facing, a player is
+     * 0.6 wide, so the centre stops 0.3 from the leaf's face. {@code streetSide} picks the sky side of the north wall (the street); the door's front is the street when it faces north.
+     */
+    static Vec3 flush(BlockPos doorLower, Direction doorFacing, boolean streetSide) {
+        boolean streetIsFront = doorFacing == Direction.NORTH;
+        double along = streetSide == streetIsFront ? -0.5 + 3.0 / 16.0 + 0.3 : -0.5 - 0.3;   // measured from the block's centre toward the front
+        Vec3 centre = Vec3.atBottomCenterOf(doorLower);
+        return centre.add(doorFacing.getStepX() * along, 0, doorFacing.getStepZ() * along);
+    }
+
+    @GameTest(template = "empty", batch = "uc_building_flush_n", timeoutTicks = 200)
+    public static void aVisitorWalkingIntoALockedDoorThatFacesTheStreetCannotOpenIt(GameTestHelper helper) {
+        try (House h = new House(helper, Direction.NORTH)) { flushBody(helper, h, Direction.NORTH); }
+    }
+
+    @GameTest(template = "empty", batch = "uc_building_flush_s", timeoutTicks = 200)
+    public static void aVisitorWalkingIntoALockedDoorThatFacesTheRoomCannotOpenIt(GameTestHelper helper) {
+        try (House h = new House(helper, Direction.SOUTH)) { flushBody(helper, h, Direction.SOUTH); }
+    }
+
+    private static void flushBody(GameTestHelper helper, House h, Direction facing) {
+        ServerLevel level = h.level;
+        BlockState closed = level.getBlockState(h.doorLower);
+        Vec3 street = flush(h.doorLower, facing, true), room = flush(h.doorLower, facing, false);
+        check(BuildingGuard.outsideSide(level, h.doorLower, closed, street), "a visitor standing against the leaf on the street side is taken for somebody inside (door facing " + facing + ", feet at " + street + ")");
+        check(!BuildingGuard.outsideSide(level, h.doorLower, closed, room), "somebody standing against the leaf on the room side is taken for a visitor (door facing " + facing + ", feet at " + room + ")");
+
+        for (boolean armed : new boolean[] {false, true}) {   // with and without a lockpick: the playtest saw both walk in
+            ServerPlayer thief = visitor(helper, h, armed ? "uc_flp" : "uc_fln");
+            thief.getInventory().clearContent();
+            if (armed) thief.getInventory().add(picks(3));
+            thief.moveTo(street.x, street.y, street.z);
+            knock(thief, h.doorLower, Direction.NORTH);
+            check(!level.getBlockState(h.doorLower).getValue(DoorBlock.OPEN), "a visitor walking into the door " + (armed ? "with" : "without") + " a lockpick opened it with a click (door facing " + facing + ")");
+            check(LockService.busy(thief.getUUID()) == armed, "a lock session " + (armed ? "did not start" : "started") + " for a visitor " + (armed ? "with" : "without") + " a lockpick");
+            LockService.abort(thief);
+            LockService.resetForTest();
+        }
+
+        // the person inside, standing against the same leaf from the other side, still leaves by it
+        ServerPlayer resident = visitor(helper, h, "uc_flr");
+        resident.getInventory().clearContent();
+        resident.moveTo(room.x, room.y, room.z);
+        knock(resident, h.doorLower, Direction.SOUTH);
+        check(level.getBlockState(h.doorLower).getValue(DoorBlock.OPEN), "somebody inside, standing against the door, could not open it to leave (door facing " + facing + ")");
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty", batch = "uc_building_redstone", timeoutTicks = 100)
+    public static void aLockedDoorThatRedstoneOpensIsShutAgainWithinATick(GameTestHelper helper) {
+        House h = new House(helper, Direction.NORTH);
+        h.level.setBlock(h.doorLower.north(), Blocks.REDSTONE_BLOCK.defaultBlockState(), 3);   // the street cell in front of the door
+        boolean opened = h.level.getBlockState(h.doorLower).getValue(DoorBlock.OPEN);
+        if (!opened) { h.close(); throw new AssertionError("the fixture did not open the door by redstone, so the test would prove nothing"); }
+        int before = BuildingGuard.shutByWatch;
+        helper.runAfterDelay(4, () -> {
+            try {
+                check(!h.level.getBlockState(h.doorLower).getValue(DoorBlock.OPEN), "a locked door stood open after redstone powered it");
+                check(BuildingGuard.shutByWatch > before, "the door closed but not by the watch");
+                helper.succeed();
+            } finally { h.close(); }
+        });
+    }
+
+    @GameTest(template = "empty", batch = "uc_building_signal", timeoutTicks = 200)
+    public static void aVisitorCannotRigAPlateOrABlockOfRedstoneAgainstALockedDoor(GameTestHelper helper) {
+        try (House h = new House(helper, Direction.NORTH)) {
+            ServerPlayer thief = visitor(helper, h, "uc_bgs");
+            thief.getInventory().clearContent();
+            BlockPos ground = h.doorLower.north().below();
+            h.level.setBlock(ground, Blocks.STONE.defaultBlockState(), 2);
+            for (var item : List.of(Items.REDSTONE_BLOCK, Items.STONE_PRESSURE_PLATE, Items.OAK_PRESSURE_PLATE, Items.LEVER, Items.REDSTONE_TORCH)) {
+                use(thief, new ItemStack(item), ground, Direction.UP);
+                check(h.level.getBlockState(ground.above()).isAir(), "a visitor put " + item + " against a locked door");
+            }
+            // control: farther than the reach, the same plate is allowed (the street is public)
+            BlockPos far = h.doorLower.north(4).below();
+            h.level.setBlock(far, Blocks.STONE.defaultBlockState(), 2);
+            h.level.setBlock(far.above(), Blocks.AIR.defaultBlockState(), 2);
+            use(thief, new ItemStack(Items.STONE_PRESSURE_PLATE), far, Direction.UP);
+            check(h.level.getBlockState(far.above()).is(Blocks.STONE_PRESSURE_PLATE), "control: a plate four blocks from the door was refused (the cell holds " + h.level.getBlockState(far.above()).getBlock() + ", the ground " + h.level.getBlockState(far).getBlock() + ")");
+            helper.succeed();
+        }
+    }
+
+    @GameTest(template = "empty", batch = "uc_building_exit", timeoutTicks = 200)
+    public static void aDoorOpenedFromInsideToLeaveShutsItselfAndStaysLockedToTheStreet(GameTestHelper helper) {
+        try (House h = new House(helper, Direction.NORTH)) {
+            ServerLevel level = h.level;
+            PropertyLocks locks = PropertyLocks.get(level.getServer());
+            ServerPlayer resident = visitor(helper, h, "uc_bge");
+            resident.getInventory().clearContent();
+            Vec3 room = flush(h.doorLower, Direction.NORTH, false);
+            resident.moveTo(room.x, room.y, room.z);
+            knock(resident, h.doorLower, Direction.SOUTH);
+            check(level.getBlockState(h.doorLower).getValue(DoorBlock.OPEN), "the person inside could not open the door");
+            check(locks.openOnPurpose(h.doorLower), "the exit was not remembered");
+            check(!locks.breached(h.doorLower, WorkOrderLedger.get(level.getServer()).clock()), "leaving unlocked the door for the street");
+            check(!BuildingGuard.enforce(level, h.doorLower), "the watch shut a door somebody had just opened to leave");
+            // a visitor outside, on the street, clicks it while it stands open: it shuts, and he cannot open it again
+            ServerPlayer thief = visitor(helper, h, "uc_bgt2");
+            Vec3 street = flush(h.doorLower, Direction.NORTH, true);
+            thief.moveTo(street.x, street.y, street.z);
+            thief.getInventory().clearContent();
+            knock(thief, h.doorLower, Direction.NORTH);
+            check(!level.getBlockState(h.doorLower).getValue(DoorBlock.OPEN), "a click on the open door did not shut it");
+            knock(thief, h.doorLower, Direction.NORTH);
+            check(!level.getBlockState(h.doorLower).getValue(DoorBlock.OPEN), "the visitor opened the door after the resident left");
+            // the resident leaves it open again and walks off: the sweep shuts it when the few seconds are over
+            level.setBlock(h.doorLower, level.getBlockState(h.doorLower).setValue(DoorBlock.OPEN, true), 2);
+            locks.closed(h.doorLower);   // the earlier exit is over; this one has run its few seconds (the shared clock of this test world cannot be advanced)
+            locks.exitOpen(h.doorLower, WorkOrderLedger.get(level.getServer()).clock() - 1);
+            LockService.sweep(level.getServer());
+            check(!level.getBlockState(h.doorLower).getValue(DoorBlock.OPEN), "the door that somebody left open was not shut by the sweep");
+            check(!locks.openOnPurpose(h.doorLower), "the shut door is still on the sweep's list");
+            helper.succeed();
+        }
+    }
+
+    @GameTest(template = "empty", batch = "uc_building_watch", timeoutTicks = 200)
+    public static void aDoorFoundOpenWithoutAReasonIsShutExceptWhereABuilderWorks(GameTestHelper helper) {
+        try (House h = new House(helper, Direction.NORTH)) {
+            ServerLevel level = h.level;
+            level.setBlock(h.doorLower, level.getBlockState(h.doorLower).setValue(DoorBlock.OPEN, true), 2);
+            check(BuildingGuard.watchAround(level, h.doorLower.north(2)) == 1, "a door that stood open for no reason was not found within six blocks");
+            check(!level.getBlockState(h.doorLower).getValue(DoorBlock.OPEN), "the door was found but not shut");
+            // a picked door is somebody's business until its window ends
+            PropertyLocks.get(level.getServer()).breach(h.doorLower, WorkOrderLedger.get(level.getServer()).clock() + 200);
+            level.setBlock(h.doorLower, level.getBlockState(h.doorLower).setValue(DoorBlock.OPEN, true), 2);
+            check(BuildingGuard.watchAround(level, h.doorLower.north(2)) == 0 && level.getBlockState(h.doorLower).getValue(DoorBlock.OPEN), "the watch shut a door inside its picked window");
+            PropertyLocks.get(level.getServer()).breach(h.doorLower, WorkOrderLedger.get(level.getServer()).clock() - 1);
+            PropertyLocks.get(level.getServer()).closed(h.doorLower);
+            // a builder in creative mode is not fought
+            ServerPlayer builder = visitor(helper, h, "uc_bgb");
+            builder.setGameMode(GameType.CREATIVE);
+            level.addFreshEntity(builder);
+            builder.moveTo(h.doorLower.getX() + 0.5, h.doorLower.getY(), h.doorLower.getZ() - 1.5);
+            check(BuildingGuard.enforce(level, h.doorLower) == false, "a creative builder's open door was shut");
+            builder.discard();
+            helper.succeed();
+        }
+    }
+
+    @GameTest(template = "empty", batch = "uc_building")
+    public static void theDoorTableOfAnOlderSaveGetsItsCloseTimeFromItsWindow(GameTestHelper helper) {
+        CompoundTag old = new CompoundTag();
+        old.putInt("schema_version", 1);
+        net.minecraft.nbt.ListTag list = new net.minecraft.nbt.ListTag();
+        CompoundTag door = new CompoundTag();
+        door.putLong("pos", new BlockPos(3, 70, 4).asLong());
+        door.putLong("breached_until", 4000);
+        door.putLong("jammed_until", 0);
+        door.putBoolean("closed", false);
+        door.putInt("breaches", 1);
+        list.add(door);
+        old.put("doors", list);
+        PropertyLocks loaded = PropertyLocks.load(old);
+        PropertyLocks.Door d = loaded.door(new BlockPos(3, 70, 4));
+        check(d != null && d.closeAt() == 4000 && !d.closed(), "a schema 1 door did not keep its window as its close time: " + d);
+        check(loaded.dueToClose(3999).isEmpty() && loaded.dueToClose(4000).size() == 1, "the old window no longer decides when the door is shut");
+        CompoundTag saved = loaded.save(new CompoundTag());
+        check(saved.getInt("schema_version") == 2 && PropertyLocks.load(saved).door(new BlockPos(3, 70, 4)).closeAt() == 4000, "the upgraded table did not round-trip");
         helper.succeed();
     }
 

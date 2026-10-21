@@ -37,8 +37,10 @@ public final class LockpickSessionGameTests {
     interface Hand { void tick(double position, boolean pressing); }
 
     /** The same honest player, but the ticks go through {@code hand} (for example the server's own per-tick handling, with its endings), the feel is still read from the session. */
-    static LockpickSession.State solve(LockpickSession session, boolean careless, Hand hand) {
-        final double step = 0.012;
+    static LockpickSession.State solve(LockpickSession session, boolean careless, Hand hand) { return solve(session, careless, hand, 0.012); }
+
+    /** {@code step} is how far the hand slides per tick while reading the bar: 0.012 is four seconds end to end, 0.005 is ten. */
+    static LockpickSession.State solve(LockpickSession session, boolean careless, Hand hand, double step) {
         int guard = 0;
         while (session.active() && guard++ < 6000) {
             int pin = session.pin();
@@ -75,11 +77,26 @@ public final class LockpickSessionGameTests {
                 LockpickSession session = new LockpickSession(profile(id), 1000L + seed);
                 if (solve(session, false) == LockpickSession.State.OPENED) opened++;
             }
-            // an ordinary lock yields to a careful hand almost every time; a high-security one is meant to fail now and then even for a careful one (measured: about 4 in 5)
-            double floor = id.equals("high_security") ? 0.6 : 0.8;
-            check(opened >= trials * floor, id + ": a careful player opened only " + opened + " of " + trials + " locks");
-            if (id.equals("high_security")) check(opened < trials, "a high-security lock opened for a careful player every time: it is no harder than a deadbolt");
+            // a hand at a person's pace opens every kind of lock; how hard a lock is shows in how long a careful hand may take (the next test), not in a reading that lies from tick to tick
+            check(opened >= trials * 0.8, id + ": a careful player opened only " + opened + " of " + trials + " locks");
         }
+        helper.succeed();
+    }
+
+    /**
+     * The first version made a high-security lock hard by drawing a new random error into the reading every tick, which a person sees as a flickering screen. Its difficulty is now the time it takes:
+     * five pins and a tight band, so a hand that reads the bar slowly and carefully (ten seconds a pass) opens a deadbolt but runs out of time on a high-security lock.
+     */
+    @GameTest(template = "empty", batch = "uc_lockpick")
+    public static void aSlowCarefulHandOpensADeadboltButRunsOutOfTimeOnAHighSecurityLock(GameTestHelper helper) {
+        int deadbolt = 0, high = 0, trials = 30;
+        for (int seed = 0; seed < trials; seed++) {
+            LockpickSession a = new LockpickSession(profile("deadbolt"), 300L + seed), b = new LockpickSession(profile("high_security"), 300L + seed);
+            if (solve(a, false, a::tick, 0.005) == LockpickSession.State.OPENED) deadbolt++;
+            if (solve(b, false, b::tick, 0.005) == LockpickSession.State.OPENED) high++;
+        }
+        check(deadbolt >= trials * 0.9, "a slow careful hand opened only " + deadbolt + " of " + trials + " deadbolts");
+        check(high <= trials / 3, "a slow careful hand opened " + high + " of " + trials + " high-security locks: it is no harder than a deadbolt");
         helper.succeed();
     }
 
@@ -128,6 +145,90 @@ public final class LockpickSessionGameTests {
         check(session.pinsSet() == 0, "letting go did not reset the hold");
         for (int tick = 0; tick < 6; tick++) session.tick(spot, true);
         check(session.pinsSet() == 1, "a full hold on the spot did not set the pin (tremor allowed for: " + session.state() + ")");
+        helper.succeed();
+    }
+
+    private static final String[] LADDER = {"latch", "deadbolt", "commercial", "high_security", "safe"};
+
+    /** The first human playtest called the screen jittery. The cause that could be measured: the reading changed by itself, many times a second, with the pick held still. */
+    @GameTest(template = "empty", batch = "uc_lockpick")
+    public static void aPickHeldStillReadsTheSameFeelEveryTick(GameTestHelper helper) {
+        for (String id : LADDER) for (int seed = 0; seed < 12; seed++) for (double at = 0.02; at < 1.0; at += 0.07) {
+            LockpickSession session = new LockpickSession(profile(id), 500L + seed);
+            session.tick(at, false);
+            int first = session.feel(), changes = 0;
+            for (int t = 0; t < 120; t++) { session.tick(at, false); if (session.feel() != first) changes++; }
+            check(changes == 0, id + " seed " + seed + ": the feel of a pick held still at " + at + " changed " + changes + " times in six seconds");
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty", batch = "uc_lockpick")
+    public static void slidingTheBarTowardTheSpotNeverMakesTheReadingWorseAndAwayNeverBetter(GameTestHelper helper) {
+        for (String id : LADDER) for (int seed = 0; seed < 20; seed++) {
+            LockpickSession probe = new LockpickSession(profile(id), 900L + seed);
+            double spot = probe.sweetSpot();
+            int worse = 0, better = 0, previous = -1;
+            LockpickSession toward = new LockpickSession(profile(id), 900L + seed);
+            for (double p = 0.0; p < spot; p += 0.004) {
+                toward.tick(p, false);
+                if (previous >= 0 && toward.feel() < previous) worse++;
+                previous = toward.feel();
+            }
+            previous = -1;
+            LockpickSession away = new LockpickSession(profile(id), 900L + seed);
+            for (double p = spot; p <= 1.0; p += 0.004) {
+                away.tick(p, false);
+                if (previous >= 0 && away.feel() > previous) better++;
+                previous = away.feel();
+            }
+            check(worse == 0, id + " seed " + seed + ": the reading got worse " + worse + " times while the pick slid toward the spot");
+            check(better == 0, id + " seed " + seed + ": the reading got better " + better + " times while the pick slid away from the spot");
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty", batch = "uc_lockpick")
+    public static void theTremorIsSlowVisibleAndOnlyWhileThePickIsPressed(GameTestHelper helper) {
+        check(LockpickSession.tremorOffset(0.01, 1.0, 40, false) == 0.0, "a pick that is not pressed shakes");
+        double max = 0, peak = 0;
+        int crossings = 0;
+        double last = 0;
+        for (int t = 0; t < 300; t++) {
+            double offset = LockpickSession.tremorOffset(0.01, 0.4, t, true);
+            peak = Math.max(peak, Math.abs(offset));
+            if (t > 0 && Math.signum(offset) != Math.signum(last)) crossings++;
+            last = offset;
+            max = Math.max(max, Math.abs(offset - (t > 0 ? last : 0)));
+        }
+        check(peak > 0.0099 && peak <= 0.01 + 1e-9, "the tremor does not reach its amplitude, or passes it: " + peak);
+        check(crossings <= 21, "the tremor swings " + crossings + " times in fifteen seconds (more than once every 1.4 seconds): too fast to see or play against");
+        // the server's own use of it is the same function the screen draws
+        LockpickSession session = new LockpickSession(profile("deadbolt"), 31L);
+        double spot = session.sweetSpot();
+        session.tick(spot, true);
+        check(Math.abs(LockpickSession.tremorOffset(session.profile().tremor(), session.tremorPhase(), session.ticks(), true)) <= session.profile().tremor() + 1e-9, "the screen's tremor is not the server's");
+        helper.succeed();
+    }
+
+    /** A late position must not turn into a strain: the position and the press travel in one message, so a pick that is late is late as a whole. */
+    @GameTest(template = "empty", batch = "uc_lockpick")
+    public static void aLateInputIsLateAsAWholeAndNeverPressesOnAnOldPosition(GameTestHelper helper) {
+        for (int delay : new int[] {0, 2, 5, 10}) {
+            LockpickSession session = new LockpickSession(profile("deadbolt"), 61L);
+            double spot = session.sweetSpot(), far = spot < 0.5 ? 0.9 : 0.1;
+            java.util.ArrayDeque<double[]> wire = new java.util.ArrayDeque<>();
+            double[] seen = {far, 0};
+            // the player sits at a far place, then moves to the spot and presses in the same moment (one message); the server hears it `delay` ticks later
+            for (int t = 0; t < 12 + delay + 40 && session.active() && session.pinsSet() == 0; t++) {
+                double[] sent = t < 12 ? new double[] {far, 0} : new double[] {spot, 1};
+                wire.addLast(sent);
+                if (wire.size() > delay) seen = wire.pollFirst();
+                session.tick(seen[0], seen[1] > 0);
+            }
+            check(session.pinsSet() == 1, "with " + delay + " ticks of delay the pin was not set (" + session.state() + ", strain " + session.strainPercent() + ")");
+            check(session.strainPercent() == 0, "with " + delay + " ticks of delay a press landed on the old position (strain " + session.strainPercent() + ")");
+        }
         helper.succeed();
     }
 

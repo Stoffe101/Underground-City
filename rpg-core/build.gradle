@@ -79,6 +79,8 @@ minecraft {
             // D-103: Core refuses to load a world that holds Traveler's Backpack data without the mod. -PucAcceptLegacyBackpackLoss=true is the deliberate way past it
             // for a development launch (Core copies the world to uc-backups/ first); nothing sets it by default.
             if (providers.gradleProperty('ucAcceptLegacyBackpackLoss').orNull == 'true') property 'uc.acceptLegacyBackpackLoss', 'true'
+            // Privately licensed content (docs/legal/private-content.md) is loaded from a folder OUTSIDE the checkout: -PucPrivateContent=<folder> or the UC_PRIVATE_CONTENT_DIR environment variable.
+            if (providers.gradleProperty('ucPrivateContent').isPresent()) property 'uc.private.content', providers.gradleProperty('ucPrivateContent').get()
             if (!devPackMods.isEmpty()) {
                 // Dev-pack mods such as TaCZ are mixin mods whose refmaps use SRG names; this development environment
                 // runs with the official names, so Mixin must remap the refmaps (the documented ForgeGradle 6 recipe).
@@ -109,7 +111,8 @@ minecraft {
                 project.properties.each { name, value ->
                     if (name.startsWith('ucPt') && name.length() > 4) jvmArgs "-Duc.playtest.${name.substring(4).toLowerCase()}=${value}"
                 }
-                args '--width', '1280', '--height', '720'
+                if (providers.gradleProperty('ucLockLatency').isPresent()) jvmArgs "-Duc.lock.latency=${providers.gradleProperty('ucLockLatency').get()}"
+                args '--width', providers.gradleProperty('ucPtWidth').orElse('1280').get(), '--height', providers.gradleProperty('ucPtHeight').orElse('720').get()
                 if (worldLayout == 'archipelago') jvmArgs '-Duc.devPreset=underground_city:archipelago'
             }
             if (providers.gradleProperty('ucPhotoTour').isPresent()) {

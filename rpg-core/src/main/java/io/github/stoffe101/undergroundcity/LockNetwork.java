@@ -19,12 +19,12 @@ import java.util.Optional;
  * Nothing the client sends decides any outcome; the pins are never sent.
  */
 public final class LockNetwork {
-    private static final String VERSION = "1";
+    private static final String VERSION = "2";
     private static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
         ResourceLocation.fromNamespaceAndPath(UndergroundCity.MOD_ID, "lock"), () -> VERSION, VERSION::equals, VERSION::equals);
 
-    private record Open(String label, int pins, int timeLimit, int holdTicks) {}
-    private record Progress(int feel, int pinsSet, int strain, int timeLeft) {}
+    private record Open(String label, int pins, int timeLimit, int holdTicks, float tremor, float phase) {}
+    private record Progress(int feel, int pinsSet, int strain, int timeLeft, int tick) {}
     private record Finished(int state, String note) {}
     private record Input(float position, boolean pressing) {}
     private record Abort() {}
@@ -32,18 +32,18 @@ public final class LockNetwork {
     private LockNetwork() {}
 
     public static void register() {
-        CHANNEL.registerMessage(0, Open.class, (p, b) -> { b.writeUtf(p.label, 48); b.writeVarInt(p.pins); b.writeVarInt(p.timeLimit); b.writeVarInt(p.holdTicks); },
-            b -> new Open(b.readUtf(48), b.readVarInt(), b.readVarInt(), b.readVarInt()),
+        CHANNEL.registerMessage(0, Open.class, (p, b) -> { b.writeUtf(p.label, 48); b.writeVarInt(p.pins); b.writeVarInt(p.timeLimit); b.writeVarInt(p.holdTicks); b.writeFloat(p.tremor); b.writeFloat(p.phase); },
+            b -> new Open(b.readUtf(48), b.readVarInt(), b.readVarInt(), b.readVarInt(), b.readFloat(), b.readFloat()),
             (p, supplier) -> {
                 NetworkEvent.Context context = supplier.get();
-                if (context.getDirection().getReceptionSide().isClient()) context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> ClientLock.open(p.label, p.pins, p.timeLimit, p.holdTicks)));
+                if (context.getDirection().getReceptionSide().isClient()) context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> ClientLock.open(p.label, p.pins, p.timeLimit, p.holdTicks, p.tremor, p.phase)));
                 context.setPacketHandled(true);
             }, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
-        CHANNEL.registerMessage(1, Progress.class, (p, b) -> { b.writeVarInt(p.feel); b.writeVarInt(p.pinsSet); b.writeVarInt(p.strain); b.writeVarInt(p.timeLeft); },
-            b -> new Progress(b.readVarInt(), b.readVarInt(), b.readVarInt(), b.readVarInt()),
+        CHANNEL.registerMessage(1, Progress.class, (p, b) -> { b.writeVarInt(p.feel); b.writeVarInt(p.pinsSet); b.writeVarInt(p.strain); b.writeVarInt(p.timeLeft); b.writeVarInt(p.tick); },
+            b -> new Progress(b.readVarInt(), b.readVarInt(), b.readVarInt(), b.readVarInt(), b.readVarInt()),
             (p, supplier) -> {
                 NetworkEvent.Context context = supplier.get();
-                if (context.getDirection().getReceptionSide().isClient()) context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> ClientLock.progress(p.feel, p.pinsSet, p.strain, p.timeLeft)));
+                if (context.getDirection().getReceptionSide().isClient()) context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> ClientLock.progress(p.feel, p.pinsSet, p.strain, p.timeLeft, p.tick)));
                 context.setPacketHandled(true);
             }, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
         CHANNEL.registerMessage(2, Finished.class, (p, b) -> { b.writeVarInt(p.state); b.writeUtf(p.note, 120); },
@@ -70,12 +70,13 @@ public final class LockNetwork {
 
     private static boolean reachable(ServerPlayer player) { return player != null && !(player instanceof FakePlayer) && player.connection != null; }
 
-    static void open(ServerPlayer player, String label, LockpickSession.Profile profile) {
-        if (reachable(player)) CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new Open(label, profile.pins(), profile.timeLimitTicks(), profile.holdTicks()));
+    static void open(ServerPlayer player, String label, LockpickSession session) {
+        LockpickSession.Profile profile = session.profile();
+        if (reachable(player)) CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new Open(label, profile.pins(), profile.timeLimitTicks(), profile.holdTicks(), (float) profile.tremor(), (float) session.tremorPhase()));
     }
 
     static void progress(ServerPlayer player, LockpickSession session) {
-        if (reachable(player)) CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new Progress(session.feel(), session.pinsSet(), session.strainPercent(), session.timeLeft()));
+        if (reachable(player)) CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new Progress(session.feel(), session.pinsSet(), session.strainPercent(), session.timeLeft(), session.ticks()));
     }
 
     /** {@code state} is the ordinal of {@link LockpickSession.State}. */
