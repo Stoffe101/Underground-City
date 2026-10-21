@@ -446,19 +446,26 @@ public final class BuildingSecurityGameTests {
             h.close();
             throw error;
         }
-        helper.runAfterDelay(10, () -> {
+        // wait until the builder is visible to an area query, up to four seconds (ten ticks were not always enough on a loaded hosted runner), then look at the door
+        final int[] looks = {0};
+        final Runnable[] look = new Runnable[1];
+        look[0] = () -> {
+            boolean done = false;
             try {
                 int seen = level.getEntitiesOfClass(net.minecraft.world.entity.player.Player.class, new net.minecraft.world.phys.AABB(h.doorLower).inflate(8.0)).size();
-                check(seen >= 1, "the builder was not visible to an area query ten ticks after being added");
+                if (seen < 1 && ++looks[0] < 16) { helper.runAfterDelay(5, look[0]); return; }
+                done = true;
+                check(seen >= 1, "the builder was not visible to an area query " + (looks[0] * 5 + 10) + " ticks after being added");
                 check(BuildingGuard.enforce(level, h.doorLower) == false, "a creative builder's open door was shut (the guard saw " + seen + " players)");
                 helper.succeed();
-            } catch (AssertionError error) {
+            } catch (AssertionError | RuntimeException error) {
+                done = true;
                 helper.fail(String.valueOf(error.getMessage()));
             } finally {
-                builder.discard();
-                h.close();
+                if (done) { builder.discard(); h.close(); }
             }
-        });
+        };
+        helper.runAfterDelay(10, look[0]);
     }
 
     @GameTest(template = "empty", batch = "uc_building")
