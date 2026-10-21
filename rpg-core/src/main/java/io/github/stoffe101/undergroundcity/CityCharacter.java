@@ -48,7 +48,7 @@ public final class CityCharacter extends SimpleJsonResourceReloadListener {
     public record Zone(double within, List<Pick> picks) {
         double total() { double sum = 0; for (Pick pick : picks) sum += pick.weight; return sum; }
     }
-    public record Character(String city, ResourceLocation style, List<Zone> zones) {}
+    public record Character(String city, ResourceLocation style, List<Zone> zones, boolean keepMultiBuildings) {}
 
     private volatile Map<String, Character> characters = Map.of();
     private final Set<String> warned = java.util.concurrent.ConcurrentHashMap.newKeySet();
@@ -91,7 +91,7 @@ public final class CityCharacter extends SimpleJsonResourceReloadListener {
             zones.add(new Zone(within, List.copyOf(picks)));
         }
         if (last < 1.0 - 1e-9) throw new IllegalArgumentException("The last zone must reach the edge of the city: " + file);
-        return new Character(city, style, List.copyOf(zones));
+        return new Character(city, style, List.copyOf(zones), json.has("keep_multi_buildings") && json.get("keep_multi_buildings").getAsBoolean());
     }
 
     public Map<String, Character> all() { return characters; }
@@ -126,7 +126,8 @@ public final class CityCharacter extends SimpleJsonResourceReloadListener {
     // ------------------------------------------------------------------------------------------------ the hook into Lost Cities (reflection)
 
     private static Method getCharacteristics, getChunkX, getChunkZ, getWorld, getLostInfo, getBuildings, getCityStyles, registryGet;
-    private static Field cityStyleId, cityStyle, buildingTypeId, buildingType, multiBuilding, isCity;
+    private static Field cityStyleId, cityStyle, buildingTypeId, buildingType, multiBuilding, multiBuildingId, multiPos, isCity;
+    private static Object singlePos;
 
     /** Registers the listener on the Forge bus when Lost Cities is installed. Safe to call when it is not (it does nothing). */
     public static void register(IEventBus forgeBus) {
@@ -150,6 +151,9 @@ public final class CityCharacter extends SimpleJsonResourceReloadListener {
             buildingTypeId = characteristics.getField("buildingTypeId");
             buildingType = characteristics.getField("buildingType");
             multiBuilding = characteristics.getField("multiBuilding");
+            multiBuildingId = characteristics.getField("multiBuildingId");
+            multiPos = characteristics.getField("multiPos");
+            singlePos = Class.forName("mcjty.lostcities.api.MultiPos").getField("SINGLE").get(null);
             isCity = characteristics.getField("isCity");
             @SuppressWarnings({"unchecked", "rawtypes"})
             Class<net.minecraftforge.eventbus.api.Event> eventClass = (Class) event;
@@ -179,8 +183,13 @@ public final class CityCharacter extends SimpleJsonResourceReloadListener {
             Object style = registryGet.invoke(styles, level, character.style);
             if (style == null) { warnOnce("style " + character.style, "city style " + character.style + " is not registered; " + character.city + " keeps Lost Cities' style"); }
             else { cityStyle.set(ch, style); cityStyleId.set(ch, character.style); }
-            // only a single-chunk building that Lost Cities itself decided to build; a multi-chunk building, a street or a park is left alone
-            if (buildingType.get(ch) == null || multiBuilding.get(ch) != null) return;
+            // Lost Cities' multi-chunk buildings (a mall, a library, a skyscraper over four chunks) belong to the standard look: unless the city asks to keep them every chunk of one becomes a single-chunk lot
+            if (multiBuilding.get(ch) != null) {
+                if (character.keepMultiBuildings) return;
+                multiBuilding.set(ch, null); multiBuildingId.set(ch, null); multiPos.set(ch, singlePos);
+            } else if (buildingType.get(ch) == null) {
+                return;   // a street, a park or an empty lot: Lost Cities' choice stays
+            }
             ResourceLocation chosen = choose(character, placement.get().fraction, world.getSeed(), chunkX, chunkZ);
             Object building = registryGet.invoke(getBuildings.invoke(information), level, chosen);
             if (building == null) { warnOnce("building " + chosen, "building " + chosen + " is not registered; the chunk keeps Lost Cities' choice"); return; }

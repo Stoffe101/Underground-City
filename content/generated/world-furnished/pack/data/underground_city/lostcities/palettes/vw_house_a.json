@@ -23,7 +23,7 @@
           "random": 200
         },
         {
-          "block": "air",
+          "block": "minecraft:air",
           "random": 1000
         }
       ],
@@ -178,7 +178,7 @@
       "char": "C"
     },
     {
-      "block": "modernlife:night_stand[facing=north]",
+      "block": "modernlife:oak_night_stand[facing=north]",
       "char": "D"
     },
     {
@@ -190,24 +190,20 @@
       "char": "F"
     },
     {
-      "block": "modernlife:oak_night_stand[facing=north]",
+      "block": "modernlife:modern_oak_bookshelf[facing=south]",
       "char": "G"
     },
     {
-      "block": "modernlife:modern_oak_bookshelf[facing=south]",
+      "block": "minecraft:brick_stairs[facing=south,half=bottom,shape=straight]",
       "char": "H"
     },
     {
-      "block": "minecraft:brick_stairs[facing=south,half=bottom,shape=straight]",
+      "block": "minecraft:brick_stairs[facing=north,half=bottom,shape=straight]",
       "char": "I"
     },
     {
-      "block": "minecraft:brick_stairs[facing=north,half=bottom,shape=straight]",
-      "char": "J"
-    },
-    {
       "block": "minecraft:bricks",
-      "char": "K"
+      "char": "J"
     }
   ]
 }

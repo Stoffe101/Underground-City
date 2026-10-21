@@ -1,5 +1,6 @@
 {
   "city": "valewood",
+  "keep_multi_buildings": false,
   "schema_version": 1,
   "style": "underground_city:valewood",
   "zones": [

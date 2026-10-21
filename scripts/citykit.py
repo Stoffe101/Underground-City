@@ -49,6 +49,8 @@ class Palette:
 
     def char(self, spec: "str | list") -> str:
         """The character for a block string, or for a list ``[(chance in thousandths, "block"), ..., (0, "default block")]`` (the last entry is what is left)."""
+        if not isinstance(spec, str):
+            spec = [(chance, "minecraft:air" if block == "air" else block) for chance, block in spec]
         key = spec if isinstance(spec, str) else json.dumps(spec)
         if key in self.by_spec:
             return self.by_spec[key]

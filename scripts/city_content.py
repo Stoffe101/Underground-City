@@ -82,7 +82,7 @@ def package() -> dict[str, bytes]:
             rings.append({"within": within, "buildings": [{"id": f"{NAMESPACE}:{building_id}", "weight": weight} for building_id, weight in picks]})
         if last != 1.0:
             raise ValueError(f"{module.CITY}: the last zone must reach 1.0")
-        files[f"data/{NAMESPACE}/city_character/{module.CITY}.json"] = json_bytes({"schema_version": 1, "city": module.CITY, "style": f"{NAMESPACE}:{module.CITY}", "zones": rings})
+        files[f"data/{NAMESPACE}/city_character/{module.CITY}.json"] = json_bytes({"schema_version": 1, "city": module.CITY, "style": f"{NAMESPACE}:{module.CITY}", "keep_multi_buildings": bool(getattr(module, "KEEP_MULTI_BUILDINGS", False)), "zones": rings})
     return files
 
 

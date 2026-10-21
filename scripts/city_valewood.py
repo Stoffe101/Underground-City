@@ -161,10 +161,10 @@ def house_a() -> Building:
     u.floor(9, 5, 11, 7, TILE)
     # bedroom 2 (x 9..11, z 9..10)
     k.bed(u, 11, 1, 9, "west", "blue")
-    u.put(9, 1, 10, ml("night_stand", facing="north"))
+    u.put(9, 1, 10, ml("oak_night_stand", facing="north"))
     # bedroom 1 (the west half, x 5..7)
     k.bed(u, 7, 1, 9, "north", "red")
-    u.put(6, 1, 10, ml("night_stand", facing="north"))
+    u.put(6, 1, 10, ml("oak_night_stand", facing="north"))
     u.put(5, 1, 10, ml("oak_night_stand", facing="north"))
     u.put(7, 1, 5, ml("modern_oak_bookshelf", facing="south"))
     for (x, z) in ((6, 7), (10, 9)):
