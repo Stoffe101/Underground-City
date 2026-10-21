@@ -42,7 +42,7 @@ class DevClientInputs(unittest.TestCase):
         # "vintner", "farming", "qol" and "survival" are opt-in candidate sets (-PucPack=...,vintner,farming,qol,survival); the default pack stays the four above.
         # "legacy_travelers" holds only the retired Traveler's Backpack (D-092), for opening an old world once; it is never combined with "survival".
         # "performance_deferred" parks the two client performance mods that crash the ForgeGradle development client, and "citytweaks_deferred" parks Lost Cities Modern Tweaks, which breaks Lost Cities' chunk generation in our styles (D-113); no launch or workflow names either.
-        self.assertEqual(sets, {"world", "firearms", "vehicles", "boats", "vintner", "farming", "qol", "survival", "legacy_travelers", "performance", "navigation", "performance_deferred", "citytweaks_deferred"})
+        self.assertEqual(sets, {"world", "firearms", "vehicles", "boats", "vintner", "farming", "qol", "survival", "legacy_travelers", "performance", "navigation", "performance_deferred", "citytweaks_deferred", "furnished"})
         self.assertEqual({m["mod_id"] for m in MANIFEST["mods"] if "performance_deferred" in m["sets"]}, {"entityculling", "immediatelyfast"})
         self.assertTrue(all(m["sets"] == ["performance_deferred"] for m in MANIFEST["mods"] if m["mod_id"] in ("entityculling", "immediatelyfast")))
         legacy = {m["id"] for m in MANIFEST["mods"] if "legacy_travelers" in m["sets"]}
