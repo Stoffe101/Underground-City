@@ -34,7 +34,7 @@ Three islands, three bridges, from the game's own chunk generator (42,813 sample
 | archipelago, seed 20261020 | 77 % | **0.0 %** | plains 73 %, forest 25 % | forest 61 %, plains 39 % | plains 53 %, dark forest 36 %, forest and birch 10 % |
 | archipelago, seed 777 | 79 % | **0.0 %** | plains 77 %, forest 22 % | forest 61 %, plains 39 % | plains 54 %, dark forest 35 %, forest and birch 10 % |
 
-The islands differ in **countryside**, not dramatically: say "three islands with their own woods", not "three biomes". **Blackwater has no swamp.** The three cities are what make the islands read apart in a photograph (Ironhaven's industrial blocks, Blackwater's glass core, Valewood's low town).
+The islands differ in **countryside**, not dramatically: say "three islands with their own woods", not "three biomes". **Blackwater has no swamp.** The cities do **not** yet make the islands read apart: in the frames the three Lost Cities layouts, built from one building set, look like one town three times (Valewood is not a green low-rise town and Blackwater shows no harbour), so the registration cards promise more than the world shows.
 
 **Routes** (block by block, `scripts/run_road_check.py`): Ironhaven to Valewood 1,069 blocks (236-block longest bridge), Ironhaven to Blackwater 984 (296), Valewood to Blackwater 1,046 (167). All three are continuous: no missing deck, no blocked headroom, no step over half a block, a parapet on both sides of every bridge span (0 of 2,090 missing), no growth over the carriageway. At 4.317 blocks per second that is **3.8 to 4.1 minutes on foot** between the outskirts, inside the 3 to 5 minutes the owner asked for. Nobody has walked, driven or sailed them.
 
@@ -72,7 +72,7 @@ A roster (identity, name, face, trade, district) is arithmetic from the city and
 | Passes that found no spot | 55 of 74 | 21 of 75 |
 | People within 64 blocks after a minute | 2 | 6 |
 
-The first measurement showed that nearly the whole cost of a pass was asking Lost Cities, every second, for the street level of the same few chunks, and that most passes found no spot and retried the same person at once. The answer is now asked once per chunk and a person whose search failed waits 15 seconds while the next candidate is tried (`PopulationService.streetOf`, `RETRY_TICKS`; one GameTest). **The two runs are single samples in different worlds of one process under a software renderer: the individual lookup times differ for reasons that are not understood, so the fall from 25 ms to 0.5 ms is not all the fix. What the fix does guarantee is that lookups are bounded by the number of distinct chunks, not by the number of passes.** No dedicated-server measurement exists.
+The first measurement showed that nearly the whole cost of a pass was asking Lost Cities, every second, for the street level of the same few chunks, and that most passes found no spot and retried the same person at once. The answer is now asked once per chunk and a person whose search failed waits 15 seconds while the next candidate is tried (`PopulationService.streetOf`, `RETRY_TICKS`; one GameTest). **The two runs are single samples in different worlds of one process under a software renderer: the individual lookup times differ for reasons that are not understood, so the fall from 25 ms to 0.5 ms is not all the fix. What the fix does guarantee is that lookups are bounded by the number of distinct chunks, not by the number of passes.** A third sample on the final build (the scripted arrival, same single process): mean 0.81 ms and worst 11.6 ms over 74 passes, 11 Lost Cities lookups (mean 1.3 ms), 20 passes with no spot, 6 people within 64 blocks after a minute, the nearest a guard 16 blocks away. No dedicated-server measurement exists.
 
 **Not true yet:** the people have no jobs, homes, economy or memory beyond a greeting; no police respond; nobody walks between cities; the density in a street is low; nobody has met one of them.
 
@@ -104,7 +104,7 @@ Found by looking at real frames at 1280x720, 1920x1080 (scale 2 and 3) and 3440x
 | Persistent status | none | a configurable stack and a settings screen (place, size, solidity, eight lines), seen in a real world beside Xaero's minimap and the survival bars |
 | First login | recipe and advancement toasts stood over the third city's card | the screen drops toasts while it is open |
 
-Not seen: any of these used with a mouse by a person; other aspect ratios; Xaero's minimap anywhere but its default corner.
+Not seen: any of these used with a mouse by a person; other aspect ratios; Xaero's minimap anywhere but its default corner. Still wrong in the last frames: at 1280x720 the registration cards cut their last line with an ellipsis; after registering, the "Step done" banner and the chat lines sit over the status stack for a few seconds and the next-step card's last line is cut off (the employer's name is truncated).
 
 ## 7. The first-player journey, and what can actually be completed
 
@@ -121,7 +121,7 @@ The nine steps the game itself lists (`Journey.STEPS`) and the evidence for each
 | 8 Travel to a rival city | The economy journey has a foreign visit; nobody has crossed a bridge |
 | 9 Finish a second order | GameTests |
 
-What a new player does see in a real client on the archipelago: arrival on dry, open ground 53 blocks from the Row's origin, **no water, not under cover**; registration by mouse; the status stack with the next step; the Row's lane walked in about five seconds with the real keys up to the registrar's booth (a fence stands between the lane and her, the 23-block walk took 4 seconds and ended about 6 blocks from her; the registration screen opens by itself, so she is not needed for step 1); a street of Ironhaven with its buildings, verges and a minimap. A first 15 to 30 minutes with a person at the keys has **not** been run.
+What a new player does see in a real client on the archipelago: arrival on dry, open ground 53 blocks from the Row's origin, **no water, not under cover**; registration by mouse; the status stack with the next step; the Row's lane walked with the real keys up to the registrar's booth (a fence stands between the lane and her: the 23-block walk took 4 seconds and ended about 6 blocks from her; the registration screen opens by itself, so she is not needed for step 1); a street of Ironhaven with its buildings, verges and a minimap. A first 15 to 30 minutes with a person at the keys has **not** been run.
 
 ## 8. Test results and the limits of the evidence
 
@@ -130,7 +130,7 @@ What a new player does see in a real client on the archipelago: arrival on dry, 
 | Forge GameTests | 249 of 249 locally with the Q Shop provider (248 of 248 before the cache test was added, in three configurations: no provider, provider, and the survival set) |
 | Offline Python suite (`unittest discover`) | 245 tests OK |
 | Repository validation | passed |
-| Scripted arrival run (real client, archipelago, helpers loaded) | pass, no chunk-generation errors |
+| Scripted arrival run (real client, archipelago, helpers loaded, final landing) | pass, 0 chunk-generation errors, 6 people out in an Ironhaven street after a minute |
 | Burglary check, two seeds | all facts hold, both |
 | Road check | three routes continuous; four of six wayside stops built |
 | City probes | 507 of 507 city chunks, no generation errors without Lost Cities Modern Tweaks |
