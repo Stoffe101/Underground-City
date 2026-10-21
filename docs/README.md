@@ -50,7 +50,8 @@ The docs here distinguish **confirmed product direction**, **design proposals**,
 - [Checkpoint searches of carried storage, including backpacks (D-100)](technical/checkpoint-search.md)
 - [Vehicle and boat price tiers and the two dealer lines (D-101)](technical/vehicle-tiers.md)
 - [The archipelago world: three islands, three bridges, no snow (D-104, D-106, D-107)](technical/archipelago-world.md)
-- [City building protection, locks and burglary (D-105)](technical/building-protection.md)
+- [City building protection, locks and burglary (D-105, D-114, D-115)](technical/building-protection.md)
+- [Private content: how to use it, where it lives, how it is checked (D-116)](technical/private-content-workflow.md)
 - [The people of the cities: roster, schedule, budget (D-108)](technical/population.md)
 - [AI-assisted development, docs and PR workflow](technical/agent-workflow.md)
 - [Claude Code cloud MCP setup](technical/claude-cloud-tools.md)
@@ -76,6 +77,7 @@ The docs here distinguish **confirmed product direction**, **design proposals**,
 ## Legal and assets
 
 - [Third-party use policy](legal/third-party-policy.md)
+- [Privately licensed city-building content (D-116)](legal/private-content.md)
 - [Asset/source register](legal/asset-register.csv)
 - [Project license](../LICENSE)
 - [Third-party notices](../THIRD_PARTY_NOTICES.md)

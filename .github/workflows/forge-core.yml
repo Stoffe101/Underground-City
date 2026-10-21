@@ -46,6 +46,12 @@ jobs:
           gradle -p rpg-core runGameTestServer --no-daemon --stacktrace
           # A Forge GameTest server that fails to start (a broken datapack, a registry error) still exits 0, so the result line is the evidence.
           grep -E "All [0-9]+ required tests passed" rpg-core/run/logs/latest.log
+      - name: GameTests with a SYNTHETIC private pack in a folder outside the checkout (the private-content loader; invented content only, D-116)
+        run: |
+          python scripts/private_pack_tool.py fixture "$RUNNER_TEMP/uc-private"
+          gradle -p rpg-core runGameTestServer -PucPrivateContent="$RUNNER_TEMP/uc-private" -PucRunDir=run-private --no-daemon --stacktrace
+          grep -E "All [0-9]+ required tests passed" rpg-core/run-private/logs/latest.log
+          grep -E "\[UC-PRIVATE\] pack 'uc_private_fixture'" rpg-core/run-private/logs/latest.log
       - name: Print which tests failed (a failing GameTest makes the server exit 1; the reason is in the log)
         if: failure()
         run: |

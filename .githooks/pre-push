@@ -1,0 +1,3 @@
+#!/bin/sh
+# Stops a push whose history ever touched privately licensed content (docs/legal/private-content.md). Installed by scripts/install_git_hooks.py.
+python3 scripts/check_private_content.py 2>/dev/null || python scripts/check_private_content.py || exit 1

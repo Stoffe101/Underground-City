@@ -73,6 +73,13 @@ server.properties
 *.wav
 *.mp4
 
+# Privately licensed city-building content (docs/legal/private-content.md): never tracked here.
+# This is not enough on its own; scripts/check_private_content.py checks what is really tracked, staged, uploaded and in the history.
+/private-content/
+/.private/
+*.ucprivate
+*.ucprivate.zip
+
 # Environment / credentials
 .env
 .env.*

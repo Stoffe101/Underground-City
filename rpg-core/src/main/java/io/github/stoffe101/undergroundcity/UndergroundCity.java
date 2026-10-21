@@ -112,6 +112,7 @@ public final class UndergroundCity {
         context.getModEventBus().addListener((net.minecraftforge.event.entity.EntityAttributeCreationEvent event) -> event.put(TOWNSPERSON.get(), TownspersonEntity.attributes().build()));
         LostCitiesLink.register(context.getModEventBus());
         RegionalWorldgen.register(context.getModEventBus());
+        PrivateContent.register(context.getModEventBus());   // privately licensed packs from a folder outside the checkout, if one is configured (D-116)
         ITEMS.register(context.getModEventBus());
         context.getModEventBus().addListener(this::addCreativeTab);
         TerminalNetwork.register();
