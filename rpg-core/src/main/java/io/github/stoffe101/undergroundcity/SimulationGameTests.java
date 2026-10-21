@@ -426,15 +426,25 @@ public final class SimulationGameTests {
         });
     }
 
-    /** Open-air spots (found by asking the world's biome source, which generates nothing) whose biome has livestock, at least 100 blocks apart. */
+    /** True where the base game's spawner can put livestock on grass: a temperate biome with creatures, and not one whose only creatures need another floor (mooshrooms need mycelium). */
+    private static boolean livestockBiome(ServerLevel level, BlockPos at) {
+        var holder = level.getBiome(at);
+        var biome = holder.value();
+        boolean livestock = !biome.getMobSettings().getMobs(MobCategory.CREATURE).isEmpty() && biome.getBaseTemperature() > 0.15f && biome.getBaseTemperature() < 1.5f;
+        String name = holder.unwrapKey().map(k -> k.location().getPath()).orElse("");
+        return livestock && !name.contains("ocean") && !name.contains("river") && !name.contains("beach") && !name.contains("desert") && !name.contains("badlands") && !name.contains("mushroom");
+    }
+
+    /**
+     * Open-air spots (found by asking the world's biome source, which generates nothing) whose biome has livestock, at least 100 blocks apart. The meadow the test builds is 20 blocks wide and
+     * its middle is where the spawner is asked, so the biome is checked there and at the far corner too (the world's seed is not fixed on a hosted runner, and a spot on the edge of an ocean
+     * or a mushroom island failed the test on a seed that had one near these coordinates).
+     */
     private static List<BlockPos> livestockSpots(ServerLevel level, int wanted) {
         List<BlockPos> found = new ArrayList<>();
         for (int i = 0; i < 400 && found.size() < wanted; i++) {
             BlockPos spot = new BlockPos(5000 + (i % 20) * 160, 290, 5000 + (i / 20) * 160);
-            var biome = level.getBiome(spot).value();
-            boolean livestock = !biome.getMobSettings().getMobs(MobCategory.CREATURE).isEmpty() && biome.getBaseTemperature() > 0.15f && biome.getBaseTemperature() < 1.5f;
-            String name = level.getBiome(spot).unwrapKey().map(k -> k.location().getPath()).orElse("");
-            if (livestock && !name.contains("ocean") && !name.contains("river") && !name.contains("beach") && !name.contains("desert") && !name.contains("badlands")) found.add(spot);
+            if (livestockBiome(level, spot) && livestockBiome(level, spot.offset(10, 1, 10)) && livestockBiome(level, spot.offset(19, 1, 19)) && livestockBiome(level, spot.offset(0, 1, 19))) found.add(spot);
         }
         return found;
     }
