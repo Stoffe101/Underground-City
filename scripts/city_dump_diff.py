@@ -43,9 +43,9 @@ def main() -> int:
     floors = args.floors or building.min_floors
     # the parts in the order Lost Cities stacks them: ground floor, upper floors, top
     ground = next(p for p, f in building.parts if f.get("ground"))
-    upper = next((p for p, f in building.parts if "floor" in f), None)
+    uppers = {f["floor"]: p for p, f in building.parts if "floor" in f}
     top = next(p for p, f in building.parts if f.get("top"))
-    stack = [ground] + [upper] * (floors - 1) + [top]
+    stack = [ground] + [uppers[min(i, max(uppers))] for i in range(1, floors)] + [top]   # a floor part with its own index, else the last one
     palette = building.palette
     chars = palette.entries
     diffs = collections.defaultdict(list)
