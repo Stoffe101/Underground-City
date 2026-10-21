@@ -446,16 +446,21 @@ public final class BuildingSecurityGameTests {
             h.close();
             throw error;
         }
-        // wait until the builder is visible to an area query, up to four seconds (ten ticks were not always enough on a loaded hosted runner), then look at the door
-        final int[] looks = {0};
-        final Runnable[] look = new Runnable[1];
-        look[0] = () -> {
+        watchBuilder(helper, level, h, builder, 0);
+    }
+
+    /**
+     * Waits until the builder is visible to an area query, up to about four seconds (ten ticks were not always enough on a loaded hosted runner), then looks at the door. Every wait is a new lambda:
+     * the test helper keys its delayed actions by the action itself, so one that re-registers itself from inside its own run is erased as it returns and the test would never end.
+     */
+    private static void watchBuilder(GameTestHelper helper, ServerLevel level, House h, ServerPlayer builder, int looks) {
+        helper.runAfterDelay(looks == 0 ? 10 : 5, () -> {
             boolean done = false;
             try {
                 int seen = level.getEntitiesOfClass(net.minecraft.world.entity.player.Player.class, new net.minecraft.world.phys.AABB(h.doorLower).inflate(8.0)).size();
-                if (seen < 1 && ++looks[0] < 16) { helper.runAfterDelay(5, look[0]); return; }
+                if (seen < 1 && looks < 15) { watchBuilder(helper, level, h, builder, looks + 1); return; }
                 done = true;
-                check(seen >= 1, "the builder was not visible to an area query " + (looks[0] * 5 + 10) + " ticks after being added");
+                check(seen >= 1, "the builder was not visible to an area query " + (10 + looks * 5) + " ticks after being added");
                 check(BuildingGuard.enforce(level, h.doorLower) == false, "a creative builder's open door was shut (the guard saw " + seen + " players)");
                 helper.succeed();
             } catch (AssertionError | RuntimeException error) {
@@ -464,8 +469,7 @@ public final class BuildingSecurityGameTests {
             } finally {
                 if (done) { builder.discard(); h.close(); }
             }
-        };
-        helper.runAfterDelay(10, look[0]);
+        });
     }
 
     @GameTest(template = "empty", batch = "uc_building")
