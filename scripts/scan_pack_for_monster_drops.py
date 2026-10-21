@@ -33,6 +33,7 @@ ALLOWED = [
     ("modern-life", "minecraft:prismarine_shard", "prismarine furniture variants (decoration; the same furniture exists in other materials)"),
     ("farmers-delight", "minecraft:rotten_flesh", "dog food and one compost recipe; nothing the game offers as progression needs it"),
     ("lets-do-farm-charm", "minecraft:rotten_flesh", "fertilizer, which has another recipe"),
+    ("lost-cities-modern-tweaks", "minecraft:rotten_flesh", "one entry of the basic food-shop chest loot table (spoiled food as set dressing); no recipe or order needs it"),
     ("farmers-delight", "minecraft:shulker_shell", "a loot-modifier file that lets shulkers drop shells; shulkers do not exist in the simulation world and nothing needs the shell"),
     ("farmers-delight", "minecraft:trident", "a cutting-board tool entry (a trident lying flat), not an ingredient"),
 ]
