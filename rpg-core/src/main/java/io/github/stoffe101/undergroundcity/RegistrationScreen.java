@@ -106,6 +106,15 @@ public final class RegistrationScreen extends UcScreen {
     int[] confirmCentre() { return new int[]{confirm.getX() + confirm.getWidth() / 2, confirm.getY() + confirm.getHeight() / 2}; }
     int step() { return step; }
 
+    /**
+     * A new player's first login brings toasts with it (a recipe notice, and the advancements that Immersive Vehicles grants by itself) which stand in the top right corner over the
+     * third city's card for several seconds, before anything has been chosen. While this screen is open they are dropped; the advancements themselves are still recorded.
+     */
+    @Override public void tick() {
+        super.tick();
+        Minecraft.getInstance().getToasts().clear();
+    }
+
     // ---------------------------------------------------------------- behaviour
     private int cardCount() { return step == 0 ? CITIES.size() : CAREERS.size(); }
 
