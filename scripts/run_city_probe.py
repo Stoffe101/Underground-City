@@ -29,6 +29,9 @@ def main() -> int:
     parser.add_argument("--cities", default="ironhaven,valewood,blackwater")
     parser.add_argument("--extra", default="", help="more chunks as x:z,x:z")
     parser.add_argument("--sets", default="world", help="dev-pack sets to load, comma separated (world is the Lost Cities profile the probe needs); e.g. world,citytweaks")
+    parser.add_argument("--dump", type=Path, default=None, help="a folder: a text picture (one glyph per block, layer by layer) is written there for every chunk whose building type contains --dump-prefix")
+    parser.add_argument("--dump-prefix", default="", help="part of a building type, e.g. vw_ for the Valewood buildings")
+    parser.add_argument("--stack", default="", help="resource files to look up in every data pack, comma separated, e.g. underground_city:lostcities/citystyles/valewood.json (logs which packs carry each, lowest priority first)")
     parser.add_argument("--timeout", type=int, default=3000)
     args = parser.parse_args()
     run_name = f"run-cityprobe-{args.name}"
@@ -47,6 +50,10 @@ def main() -> int:
                f"-PucWorldLayout={args.layout}", f"-PucCityProbe={args.output.resolve()}", f"-PucCpRadius={args.radius}", f"-PucCpCities={args.cities}"]
     if args.extra:
         command.append(f"-PucCpExtra={args.extra}")
+    if args.stack:
+        command.append(f"-PucCpStack={args.stack}")
+    if args.dump:
+        command += [f"-PucCpDump={args.dump.resolve()}", f"-PucCpDumpprefix={args.dump_prefix}"]
     print(" ".join(command))
     result = subprocess.run(command, cwd=ROOT, timeout=args.timeout)
     if not args.output.is_file():

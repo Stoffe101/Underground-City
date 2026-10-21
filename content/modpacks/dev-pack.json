@@ -104,9 +104,10 @@
       "sha512": "e0a5c184c1f033f51138291f7a7fe7c81b5bade48459aadd41fd98e84fb2de130a9b05d04a1388d08c13fe6b5f880d7b88635d1a57240839f73e5caff98c2d16",
       "license": "LicenseRef-All-Rights-Reserved",
       "mod_id": "modernlife",
-      "role": "motorboat with a 27-slot persistent hold and fuel",
+      "role": "motorboat with a 27-slot persistent hold and fuel; furniture, appliances and fixtures for the furnished cities",
       "sets": [
-        "boats"
+        "boats",
+        "furnished"
       ],
       "requires": [],
       "placement": "classpath",

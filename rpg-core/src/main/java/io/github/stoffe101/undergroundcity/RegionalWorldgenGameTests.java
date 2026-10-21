@@ -116,6 +116,25 @@ public final class RegionalWorldgenGameTests {
     }
 
     @GameTest(template = "empty", batch = "uc_regional")
+    public static void theGenerationPackGuardGivesNoExistingWorldNewRules(GameTestHelper helper) {
+        var none = java.util.Set.<String>of();
+        var furnished = java.util.Set.of("underground_city_furnished");
+        var both = java.util.Set.of("underground_city_furnished", "underground_city_scarcity");
+        check(GenerationPackGuard.verdict(none, null, true) == GenerationPackGuard.Verdict.OK, "an existing world without any package is left alone and nothing is written");
+        check(GenerationPackGuard.verdict(none, null, false) == GenerationPackGuard.Verdict.OK, "a new world without any package is left alone");
+        check(GenerationPackGuard.verdict(furnished, null, false) == GenerationPackGuard.Verdict.MARK_NEW_WORLD, "a new world with a package is marked");
+        check(GenerationPackGuard.verdict(furnished, null, true) == GenerationPackGuard.Verdict.EXISTING_WORLD_WOULD_GET_NEW_RULES, "an existing world must not be given new generation rules");
+        check(GenerationPackGuard.verdict(furnished, furnished, true) == GenerationPackGuard.Verdict.OK, "a marked world with its package is fine");
+        check(GenerationPackGuard.verdict(none, furnished, true) == GenerationPackGuard.Verdict.PACKAGES_DIFFER_FROM_MARKER, "a marked world missing its package must be refused");
+        check(GenerationPackGuard.verdict(both, furnished, true) == GenerationPackGuard.Verdict.PACKAGES_DIFFER_FROM_MARKER, "a marked world given another package must be refused");
+        check(GenerationPackGuard.verdict(none, none, true) == GenerationPackGuard.Verdict.OK, "a world marked as made with none and opened with none is fine");
+        check(GenerationPackGuard.verdict(furnished, none, true) == GenerationPackGuard.Verdict.PACKAGES_DIFFER_FROM_MARKER, "a world marked as made with none is not given a package later");
+        var text = GenerationPackGuard.markerText(both);
+        check(text.contains("underground_city_scarcity") && text.contains("underground_city_furnished"), "the marker lists the packages");
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty", batch = "uc_regional")
     public static void theShoreIsTheSameEveryTimeItIsAsked(GameTestHelper helper) {
         var plan = plan();
         double first = plan.distanceToShore(123.5, -456.25), second = plan.distanceToShore(123.5, -456.25);

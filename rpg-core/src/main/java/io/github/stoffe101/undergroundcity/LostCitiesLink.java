@@ -17,13 +17,13 @@ import java.util.function.Function;
  * installed. Chunk queries use the planner's own deterministic data and never generate terrain.
  */
 public final class LostCitiesLink {
-    public record ChunkSample(boolean city, int highwayLevel, String building, String buildingId, int floors, int cellars, int cityLevel) {
+    public record ChunkSample(boolean city, int highwayLevel, String building, String buildingId, int floors, int cellars, int cityLevel, String style) {
         /** The three-argument form older callers used (the survey and the launch smoke only read whether it is a city and which building type). */
-        public ChunkSample(boolean city, int highwayLevel, String building) { this(city, highwayLevel, building, "", 0, 0, 0); }
+        public ChunkSample(boolean city, int highwayLevel, String building) { this(city, highwayLevel, building, "", 0, 0, 0, ""); }
     }
 
     private static volatile Object api;
-    private static Method getLostInfo, getChunkInfo, isCity, maxHighwayLevel, buildingType, buildingId, numFloors, numCellars, cityLevel, realHeight;
+    private static Method getLostInfo, getChunkInfo, isCity, maxHighwayLevel, buildingType, buildingId, numFloors, numCellars, cityLevel, realHeight, cityStyle, styleName;
     private LostCitiesLink() {}
 
     public static void register(IEventBus modBus) {
@@ -64,14 +64,17 @@ public final class LostCitiesLink {
                 numFloors = chunk.getMethod("getNumFloors");
                 numCellars = chunk.getMethod("getNumCellars");
                 cityLevel = chunk.getMethod("getCityLevel");
+                cityStyle = chunk.getMethod("getCityStyle");
+                styleName = Class.forName("mcjty.lostcities.api.ILostCityCityStyle").getMethod("getName");
                 realHeight = info.getMethod("getRealHeight", int.class);
             }
             Object information = getLostInfo.invoke(implementation, (Level) level);
             if (information == null) return Optional.empty();
             Object sample = getChunkInfo.invoke(information, chunkX, chunkZ);
             Object id = buildingId.invoke(sample);
+            Object style = cityStyle.invoke(sample);
             return Optional.of(new ChunkSample((Boolean) isCity.invoke(sample), (Integer) maxHighwayLevel.invoke(sample),
-                (String) buildingType.invoke(sample), id == null ? "" : id.toString(), (Integer) numFloors.invoke(sample), (Integer) numCellars.invoke(sample), (Integer) cityLevel.invoke(sample)));
+                (String) buildingType.invoke(sample), id == null ? "" : id.toString(), (Integer) numFloors.invoke(sample), (Integer) numCellars.invoke(sample), (Integer) cityLevel.invoke(sample), style == null ? "" : String.valueOf(styleName.invoke(style))));
         } catch (ReflectiveOperationException error) {
             throw new IllegalStateException("The Lost Cities API changed; update the survey bridge", error);
         }

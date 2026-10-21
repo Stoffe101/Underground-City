@@ -27,6 +27,10 @@ from install_world_prototype import config_files
 LAYOUTS = {
     "legacy": (DEFAULT, ROOT / "content/generated/world-prototype"),
     "archipelago": (ROOT / "content/region-blueprints/archipelago/cities.json", ROOT / "content/generated/world-archipelago"),
+    # the furnished cities (D-117): original Lost Cities buildings written as code (scripts/city_*.py), packaged as their own low-code mod; there is no blueprint
+    "furnished": (None, ROOT / "content/generated/world-furnished"),
+    # a new world with no natural ore (D-120): one biome modifier in its own low-code mod, opt-in like the furnished cities
+    "scarcity": (None, ROOT / "content/generated/world-scarcity"),
 }
 
 
@@ -34,6 +38,12 @@ OUT = LAYOUTS["legacy"][1]   # the legacy package's folder, as before the archip
 
 
 def expected(data: dict, layout: str = "legacy") -> dict[str, bytes]:
+    if layout == "furnished":
+        import city_content
+        return {f"pack/{name}": content for name, content in city_content.package().items()}
+    if layout == "scarcity":
+        import scarcity_content
+        return {f"pack/{name}": content for name, content in scarcity_content.package().items()}
     files = {f"pack/{name}": content for name, content in render(data, layout).items()}
     files.update({f"game-config/{name}": text.encode("utf-8") for name, text in config_files(data, layout).items()})
     return files
@@ -50,7 +60,7 @@ def main() -> int:
     parser.add_argument("--blueprint", type=Path)
     args = parser.parse_args()
     blueprint, OUT = LAYOUTS[args.layout]
-    data = json.loads((args.blueprint or blueprint).read_text(encoding="utf-8"))
+    data = json.loads((args.blueprint or blueprint).read_text(encoding="utf-8")) if (args.blueprint or blueprint) else {}
     want = expected(data, args.layout)
     if args.check:
         have = current(OUT) if OUT.exists() else {}

@@ -1,0 +1,60 @@
+{
+  "city": "valewood",
+  "floors": {
+    "max": 2,
+    "min": 2
+  },
+  "id": "vw_house_a",
+  "notes": "A detached two-storey house: living room and kitchen below, two bedrooms and a bathroom above, a garden all round.",
+  "schema_version": 1,
+  "spots": [
+    {
+      "facing": "south",
+      "kind": "door",
+      "note": "front door",
+      "x": 7,
+      "y": 1,
+      "z": 11
+    },
+    {
+      "facing": "north",
+      "kind": "bed",
+      "note": "main bedroom",
+      "x": 7,
+      "y": 1,
+      "z": 9
+    },
+    {
+      "facing": "west",
+      "kind": "bed",
+      "note": "second bedroom",
+      "x": 11,
+      "y": 1,
+      "z": 9
+    },
+    {
+      "facing": "west",
+      "kind": "stove",
+      "x": 11,
+      "y": 1,
+      "z": 7
+    },
+    {
+      "facing": "south",
+      "kind": "seat",
+      "note": "sofa",
+      "x": 5,
+      "y": 1,
+      "z": 6
+    },
+    {
+      "facing": "south",
+      "kind": "seat",
+      "note": "dining",
+      "x": 9,
+      "y": 1,
+      "z": 6
+    }
+  ],
+  "use": "house"
+}

@@ -54,6 +54,14 @@ public final class CityProbe {
     public void started(ServerStartedEvent event) {
         if (OUTPUT == null || OUTPUT.isBlank()) return;
         started = System.nanoTime();
+        // which data packs carry the same file, lowest priority first: the answer to "whose citystyle does Lost Cities read?"
+        for (String path : System.getProperty("uc.cityProbe.stack", "").split(",")) {
+            if (path.isBlank()) continue;
+            var location = net.minecraft.resources.ResourceLocation.tryParse(path.trim());
+            if (location == null) continue;
+            var stack = event.getServer().getResourceManager().getResourceStack(location);
+            LOGGER.info("[UC-PROBE] resource stack of {}: {}", location, stack.stream().map(r -> r.sourcePackId()).toList());
+        }
     }
 
     @SubscribeEvent
@@ -125,7 +133,7 @@ public final class CityProbe {
         JsonObject out = new JsonObject();
         out.addProperty("chunk_x", cx); out.addProperty("chunk_z", cz);
         out.addProperty("planned_city_before_generation", planned);
-        out.addProperty("city", sample.city()); out.addProperty("type", type); out.addProperty("building", sample.buildingId());
+        out.addProperty("city", sample.city()); out.addProperty("type", type); out.addProperty("building", sample.buildingId()); out.addProperty("style", sample.style());
         out.addProperty("floors", sample.floors()); out.addProperty("cellars", sample.cellars()); out.addProperty("city_level", sample.cityLevel());
         int minY = level.getMinBuildHeight(), maxY = level.getMaxBuildHeight();
         int topSolid = minY, bottomBuilt = maxY, doors = 0, glass = 0, containers = 0, onStructure = 0, trees = 0;
@@ -198,8 +206,53 @@ public final class CityProbe {
         out.addProperty("vegetation_on_structure", onStructure);
         out.add("samples", samples);
         String key = (sample.city() ? "city:" : "outside:") + (type.isEmpty() ? "none" : type);
+        dump(level, chunk, sample, street, type);
         int[] total = totals.computeIfAbsent(key, k -> new int[3]);
         total[0]++; if (onStructure > 0) total[1]++; if (trees > 0) total[2]++;
         return out;
+    }
+
+    // ----------------------------------------------------------------------------------------------------- a text picture of a chunk
+
+    private static final String DUMP = System.getProperty("uc.cityProbe.dump");
+    private static final String DUMP_PREFIX = System.getProperty("uc.cityProbe.dumpprefix", "");
+    private static final String GLYPHS = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!$%&*+,-./:;<=>?@[]^_`{|}~";
+
+    /**
+     * For a chunk whose building type starts with {@code -PucCpDumpprefix=}, writes {@code <type>_<chunkX>_<chunkZ>.txt} to {@code -PucCpDump=<folder>}: the blocks of the chunk layer by layer from just under the street to
+     * above the roof, one glyph per block kind (air is a dot), with the legend at the top. It is how a generated building is read without a client: where the doors are, which side the street is, what stands in each room.
+     */
+    private static void dump(ServerLevel level, LevelChunk chunk, LostCitiesLink.ChunkSample sample, int street, String type) {
+        if (DUMP == null || DUMP.isBlank() || type.isEmpty() || !type.contains(DUMP_PREFIX)) return;
+        try {
+            Path dir = Path.of(DUMP);
+            Files.createDirectories(dir);
+            Map<String, Character> legend = new java.util.LinkedHashMap<>();
+            StringBuilder body = new StringBuilder();
+            ChunkPos base = chunk.getPos();
+            int top = street + Math.max(1, sample.floors()) * 6 + 10, bottom = street - 3;
+            BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+            for (int y = bottom; y <= top; y++) {
+                body.append("--- y ").append(y).append(" (street ").append(y - street >= 0 ? "+" : "").append(y - street).append(")\n");
+                for (int z = 0; z < 16; z++) {
+                    for (int x = 0; x < 16; x++) {
+                        pos.set(base.getMinBlockX() + x, y, base.getMinBlockZ() + z);
+                        BlockState state = chunk.getBlockState(pos);
+                        if (state.isAir()) { body.append('.'); continue; }
+                        String name = String.valueOf(ForgeRegistries.BLOCKS.getKey(state.getBlock()));
+                        Character glyph = legend.get(name);
+                        if (glyph == null) { glyph = GLYPHS.charAt(Math.min(legend.size(), GLYPHS.length() - 1)); legend.put(name, glyph); }
+                        body.append(glyph);
+                    }
+                    body.append('\n');
+                }
+            }
+            StringBuilder head = new StringBuilder("# " + type + " chunk " + base.x + "," + base.z + " floors " + sample.floors() + " cellars " + sample.cellars() + " street y " + street + "\n# x grows east (columns), z grows south (rows)\n# legend:");
+            legend.forEach((name, glyph) -> head.append(' ').append(glyph).append('=').append(name.replace("minecraft:", "")));
+            head.append("\n");
+            Files.writeString(dir.resolve(type.replace(':', '_') + "_" + base.x + "_" + base.z + ".txt"), head + body.toString(), StandardCharsets.UTF_8);
+        } catch (IOException error) {
+            LOGGER.warn("[UC-PROBE] could not write a chunk dump: {}", error.toString());
+        }
     }
 }

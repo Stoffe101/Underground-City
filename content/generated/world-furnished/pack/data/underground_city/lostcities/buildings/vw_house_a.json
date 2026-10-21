@@ -1,0 +1,32 @@
+{
+  "allowdoors": false,
+  "allowfillers": false,
+  "filler": "3",
+  "maxcellars": 0,
+  "maxfloors": 2,
+  "mincellars": 0,
+  "minfloors": 2,
+  "parts": [
+    {
+      "cellar": false,
+      "ground": true,
+      "part": "underground_city:vw_house_a_ground",
+      "top": false
+    },
+    {
+      "cellar": false,
+      "floor": 1,
+      "ground": false,
+      "part": "underground_city:vw_house_a_floor",
+      "top": false
+    },
+    {
+      "cellar": false,
+      "ground": false,
+      "part": "underground_city:vw_house_a_top",
+      "top": true
+    }
+  ],
+  "refpalette": "underground_city:vw_house_a",
+  "rubble": "3"
+}

@@ -26,7 +26,7 @@ java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 // GitHub release), are SHA-512/SHA-256 verified against content/modpacks/dev-pack.json, and are never committed.
 // ---------------------------------------------------------------------------------------------------------------
 def harnessFlags = ['ucPack', 'ucEconomyTest', 'ucScreeningMod', 'ucWorldCandidate', 'ucWorldTour', 'ucJourneyClient',
-                    'ucVisualCapture', 'ucWorldSurvey', 'ucSeedScan', 'ucJourneyPhase', 'ucJourneyScenario', 'ucJourneySurvival', 'ucJourneyWorld', 'ucPerfProbe', 'ucStallProbe', 'ucTerrainMap', 'ucCityProbe', 'ucRoadCheck', 'ucBurglary', 'ucPhotoTour']
+                    'ucVisualCapture', 'ucWorldSurvey', 'ucSeedScan', 'ucJourneyPhase', 'ucJourneyScenario', 'ucJourneySurvival', 'ucJourneyWorld', 'ucPerfProbe', 'ucStallProbe', 'ucTerrainMap', 'ucCityProbe', 'ucOreAudit', 'ucRoadCheck', 'ucBurglary', 'ucPhotoTour']
 def requestedTasks = gradle.startParameter.taskNames.collect { it.tokenize(':').last() }
 def userLaunch = requestedTasks.any { it in ['runClient', 'runServer'] } &&
         !harnessFlags.any { providers.gradleProperty(it).isPresent() }
@@ -36,6 +36,7 @@ def extraSets = providers.gradleProperty('ucExtraSets').orElse('').get().trim()
 def packSelection = explicitPack != null ? (explicitPack == 'none' ? '' : explicitPack)
         : (userLaunch ? 'world,firearms,vehicles,boats' + (extraSets.isEmpty() ? '' : ',' + extraSets) : '')
 def devPackSets = packSelection.split(',').collect { it.trim() }.findAll { !it.isEmpty() }
+def devPackSetsForFurnished = { p -> devPackSets.contains('furnished') }
 def devWorldWanted = userLaunch || providers.gradleProperty('ucDevWorld').orNull == 'true'
 def autoWorld = devWorldWanted && providers.gradleProperty('ucAutoWorld').orNull != 'false' && !providers.gradleProperty('ucPlaytest').isPresent()
 def economyRuntime = providers.gradleProperty('ucEconomyTest').orNull == 'true' || userLaunch
@@ -47,7 +48,10 @@ def interactiveLaunch = userLaunch && !providers.gradleProperty('ucPlaytest').is
 def worldLayout = providers.gradleProperty('ucWorldLayout').orElse(interactiveLaunch ? 'archipelago' : 'legacy').get()
 if (!(worldLayout in ['legacy', 'archipelago'])) throw new GradleException('ucWorldLayout must be legacy or archipelago')
 def worldPackName = worldLayout == 'archipelago' ? 'world-archipelago' : 'world-prototype'
-def devWorldName = worldLayout == 'archipelago' ? 'UC-Archipelago' : 'UC-Dev-5908'
+// -PucDevWorldName=<name> opens or makes a different dev world (a new world for the furnished cities, say) beside the existing one, which is never touched
+def devWorldName = providers.gradleProperty('ucDevWorldName').orElse(worldLayout == 'archipelago' ? 'UC-Archipelago' : 'UC-Dev-5908').get()
+// The furnished cities (D-117) are original buildings furnished with Modern Life; they change how new chunks generate, so they exist only for the archipelago layout and only when asked for (-PucExtraSets=furnished)
+if (devPackSetsForFurnished(providers)) { if (worldLayout != 'archipelago') throw new GradleException('The furnished set belongs to the archipelago layout (-PucWorldLayout=archipelago)') }
 
 def devPackMods = []
 if (!devPackSets.isEmpty()) {
@@ -62,7 +66,7 @@ if (!devPackSets.isEmpty()) {
         chosen[id] = mod
     }
     manifest.mods.findAll { mod -> mod.sets.any { devPackSets.contains(it) } }.each { include(it.id) }
-    if (chosen.isEmpty()) throw new GradleException('No dev-pack mods in sets ' + devPackSets + ' (known sets: world, firearms, vehicles, boats, vintner, farming, qol, survival, legacy_travelers, performance, navigation, citytweaks)')
+    if (chosen.isEmpty()) throw new GradleException('No dev-pack mods in sets ' + devPackSets + ' (known sets: world, firearms, vehicles, boats, vintner, farming, qol, survival, legacy_travelers, performance, navigation, citytweaks, furnished, scarcity)')
     devPackMods = chosen.values().toList()
 }
 
@@ -173,6 +177,13 @@ minecraft {
                 jvmArgs "-Duc.cityProbe=${providers.gradleProperty('ucCityProbe').get()}", "-Xmx${providers.gradleProperty('ucServerHeap').orElse('3G').get()}"
                 project.properties.each { name, value ->
                     if (name.startsWith('ucCp') && name.length() > 4) jvmArgs "-Duc.cityProbe.${name.substring(4).toLowerCase()}=${value}"
+                }
+            }
+            if (providers.gradleProperty('ucOreAudit').isPresent()) {
+                // generates chunks around each city and in the countryside and counts every ore block by kind (OreAudit); -PucOaRadius=4 -PucOaSpread=260
+                jvmArgs "-Duc.oreAudit=${providers.gradleProperty('ucOreAudit').get()}", "-Xmx${providers.gradleProperty('ucServerHeap').orElse('3G').get()}"
+                project.properties.each { name, value ->
+                    if (name.startsWith('ucOa') && name.length() > 4) jvmArgs "-Duc.oreAudit.${name.substring(4).toLowerCase()}=${value}"
                 }
             }
             if (providers.gradleProperty('ucRoadCheck').isPresent()) {
@@ -351,6 +362,21 @@ def prepareDevRun = tasks.register('prepareDevRun') {
             def worldJar = new File(modsDir, worldLayout == 'archipelago' ? 'underground-city-world-archipelago.jar' : 'underground-city-world-prototype.jar')
             ant.zip(destfile: worldJar, basedir: pack, whenempty: 'fail', level: 9)
             wanted << worldJar.name
+            if (devPackSets.contains('scarcity')) {
+                // a new world with no natural ore (D-120): one biome modifier in its own low-code mod, opt-in, and refused by GenerationPackGuard for any world that already holds chunks
+                def scarcity = file('../content/generated/world-scarcity/pack')
+                if (!scarcity.isDirectory()) throw new GradleException('content/generated/world-scarcity is missing; run python scripts/emit_dev_world_pack.py --layout scarcity')
+                def scarcityJar = new File(modsDir, 'underground-city-scarcity.jar')
+                ant.zip(destfile: scarcityJar, basedir: scarcity, whenempty: 'fail', level: 9)
+                wanted << scarcityJar.name
+            }
+            if (devPackSets.contains('furnished')) {
+                def furnished = file('../content/generated/world-furnished/pack')
+                if (!furnished.isDirectory()) throw new GradleException('content/generated/world-furnished is missing; run python scripts/emit_dev_world_pack.py --layout furnished')
+                def furnishedJar = new File(modsDir, 'underground-city-furnished-cities.jar')
+                ant.zip(destfile: furnishedJar, basedir: furnished, whenempty: 'fail', level: 9)
+                wanted << furnishedJar.name
+            }
             fileTree(runConfig).visit { entry ->
                 if (entry.isDirectory()) return
                 def target = new File(runDir, entry.relativePath.pathString)
