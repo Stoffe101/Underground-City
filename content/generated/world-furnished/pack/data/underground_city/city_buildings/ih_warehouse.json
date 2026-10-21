@@ -1,0 +1,53 @@
+{
+  "city": "ironhaven",
+  "floors": {
+    "max": 1,
+    "min": 1
+  },
+  "id": "ih_warehouse",
+  "notes": "A warehouse: racks of crates and barrels, loading bays, a corner office.",
+  "schema_version": 1,
+  "spots": [
+    {
+      "facing": "south",
+      "kind": "door",
+      "note": "loading bay",
+      "x": 7,
+      "y": 1,
+      "z": 14
+    },
+    {
+      "facing": "north",
+      "kind": "door",
+      "note": "loading bay",
+      "x": 7,
+      "y": 1,
+      "z": 1
+    },
+    {
+      "facing": "west",
+      "kind": "desk",
+      "note": "office",
+      "x": 13,
+      "y": 1,
+      "z": 2
+    },
+    {
+      "facing": "south",
+      "kind": "shelf",
+      "note": "racking",
+      "x": 5,
+      "y": 1,
+      "z": 3
+    },
+    {
+      "facing": "south",
+      "kind": "stash",
+      "note": "racking",
+      "x": 12,
+      "y": 1,
+      "z": 3
+    }
+  ],
+  "use": "warehouse"
+}

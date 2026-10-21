@@ -1,11 +1,12 @@
 {
-  "allowdoors": false,
-  "allowfillers": false,
+  "allowDoors": false,
+  "allowFillers": false,
   "filler": "3",
   "maxcellars": 0,
   "maxfloors": 2,
   "mincellars": 0,
   "minfloors": 2,
+  "overrideFloors": true,
   "parts": [
     {
       "cellar": false,

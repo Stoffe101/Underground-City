@@ -1,0 +1,53 @@
+{
+  "city": "valewood",
+  "floors": {
+    "max": 2,
+    "min": 2
+  },
+  "id": "vw_shop",
+  "notes": "A market shop: counter, shelves and crates on the ground floor, a small flat above.",
+  "schema_version": 1,
+  "spots": [
+    {
+      "facing": "south",
+      "kind": "door",
+      "note": "shop door",
+      "x": 7,
+      "y": 1,
+      "z": 12
+    },
+    {
+      "facing": "south",
+      "kind": "counter",
+      "note": "till",
+      "x": 7,
+      "y": 1,
+      "z": 7
+    },
+    {
+      "facing": "south",
+      "kind": "shelf",
+      "note": "display",
+      "x": 7,
+      "y": 1,
+      "z": 5
+    },
+    {
+      "facing": "south",
+      "kind": "bed",
+      "note": "flat bed",
+      "x": 5,
+      "y": 7,
+      "z": 5
+    },
+    {
+      "facing": "west",
+      "kind": "stove",
+      "note": "flat kitchen",
+      "x": 12,
+      "y": 7,
+      "z": 6
+    }
+  ],
+  "use": "shop"
+}

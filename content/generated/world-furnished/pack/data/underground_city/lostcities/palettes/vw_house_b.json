@@ -1,0 +1,209 @@
+{
+  "palette": [
+    {
+      "block": "minecraft:grass_block",
+      "char": "0"
+    },
+    {
+      "block": "minecraft:stone_bricks",
+      "char": "1"
+    },
+    {
+      "block": "minecraft:spruce_planks",
+      "char": "2"
+    },
+    {
+      "block": "modernlife:floor_mat[facing=north]",
+      "char": "3"
+    },
+    {
+      "block": "minecraft:oak_fence",
+      "char": "4"
+    },
+    {
+      "blocks": [
+        {
+          "block": "minecraft:poppy",
+          "random": 70
+        },
+        {
+          "block": "minecraft:dandelion",
+          "random": 70
+        },
+        {
+          "block": "minecraft:oxeye_daisy",
+          "random": 70
+        },
+        {
+          "block": "minecraft:grass",
+          "random": 200
+        },
+        {
+          "block": "minecraft:air",
+          "random": 1000
+        }
+      ],
+      "char": "5"
+    },
+    {
+      "block": "minecraft:dark_oak_planks",
+      "char": "6"
+    },
+    {
+      "block": "minecraft:cobblestone",
+      "char": "7"
+    },
+    {
+      "block": "modernlife:blue_sofa[facing=south,type=right]",
+      "char": "8"
+    },
+    {
+      "block": "modernlife:blue_sofa[facing=south,type=middle]",
+      "char": "9"
+    },
+    {
+      "block": "modernlife:blue_sofa[facing=south,type=left]",
+      "char": "a"
+    },
+    {
+      "block": "minecraft:birch_planks",
+      "char": "b"
+    },
+    {
+      "block": "modernlife:refrigerator[facing=east,half=lower]",
+      "char": "c"
+    },
+    {
+      "block": "modernlife:oak_chair[facing=south]",
+      "char": "d"
+    },
+    {
+      "block": "modernlife:oak_kitchen_drawer_cabinet[facing=east]",
+      "char": "e"
+    },
+    {
+      "block": "modernlife:oak_coffee_table[type=e_end]",
+      "char": "f"
+    },
+    {
+      "block": "modernlife:oak_coffee_table[type=w_end]",
+      "char": "g"
+    },
+    {
+      "block": "modernlife:oak_small_table[type=single]",
+      "char": "h"
+    },
+    {
+      "block": "modernlife:oak_chair[facing=east]",
+      "char": "i"
+    },
+    {
+      "block": "modernlife:stove[facing=east,open_door=false]",
+      "char": "j"
+    },
+    {
+      "block": "modernlife:oak_chair[facing=north]",
+      "char": "k"
+    },
+    {
+      "block": "modernlife:kitchen_sink[facing=east]",
+      "char": "l"
+    },
+    {
+      "block": "modernlife:floor_mat[facing=west]",
+      "char": "m"
+    },
+    {
+      "block": "modernlife:oak_kitchen_cabinet[facing=east]",
+      "char": "n"
+    },
+    {
+      "block": "minecraft:oak_stairs[facing=north,half=bottom,shape=straight]",
+      "char": "o"
+    },
+    {
+      "block": "modernlife:modern_oak_bookshelf[facing=north]",
+      "char": "p"
+    },
+    {
+      "block": "modernlife:trash_can",
+      "char": "q"
+    },
+    {
+      "block": "minecraft:birch_door[facing=south,half=lower,hinge=right,open=false]",
+      "char": "r"
+    },
+    {
+      "block": "minecraft:glass_pane",
+      "char": "s"
+    },
+    {
+      "block": "modernlife:refrigerator[facing=east,half=upper]",
+      "char": "t"
+    },
+    {
+      "block": "modernlife:flatscreen_tv[facing=east]",
+      "char": "u"
+    },
+    {
+      "block": "minecraft:birch_door[facing=south,half=upper,hinge=right,open=false]",
+      "char": "v"
+    },
+    {
+      "block": "modernlife:light_bulb[face=ceiling,facing=north]",
+      "char": "w"
+    },
+    {
+      "block": "minecraft:white_concrete",
+      "char": "x"
+    },
+    {
+      "block": "modernlife:modern_oak_bookshelf[facing=south]",
+      "char": "y"
+    },
+    {
+      "block": "modernlife:toilet[facing=east]",
+      "char": "z"
+    },
+    {
+      "block": "minecraft:birch_door[facing=east,half=lower,hinge=right,open=false]",
+      "char": "A"
+    },
+    {
+      "block": "minecraft:green_bed[facing=north,part=head]",
+      "char": "B"
+    },
+    {
+      "block": "minecraft:green_bed[facing=north,part=foot]",
+      "char": "C"
+    },
+    {
+      "block": "minecraft:yellow_bed[facing=east,part=head]",
+      "char": "D"
+    },
+    {
+      "block": "minecraft:yellow_bed[facing=east,part=foot]",
+      "char": "E"
+    },
+    {
+      "block": "modernlife:oak_night_stand[facing=north]",
+      "char": "F"
+    },
+    {
+      "block": "minecraft:birch_door[facing=east,half=upper,hinge=right,open=false]",
+      "char": "G"
+    },
+    {
+      "block": "modernlife:shower_head[facing=south]",
+      "char": "H"
+    },
+    {
+      "block": "minecraft:dark_oak_stairs[facing=south,half=bottom,shape=straight]",
+      "char": "I"
+    },
+    {
+      "block": "minecraft:dark_oak_stairs[facing=north,half=bottom,shape=straight]",
+      "char": "J"
+    }
+  ]
+}

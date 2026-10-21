@@ -1,0 +1,101 @@
+{
+  "city": "blackwater",
+  "floors": {
+    "max": 4,
+    "min": 4
+  },
+  "id": "bw_apartments",
+  "notes": "A four-storey apartment block in dark concrete: two flats a floor either side of a central corridor, a roof terrace.",
+  "schema_version": 1,
+  "spots": [
+    {
+      "facing": "west",
+      "kind": "door",
+      "note": "street door",
+      "x": 1,
+      "y": 1,
+      "z": 7
+    },
+    {
+      "facing": "east",
+      "kind": "door",
+      "note": "street door",
+      "x": 14,
+      "y": 1,
+      "z": 7
+    },
+    {
+      "facing": "south",
+      "kind": "stove",
+      "note": "flat 1 stove",
+      "x": 11,
+      "y": 1,
+      "z": 2
+    },
+    {
+      "facing": "east",
+      "kind": "bed",
+      "note": "flat 1 bed",
+      "x": 3,
+      "y": 1,
+      "z": 3
+    },
+    {
+      "facing": "east",
+      "kind": "bed",
+      "note": "flat 2 bed",
+      "x": 3,
+      "y": 1,
+      "z": 12
+    },
+    {
+      "facing": "east",
+      "kind": "bed",
+      "note": "flat 3 bed",
+      "x": 3,
+      "y": 7,
+      "z": 3
+    },
+    {
+      "facing": "east",
+      "kind": "bed",
+      "note": "flat 4 bed",
+      "x": 3,
+      "y": 7,
+      "z": 12
+    },
+    {
+      "facing": "east",
+      "kind": "bed",
+      "note": "flat 5 bed",
+      "x": 3,
+      "y": 13,
+      "z": 3
+    },
+    {
+      "facing": "east",
+      "kind": "bed",
+      "note": "flat 6 bed",
+      "x": 3,
+      "y": 13,
+      "z": 12
+    },
+    {
+      "facing": "east",
+      "kind": "bed",
+      "note": "flat 7 bed",
+      "x": 3,
+      "y": 19,
+      "z": 3
+    },
+    {
+      "facing": "east",
+      "kind": "bed",
+      "note": "flat 8 bed",
+      "x": 3,
+      "y": 19,
+      "z": 12
+    }
+  ],
+  "use": "flats"
+}

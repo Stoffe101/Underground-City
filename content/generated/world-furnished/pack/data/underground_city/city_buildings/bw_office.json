@@ -1,0 +1,69 @@
+{
+  "city": "blackwater",
+  "floors": {
+    "max": 3,
+    "min": 3
+  },
+  "id": "bw_office",
+  "notes": "A three-storey office: reception, open-plan floors, a meeting room and a server room.",
+  "schema_version": 1,
+  "spots": [
+    {
+      "facing": "south",
+      "kind": "door",
+      "note": "front door",
+      "x": 7,
+      "y": 1,
+      "z": 14
+    },
+    {
+      "facing": "north",
+      "kind": "door",
+      "note": "back door",
+      "x": 7,
+      "y": 1,
+      "z": 1
+    },
+    {
+      "facing": "north",
+      "kind": "counter",
+      "note": "reception",
+      "x": 7,
+      "y": 1,
+      "z": 10
+    },
+    {
+      "facing": "south",
+      "kind": "desk",
+      "note": "desk",
+      "x": 5,
+      "y": 7,
+      "z": 4
+    },
+    {
+      "facing": "south",
+      "kind": "desk",
+      "note": "desk",
+      "x": 8,
+      "y": 7,
+      "z": 4
+    },
+    {
+      "facing": "north",
+      "kind": "desk",
+      "note": "desk",
+      "x": 11,
+      "y": 7,
+      "z": 10
+    },
+    {
+      "facing": "south",
+      "kind": "stash",
+      "note": "server room",
+      "x": 11,
+      "y": 13,
+      "z": 3
+    }
+  ],
+  "use": "office"
+}

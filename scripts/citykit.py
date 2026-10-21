@@ -137,6 +137,90 @@ class Part:
         return "\n".join(out)
 
 
+# ---------------------------------------------------------------------------------------------------- stairs
+
+def stair_block(material: str, facing: str, half: str = "bottom") -> str:
+    return f"minecraft:{material}[facing={facing},half={half},shape=straight]"
+
+
+def stair_run(lower: Part, upper: Part, x: int, z: int, facing: str, material: str = "oak_stairs", clear_sides: int = 0) -> list[tuple[int, int]]:
+    """A straight stair from the floor of ``lower`` to the floor of ``upper`` (six blocks higher), climbing toward ``facing`` from the cell (x, z).
+
+    Five stair blocks stand in ``lower`` (y 1 to 5, one cell further along each); the sixth step is the upper floor's own slab. The head room above every step is cleared, through the lower
+    floor's ceiling layers and the upper floor's slab where they are in the way. Returns the cells the stair uses (the five steps and the landing) so a caller can keep furniture off them.
+    """
+    dx, dz = DIRS[facing]
+    cells = []
+    for step in range(6):
+        cx, cz = x + dx * step, z + dz * step
+        cells.append((cx, cz))
+        y = 1 + step
+        if y <= 5:
+            lower.put(cx, y, cz, stair_block(material, facing))
+        for head in (y + 1, y + 2):
+            if head <= 5:
+                lower.put(cx, head, cz, "air")
+            else:
+                upper.put(cx, head - 6, cz, "air")
+        if step in (3, 4):
+            upper.put(cx, 0, cz, "air")                      # the slab above the steps that reach it
+    return cells
+
+
+# ---------------------------------------------------------------------------------------------------- mirroring
+
+_SWAP_WORDS = {"east": "west", "west": "east", "left": "right", "right": "left",
+               "w_end": "e_end", "e_end": "w_end", "ne_corner": "nw_corner", "nw_corner": "ne_corner", "se_corner": "sw_corner", "sw_corner": "se_corner"}
+
+
+def swap_lr(spec: str) -> str:
+    """The block as it looks mirrored west to east: east and west facings, door hinges and the left and right pieces of sofas and tables trade places."""
+    if "[" not in spec:
+        return spec
+    head, _, rest = spec.partition("[")
+    pairs = []
+    for pair in rest.rstrip("]").split(","):
+        key, _, value = pair.partition("=")
+        if key == "shape":                                  # stairs: inner_left <-> inner_right, outer_left <-> outer_right
+            value = value.replace("left", "@").replace("right", "left").replace("@", "right")
+        elif key in ("facing", "hinge", "type"):
+            value = _SWAP_WORDS.get(value, value)
+        pairs.append(f"{key}={value}")
+    return head + "[" + ",".join(pairs) + "]"
+
+
+def mirror_part(part: "Part", name: str, palette: Palette) -> "Part":
+    """A copy of the part flipped west to east, drawn with ``palette``."""
+    out = Part(name, palette, part.xsize, part.zsize)
+    for y in range(FLOOR_H):
+        for z in range(part.zsize):
+            for x in range(part.xsize):
+                c = part.layers[y][z][x]
+                if c == " ":
+                    continue
+                spec = part.palette.entries[c]
+                if isinstance(spec, str):
+                    out.put(part.xsize - 1 - x, y, z, swap_lr(spec))
+                else:
+                    out.put(part.xsize - 1 - x, y, z, [(chance, swap_lr(block)) for chance, block in spec])
+    return out
+
+
+def mirror_building(source: "Building", new_id: str, **changes) -> "Building":
+    """The same building drawn west to east, under another id (a second house from one plan)."""
+    palette = Palette(new_id)
+    out = Building(new_id, palette, source.use, source.city, min_floors=source.min_floors, max_floors=source.max_floors, filler=source.filler,
+                   notes=source.notes, allow_doors=source.allow_doors, security=source.security)
+    for part, flags in source.parts:
+        out.add(mirror_part(part, part.name.replace(source.id, new_id), palette), **flags)
+    for spot in source.spots:
+        facing = _SWAP_WORDS.get(spot.facing, spot.facing)
+        out.spots.append(Spot(spot.kind, SIZE - 1 - spot.x, spot.y, spot.z, facing, spot.note))
+    for key, value in changes.items():
+        setattr(out, key, value)
+    return out
+
+
 # ---------------------------------------------------------------------------------------------------- furniture
 # Every helper places furniture whose front looks at `facing`. The bounding blocks are the caller's business.
 
@@ -277,7 +361,7 @@ class Building:
         files[f"{base}palettes/{self.id}.json"] = self.palette.to_json()
         files[f"{base}buildings/{self.id}.json"] = {
             "minfloors": self.min_floors, "maxfloors": self.max_floors, "mincellars": 0, "maxcellars": 0,
-            "allowdoors": self.allow_doors, "allowfillers": False, "refpalette": ref,
+            "allowDoors": self.allow_doors, "allowFillers": False, "overrideFloors": True, "refpalette": ref,
             "filler": filler_char, "rubble": filler_char, "parts": refs,
         }
         return files

@@ -1,10 +1,77 @@
 {
-  "classes": {},
+  "classes": {
+    "club": {
+      "label": "club",
+      "lock_profile": "high_security",
+      "locked_exterior": true,
+      "stash_chance": 0.6,
+      "stash_policy": "underground_city:illegal_cache"
+    },
+    "storefront": {
+      "label": "shop",
+      "lock_profile": "commercial",
+      "locked_exterior": true,
+      "stash_chance": 0.5,
+      "stash_policy": "underground_city:office"
+    },
+    "warehouse": {
+      "label": "warehouse",
+      "lock_profile": "commercial",
+      "locked_exterior": true,
+      "stash_chance": 0.7,
+      "stash_policy": "underground_city:industrial"
+    }
+  },
   "rules": [
     {
       "class": "cottage",
       "priority": 10,
       "type_prefix": "underground_city:vw_house_a"
+    },
+    {
+      "class": "cottage",
+      "priority": 10,
+      "type_prefix": "underground_city:vw_house_b"
+    },
+    {
+      "class": "cottage",
+      "priority": 10,
+      "type_prefix": "underground_city:vw_cottage"
+    },
+    {
+      "class": "storefront",
+      "priority": 10,
+      "type_prefix": "underground_city:vw_shop"
+    },
+    {
+      "class": "flat_block",
+      "priority": 10,
+      "type_prefix": "underground_city:ih_flats"
+    },
+    {
+      "class": "workshop",
+      "priority": 10,
+      "type_prefix": "underground_city:ih_workshop"
+    },
+    {
+      "class": "warehouse",
+      "priority": 10,
+      "type_prefix": "underground_city:ih_warehouse"
+    },
+    {
+      "class": "flat_tower",
+      "priority": 10,
+      "type_prefix": "underground_city:bw_apartments"
+    },
+    {
+      "class": "office",
+      "priority": 10,
+      "type_prefix": "underground_city:bw_office"
+    },
+    {
+      "class": "club",
+      "priority": 10,
+      "type_prefix": "underground_city:bw_club"
     }
   ],
   "schema_version": 1

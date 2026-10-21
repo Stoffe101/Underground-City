@@ -1,0 +1,59 @@
+{
+  "city": "ironhaven",
+  "keep_multi_buildings": false,
+  "schema_version": 1,
+  "style": "underground_city:ironhaven",
+  "zones": [
+    {
+      "buildings": [
+        {
+          "id": "underground_city:ih_flats",
+          "weight": 4
+        },
+        {
+          "id": "underground_city:ih_workshop",
+          "weight": 2
+        },
+        {
+          "id": "underground_city:ih_warehouse",
+          "weight": 1
+        }
+      ],
+      "within": 0.35
+    },
+    {
+      "buildings": [
+        {
+          "id": "underground_city:ih_flats",
+          "weight": 2
+        },
+        {
+          "id": "underground_city:ih_workshop",
+          "weight": 3
+        },
+        {
+          "id": "underground_city:ih_warehouse",
+          "weight": 2
+        }
+      ],
+      "within": 0.7
+    },
+    {
+      "buildings": [
+        {
+          "id": "underground_city:ih_workshop",
+          "weight": 2
+        },
+        {
+          "id": "underground_city:ih_warehouse",
+          "weight": 4
+        },
+        {
+          "id": "underground_city:ih_flats",
+          "weight": 1
+        }
+      ],
+      "within": 1.0
+    }
+  ]
+}

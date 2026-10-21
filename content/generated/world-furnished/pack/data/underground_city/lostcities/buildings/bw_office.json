@@ -1,0 +1,40 @@
+{
+  "allowDoors": false,
+  "allowFillers": false,
+  "filler": "9",
+  "maxcellars": 0,
+  "maxfloors": 3,
+  "mincellars": 0,
+  "minfloors": 3,
+  "overrideFloors": true,
+  "parts": [
+    {
+      "cellar": false,
+      "ground": true,
+      "part": "underground_city:bw_office_ground",
+      "top": false
+    },
+    {
+      "cellar": false,
+      "floor": 1,
+      "ground": false,
+      "part": "underground_city:bw_office_floor1",
+      "top": false
+    },
+    {
+      "cellar": false,
+      "floor": 2,
+      "ground": false,
+      "part": "underground_city:bw_office_floor2",
+      "top": false
+    },
+    {
+      "cellar": false,
+      "ground": false,
+      "part": "underground_city:bw_office_top",
+      "top": true
+    }
+  ],
+  "refpalette": "underground_city:bw_office",
+  "rubble": "9"
+}

@@ -1,0 +1,161 @@
+{
+  "palette": [
+    {
+      "blocks": [
+        {
+          "block": "minecraft:cracked_stone_bricks",
+          "random": 180
+        },
+        {
+          "block": "minecraft:gray_concrete",
+          "random": 1000
+        }
+      ],
+      "char": "0"
+    },
+    {
+      "block": "minecraft:iron_bars",
+      "char": "1"
+    },
+    {
+      "block": "modernlife:street_light[facing=south,part=bottom]",
+      "char": "2"
+    },
+    {
+      "block": "modernlife:street_light[facing=south,part=mid]",
+      "char": "3"
+    },
+    {
+      "block": "modernlife:street_light[facing=south,part=top]",
+      "char": "4"
+    },
+    {
+      "block": "minecraft:smooth_stone",
+      "char": "5"
+    },
+    {
+      "block": "minecraft:stone_bricks",
+      "char": "6"
+    },
+    {
+      "block": "minecraft:polished_blackstone_bricks",
+      "char": "7"
+    },
+    {
+      "block": "minecraft:gray_concrete",
+      "char": "8"
+    },
+    {
+      "block": "minecraft:glass",
+      "char": "9"
+    },
+    {
+      "block": "minecraft:iron_door[facing=south,half=lower,hinge=left,open=false]",
+      "char": "a"
+    },
+    {
+      "block": "minecraft:iron_door[facing=south,half=upper,hinge=left,open=false]",
+      "char": "b"
+    },
+    {
+      "block": "minecraft:iron_door[facing=south,half=lower,hinge=right,open=false]",
+      "char": "c"
+    },
+    {
+      "block": "minecraft:iron_door[facing=south,half=upper,hinge=right,open=false]",
+      "char": "d"
+    },
+    {
+      "block": "minecraft:iron_door[facing=north,half=lower,hinge=left,open=false]",
+      "char": "e"
+    },
+    {
+      "block": "minecraft:iron_door[facing=north,half=upper,hinge=left,open=false]",
+      "char": "f"
+    },
+    {
+      "block": "minecraft:iron_door[facing=north,half=lower,hinge=right,open=false]",
+      "char": "g"
+    },
+    {
+      "block": "minecraft:iron_door[facing=north,half=upper,hinge=right,open=false]",
+      "char": "h"
+    },
+    {
+      "block": "minecraft:iron_door[facing=east,half=lower,hinge=left,open=false]",
+      "char": "i"
+    },
+    {
+      "block": "minecraft:iron_door[facing=east,half=upper,hinge=left,open=false]",
+      "char": "j"
+    },
+    {
+      "block": "minecraft:iron_door[facing=west,half=lower,hinge=right,open=false]",
+      "char": "k"
+    },
+    {
+      "block": "minecraft:iron_door[facing=west,half=upper,hinge=right,open=false]",
+      "char": "l"
+    },
+    {
+      "block": "minecraft:iron_door[facing=east,half=lower,hinge=right,open=false]",
+      "char": "m"
+    },
+    {
+      "block": "minecraft:iron_door[facing=east,half=upper,hinge=right,open=false]",
+      "char": "n"
+    },
+    {
+      "block": "minecraft:iron_door[facing=west,half=lower,hinge=left,open=false]",
+      "char": "o"
+    },
+    {
+      "block": "minecraft:iron_door[facing=west,half=upper,hinge=left,open=false]",
+      "char": "p"
+    },
+    {
+      "block": "minecraft:chest[facing=south,type=single,waterlogged=false]",
+      "char": "q"
+    },
+    {
+      "block": "modernlife:oak_wall_shelf[facing=south]",
+      "char": "r"
+    },
+    {
+      "block": "minecraft:barrel[facing=up,open=false]",
+      "char": "s"
+    },
+    {
+      "block": "minecraft:hay_block[axis=y]",
+      "char": "t"
+    },
+    {
+      "block": "modernlife:light_bulb[face=ceiling,facing=north]",
+      "char": "u"
+    },
+    {
+      "block": "modernlife:oak_small_table[type=single]",
+      "char": "v"
+    },
+    {
+      "block": "modernlife:monitor[facing=west]",
+      "char": "w"
+    },
+    {
+      "block": "modernlife:oak_chair[facing=east]",
+      "char": "x"
+    },
+    {
+      "block": "modernlife:modern_oak_bookshelf[facing=west]",
+      "char": "y"
+    },
+    {
+      "block": "modernlife:printer[facing=west]",
+      "char": "z"
+    },
+    {
+      "block": "minecraft:campfire[facing=north,lit=false,signal_fire=false,waterlogged=false]",
+      "char": "A"
+    }
+  ]
+}

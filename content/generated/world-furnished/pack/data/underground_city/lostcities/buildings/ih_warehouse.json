@@ -1,0 +1,26 @@
+{
+  "allowDoors": false,
+  "allowFillers": false,
+  "filler": "6",
+  "maxcellars": 0,
+  "maxfloors": 1,
+  "mincellars": 0,
+  "minfloors": 1,
+  "overrideFloors": true,
+  "parts": [
+    {
+      "cellar": false,
+      "ground": true,
+      "part": "underground_city:ih_warehouse_ground",
+      "top": false
+    },
+    {
+      "cellar": false,
+      "ground": false,
+      "part": "underground_city:ih_warehouse_top",
+      "top": true
+    }
+  ],
+  "refpalette": "underground_city:ih_warehouse",
+  "rubble": "6"
+}

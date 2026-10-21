@@ -21,7 +21,7 @@
       "kind": "bed",
       "note": "main bedroom",
       "x": 7,
-      "y": 1,
+      "y": 7,
       "z": 9
     },
     {
@@ -29,7 +29,7 @@
       "kind": "bed",
       "note": "second bedroom",
       "x": 11,
-      "y": 1,
+      "y": 7,
       "z": 9
     },
     {
