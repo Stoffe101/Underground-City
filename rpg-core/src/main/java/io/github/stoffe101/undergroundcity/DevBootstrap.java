@@ -26,6 +26,8 @@ public final class DevBootstrap {
     static final int SEARCH_RADIUS = 160, MAX_RELIEF = 3;
     /** The landing is graded (LandingGrader), so a lot may be this uneven before grading and still be the least work. */
     static final int LANDING_RELIEF = 24, LANDING_SEARCH_RADIUS = 200;
+    /** The landing is searched on a grid of this many blocks (the ground is graded afterwards, so a coarse look is enough and costs a quarter of the noise columns of the default). */
+    static final int LANDING_SAMPLE = 8;
 
     /** A new archipelago world starts at its landing, not at the vanilla spawn point (which would be inside a city). Runs once, when the world is created. */
     @SubscribeEvent
@@ -60,9 +62,17 @@ public final class DevBootstrap {
         var generator = level.getChunkSource().getGenerator();
         var random = level.getChunkSource().randomState();
         return new DistrictSites.Ground() {
-            @Override public int height(int x, int z) { return generator.getBaseHeight(x, z, Heightmap.Types.OCEAN_FLOOR_WG, level, random); }
+            // A column of the generator's noise costs milliseconds on the archipelago's density functions, so each column is evaluated once for the floor and once for the surface (a lot's
+            // wetness and its height come from the same two answers; asking for them separately was four evaluations per column).
+            private final java.util.Map<Long, int[]> columns = new java.util.HashMap<>();
+            private int[] column(int x, int z) {
+                return columns.computeIfAbsent(((long) x << 32) ^ (z & 0xffffffffL), k -> new int[]{
+                    generator.getBaseHeight(x, z, Heightmap.Types.OCEAN_FLOOR_WG, level, random), generator.getBaseHeight(x, z, Heightmap.Types.WORLD_SURFACE_WG, level, random)});
+            }
+            @Override public int height(int x, int z) { return column(x, z)[0]; }
             @Override public boolean wet(int x, int z) {
-                return generator.getBaseHeight(x, z, Heightmap.Types.WORLD_SURFACE_WG, level, random) > height(x, z) || height(x, z) <= level.getSeaLevel() + 1;
+                int[] c = column(x, z);
+                return c[1] > c[0] || c[0] <= level.getSeaLevel() + 1;
             }
             @Override public boolean reserved(int x, int z) {
                 // Inside a city circle Lost Cities owns the ground; keep well clear of the circle and of the roads' region of influence.
@@ -141,8 +151,11 @@ public final class DevBootstrap {
         if (landing) {
             // The archipelago's landing is rolling plains: the whole footprint (range, Row, flats, motel and the lane's gate) is levelled once, on the flattest ground near the anchor.
             Footprint footprint = footprint(width, depth);
-            site = DistrictSites.find(ground(level), spawn.getX(), spawn.getZ(), footprint.width(), footprint.depth(), LANDING_RELIEF, LANDING_SEARCH_RADIUS)
+            long searchStart = System.nanoTime();
+            // the ground is going to be graded, so the nearest dry site that is not too steep wins (relief weight zero): the search ends at the first lot instead of reading the whole radius
+            site = DistrictSites.find(ground(level), spawn.getX(), spawn.getZ(), footprint.width(), footprint.depth(), LANDING_RELIEF, LANDING_SEARCH_RADIUS, 0.0, LANDING_SAMPLE)
                 .orElseThrow(() -> new IllegalStateException("no dry ground within " + LANDING_SEARCH_RADIUS + " blocks of the landing"));
+            LOGGER.info("[UC-DEV] landing site found at {} {} (relief {}, {} blocks from the anchor) in {} ms", site.x(), site.z(), site.relief(), Math.round(site.distance()), (System.nanoTime() - searchStart) / 1_000_000L);
             // find() returns the north-west corner of the footprint; the Row's own origin is the range's width further east.
             LandingGrader.Rect lot = new LandingGrader.Rect(site.x(), site.z(), site.x() + footprint.width() - 1, site.z() + footprint.depth() - 1);
             LandingGrader.Result graded = LandingGrader.grade(level, lot, site.y());

@@ -22,12 +22,28 @@ final class DistrictSites {
     record Site(int x, int z, int y, int relief, double distance) {}
 
     static final int STEP = 8, SAMPLE = 4, MARGIN = 3;
+    /** What a block of relief costs against a block of distance when sites are compared. */
+    static final double RELIEF_WEIGHT = 12.0;
 
     /**
      * The best site within {@code radius} blocks of {@code (aroundX, aroundZ)} for a lot of {@code width} x {@code depth}: dry, unreserved, no
      * more than {@code maxRelief} blocks between the highest and lowest ground, nearest first among equally level candidates. Empty when none fits.
      */
     static java.util.Optional<Site> find(Ground ground, int aroundX, int aroundZ, int width, int depth, int maxRelief, int radius) {
+        return find(ground, aroundX, aroundZ, width, depth, maxRelief, radius, RELIEF_WEIGHT);
+    }
+
+    /**
+     * As above, with what a block of relief costs against a block of distance. A site that is going to be graded (the arrival landing) does not care how uneven the ground is, only that it is dry
+     * and not too steep: with a weight of zero the nearest such site wins and the search ends at the first one. At the default weight a landing with 19 blocks of natural relief made every
+     * candidate within 200 blocks worth reading (about 15,000 columns of the chunk generator): 58 seconds on a loaded machine and, on a hosted runner, a first start that the 60 second watchdog killed.
+     */
+    static java.util.Optional<Site> find(Ground ground, int aroundX, int aroundZ, int width, int depth, int maxRelief, int radius, double reliefWeight) {
+        return find(ground, aroundX, aroundZ, width, depth, maxRelief, radius, reliefWeight, SAMPLE);
+    }
+
+    /** As above, reading the terrain under a lot every {@code sample} blocks (the default is {@link #SAMPLE}). */
+    static java.util.Optional<Site> find(Ground ground, int aroundX, int aroundZ, int width, int depth, int maxRelief, int radius, double reliefWeight, int sample) {
         // A column is asked about by every candidate lot that overlaps it (the lots are a few blocks apart and ninety wide), and a chunk generator's height costs
         // a whole noise column: ask each column once.
         Ground cached = new Cached(ground);
@@ -46,9 +62,9 @@ final class DistrictSites {
         for (int[] o : offsets) {
             double distance = Math.hypot(o[0], o[1]);
             if (distance >= bestCost) break;
-            Site site = evaluate(cached, aroundX + o[0] - width / 2, aroundZ + o[1] - depth / 2, width, depth, distance);
+            Site site = evaluate(cached, aroundX + o[0] - width / 2, aroundZ + o[1] - depth / 2, width, depth, distance, sample);
             if (site == null || site.relief() > maxRelief) continue;
-            double cost = site.relief() * 12.0 + site.distance();
+            double cost = site.relief() * reliefWeight + site.distance();
             if (cost < bestCost) { best = site; bestCost = cost; }
         }
         return java.util.Optional.ofNullable(best);
@@ -70,9 +86,13 @@ final class DistrictSites {
     }
 
     static Site evaluate(Ground ground, int x0, int z0, int width, int depth, double distance) {
+        return evaluate(ground, x0, z0, width, depth, distance, SAMPLE);
+    }
+
+    static Site evaluate(Ground ground, int x0, int z0, int width, int depth, double distance, int sample) {
         List<Integer> heights = new ArrayList<>();
-        for (int x = x0 - MARGIN; x <= x0 + width + MARGIN; x += SAMPLE) {
-            for (int z = z0 - MARGIN; z <= z0 + depth + MARGIN; z += SAMPLE) {
+        for (int x = x0 - MARGIN; x <= x0 + width + MARGIN; x += sample) {
+            for (int z = z0 - MARGIN; z <= z0 + depth + MARGIN; z += sample) {
                 if (ground.reserved(x, z) || ground.wet(x, z)) return null; // reserved first: a column that is not loaded must be refused before anything reads its height
                 heights.add(ground.height(x, z));
             }

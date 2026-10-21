@@ -1195,6 +1195,16 @@ public final class UndergroundGameTests {
             if (other != null && other.relief() <= 3) best = Math.min(best, other.relief() * 12.0 + other.distance());
         }
         check(Math.abs(pushed.relief() * 12.0 + pushed.distance() - best) < 1e-9, "The early exit finds the same cost as an exhaustive search: " + pushed + " vs " + best);
+        // A site that will be graded does not care about relief: with a weight of zero the nearest lot that is not too steep wins at once, on ground that is never level.
+        int[] rolling = {0};
+        DistrictSites.Ground hills = new DistrictSites.Ground() {
+            @Override public int height(int x, int z) { rolling[0]++; return 70 + (Math.floorMod(x / 8 + z / 8, 5)) * 3; }
+            @Override public boolean wet(int x, int z) { return false; }
+            @Override public boolean reserved(int x, int z) { return false; }
+        };
+        var graded = DistrictSites.find(hills, 0, 0, 94, 60, 24, 200, 0.0).orElseThrow(() -> new IllegalStateException("no site on rolling ground"));
+        check(graded.distance() == 0, "With a relief weight of zero the nearest feasible lot wins: " + graded);
+        check(rolling[0] < 4000, "The search for a lot that will be graded stopped at the first lot (" + rolling[0] + " terrain reads)");
         helper.succeed();
     }
 
