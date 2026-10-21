@@ -192,12 +192,16 @@ def buildings() -> list[Building]:
     return [house_a()]
 
 
+def zones() -> list[tuple[float, list[tuple[str, int]]]]:
+    """Which buildings stand how far from the centre (a fraction of the city radius); Core's CityCharacter picks from the ring of a chunk."""
+    return [(1.0, [("vw_house_a", 1)])]
+
+
 def citystyle(all_buildings: list[Building]) -> dict:
     ids = [b.id for b in all_buildings if b.city == CITY]
     style = {
         "inherit": "lostcities:citystyle_standard",
         "buildingsettings": {"buildingchance": 0.44, "maxfloors": 3},
         "parkblocks": {"parkchance": 0.26},
-        "selectors": {"buildings": [{"factor": 1.0, "value": f"{NS}:{i}"} for i in ids]},
     }
     return style

@@ -135,6 +135,64 @@ public final class RegionalWorldgenGameTests {
     }
 
     @GameTest(template = "empty", batch = "uc_regional")
+    public static void aCitysCharacterChoosesTheSameBuildingEveryTimeAndKeepsToItsRings(GameTestHelper helper) {
+        var json = com.google.gson.JsonParser.parseString("""
+            {"schema_version":1,"city":"valewood","style":"underground_city:valewood","zones":[
+              {"within":0.3,"buildings":[{"id":"underground_city:vw_shop","weight":3}]},
+              {"within":1.0,"buildings":[{"id":"underground_city:vw_house_a","weight":1},{"id":"underground_city:vw_house_b","weight":1}]}]}
+            """).getAsJsonObject();
+        var character = CityCharacter.parse(net.minecraft.resources.ResourceLocation.parse("underground_city:valewood"), json);
+        for (int x = -20; x <= 20; x++) {
+            for (int z = -20; z <= 20; z++) {
+                var first = CityCharacter.choose(character, 0.1, 5908L, x, z);
+                check(first.equals(CityCharacter.choose(character, 0.1, 5908L, x, z)), "the choice changes between two asks of the same chunk");
+                check(first.getPath().equals("vw_shop"), "the centre ring holds only the shop");
+                var outer = CityCharacter.choose(character, 0.8, 5908L, x, z);
+                check(outer.getPath().startsWith("vw_house_"), "the outer ring holds only houses: " + outer);
+            }
+        }
+        int a = 0, b = 0;
+        for (int x = 0; x < 60; x++) for (int z = 0; z < 60; z++) { if (CityCharacter.choose(character, 0.8, 7L, x, z).getPath().endsWith("_a")) a++; else b++; }
+        check(a > 1500 && b > 1500, "the two houses are not mixed about evenly: " + a + " / " + b);
+        check(CityCharacter.choose(character, 1.0, 1L, 0, 0).getPath().startsWith("vw_house_"), "the very edge belongs to the last ring");
+        check(CityCharacter.missing(character, java.util.Set.of(net.minecraft.resources.ResourceLocation.parse("underground_city:vw_shop"))).size() == 2, "the data check does not name the unregistered buildings");
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty", batch = "uc_regional")
+    public static void aCitysCharacterRefusesBrokenData(GameTestHelper helper) {
+        String[] broken = {
+            "{\"schema_version\":2,\"city\":\"valewood\",\"style\":\"a:b\",\"zones\":[]}",
+            "{\"schema_version\":1,\"city\":\"valewood\",\"style\":\"a:b\",\"zones\":[]}",
+            "{\"schema_version\":1,\"city\":\"valewood\",\"style\":\"a:b\",\"zones\":[{\"within\":0.5,\"buildings\":[{\"id\":\"a:c\",\"weight\":1}]}]}",
+            "{\"schema_version\":1,\"city\":\"valewood\",\"style\":\"a:b\",\"zones\":[{\"within\":1.0,\"buildings\":[]}]}",
+            "{\"schema_version\":1,\"city\":\"valewood\",\"style\":\"a:b\",\"zones\":[{\"within\":1.0,\"buildings\":[{\"id\":\"a:c\",\"weight\":0}]}]}",
+            "{\"schema_version\":1,\"city\":\"valewood\",\"style\":\"a:b\",\"zones\":[{\"within\":0.6,\"buildings\":[{\"id\":\"a:c\",\"weight\":1}]},{\"within\":0.5,\"buildings\":[{\"id\":\"a:c\",\"weight\":1}]}]}"
+        };
+        for (String text : broken) {
+            boolean refused = false;
+            try { CityCharacter.parse(net.minecraft.resources.ResourceLocation.parse("underground_city:x"), com.google.gson.JsonParser.parseString(text).getAsJsonObject()); }
+            catch (IllegalArgumentException expected) { refused = true; }
+            check(refused, "broken city-character data was accepted: " + text);
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty", batch = "uc_regional")
+    public static void aChunkBelongsToTheNearestCityCircleAndNoneOutside(GameTestHelper helper) {
+        var regions = java.util.List.of(
+            new CityRegions.Region("ironhaven", "minecraft:overworld", 0, 0, 500, 330),
+            new CityRegions.Region("valewood", "minecraft:overworld", 100, 14, 500, 240));
+        var centre = CityCharacter.placement(regions, 100, 14).orElseThrow();
+        check(centre.region().id().equals("valewood") && centre.fraction() < 0.05, "the centre chunk is not Valewood's centre: " + centre);
+        var edge = CityCharacter.placement(regions, 100 + 14, 14).orElseThrow();
+        check(edge.fraction() > 0.85 && edge.fraction() <= 1.0, "a chunk near the circle's edge has the wrong fraction: " + edge.fraction());
+        check(CityCharacter.placement(regions, 100 + 40, 14).isEmpty(), "a chunk outside every circle belongs to a city");
+        check(CityCharacter.placement(java.util.List.of(new CityRegions.Region("x", "minecraft:the_nether", 0, 0, 500, 330)), 0, 0).isEmpty(), "a nether region holds an overworld chunk");
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty", batch = "uc_regional")
     public static void theShoreIsTheSameEveryTimeItIsAsked(GameTestHelper helper) {
         var plan = plan();
         double first = plan.distanceToShore(123.5, -456.25), second = plan.distanceToShore(123.5, -456.25);

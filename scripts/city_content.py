@@ -43,6 +43,7 @@ def citystyles(buildings: list[citykit.Building]) -> dict[str, dict]:
 
 
 def package() -> dict[str, bytes]:
+    import city_valewood, city_ironhaven, city_blackwater   # noqa: E401
     files: dict[str, bytes] = {}
     files["META-INF/mods.toml"] = (
         'modLoader="lowcodefml"\nloaderVersion="[47,)"\nlicense="All Rights Reserved"\n\n[[mods]]\n'
@@ -64,6 +65,24 @@ def package() -> dict[str, bytes]:
         files[f"data/{NAMESPACE}/city_buildings/{b.id}.json"] = json_bytes(b.core_data())
     for city, style in citystyles(buildings).items():
         files[f"data/{NAMESPACE}/lostcities/citystyles/{city}.json"] = json_bytes(style)
+    ids = {b.id for b in buildings}
+    for module in (city_valewood, city_ironhaven, city_blackwater):
+        zones = module.zones()
+        if not zones:
+            continue
+        rings = []
+        last = 0.0
+        for within, picks in zones:
+            if within <= last or within > 1.0:
+                raise ValueError(f"{module.CITY}: zones must grow from 0 to 1")
+            last = within
+            for building_id, weight in picks:
+                if building_id not in ids:
+                    raise ValueError(f"{module.CITY}: zone names the unknown building {building_id}")
+            rings.append({"within": within, "buildings": [{"id": f"{NAMESPACE}:{building_id}", "weight": weight} for building_id, weight in picks]})
+        if last != 1.0:
+            raise ValueError(f"{module.CITY}: the last zone must reach 1.0")
+        files[f"data/{NAMESPACE}/city_character/{module.CITY}.json"] = json_bytes({"schema_version": 1, "city": module.CITY, "style": f"{NAMESPACE}:{module.CITY}", "zones": rings})
     return files
 
 

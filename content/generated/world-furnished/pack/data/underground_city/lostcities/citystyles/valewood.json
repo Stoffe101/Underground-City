@@ -6,13 +6,5 @@
   "inherit": "lostcities:citystyle_standard",
   "parkblocks": {
     "parkchance": 0.26
-  },
-  "selectors": {
-    "buildings": [
-      {
-        "factor": 1.0,
-        "value": "underground_city:vw_house_a"
-      }
-    ]
   }
 }

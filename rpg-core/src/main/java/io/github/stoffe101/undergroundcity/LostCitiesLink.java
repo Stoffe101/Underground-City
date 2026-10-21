@@ -34,6 +34,9 @@ public final class LostCitiesLink {
 
     public static boolean ready() { return api != null; }
 
+    /** Lost Cities' ILostCities implementation (null until it answered the interop request); for the listeners that call it by reflection. */
+    static Object implementation() { return api; }
+
     /** The street height of a Lost Cities city level in this level (Lost Cities' own answer, not a constant of ours); -1 when the API is not ready. */
     public static int realHeight(ServerLevel level, int cityLevel) {
         Object implementation = api;
