@@ -49,7 +49,8 @@
     "vinery:noir_wine": 2.6,
     "vinery:cherry_wine": 2.4,
     "kaleidoscope_tavern:vodka": 1.5,
-    "minecraft:sugar": 0.25
+    "minecraft:sugar": 0.25,
+    "minecraft:lever": 0.12
   },
   "wait_minutes": {
     "note": "Latency before the FIRST delivery of an order that needs growing or ageing; later cycles overlap with other work.",
@@ -123,7 +124,8 @@
       0.7,
       1.0,
       1.4
-    ]
+    ],
+    "fence_hourly_ceiling_vs_best_legal_max": 1.5
   },
   "efficiency": {
     "hands_on_share_of_active_time": 0.5,
@@ -143,5 +145,62 @@
     "max_margin": 1.7,
     "note": "Errands that carry exchange goods to a buyer unchanged. They pay a courier's margin (not a crafter's) and are bounded by the shelf: the exchange restocks a few units an hour for everyone, so the profit per hour is capped no matter how fast the player walks. The underground errands also carry the seizure risk of contraband (D-052). The cap compares the errand's net credits per hour (the smaller of what the shelf and the employer allow, times its margin) with the best crafting careers' 400-480: a courier is never the best hour.",
     "max_net_per_hour": 250
+  },
+  "scarcity": {
+    "note": "A new world made with the scarcity package (D-120) has no ore to mine: every unit of iron, copper, coal or redstone in what an order asks for comes off a city's finite shelf (bought) or, for the base metals, out of the regrowing quarry (D-123). ore_content is the ore-derived content of the vanilla goods the work orders ask for, from the base-game recipes; the mining time the default model counts for those units is taken out and replaced by the shelf price (and an exchange run) or by quarry_minutes_each. Provisional, like every hands-on minute.",
+    "ore_content": {
+      "minecraft:iron_ingot": {
+        "minecraft:iron_ingot": 1
+      },
+      "minecraft:copper_ingot": {
+        "minecraft:copper_ingot": 1
+      },
+      "minecraft:redstone": {
+        "minecraft:redstone": 1
+      },
+      "minecraft:iron_pickaxe": {
+        "minecraft:iron_ingot": 3
+      },
+      "minecraft:bucket": {
+        "minecraft:iron_ingot": 3
+      },
+      "minecraft:hopper": {
+        "minecraft:iron_ingot": 5
+      },
+      "minecraft:iron_chestplate": {
+        "minecraft:iron_ingot": 8
+      },
+      "minecraft:iron_helmet": {
+        "minecraft:iron_ingot": 5
+      },
+      "minecraft:crossbow": {
+        "minecraft:iron_ingot": 2
+      },
+      "minecraft:piston": {
+        "minecraft:iron_ingot": 1,
+        "minecraft:redstone": 1
+      },
+      "minecraft:redstone_torch": {
+        "minecraft:redstone": 1
+      },
+      "minecraft:repeater": {
+        "minecraft:redstone": 3
+      },
+      "minecraft:comparator": {
+        "minecraft:redstone": 3
+      },
+      "minecraft:observer": {
+        "minecraft:redstone": 2
+      },
+      "minecraft:target": {
+        "minecraft:redstone": 4
+      }
+    },
+    "quarry_minutes_each": {
+      "minecraft:iron_ingot": 0.7,
+      "minecraft:copper_ingot": 0.6,
+      "minecraft:coal": 0.4
+    },
+    "ore_world_share_min_at_level_5": 0.5
   }
 }

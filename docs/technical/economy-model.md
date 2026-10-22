@@ -90,6 +90,7 @@ Everything between the markers is written by `--update-doc` and checked by a uni
 | smith      | 5  | guard_plating            | le   | 270     | 0    | 270 | 31.5 | 514   | 340 | 6/h    | armoury_contracts       |                     |
 | smith      | 7  | unstamped_plate_run      | un   | 300     | 148  | 152 | 12.9 | 707   | 360 | 4/h    | unlisted_fabrication    |                     |
 | smith      | 11 | armoury_order            | un   | 600     | 296  | 304 | 21.3 | 856   | 600 | 3/h    | contraband_armoury      |                     |
+| technician | 1  | switches                 | le   | 16      | 0    | 16  | 3.4  | 281   | 100 | 12/h   |                         |                     |
 | technician | 1  | torches                  | le   | 32      | 0    | 32  | 8.7  | 221   | 125 | 12/h   |                         |                     |
 | technician | 2  | repeaters                | le   | 68      | 0    | 68  | 7.5  | 544   | 180 | 12/h   |                         |                     |
 | technician | 3  | controller_install       | le   | 135     | 82   | 53  | 5.2  | 617   | 320 | 6/h    |                         |                     |
@@ -119,13 +120,13 @@ Everything between the markers is written by `--update-doc` and checked by a uni
 | vintner    | 6 (cellar_bottles, 28 cr) | 6 (cellar_bottles, 28 cr) |
 | smith      | 3 (stone_tools, 24 cr)    | 3 (stone_tools, 24 cr)    |
 | gunsmith   | 9 (arrows, 32 cr)         | 9 (arrows, 32 cr)         |
-| technician | 9 (torches, 32 cr)        | 9 (torches, 32 cr)        |
+| technician | 3 (switches, 16 cr)       | 3 (switches, 16 cr)       |
 
 ### Legal net credits per active hour / XP per active hour, by career level (every mod installed)
 
 | level | farmer     | vintner    | smith      | gunsmith   | technician |
 |-------|------------|------------|------------|------------|------------|
-| 1     | 143 / 595  | 147 / 658  | 282 / 1471 | 112 / 439  | 110 / 431  |
+| 1     | 143 / 595  | 147 / 658  | 282 / 1471 | 112 / 439  | 140 / 877  |
 | 2     | 143 / 595  | 176 / 720  | 282 / 1471 | 360 / 1080 | 272 / 720  |
 | 3     | 201 / 524  | 255 / 1357 | 391 / 980  | 380 / 1283 | 297 / 1506 |
 | 4     | 237 / 1266 | 315 / 1210 | 407 / 974  | 419 / 1672 | 371 / 1779 |
@@ -139,7 +140,7 @@ Everything between the markers is written by `--update-doc` and checked by a uni
 
 | level | farmer     | vintner    | smith      | gunsmith   | technician |
 |-------|------------|------------|------------|------------|------------|
-| 1     | 143 / 595  | 147 / 658  | 282 / 1471 | 112 / 439  | 110 / 431  |
+| 1     | 143 / 595  | 147 / 658  | 282 / 1471 | 112 / 439  | 140 / 877  |
 | 2     | 143 / 595  | 176 / 720  | 282 / 1471 | 360 / 1080 | 272 / 720  |
 | 3     | 201 / 524  | 255 / 1357 | 391 / 980  | 380 / 1283 | 297 / 1506 |
 | 4     | 237 / 1266 | 269 / 1959 | 407 / 974  | 419 / 1672 | 371 / 1779 |
@@ -157,16 +158,16 @@ Everything between the markers is written by `--update-doc` and checked by a uni
 | vintner    | 2            | 323         | 6                  | 512         | 63%                       |
 | smith      | 3            | 577         | 5                  | 750         | 77%                       |
 | gunsmith   | 3            | 449         | 5                  | 679         | 66%                       |
-| technician | 3            | 420         | 5                  | 629         | 67%                       |
+| technician | 4            | 385         | 5                  | 629         | 61%                       |
 
 ### Rent against income (a household of one)
 
 | home                | rent/h | at level | mean net/h | share | weakest career | share |
 |---------------------|--------|----------|------------|-------|----------------|-------|
-| row_motel:motel_1   | 10     | 1        | 159        | 6%    | technician 110 | 9%    |
-| row_motel:motel_2   | 10     | 1        | 159        | 6%    | technician 110 | 9%    |
-| row_motel:motel_3   | 10     | 1        | 159        | 6%    | technician 110 | 9%    |
-| row_motel:motel_4   | 10     | 1        | 159        | 6%    | technician 110 | 9%    |
+| row_motel:motel_1   | 10     | 1        | 165        | 6%    | gunsmith 112   | 9%    |
+| row_motel:motel_2   | 10     | 1        | 165        | 6%    | gunsmith 112   | 9%    |
+| row_motel:motel_3   | 10     | 1        | 165        | 6%    | gunsmith 112   | 9%    |
+| row_motel:motel_4   | 10     | 1        | 165        | 6%    | gunsmith 112   | 9%    |
 | row_flats:flat_1    | 40     | 4        | 350        | 11%   | farmer 237     | 17%   |
 | row_flats:flat_2    | 40     | 4        | 350        | 11%   | farmer 237     | 17%   |
 | row_flats:row_house | 100    | 8        | 413        | 24%   | farmer 339     | 30%   |
@@ -186,11 +187,11 @@ Everything between the markers is written by `--update-doc` and checked by a uni
 | vintner                       | 1         | 8        | -          | 28        | 30              | 369            |
 | smith                         | 1         | 8        | 2          | 27        | 30              | 483            |
 | gunsmith                      | 1         | 8        | 2          | 26        | 30              | 508            |
-| technician                    | 1         | 7        | 3          | 22        | 30              | 566            |
+| technician                    | 1         | 7        | 2          | 22        | 30              | 566            |
 | farmer + gunsmith             | 1         | 5        | 2          | 16        | 30/30           | 806            |
-| smith + technician            | 0         | 4        | 2          | 13        | 30/30           | 906            |
+| smith + technician            | 0         | 4        | 1          | 12        | 30/30           | 906            |
 | farmer + smith + gunsmith     | 0         | 3        | 1          | 10        | 30/30/30        | 1271           |
-| vintner + technician + farmer | 0         | 4        | 2          | 11        | 30/30/30        | 1199           |
+| vintner + technician + farmer | 0         | 3        | 1          | 10        | 30/30/30        | 1199           |
 
 ### Vehicle and boat tiers: active hours of the five careers' mean wage to afford one (prices are the planning table of D-101)
 
@@ -202,6 +203,59 @@ Everything between the markers is written by `--update-doc` and checked by a uni
 | 4    | small_car | bench (proposed) | 3400  | not priced      | 10       | 421        | 8.1   | 8           |
 | 5    | large_car | bench (proposed) | 8800  | not priced      | 12       | 441        | 20.0  | 20          |
 | 6    | truck     | bench (proposed) | 13000 | not priced      | 12       | 441        | 29.5  | 30          |
+
+### A scarcity world (no ore to mine, D-120): legal net credits per active hour with metals from the shelves only, or with the quarry's base metals (every mod)
+
+| career     | level | ore world | shelves | quarry + shelves | best as a share of the ore world |
+|------------|-------|-----------|---------|------------------|----------------------------------|
+| farmer     | 1     | 143       | 143     | 143              | 100%                             |
+| vintner    | 1     | 147       | 147     | 147              | 100%                             |
+| smith      | 1     | 282       | 282     | 282              | 100%                             |
+| gunsmith   | 1     | 112       | 112     | 112              | 100%                             |
+| technician | 1     | 140       | 140     | 140              | 100%                             |
+| farmer     | 3     | 201       | 201     | 201              | 100%                             |
+| vintner    | 3     | 255       | 255     | 255              | 100%                             |
+| smith      | 3     | 391       | 378     | 426              | 109%                             |
+| gunsmith   | 3     | 380       | 309     | 406              | 107%                             |
+| technician | 3     | 297       | 277     | 277              | 93%                              |
+| farmer     | 5     | 337       | 321     | 348              | 103%                             |
+| vintner    | 5     | 315       | 315     | 315              | 100%                             |
+| smith      | 5     | 407       | 405     | 446              | 110%                             |
+| gunsmith   | 5     | 424       | 437     | 432              | 103%                             |
+| technician | 5     | 472       | 464     | 464              | 98%                              |
+| farmer     | 8     | 339       | 327     | 348              | 103%                             |
+| vintner    | 8     | 346       | 346     | 346              | 100%                             |
+| smith      | 8     | 440       | 445     | 478              | 109%                             |
+| gunsmith   | 8     | 424       | 437     | 432              | 103%                             |
+| technician | 8     | 519       | 515     | 515              | 99%                              |
+
+### Orders that cost more than they pay when every ore unit is bought from a shelf (a scarcity world; the quarry's base metals do not help these)
+
+| career     | L | order               | credits | shelf cost |
+|------------|---|---------------------|---------|------------|
+| technician | 3 | municipal_terminals | 160     | 216        |
+| technician | 2 | repeaters           | 68      | 72         |
+| technician | 1 | torches             | 32      | 96         |
+
+### Where a scarcity world's ore comes from: cheapest shelf price, units an hour the shelves sustain (all cities), units an hour the quarry grows back (shared by everybody)
+
+| ore          | cheapest shelf | shelves/h | quarry/h |
+|--------------|----------------|-----------|----------|
+| charcoal     | 2              | 26.0      | 0        |
+| coal         | 3              | 34.7      | 15       |
+| copper_ingot | 7              | 13.3      | 9        |
+| diamond      | 150            | 1.2       | 0        |
+| gold_ingot   | 38             | 3.3       | 0        |
+| iron_ingot   | 9              | 32.0      | 18       |
+| lapis_lazuli | 11             | 5.7       | 0        |
+| redstone     | 6              | 18.7      | 0        |
+
+### Fences (D-125): rate, best rate with every payout skill, opening budget, the most they pay an hour after it, against the best legal hour at level 5
+
+| city       | fence         | rate              | best rate | budget | per hour | best legal/h (L5) | share |
+|------------|---------------|-------------------|-----------|--------|----------|-------------------|-------|
+| blackwater | The Back Room | 50% (32% at home) | 60%       | 320    | 270      | 472               | 57%   |
+| ironhaven  | The Yard      | 45% (30% at home) | 55%       | 240    | 240      | 472               | 51%   |
 
 ### Loops the data allows
 
