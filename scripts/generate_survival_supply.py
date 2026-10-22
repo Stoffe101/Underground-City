@@ -3,7 +3,9 @@
 
 Each line becomes data/underground_city/regional_stock/survival/<id>.json, read by the same loader as every other finite supplier line. A line carries
 ``requires_mod`` when its item belongs to an optional mod: it is left out at load time while that mod is not installed. ``outlets`` says where the line is
-sold: ``city`` (an Operations Terminal inside the city) and/or ``wayside`` (the provisions desk of a wayside shelter that belongs to the city).
+sold: ``city`` (an Operations Terminal inside the city), ``wayside`` (the provisions desk of a wayside shelter that belongs to the city) and/or
+``shop:<kind>`` (the counter of a shopkeeper in a furnished building of that kind, D-126; the shops themselves are declared in content/gameplay/shop-supply.json
+and written to data/underground_city/shop_counters).
 
     python scripts/generate_survival_supply.py          write
     python scripts/generate_survival_supply.py --check  fail if the committed files differ
@@ -22,10 +24,15 @@ OUT = ROOT / "rpg-core/src/main/resources/data/underground_city/regional_stock/s
 # the raw materials of the hybrid economy (D-120): the same kind of finite, shared, slowly refilling line, sold in the cities only
 MATERIALS_SOURCE = ROOT / "content/gameplay/materials-supply.json"
 MATERIALS_OUT = ROOT / "rpg-core/src/main/resources/data/underground_city/regional_stock/materials"
+# what the shopkeepers of the furnished cities sell over their counters (D-126)
+SHOP_SOURCE = ROOT / "content/gameplay/shop-supply.json"
+SHOP_OUT = ROOT / "rpg-core/src/main/resources/data/underground_city/regional_stock/shops"
+COUNTER_OUT = ROOT / "rpg-core/src/main/resources/data/underground_city/shop_counters"
 CITIES = {"valewood", "ironhaven", "blackwater"}
 OUTLETS = {"city", "wayside"}
-MAX_LINES_IN_GAME = 64          # RegionalCatalog.apply refuses more
-EXISTING_REGIONAL_LINES = 9     # the generated commodities
+SHOP_OUTLET = re.compile(r"shop:[a-z_]{2,24}")
+MAX_LINES_IN_GAME = 128         # RegionalCatalog.apply refuses more
+EXISTING_REGIONAL_LINES = 13    # the generated commodities (9) and vehicle lines (4)
 STARTER_SHOP_UNIT_PRICES = {"minecraft:bread": 5.0}   # Q Shop starter shop: 4 for 20
 
 
@@ -48,8 +55,8 @@ def problems(data: dict, wayside: bool = True, other_lines: int = 0) -> list[str
             found.append(f"{name}: bad id")
         if line["city"] not in CITIES:
             found.append(f"{name}: unknown city {line['city']}")
-        if not set(line["outlets"]) or not set(line["outlets"]) <= OUTLETS:
-            found.append(f"{name}: outlets must be a non-empty subset of {sorted(OUTLETS)}")
+        if not line["outlets"] or any(o not in OUTLETS and not SHOP_OUTLET.fullmatch(o) for o in line["outlets"]):
+            found.append(f"{name}: outlets must be a non-empty list of {sorted(OUTLETS)} or shop:<kind>")
         namespace = line["item"].split(":")[0]
         if not re.fullmatch(r"[a-z0-9_.-]+:[a-z0-9_./-]+", line["item"]):
             found.append(f"{name}: bad item id {line['item']}")
@@ -85,6 +92,51 @@ def problems(data: dict, wayside: bool = True, other_lines: int = 0) -> list[str
     return found
 
 
+def shop_problems(shops: dict, all_lines: list[dict]) -> list[str]:
+    """The shop counters: each names a furnished building and a spot, sells at least one line of its own city, and is never cheaper than the cheapest other honest price."""
+    found: list[str] = []
+    outlets = [shop["outlet"] for shop in shops["shops"]]
+    if len(outlets) != len(set(outlets)):
+        found.append("two shops share an outlet")
+    for shop in shops["shops"]:
+        if not SHOP_OUTLET.fullmatch(shop["outlet"]) or shop["city"] not in CITIES or shop["spot"] not in ("counter", "desk"):
+            found.append(f"{shop['outlet']}: needs a shop:<kind> outlet, a city and a counter or desk spot")
+        if not re.fullmatch(r"underground_city:[a-z0-9_]+", shop["building"]):
+            found.append(f"{shop['outlet']}: building must be an underground_city building id")
+        sold = [line for line in all_lines if shop["outlet"] in line["outlets"]]
+        if not sold:
+            found.append(f"{shop['outlet']}: sells nothing")
+        if any(line["city"] != shop["city"] for line in sold):
+            found.append(f"{shop['outlet']}: sells another city's line")
+        if len(sold) > 16:
+            found.append(f"{shop['outlet']}: more than the 16 lines a counter shows")
+    known = set(outlets)
+    for line in all_lines:
+        for outlet in line["outlets"]:
+            if outlet.startswith("shop:") and outlet not in known:
+                found.append(f"{line['id']}: sold at {outlet}, which no shop declares")
+    # a counter is a convenience, never an arbitrage: no counter undercuts the cheapest city or starter-shop price for the same item
+    cheapest: dict[str, float] = dict(STARTER_SHOP_UNIT_PRICES)
+    cheapest["minecraft:cobblestone"] = 1.5   # starter supply: 16 for 24
+    cheapest["minecraft:crafting_table"] = 18.0
+    for line in all_lines:
+        if "city" in line["outlets"]:
+            cheapest[line["item"]] = min(cheapest.get(line["item"], 10**9), line["price"])
+    for line in all_lines:
+        if any(o.startswith("shop:") for o in line["outlets"]) and "city" not in line["outlets"] and line["price"] < cheapest.get(line["item"], 0):
+            found.append(f"{line['id']}: a counter price of {line['price']} undercuts the usual {cheapest[line['item']]}")
+    return found
+
+
+def build_counters(shops: dict) -> dict[Path, str]:
+    files: dict[Path, str] = {}
+    for shop in shops["shops"]:
+        kind = shop["outlet"].split(":", 1)[1]
+        files[COUNTER_OUT / f"{kind}.json"] = json.dumps({"schema_version": 1, "outlet": shop["outlet"], "building": shop["building"], "spot": shop["spot"],
+                                                         "city": shop["city"], "title": shop["title"]}, indent=2) + "\n"
+    return files
+
+
 def build(data: dict, out: Path = OUT) -> dict[Path, str]:
     files: dict[Path, str] = {}
     for line in data["lines"]:
@@ -112,16 +164,24 @@ def main() -> int:
     args = parser.parse_args()
     survival = load()
     materials = json.loads(MATERIALS_SOURCE.read_text(encoding="utf-8"))
-    found = problems(survival, True, len(materials["lines"])) + problems(materials, False, len(survival["lines"]))
-    # an item sold by both sources would give one shelf two owners
-    overlap = {line["id"] for line in survival["lines"]} & {line["id"] for line in materials["lines"]}
-    found += [f"line id {name} is in both supply files" for name in sorted(overlap)]
+    shops = json.loads(SHOP_SOURCE.read_text(encoding="utf-8"))
+    found = (problems(survival, True, len(materials["lines"]) + len(shops["lines"])) + problems(materials, False, len(survival["lines"]) + len(shops["lines"]))
+             + problems(shops, False, len(survival["lines"]) + len(materials["lines"])))
+    found += shop_problems(shops, survival["lines"] + materials["lines"] + shops["lines"])
+    # an item sold by two sources would give one shelf two owners
+    seen: dict[str, str] = {}
+    for label, source in (("survival", survival), ("materials", materials), ("shops", shops)):
+        for line in source["lines"]:
+            if line["id"] in seen:
+                found.append(f"line id {line['id']} is in both the {seen[line['id']]} and the {label} supply files")
+            seen[line["id"]] = label
     if found:
         print("Supply data is invalid:")
         for item in found:
             print(" -", item)
         return 1
-    groups = [(build(survival, OUT), OUT, "survival"), (build(materials, MATERIALS_OUT), MATERIALS_OUT, "materials")]
+    groups = [(build(survival, OUT), OUT, "survival"), (build(materials, MATERIALS_OUT), MATERIALS_OUT, "materials"), (build(shops, SHOP_OUT), SHOP_OUT, "shop"),
+              (build_counters(shops), COUNTER_OUT, "shop counter")]
     if args.check:
         bad = []
         for files, out, label in groups:

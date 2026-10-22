@@ -175,6 +175,21 @@
       "id": "optics_schematic",
       "kind": "rare",
       "stack": 16
+    },
+    {
+      "id": "pocket_watch",
+      "kind": "rare",
+      "stack": 16
+    },
+    {
+      "id": "jewellery_box",
+      "kind": "rare",
+      "stack": 16
+    },
+    {
+      "id": "old_laptop",
+      "kind": "rare",
+      "stack": 16
     }
   ]
 }

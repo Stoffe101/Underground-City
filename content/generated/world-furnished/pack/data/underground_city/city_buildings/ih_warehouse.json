@@ -47,6 +47,28 @@
       "x": 12,
       "y": 1,
       "z": 3
+    },
+    {
+      "facing": "west",
+      "kind": "fence",
+      "note": "the night man in the yard office buys what is not asked about (D-125)",
+      "x": 13,
+      "y": 1,
+      "z": 2
+    }
+  ],
+  "units": [
+    {
+      "box": [
+        2,
+        1,
+        2,
+        13,
+        5,
+        13
+      ],
+      "id": "premises",
+      "title": "Warehouse"
     }
   ],
   "use": "warehouse"

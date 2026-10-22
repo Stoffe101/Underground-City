@@ -66,7 +66,10 @@
     {"id": "heirloom_seed_packet", "name": "Heirloom Seed Packet", "icon": "seeds", "city": "valewood", "kind": "rare", "shortcut": {"result": "rare_seeds", "count": 6}, "note": "Rare find (abandoned greenhouses, affluent estates, broker contracts). Unpacks into six Rare Seeds: a shortcut worth the exchange price, never a new faucet."},
     {"id": "prototype_alloy_ingot", "name": "Prototype Alloy Ingot", "icon": "ingot", "city": "ironhaven", "kind": "rare", "shortcut": {"result": "refined_alloy", "count": 3}, "note": "Rare find (industrial safes, guard contracts). Unpacks into three Refined Alloy."},
     {"id": "circuit_prototype", "name": "Circuit Prototype", "icon": "chip", "city": "blackwater", "kind": "rare", "shortcut": {"result": "control_circuits", "count": 3}, "note": "Rare find (office safes, automation contracts). Unpacks into three Control Circuit Boards."},
-    {"id": "optics_schematic", "name": "Optics Schematic", "icon": "clipboard", "city": "blackwater", "kind": "rare", "shortcut": {"result": "optical_components", "count": 3}, "note": "Rare find (corporate safes, brokerage contracts). Unpacks into three Optical Components."}
+    {"id": "optics_schematic", "name": "Optics Schematic", "icon": "clipboard", "city": "blackwater", "kind": "rare", "shortcut": {"result": "optical_components", "count": 3}, "note": "Rare find (corporate safes, brokerage contracts). Unpacks into three Optical Components."},
+    {"id": "pocket_watch", "name": "Pocket Watch", "icon": "watch", "city": "valewood", "kind": "rare", "note": "A gold watch on a chain, engraved. Found only in homes somebody broke into; no honest buyer wants it, a fence does (D-125)."},
+    {"id": "jewellery_box", "name": "Jewellery Box", "icon": "box", "city": "blackwater", "kind": "rare", "note": "A lacquered box of rings and a necklace. Found only in affluent homes; only a fence buys it (D-125)."},
+    {"id": "old_laptop", "name": "Office Laptop", "icon": "laptop", "city": "blackwater", "kind": "rare", "note": "An office laptop with its asset tag scratched off. Found only in offices; only a fence buys it (D-125)."}
   ],
   "order_defaults": {"capacity": 2, "refill_ticks": 12000}
 }

@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "city": "ironhaven",
+  "item": "minecraft:glass",
+  "unit_price": 3,
+  "initial": 16,
+  "capacity": 32,
+  "units_per_interval": 8,
+  "interval_ticks": 36000,
+  "max_order": 16,
+  "outlets": [
+    "shop:builders"
+  ]
+}

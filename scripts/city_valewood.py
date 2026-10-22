@@ -201,6 +201,7 @@ def house(bid: str, look: Look) -> Building:
         Spot("door", 7, 1, Z1, "south", "front door"), Spot("bed", 7, 7, 9, "north", "main bedroom"), Spot("bed", 11, 7, 9, "west", "second bedroom"),
         Spot("stove", 11, 1, 7, "west"), Spot("seat", 5, 1, 6, "south", "sofa"), Spot("seat", 9, 1, 6, "south", "dining"),
     ]
+    b.units.append(k.Unit("house", "House", (X0 + 1, 1, Z0 + 1, X1 - 1, 10, Z1 - 1)))     # both floors inside the walls; the garden stays the street's (D-127)
     return b
 
 
@@ -255,6 +256,7 @@ def cottage(bid: str, look: Look) -> Building:
     t = b.new_part("top", top=True)
     gable_roof(t, look, X0, Z0, X1, Z1)
     b.spots += [Spot("door", 7, 1, Z1, "south", "front door"), Spot("bed", 9, 1, 4, "south", "bedroom"), Spot("stove", 7, 1, 4, "south"), Spot("seat", 6, 1, 6, "east", "table")]
+    b.units.append(k.Unit("house", "Cottage", (X0 + 1, 1, Z0 + 1, X1 - 1, 4, Z1 - 1)))
     return b
 
 

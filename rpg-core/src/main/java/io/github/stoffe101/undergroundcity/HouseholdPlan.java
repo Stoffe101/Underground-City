@@ -35,6 +35,9 @@ final class HouseholdPlan {
                 workers++;
             }
         }
+        // a fence keeps the building's back office at night (D-125): one at most, a person of their own
+        List<Integer> fences = plan.indexesOf("fence");
+        if (!fences.isEmpty()) out.add(make(city, worldSeed, buildingKey, slot, "fence", fences.get(0), names));
         return List.copyOf(out);
     }
 
@@ -45,6 +48,10 @@ final class HouseholdPlan {
         int skin = outfits[(int) Math.floorMod(h >>> 40, (long) outfits.length)] + PopulationPlan.OUTFITS * (int) Math.floorMod(h >>> 48, (long) (PopulationPlan.SKINS / PopulationPlan.OUTFITS));
         return new Resident(PopulationPlan.mix(h + 1), name, skin, role, spot, slot);
     }
+
+    /** A fence deals from nine at night to three in the morning (the fences' data says the same; a GameTest holds them together). */
+    static final int FENCE_FROM = 21, FENCE_TO = 3;
+    static boolean fenceHours(int hour) { return hour >= FENCE_FROM || hour < FENCE_TO; }
 
     /** Not here: the person is out for the day, away or at work elsewhere, and is not an entity at all. */
     static final int AWAY = -1;
@@ -58,6 +65,7 @@ final class HouseholdPlan {
         long h = PopulationPlan.mix(who.id() ^ worldSeed ^ (day * 0x2545F4914F6CDD1DL));
         double roll = (h >>> 11) / (double) (1L << 53);
         if (who.role().equals("worker")) return hour >= 8 && hour < 18 && roll < 0.95 ? who.spot() : AWAY;
+        if (who.role().equals("fence")) return fenceHours(hour) && roll < 0.85 ? who.spot() : AWAY;
         boolean night = hour >= 22 || hour < 7;
         if (night) return roll < 0.9 ? who.spot() : AWAY;
         if (hour < 9) return roll < 0.8 ? first(plan, "stove", who.spot()) : AWAY;

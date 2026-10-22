@@ -9,6 +9,7 @@
   "interval_ticks": 24000,
   "max_order": 24,
   "outlets": [
-    "city"
+    "city",
+    "shop:hardware"
   ]
 }

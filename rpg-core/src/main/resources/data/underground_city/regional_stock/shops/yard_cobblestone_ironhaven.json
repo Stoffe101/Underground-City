@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "city": "ironhaven",
+  "item": "minecraft:cobblestone",
+  "unit_price": 2,
+  "initial": 48,
+  "capacity": 64,
+  "units_per_interval": 16,
+  "interval_ticks": 24000,
+  "max_order": 32,
+  "outlets": [
+    "shop:builders"
+  ]
+}

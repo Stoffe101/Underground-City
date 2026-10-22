@@ -119,7 +119,8 @@ public final class HouseholdService {
     private static final List<String> HOME_MORNING = List.of("Kettle's on. Early start for most round here.", "Morning. The bread comes at seven if you want it still warm.", "I'll be at work soon. The street fills up by nine.");
     private static final List<String> HOME_DAY = List.of("Day off, or I'd not be home. Mind the step.", "Quiet in the day. Everyone's at work or at the market.", "I keep the door locked now. Everyone does, here.");
     private static final List<String> HOME_EVENING = List.of("Supper's nearly ready. It's a long day, the city.", "Evenings are the best of it. Everyone's home and the lights come on.", "You're out late. Take care on the road home.");
-    private static final List<String> WORK = List.of("Can I help you? We're open until six.", "We're a small place, and we do what the exchange allows. Ask at the terminal about stock.", "Busy day. Mind the counter.");
+    private static final List<String> WORK = List.of("Can I help you? We're open until six.", "What's on the shelves is what the city's suppliers sent. When it's gone, it's gone till the next delivery.", "Busy day. Mind the counter.");
+    private static final List<String> FENCE = List.of("Keep your voice down. If it's marked, I might be interested. If it's not, I'm not.", "Late, isn't it. Shut the door behind you.", "I don't know you. That's how I like it. What have you got?");
 
     /** What this resident or worker says now: a grudge if they saw a thief and it is the thief, a remark if their door was forced, otherwise a line of their day. */
     static String say(ServerPlayer player, TownspersonEntity body, boolean returning) {
@@ -131,6 +132,7 @@ public final class HouseholdService {
         List<String> lines;
         if (recent && mem.seen() && mem.intruder().equals(player.getUUID())) lines = ACCUSE;
         else if (recent) lines = BROKEN_INTO;
+        else if (body.role().equals("fence")) lines = FENCE;
         else if (body.role().equals("worker")) lines = WORK;
         else {
             int hour = PopulationPlan.hourOf(dayTime(level));
@@ -290,5 +292,17 @@ public final class HouseholdService {
     }
 
     static int activeCount() { return ACTIVE.size(); }
+
+    /** The furnished building type ({@code namespace:id}) a household body belongs to, or null when it is not one of the bodies this service keeps. */
+    static String typeOf(TownspersonEntity body) { Active a = ACTIVE.get(body.getUUID()); return a == null ? null : a.type(); }
+
+    /** True when the body is a household person whose post (the spot they were placed for) is a spot of this kind in their building's plan, a counter or a desk (D-126). */
+    static boolean servesAt(TownspersonEntity body, String kind) {
+        Active a = ACTIVE.get(body.getUUID());
+        if (a == null) return false;
+        HouseholdPlan.Resident who = resident(a);
+        BuildingSpots.Plan plan = BuildingSpots.INSTANCE.forType(a.type());
+        return who != null && plan != null && who.spot() >= 0 && who.spot() < plan.spots().size() && plan.spots().get(who.spot()).kind().equals(kind);
+    }
     static void resetForTest() { ACTIVE.clear(); dayTimeOverride = null; passes = nanosTotal = nanosWorst = spawned = removed = spotMisses = lookups = activePeak = 0; }
 }

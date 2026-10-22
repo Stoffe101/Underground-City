@@ -114,4 +114,8 @@ def tenement(bid: str, city: str, floors: int, look: TenementLook, yard_fn: Call
         spots.append(Spot("bed", 3, 1 + 6 * i, 3, "east", f"flat {2 * i + 1} bed"))
         spots.append(Spot("bed", 3, 1 + 6 * i, 12, "east", f"flat {2 * i + 2} bed"))
     b.spots += spots
+    # every flat can be let (D-127): the rooms inside the outer walls, the corridor wall with the flat's door is its shell
+    for i in range(floors):
+        b.units.append(k.Unit(f"flat_{2 * i + 1}", f"Flat {2 * i + 1}", (2, 6 * i + 1, 2, 13, 6 * i + 3, 5)))
+        b.units.append(k.Unit(f"flat_{2 * i + 2}", f"Flat {2 * i + 2}", (2, 6 * i + 1, 10, 13, 6 * i + 3, 13)))
     return b

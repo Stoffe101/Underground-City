@@ -26,8 +26,9 @@ public final class WorkOrderService {
 
     static void guarded(ServerPlayer player, BlockPos pos, Operation operation) {
         if (!TerminalNetwork.requestSlot(player)) return;
-        if (!TerminalNetwork.authorizedForStarterShop(player, pos)) {
-            player.sendSystemMessage(Component.literal("Register and use a nearby placed Operations Terminal."));
+        if (!TerminalNetwork.authorizedForExchange(player, pos)) {
+            player.sendSystemMessage(Component.literal(ShopCounters.INSTANCE.all().isEmpty() ? "Register and use a nearby placed Operations Terminal."
+                : "Register and use a nearby placed Operations Terminal, or a shop counter while its shopkeeper is there."));
             return;
         }
         try {
@@ -51,8 +52,10 @@ public final class WorkOrderService {
 
     public static void action(ServerPlayer player, BlockPos pos, int action, String id, UUID nonce) {
         guarded(player, pos, (ledger, citizen) -> {
-            if (Exchanges.at(player.level(), pos).map(Exchanges.Exchange::wayside).orElse(false)) {
-                throw new IllegalStateException("Orders are posted in the cities. This desk only sells supplies."); // a wayside desk is a shop, not an office
+            var exchange = Exchanges.at(player.level(), pos);
+            if (exchange.map(Exchanges.Exchange::shopOnly).orElse(false)) {
+                // a wayside desk and a shop counter are shops, not offices
+                throw new IllegalStateException(exchange.get().counter() ? "This is a shop counter. Orders are taken at an Operations Terminal." : "Orders are posted in the cities. This desk only sells supplies.");
             }
             switch (action) {
                 case 0 -> accept(player, ledger, citizen, id);

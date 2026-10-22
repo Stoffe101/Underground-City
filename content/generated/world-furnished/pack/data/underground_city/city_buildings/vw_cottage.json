@@ -40,5 +40,19 @@
       "z": 6
     }
   ],
+  "units": [
+    {
+      "box": [
+        5,
+        1,
+        4,
+        10,
+        4,
+        8
+      ],
+      "id": "house",
+      "title": "Cottage"
+    }
+  ],
   "use": "house"
 }

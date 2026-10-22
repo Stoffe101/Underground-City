@@ -221,7 +221,8 @@ def club() -> Building:
     t.put(7, 0, 14, LAMP); t.put(8, 0, 14, LAMP)
     t.put(3, 0, 3, ml("air_conditioner", facing="south")); t.put(12, 0, 12, ml("air_conditioner", facing="north"))
     b.spots += [Spot("door", 7, 1, Z1, "south", "front door"), Spot("counter", 12, 1, 8, "west", "bar"), Spot("desk", 12, 7, 12, "west", "back office desk"),
-                Spot("stash", 13, 7, 12, "west", "back office"), Spot("seat", 3, 1, 12, "north", "booth")]
+                Spot("stash", 13, 7, 12, "west", "back office"), Spot("seat", 3, 1, 12, "north", "booth"),
+                Spot("fence", 12, 7, 12, "west", "after hours the back office buys stolen goods (D-125)")]
     return b
 
 

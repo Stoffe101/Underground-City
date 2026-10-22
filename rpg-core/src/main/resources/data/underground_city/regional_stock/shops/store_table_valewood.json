@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "city": "valewood",
+  "item": "minecraft:crafting_table",
+  "unit_price": 18,
+  "initial": 3,
+  "capacity": 4,
+  "units_per_interval": 1,
+  "interval_ticks": 36000,
+  "max_order": 1,
+  "outlets": [
+    "shop:general"
+  ]
+}

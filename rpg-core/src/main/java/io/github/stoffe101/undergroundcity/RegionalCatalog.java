@@ -30,12 +30,15 @@ public final class RegionalCatalog extends SimpleJsonResourceReloadListener {
             if (stock == null) { skipped[0]++; return; }   // an optional mod's goods while that mod is not installed
             next.put(stock.id(), stock);
         });
-        if (next.size() > 64) throw new IllegalArgumentException("At most 64 regional stock lines supported");
+        if (next.size() > 128) throw new IllegalArgumentException("At most 128 regional stock lines supported");
         stocks = Map.copyOf(next);
         LOGGER.info("Loaded {} Underground City regional supplier lines ({} left out because their mod is not installed)", stocks.size(), skipped[0]);
     }
 
     public RegionalStock find(String id) { return stocks.get(id); }
+
+    /** Every line, in id order. */
+    public java.util.Collection<RegionalStock> all() { return stocks.values(); }
 
     /** What the exchange inside {@code city} sells. */
     public List<RegionalStock> forCity(String city) { return forOutlet(city, RegionalStock.CITY); }

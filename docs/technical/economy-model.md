@@ -170,6 +170,13 @@ Everything between the markers is written by `--update-doc` and checked by a uni
 | row_flats:flat_1    | 40     | 4        | 350        | 11%   | farmer 237     | 17%   |
 | row_flats:flat_2    | 40     | 4        | 350        | 11%   | farmer 237     | 17%   |
 | row_flats:row_house | 100    | 8        | 413        | 24%   | farmer 339     | 30%   |
+| city:ih_flats       | 40     | 4        | 350        | 11%   | farmer 237     | 17%   |
+| city:bw_apartments  | 55     | 5        | 391        | 14%   | vintner 315    | 17%   |
+| city:vw_cottage     | 85     | 7        | 413        | 21%   | farmer 339     | 25%   |
+| city:vw_house_a     | 85     | 7        | 413        | 21%   | farmer 339     | 25%   |
+| city:vw_house_b     | 85     | 7        | 413        | 21%   | farmer 339     | 25%   |
+| city:ih_workshop    | 135    | 12       | 882        | 15%   | vintner 369    | 37%   |
+| city:ih_warehouse   | 170    | 15       | 935        | 18%   | vintner 369    | 46%   |
 
 ### Active hours until each housing milestone (household policy in `simulate`)
 

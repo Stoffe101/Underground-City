@@ -70,6 +70,12 @@ public record TerminalData(String city, String career, int level, int xp, double
 
     /** True at the provisions desk of a wayside shelter: a shop of the nearest city's basics, with no orders, contacts or law (D-091). */
     public boolean wayside() { return outlet.equals(RegionalStock.WAYSIDE); }
+    /** True at a shopkeeper's counter (D-126); the outlet then reads {@code shop:<kind>|<the shop's name>}. */
+    public boolean counter() { return outlet.startsWith("shop:"); }
+    /** A shop and nothing else (a wayside desk or a counter): no orders, contacts or law. */
+    public boolean shopOnly() { return wayside() || counter(); }
+    /** The name of the shop at a counter, or "". */
+    public String shopTitle() { int bar = outlet.indexOf('|'); return counter() && bar >= 0 ? outlet.substring(bar + 1) : ""; }
 
     public static TerminalData offline() {
         return new TerminalData("UNREGISTERED", "NONE", 1, 0, 0, false, null, 0, "", List.of(), List.of());
@@ -80,8 +86,8 @@ public record TerminalData(String city, String career, int level, int xp, double
         if (citizen == null) return offline();
         WorkOrderLedger ledger = WorkOrderLedger.get(player.server);
         Exchanges.Exchange exchange = Exchanges.at(player.level(), pos).orElse(null);
-        boolean wayside = exchange != null && exchange.wayside();
-        // a wayside desk is only a shop: no orders, contacts or law; the region stays empty so nothing treats the player as being inside the city
+        boolean wayside = exchange != null && exchange.shopOnly();
+        // a wayside desk or a shop counter is only a shop: no orders, contacts or law; the region stays empty so nothing treats the player as being at a terminal of the city
         String region = exchange == null || wayside ? "" : exchange.city();
         if (!region.isEmpty()) ledger.noteVisit(player.getUUID(), region); // physically at a placed terminal inside the city
         CompoundTag record = ledger.player(player.getUUID());
@@ -117,7 +123,7 @@ public record TerminalData(String city, String career, int level, int xp, double
             region, rows, exchange == null ? List.of() : RegionalMarket.offers(ledger, exchange.city(), exchange.outlet(), citizen),
             SkillService.pointsAvailable(citizen), skillRows(citizen), contacts(region, citizen, ledger, player), lawRows(law, citizen),
             region.isEmpty() ? 0 : ledger.heat(player.getUUID(), region), law == null ? "" : law.summary(),
-            Journey.steps(citizen, ledger, player.getUUID()), exchange == null ? "" : exchange.outlet());
+            Journey.steps(citizen, ledger, player.getUUID()), exchange == null ? "" : exchange.counter() ? exchange.outlet() + "|" + exchange.title() : exchange.outlet());
     }
 
     private static Extra extra(WorkOrder job, CitizenState.Citizen citizen, WorkOrderLedger ledger, ServerPlayer player) {
@@ -207,7 +213,7 @@ public record TerminalData(String city, String career, int level, int xp, double
         buf.writeVarInt(heat); buf.writeUtf(lawSummary, 210);
         buf.writeVarInt(journey.size());
         for (Step step : journey) { buf.writeUtf(step.id, 24); buf.writeUtf(step.title, 48); buf.writeUtf(step.hint, 160); buf.writeBoolean(step.done); buf.writeUtf(step.page, 16); }
-        buf.writeUtf(outlet, 8);
+        buf.writeUtf(outlet, 96);
     }
 
     static TerminalData read(FriendlyByteBuf buf) {
@@ -269,7 +275,7 @@ public record TerminalData(String city, String career, int level, int xp, double
         if (stepCount < 0 || stepCount > MAX_STEPS) throw new IllegalArgumentException("Invalid journey count");
         List<Step> journey = new ArrayList<>();
         for (int i = 0; i < stepCount; i++) journey.add(new Step(buf.readUtf(24), buf.readUtf(48), buf.readUtf(160), buf.readBoolean(), buf.readUtf(16)));
-        String outlet = buf.readUtf(8);
+        String outlet = buf.readUtf(96);
         return new TerminalData(city, career, level, xp, balance, economy, active, visits, region, List.copyOf(rows), List.copyOf(offers),
             points, List.copyOf(skills), List.copyOf(contacts), List.copyOf(laws), heat, lawSummary, List.copyOf(journey), outlet);
     }

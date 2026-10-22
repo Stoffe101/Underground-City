@@ -24,7 +24,7 @@ import java.util.function.Supplier;
  * This is NOT a remote city supplier, contraband order, or raid service.
  */
 public final class TerminalNetwork {
-    private static final String VERSION = "10";
+    private static final String VERSION = "11";
     private static final String STARTER_SHOP_ID = "uc_starter_supply";
     private static final double MAX_TERMINAL_DISTANCE_SQUARED = 64.0;
     private static final java.util.Map<ServerPlayer, Integer> REQUEST_TIMES = new java.util.WeakHashMap<>();
@@ -451,6 +451,11 @@ public final class TerminalNetwork {
     /** Caller must be a click on the real PC screen, never a free-typed shop ID. */
     public static void requestStarterShop(BlockPos pos) {
         CHANNEL.sendToServer(new OpenStarterShop(pos.immutable()));
+    }
+
+    /** A terminal action at {@code pos}: a placed Operations Terminal (as for the starter shop), or an open shopkeeper's counter (D-126), which only sells. */
+    static boolean authorizedForExchange(ServerPlayer player, BlockPos pos) {
+        return authorizedForStarterShop(player, pos) || ShopCounters.authorized(player, pos);
     }
 
     static boolean authorizedForStarterShop(ServerPlayer player, BlockPos pos) {

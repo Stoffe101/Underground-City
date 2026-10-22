@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "note": "What a fence thinks one item is worth, in credits (D-125). The worth is the cheapest honest price of the item where one exists (the cities' shelves and the regional exchange), so a fence, who pays at most 60 percent of it, never pays more than the item costs to buy. Items with no worth here are not bought at all: nothing a person can come by for free (stone, logs, dirt) and nothing worthless (paper, bread).",
+  "values": {
+    "minecraft:iron_ingot": 9,
+    "minecraft:copper_ingot": 7,
+    "minecraft:gold_ingot": 38,
+    "minecraft:gold_nugget": 4,
+    "minecraft:diamond": 150,
+    "minecraft:emerald": 30,
+    "minecraft:redstone": 6,
+    "minecraft:lapis_lazuli": 11,
+    "minecraft:clock": 150,
+    "minecraft:compass": 40,
+    "minecraft:book": 6,
+    "minecraft:crossbow": 60,
+    "underground_city:machined_parts": 18,
+    "underground_city:refined_alloy": 28,
+    "underground_city:security_fabric": 22,
+    "underground_city:control_circuits": 32,
+    "underground_city:optical_components": 34,
+    "underground_city:encrypted_design": 80,
+    "underground_city:pocket_watch": 60,
+    "underground_city:jewellery_box": 90,
+    "underground_city:old_laptop": 120
+  }
+}

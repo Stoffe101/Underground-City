@@ -118,6 +118,7 @@ public final class UndergroundCity {
         TerminalNetwork.register();
         CrewNetwork.register();
         LockNetwork.register();
+        FenceNetwork.register();
         MinecraftForge.EVENT_BUS.register(this);
         MinecraftForge.EVENT_BUS.register(new WorkOrderService());
         MinecraftForge.EVENT_BUS.register(new SupplierNpc());
@@ -184,6 +185,8 @@ public final class UndergroundCity {
         event.addListener(LockProfiles.INSTANCE);
         event.addListener(CityBuildings.INSTANCE);
         event.addListener(PopulationCatalog.INSTANCE);
+        event.addListener(FenceCatalog.INSTANCE);
+        event.addListener(ShopCounters.INSTANCE);
     }
 
     private void addCreativeTab(BuildCreativeModeTabContentsEvent event) {

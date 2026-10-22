@@ -47,6 +47,14 @@
       "x": 3,
       "y": 1,
       "z": 12
+    },
+    {
+      "facing": "west",
+      "kind": "fence",
+      "note": "after hours the back office buys stolen goods (D-125)",
+      "x": 12,
+      "y": 7,
+      "z": 12
     }
   ],
   "use": "club"

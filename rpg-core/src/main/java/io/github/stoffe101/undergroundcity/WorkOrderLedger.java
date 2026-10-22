@@ -25,7 +25,7 @@ import java.util.WeakHashMap;
  * saved. Recovery runs before the player can interact. No second wallet lives here.
  */
 public final class WorkOrderLedger {
-    private static final String PURCHASE = "purchase", SEIZURE = "seizure";
+    private static final String PURCHASE = "purchase", SEIZURE = "seizure", SALE = "sale";
     /** How many searches a person's history keeps (the latest ones; who was searched where, what was found and what it cost). */
     static final int SEARCH_HISTORY = 12;
     /** One heat step cools every five minutes of active play. */
@@ -183,6 +183,12 @@ public final class WorkOrderLedger {
             // A regional purchase never touches an accepted order or career XP.
             record.putInt("purchases", Math.addExact(record.getInt("purchases"), 1));
             record.remove("pending");
+        } else if (SALE.equals(pending.getString("kind"))) {
+            // A sale to a fence never touches an accepted order or career XP; it may warm the city the goods were taken in.
+            record.putInt("sales", Math.addExact(record.getInt("sales"), 1));
+            record.putLong("fenced_credits", Math.addExact(record.getLong("fenced_credits"), pending.getLong("credits")));
+            applyTargets(record, pending);
+            record.remove("pending");
         } else if (SEIZURE.equals(pending.getString("kind"))) {
             // A seizure never touches an accepted order or career XP either; it only cools or heats a city.
             record.putInt("seizures", Math.addExact(record.getInt("seizures"), 1));
@@ -319,6 +325,66 @@ public final class WorkOrderLedger {
         state.putInt("units", units); state.putLong("last_tick", last);
         stocks.put(stock.id(), state); root.put("regional", stocks);
         return units;
+    }
+
+    // ---------------------------------------------------------------- fences (D-125)
+
+    /** Credits a city's fence network can still pay, after lazy refilling in active time; never above its budget, so it cannot bank a backlog. Does not persist by itself. */
+    int fenceBudget(FenceCatalog.Fence fence) {
+        CompoundTag all = root.getCompound("fences");
+        CompoundTag state = all.getCompound(fence.city());
+        long now = clock();
+        int credits = state.contains("credits") ? Math.min(fence.budget(), state.getInt("credits")) : fence.budget();
+        long last = state.contains("last_tick") ? state.getLong("last_tick") : now;
+        if (credits < 0 || last > now) throw new IllegalStateException("Invalid saved fence budget");
+        if (credits >= fence.budget()) last = now;
+        long intervals = (now - last) / fence.refillTicks();
+        if (intervals > 0) {
+            credits = (int) Math.min(fence.budget(), credits + Math.multiplyExact(intervals, (long) fence.refillCredits()));
+            last = credits >= fence.budget() ? now : last + intervals * fence.refillTicks();
+        }
+        state.putInt("credits", credits); state.putLong("last_tick", last);
+        all.put(fence.city(), state); root.put("fences", all);
+        return credits;
+    }
+
+    boolean hasSale(UUID player, UUID sale) {
+        ListTag recent = player(player).getList("recent_sales", Tag.TAG_STRING);
+        for (int i = 0; i < recent.size(); i++) if (recent.getString(i).equals(sale.toString())) return true;
+        return false;
+    }
+
+    /**
+     * Durably commits a sale to a fence: the network's budget decrement, the sale nonce, the absolute inventory (the sold stolen goods gone) and wallet targets and any heat, together, BEFORE the live
+     * player or Q Shop wallet changes. Recovery replays the targets and {@link #settle} retires the record, exactly as for a purchase.
+     */
+    void prepareSale(UUID player, UUID sale, FenceCatalog.Fence fence, long credits, ListTag inventoryAfter, double balanceAfter, int xpNow, Map<String, Integer> heatAfter) {
+        checkHealthy();
+        CompoundTag record = player(player);
+        if (record.contains("pending")) throw new IllegalStateException("Finish recovery before selling");
+        if (hasSale(player, sale)) throw new IllegalStateException("That sale was already made");
+        if (!Double.isFinite(balanceAfter) || balanceAfter < 0 || xpNow < 0 || credits < 1) throw new IllegalArgumentException("Invalid settlement");
+        int budget = fenceBudget(fence);
+        if (credits > budget) throw new IllegalStateException("The fence cannot find that many credits; come back after a while of play");
+        root.getCompound("fences").getCompound(fence.city()).putInt("credits", (int) (budget - credits));
+        CompoundTag pending = new CompoundTag();
+        pending.putString("kind", SALE); pending.putString("fence", fence.city()); pending.putLong("credits", credits);
+        pending.put("inventory", inventoryAfter.copy()); pending.putDouble("balance", balanceAfter); pending.putInt("xp", xpNow);
+        putTargets(pending, Map.of(), heatAfter);
+        record.put("pending", pending);
+        ListTag recent = record.getList("recent_sales", Tag.TAG_STRING);
+        recent.add(net.minecraft.nbt.StringTag.valueOf(sale.toString()));
+        while (recent.size() > 8) recent.remove(0);
+        record.put("recent_sales", recent);
+        putPlayer(player, record); persist(); // BEFORE touching inventory or Q Shop
+    }
+
+    /** Test seam: sets a supplier line's shared units, standing in for other buyers (GameTests and the scripted journey). Never called by gameplay. */
+    void setRegionalUnitsForTest(RegionalStock stock, int units) {
+        checkHealthy();
+        regionalUnits(stock);
+        root.getCompound("regional").getCompound(stock.id()).putInt("units", Math.max(0, Math.min(stock.capacity(), units)));
+        persist();
     }
 
     /** Idempotently records that a registered citizen used an exchange inside {@code city}. */

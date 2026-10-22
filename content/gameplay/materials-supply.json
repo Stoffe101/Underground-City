@@ -8,7 +8,8 @@
       "city": "ironhaven",
       "item": "minecraft:iron_ingot",
       "outlets": [
-        "city"
+        "city",
+        "shop:hardware"
       ],
       "price": 9,
       "initial": 24,
@@ -23,7 +24,8 @@
       "city": "ironhaven",
       "item": "minecraft:coal",
       "outlets": [
-        "city"
+        "city",
+        "shop:hardware"
       ],
       "price": 3,
       "initial": 32,
@@ -38,7 +40,8 @@
       "city": "ironhaven",
       "item": "minecraft:copper_ingot",
       "outlets": [
-        "city"
+        "city",
+        "shop:hardware"
       ],
       "price": 7,
       "initial": 16,

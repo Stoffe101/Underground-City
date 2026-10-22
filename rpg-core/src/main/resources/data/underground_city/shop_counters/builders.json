@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "outlet": "shop:builders",
+  "building": "underground_city:ih_warehouse",
+  "spot": "desk",
+  "city": "ironhaven",
+  "title": "Builders' Yard"
+}

@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "outlet": "shop:hardware",
+  "building": "underground_city:ih_workshop",
+  "spot": "desk",
+  "city": "ironhaven",
+  "title": "Hardware and Metals"
+}

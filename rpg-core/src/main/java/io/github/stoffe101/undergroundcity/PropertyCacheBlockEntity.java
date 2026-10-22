@@ -189,7 +189,22 @@ public final class PropertyCacheBlockEntity extends RandomizableContainerBlockEn
 
     // ------------------------------------------------------------------ container
     @Override protected Component getDefaultName() { return Component.translatable("container.underground_city.property_cache"); }
-    @Override protected AbstractContainerMenu createMenu(int id, Inventory inventory) { return new ChestMenu(net.minecraft.world.inventory.MenuType.GENERIC_9x1, id, inventory, this, 1); }
+    @Override protected AbstractContainerMenu createMenu(int id, Inventory inventory) {
+        ChestMenu menu = new ChestMenu(net.minecraft.world.inventory.MenuType.GENERIC_9x1, id, inventory, this, 1);
+        // A safe is somebody else's store, not the burglar's: things can be taken out, never put in (D-125). Otherwise a player could put their own goods into a forced safe and have them marked
+        // stolen the next time it is forced, and turn anything into fence money. The server's slots refuse a placement; the client's ordinary chest screen is corrected by the server.
+        for (int i = 0; i < SLOTS; i++) {
+            net.minecraft.world.inventory.Slot old = menu.slots.get(i);
+            net.minecraft.world.inventory.Slot takeOnly = new net.minecraft.world.inventory.Slot(this, old.getContainerSlot(), old.x, old.y) {
+                @Override public boolean mayPlace(ItemStack stack) { return false; }
+            };
+            takeOnly.index = i;
+            menu.slots.set(i, takeOnly);
+        }
+        return menu;
+    }
+    /** Nothing is ever put into a safe from outside (hoppers already cannot; this covers anything that asks). */
+    @Override public boolean canPlaceItem(int slot, ItemStack stack) { return false; }
     @Override protected NonNullList<ItemStack> getItems() { return items; }
     @Override protected void setItems(NonNullList<ItemStack> replacement) { items = replacement; }
     @Override public int getContainerSize() { return SLOTS; }

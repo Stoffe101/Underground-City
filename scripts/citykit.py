@@ -216,6 +216,9 @@ def mirror_building(source: "Building", new_id: str, **changes) -> "Building":
     for spot in source.spots:
         facing = _SWAP_WORDS.get(spot.facing, spot.facing)
         out.spots.append(Spot(spot.kind, SIZE - 1 - spot.x, spot.y, spot.z, facing, spot.note))
+    for unit in source.units:
+        x0, y0, z0, x1, y1, z1 = unit.box
+        out.units.append(Unit(unit.id, unit.title, (SIZE - 1 - x1, y0, z0, SIZE - 1 - x0, y1, z1)))
     for key, value in changes.items():
         setattr(out, key, value)
     return out
@@ -313,12 +316,21 @@ def sink(part: Part, x: int, y: int, z: int, facing: str) -> None:
 @dataclass
 class Spot:
     """A place in a building that the game needs to know: where a person stands, sleeps, works or sells (blocks relative to the chunk's north-west corner, y above the street)."""
-    kind: str          # "door", "bed", "counter", "desk", "stove", "seat", "stash", "shelf"
+    kind: str          # "door", "bed", "counter", "desk", "stove", "seat", "stash", "shelf", "fence" (a buyer of stolen goods, at night)
     x: int
     y: int             # blocks above the street surface (the ground floor's slab is 0)
     z: int
     facing: str = "south"
     note: str = ""
+
+
+@dataclass(frozen=True)
+class Unit:
+    """A home or premises in a building that can be let or sold (D-127): the interior box inside its walls (blocks relative to the chunk's north-west corner, y above the street), inclusive.
+    The walls, floor and ceiling one block round it are its shell, which stays the city's; a door in the shell is the unit's own door."""
+    id: str            # "house", "flat_1", ...
+    title: str         # "House", "Flat 1", ...
+    box: tuple[int, int, int, int, int, int]
 
 
 @dataclass
@@ -336,6 +348,7 @@ class Building:
     notes: str = ""
     allow_doors: bool = False
     security: str = ""                       # the building-security class (data/underground_city/building_security): how its doors are locked and what its stash holds
+    units: list[Unit] = field(default_factory=list)   # what can be let or sold here (D-127); the terms are Core's, in properties/ladder.json
 
     def add(self, part: Part, **flags) -> Part:
         self.parts.append((part, flags))
@@ -373,4 +386,5 @@ class Building:
             "floors": {"min": self.min_floors, "max": self.max_floors},
             "spots": [{"kind": s.kind, "x": s.x, "y": s.y, "z": s.z, "facing": s.facing, **({"note": s.note} if s.note else {})} for s in self.spots],
             "notes": self.notes,
+            **({"units": [{"id": u.id, "title": u.title, "box": list(u.box)} for u in self.units]} if self.units else {}),
         }

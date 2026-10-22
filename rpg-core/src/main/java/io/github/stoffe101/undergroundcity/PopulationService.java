@@ -224,10 +224,11 @@ public final class PopulationService {
 
     static String subtitle(TownspersonEntity body) {
         return switch (body.role()) {
-            case "worker" -> body.homeKey() != 0 ? "Works here" : "Worker";
             case "courier" -> "Courier";
             case "guard" -> "City guard";
             case "police" -> "Police";
+            case "fence" -> "Buys things, after dark";
+            case "worker" -> ShopCounters.shopOf(body).map(shop -> "Keeps the " + shop.title().toLowerCase(java.util.Locale.ROOT)).orElse(body.homeKey() != 0 ? "Works here" : "Worker");
             default -> body.homeKey() != 0 ? "Lives here" : "Resident";
         };
     }
@@ -251,12 +252,33 @@ public final class PopulationService {
         String text = body.homeKey() != 0 ? HouseholdService.say(player, body, returning) : say(player, body, returning, met.size());
         body.getLookControl().setLookAt(player);
         body.getNavigation().stop();
-        TerminalNetwork.sendDialogue(player, body.getId(), body.getName().getString(), subtitle(body), body.city(), text, List.of(new Dialogue.Choice("bye", "Goodbye", true, "")));
+        TerminalNetwork.sendDialogue(player, body.getId(), body.getName().getString(), subtitle(body), body.city(), text, choices(body));
     }
 
-    /** The one thing a conversation with a townsperson offers: closing it. */
+    /** What a conversation offers: a fence's trade (D-125), and always a goodbye. */
+    static List<Dialogue.Choice> choices(TownspersonEntity body) {
+        List<Dialogue.Choice> out = new java.util.ArrayList<>();
+        ShopCounters.shopOf(body).ifPresent(shop -> out.add(new Dialogue.Choice("shop", "What do you sell?", true, "")));
+        if (FenceService.fenceOf(body) != null) {
+            out.add(new Dialogue.Choice("fence_offer", "Show me what you would pay", true, ""));
+            out.add(new Dialogue.Choice("fence_how", "What do you buy?", true, ""));
+        }
+        out.add(new Dialogue.Choice("bye", "Goodbye", true, ""));
+        return out;
+    }
+
+    /** A choice in a conversation with a townsperson: the fence's trade, or closing it. */
     static void choose(ServerPlayer player, TownspersonEntity body, String id) {
         if (player.distanceToSqr(body) > 100.0) return;
+        if (id.equals("shop") && ShopCounters.shopOf(body).isPresent()) { TerminalNetwork.closeDialogue(player); ShopCounters.open(player, body); return; }
+        FenceCatalog.Fence fence = FenceService.fenceOf(body);
+        if (fence != null && id.equals("fence_offer")) { TerminalNetwork.closeDialogue(player); FenceService.open(player, body); return; }
+        if (fence != null && id.equals("fence_how")) {
+            TerminalNetwork.sendDialogue(player, body.getId(), body.getName().getString(), subtitle(body), body.city(),
+                "Goods with a story. Marked, you understand, from a lock somebody forced. I pay " + fence.ratePercent() + " in the hundred of what a thing is worth, less for anything lifted here in "
+                    + capitalise(fence.city()) + ": that is too close to home and people talk. Paper and bread I do not want. I only have so much cash about me; it comes in slowly.", choices(body));
+            return;
+        }
         TerminalNetwork.closeDialogue(player);
     }
 

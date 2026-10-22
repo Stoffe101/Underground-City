@@ -144,6 +144,7 @@ def workshop() -> Building:
     b.spots += [Spot("door", 7, 1, Z1, "south", "bay door"), Spot("door", 7, 1, Z0, "north", "bay door"),
                 Spot("bench", 2, 1, 5, "east", "workbench"), Spot("anvil", 2, 1, 7, "east"), Spot("stove", 13, 1, 8, "west", "furnace"),
                 Spot("desk", 3, 7, 3, "south", "office desk"), Spot("stash", 12, 1, 13, "north", "tool chests")]
+    b.units.append(k.Unit("premises", "Workshop", (X0 + 1, 1, Z0 + 1, X1 - 1, 10, Z1 - 1)))
     return b
 
 
@@ -191,7 +192,9 @@ def warehouse() -> Building:
     parapet_roof(t, X0, Z0, X1, Z1, STONE)
     chimney(t, 2, 2, 3)
     b.spots += [Spot("door", 7, 1, Z1, "south", "loading bay"), Spot("door", 7, 1, Z0, "north", "loading bay"), Spot("desk", 13, 1, 2, "west", "office"),
-                Spot("shelf", 5, 1, 3, "south", "racking"), Spot("stash", 12, 1, 3, "south", "racking")]
+                Spot("shelf", 5, 1, 3, "south", "racking"), Spot("stash", 12, 1, 3, "south", "racking"),
+                Spot("fence", 13, 1, 2, "west", "the night man in the yard office buys what is not asked about (D-125)")]
+    b.units.append(k.Unit("premises", "Warehouse", (X0 + 1, 1, Z0 + 1, X1 - 1, 5, Z1 - 1)))
     return b
 
 

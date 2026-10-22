@@ -72,7 +72,7 @@ public final class RegionalMarket {
         WorkOrderService.recover(player, ledger);
         CitizenState.get(player.server).markJourney(player.getUUID(), "bought");
         player.sendSystemMessage(Component.literal("Bought " + quantity + " x " + stock.registryItem().getDescription().getString()
-            + " from the " + city + (exchange.wayside() ? " wayside desk" : " exchange") + " for " + cost + " credits"
+            + " from " + (exchange.counter() ? exchange.title() + " in " + TerminalScreenText.capitalize(city) : "the " + city + (exchange.wayside() ? " wayside desk" : " exchange")) + " for " + cost + " credits"
             + (share.credits() > 0 ? " (" + share.credits() + " from the Crew bank, " + personal + " from your wallet)." : ".")));
     }
 

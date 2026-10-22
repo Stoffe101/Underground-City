@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "city": "ironhaven",
+  "title": "The Yard",
+  "blurb": "The night man in a warehouse office. Metal, tools and parts; cash in small amounts.",
+  "rate_percent": 45,
+  "same_city_rate_percent": 30,
+  "same_city_heat": 1,
+  "budget": 240,
+  "refill_credits": 40,
+  "refill_minutes": 10,
+  "from_hour": 21,
+  "to_hour": 3
+}

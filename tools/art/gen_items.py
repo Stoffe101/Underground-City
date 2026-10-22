@@ -580,6 +580,54 @@ def optics_schematic():
     return finish(s)
 
 
+# ----------------------------------------------------------------------------------------------- valuables a fence buys (D-125)
+@item
+def pocket_watch():
+    """A gold watch on a chain: a round case, a white face with two hands, the crown and a loop of chain."""
+    s = Sprite()
+    disc(s, 8, 9, 5.4, [BRASS[0], BRASS[1], BRASS[2], BRASS[3], BRASS[4]])
+    disc(s, 8, 9, 4.0, [PAPER[1], PAPER[2], PAPER[3], PAPER[4], WHITE[4]])
+    s.line(8, 9, 8, 6, INK); s.line(8, 9, 10, 10, INK); s.put(8, 9, RED[2])
+    for (x, y) in ((8, 5), (12, 9), (8, 13), (4, 9)):
+        s.put(x, y, GUNMETAL[1])
+    s.rect(7, 2, 9, 3, BRASS[3]); s.put(8, 1, BRASS[4])
+    s.line(9, 1, 12, 0, BRASS[2]); s.line(12, 0, 14, 2, BRASS[3]); s.line(14, 2, 14, 5, BRASS[2])
+    s.put(6, 6, WHITE[4]); s.put(5, 7, WHITE[4])
+    return finish(s)
+
+
+@item
+def jewellery_box():
+    """A small lacquered red box with a gold clasp, its lid open on a ring and a string of pearls."""
+    s = Sprite()
+    bevel_rect(s, 2, 8, 13, 14, RED)
+    s.polygon([(2, 7), (13, 7), (12, 3), (3, 3)], RED[1])
+    s.line(3, 3, 12, 3, RED[3]); s.line(2, 7, 13, 7, RED[4])
+    s.rect(4, 5, 11, 6, PURPLE[1])
+    for x in range(4, 12, 2):
+        s.put(x, 8, WHITE[4])
+    s.put(5, 9, WHITE[3]); s.put(10, 9, WHITE[3])
+    disc(s, 8, 6, 1.4, [BRASS[1], BRASS[2], BRASS[3], BRASS[4], BRASS[4]]); s.put(8, 6, CYAN[4])
+    s.rect(7, 10, 8, 11, BRASS[3]); s.put(7, 10, BRASS[4])
+    return finish(s)
+
+
+@item
+def old_laptop():
+    """A grey office laptop half open: a dark screen with a lit corner and a keyboard deck with a scratched-off sticker."""
+    s = Sprite()
+    s.polygon([(3, 2), (13, 2), (13, 9), (3, 9)], GUNMETAL[1])
+    s.rect(4, 3, 12, 8, BLUE[0]); s.line(4, 3, 12, 3, BLUE[1]); s.put(11, 4, CYAN[3]); s.put(12, 4, CYAN[4])
+    s.polygon([(1, 10), (15, 10), (14, 14), (2, 14)], STEEL[2])
+    s.line(1, 10, 15, 10, STEEL[4]); s.line(2, 14, 14, 14, STEEL[0])
+    for y in (11, 12):
+        for x in range(3, 13, 2):
+            s.put(x, y, GUNMETAL[2])
+    s.rect(6, 13, 9, 13, GUNMETAL[1])
+    s.put(13, 11, PAPER[2]); s.put(14, 12, PAPER[1])
+    return finish(s)
+
+
 def save_all(only=None):
     os.makedirs(ITEM_DIR, exist_ok=True)
     for name, fn in ITEMS.items():

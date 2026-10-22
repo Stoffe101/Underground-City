@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "city": "blackwater",
+  "title": "The Back Room",
+  "blurb": "Behind the club's office door, after closing. Electronics, valuables and anything small.",
+  "rate_percent": 50,
+  "same_city_rate_percent": 32,
+  "same_city_heat": 1,
+  "budget": 320,
+  "refill_credits": 45,
+  "refill_minutes": 10,
+  "from_hour": 21,
+  "to_hour": 3
+}

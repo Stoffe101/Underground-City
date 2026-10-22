@@ -65,6 +65,7 @@ public final class TerminalScreen extends UcScreen {
         this.data = data;
         TerminalData.Row accepted = data.jobs().stream().filter(TerminalData.Row::accepted).findFirst().orElse(null);
         if (carry != null) { current = carry.page(); undergroundView = carry.underground(); }
+        else if (data.counter()) current = Page.IMPORTS;   // a shopkeeper's counter opens on what the shop sells
         if (accepted != null) undergroundView = accepted.extra().underground();
         List<TerminalData.Row> list = jobs();
         selected = 0;
@@ -81,6 +82,25 @@ public final class TerminalScreen extends UcScreen {
     }
 
     BlockPos position() { return terminalPosition; }
+    /** What the server sent (read-only); the scripted player reads it the way a person reads the screen. */
+    TerminalData data() { return data; }
+    /** The orders of the current view (legal or underground) in their on-screen order. */
+    List<TerminalData.Row> visibleJobs() { return jobs(); }
+    /** The middle of the order row {@code index} of the current view, or null when it is scrolled out of sight (a scripted pointer clicks here). */
+    int[] jobCentre(int index) {
+        int rel = index - jobScroll;
+        if (current != Page.CONTRACTS || rel < 0 || rel >= visibleRows() || index >= jobs().size()) return null;
+        return new int[]{cx + (listW() - 6) / 2, listY() + rel * ROW_H + ROW_H / 2};
+    }
+    /** The middle of a skill card, or null when the card is not inside the scrolled viewport. */
+    int[] skillCentre(String id) {
+        for (int i = 0; i < data.skills().size() && i < nodeX.length; i++) {
+            if (!data.skills().get(i).id().equals(id)) continue;
+            int y = nodeY[i] - skillScroll + nodeH / 2;
+            return y < treeTop || y >= treeBottom ? null : new int[]{nodeX[i] + nodeW / 2, y};
+        }
+        return null;
+    }
     Carry carry() {
         String job = row() == null ? null : row().id();
         String skill = data.skills().isEmpty() ? null : data.skills().get(Math.min(selectedSkill, data.skills().size() - 1)).id();
@@ -141,7 +161,7 @@ public final class TerminalScreen extends UcScreen {
         int cw2 = UcUi.displayWidth(font, credits);
         UcUi.displayRight(g, font, credits, right - 0, ty, data.economy() ? UcUi.AMBER : UcUi.UNDERGROUND_TEXT);
         UcUi.icon(g, UcUi.Icon.CREDITS, right - cw2 - 19, y + 4, data.economy() ? UcUi.AMBER : UcUi.UNDERGROUND_TEXT);
-        String where = data.wayside() ? "Now at a wayside desk" : data.region().isEmpty() ? "Now outside a city" : "Now in " + capitalize(data.region());
+        String where = data.counter() ? "At the counter" : data.wayside() ? "Now at a wayside desk" : data.region().isEmpty() ? "Now outside a city" : "Now in " + capitalize(data.region());
         int wx = right - cw2 - 19 - 14 - font.width(where);
         if (wx > px + pw / 2) {
             UcUi.text(g, font, where, wx, ty, UcUi.DIM);
@@ -189,7 +209,7 @@ public final class TerminalScreen extends UcScreen {
     // ------------------------------------------------------------------------------------------------ state
     private List<TerminalData.Row> jobs() { return data.jobs().stream().filter(job -> job.extra().underground() == undergroundView).toList(); }
     private TerminalData.Row row() { List<TerminalData.Row> list = jobs(); return list.isEmpty() ? null : list.get(Math.max(0, Math.min(selected, list.size() - 1))); }
-    private boolean exchangeOpen() { return (!data.region().isEmpty() || data.wayside()) && !data.offers().isEmpty(); }
+    private boolean exchangeOpen() { return (!data.region().isEmpty() || data.shopOnly()) && !data.offers().isEmpty(); }
     private void setView(boolean underground) { undergroundView = underground; selected = 0; jobScroll = 0; refresh(); }
     private void send(int action) {
         if (terminalPosition == null || row() == null) return;
@@ -264,7 +284,7 @@ public final class TerminalScreen extends UcScreen {
         }
         boolean contracts = current == Page.CONTRACTS, trade = current == Page.IMPORTS;
         // trade page
-        shop.visible = trade;
+        shop.visible = trade && !data.counter();   // a shopkeeper's counter is its own shop; the civilian counter lives on the terminals
         shop.active = terminalPosition != null && data.economy();
         shop.tooltip(data.economy() ? "Buy and sell common goods using credits." : "Q Shop 1.8.4 and citizenship are required.");
         layoutOffers();
@@ -342,6 +362,18 @@ public final class TerminalScreen extends UcScreen {
             applyBuy(buyOne[i], offer, 1);
             applyBuy(buyLot[i], offer, lot);
         }
+    }
+
+    /** The middle of the "Buy 1" button of an exchange line (scrolled into view first, as the wheel would), or null when the line is not listed. */
+    int[] offerBuyCentre(String offerId) {
+        for (int i = 0; i < data.offers().size(); i++) {
+            if (!data.offers().get(i).id().equals(offerId)) continue;
+            int rows = Math.min(MAX_OFFERS, offerRows());
+            if (i < offerScroll || i >= offerScroll + rows) { offerScroll = Math.max(0, i - rows + 1); layoutOffers(); }
+            UcButton b = buyOne[i - offerScroll];
+            return b.visible ? new int[]{b.getX() + b.getWidth() / 2, b.getY() + b.getHeight() / 2} : null;
+        }
+        return null;
     }
 
     /** Why this offer cannot be bought in this quantity right now, or "" when it can. */
@@ -563,7 +595,8 @@ public final class TerminalScreen extends UcScreen {
         int lx = cx, ly = listY(), lw = listW(), lh = ch - 22;
         UcUi.well(g, lx, ly, lw, lh);
         if (list.isEmpty()) {
-            UcUi.wrapped(g, font, data.wayside() ? "Orders are posted in the cities. This desk only sells supplies: open the TRADE tab."
+            UcUi.wrapped(g, font, data.counter() ? "This is a shop counter. Orders are taken at an Operations Terminal; this shop sells on the TRADE tab."
+                : data.wayside() ? "Orders are posted in the cities. This desk only sells supplies: open the TRADE tab."
                 : undergroundView ? "No underground contracts yet. Learn an underground skill on the SKILLS tab to open the trade."
                 : "No legal contracts are listed for this trade.", lx + 8, ly + 10, lw - 16, UcUi.SOFT, 6);
             return;
@@ -764,16 +797,18 @@ public final class TerminalScreen extends UcScreen {
     private void renderTrade(GuiGraphics g, int mouseX, int mouseY) {
         boolean exchange = exchangeOpen();
         int y = cy + 26;
-        String heading = data.wayside() ? "WAYSIDE PROVISIONS" : exchange ? capitalize(data.region()).toUpperCase(Locale.ROOT) + " EXCHANGE" : "REGIONAL EXCHANGE";
+        String heading = data.counter() ? data.shopTitle().toUpperCase(Locale.ROOT) : data.wayside() ? "WAYSIDE PROVISIONS" : exchange ? capitalize(data.region()).toUpperCase(Locale.ROOT) + " EXCHANGE" : "REGIONAL EXCHANGE";
         UcUi.display(g, font, heading, cx, y, UcUi.LEGAL);
         int subtitleX = cx + UcUi.displayWidth(font, heading) + 8;
-        String subtitle = data.wayside() ? "A few basics, shared with " + capitalize(data.city().isEmpty() ? "the city" : data.city()) + "'s desks" : "Shared stock, refilled during active play";
+        String subtitle = data.counter() ? "Shared with the city's other shops of its kind; open while the shopkeeper is in"
+            : data.wayside() ? "A few basics, shared with " + capitalize(data.city().isEmpty() ? "the city" : data.city()) + "'s desks" : "Shared stock, refilled during active play";
         UcUi.text(g, font, UcUi.fit(font, subtitle, cx + cw - subtitleX), subtitleX, y, UcUi.DIM);
         UcUi.well(g, cx, cy + 40, cw, ch - 40);
         if (!exchange) {
             int ty = cy + 52;
             UcUi.icon(g, UcUi.Icon.INFO, cx + 8, ty - 4, UcUi.AMBER);
-            UcUi.wrapped(g, font, data.wayside() ? "This desk has nothing for sale right now."
+            UcUi.wrapped(g, font, data.counter() ? "The shelves behind this counter are empty for now. Stock comes back during active play."
+                : data.wayside() ? "This desk has nothing for sale right now."
                 : data.region().isEmpty() ? "This terminal is outside every city exchange. Use one inside Ironhaven, Valewood or Blackwater to see local goods."
                 : "No regional stock is listed for this city.", cx + 28, ty, cw - 40, UcUi.SOFT, 4);
             return;
