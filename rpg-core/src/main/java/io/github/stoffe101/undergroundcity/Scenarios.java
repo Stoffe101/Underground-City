@@ -15,6 +15,7 @@ final class Scenarios {
             case "arrival" -> arrival();
             case "doorwalk" -> doorwalk();
             case "burglary" -> BurglaryScenario.build();
+            case "journey" -> JourneyScenario.build();
             case "lockjitter" -> lockjitter();
             case "walk" -> walk();
             case "row" -> row();

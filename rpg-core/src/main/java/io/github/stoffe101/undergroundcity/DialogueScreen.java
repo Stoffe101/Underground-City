@@ -74,6 +74,9 @@ public final class DialogueScreen extends UcScreen {
         return new int[]{button.getX() + button.getWidth() / 2, button.getY() + button.getHeight() / 2};
     }
 
+    /** The label of the n-th answer, or null past the last (scripted-player runs read it the way a person reads the screen). */
+    String choiceLabel(int index) { return index < 0 || index >= choiceButtons.size() ? null : choiceButtons.get(index).getMessage().getString(); }
+
     private void pick(Choice choice) {
         if (Playtest.enabled()) Playtest.log("dialogue pick '" + choice.id() + "'");
         if (qa) return;

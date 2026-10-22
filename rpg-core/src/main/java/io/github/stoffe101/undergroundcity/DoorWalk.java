@@ -33,7 +33,12 @@ final class DoorWalk {
 
     /** The same, among the buildings {@code accept} approves (the burglary scenario wants one whose alarm is armed and whose stash exists). */
     static Optional<Spot> find(ServerLevel level, boolean frontIsStreet, String preferredClass, java.util.function.Predicate<CityBuildings.Building> accept) {
-        var region = CityRegions.INSTANCE.all().stream().filter(r -> r.id().equals("ironhaven")).findFirst().orElseThrow();
+        return find(level, "ironhaven", frontIsStreet, preferredClass, accept);
+    }
+
+    /** The same, nearest the centre of the named city. */
+    static Optional<Spot> find(ServerLevel level, String city, boolean frontIsStreet, String preferredClass, java.util.function.Predicate<CityBuildings.Building> accept) {
+        var region = CityRegions.INSTANCE.all().stream().filter(r -> r.id().equals(city)).findFirst().orElseThrow();
         Spot fallback = null;
         for (int radius = 1; radius <= 16; radius++) {
             for (int dx = -radius; dx <= radius; dx++) for (int dz = -radius; dz <= radius; dz++) {

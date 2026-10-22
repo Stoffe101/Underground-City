@@ -157,7 +157,9 @@ public final class Playtest {
             if (mc.getLevelSource().levelExists(name)) {
                 mc.createWorldOpenFlows().loadLevel(mc.screen, name);
             } else {
-                LevelSettings settings = new LevelSettings(name, GameType.CREATIVE, false, Difficulty.NORMAL, true, new GameRules(), WorldDataConfiguration.DEFAULT);
+                // the first-player journey starts as a new player does, in survival; the other scenarios start in creative and switch when they need to
+                GameType mode = "journey".equals(SCENARIO) || Boolean.getBoolean("uc.playtest.survival") ? GameType.SURVIVAL : GameType.CREATIVE;
+                LevelSettings settings = new LevelSettings(name, mode, false, Difficulty.NORMAL, true, new GameRules(), WorldDataConfiguration.DEFAULT);
                 mc.createWorldOpenFlows().createFreshLevel(name, settings, new WorldOptions(5908L, true, false), DevWorldLauncher::dimensions);
             }
             log("opening world " + name + " for scenario " + SCENARIO);

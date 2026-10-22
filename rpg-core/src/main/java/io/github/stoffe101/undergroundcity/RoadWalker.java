@@ -28,8 +28,11 @@ final class RoadWalker {
 
     private final double startS, endS;
 
-    /** Walks from {@code startS} to {@code endS} along the road (the stretch between the two cities: inside a city circle there is no corridor road). */
-    RoadWalker(CorridorPlan plan, boolean sprint, double startS, double endS) { this.plan = plan; this.sprint = sprint; this.startS = startS; this.endS = endS; this.progress = startS; }
+    /** +1 when the walk goes the way the road was planned (startS below endS), -1 when it goes back the other way. */
+    private final double dir;
+
+    /** Walks from {@code startS} to {@code endS} along the road (the stretch between the two cities: inside a city circle there is no corridor road), in either direction. */
+    RoadWalker(CorridorPlan plan, boolean sprint, double startS, double endS) { this.plan = plan; this.sprint = sprint; this.startS = startS; this.endS = endS; this.progress = startS; this.dir = endS >= startS ? 1 : -1; }
 
     boolean done() { return done; }
     String summary() { return summary; }
@@ -43,18 +46,18 @@ final class RoadWalker {
         ownTicks++;
         Vec3 position = player.position();
         CorridorPlan.Hit hit = plan.project(position.x, position.z);
-        progress = Math.max(progress, hit.s());
+        progress = dir > 0 ? Math.max(progress, hit.s()) : Math.min(progress, hit.s());
         maxDeviation = Math.max(maxDeviation, hit.distance());
-        if (progress >= endS - ARRIVAL) { finish(false, "reached the far end of the open road"); return; }
+        if ((progress - endS) * dir >= -ARRIVAL) { finish(false, "reached the far end of the open road"); return; }
         if (position.y < mc.level.getMinBuildHeight() + 2) { finish(true, "fell out of the world near " + BlockPos.containing(position).toShortString()); return; }
         // Face the road ahead; the walking itself is the real key.
-        double[] target = plan.pointAt(Math.min(plan.length(), progress + LOOK_AHEAD));
+        double[] target = plan.pointAt(Math.max(0, Math.min(plan.length(), progress + dir * LOOK_AHEAD)));
         float yaw = (float) Math.toDegrees(Math.atan2(-(target[0] - position.x), target[1] - position.z));
         player.setYRot(yaw);
         player.yHeadRot = yaw;
         player.setXRot(8f);
         // Wait while the chunks ahead have not arrived (a person on a slow machine would stand at the edge of the world too).
-        double[] ahead = plan.pointAt(Math.min(plan.length(), progress + 8));
+        double[] ahead = plan.pointAt(Math.max(0, Math.min(plan.length(), progress + dir * 8)));
         boolean loaded = mc.level.getChunkSource().hasChunk((int) Math.floor(ahead[0]) >> 4, (int) Math.floor(ahead[1]) >> 4);
         if (!loaded) {
             waitingForChunks++;
@@ -81,8 +84,8 @@ final class RoadWalker {
                 return;
             }
         }
-        if (progress >= nextMilestone) {
-            Playtest.log(plan.id() + ": " + (int) progress + " blocks in " + ownTicks / 20 + " s (waited " + waitingForChunks / 20 + " s for chunks)");
+        if (Math.abs(progress - startS) >= nextMilestone) {
+            Playtest.log(plan.id() + ": " + (int) Math.abs(progress - startS) + " blocks in " + ownTicks / 20 + " s (waited " + waitingForChunks / 20 + " s for chunks)");
             nextMilestone += 200;
         }
     }
@@ -116,7 +119,7 @@ final class RoadWalker {
         long ticks = ownTicks;
         long moving = Math.max(1, walkingTicks);
         summary = String.format("%s: %s. %d of %d blocks, %d s in game time (%d s of it waiting for chunks), %.2f blocks/s while moving, %d s on bridges, %d s swimming, %d jumps, at most %.1f blocks off the centreline",
-            plan.id(), reason, (int) (progress - startS), (int) (endS - startS), ticks / 20, waitingForChunks / 20, (progress - startS) / (moving / 20.0), bridgeTicks / 20, swimTicks / 20, jumps, maxDeviation);
+            plan.id(), reason, (int) Math.abs(progress - startS), (int) Math.abs(endS - startS), ticks / 20, waitingForChunks / 20, Math.abs(progress - startS) / (moving / 20.0), bridgeTicks / 20, swimTicks / 20, jumps, maxDeviation);
         Playtest.log(summary);
         if (fail) Playtest.fail(summary);
     }

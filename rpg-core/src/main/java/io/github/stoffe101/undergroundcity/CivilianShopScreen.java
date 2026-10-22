@@ -315,6 +315,28 @@ public final class CivilianShopScreen extends UcScreen {
         return false;
     }
 
+    /**
+     * Scripted-player hook: shows the section that lists the first entry whose name starts with {@code name}, scrolls it into view, and returns the middle of its first button
+     * (a real pointer clicks there), or null when no entry has that name. The button may be inactive: the click is then a refused attempt, which a test may want.
+     */
+    int[] buyCentre(String name) {
+        for (int t = 0; t < data.tabs().size(); t++) {
+            var list = data.tabs().get(t).entries();
+            for (int i = 0; i < list.size(); i++) {
+                if (!list.get(i).name().startsWith(name)) continue;
+                if (t != tab) select(t);
+                scrollTo(i);
+                int row = i - scroll;
+                if (row < 0 || row >= rows()) return null;
+                UcButton button = buyOne[row];
+                return new int[]{button.getX() + button.getWidth() / 2, button.getY() + button.getHeight() / 2};
+            }
+        }
+        return null;
+    }
+
+    double balance() { return data.balance(); }
+
     /** Scrolls as the wheel would, for captures of a long list. */
     void scrollTo(int firstRow) { scroll = Mth.clamp(firstRow, 0, maxScroll()); layoutRows(); }
 

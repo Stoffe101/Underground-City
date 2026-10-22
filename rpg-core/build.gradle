@@ -118,6 +118,8 @@ minecraft {
                 if (providers.gradleProperty('ucLockLatency').isPresent()) jvmArgs "-Duc.lock.latency=${providers.gradleProperty('ucLockLatency').get()}"
                 args '--width', providers.gradleProperty('ucPtWidth').orElse('1280').get(), '--height', providers.gradleProperty('ucPtHeight').orElse('720').get()
                 if (worldLayout == 'archipelago') jvmArgs '-Duc.devPreset=underground_city:archipelago'
+                // a new player in an existing playtest world (a scripted journey run again without generating a new world): -PucUsername=<name>
+                if (providers.gradleProperty('ucUsername').isPresent()) args '--username', providers.gradleProperty('ucUsername').get()
             }
             if (providers.gradleProperty('ucPhotoTour').isPresent()) {
                 // a spectator camera flies to each viewpoint of a shot list (PhotoTour) in the world the development launcher creates; frames land in <run dir>/screenshots
