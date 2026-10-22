@@ -67,6 +67,19 @@ public final class RegionalWorldgenGameTests {
     }
 
     @GameTest(template = "empty", batch = "uc_regional")
+    public static void theScarcityPackageSwitchesOffTheNoiseBasedOreVeinsAndNothingElseDoes(GameTestHelper helper) {
+        java.util.function.Function<String, String> vanilla = path -> path.endsWith("noise_settings/overworld.json")
+            ? "{\"ore_veins_enabled\":true,\"sea_level\":63,\"noise_router\":{\"continents\":\"minecraft:overworld/continents\",\"erosion\":\"e\",\"depth\":\"d\",\"ridges\":\"r\"}}"
+            : "{}";
+        JsonObject normal = JsonParser.parseString(RegionalWorldgen.derive(vanilla).get("worldgen/noise_settings/regional.json")).getAsJsonObject();
+        JsonObject scarce = JsonParser.parseString(RegionalWorldgen.derive(vanilla, true).get("worldgen/noise_settings/regional.json")).getAsJsonObject();
+        check(normal.get("ore_veins_enabled").getAsBoolean(), "a world without the scarcity package lost the game's ore veins");
+        check(!scarce.get("ore_veins_enabled").getAsBoolean(), "the scarcity package left the noise-based ore veins on");
+        check(normal.get("sea_level").getAsInt() == 63 && scarce.get("sea_level").getAsInt() == 63, "the scarcity switch changed something else in the noise settings");
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty", batch = "uc_regional")
     public static void thePackListsADirectoryNotAStringPrefix(GameTestHelper helper) {
         var pack = RegionalWorldgen.packForTest(Map.of("worldgen/noise_settings/regional.json", "{}", "worldgen/density_function/regional/offset.json", "{}", "worldgen/noise/x.json", "{}"));
         int[] counts = new int[2];

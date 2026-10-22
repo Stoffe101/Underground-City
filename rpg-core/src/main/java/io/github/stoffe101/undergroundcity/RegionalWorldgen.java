@@ -80,7 +80,14 @@ public final class RegionalWorldgen {
      * The files of the derived pack, keyed by path under {@code data/underground_city/}, from a reader of the vanilla files (path under
      * {@code data/minecraft/}). Fails loudly when a file the derivation needs is missing: a changed vanilla layout must not give a quiet, wrong world.
      */
-    static Map<String, String> derive(Function<String, String> vanilla) {
+    static Map<String, String> derive(Function<String, String> vanilla) { return derive(vanilla, false); }
+
+    /**
+     * As above; with {@code noOreVeins} the noise settings switch off the game's noise-based ore veins (the big copper and iron veins, with their tuff and granite filler, that no biome modifier
+     * can remove because they are not placed features). Used when the scarcity package ({@code underground_city_scarcity}, D-120) is installed: an ore audit of a scarcity world found 12,899
+     * ore blocks left of 443,563, all of them copper at y 0 to 49 and deepslate iron at y -58 to -8, the two kinds of vein.
+     */
+    static Map<String, String> derive(Function<String, String> vanilla, boolean noOreVeins) {
         Map<String, String> files = new LinkedHashMap<>();
         for (String name : REBUILT) {
             String text = vanilla.apply(OVERWORLD_DIR + name + ".json");
@@ -97,6 +104,7 @@ public final class RegionalWorldgen {
         // the climate sampler (biomes) reads these two; the terrain splines read continents and erosion through the rebuilt functions above
         router.addProperty("temperature", "underground_city:regional/temperature");
         router.addProperty("vegetation", "underground_city:regional/humidity");
+        if (noOreVeins) json.addProperty("ore_veins_enabled", false);
         files.put("worldgen/noise_settings/regional.json", json.toString());
         return files;
     }
@@ -125,12 +133,13 @@ public final class RegionalWorldgen {
         DerivedPack() {
             var vanilla = ServerPacksSource.createVanillaPackSource();
             try {
-                derive(path -> readVanilla(vanilla, path)).forEach((path, text) ->
+                boolean scarcity = net.minecraftforge.fml.ModList.get() != null && net.minecraftforge.fml.ModList.get().isLoaded("underground_city_scarcity");
+                derive(path -> readVanilla(vanilla, path), scarcity).forEach((path, text) ->
                     files.put(ResourceLocation.fromNamespaceAndPath(UndergroundCity.MOD_ID, path), text.getBytes(StandardCharsets.UTF_8)));
             } finally {
                 vanilla.close();
             }
-            LOGGER.info("[UC-WORLD] derived {} regional terrain files from the game's overworld functions", files.size());
+            LOGGER.info("[UC-WORLD] derived {} regional terrain files from the game's overworld functions{}", files.size(), net.minecraftforge.fml.ModList.get() != null && net.minecraftforge.fml.ModList.get().isLoaded("underground_city_scarcity") ? " (noise-based ore veins off: the scarcity package is installed)" : "");
         }
 
         @Override public IoSupplier<InputStream> getRootResource(String... elements) {
