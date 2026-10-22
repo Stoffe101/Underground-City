@@ -36,7 +36,7 @@ public final class TownspersonEntity extends PathfinderMob {
     private static final EntityDataAccessor<Integer> SKIN = SynchedEntityData.defineId(TownspersonEntity.class, EntityDataSerializers.INT);
     private long person, homeKey;
     private String city = "", role = "resident";
-    /** An officer's errand: where to go and how fast, and the game time at which the officer leaves (both only ever set by {@link PoliceResponse}; none of it is saved). */
+    /** An errand: where to go and how fast, and the game time at which the body leaves (set by {@link PoliceResponse} for an officer and by {@link HouseholdService} for a commuter; none of it is saved). */
     private BlockPos errand;
     private double errandSpeed = 1.0;
     private long leaveAt = Long.MAX_VALUE;
@@ -57,7 +57,7 @@ public final class TownspersonEntity extends PathfinderMob {
         goalSelector.addGoal(0, new FloatGoal(this));
         goalSelector.addGoal(1, new PanicGoal(this, 1.35) { @Override public boolean canUse() { return !police() && super.canUse(); } });
         goalSelector.addGoal(2, new ErrandGoal());
-        goalSelector.addGoal(5, new WaterAvoidingRandomStrollGoal(this, 0.55, 0.002f) { @Override public boolean canUse() { return !police() && super.canUse(); } });
+        goalSelector.addGoal(5, new WaterAvoidingRandomStrollGoal(this, 0.55, 0.002f) { @Override public boolean canUse() { return !police() && errand == null && super.canUse(); } });
         goalSelector.addGoal(6, new LookAtPlayerGoal(this, Player.class, 8.0f));
         goalSelector.addGoal(7, new RandomLookAroundGoal(this));
     }
@@ -85,6 +85,18 @@ public final class TownspersonEntity extends PathfinderMob {
         clearRestriction();
     }
 
+    /**
+     * Makes this body a resident or a worker of a furnished building on the way out of it or home to it ({@link HouseholdService}): no leash, an errand to {@code to}, and gone a minute and a half from
+     * now whatever happens (nobody is left standing in a street for good).
+     */
+    void becomeCommuter(PopulationPlan.Person who, BlockPos to, long building) {
+        become(who, to);
+        homeKey = building;
+        clearRestriction();
+        errand(to, 0.8);
+        leaveIn(1800);
+    }
+
     /** Makes this body a resident or a worker of a furnished building ({@link HouseholdService}): it stays within two blocks of where it was put and remembers which building is its own. */
     void becomeResident(PopulationPlan.Person who, BlockPos anchor, long building) {
         become(who, anchor);
@@ -101,23 +113,23 @@ public final class TownspersonEntity extends PathfinderMob {
     boolean leaving() { return leaveAt != Long.MAX_VALUE; }
     BlockPos errandPlace() { return errand; }
 
-    /** Sends an officer to a place at a speed (a multiple of their walking speed); null stands them still. */
+    /** Sends an officer (or a commuter) to a place at a speed (a multiple of their walking speed); null stands them still. */
     void errand(BlockPos where, double speed) { errand = where; errandSpeed = speed; if (where == null) getNavigation().stop(); }
 
-    /** An officer leaves (is removed) this many ticks from now; nobody is left standing in a street for good. */
+    /** An officer (or a commuter) leaves (is removed) this many ticks from now; nobody is left standing in a street for good. */
     void leaveIn(long ticks) { leaveAt = level().getGameTime() + ticks; }
 
     @Override public void tick() {
         super.tick();
-        if (!level().isClientSide && police() && level().getGameTime() >= leaveAt) discard();
+        if (!level().isClientSide && leaving() && level().getGameTime() >= leaveAt) discard();
     }
 
     /** Walks to the errand's place while there is one; stands and watches when there is none. */
     private final class ErrandGoal extends Goal {
         private int repath;
         ErrandGoal() { setFlags(java.util.EnumSet.of(Flag.MOVE)); }
-        @Override public boolean canUse() { return police() && errand != null; }
-        @Override public boolean canContinueToUse() { return police() && errand != null; }
+        @Override public boolean canUse() { return errand != null; }
+        @Override public boolean canContinueToUse() { return errand != null; }
         @Override public void tick() {
             if (errand == null) return;
             if (--repath > 0 && !getNavigation().isDone()) return;

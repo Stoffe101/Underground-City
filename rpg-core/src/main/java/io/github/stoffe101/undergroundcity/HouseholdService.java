@@ -40,8 +40,13 @@ import java.util.UUID;
  * burglary of an occupied house is likelier to bring the police than a midday one of an empty one, and a shop is empty at night and staffed by day; the household remembers a forced door in a saved record
  * (bounded to {@link #MEMORY_LIMIT} buildings) and says so when spoken to, and a resident who saw the thief says so to the thief's face for three active hours.
  *
- * <p>What it is not: residents do not walk about the city, open doors, buy or sell, own anything the Crew ledger knows of, or respond beyond a line of speech; a building that was never furnished by a package with
- * spots has nobody in it; nobody is simulated while their building is not loaded.
+ * <p>Coming and going (D-129): when the clock moves a person from home to out (or from out to home) while a player is near, they do not simply vanish or appear. A leaver comes out of the
+ * building's street door (it opens for them as it would for anybody inside) and walks off down the street; somebody coming home walks up the street to the door, which opens, and goes in. The
+ * moment of the hour a person leaves or comes is theirs (spread over the first forty minutes), a person is seen to commute only in the ten minutes after that moment and only once, and a commuter
+ * is gone within a minute and a half whatever happens. Nobody commutes past a building nobody is near.
+ *
+ * <p>What it is not: residents do not walk about the city, open doors other than their street door on the way out or in, buy or sell, own anything the Crew ledger knows of, or respond beyond a
+ * line of speech; a building that was never furnished by a package with spots has nobody in it; nobody is simulated while their building is not loaded.
  */
 public final class HouseholdService {
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -52,6 +57,14 @@ public final class HouseholdService {
     /** Active bodies: entity uuid to who they are and where they live. */
     private record Active(long building, String type, String city, long person, int chunkX, int chunkZ, int streetY, long worldSeed) {}
     private static final Map<UUID, Active> ACTIVE = new HashMap<>();
+    /** A body on its way out of its building ({@code entering} false) or home to it: the street door (its lower half) and where the body is walking to. */
+    record Commute(boolean entering, BlockPos door, BlockPos target) {}
+    private static final Map<UUID, Commute> COMMUTERS = new HashMap<>();
+    /** Who has already been seen to commute this hour ({@code person ^ hour}), bounded. */
+    private static final java.util.Set<Long> COMMUTED = new java.util.LinkedHashSet<>();
+    /** A person leaves or comes home at a moment of the first forty minutes of the hour, and is seen to only in the ten minutes after it. */
+    static final int COMMUTE_SPREAD_MINUTES = 40, COMMUTE_WINDOW_MINUTES = 10;
+    static long commutersOut, commutersIn;
 
     static long passes, nanosTotal, nanosWorst, spawned, removed, spotMisses, lookups, activePeak;
 
@@ -167,7 +180,11 @@ public final class HouseholdService {
         removeOutOfDate(level, players);
         if (!players.isEmpty()) {
             int start = (int) (level.getGameTime() / CYCLE % players.size());
-            for (int i = 0; i < Math.min(PLAYERS_PER_PASS, players.size()); i++) topUp(level, players.get((start + i) % players.size()));
+            for (int i = 0; i < Math.min(PLAYERS_PER_PASS, players.size()); i++) {
+                ServerPlayer player = players.get((start + i) % players.size());
+                commute(level, player, players);
+                topUp(level, player);
+            }
         }
         long took = System.nanoTime() - started;
         passes++; nanosTotal += took; nanosWorst = Math.max(nanosWorst, took); activePeak = Math.max(activePeak, ACTIVE.size());
@@ -185,18 +202,21 @@ public final class HouseholdService {
 
     /** Removes bodies that are gone, far from everybody, or whose person has gone out and is not being looked at closely. */
     static void removeOutOfDate(ServerLevel level, List<ServerPlayer> players) {
-        long day = PopulationPlan.dayOf(dayTime(level));
-        int hour = PopulationPlan.hourOf(dayTime(level));
         for (Iterator<Map.Entry<UUID, Active>> it = ACTIVE.entrySet().iterator(); it.hasNext(); ) {
             var entry = it.next();
             Active a = entry.getValue();
-            if (!(level.getEntity(entry.getKey()) instanceof TownspersonEntity body) || !body.isAlive()) { it.remove(); continue; }
+            if (!(level.getEntity(entry.getKey()) instanceof TownspersonEntity body) || !body.isAlive()) { it.remove(); COMMUTERS.remove(entry.getKey()); continue; }
             ServerPlayer nearest = nearest(players, body, FAR_BLOCKS);
+            Commute commute = COMMUTERS.get(entry.getKey());
+            if (commute != null) {
+                if (!commuteStep(level, body, commute, nearest)) { body.discard(); it.remove(); COMMUTERS.remove(entry.getKey()); removed++; }
+                continue;
+            }
             boolean away = false;
             if (nearest != null) {
                 HouseholdPlan.Resident who = resident(a);
                 BuildingSpots.Plan plan = BuildingSpots.INSTANCE.forType(a.type());
-                away = who == null || plan == null || HouseholdPlan.where(who, plan, a.worldSeed(), hour, day) == HouseholdPlan.AWAY;
+                away = who == null || plan == null || whereNow(who, plan, a.worldSeed(), dayTime(level)) == HouseholdPlan.AWAY;
                 if (away && nearest.distanceToSqr(body) < 12 * 12) away = false;   // nobody leaves in front of a player's nose
             }
             if (nearest == null || away) { body.discard(); it.remove(); removed++; }
@@ -241,7 +261,7 @@ public final class HouseholdService {
             for (HouseholdPlan.Resident who : HouseholdPlan.residents(building.city(), level.getSeed(), building.key(), plan, def.names())) {
                 if (out.contains(who.id())) continue;
                 if (CityHomes.spotLet(level.getSeed(), building, plan, plan.spots().get(who.spot()))) continue;   // their flat or house is to let: nobody of the household lives there (D-127)
-                int spot = HouseholdPlan.where(who, plan, level.getSeed(), hour, day);
+                int spot = whereNow(who, plan, level.getSeed(), dayTime(level));
                 if (spot != HouseholdPlan.AWAY) candidates.add(new Candidate(building, plan, who, spot));
             }
         }
@@ -262,6 +282,131 @@ public final class HouseholdService {
         }
     }
 
+    // ------------------------------------------------------------------------------------------------ coming and going (D-129)
+
+    /** The minute of {@code hour} at which this person leaves or comes home when the hour moves them. */
+    static int commuteMinute(long person, long day, int hour) {
+        return (int) Math.floorMod(PopulationPlan.mix(person ^ PopulationPlan.mix(day * 24 + hour)) >>> 7, (long) COMMUTE_SPREAD_MINUTES);
+    }
+
+    /**
+     * Where a person is at the world time {@code time}: the plan's answer for the hour, except that in an hour that moves them out or home they are still where they were until their own minute of it
+     * (so a leaver is there to be seen leaving, and somebody coming home is not already at home before they have walked in).
+     */
+    static int whereNow(HouseholdPlan.Resident who, BuildingSpots.Plan plan, long worldSeed, long time) {
+        long day = PopulationPlan.dayOf(time), before = PopulationPlan.dayOf(time - 1000);
+        int hour = PopulationPlan.hourOf(time), hourBefore = PopulationPlan.hourOf(time - 1000);
+        int now = HouseholdPlan.where(who, plan, worldSeed, hour, day), then = HouseholdPlan.where(who, plan, worldSeed, hourBefore, before);
+        if ((now == HouseholdPlan.AWAY) == (then == HouseholdPlan.AWAY)) return now;
+        int minute = (int) (Math.floorMod(time, 1000L) * 60 / 1000);
+        return minute < commuteMinute(who.id(), day, hour) ? then : now;
+    }
+
+    /** The street door of a plan: its first door spot, or null. */
+    private static BuildingSpots.Spot streetDoor(BuildingSpots.Plan plan) {
+        for (BuildingSpots.Spot spot : plan.spots()) if (spot.kind().equals("door")) return spot;
+        return null;
+    }
+
+    private static net.minecraft.core.Direction facing(BuildingSpots.Spot spot) {
+        net.minecraft.core.Direction d = net.minecraft.core.Direction.byName(spot.facing());
+        return d == null || d.getAxis().isVertical() ? net.minecraft.core.Direction.SOUTH : d;
+    }
+
+    /** Starts at most one commute round this player: somebody of a building near them whose hour has just moved them out or home. */
+    private static void commute(ServerLevel level, ServerPlayer player, List<ServerPlayer> players) {
+        if (ACTIVE.size() >= MAX_ACTIVE || near(level, player) >= MAX_PER_PLAYER) return;
+        long time = dayTime(level);
+        long day = PopulationPlan.dayOf(time), before = PopulationPlan.dayOf(time - 1000);
+        int hour = PopulationPlan.hourOf(time), hourBefore = PopulationPlan.hourOf(time - 1000);
+        int minute = (int) (Math.floorMod(time, 1000L) * 60 / 1000);
+        java.util.Set<Long> out = new java.util.HashSet<>();
+        for (Active a : ACTIVE.values()) out.add(a.person());
+        ChunkPos here = player.chunkPosition();
+        for (int dx = -RADIUS_CHUNKS; dx <= RADIUS_CHUNKS; dx++) for (int dz = -RADIUS_CHUNKS; dz <= RADIUS_CHUNKS; dz++) {
+            int cx = here.x + dx, cz = here.z + dz;
+            if (level.getChunkSource().getChunkNow(cx, cz) == null || !CityBuildings.INSTANCE.known(cx, cz)) continue;   // the household pass asks Lost Cities; this one never does
+            Optional<CityBuildings.Building> found = CityBuildings.INSTANCE.ofChunk(level, cx, cz);
+            if (found.isEmpty()) continue;
+            CityBuildings.Building building = found.get();
+            BuildingSpots.Plan plan = BuildingSpots.INSTANCE.forType(building.type());
+            PopulationCatalog.Def def = PopulationCatalog.INSTANCE.city(building.city());
+            BuildingSpots.Spot door = plan == null ? null : streetDoor(plan);
+            if (door == null || def == null) continue;
+            for (HouseholdPlan.Resident who : HouseholdPlan.residents(building.city(), level.getSeed(), building.key(), plan, def.names())) {
+                if (out.contains(who.id()) || CityHomes.spotLet(level.getSeed(), building, plan, plan.spots().get(who.spot()))) continue;
+                int now = HouseholdPlan.where(who, plan, level.getSeed(), hour, day), then = HouseholdPlan.where(who, plan, level.getSeed(), hourBefore, before);
+                boolean leaving = then != HouseholdPlan.AWAY && now == HouseholdPlan.AWAY, coming = then == HouseholdPlan.AWAY && now != HouseholdPlan.AWAY;
+                if (!leaving && !coming) continue;
+                long key = who.id() ^ PopulationPlan.mix(day * 24 + hour);
+                int at = commuteMinute(who.id(), day, hour);
+                if (minute < at || minute >= at + COMMUTE_WINDOW_MINUTES || COMMUTED.contains(key)) continue;
+                COMMUTED.add(key);
+                while (COMMUTED.size() > 512) COMMUTED.remove(COMMUTED.iterator().next());
+                if (startCommute(level, building, door, who, coming, players)) return;
+            }
+        }
+    }
+
+    /** A place a person can stand on the street in front of the door: a street spot of the chunk ahead if there is one, else the nearest floor two to six steps out from the door. */
+    private static Optional<BlockPos> streetTarget(ServerLevel level, BlockPos outside, net.minecraft.core.Direction out, long person, List<ServerPlayer> players) {
+        net.minecraft.util.RandomSource random = net.minecraft.util.RandomSource.create(person);
+        for (int ahead : new int[]{12, 24}) {
+            Optional<BlockPos> spot = PopulationService.findSpot(level, new ChunkPos(outside.relative(out, ahead)), random, players);
+            if (spot.isPresent() && spot.get().distSqr(outside) >= 16) return spot;
+        }
+        for (int k = 2; k <= 6; k++) for (int dy : new int[]{0, -1, 1}) {
+            BlockPos p = outside.relative(out, k).above(dy);
+            if (PopulationService.standable(level, p)) return Optional.of(p);
+        }
+        return Optional.empty();
+    }
+
+    private static boolean startCommute(ServerLevel level, CityBuildings.Building building, BuildingSpots.Spot doorSpot, HouseholdPlan.Resident who, boolean coming, List<ServerPlayer> players) {
+        net.minecraft.core.Direction out = facing(doorSpot);
+        BlockPos door = new BlockPos(building.chunkX() * 16 + doorSpot.x(), building.streetY() + doorSpot.y(), building.chunkZ() * 16 + doorSpot.z());
+        BlockPos inside = door.relative(out.getOpposite()), outside = door.relative(out);
+        BlockPos outsideFeet = PopulationService.standable(level, outside) ? outside : PopulationService.standable(level, outside.below()) ? outside.below() : null;
+        Optional<BlockPos> street = streetTarget(level, outsideFeet != null ? outsideFeet : outside, out, who.id(), players);
+        if (street.isEmpty() || outsideFeet == null || (!coming && !PopulationService.standable(level, inside))) { spotMisses++; return false; }
+        BlockPos from = coming ? street.get() : inside, to = coming ? outsideFeet : street.get();
+        TownspersonEntity body = UndergroundCity.TOWNSPERSON.get().create(level);
+        if (body == null) return false;
+        PopulationPlan.Person person = new PopulationPlan.Person(who.id(), who.name(), who.skin(), who.role(), building.city(), 0, 0);
+        body.moveTo(from.getX() + 0.5, from.getY(), from.getZ() + 0.5, out.getOpposite().toYRot() + (coming ? 0 : 180), 0f);
+        body.becomeCommuter(person, to, building.key());
+        if (!level.addFreshEntity(body)) return false;
+        ACTIVE.put(body.getUUID(), new Active(building.key(), building.type(), building.city(), who.id(), building.chunkX(), building.chunkZ(), building.streetY(), level.getSeed()));
+        COMMUTERS.put(body.getUUID(), new Commute(coming, door, to));
+        spawned++;
+        if (coming) commutersIn++; else { commutersOut++; openDoor(level, door); }
+        return true;
+    }
+
+    /** Opens a street door for somebody of the household on the way out or in, as a person inside opens it to leave ({@link BuildingGuard}); it shuts again a few seconds later. */
+    static void openDoor(ServerLevel level, BlockPos door) {
+        net.minecraft.world.level.block.state.BlockState state = level.getBlockState(door);
+        if (!(state.getBlock() instanceof net.minecraft.world.level.block.DoorBlock block)) return;
+        PropertyLocks.get(level.getServer()).exitOpen(door, LockService.clock(level.getServer()) + BuildingGuard.EXIT_TICKS);
+        if (!state.getValue(net.minecraft.world.level.block.DoorBlock.OPEN)) block.setOpen(null, level, state, door, true);
+    }
+
+    /** One step of a commute; false when the body is done (home through the door, or out of sight down the street). */
+    private static boolean commuteStep(ServerLevel level, TownspersonEntity body, Commute commute, ServerPlayer nearest) {
+        if (nearest == null) return false;                                                     // nobody to see them: they are simply out, or in
+        double left = body.distanceToSqr(commute.target().getX() + 0.5, commute.target().getY(), commute.target().getZ() + 0.5);
+        if (commute.entering()) {
+            if (body.distanceToSqr(commute.door().getX() + 0.5, commute.door().getY(), commute.door().getZ() + 0.5) <= 2.6 * 2.6) { openDoor(level, commute.door()); return false; }
+            return true;
+        }
+        if (body.distanceToSqr(commute.door().getX() + 0.5, commute.door().getY(), commute.door().getZ() + 0.5) <= 2.0 * 2.0) openDoor(level, commute.door());   // keep it open while they pass
+        if (left <= 1.8 * 1.8) {
+            body.errand(null, 1.0);                                                             // there: they stroll, and go once nobody is close
+            return nearest.distanceToSqr(body) <= 24 * 24;
+        }
+        return true;
+    }
+
     /** The place a person stands for a spot: the spot itself if somebody can stand there (a seat), else the nearest free floor beside it (a counter, a bed, a stove). Never outside the building's chunk. */
     static Optional<BlockPos> standAt(ServerLevel level, Candidate c) {
         BuildingSpots.Spot spot = c.plan().spots().get(c.spot());
@@ -279,8 +424,8 @@ public final class HouseholdService {
 
     static String status() {
         double average = passes == 0 ? 0 : nanosTotal / (double) passes / 1000.0;
-        return String.format(Locale.ROOT, "indoors now %d (peak %d, cap %d total / %d per player); passes %d, mean %.0f us, worst %d us; Lost Cities lookups %d; spawned %d, removed %d, spots missed %d; furnished plans %d",
-            ACTIVE.size(), activePeak, MAX_ACTIVE, MAX_PER_PLAYER, passes, average, nanosWorst / 1000, lookups, spawned, removed, spotMisses, BuildingSpots.INSTANCE.size());
+        return String.format(Locale.ROOT, "indoors now %d (peak %d, cap %d total / %d per player), commuting now %d (out %d, home %d); passes %d, mean %.0f us, worst %d us; Lost Cities lookups %d; spawned %d, removed %d, spots missed %d; furnished plans %d",
+            ACTIVE.size(), activePeak, MAX_ACTIVE, MAX_PER_PLAYER, COMMUTERS.size(), commutersOut, commutersIn, passes, average, nanosWorst / 1000, lookups, spawned, removed, spotMisses, BuildingSpots.INSTANCE.size());
     }
 
     @SubscribeEvent
@@ -300,10 +445,12 @@ public final class HouseholdService {
     /** True when the body is a household person whose post (the spot they were placed for) is a spot of this kind in their building's plan, a counter or a desk (D-126). */
     static boolean servesAt(TownspersonEntity body, String kind) {
         Active a = ACTIVE.get(body.getUUID());
-        if (a == null) return false;
+        if (a == null || COMMUTERS.containsKey(body.getUUID())) return false;   // on the way to or from work: not behind a counter
         HouseholdPlan.Resident who = resident(a);
         BuildingSpots.Plan plan = BuildingSpots.INSTANCE.forType(a.type());
         return who != null && plan != null && who.spot() >= 0 && who.spot() < plan.spots().size() && plan.spots().get(who.spot()).kind().equals(kind);
     }
-    static void resetForTest() { ACTIVE.clear(); dayTimeOverride = null; passes = nanosTotal = nanosWorst = spawned = removed = spotMisses = lookups = activePeak = 0; }
+    static void resetForTest() { ACTIVE.clear(); COMMUTERS.clear(); COMMUTED.clear(); dayTimeOverride = null; passes = nanosTotal = nanosWorst = spawned = removed = spotMisses = lookups = activePeak = commutersOut = commutersIn = 0; }
+    static int commuterCount() { return COMMUTERS.size(); }
+    static Commute commuteOf(TownspersonEntity body) { return COMMUTERS.get(body.getUUID()); }
 }

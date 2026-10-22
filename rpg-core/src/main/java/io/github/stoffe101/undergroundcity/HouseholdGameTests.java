@@ -215,6 +215,64 @@ public final class HouseholdGameTests {
         helper.succeed();
     }
 
+    /** A shop whose street door is in the south wall of the test room, so the street in front of it lies inside the room's own chunk. */
+    private static BuildingSpots.Plan southShop() {
+        return new BuildingSpots.Plan(SHOP, "shop", "valewood", List.of(
+            new BuildingSpots.Spot("door", 7, 1, 12, "south", "shop door"), new BuildingSpots.Spot("counter", 6, 1, 6, "south", "till"), new BuildingSpots.Spot("shelf", 10, 1, 10, "west", "")));
+    }
+
+    /** Runs the household over the minutes of one hour of {@code day} until {@code done} holds; false when the hour ended first. */
+    private static boolean runHour(Room room, long day, int hour, java.util.function.BooleanSupplier done) {
+        for (int minute = 0; minute < 60; minute++) {
+            HouseholdService.dayTimeOverride = clock(day, hour) + minute * 1000L / 60;
+            HouseholdService.pass(room.level, List.of(room.visitor));
+            if (done.getAsBoolean()) return true;
+        }
+        return false;
+    }
+
+    @GameTest(template = "empty")
+    public static void theShopkeeperWalksInThroughTheStreetDoorAtEightAndOutAgainAtSix(GameTestHelper helper) {
+        BuildingSpots.INSTANCE.replaceForTest(Map.of(SHOP, southShop()));
+        try (Room room = new Room(helper, "uc_hh_go", SHOP, null)) {
+            BlockPos door = room.spot(southShop().spots().get(0));
+            var oak = Blocks.OAK_DOOR.defaultBlockState().setValue(net.minecraft.world.level.block.DoorBlock.FACING, net.minecraft.core.Direction.SOUTH);
+            room.level.setBlock(door, oak.setValue(net.minecraft.world.level.block.DoorBlock.HALF, net.minecraft.world.level.block.state.properties.DoubleBlockHalf.LOWER), 2);
+            room.level.setBlock(door.above(), oak.setValue(net.minecraft.world.level.block.DoorBlock.HALF, net.minecraft.world.level.block.state.properties.DoubleBlockHalf.UPPER), 2);
+            long day = dayWhere(d -> presentAt(room, southShop(), 10, d) == 1);
+            // eight in the morning: the shopkeeper comes up the street to the door, not out of thin air at the counter
+            check(runHour(room, day, 8, () -> HouseholdService.commuterCount() > 0), "nobody came to work at eight");
+            TownspersonEntity coming = room.bodies().stream().filter(b -> HouseholdService.commuteOf(b) != null).findFirst().orElseThrow();
+            var commute = HouseholdService.commuteOf(coming);
+            check(commute.entering() && coming.role().equals("worker") && commute.door().equals(door), "the commute is not the shopkeeper coming in by the door: " + commute + " " + coming.role());
+            check(coming.blockPosition().distSqr(door) >= 4 && coming.errandPlace() != null && coming.errandPlace().distSqr(door.relative(net.minecraft.core.Direction.SOUTH).below()) <= 1,
+                "the shopkeeper did not start in the street and walk to the door: at " + coming.blockPosition() + ", going to " + coming.errandPlace());
+            check(ShopCounters.shopOf(coming).isEmpty(), "a shopkeeper on the way to work opened the shop in the street");
+            coming.moveTo(door.getX() + 0.5, door.getY() - 1, door.getZ() + 1.5, 0f, 0f);
+            HouseholdService.pass(room.level, List.of(room.visitor));
+            check(!coming.isAlive() && HouseholdService.commuterCount() == 0, "the shopkeeper did not go in at the door");
+            check(room.level.getBlockState(door).getValue(net.minecraft.world.level.block.DoorBlock.OPEN), "the street door did not open for the shopkeeper");
+            // the same hour: nobody comes twice, and the shopkeeper is now behind the counter
+            runHour(room, day, 9, () -> false);
+            check(HouseholdService.commuterCount() == 0 && room.bodies().size() == 1 && room.bodies().get(0).role().equals("worker"), "after going in the shopkeeper is not simply at work: " + room.bodies().size());
+            // six in the evening, with the visitor out of the shop: the shopkeeper comes out of the door and goes down the street
+            room.visitor.setPos(room.chunk.getMinBlockX() + 14.5, room.streetY, room.chunk.getMinBlockZ() + 15.5);
+            room.level.setBlock(door, room.level.getBlockState(door).setValue(net.minecraft.world.level.block.DoorBlock.OPEN, false), 2);
+            check(runHour(room, day, 18, () -> HouseholdService.commuterCount() > 0), "nobody went home at six");
+            TownspersonEntity going = room.bodies().stream().filter(b -> HouseholdService.commuteOf(b) != null).findFirst().orElseThrow();
+            check(!HouseholdService.commuteOf(going).entering() && going.blockPosition().distSqr(door) <= 4, "the shopkeeper did not leave from just inside the door: " + going.blockPosition());
+            check(room.level.getBlockState(door).getValue(net.minecraft.world.level.block.DoorBlock.OPEN), "the street door did not open to let the shopkeeper out");
+            check(room.bodies().stream().noneMatch(b -> HouseholdService.commuteOf(b) == null), "the shopkeeper was both at the counter and on the way home");
+            // nobody to see them: they are simply gone
+            room.visitor.setPos(room.visitor.getX() + 200, room.visitor.getY(), room.visitor.getZ());
+            HouseholdService.pass(room.level, List.of(room.visitor));
+            check(room.bodies().isEmpty() && HouseholdService.commuterCount() == 0, "a commuter stayed with nobody near");
+            room.level.setBlock(door.above(), Blocks.STONE_BRICKS.defaultBlockState(), 2);
+            room.level.setBlock(door, Blocks.STONE_BRICKS.defaultBlockState(), 2);
+        }
+        helper.succeed();
+    }
+
     @GameTest(template = "empty")
     public static void aResidentAtHomeIsAWitnessThatBringsThePoliceAndTheForcedDoorIsRemembered(GameTestHelper helper) throws Exception {
         BuildingSpots.INSTANCE.replaceForTest(Map.of(TYPE, house()));
