@@ -190,9 +190,15 @@ def club() -> Building:
     k.sofa(g, 3, 1, 12, "east", "north", "red", 3)
     g.put(4, 1, 11, ml("dark_oak_small_table", type="single"))
     k.sofa(g, 3, 1, 4, "south", "east", "red", 3)
-    # lights: redstone lamps in the ceiling
-    for (x, z) in ((5, 5), (10, 5), (5, 8), (10, 8), (7, 11)):
-        g.put(x, 3, z, "minecraft:redstone_lamp[lit=true]")
+    # lights: froglights set flush into the ceiling over the floor, bar and booths (a redstone lamp marked lit has no power here and a photograph found the room almost black),
+    # and lit rods as neon tubes in the corners and either side of the DJ booth
+    for (x, z) in ((3, 3), (6, 3), (9, 3), (12, 3), (4, 6), (7, 6), (10, 6), (13, 6), (4, 9), (7, 9), (10, 9), (13, 9), (3, 12), (6, 12), (9, 12), (12, 12)):
+        g.put(x, 4, z, "minecraft:pearlescent_froglight[axis=y]" if (x + z) % 2 else "minecraft:verdant_froglight[axis=y]")
+    for (x, z) in ((2, 2), (13, 2), (2, 13), (13, 13), (6, 2), (9, 2)):
+        if (x, z) == (2, 13):
+            continue                                                            # the foot of the stair
+        for y in (1, 2, 3):
+            g.put(x, y, z, "minecraft:end_rod[facing=up]")
     # the stair up to the VIP lounge in the north-west corner
     f1 = b.new_part("floor1", floor=1)
     f1.floor(0, 0, 15, 15, "air")
@@ -214,8 +220,8 @@ def club() -> Building:
     for (x, z) in ((13, 11), (13, 12), (13, 13), (9, 13)):
         f1.put(x, 1, z, "minecraft:barrel[facing=up,open=false]")
     f1.put(9, 1, 11, ml("modern_oak_bookshelf", facing="east"))
-    for (x, z) in ((6, 5), (11, 6), (11, 11)):
-        f1.put(x, 3, z, "minecraft:redstone_lamp[lit=true]")
+    for (x, z) in ((5, 4), (8, 4), (5, 7), (8, 7), (12, 5), (11, 11), (13, 13)):
+        f1.put(x, 4, z, "minecraft:pearlescent_froglight[axis=y]" if (x + z) % 2 else "minecraft:ochre_froglight[axis=y]")
     t = b.new_part("top", top=True)
     t.ring(X0, Z0, X1, Z1, 0, 0, BLACK)
     t.put(7, 0, 14, LAMP); t.put(8, 0, 14, LAMP)

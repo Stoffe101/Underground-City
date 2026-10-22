@@ -164,9 +164,10 @@ def house(bid: str, look: Look) -> Building:
     g.put(5, 1, 9, ml("floor_mat", facing="east")); g.put(6, 0, 8, ml("floor_mat", facing="north"))
     # kitchen and dining (x 9..11, z 5..10)
     k.counter_run(g, 11, 1, 5, "south", "west", ["fridge", "drawers", "stove", "sink", "cabinet"], "oak")
-    k.table(g, 9, 1, 7, 1, 1, "oak", "small")
-    k.chair(g, 9, 1, 6, "south"); k.chair(g, 9, 1, 8, "north"); k.chair(g, 10, 1, 7, "west")
-    g.put(10, 1, 10, ml("trash_can"))
+    # the dining table in the south-west corner, out of the doorway (x 9, z 7..8) and the lane along the counter (x 10): a photograph found the way in squeezed between two chairs
+    k.table(g, 9, 1, 10, 1, 1, "oak", "small")
+    k.chair(g, 9, 1, 9, "south"); k.chair(g, 10, 1, 10, "west")
+    g.put(11, 1, 10, ml("trash_can"))
     for (x, z) in ((6, 7), (10, 8)):
         k.lamp_ceiling(g, x, z)
     u = b.new_part("floor", floor=1)
@@ -199,7 +200,7 @@ def house(bid: str, look: Look) -> Building:
     t.fill(10, 0, 6, 10, 5, 6, look.roof_block)                                # a chimney
     b.spots += [
         Spot("door", 7, 1, Z1, "south", "front door"), Spot("bed", 7, 7, 9, "north", "main bedroom"), Spot("bed", 11, 7, 9, "west", "second bedroom"),
-        Spot("stove", 11, 1, 7, "west"), Spot("seat", 5, 1, 6, "south", "sofa"), Spot("seat", 9, 1, 6, "south", "dining"),
+        Spot("stove", 11, 1, 7, "west"), Spot("seat", 5, 1, 6, "south", "sofa"), Spot("seat", 9, 1, 9, "south", "dining"),
     ]
     b.units.append(k.Unit("house", "House", (X0 + 1, 1, Z0 + 1, X1 - 1, 10, Z1 - 1)))     # both floors inside the walls; the garden stays the street's (D-127)
     return b
@@ -217,12 +218,16 @@ def cottage(bid: str, look: Look) -> Building:
     lawn(g)
     fence_with_gaps(g)
     walkway(g, X0, Z0, X1, Z1)
-    # two beds south of the cottage: a ploughed one (farmland round a water cell; a crop would not survive world generation, it needs light and the chunk has none yet, so it is left for
-    # the people who live here to plant) and a market bed of coarse dirt with pumpkins, melons and hay, and a scarecrow
+    # two beds south of the cottage: a planted bed (a photograph found bare farmland reads as a trench in the lawn, and a crop would not survive world generation, which gives it no light:
+    # berry bushes and ferns in rows on podzol, edged with a low border, survive it) and a market bed of coarse dirt with pumpkins, melons and hay, and a scarecrow
     for z in range(12, 15):
         for x in range(2, 5):
-            g.put(x, 0, z, "minecraft:farmland[moisture=7]")
-    g.put(3, 0, 13, "minecraft:water[level=0]")
+            g.put(x, 0, z, "minecraft:podzol[snowy=false]")
+            g.put(x, 1, z, "minecraft:sweet_berry_bush[age=2]" if z != 13 else "minecraft:fern")
+    for x in range(1, 6):
+        for z in (11,):
+            g.put(x, 1, z, "minecraft:spruce_slab[type=bottom,waterlogged=false]")
+    g.put(1, 1, 12, "minecraft:composter[level=4]")
     for z in range(12, 15):
         for x in range(10, 13):
             g.put(x, 0, z, "minecraft:coarse_dirt")

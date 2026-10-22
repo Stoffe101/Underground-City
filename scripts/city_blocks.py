@@ -70,6 +70,11 @@ def tenement(bid: str, city: str, floors: int, look: TenementLook, yard_fn: Call
         k.bed(part, 3, 1, Z(3), "east", colour)
         part.put(5, 1, Z(3), ml("oak_night_stand", facing=F("south")))
         part.put(6, 1, Z(2), ml("modern_oak_bookshelf", facing=F("south")))
+        part.put(5, 2, Z(3), ml("alarm_clock", facing="west"))                    # on the night stand
+        part.put(2, 2, Z(4), ml("mirror", facing="east"))
+        for x in (3, 4, 5):
+            part.put(x, 1, Z(4), f"minecraft:{colour}_carpet")                    # a rug beside the bed
+        part.put(2, 1, Z(5), "minecraft:potted_fern")
         # kitchen along the outer wall, a table, a sofa and a small table in the living room (x 8..13)
         k.counter_run(part, 9, 1, Z(2), "east", F("south"), ["fridge", "drawers", "stove", "sink"], look.wood)
         k.table(part, 10, 1, Z(4), 1, 1, "oak", "small"); k.chair(part, 9, 1, Z(4), "east"); k.chair(part, 11, 1, Z(4), "west")
