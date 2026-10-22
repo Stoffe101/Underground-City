@@ -37,11 +37,24 @@ public final class PropertyCatalog extends SimpleJsonResourceReloadListener {
     private volatile Map<String, Terms> listings = Map.of();
     private volatile Map<String, Upgrade> upgrades = Map.of();
     private volatile Map<String, String> categoryTitles = Map.of();
+    /** The furnished cities' listing templates (D-127), by building type: the share of a kind of building that is to let and the terms of each of its units. */
+    public record CityTemplate(String building, int sharePercent, Terms terms) {}
+    private volatile Map<String, CityTemplate> cityTemplates = Map.of();
 
     private PropertyCatalog() { super(new Gson(), "properties"); }
 
+    public Optional<CityTemplate> cityTemplate(String buildingType) { return Optional.ofNullable(cityTemplates.get(buildingType)); }
+    /** Test seam: replaces the city templates and returns the previous ones. */
+    Map<String, CityTemplate> installCityTemplatesForTest(Map<String, CityTemplate> next) { Map<String, CityTemplate> previous = cityTemplates; cityTemplates = Map.copyOf(next); return previous; }
+    public Map<String, CityTemplate> cityTemplates() { return cityTemplates; }
+
     public Rules rules() { return rules; }
-    public Optional<Terms> find(String residenceId) { return Optional.ofNullable(listings.get(residenceId)); }
+    public Optional<Terms> find(String residenceId) {
+        Terms listed = listings.get(residenceId);
+        if (listed != null || residenceId == null || !residenceId.startsWith(CityHomes.PREFIX)) return Optional.ofNullable(listed);
+        // a unit of a furnished city building: the terms of its building's template, under the unit's own id
+        return CityHomes.typeOf(residenceId).flatMap(this::cityTemplate).map(t -> t.terms().withId(residenceId));
+    }
     public Map<String, Terms> all() { return listings; }
     public Upgrade upgrade(String id) { return upgrades.get(id); }
     public Map<String, Upgrade> upgrades() { return upgrades; }
@@ -53,6 +66,7 @@ public final class PropertyCatalog extends SimpleJsonResourceReloadListener {
         Map<String, Terms> nextListings = new LinkedHashMap<>();
         Map<String, Upgrade> nextUpgrades = new LinkedHashMap<>();
         Map<String, String> titles = new LinkedHashMap<>();
+        Map<String, CityTemplate> nextTemplates = new LinkedHashMap<>();
         for (var entry : data.entrySet().stream().sorted(Map.Entry.comparingByKey()).toList()) {
             JsonObject json = entry.getValue().getAsJsonObject();
             if (!json.has("schema_version") || json.get("schema_version").getAsInt() != 1) throw new IllegalArgumentException("Unsupported property schema: " + entry.getKey());
@@ -62,6 +76,17 @@ public final class PropertyCatalog extends SimpleJsonResourceReloadListener {
                 for (JsonElement element : json.getAsJsonArray("upgrades")) {
                     Upgrade upgrade = parseUpgrade(element.getAsJsonObject());
                     if (nextUpgrades.put(upgrade.id(), upgrade) != null) throw new IllegalArgumentException("Upgrade listed twice: " + upgrade.id());
+                }
+            }
+            if (json.has("city_listings")) {
+                for (JsonElement element : json.getAsJsonArray("city_listings")) {
+                    JsonObject t = element.getAsJsonObject().deepCopy();
+                    String building = t.get("building").getAsString();
+                    int share = t.get("share_percent").getAsInt();
+                    if (share < 0 || share > 100) throw new IllegalArgumentException("Bad share for " + building);
+                    t.addProperty("id", "template/" + building.replace(':', '/'));
+                    t.addProperty("title", titles.getOrDefault(t.get("category").getAsString(), t.get("category").getAsString()));
+                    if (nextTemplates.put(building, new CityTemplate(building, share, parseTerms(t, nextRules))) != null) throw new IllegalArgumentException("Building templated twice: " + building);
                 }
             }
             if (json.has("listings")) {
@@ -76,7 +101,8 @@ public final class PropertyCatalog extends SimpleJsonResourceReloadListener {
         listings = Map.copyOf(nextListings);
         upgrades = java.util.Collections.unmodifiableMap(nextUpgrades);   // file order: the screens and the upgrade request count the same list
         categoryTitles = Map.copyOf(titles);
-        LOGGER.info("Loaded {} Underground City property listings and {} upgrades", listings.size(), upgrades.size());
+        cityTemplates = Map.copyOf(nextTemplates);
+        LOGGER.info("Loaded {} Underground City property listings, {} city building templates and {} upgrades", listings.size(), cityTemplates.size(), upgrades.size());
     }
 
     static Rules parseRules(JsonObject json) {

@@ -178,6 +178,8 @@ public final class BuildingGuard {
         BlockState state = level.getBlockState(event.getPos());
         if (!(state.getBlock() instanceof DoorBlock)) return;
         BlockPos lower = lowerOf(event.getPos(), state);
+        // a building with units to let registers them when somebody comes to its door (D-127): a vacant house's door is then its showroom door, a let one its tenant's
+        CityBuildings.INSTANCE.at(level, lower).ifPresent(b -> CityHomes.ensureBuilding(level, b));
         Optional<CityBuildings.Building> found = protectedAt(level, lower);
         if (found.isEmpty() || !found.get().locked()) return;
         BlockState lowerState = lower.equals(event.getPos()) ? state : level.getBlockState(lower);
@@ -185,7 +187,8 @@ public final class BuildingGuard {
         long now = LockService.clock(level.getServer());
         if (PropertyLocks.get(level.getServer()).breached(lower, now)) return;               // somebody picked it a moment ago
         if (lowerState.getValue(DoorBlock.OPEN)) return;                                      // a click on a door that stands open only shuts it
-        if (!outsideSide(level, lower, lowerState, player.position())) {                      // from the inside a door always opens, and shuts itself again a few seconds later
+        if (!outsideSide(level, lower, lowerState, player.position()) || CityHomes.holdsKey(player, found.get())) {
+            // from the inside a door always opens, and a tenant of a flat in the building has a key to its street door (D-127); either way it shuts itself again a few seconds later
             PropertyLocks.get(level.getServer()).exitOpen(lower, now + EXIT_TICKS);
             return;
         }

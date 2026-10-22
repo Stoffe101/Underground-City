@@ -111,6 +111,8 @@ public record CrewView(boolean storageOk, String problem, UUID self, String self
         }
         List<HomeRow> homes = new ArrayList<>();
         List<LeaseRow> nearby = new ArrayList<>();
+        // the to-let flats, houses and premises of the furnished buildings round the player become listings the first time somebody looks (D-127)
+        try { CityHomes.ensureNear(player); } catch (RuntimeException error) { org.slf4j.LoggerFactory.getLogger(CrewView.class).warn("[UC] city homes near {} could not be listed: {}", player.getGameProfile().getName(), error.toString()); }
         String dimension = player.level().dimension().location().toString();
         Rules rules = PropertyCatalog.INSTANCE.rules();
         List<Residence> held = new ArrayList<>(ledger.residencesOf(OwnerType.PLAYER, player.getUUID()));

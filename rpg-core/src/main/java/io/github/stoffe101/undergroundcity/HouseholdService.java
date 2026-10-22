@@ -240,6 +240,7 @@ public final class HouseholdService {
             if (plan == null || def == null) continue;
             for (HouseholdPlan.Resident who : HouseholdPlan.residents(building.city(), level.getSeed(), building.key(), plan, def.names())) {
                 if (out.contains(who.id())) continue;
+                if (CityHomes.spotLet(level.getSeed(), building, plan, plan.spots().get(who.spot()))) continue;   // their flat or house is to let: nobody of the household lives there (D-127)
                 int spot = HouseholdPlan.where(who, plan, level.getSeed(), hour, day);
                 if (spot != HouseholdPlan.AWAY) candidates.add(new Candidate(building, plan, who, spot));
             }

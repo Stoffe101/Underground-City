@@ -72,7 +72,8 @@ public final class BuildingStash {
             int y = entrance.getY() + floor * CityBuildings.FLOOR;
             for (int x = 0; x < 16; x++) for (int z = 0; z < 16; z++) {
                 pos.set(building.chunkX() * 16 + x, y, building.chunkZ() * 16 + z);
-                if (sound(level, pos) && !nearDoor(level, pos)) out.add(pos.immutable());
+                // never in a flat, house or premises that is to let or let (D-127): a stash is the household's, and that unit has no household
+                if (sound(level, pos) && !nearDoor(level, pos) && !CityHomes.letAt(level, building, pos)) out.add(pos.immutable());
             }
         }
         return out;

@@ -28,7 +28,14 @@ public final class BuildingSpots extends SimpleJsonResourceReloadListener {
     public record Spot(String kind, int x, int y, int z, String facing, String note) {}
 
     /** One building: its use ("house", "flats", "shop", "office", ...), its city and its spots in file order. */
-    public record Plan(String id, String use, String city, List<Spot> spots) {
+    /** A home or premises of the building that can be let or sold (D-127): its interior box in the building's own coordinates (y above the street), inclusive. */
+    public record Unit(String id, String title, int x0, int y0, int z0, int x1, int y1, int z1) {
+        boolean contains(int x, int y, int z) { return x >= x0 && x <= x1 && y >= y0 && y <= y1 && z >= z0 && z <= z1; }
+    }
+
+    public record Plan(String id, String use, String city, List<Spot> spots, List<Unit> units) {
+        public Plan(String id, String use, String city, List<Spot> spots) { this(id, use, city, spots, List.of()); }
+
         public List<Integer> indexesOf(String kind) {
             List<Integer> out = new ArrayList<>();
             for (int i = 0; i < spots.size(); i++) if (spots.get(i).kind().equals(kind)) out.add(i);
@@ -53,7 +60,18 @@ public final class BuildingSpots extends SimpleJsonResourceReloadListener {
                 spots.add(new Spot(kind, s.get("x").getAsInt(), s.get("y").getAsInt(), s.get("z").getAsInt(), s.has("facing") ? s.get("facing").getAsString() : "", s.has("note") ? s.get("note").getAsString() : ""));
             }
             if (spots.size() > MAX_SPOTS) throw new IllegalArgumentException(entry.getKey() + " has more than " + MAX_SPOTS + " spots");
-            next.put(entry.getKey().toString(), new Plan(entry.getKey().toString(), json.has("use") ? json.get("use").getAsString() : "", json.has("city") ? json.get("city").getAsString() : "", List.copyOf(spots)));
+            List<Unit> units = new ArrayList<>();
+            if (json.has("units")) for (JsonElement element : json.getAsJsonArray("units")) {
+                JsonObject u = element.getAsJsonObject();
+                var box = u.getAsJsonArray("box");
+                Unit unit = new Unit(u.get("id").getAsString(), u.get("title").getAsString(), box.get(0).getAsInt(), box.get(1).getAsInt(), box.get(2).getAsInt(), box.get(3).getAsInt(), box.get(4).getAsInt(), box.get(5).getAsInt());
+                if (!unit.id().matches("[a-z0-9_]{2,24}") || unit.x0() < 0 || unit.x1() > 15 || unit.z0() < 0 || unit.z1() > 15 || unit.x0() > unit.x1() || unit.y0() > unit.y1() || unit.z0() > unit.z1() || unit.y0() < 0 || unit.y1() > 64) {
+                    throw new IllegalArgumentException("Bad unit " + unit.id() + " in " + entry.getKey());
+                }
+                units.add(unit);
+            }
+            if (units.size() > 12) throw new IllegalArgumentException(entry.getKey() + " has more than 12 units");
+            next.put(entry.getKey().toString(), new Plan(entry.getKey().toString(), json.has("use") ? json.get("use").getAsString() : "", json.has("city") ? json.get("city").getAsString() : "", List.copyOf(spots), List.copyOf(units)));
         }
         plans = Map.copyOf(next);
         LOGGER.info("Loaded the spots of {} furnished buildings", plans.size());
@@ -65,4 +83,6 @@ public final class BuildingSpots extends SimpleJsonResourceReloadListener {
 
     /** Test seam. */
     void replaceForTest(Map<String, Plan> replacement) { plans = Map.copyOf(replacement); }
+    /** Test seam: the plans now loaded, to put back after a test. */
+    Map<String, Plan> plansForTest() { return plans; }
 }
