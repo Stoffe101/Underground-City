@@ -1,6 +1,6 @@
 # The hybrid resource economy (D-120, D-123)
 
-Status: **implemented as data, an audit, a regional-exchange line set, one regenerating site and GameTests; the scarcity package has not yet been run in a real generated world, the quarry has not yet been dug by a person, and nobody has played an hour of it.** This document says what exists, what each number is for and where the evidence stops.
+Status: **implemented as data, an audit, a regional-exchange line set, one regenerating site and GameTests; the scarcity package was measured on a real generated world (below: 443,563 ore blocks without it, 0 with it, after one fix the first measurement forced), the quarry has not yet been dug by a person, and nobody has played an hour of it.** This document says what exists, what each number is for and where the evidence stops.
 
 ## What the owner asked for
 
@@ -13,7 +13,7 @@ A new world has **no natural ores**. Materials come from four places, each bound
 | **Shelves** | Ten finite, shared raw-material lines in the regional exchange, sold in the cities only: iron (three cities, at 9, 11 and 12 credits), coal, copper, charcoal, redstone, lapis, gold, diamond. A shelf is a few units, refills a few at a time in active ticks and never stockpiles (a full shelf is worth at most 1,200 credits, enforced). | `content/gameplay/materials-supply.json`, `scripts/generate_survival_supply.py`, `data/underground_city/regional_stock/materials/` |
 | **The quarry** | One built district, the old quarry (a stepped pit beside the arrival landing), with fourteen vein cells: six iron, five coal, three copper. A mined vein grows back after **20 minutes of active play time** and never while nobody is online. At most 42 ores an active hour, if a person mines every vein the moment it is back. | `scripts/generate_resource_site.py`, `districts/old_quarry.json`, `resource_sites/ironhaven_quarry.json`, `ResourceSites` |
 | **Salvage and crafting** | Whatever the base game and the pack already give: smelting what the shelves and the quarry sell, the backpack tiers, vehicle parts, machined parts. Nothing was removed or added to recipes for this. | existing recipes |
-| **Natural ore** | **None in a new scarcity world.** The opt-in package `underground_city_scarcity` is one Forge biome modifier (`forge:remove_features` for the ore step) that applies to chunks generated after it is installed. | `content/generated/world-scarcity/`, `scripts/scarcity_content.py` |
+| **Natural ore** | **None in a new archipelago world made with the scarcity package** (measured: 0 ore blocks in 1,215 generated chunks, against 443,563 without it). The opt-in package `underground_city_scarcity` is one Forge biome modifier (`forge:remove_features` for the ore step) that applies to chunks generated after it is installed, **plus** a switch in the archipelago's own noise settings that turns off the game's noise-based ore veins (see "The ore audit"). | `content/generated/world-scarcity/`, `scripts/scarcity_content.py`, `RegionalWorldgen.derive` |
 
 Gold, diamond, redstone and lapis are on the shelves only and are deliberately not in the quarry: the rare things stay rare and priced, and the cheap base metals are the ones a new player can earn their way to.
 
@@ -43,6 +43,20 @@ These prices are first guesses. They are checked for one thing only: **an order 
 * **Bounds.** At most 64 veins and no interval under five minutes are accepted by the loader; the generator refuses a layout whose ceiling is above 60 ores an hour, and the unit tests repeat the check.
 * **Status.** `/uc_site status` (operators) lists each site, where it stands, how many veins wait and how many ores an hour it could give.
 
+## The ore audit: what the scarcity package removes (October 22)
+
+`python scripts/run_ore_audit.py --name <n> --sets <sets>` starts a disposable dedicated server on a new archipelago world (seed 5908), forces chunks around the three cities and counts every ore block by kind. 1,215 chunks each time:
+
+| Sets | Ore blocks | What is left |
+| --- | --- | --- |
+| `world` (no scarcity package) | **443,563** | coal 121,637, copper 111,099, iron 93,841, redstone 41,938, gold 29,277, diamond 17,661, lapis 28,110 |
+| `world,scarcity` with the biome modifier alone | **12,899** (2.9 percent) | copper 4,992 (y 0 to 49) and deepslate iron 7,907 (y -58 to -8) |
+| `world,scarcity` with the biome modifier **and** the noise switch | **0** | nothing |
+
+The middle row is what the first measurement found, and it contradicted the sentence this document had carried: the biome modifier removes every *placed feature* of the ore step, but the game also generates copper and iron **veins from the noise settings** (large veins with raw-ore blocks and tuff or granite filler, at exactly those heights), which no biome modifier can remove. They are switched off by `"ore_veins_enabled": false` in the noise settings. The archipelago already derives its noise settings at load time from the game's own overworld settings (`RegionalWorldgen`, nothing of Mojang's is copied into the repository), so the derivation sets that flag when `underground_city_scarcity` is installed (`RegionalWorldgenGameTests`: the flag is off with the package and on without it, and nothing else in the settings changes). The third row is the same world after that change.
+
+What this does not cover: a world with the **legacy** layout uses the game's own overworld noise settings, so the scarcity package would still leave its copper and iron veins there (the package is meant for new archipelago worlds); a world whose chunks already exist is never changed (the package guard refuses to start it with a different package set). The quarry was not in the count (its fourteen veins would have shown as ore; the count is 0, so it was not placed on the audit server's world). The audit counts blocks, not what a person would find: whether the veins that remain in other mods' worlds matter is not measured.
+
 ## The reachability audit
 
 `scripts/audit_item_sources.py` (also run by `validate_repo.py` and the unit tests) reads every Core work order and recipe and asks, for each item the game itself does not mint: is there a deterministic source? It has three catalogues: monsters (D-095), a new kind of finding **`ORE ONLY`** (D-120), and the exchange's own lines. `progression/ore_resources.json` lists the items that in the base game come from mining an ore, and for each says what replaces mining in a scarcity world: an exchange line (checked to exist, to sell that item in a city, to be small and finite), a base-game recipe from another root, or, for iron, coal and copper, **also a vein of the quarry** (checked: the site file must exist and hold a vein of the right ore). A recipe or order that needs a root with no route fails the audit; a root that nothing needs says so explicitly. Result at the time of writing: 54 work orders, 25 recipes, 64 items with a deterministic source, **0 findings**. The unit tests in `tests/test_item_sources.py` (class `OreRoutes`) prove that the audit *notices* a deleted shelf, a stockpile, a wrong item, a missing site and a site with no vein of an ore.
@@ -52,5 +66,5 @@ What the audit cannot say: whether a third-party mod's own recipes (TaCZ, Modern
 ## Evidence, and where it stops
 
 * **Tested:** the shelves (`MaterialsSupplyGameTests`: they load, are finite, shared, priced inside the cap and refill in active time); the order margins (`RegionalGameTests`); the quarry (`ResourceSitesGameTests`: data bounds and every vein is a base-metal ore inside the district and placed by it; a vein grows back at exactly its interval and not a tick before; nothing grows back while the active clock stands still, with the real pass and the real ledger; a living thing in the cell holds it; a builder's block is never overwritten; a clock that went backwards pays nothing early; the saved record survives a round trip; undoing the district leaves nothing behind); the generator and the audit (Python unit tests, 287 in all).
-* **Not run:** the scarcity package in a real generated world (`scripts/run_ore_audit.py` exists to count ore in a base world against a scarcity world and has not been run for this report); the quarry placed by a real new-world start and dug by a person; anything about how long a new player takes to earn a first backpack tier from these sources; the economic model with the new sources.
+* **Not run:** the quarry placed by a real new-world start and dug by a person; anything about how long a new player takes to earn a first backpack tier from these sources; the economic model with the new sources.
 * **Not done:** salvage as a designed system (nothing yet turns city junk into metal); a second site; ore processing as a profession; the shelves' prices being tuned against the model.

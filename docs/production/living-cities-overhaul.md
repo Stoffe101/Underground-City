@@ -50,7 +50,7 @@ See the frames named in section "What the photographs showed" below. They are in
 
 ### 11. The hybrid resource economy
 
-**Implemented as data, an audit, one regenerating site and GameTests; the scarcity package not yet run in a real world.** No natural ore in a new world (an opt-in package, a biome modifier, never applied to chunks that exist); ten finite shared shelves in the cities (iron 9 to 12 credits, coal 3, copper 7, charcoal 2, redstone 6, lapis 11, gold 38, diamond 150); one old quarry with fourteen seams of iron, coal and copper that grow back after 20 minutes of *active* play, at most 42 ores an hour; an audit that fails when a recipe or order needs an item with no route (0 findings: 54 orders, 25 recipes, 64 items); the order margin test that stays inside its band even when every raw material is bought. [hybrid-economy.md](../technical/hybrid-economy.md).
+**Implemented as data, an audit, one regenerating site and GameTests; the scarcity package measured once on a generated world (443,563 ore blocks without it, 0 with it).** No natural ore in a new archipelago world made with the package (an opt-in package: a biome modifier plus a switch that turns off the game's noise-based copper and iron veins, which the first measurement found the modifier alone left, 12,899 blocks; never applied to chunks that exist); ten finite shared shelves in the cities (iron 9 to 12 credits, coal 3, copper 7, charcoal 2, redstone 6, lapis 11, gold 38, diamond 150); one old quarry with fourteen seams of iron, coal and copper that grow back after 20 minutes of *active* play, at most 42 ores an hour; an audit that fails when a recipe or order needs an item with no route (0 findings: 54 orders, 25 recipes, 64 items); the order margin test that stays inside its band even when every raw material is bought. [hybrid-economy.md](../technical/hybrid-economy.md).
 
 ### 12. Mod compatibility and performance
 
@@ -97,7 +97,7 @@ Looked at, in a private gallery (not committed): Valewood (a shop with an awning
 
 ### Not run, or run only once
 
-* The scarcity package in a real generated world (`scripts/run_ore_audit.py` was not run for this report), the quarry placed by a real new-world start and dug, anything at 1920 by 1080 or 3440 by 1440 GUI scale 2 for the burglary, a resident seen in a real furnished house, two officers, a witness-raised response, a moving thief, the economy model with the shelves and the quarry, and any of it with a human.
+* The quarry placed by a real new-world start and dug, anything at 1920 by 1080 or 3440 by 1440 GUI scale 2 for the burglary, a resident seen in a real furnished house, two officers, a witness-raised response, a moving thief, the economy model with the shelves and the quarry, and any of it with a human.
 * The private content (the C70 buildings): no file was available, so nothing was integrated or tested (item 4).
 
 ## Next
@@ -105,7 +105,7 @@ Looked at, in a private gallery (not committed): Valewood (a shop with an awning
 Recommended order for the next milestone, each one small and finishable:
 
 1. **A person walks it.** Follow [the Windows 11 guide](playtest-guide-windows11.md) section 6e once, on a furnished new world, and write down what felt wrong. Nothing below should be tuned before this: every number in this report is a first guess.
-2. **Run what was only written.** The scarcity package against a real generated world (`scripts/run_ore_audit.py` baseline against scarcity), the quarry placed by a real new-world start and dug, a resident seen in a real furnished house (`/uc_household status` spot misses), and the burglary scenario repeated at 1920 by 1080, GUI scale 3.
+2. **Run what was only written.** The quarry placed by a real new-world start and dug, a resident seen in a real furnished house (`/uc_household status` spot misses), and the burglary scenario repeated at 1920 by 1080, GUI scale 3.
 3. **Give the thief tools.** A way to bypass or disable an alarm that is a choice (a skill or a device, not luck), and a fence who buys marked goods at a discount. Today stolen goods can only be lost, and nothing turns them into money.
 4. **Furnish more than ten buildings.** More types per city, street furniture, lit clubs, planted gardens, and shops whose counters sell through the existing civilian shop. The share of a city that is furnished is still small.
 5. **Bring the economy model up to date** with the shelves and the quarry, and re-run its income tables with the quarry's 42-an-hour ceiling.
