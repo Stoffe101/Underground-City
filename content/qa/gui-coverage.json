@@ -568,6 +568,55 @@
       "owner": "underground_city",
       "group": "lockpicking",
       "description": "Lockpicking screen after time ran out (nothing lost)"
+    },
+    {
+      "id": "alarm.show",
+      "expected_file": "uc-alarm-show.png",
+      "owner": "underground_city",
+      "group": "alarm_panel",
+      "description": "Alarm panel trace (D-128) while the signal shows: six symbols of a high-security panel, the 'Bypass' chip, the panel-specific help line"
+    },
+    {
+      "id": "alarm.input",
+      "expected_file": "uc-alarm-input.png",
+      "owner": "underground_city",
+      "group": "alarm_panel",
+      "description": "Alarm panel trace in the input phase, three answers in, the panel's reset timer"
+    },
+    {
+      "id": "fence.full",
+      "expected_file": "uc-fence-full.png",
+      "owner": "underground_city",
+      "group": "fence",
+      "description": "A fence's screen (D-125): stolen goods in the pockets by item and city of origin, the price each, sell and sell-all, the rate and the budget"
+    },
+    {
+      "id": "fence.partial",
+      "expected_file": "uc-fence-partial.png",
+      "owner": "underground_city",
+      "group": "fence",
+      "description": "The same fence with a budget too small for everything: what a sale would be cut to"
+    },
+    {
+      "id": "fence.nothing",
+      "expected_file": "uc-fence-nothing.png",
+      "owner": "underground_city",
+      "group": "fence",
+      "description": "A fence when the pockets hold nothing marked: the empty state and why"
+    },
+    {
+      "id": "counter.hardware",
+      "expected_file": "uc-counter-hardware.png",
+      "owner": "underground_city",
+      "group": "shop_counter",
+      "description": "A shopkeeper's counter (D-126): the Trade page opened over the counter, headed with the shop's name, the city's hardware lines with stock, a sold-out line"
+    },
+    {
+      "id": "counter.poor",
+      "expected_file": "uc-counter-poor.png",
+      "owner": "underground_city",
+      "group": "shop_counter",
+      "description": "The same counter with six credits: every purchase refused with its reason"
     }
   ],
   "unintegrated_future_interfaces": [

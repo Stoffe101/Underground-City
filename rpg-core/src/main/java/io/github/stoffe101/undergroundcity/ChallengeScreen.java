@@ -50,6 +50,13 @@ public final class ChallengeScreen extends UcScreen {
         return screen;
     }
 
+    /** Capture harness: an alarm panel's trace (D-128) with its own pace. */
+    static ChallengeScreen forCapture(byte[] sequence, Kind kind, int perSymbol, int inputTicks) {
+        ChallengeScreen screen = new ChallengeScreen(BlockPos.ZERO, sequence, kind, perSymbol, inputTicks);
+        screen.qa = screen.frozen = true;
+        return screen;
+    }
+
     /** Freezes the screen mid-sequence: {@code lit} is the pad currently flashing (-1 none), {@code step} how far in. */
     void poseShowing(int step, boolean lit) {
         age = step * perSymbol + (lit ? 2 : LIT_TICKS + 2);

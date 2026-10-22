@@ -61,6 +61,28 @@ public final class VisualCaptureHarness {
     private static TerminalData waysideDesk(double balance) {
         return new TerminalData("ironhaven","farmer",3,520,balance,true,null,0,"",List.of(),WAYSIDE_OFFERS,0,List.of(),List.of(),List.of(),0,"",List.of(),"wayside");
     }
+    /** A shopkeeper's counter (D-126): the Ironhaven hardware shop's lines on the Trade page. */
+    private static TerminalData counter(double balance) {
+        List<TerminalData.Offer> offers=List.of(
+            new TerminalData.Offer("underground_city:materials/iron_ingot_ironhaven","minecraft:iron_ingot",9,14,32,16),
+            new TerminalData.Offer("underground_city:materials/coal_ironhaven","minecraft:coal",3,30,48,24),
+            new TerminalData.Offer("underground_city:materials/copper_ingot_ironhaven","minecraft:copper_ingot",7,0,24,16),
+            new TerminalData.Offer("underground_city:shops/hardware_lockpick_ironhaven","underground_city:lockpick",14,3,6,2),
+            new TerminalData.Offer("underground_city:shops/hardware_shears_ironhaven","minecraft:shears",11,5,8,2));
+        return new TerminalData("ironhaven","smith",3,520,balance,true,null,1,"ironhaven",List.of(),offers,0,List.of(),List.of(),List.of(),0,"",List.of(),"shop:hardware|Foundry Street Hardware");
+    }
+
+    /** A fence's quote (D-125): stolen goods in the pockets, priced at the fence's rate; partial when the budget is low, empty when nothing is marked. */
+    private static FenceService.Quote fenceQuote(String pose) {
+        List<FenceService.Row> rows=switch(pose) {
+            case "fence-nothing" -> List.of();
+            default -> List.of(new FenceService.Row("underground_city:jewellery_box","valewood",2,40),new FenceService.Row("minecraft:gold_ingot","valewood",5,17),
+                new FenceService.Row("underground_city:old_laptop","ironhaven",1,36),new FenceService.Row("minecraft:clock","blackwater",1,67),new FenceService.Row("underground_city:pocket_watch","valewood",3,27));
+        };
+        int budget=pose.equals("fence-partial")?55:240;
+        return new FenceService.Quote("ironhaven","The Yard","The night man in a warehouse office. Metal, tools and parts; cash in small amounts.",45,30,budget,false,rows);
+    }
+
     private static TerminalData exchange(String region,double balance) {
         return new TerminalData("valewood","farmer",3,520,balance,true,null,region.isEmpty()?0:1,region,
             List.of(),region.isEmpty()?List.of():IRONHAVEN_OFFERS);
@@ -283,6 +305,13 @@ public final class VisualCaptureHarness {
         cases.add(Case.challenge("uc-challenge-show","show"));
         cases.add(Case.challenge("uc-challenge-input","input"));
         cases.add(Case.challenge("uc-challenge-urgent","urgent"));
+        cases.add(Case.challenge("uc-alarm-show","alarm-show"));
+        cases.add(Case.challenge("uc-alarm-input","alarm-input"));
+        cases.add(Case.challenge("uc-fence-full","fence-full"));
+        cases.add(Case.challenge("uc-fence-partial","fence-partial"));
+        cases.add(Case.challenge("uc-fence-nothing","fence-nothing"));
+        cases.add(new Case("uc-counter-hardware",TerminalScreen.Page.IMPORTS,counter(140),0));
+        cases.add(new Case("uc-counter-poor",TerminalScreen.Page.IMPORTS,counter(6),0));
         cases.add(Case.ledger("uc-ledger"));
         cases.add(Case.notices("uc-notices"));
         for(String pose:new String[]{"nocrew","nocrew-invited","unregistered","unavailable","members","members-member","money","money-consent","money-shared","money-shared-nospend","home","home-notice","home-owned","home-find","home-solo","rules-permissions","rules-mode","rules-mode-active","rules-disband"}) {
@@ -346,6 +375,12 @@ public final class VisualCaptureHarness {
             mc.setScreen(new LedgerScreen(ledgerFixture()));
         } else if(capture.challenge!=null && capture.challenge.startsWith("dialogue-")) {
             mc.setScreen(dialogueCapture(capture.challenge));
+        } else if(capture.challenge!=null && capture.challenge.startsWith("alarm-")) {
+            ChallengeScreen screen=ChallengeScreen.forCapture(new byte[]{1,3,0,2,2,1},ChallengeScreen.Kind.ALARM,AlarmPanels.BASE_PER_SYMBOL,AlarmPanels.BASE_INPUT_TICKS);
+            mc.setScreen(screen);
+            if(capture.challenge.equals("alarm-show")) screen.poseShowing(3,true); else screen.poseInput(3,0.6);
+        } else if(capture.challenge!=null && capture.challenge.startsWith("fence-")) {
+            mc.setScreen(FenceScreen.forCapture(fenceQuote(capture.challenge),0));
         } else if(capture.challenge!=null) {
             ChallengeScreen screen=ChallengeScreen.forCapture(new byte[]{0,2,1,3,2});
             mc.setScreen(screen);

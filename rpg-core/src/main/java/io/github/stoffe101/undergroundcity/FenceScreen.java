@@ -40,6 +40,13 @@ public final class FenceScreen extends UcScreen {
 
     FenceService.Quote quote() { return quote; }
 
+    /** Capture harness: the screen for a made-up quote, scrolled as asked, never talking to a server. */
+    static FenceScreen forCapture(FenceService.Quote quote, int scroll) {
+        FenceScreen screen = new FenceScreen(-1, quote);
+        screen.scroll = scroll;
+        return screen;
+    }
+
     @Override protected int accent() { return UcUi.UNDERGROUND; }
     @Override protected String titleText() { return quote.title().toUpperCase(Locale.ROOT); }
     @Override protected UcUi.Icon titleIcon() { return UcUi.Icon.UNDERGROUND; }
