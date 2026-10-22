@@ -109,8 +109,19 @@ public final class PoliceResponse {
         boolean slipped = wired && event.quiet() && response.alarmChance() < QUIET_BYPASS_MAX_CHANCE;
         if (slipped) Notice.send(player, Notice.Kind.INFO, "Quiet entry", "Something in here is wired to an alarm. Your pick was clean and it did not hear you.");
         boolean armed = lockAlarm || (wired && !slipped);
+        // the building's alarm panel (D-128): a jammed panel calls nobody; an armed one with a panel by the door gives the entry delay to work it instead of ringing at once
+        if (armed && AlarmPanels.jammed(level, building)) {
+            armed = false;
+            Notice.send(player, Notice.Kind.INFO, "Quiet entry", "The alarm panel by the door is jammed. Nothing rings.");
+        } else if (armed && !lockAlarm && AlarmPanels.startEntry(player, level, building, event.door())) armed = false;
         boolean seen = witnessed(level, player, event);
         if (!armed && !seen) return;
+        raise(player, level, building, event.door(), armed, lockAlarm, seen);
+    }
+
+    /** Raises (or joins) the dispatch for a noticed break-in: {@code armed} when the building's alarm rang, {@code lockAlarm} when it was a snapped pick, {@code seen} when a witness saw it. */
+    static void raise(ServerPlayer player, ServerLevel level, CityBuildings.Building building, BlockPos door, boolean armed, boolean lockAlarm, boolean seen) {
+        CityBuildings.Response response = building.security() == null ? null : building.security().response();
         CityBuildings.Response used = response != null ? response : NEIGHBOUR;
         long now = LockService.clock(level.getServer());
         // an alarm brings the class's own response; only a neighbour's call is slower (the building's alarm, if it has one, may be quicker than the neighbour)
@@ -124,13 +135,13 @@ public final class PoliceResponse {
             }
         }
         if (DISPATCHES.size() >= MAX_DISPATCHES) { LOGGER.warn("Police response not raised: {} dispatches are already out", DISPATCHES.size()); return; }
-        Dispatch dispatch = new Dispatch(player, level, event.door(), building.city(), building.security() == null ? "" : building.security().id(), building.key(), why, now + delay, used);
+        Dispatch dispatch = new Dispatch(player, level, door, building.city(), building.security() == null ? "" : building.security().id(), building.key(), why, now + delay, used);
         DISPATCHES.add(dispatch);
         raised++;
         if (armed) { byAlarm++; ring(level, dispatch, now); }
         if (seen) byWitness++;
         // somebody who lives or works in the building and is in it now is a witness too (the households of D-124): a night break-in of an occupied house is seen from the bed
-        boolean resident = seen && !level.getEntitiesOfClass(TownspersonEntity.class, new AABB(event.door()).inflate(WITNESS_RADIUS), person -> person.homeKey() == building.key() && person.isAlive()).isEmpty();
+        boolean resident = seen && !level.getEntitiesOfClass(TownspersonEntity.class, new AABB(door).inflate(WITNESS_RADIUS), person -> person.homeKey() == building.key() && person.isAlive()).isEmpty();
         Notice.send(player, Notice.Kind.HEAT, armed ? (lockAlarm ? "The alarm is ringing" : "An alarm went off") : resident ? "A resident saw you" : "Somebody saw you",
             "The police are on their way. Get out of sight before they arrive.");
         player.sendSystemMessage(Component.literal(armed ? (lockAlarm ? "The pick snapped and the alarm is ringing." : "An alarm sounds inside the building.") : resident ? "Somebody is at home, and has seen you." : "A passer-by sees you at the door and hurries off.")

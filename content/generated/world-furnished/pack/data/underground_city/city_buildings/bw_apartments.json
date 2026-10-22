@@ -95,6 +95,14 @@
       "x": 3,
       "y": 19,
       "z": 12
+    },
+    {
+      "facing": "north",
+      "kind": "alarm",
+      "note": "alarm panel by the street door",
+      "x": 2,
+      "y": 2,
+      "z": 8
     }
   ],
   "units": [

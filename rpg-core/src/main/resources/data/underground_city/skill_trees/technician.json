@@ -102,7 +102,7 @@
       "id": "technician.bypass_tooling",
       "branch": "underground",
       "title": "Bypass Tooling",
-      "description": "Defeat secured terminals: unlocks data recovery and the Bypass Kit.",
+      "description": "Defeat secured terminals and jam alarm panels with the Bypass Kit.",
       "cost": 3,
       "min_level": 7,
       "requires": [

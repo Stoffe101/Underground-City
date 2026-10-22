@@ -1,4 +1,5 @@
 {
+  "block.underground_city.alarm_panel": "Alarm Panel",
   "block.underground_city.operations_terminal": "Operations Terminal",
   "block.underground_city.property_cache": "Household Safe",
   "block.underground_city.public_ledger": "Public Ledger",
@@ -8,6 +9,7 @@
   "generator.underground_city.archipelago": "Underground City: Archipelago",
   "item.underground_city.agri_sensor_repair": "Agricultural Sensor Repair Pack",
   "item.underground_city.agro_catalyst": "Agricultural Catalyst",
+  "item.underground_city.alarm_panel": "Alarm Panel",
   "item.underground_city.biopolymer": "Biopolymer Sheet",
   "item.underground_city.bypass_kit": "Bypass Kit",
   "item.underground_city.circuit_prototype": "Circuit Prototype",

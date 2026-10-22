@@ -24,7 +24,7 @@ import java.util.function.Supplier;
  * This is NOT a remote city supplier, contraband order, or raid service.
  */
 public final class TerminalNetwork {
-    private static final String VERSION = "11";
+    private static final String VERSION = "12";
     private static final String STARTER_SHOP_ID = "uc_starter_supply";
     private static final double MAX_TERMINAL_DISTANCE_SQUARED = 64.0;
     private static final java.util.Map<ServerPlayer, Integer> REQUEST_TIMES = new java.util.WeakHashMap<>();
@@ -345,13 +345,13 @@ public final class TerminalNetwork {
 
     private static void registerChallenge() {
         CHANNEL.registerMessage(5, OpenChallenge.class,
-            (packet, buffer) -> { buffer.writeBlockPos(packet.pos); buffer.writeByteArray(packet.sequence); },
-            buffer -> new OpenChallenge(buffer.readBlockPos(), buffer.readByteArray(16)),
+            (packet, buffer) -> { buffer.writeBlockPos(packet.pos); buffer.writeByteArray(packet.sequence); buffer.writeVarInt(packet.kind); buffer.writeVarInt(packet.perSymbol); buffer.writeVarInt(packet.inputTicks); },
+            buffer -> new OpenChallenge(buffer.readBlockPos(), buffer.readByteArray(16), buffer.readVarInt(), buffer.readVarInt(), buffer.readVarInt()),
             (packet, supplier) -> {
                 NetworkEvent.Context context = supplier.get();
                 if (context.getDirection().getReceptionSide().isClient()) {
                     context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT,
-                        () -> () -> ClientChallenge.open(packet.pos, packet.sequence)));
+                        () -> () -> ClientChallenge.open(packet.pos, packet.sequence, packet.kind, packet.perSymbol, packet.inputTicks)));
                 }
                 context.setPacketHandled(true);
             }, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
@@ -362,7 +362,9 @@ public final class TerminalNetwork {
                 NetworkEvent.Context context = supplier.get();
                 context.enqueueWork(() -> {
                     ServerPlayer player = context.getSender();
-                    if (player != null) SecureTerminalService.answer(player, packet.pos, packet.answer, player.server.getTickCount());
+                    // the answer belongs to an alarm panel being bypassed (D-128) or to a secured terminal's trace
+                    if (player != null && AlarmPanels.hasSession(player.getUUID())) AlarmPanels.answer(player, packet.pos, packet.answer, player.server.getTickCount());
+                    else if (player != null) SecureTerminalService.answer(player, packet.pos, packet.answer, player.server.getTickCount());
                 });
                 context.setPacketHandled(true);
             }, Optional.of(NetworkDirection.PLAY_TO_SERVER));
@@ -392,7 +394,12 @@ public final class TerminalNetwork {
 
     /** Server to client: the hidden sequence to flash. The client only displays it; the server checks the answer. */
     public static void openChallenge(ServerPlayer player, BlockPos pos, byte[] sequence) {
-        CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new OpenChallenge(pos.immutable(), sequence.clone()));
+        openChallenge(player, pos, sequence, 0, SecureTerminalService.SHOW_TICKS_PER_SYMBOL, SecureTerminalService.INPUT_TICKS);
+    }
+
+    /** {@code kind} 0 for a secured terminal, 1 for an alarm panel (D-128); the client runs the signal at {@code perSymbol} ticks a symbol and gives {@code inputTicks} to answer. */
+    public static void openChallenge(ServerPlayer player, BlockPos pos, byte[] sequence, int kind, int perSymbol, int inputTicks) {
+        CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new OpenChallenge(pos.immutable(), sequence.clone(), kind, perSymbol, inputTicks));
     }
 
     /** Client to server: the single answer for the open challenge. */
@@ -519,6 +526,6 @@ public final class TerminalNetwork {
     private record AskRegistration() {}
     private record RegisterChoice(String city, String career) {}
     private record RegistrationResult(boolean ok, String message) {}
-    private record OpenChallenge(BlockPos pos, byte[] sequence) {}
+    private record OpenChallenge(BlockPos pos, byte[] sequence, int kind, int perSymbol, int inputTicks) {}
     private record ChallengeAnswer(BlockPos pos, byte[] answer) {}
 }

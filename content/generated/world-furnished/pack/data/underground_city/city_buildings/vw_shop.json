@@ -47,6 +47,14 @@
       "x": 12,
       "y": 7,
       "z": 6
+    },
+    {
+      "facing": "north",
+      "kind": "alarm",
+      "note": "alarm panel by the shop door",
+      "x": 3,
+      "y": 2,
+      "z": 11
     }
   ],
   "use": "shop"

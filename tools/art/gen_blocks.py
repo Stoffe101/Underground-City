@@ -201,6 +201,45 @@ def ledger_wood():
     return s
 
 
+# ------------------------------------------------------------------------------------------------------- Alarm panel (D-128)
+PANEL = ramp('#d9d4c7')
+PANEL_LIGHTS = {'off': None, 'armed': RED, 'entry': AMBER, 'jammed': BLUE}
+
+
+def panel_front(light):
+    """A wall keypad, 8 x 10 pixels at (4, 3): a cream plastic case, a small display, a status light and a keypad. ``light`` is the light's ramp, or None when it is dark."""
+    s = Sprite()
+    s.rect(0, 0, 15, 15, PANEL[2])
+    s.rect(4, 3, 11, 12, PANEL[2])
+    s.line(4, 3, 11, 3, PANEL[4]); s.line(4, 3, 4, 12, PANEL[3])
+    s.line(4, 12, 11, 12, PANEL[0]); s.line(11, 4, 11, 12, PANEL[1])
+    s.rect(5, 4, 10, 5, INK)
+    if light:
+        s.rect(6, 5, 8, 5, light[1]); s.put(5, 4, light[2])
+        s.rect(9, 7, 10, 7, light[4]); s.put(9, 7, light[3])
+    else:
+        s.rect(9, 7, 10, 7, PLASTIC_BLACK[1])
+    for ky in (7, 9, 11):
+        for kx in (5, 7):
+            if ky == 7 and kx == 7:
+                continue
+            s.put(kx, ky, STEEL[1]); s.put(kx + 1, ky, STEEL[2])
+    s.rect(9, 9, 10, 11, PLASTIC_BLACK[1]); s.line(9, 9, 10, 9, PLASTIC_BLACK[2])
+    return s
+
+
+for _name, _ramp in PANEL_LIGHTS.items():
+    TEXTURES['alarm_panel_' + _name] = (lambda r=_ramp: panel_front(r))
+
+
+@tex
+def alarm_panel_case():
+    s = Sprite()
+    s.rect(0, 0, 15, 15, PANEL[1])
+    s.line(0, 0, 15, 0, PANEL[3]); s.line(0, 15, 15, 15, PANEL[0])
+    return s
+
+
 # ------------------------------------------------------------------------------------------------------------ models
 def box(f, t, faces, rotation=None, shade=True):
     el = {'from': f, 'to': t, 'faces': faces}
@@ -265,6 +304,20 @@ def ledger_model():
             ], 'display': gui_display((24, 200, 0), 0.6, (0, -2, 0))}
 
 
+def panel_model(light):
+    return {'textures': {'front': f'underground_city:block/alarm_panel_{light}', 'case': 'underground_city:block/alarm_panel_case', 'particle': 'underground_city:block/alarm_panel_case'},
+            'elements': [
+                box([4, 3, 15], [12, 13, 16], {'north': {'texture': '#front', 'uv': [4, 3, 12, 13]}, 'south': {'texture': '#case', 'uv': [4, 3, 12, 13]},
+                                              'east': {'texture': '#case', 'uv': [0, 3, 1, 13]}, 'west': {'texture': '#case', 'uv': [0, 3, 1, 13]},
+                                              'up': {'texture': '#case', 'uv': [4, 0, 12, 1]}, 'down': {'texture': '#case', 'uv': [4, 0, 12, 1]}}),
+            ], 'display': gui_display((0, 180, 0), 1.0, (0, 0, -6))}
+
+
+def panel_states():
+    return {'variants': {f'facing={d},light={light}': ({'model': f'underground_city:block/alarm_panel_{light}'} | ({'y': y} if y else {}))
+                         for d, y in (('north', 0), ('east', 90), ('south', 180), ('west', 270)) for light in PANEL_LIGHTS}}
+
+
 def write_models():
     os.makedirs(MODELS, exist_ok=True)
     for name, model in (('operations_terminal', terminal_model()), ('secure_data_terminal', secure_model()), ('property_cache', safe_model()), ('public_ledger', ledger_model())):
@@ -274,6 +327,11 @@ def write_models():
             if element['from'][1] <= 0.001 and 'rotation' not in element:
                 element['faces'].pop('down', None)
         with open(os.path.join(MODELS, name + '.json'), 'w') as fh:
+            json.dump(model, fh, indent=1)
+    for light in PANEL_LIGHTS:
+        model = panel_model(light)
+        model['parent'] = 'minecraft:block/block'
+        with open(os.path.join(MODELS, f'alarm_panel_{light}.json'), 'w') as fh:
             json.dump(model, fh, indent=1)
 
 
@@ -287,6 +345,8 @@ def write_states():
     for name in ('operations_terminal', 'secure_data_terminal', 'property_cache', 'public_ledger'):
         with open(os.path.join(sd, name + '.json'), 'w') as fh:
             json.dump(facing_states(name), fh, indent=1)
+    with open(os.path.join(sd, 'alarm_panel.json'), 'w') as fh:
+        json.dump(panel_states(), fh, indent=1)
 
 
 def build():

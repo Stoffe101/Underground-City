@@ -284,6 +284,10 @@
     {
       "block": "minecraft:lightning_rod[facing=up,powered=false,waterlogged=false]",
       "char": ","
+    },
+    {
+      "block": "underground_city:alarm_panel[facing=north,light=off]",
+      "char": "-"
     }
   ]
 }

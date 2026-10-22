@@ -20,15 +20,27 @@ public final class ChallengeScreen extends UcScreen {
 
     private final BlockPos pos;
     private final byte[] sequence;
-    private final byte[] entered = new byte[SecureTerminalService.LENGTH];
+    private final byte[] entered;
+    /** What is being worked: a secured terminal (the Technician's trace) or an alarm panel (D-128), and how fast its signal runs. */
+    private final Kind kind;
+    private final int perSymbol, inputTicks;
+
+    /** The two things a trace opens. */
+    public enum Kind { TERMINAL, ALARM }
     private int count, age, flashPad = -1, flashAge;
     private boolean sent, frozen, qa;
     private int padSize, padGap, padTop;
 
-    ChallengeScreen(BlockPos pos, byte[] sequence) {
-        super(Component.literal("Underground City | Secure terminal"));
+    ChallengeScreen(BlockPos pos, byte[] sequence) { this(pos, sequence, Kind.TERMINAL, SecureTerminalService.SHOW_TICKS_PER_SYMBOL, SecureTerminalService.INPUT_TICKS); }
+
+    ChallengeScreen(BlockPos pos, byte[] sequence, Kind kind, int perSymbol, int inputTicks) {
+        super(Component.literal(kind == Kind.ALARM ? "Underground City | Alarm panel" : "Underground City | Secure terminal"));
         this.pos = pos;
         this.sequence = sequence.clone();
+        this.entered = new byte[this.sequence.length];
+        this.kind = kind;
+        this.perSymbol = Math.max(6, perSymbol);
+        this.inputTicks = Math.max(40, inputTicks);
     }
 
     /** Capture harness: a fixed pose that never advances or talks to a server. */
@@ -40,27 +52,27 @@ public final class ChallengeScreen extends UcScreen {
 
     /** Freezes the screen mid-sequence: {@code lit} is the pad currently flashing (-1 none), {@code step} how far in. */
     void poseShowing(int step, boolean lit) {
-        age = step * SecureTerminalService.SHOW_TICKS_PER_SYMBOL + (lit ? 2 : LIT_TICKS + 2);
+        age = step * perSymbol + (lit ? 2 : LIT_TICKS + 2);
     }
 
     /** Freezes the screen in the input phase with {@code taken} answers already entered and a fraction of time spent. */
     void poseInput(int taken, double spent) {
-        count = Math.max(0, Math.min(SecureTerminalService.LENGTH - 1, taken));
+        count = Math.max(0, Math.min(sequence.length - 1, taken));
         System.arraycopy(sequence, 0, entered, 0, count);
-        age = SecureTerminalService.LENGTH * SecureTerminalService.SHOW_TICKS_PER_SYMBOL + (int) (spent * SecureTerminalService.INPUT_TICKS);
+        age = sequence.length * perSymbol + (int) (spent * inputTicks);
         flashPad = -1;
     }
 
-    private int showTicks() { return SecureTerminalService.LENGTH * SecureTerminalService.SHOW_TICKS_PER_SYMBOL; }
+    private int showTicks() { return sequence.length * perSymbol; }
     private boolean showing() { return age < showTicks(); }
     private int litPad() {
         if (!showing()) return -1;
-        int step = age / SecureTerminalService.SHOW_TICKS_PER_SYMBOL;
-        return age % SecureTerminalService.SHOW_TICKS_PER_SYMBOL < LIT_TICKS ? sequence[step] : -1;
+        int step = age / perSymbol;
+        return age % perSymbol < Math.min(LIT_TICKS, perSymbol - 3) ? sequence[step] : -1;
     }
 
     @Override protected int accent() { return UcUi.UNDERGROUND; }
-    @Override protected String titleText() { return "Secured terminal"; }
+    @Override protected String titleText() { return kind == Kind.ALARM ? "Alarm panel" : "Secured terminal"; }
     @Override protected UcUi.Icon titleIcon() { return UcUi.Icon.TECHNICIAN; }
     @Override protected boolean showFooter() { return true; }
 
@@ -77,7 +89,7 @@ public final class ChallengeScreen extends UcScreen {
         age++;
         if (flashPad >= 0 && ++flashAge > 4) flashPad = -1;
         // The server's deadline is final; once this timer is spent the answer would be refused, so stop waiting.
-        if (!sent && age > showTicks() + SecureTerminalService.INPUT_TICKS) finish(true);
+        if (!sent && age > showTicks() + inputTicks) finish(true);
     }
 
     private int padX(int index) {
@@ -127,7 +139,8 @@ public final class ChallengeScreen extends UcScreen {
     }
 
     @Override protected void renderHeaderRight(GuiGraphics g, int right) {
-        int w = UcUi.chip(g, font, "Technician", right - UcUi.displayWidth(font, "Technician") - 22, py + 9, UcUi.careerColor("technician"), UcUi.Icon.TECHNICIAN);
+        String chip = kind == Kind.ALARM ? "Bypass" : "Technician";
+        int w = UcUi.chip(g, font, chip, right - UcUi.displayWidth(font, chip) - 22, py + 9, UcUi.careerColor("technician"), UcUi.Icon.TECHNICIAN);
     }
 
     @Override protected void renderBody(GuiGraphics g, int mouseX, int mouseY, float partial) {
@@ -136,7 +149,7 @@ public final class ChallengeScreen extends UcScreen {
         int cxm = px + pw / 2, y = py + HEADER + 12;
         String status = show ? "Watch the signal" : count >= entered.length ? "Sending" : "Repeat the sequence";
         UcUi.displayCentre(g, font, status, cxm, y, show ? UcUi.AMBER : UcUi.LEGAL);
-        String help = show ? "Five signals, four pads. Do not press yet." : "Press the pads in the same order.";
+        String help = show ? (kind == Kind.ALARM ? "Find the panel's code: " : "") + sequence.length + " signals, four pads. Do not press yet." : "Press the pads in the same order.";
         UcUi.text(g, font, help, cxm - font.width(help) / 2, y + 14, UcUi.DIM);
 
         for (int i = 0; i < 4; i++) {
@@ -161,7 +174,7 @@ public final class ChallengeScreen extends UcScreen {
         // progress: five lamps, one per signal
         int lampW = 14, gap = 5, lampsW = entered.length * (lampW + gap) - gap;
         int lampY = padTop + padSize + 16;
-        int shown = show ? Math.min(entered.length, age / SecureTerminalService.SHOW_TICKS_PER_SYMBOL + (lit >= 0 ? 1 : 0)) : count;
+        int shown = show ? Math.min(entered.length, age / perSymbol + (lit >= 0 ? 1 : 0)) : count;
         for (int i = 0; i < entered.length; i++) {
             int x = cxm - lampsW / 2 + i * (lampW + gap);
             int color = show ? UcUi.AMBER : UcUi.LEGAL;
@@ -170,9 +183,10 @@ public final class ChallengeScreen extends UcScreen {
             if (i < shown) g.fill(x + 1, lampY + 1, x + lampW - 1, lampY + 2, color);
         }
         int barW = Math.min(pw - 2 * PAD - 40, 260), barX = cxm - barW / 2, barY = lampY + 18;
-        double remaining = show ? 1.0 : Math.max(0, 1.0 - (age - showTicks()) / (double) SecureTerminalService.INPUT_TICKS);
+        double remaining = show ? 1.0 : Math.max(0, 1.0 - (age - showTicks()) / (double) inputTicks);
         UcUi.bar(g, barX, barY, barW, 7, (float) remaining, remaining > 0.5 ? UcUi.LEGAL : remaining > 0.25 ? UcUi.AMBER : UcUi.UNDERGROUND);
-        String timer = show ? "The lock resets after the signal" : String.format("Lock resets in %.0fs", remaining * SecureTerminalService.INPUT_TICKS / 20.0);
+        String timer = show ? (kind == Kind.ALARM ? "The panel resets after the signal" : "The lock resets after the signal")
+            : String.format(kind == Kind.ALARM ? "Panel resets in %.0fs" : "Lock resets in %.0fs", remaining * inputTicks / 20.0);
         UcUi.text(g, font, timer, cxm - font.width(timer) / 2, barY + 11, remaining <= 0.25 && !show ? UcUi.UNDERGROUND_TEXT : UcUi.DIM);
     }
 

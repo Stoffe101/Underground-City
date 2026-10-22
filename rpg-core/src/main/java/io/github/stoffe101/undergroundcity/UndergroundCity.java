@@ -60,6 +60,13 @@ public final class UndergroundCity {
     public static final RegistryObject<Item> SECURE_TERMINAL_ITEM = ITEMS.register("secure_data_terminal",
         () -> new BlockItem(SECURE_TERMINAL.get(), new Item.Properties()));
 
+    /** A furnished building's alarm panel (D-128): placed by the furnished buildings beside the street door, its light set by the server; never craftable or breakable in survival. */
+    public static final RegistryObject<Block> ALARM_PANEL = BLOCKS.register("alarm_panel",
+        () -> new AlarmPanelBlock(BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_GRAY).strength(-1.0f, 3_600_000f).noLootTable().noOcclusion()
+            .lightLevel(state -> switch (state.getValue(AlarmPanelBlock.LIGHT)) { case OFF -> 0; case ARMED -> 3; case ENTRY -> 6; case JAMMED -> 4; })));
+    public static final RegistryObject<Item> ALARM_PANEL_ITEM = ITEMS.register("alarm_panel",
+        () -> new BlockItem(ALARM_PANEL.get(), new Item.Properties()));
+
     private static final DeferredRegister<net.minecraft.world.level.block.entity.BlockEntityType<?>> BLOCK_ENTITIES =
         DeferredRegister.create(ForgeRegistries.BLOCK_ENTITY_TYPES, MOD_ID);
     // Unbreakable by survival players: a smash-and-grab would bypass lock, vigilance and restock rules.
@@ -145,6 +152,7 @@ public final class UndergroundCity {
         CityCharacter.register(MinecraftForge.EVENT_BUS);
         MinecraftForge.EVENT_BUS.register(new CheckpointService());
         MinecraftForge.EVENT_BUS.register(new SecureTerminalService());
+        MinecraftForge.EVENT_BUS.register(new AlarmPanels());
         MinecraftForge.EVENT_BUS.register(new CrewService());
         MinecraftForge.EVENT_BUS.register(new PropertyService());
         MinecraftForge.EVENT_BUS.register(new CrewCommands());

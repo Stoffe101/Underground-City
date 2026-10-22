@@ -54,6 +54,67 @@ NEW_SECURITY_CLASSES = {
 STOCK_SECURITY_CLASSES = {"cottage", "flat_block", "flat_tower", "workshop", "office", "vault", "public"}
 
 
+# stock classes that have an alarm (a "response" in data/underground_city/building_security/classes.json)
+ALARMED_STOCK_CLASSES = {"flat_block", "flat_tower", "workshop", "office", "vault"}
+NOT_A_WALL = ("door", "glass", "pane", "bars", "trapdoor", "fence", "air", "sign", "banner", "ladder", "torch", "lantern", "button", "lever")
+
+
+def alarmed(security: str) -> bool:
+    return security in ALARMED_STOCK_CLASSES or "response" in NEW_SECURITY_CLASSES.get(security, {})
+
+
+def place_alarm_panel(b: citykit.Building) -> None:
+    """The building's alarm panel (D-128): on a plain inside wall a few steps in from the first street door (the door's own wall when it can), at head height (layer 2 of the ground floor), facing into the room,
+    and an ``alarm`` spot that tells Core where it is. A building whose class has no alarm gets none."""
+    if not alarmed(b.security) or any(s.kind == "alarm" for s in b.spots):
+        return
+    ground = [part for part, flags in b.parts if flags.get("ground")]
+    if not ground:
+        raise ValueError(f"{b.id}: no ground floor for the alarm panel")
+    part = ground[0]
+
+    def solid(x: int, y: int, z: int) -> bool:
+        c = part.get(x, y, z)
+        if c == " ":
+            return False
+        spec = part.palette.entries[c]
+        return isinstance(spec, str) and not any(word in spec for word in NOT_A_WALL)
+
+    for door in (s for s in b.spots if s.kind == "door"):
+        out = citykit.DIRS[door.facing]
+        start = (door.x - out[0], door.z - out[1])
+        if part.get(start[0], 2, start[1]) != " ":
+            continue
+        # the open cells at head height a few steps in from the door, nearest first; a panel goes on the first plain wall one of them has beside it (the door's own wall first)
+        seen, frontier, best = {start}, [start], None
+        for distance in range(1, 6):
+            nxt = []
+            for (x, z) in frontier:
+                for d in citykit.DIRS.values():
+                    c = (x + d[0], z + d[1])
+                    if c in seen or not (1 <= c[0] < citykit.SIZE - 1 and 1 <= c[1] < citykit.SIZE - 1) or part.get(c[0], 2, c[1]) != " ":
+                        continue
+                    seen.add(c)
+                    nxt.append(c)
+            for (x, z) in sorted(nxt):
+                for name in [door.facing] + [n for n in ("north", "east", "south", "west") if n != door.facing]:
+                    d = citykit.DIRS[name]
+                    if solid(x + d[0], 2, z + d[1]):
+                        best = (x, z, citykit.OPPOSITE[name])
+                        break
+                if best:
+                    break
+            if best:
+                break
+            frontier = nxt
+        if best:
+            px, pz, facing = best
+            part.put(px, 2, pz, f"underground_city:alarm_panel[facing={facing},light=off]")
+            b.spots.append(citykit.Spot("alarm", px, 2, pz, facing, f"alarm panel by the {door.note or 'door'}"))
+            return
+    raise ValueError(f"{b.id}: no plain wall beside a street door for the alarm panel")
+
+
 def package() -> dict[str, bytes]:
     import city_valewood, city_ironhaven, city_blackwater   # noqa: E401
     files: dict[str, bytes] = {}
@@ -72,6 +133,7 @@ def package() -> dict[str, bytes]:
         if b.id in seen:
             raise ValueError("duplicate building id " + b.id)
         seen.add(b.id)
+        place_alarm_panel(b)
         for path, doc in b.files(NAMESPACE).items():
             files[f"data/{NAMESPACE}/{path}"] = json_bytes(doc)
         files[f"data/{NAMESPACE}/city_buildings/{b.id}.json"] = json_bytes(b.core_data())

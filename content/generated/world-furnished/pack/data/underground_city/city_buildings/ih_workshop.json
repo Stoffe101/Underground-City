@@ -62,6 +62,14 @@
       "x": 12,
       "y": 1,
       "z": 13
+    },
+    {
+      "facing": "north",
+      "kind": "alarm",
+      "note": "alarm panel by the bay door",
+      "x": 6,
+      "y": 2,
+      "z": 13
     }
   ],
   "units": [

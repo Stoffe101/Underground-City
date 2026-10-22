@@ -63,6 +63,14 @@
       "x": 11,
       "y": 13,
       "z": 3
+    },
+    {
+      "facing": "south",
+      "kind": "alarm",
+      "note": "alarm panel by the front door",
+      "x": 6,
+      "y": 2,
+      "z": 11
     }
   ],
   "use": "office"

@@ -239,6 +239,8 @@ def build(data: dict, contracts: dict) -> dict[Path, bytes]:
         "container.underground_city.property_cache": "Household Safe",
         "block.underground_city.secure_data_terminal": "Secured Data Terminal",
         "item.underground_city.secure_data_terminal": "Secured Data Terminal",
+        "block.underground_city.alarm_panel": "Alarm Panel",
+        "item.underground_city.alarm_panel": "Alarm Panel",
         "block.underground_city.public_ledger": "Public Ledger",
         "item.underground_city.public_ledger": "Public Ledger",
     }
@@ -373,6 +375,8 @@ def build(data: dict, contracts: dict) -> dict[Path, bytes]:
         {"parent": f"{NAMESPACE}:block/property_cache"}).encode()
     files[Path(f"rpg-core/src/main/resources/assets/{NAMESPACE}/models/item/secure_data_terminal.json")] = jdump(
         {"parent": f"{NAMESPACE}:block/secure_data_terminal"}).encode()
+    files[Path(f"rpg-core/src/main/resources/assets/{NAMESPACE}/models/item/alarm_panel.json")] = jdump(
+        {"parent": f"{NAMESPACE}:block/alarm_panel_armed"}).encode()
     files[Path(f"rpg-core/src/main/resources/assets/{NAMESPACE}/models/item/public_ledger.json")] = jdump(
         {"parent": f"{NAMESPACE}:block/public_ledger"}).encode()
     blueprint = json.loads((ROOT / "content/region-blueprints/cities.json").read_text(encoding="utf-8"))

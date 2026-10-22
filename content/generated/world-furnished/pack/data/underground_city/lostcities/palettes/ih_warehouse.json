@@ -156,6 +156,10 @@
     {
       "block": "minecraft:campfire[facing=north,lit=false,signal_fire=false,waterlogged=false]",
       "char": "A"
+    },
+    {
+      "block": "underground_city:alarm_panel[facing=north,light=off]",
+      "char": "B"
     }
   ]
 }

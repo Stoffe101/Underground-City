@@ -256,6 +256,10 @@
     {
       "block": "minecraft:dark_oak_slab[type=bottom]",
       "char": "Z"
+    },
+    {
+      "block": "underground_city:alarm_panel[facing=north,light=off]",
+      "char": "!"
     }
   ]
 }
