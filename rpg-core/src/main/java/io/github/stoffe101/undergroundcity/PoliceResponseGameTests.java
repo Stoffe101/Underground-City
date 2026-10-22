@@ -262,6 +262,54 @@ public final class PoliceResponseGameTests {
         helper.succeed();
     }
 
+    @GameTest(template = "empty")
+    public static void officersFollowAThiefWhoMovesAndOnlyTheThiefIsArrested(GameTestHelper helper) {
+        try (Scene s = new Scene(helper, "uc_pol_chase", ALARMED)) {
+            arrive(s);
+            BlockPos fled = s.door.offset(12, 0, 6);
+            s.thief.setPos(fled.getX() + 0.5, fled.getY(), fled.getZ() + 0.5);
+            PoliceResponse.pass(s.level.getServer());
+            for (TownspersonEntity officer : s.officers()) {
+                check(fled.equals(officer.errandPlace()), "an officer did not turn after the thief who moved: going to " + officer.errandPlace() + ", the thief is at " + fled);
+            }
+            // a partner who did not break in stands right beside an officer, with marked goods in their pockets: the response is not theirs
+            ServerPlayer partner = CrewGameTests.player(helper, "uc_pol_mate", "smith");
+            ItemStack loot = new ItemStack(Items.GOLD_INGOT, 4);
+            StolenGoods.mark(loot, "valewood");
+            partner.getInventory().setItem(0, loot);
+            var officer = s.officers().get(0);
+            partner.setPos(officer.getX() + 1.0, officer.getY(), officer.getZ());
+            PoliceResponse.pass(s.level.getServer());
+            check(PoliceResponse.arrests == 0 && partner.getInventory().countItem(Items.GOLD_INGOT) == 4, "a partner who did not break in was arrested or searched");
+            check(PoliceResponse.dispatches() == 1, "the response for the thief ended because of the partner");
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty")
+    public static void eachThiefAndEachBuildingHasItsOwnResponseAndAWitnessCallIsSlowerThanAnAlarm(GameTestHelper helper) {
+        try (Scene s = new Scene(helper, "uc_pol_two", ALARMED)) {
+            long now = LockService.clock(s.level.getServer());
+            ServerPlayer second = CrewGameTests.player(helper, "uc_pol_two_b", "smith");
+            second.setPos(s.thief.getX() + 2, s.thief.getY(), s.thief.getZ());
+            PoliceResponse.noticed(s.thief, opened(s.thief, s.door, now));
+            PoliceResponse.noticed(second, opened(second, s.door, now));
+            check(PoliceResponse.dispatches() == 2, "two thieves at one building raised " + PoliceResponse.dispatches() + " responses");
+            var other = new CityBuildings.Building("valewood", s.building.chunkX() + 3, s.building.chunkZ(), "test", "test_building_2", 2, 0, s.building.streetY(), s.building.security());
+            PoliceResponse.raise(s.thief, s.level, other, s.door.offset(48, 0, 0), true, false, false);
+            check(PoliceResponse.dispatches() == 3, "the same thief at a second building did not raise a second response");
+        }
+        try (Scene s = new Scene(helper, "uc_pol_slow", ALARMED)) {
+            long now = LockService.clock(s.level.getServer());
+            PoliceResponse.raise(s.thief, s.level, s.building, s.door, false, false, true);
+            long witness = PoliceResponse.dispatchAt(0).arriveAt - now;
+            check(witness == Math.max(ALARMED.dispatchSeconds(), PoliceResponse.NEIGHBOUR.dispatchSeconds()) * 20L, "a witness's call brings the police in " + witness + " ticks");
+            PoliceResponse.raise(s.thief, s.level, s.building, s.door, true, false, false);
+            check(PoliceResponse.dispatches() == 1 && PoliceResponse.dispatchAt(0).arriveAt - now == ALARMED.dispatchSeconds() * 20L, "the alarm that followed did not bring the same response sooner");
+        }
+        helper.succeed();
+    }
+
     /** A real client: the nearest street spot lay behind the building, the officer's path to the thief ended at a wall, and nobody was arrested. Built in the sky, clear of the other tests. */
     @GameTest(template = "empty")
     public static void officersAppearWhereTheyCanWalkToTheThiefAndNotInsideAWall(GameTestHelper helper) {

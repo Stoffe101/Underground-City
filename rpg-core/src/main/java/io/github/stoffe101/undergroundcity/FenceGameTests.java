@@ -241,6 +241,8 @@ public final class FenceGameTests {
         int playerSlot = PropertyCacheBlockEntity.SLOTS + 27;   // the first hotbar square in a one-row chest menu
         menu.quickMoveStack(player, playerSlot);
         for (int i = 0; i < PropertyCacheBlockEntity.SLOTS; i++) check(!safe.getItem(i).is(Items.COBBLESTONE), "a shift-click put stone into the safe");
+        safe.clearContent();
+        helper.getLevel().setBlock(at, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(), 3);   // the test world is shared: a full safe left here was found inside a later test's home
         helper.succeed();
     }
 }
