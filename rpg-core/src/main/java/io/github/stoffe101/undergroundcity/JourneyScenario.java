@@ -1148,7 +1148,10 @@ final class JourneyScenario {
      * Places the held block on firm ground ahead with a right click: a full, sturdy top two or three blocks away with room above it (a garden plant is not ground), aimed at until the
      * crosshair is on that top (a software-rendered frame lags the aim), retried a quarter turn round each time, at most six times. {@code spot} receives where it should stand.
      */
-    private static void placeAhead(String label, net.minecraft.world.level.block.Block block, BlockPos[] spot) {
+    private static void placeAhead(String label, net.minecraft.world.level.block.Block block, BlockPos[] spot) { placeAhead(label, block, spot, pos -> true); }
+
+    /** The same, only where {@code allowed} says a person may build (a city building's lot, its garden included, is not theirs to build on). */
+    private static void placeAhead(String label, net.minecraft.world.level.block.Block block, BlockPos[] spot, java.util.function.Predicate<BlockPos> allowed) {
         final int[] tick = {0}, tries = {0};
         Playtest.queue("place " + label + " on the ground ahead with a right click", () -> { tick[0] = 0; tries[0] = 0; spot[0] = null; }, () -> {
             var p = mc().player;
@@ -1158,7 +1161,8 @@ final class JourneyScenario {
                 spot[0] = null;
                 for (int dist : new int[]{2, 3}) for (int dy = 1; dy >= -2 && spot[0] == null; dy--) {
                     BlockPos g = p.blockPosition().relative(facing, dist).offset(0, dy - 1, 0);
-                    if (mc().level.getBlockState(g).isFaceSturdy(mc().level, g, Direction.UP) && mc().level.getBlockState(g.above()).canBeReplaced() && mc().level.getBlockState(g.above(2)).isAir()) spot[0] = g.above();
+                    if (mc().level.getBlockState(g).isFaceSturdy(mc().level, g, Direction.UP) && mc().level.getBlockState(g.above()).canBeReplaced() && mc().level.getBlockState(g.above(2)).isAir()
+                        && allowed.test(g.above())) spot[0] = g.above();
                 }
                 if (spot[0] == null) spot[0] = p.blockPosition().relative(facing, 2);
             }
@@ -1251,8 +1255,25 @@ final class JourneyScenario {
         valewoodDoor(door);
         // the welcome-pack terminal, placed in the street
         hold("the welcome-pack terminal", UndergroundCity.TERMINAL_ITEM.get());
+        // out of the building's garden and into the street, as a person would (a city building's lot is not theirs to build on: the guard says so and refuses)
+        final BlockPos[] street = new BlockPos[1];
+        Playtest.queue("find open street ground nearby that nobody owns", () -> street[0] = server(() -> {
+            ServerLevel lvl = level();
+            BlockPos me = me().blockPosition();
+            BlockPos best = null;
+            for (BlockPos q : BlockPos.betweenClosed(me.offset(-20, -3, -20), me.offset(20, 3, 20))) {
+                if (!PlayerPath.standable(lvl, q) || BuildingGuard.protectedAt(lvl, q).isPresent() || BuildingGuard.protectedAt(lvl, q.below()).isPresent()) continue;
+                boolean roomAround = true;
+                for (Direction d : Direction.Plane.HORIZONTAL) if (BuildingGuard.protectedAt(lvl, q.relative(d, 2)).isPresent()) { roomAround = false; break; }
+                if (!roomAround) continue;
+                if (best == null || q.distSqr(me) < best.distSqr(me)) best = q.immutable();
+            }
+            return best;
+        }));
+        Playtest.queue("the street", () -> Playtest.log("JOURNEY open street ground for the terminal: " + (street[0] == null ? "none within 20 blocks" : street[0].toShortString())));
+        walkOrTeleport("step out into the street", () -> street[0] == null ? mc().player.position() : Vec3.atBottomCenterOf(street[0]), 0.8, 1200);
         final BlockPos[] spot = new BlockPos[1];
-        placeAhead("the terminal", UndergroundCity.TERMINAL.get(), spot);
+        placeAhead("the terminal", UndergroundCity.TERMINAL.get(), spot, pos -> server(() -> BuildingGuard.protectedAt(level(), pos).isEmpty() && BuildingGuard.protectedAt(level(), pos.below()).isEmpty()));
         Playtest.queue("placed", () -> { F.placedTerminal = spot[0]; if (!mc().level.getBlockState(spot[0]).is(UndergroundCity.TERMINAL.get())) Playtest.fail("the terminal could not be placed in the street"); });
         use("open the terminal", () -> F.placedTerminal, () -> mc().screen instanceof TerminalScreen, 200);
         shot("28-valewood-terminal");
@@ -1260,9 +1281,12 @@ final class JourneyScenario {
             int visits = server(() -> WorkOrderLedger.get(mc().getSingleplayerServer()).foreignVisits(mc().player.getUUID(), "ironhaven"));
             if (visits >= 1) pass("14b a rival city visit is recorded at a terminal inside Valewood"); else Playtest.fail("no visit recorded in Valewood");
         });
+        final int[] deliveriesBefore = {0};
+        Playtest.queue("deliveries so far", () -> deliveriesBefore[0] = server(() -> CitizenState.get(mc().getSingleplayerServer()).find(mc().player.getUUID()).map(c -> c.journey("deliveries")).orElse(0)));
         clickAt("the second order", () -> { int i = jobIndex("underground_city:stone_tools"); return i < 0 ? null : ((TerminalScreen) mc().screen).jobCentre(i); });
         click("Deliver", true);
-        until("the second delivery", () -> server(() -> CitizenState.get(mc().getSingleplayerServer()).find(mc().player.getUUID()).map(c -> c.journey("deliveries") >= 2).orElse(false)), 200);
+        // one more than before (a full run has made one delivery at the Row; a development run from 'travel' none)
+        until("the second delivery", () -> server(() -> CitizenState.get(mc().getSingleplayerServer()).find(mc().player.getUUID()).map(c -> c.journey("deliveries") > deliveriesBefore[0]).orElse(false)), 200);
         Playtest.queue("second order", () -> { Playtest.log("JOURNEY second delivery in Valewood: wallet " + wallet() + ", XP " + citizen().careerXp()); pass("15 complete a follow-up activity in another city (the second order, delivered in Valewood)"); });
         Playtest.wait("refresh", 10);
         click("TRADE", true);
