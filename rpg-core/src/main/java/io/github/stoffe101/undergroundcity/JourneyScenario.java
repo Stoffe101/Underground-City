@@ -1108,7 +1108,22 @@ final class JourneyScenario {
             double[] p = plan.pointAt(F.roadFrom);
             return new Vec3(p[0], mc().player.getY(), p[1]);
         };
-        Playtest.queue("walk from the Row to the road's Ironhaven end", () -> { approachTicks[0] = 0; approach[0] = new PathWalker("walk from the Row to the road's Ironhaven end", roadStart, 6.0); }, () -> {
+        // where a person walking out of the city gets onto the road: the ramp just inside the city from the road's end, at the deck's height once the road's profile is built (until then
+        // the player's own height, while the walk is still far away). Aiming at the road itself at the player's height took the walker into a gully under the deck's first stretch.
+        Supplier<Vec3> onTheRamp = () -> {
+            CorridorPlan plan = roadTo("valewood");
+            if (plan == null) return null;
+            for (CorridorPlan.End end : plan.ends()) {
+                double[] from = plan.pointAt(F.roadFrom);
+                if (Math.hypot(end.x() - from[0], end.z() - from[1]) > 40) continue;
+                double x = end.x() + end.dirX() * 4, z = end.z() + end.dirZ() * 4;
+                double y = plan.built() ? CorridorPlan.deckBlockY(plan.deckHalfAt(end.s())) + 1 : mc().player.getY();
+                return new Vec3(x, y, z);
+            }
+            double[] p = plan.pointAt(F.roadFrom);
+            return new Vec3(p[0], mc().player.getY(), p[1]);
+        };
+        Playtest.queue("walk from the Row to the road's Ironhaven end", () -> { approachTicks[0] = 0; approach[0] = new PathWalker("walk from the Row to the road's Ironhaven end", onTheRamp, 3.0, 1.6); }, () -> {
             approach[0].tick();
             if (++approachTicks[0] > 14000 && !approach[0].done()) approach[0].stop();
             return approach[0].done() || approachTicks[0] > 14000;

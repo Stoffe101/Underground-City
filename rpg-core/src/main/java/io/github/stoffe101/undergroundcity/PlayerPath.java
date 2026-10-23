@@ -106,7 +106,10 @@ final class PlayerPath {
      * the bottom of a dead end (a journey's player dropped into a one-block trench between a building and a cliff, closed by iron bars at both ends, because it was the nearest point to a road
      * 225 blocks away), and a dead end's cells are all explored, so it is never on the frontier.
      */
-    static List<Vec3> find(ServerLevel level, Vec3 from, Vec3 to, double within) {
+    static List<Vec3> find(ServerLevel level, Vec3 from, Vec3 to, double within) { return find(level, from, to, within, 3.0); }
+
+    /** As above, with the goal reached only within {@code withinY} blocks of its height (a road's deck, not the gully under it). */
+    static List<Vec3> find(ServerLevel level, Vec3 from, Vec3 to, double within, double withinY) {
         BlockPos start = start(level, from);
         if (start == null) return List.of();
         double tx = to.x, tz = to.z, ty = to.y;
@@ -126,7 +129,7 @@ final class PlayerPath {
             double flat = Math.hypot(at.getX() + 0.5 - tx, at.getZ() + 0.5 - tz);
             double hh = h(at, tx, ty, tz);
             if (hh < closestH) { closestH = hh; closest = at; }
-            if (flat <= within && Math.abs(at.getY() - ty) <= 3) { closest = at; reached = true; break; }
+            if (flat <= within && Math.abs(at.getY() - ty) <= withinY) { closest = at; reached = true; break; }
             for (int[] step : STEPS) {
                 boolean diagonal = step[0] != 0 && step[1] != 0;
                 for (int dy : new int[]{0, 1, -1, -2, -3}) {

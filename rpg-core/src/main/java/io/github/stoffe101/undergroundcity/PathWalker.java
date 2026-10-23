@@ -22,7 +22,7 @@ final class PathWalker {
     private static final int STUCK_TICKS = 50, MAX_REPLANS = 14, MAX_LEGS = 120;
 
     private final Supplier<Vec3> target;
-    private final double within;
+    private final double within, withinY;
     private final String label;
     private List<Vec3> nodes = new ArrayList<>();
     private int next, ticks, sinceProgress, replans, legs, jumps, doors, planWait, jumpHold;
@@ -32,7 +32,13 @@ final class PathWalker {
     private String summary = "";
     private volatile List<Vec3> planned;
 
-    PathWalker(String label, Supplier<Vec3> target, double within) { this.label = label; this.target = target; this.within = within; }
+    PathWalker(String label, Supplier<Vec3> target, double within) { this(label, target, within, Double.MAX_VALUE); }
+
+    /**
+     * A walk that has arrived only within {@code withinY} blocks of the target's height too: "beside the road's start" four blocks under its deck is not on the road (a journey's walker
+     * reached the road's first stretch through a gully under it, by flat distance, and could not climb on).
+     */
+    PathWalker(String label, Supplier<Vec3> target, double within, double withinY) { this.label = label; this.target = target; this.within = within; this.withinY = withinY; }
 
     boolean done() { return done; }
     boolean failed() { return failed; }
@@ -57,7 +63,7 @@ final class PathWalker {
             List<Vec3> out = new ArrayList<>();
             try {
                 // a route a person can walk: the player's own collision, not a mob's (see PlayerPath)
-                out.addAll(PlayerPath.find(server.overworld(), from, leg, last ? Math.max(0.8, within - 0.5) : 3.0));
+                out.addAll(PlayerPath.find(server.overworld(), from, leg, last ? Math.max(0.8, within - 0.5) : 3.0, last ? Math.min(3.0, withinY) : 3.0));
             } catch (RuntimeException error) {
                 Playtest.log(label + ": planning failed: " + error);
             }
@@ -97,7 +103,7 @@ final class PathWalker {
         Vec3 goal = target.get();
         if (goal == null) { finish(true, "the target is gone"); return; }
         double left = flat(me.position(), goal);
-        if (left <= within) { finish(false, String.format(java.util.Locale.ROOT, "arrived %.1f blocks from the target", left)); return; }
+        if (left <= within && Math.abs(me.getY() - goal.y) <= withinY) { finish(false, String.format(java.util.Locale.ROOT, "arrived %.1f blocks from the target", left)); return; }
         if (planning) {
             if (planned == null) { if (++planWait > 200) { planning = false; planWait = 0; } return; }
             nodes = planned; next = 0; planning = false; planWait = 0; bestNode = -1; best = Double.MAX_VALUE; sinceProgress = 0;
