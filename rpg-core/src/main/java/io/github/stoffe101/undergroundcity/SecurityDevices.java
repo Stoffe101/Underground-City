@@ -113,7 +113,7 @@ public final class SecurityDevices {
         java.util.Optional<CityBuildings.Building> found = BurglarySearch.foreignBuilding(player, level, player.blockPosition());
         if (found.isEmpty()) return;
         CityBuildings.Building b = found.get();
-        if (!CityBuildings.INSTANCE.known(b.chunkX(), b.chunkZ()) || ShopCounters.openNow(level, b)) return;   // a customer in an open shop is not a burglar
+        if (!CityBuildings.INSTANCE.known(b.chunkX(), b.chunkZ()) || BuildingGuard.openToPublic(level, b, null)) return;   // a customer in an open shop, or at a fence's at their hours, is not a burglar
         List<BlockPos> cameras = cameras(level, b);
         if (cameras.isEmpty()) return;
         boolean sense = Thievery.has(player, "thief.camera_sense");

@@ -183,8 +183,8 @@ public final class BuildingGuard {
         Optional<CityBuildings.Building> found = protectedAt(level, lower);
         if (found.isEmpty() || !found.get().locked()) return;
         BlockState lowerState = lower.equals(event.getPos()) ? state : level.getBlockState(lower);
-        // an open shop's street door is a shop door (D-146): customers walk in while the shopkeeper is at the counter; crouching with an empty hand still cases it
-        if (ShopCounters.openNow(level, found.get()) && !(Casing.wants(player) && lowerState.getBlock() instanceof DoorBlock && outsideSide(level, lower, lowerState, player.position()))) {
+        // an open shop's street door is a shop door (D-146), and a fence's door at the fence's hours lets in whoever brings stolen goods (D-147); crouching with an empty hand still cases it
+        if (openToPublic(level, found.get(), player) && !(Casing.wants(player) && lowerState.getBlock() instanceof DoorBlock && outsideSide(level, lower, lowerState, player.position()))) {
             PropertyLocks.get(level.getServer()).exitOpen(lower, LockService.clock(level.getServer()) + EXIT_TICKS);
             return;
         }
@@ -236,6 +236,15 @@ public final class BuildingGuard {
         if (refusal != null) tell(player, refusal);
     }
 
+    /**
+     * Whether a building's street door is open to the public now: a shop while its shopkeeper is in (D-146), a fence's building while the fence is in (D-147), the latter only to a person carrying
+     * stolen goods when {@code player} is given (with no player, whether the door may stand open at all). Nobody searches the furniture of a building that is open ({@link BurglarySearch}).
+     */
+    static boolean openToPublic(ServerLevel level, CityBuildings.Building building, ServerPlayer player) {
+        if (ShopCounters.openNow(level, building)) return true;
+        return FenceService.receivingNow(level, building) && (player == null || FenceService.carriesStolen(player));
+    }
+
     // ------------------------------------------------------------------------------------------------ the door itself
 
     /**
@@ -255,7 +264,7 @@ public final class BuildingGuard {
         Optional<CityBuildings.Building> found = protectedAt(level, lower);
         if (found.isEmpty() || !found.get().locked() || !exterior(level, lower, state)) return false;
         if (PropertyLocks.get(level.getServer()).openOnPurpose(lower)) return false;
-        if (ShopCounters.openNow(level, found.get())) return false;   // a shop's door may stand open in business hours
+        if (openToPublic(level, found.get(), null)) return false;   // a shop's door may stand open in business hours, a fence's in theirs
         for (Player near : level.getEntitiesOfClass(Player.class, new net.minecraft.world.phys.AABB(lower).inflate(8.0))) if (near.isCreative()) return false;
         door.setOpen(null, level, state, lower, false);
         shutByWatch++;

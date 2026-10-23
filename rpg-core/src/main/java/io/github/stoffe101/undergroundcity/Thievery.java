@@ -53,7 +53,7 @@ public final class Thievery {
         state.addThiefXp(player.getUUID(), amount);
         int after = citizen.thiefLevel();
         if (tell) Notice.send(player, Notice.Kind.SKILL, "+" + amount + " Thief XP", why);
-        if (after > before) Notice.send(player, Notice.Kind.SKILL, "Thief level " + after, "A Thief point to spend on the Skills page of a terminal.");
+        if (after > before) Notice.send(player, Notice.Kind.SKILL, "Thief level " + after, "A Thief point to spend on the Thief page of a terminal.");
         return amount;
     }
 

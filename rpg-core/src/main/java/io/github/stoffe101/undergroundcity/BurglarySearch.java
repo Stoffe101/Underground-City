@@ -197,15 +197,24 @@ public final class BurglarySearch {
         boolean container = state.getBlock() instanceof ChestBlock || state.getBlock() instanceof BarrelBlock;
         Kind kind = container ? null : LOADER.kindOf(state);
         if (!container && kind == null) return;
-        Optional<CityBuildings.Building> building = foreignBuilding(player, level, event.getPos());
+        BlockPos at = anchor(state, event.getPos()).immutable();
+        Optional<CityBuildings.Building> building = foreignBuilding(player, level, at);
         if (building.isEmpty()) return;
         long now = LockService.clock(level.getServer());
         // a container that was searched once opens normally afterwards: what is in it is already marked
-        if (container && !records(level.getServer()).ready(event.getPos().asLong(), now, Long.MAX_VALUE)) return;
+        if (container && !records(level.getServer()).ready(at.asLong(), now, Long.MAX_VALUE)) return;
         event.setCanceled(true);
         event.setCancellationResult(InteractionResult.SUCCESS);
-        String refusal = begin(player, level, event.getPos().immutable(), building.get(), container ? CONTAINER : kind, container);
+        String refusal = begin(player, level, at, building.get(), container ? CONTAINER : kind, container);
         if (refusal != null) player.displayClientMessage(Component.literal(refusal), true);
+    }
+
+    /** The block a piece of furniture is searched and recorded by: the lower half of a two-block one (Modern Life's refrigerator), so it is searched once and not once per half. */
+    static BlockPos anchor(BlockState state, BlockPos pos) {
+        for (var property : state.getProperties()) {
+            if (property.getName().equals("half") && String.valueOf(state.getValue(property)).equals("upper")) return pos.below();
+        }
+        return pos;
     }
 
     /** A chest or a barrel: searched like furniture, then opened. */
@@ -218,6 +227,8 @@ public final class BurglarySearch {
         if (WorkOrderLedger.get(level.getServer()).faulted()) return "Searching is unavailable until the server is restarted.";
         long now = LockService.clock(level.getServer());
         if (!container && !records(level.getServer()).ready(pos.asLong(), now, LOADER.refillTicks())) return "Somebody has been through this already. Nothing left worth taking.";
+        // a building open to the public (a shop in its hours, a fence's at theirs) has somebody watching the room: its furniture is searched only once it has closed (D-147)
+        if (BuildingGuard.openToPublic(level, building, null)) return "Not while the place is open. Come back when it has closed.";
         Kind effective = kind;
         if (!container && !kind.tillUses().isEmpty() && kind.tillUses().contains(use(building)) && LOADER.kinds().containsKey("till")) effective = LOADER.kinds().get("till");
         int ticks = Math.max(10, Thievery.has(player, "thief.quick_hands") ? effective.ticks() / 2 : effective.ticks());

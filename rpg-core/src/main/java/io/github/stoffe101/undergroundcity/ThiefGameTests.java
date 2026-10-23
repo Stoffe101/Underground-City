@@ -179,6 +179,18 @@ public final class ThiefGameTests {
         helper.succeed();
     }
 
+    @GameTest(template = "empty")
+    public static void aTwoBlockPieceOfFurnitureIsSearchedOnceByItsLowerHalf(GameTestHelper helper) {
+        BlockPos pos = helper.absolutePos(new BlockPos(2, 3, 2));
+        var upper = net.minecraft.world.level.block.Blocks.OAK_DOOR.defaultBlockState().setValue(net.minecraft.world.level.block.DoorBlock.HALF, net.minecraft.world.level.block.state.properties.DoubleBlockHalf.UPPER);
+        var lower = upper.setValue(net.minecraft.world.level.block.DoorBlock.HALF, net.minecraft.world.level.block.state.properties.DoubleBlockHalf.LOWER);
+        var stairs = net.minecraft.world.level.block.Blocks.OAK_STAIRS.defaultBlockState().setValue(net.minecraft.world.level.block.StairBlock.HALF, net.minecraft.world.level.block.state.properties.Half.TOP);
+        check(BurglarySearch.anchor(upper, pos).equals(pos.below()), "the upper half of a two-block piece is a second searchable spot");
+        check(BurglarySearch.anchor(lower, pos).equals(pos), "the lower half moved");
+        check(BurglarySearch.anchor(stairs, pos).equals(pos), "an upside-down block (half=top) was taken for the top of a two-block piece");
+        helper.succeed();
+    }
+
     // ------------------------------------------------------------------------------------------------ fences
 
     @GameTest(template = "empty")

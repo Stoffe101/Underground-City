@@ -170,6 +170,22 @@ public final class FenceService {
         return FenceCatalog.INSTANCE.forCity(body.city()).orElse(null);
     }
 
+    /**
+     * Whether a fence's building takes customers now (D-147): the building's plan has the fence's spot, its city has a fence network, and the fence is in tonight (their hours, and the night's roll
+     * that sometimes keeps them away). Its street door then opens to anybody carrying stolen goods, as an open shop's does to everybody; nothing else about the building changes.
+     */
+    static boolean receivingNow(net.minecraft.server.level.ServerLevel level, CityBuildings.Building building) {
+        BuildingSpots.Plan plan = BuildingSpots.INSTANCE.forType(building.type());
+        if (plan == null || plan.indexesOf("fence").isEmpty() || FenceCatalog.INSTANCE.forCity(building.city()).isEmpty()) return false;
+        PopulationCatalog.Def def = PopulationCatalog.INSTANCE.city(building.city());
+        if (def == null) return false;
+        long time = HouseholdService.dayTime(level);
+        for (HouseholdPlan.Resident who : HouseholdPlan.residents(building.city(), level.getSeed(), building.key(), plan, def.names())) {
+            if (who.role().equals("fence") && HouseholdService.whereNow(who, plan, level.getSeed(), time) != HouseholdPlan.AWAY) return true;
+        }
+        return false;
+    }
+
     /** Opens the fence's screen for a player who spoke to them. */
     static void open(ServerPlayer player, TownspersonEntity body) {
         FenceCatalog.Fence fence = fenceOf(body);
