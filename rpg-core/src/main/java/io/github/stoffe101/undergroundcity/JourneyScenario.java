@@ -177,6 +177,16 @@ final class JourneyScenario {
 
     private static void until(String label, BooleanSupplier done, int ticks) { Playtest.queue(label, () -> { }, done, ticks); }
 
+    /** Presses Escape until no screen is open (a single key press can be lost while a frame is being drawn), at most ten times. */
+    private static void closeScreen(String label) {
+        final int[] t = {0};
+        Playtest.queue(label, () -> { t[0] = 0; Playtest.focusWindow(); }, () -> {
+            if (mc().screen == null) return true;
+            if (t[0]++ % 12 == 0) Playtest.tap("escape");
+            return false;
+        }, 140);
+    }
+
     /** Ends the run when something has failed that every later step depends on (a cascade of follow-on failures tells nothing new). */
     private static void stopIfFailed(String what) {
         Playtest.queue("stop if " + what + " failed", () -> { if (Playtest.failures.length() > 0) { Playtest.log("JOURNEY stopping: " + what + " failed, and the rest depends on it"); summary(); Playtest.finish(); } });
@@ -498,8 +508,7 @@ final class JourneyScenario {
         Playtest.queue("accepted", () -> pass("5 accept the introductory work order (3 stone pickaxes, 24 credits) with a click"));
         stopIfFailed("accepting the first order");
         shot("08-accepted");
-        Playtest.queue("close the terminal", () -> Playtest.tap("escape"));
-        until("no screen", () -> mc().screen == null, 100);
+        closeScreen("close the terminal");
     }
 
     private static void reopenOrdersIfClosed() {
@@ -535,8 +544,7 @@ final class JourneyScenario {
             if (orders) Playtest.fail("another trade's employer offers a Smith her orders");
             else pass("5b failure case: an employer of another profession offers no orders");
         });
-        Playtest.queue("close", () -> Playtest.tap("escape"));
-        until("no screen", () -> mc().screen == null, 100);
+        closeScreen("close");
     }
 
     // ------------------------------------------------------------------------------------------------ 3. materials: a tree and the quarry
@@ -814,8 +822,7 @@ final class JourneyScenario {
             Playtest.log("JOURNEY crafting table " + table + ", sticks " + sticks);
             if (table < 1 || sticks < 12) Playtest.fail("crafting in the inventory made " + table + " tables and " + sticks + " sticks");
         });
-        Playtest.queue("close the inventory", () -> Playtest.tap("escape"));
-        until("no screen", () -> mc().screen == null, 100);
+        closeScreen("close the inventory");
         // place the table on the ground in front and open it
         hold("the crafting table", Items.CRAFTING_TABLE);
         // place the table: aim at the top of firm ground two blocks ahead and click only when the crosshair is there (a software-rendered frame can lag the aim by several ticks);
@@ -848,8 +855,7 @@ final class JourneyScenario {
             if (made < 6) Playtest.fail("the crafting screen made " + made + " of 6 stone pickaxes"); else pass("7 produce the goods on the real crafting screens (planks, a table, sticks, 6 stone pickaxes)");
         });
         stopIfFailed("crafting");
-        Playtest.queue("close", () -> Playtest.tap("escape"));
-        until("no screen", () -> mc().screen == null, 100);
+        closeScreen("close");
     }
 
     // ------------------------------------------------------------------------------------------------ 5. delivery and the counter
@@ -905,8 +911,7 @@ final class JourneyScenario {
             Playtest.log("JOURNEY after the unaffordable click: wallet " + w + ", crafting tables " + tables);
             if (w != F.walletAfterRations) Playtest.fail("the wallet changed on an unaffordable purchase"); else pass("9a failure case: a purchase the wallet cannot cover changes nothing");
         });
-        Playtest.queue("close", () -> Playtest.tap("escape"));
-        until("no screen", () -> mc().screen == null, 100);
+        closeScreen("close");
     }
 
     // ------------------------------------------------------------------------------------------------ 6. a home
@@ -981,8 +986,7 @@ final class JourneyScenario {
             if (w != F.walletAfterRations) Playtest.fail("renting the welcome room cost " + (F.walletAfterRations - w)); else pass("10 rent a starter property on the Home page (motel room, free welcome hours)");
         });
         shot("20-rented");
-        Playtest.queue("close", () -> Playtest.tap("escape"));
-        until("no screen", () -> mc().screen == null, 100);
+        closeScreen("close");
         // into the room: the door, then the barrel
         walk("walk in through the door", () -> F.motelDoor == null ? null : Vec3.atBottomCenterOf(F.motelDoor.north(2)), 1.0, 800);
         Playtest.queue("inside", () -> {
@@ -995,8 +999,7 @@ final class JourneyScenario {
         until("the barrel's screen", () -> mc().screen instanceof AbstractContainerScreen<?> s && !(s instanceof InventoryScreen), 100);
         shot("21-barrel");
         slotClick("the bread (Shift-click into the barrel)", () -> inventorySlotWith((AbstractContainerScreen<?>) mc().screen, st -> st.is(Items.BREAD)), 1, true);
-        Playtest.queue("close", () -> Playtest.tap("escape"));
-        until("no screen", () -> mc().screen == null, 100);
+        closeScreen("close");
         Playtest.queue("the bread is in the barrel", () -> {
             int stored = server(() -> level().getBlockEntity(F.motelBarrel) instanceof net.minecraft.world.Container c ? c.countItem(Items.BREAD) : -1);
             Playtest.log("JOURNEY bread in the barrel: " + stored);
@@ -1041,8 +1044,7 @@ final class JourneyScenario {
         until("learned", () -> server(() -> CitizenState.get(mc().getSingleplayerServer()).find(mc().player.getUUID()).map(c -> c.skills().contains("smith.fundamentals")).orElse(false)), 200);
         Playtest.queue("skill", () -> pass("12 gain profession experience and unlock a skill on the SKILLS page (Forge Fundamentals)"));
         shot("24-skill-learned");
-        Playtest.queue("close", () -> Playtest.tap("escape"));
-        until("no screen", () -> mc().screen == null, 100);
+        closeScreen("close");
     }
 
     private static void reconnect() {
@@ -1319,9 +1321,8 @@ final class JourneyScenario {
                 if (stock != null) WorkOrderLedger.get(mc().getSingleplayerServer()).setRegionalUnitsForTest(stock, 0);
                 return stock != null;
             });
-            Playtest.tap("escape");
         });
-        until("closed", () -> mc().screen == null, 100);
+        closeScreen("close the terminal");
         use("open the terminal again", () -> F.placedTerminal, () -> mc().screen instanceof TerminalScreen, 200);
         click("TRADE", true);
         Playtest.wait("draw", 10);
@@ -1335,8 +1336,7 @@ final class JourneyScenario {
             if (wallet() != w1[0] || count(Items.CHARCOAL) != c1[0]) Playtest.fail("a sold-out shelf sold something");
             else pass("16b failure case: a shelf another buyer emptied sells nothing and takes nothing");
         });
-        Playtest.queue("close", () -> Playtest.tap("escape"));
-        until("no screen", () -> mc().screen == null, 100);
+        closeScreen("close");
     }
 
     /** Inaccessible building: walking at a locked city door and right-clicking it with no lockpicks leaves the door shut and the player outside. */
