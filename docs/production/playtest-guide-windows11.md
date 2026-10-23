@@ -257,6 +257,25 @@ Also look, wherever a building stands higher than the ground beside it, at its r
 
 Things to write down: where you were lost in the first ten minutes; whether the arrow and the side display were enough; whether the walk from the landing to the road was obvious; whether the shopkeepers and the people walking in and out made the streets feel alive; whether the alarm panel was readable and fair; whether the fence's prices felt worth the risk.
 
+## 6g. The roads: roadside places, encounters, the road ends, and (optional) the SecurityCraft trial (about 45 minutes, a NEW world only)
+
+**Written for the October 23 second pass (D-138 to D-141).** A script walked the Ironhaven-Valewood road through a real client, took a courier's letter (set up by an operator command), ate at the Crossroads Diner and was paid for the letter in Valewood ([living-world-roadside.md](living-world-roadside.md)); **no person has done any of it**.
+
+Start a new world as in 6f (`-PucWorldLayout=archipelago -PucPack=world,furnished,scarcity`). The places and encounters exist only in a world started this way.
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Walk out of Ironhaven onto the Valewood road and keep walking | a farm with a stand and a farmhouse (Harrow Farm) beside the first stretch of land, later the Crossroads Diner with a forecourt; each built the first time you come near (a short hitch is possible then) |
+| 2 | Step off at the diner and speak to Dot Mallory, the cook | hot food over the counter at the city's prices or a little more; nothing is free |
+| 3 | Keep travelling the roads for a while (five minutes of road travel or so earns an encounter) | sooner or later, beside the road ahead: a stranded driver, a courier with a letter, goods off a lorry (only on the two roads to Blackwater) or a spilled load. Walk past one: nothing happens. Talk to one: it says what it wants |
+| 4 | Take a courier's letter to the city it names and hand it in at a terminal or a shopkeeper's counter there | its fee, once; a second copy is worth nothing |
+| 5 | Walk off each road end into its city, especially the two ends at Blackwater | a ramp from the road up or down to the city's ground; no step higher than one block |
+| 6 | Visit Kessler Salvage (Ironhaven-Blackwater road) and break a scrap heap; come back an hour of play later | nuggets, sometimes copper or a part; the heaps grow back while you play, never while you are away |
+| 7 | Rent a Saltmarsh Motel room or ask about Harrow Farm's farmhouse (Find a home near them) | the rooms and the farmhouse on the usual terms |
+| 8 | Optional, a separate new world started with `-PucPack=world,furnished,scarcity,securitycraft`: an operator looks at a city building's street door and runs `/uc_security install` (it prints the door's code) | a keypad door, a laser, a siren, a camera and a light. As a stranger, type the code: you are in, but it counts as a break-in. Walk across the laser: the siren and the police. `/uc_security keyholder <you>`: then nothing rings |
+
+Things to write down: whether the places look like they belong; whether stopping was worth it; whether encounters came too often, too rarely or at bad moments; whether the SecurityCraft devices feel like part of this game.
+
 ## 7. Logs, screenshots and bug reports
 
 * Server log: `rpg-core\run-dev\logs\latest.log` (authenticated pack: `build\server-pack\server\logs\latest.log`); crash reports: `rpg-core\run-dev\crash-reports\`.
