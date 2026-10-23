@@ -47,6 +47,9 @@ public final class HudGameTests {
                         bottom = previousBottom;
                         if (anchor.top()) check(plan.y()[i] >= HudLayout.MARGIN + HudLayout.reserved(anchor) - 1, "A top card stays below what the game draws there: " + where);
                         if (anchor.bottom()) check(plan.y()[i] + h <= screen[1] - HudLayout.MARGIN - HudLayout.reserved(anchor) + 1, "A bottom card stays above what the game draws there: " + where);
+                        if (plan.x()[i] + plan.width() > screen[0] / 2 - 91 && plan.x()[i] < screen[0] / 2 + 91) {
+                            check(plan.y()[i] + h <= screen[1] - HudLayout.HOTBAR_RESERVE + 1, "A card over the hotbar's column stays above the hotbar and the bars: " + where + " y " + plan.y()[i] + " h " + h);
+                        }
                         if (anchor.right()) check(plan.x()[i] + plan.width() == screen[0] - HudLayout.MARGIN, "A right-hand card is flush with the right margin: " + where);
                         if (!anchor.right()) check(plan.x()[i] == HudLayout.MARGIN, "A left-hand card is flush with the left margin: " + where);
                     }
@@ -59,6 +62,11 @@ public final class HudGameTests {
         HudLayout.Plan roomy = HudLayout.plan(HudLayout.Anchor.TOP_RIGHT, 1720, 720, stack(66, 82, 58), 1.0f);
         check(roomy.shown()[0] && roomy.shown()[1] && roomy.shown()[2] && Math.abs(roomy.scale() - 1.0f) < 1e-4, "A 3440x1440 window at GUI scale 2 shows all three cards at full size");
         // a small one drops the accepted order first, then the status, and keeps the next step
+        // the real client's 1280x720 window at GUI scale 3 (427x240): the stack at the right side used to cover the hunger bar and the hotbar's right-hand squares
+        HudLayout.Plan side = HudLayout.plan(HudLayout.Anchor.MIDDLE_RIGHT, 427, 240, stack(66, 82, 58), 1.0f);
+        int lastShown = -1;
+        for (int i = 0; i < 3; i++) if (side.shown()[i]) lastShown = i;
+        check(side.any() && side.y()[lastShown] + Math.round(new int[]{66, 82, 58}[lastShown] * side.scale()) <= 240 - HudLayout.HOTBAR_RESERVE, "At 1280x720 GUI 3 the side stack ends above the hotbar: " + side.y()[lastShown] + " at scale " + side.scale());
         HudLayout.Plan small = HudLayout.plan(HudLayout.Anchor.TOP_RIGHT, 427, 190, stack(66, 82, 58), 1.0f);
         check(small.shown()[2] && !small.shown()[1], "A small window drops the accepted order before the next step: " + java.util.Arrays.toString(small.shown()));
         // no stack at all when even the smallest card does not fit

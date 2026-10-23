@@ -6,7 +6,8 @@ package io.github.stoffe101.undergroundcity;
  *
  * <p>The corners and what lives in them (measured against the pinned pack, D-109): Xaero's minimap is at the top left by default and moves itself away from boss bars and status effects; the
  * game draws status effects at the top right (up to two rows of 24 pixels); boss bars and Jade's tooltip at the top centre (so no anchor stands there); chat at the bottom left; the hotbar, the health, hunger and thirst bars and the
- * held-item name at the bottom centre; TaCZ's ammunition readout at the bottom right. The default anchor is therefore the top right, below the status effects.
+ * held-item name at the bottom centre; TaCZ's ammunition readout at the bottom right. The default anchor is therefore the top right, below the status effects. Wherever the stack sits, on a
+ * window narrow enough for it to reach over the hotbar's column it stops above the hotbar and the bars ({@link #HOTBAR_RESERVE}).
  */
 final class HudLayout {
     private HudLayout() {}
@@ -25,6 +26,18 @@ final class HudLayout {
 
     static final int MARGIN = 6, GAP = 4, CARD_WIDTH = 176;
     static final float MIN_SCALE = 0.6f, MAX_SCALE = 1.5f;
+    /**
+     * The hotbar and what the game stacks above it at the bottom centre (the experience bar, the health, armour, hunger, thirst and air rows, the held item's name): 182 pixels wide and up to
+     * 60 high. A stack whose cards reach over that column keeps its bottom above it. A real client at 1280x720, GUI scale 3, showed the next-step card drawn over the hunger bar and the
+     * hotbar's right-hand squares.
+     */
+    static final int HOTBAR_RESERVE = 60, HOTBAR_HALF_WIDTH = 100;
+
+    /** True when a stack of width {@code w} at this anchor reaches over the hotbar's column. */
+    static boolean overHotbar(Anchor anchor, int screenW, int w) {
+        int left = anchor.right() ? screenW - MARGIN - w : MARGIN;
+        return left + w > screenW / 2 - HOTBAR_HALF_WIDTH && left < screenW / 2 + HOTBAR_HALF_WIDTH;
+    }
 
     /** Pixels (GUI units) an anchor leaves free at the edge it sits on, for what the game or a common mod draws there. */
     static int reserved(Anchor anchor) {
@@ -52,12 +65,15 @@ final class HudLayout {
         for (int i = 0; i < n; i++) { shown[i] = cards[i].height() > 0; if (shown[i]) count++; }
         float scale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, wantedScale));
         int edge = reserved(anchor);
-        int availableH = screenH - 2 * MARGIN - edge;
+        int topLimit = MARGIN + (anchor.top() ? edge : 0), bottomEdge = anchor.bottom() ? edge : 0;
         int availableW = screenW - 2 * MARGIN;
         while (count > 0) {
             int total = stackHeight(cards, shown);
-            // the largest scale (not above the wanted one) at which the stack fits, never below the minimum
-            float fit = Math.min(scale, Math.min(availableH / (float) Math.max(1, total), availableW / (float) CARD_WIDTH));
+            // the largest scale (not above the wanted one) at which the stack fits, never below the minimum; over the hotbar's column the stack stops above it
+            float fit = Math.min(scale, Math.min((screenH - topLimit - MARGIN - bottomEdge) / (float) Math.max(1, total), availableW / (float) CARD_WIDTH));
+            if (overHotbar(anchor, screenW, Math.round(CARD_WIDTH * fit))) {
+                fit = Math.min(fit, (screenH - topLimit - MARGIN - Math.max(bottomEdge, HOTBAR_RESERVE)) / (float) Math.max(1, total));
+            }
             if (fit >= MIN_SCALE) { scale = fit; break; }
             // drop the least important shown card and try again
             int drop = -1;
@@ -69,7 +85,8 @@ final class HudLayout {
         if (count == 0) return new Plan(scale, shown, x, y, 0, 0);
         int w = Math.round(CARD_WIDTH * scale), h = Math.round(stackHeight(cards, shown) * scale);
         int left = anchor.right() ? screenW - MARGIN - w : MARGIN;
-        int top = anchor.top() ? MARGIN + edge : anchor.middle() ? (screenH - h) / 2 : screenH - MARGIN - edge - h;
+        int bottomLimit = screenH - MARGIN - (overHotbar(anchor, screenW, w) ? Math.max(bottomEdge, HOTBAR_RESERVE) : bottomEdge);
+        int top = anchor.top() ? topLimit : anchor.middle() ? topLimit + Math.max(0, (bottomLimit - topLimit - h) / 2) : bottomLimit - h;
         int cursor = top;
         for (int i = 0; i < n; i++) {
             if (!shown[i]) continue;
