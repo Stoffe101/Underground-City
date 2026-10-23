@@ -136,6 +136,10 @@ public final class UndergroundCity {
         MinecraftForge.EVENT_BUS.register(new OrderTracker());
         MinecraftForge.EVENT_BUS.register(new Journey());
         MinecraftForge.EVENT_BUS.register(new DevBootstrap());
+        // the roads are planned in the background as the overworld loads, not on the server thread's first road chunk (a nine-second freeze mid-play)
+        MinecraftForge.EVENT_BUS.addListener((net.minecraftforge.event.level.LevelEvent.Load event) -> {
+            if (event.getLevel() instanceof net.minecraft.server.level.ServerLevel level) CorridorRoadFeature.prepare(level);
+        });
         MinecraftForge.EVENT_BUS.register(new TerrainMapHarness());
         MinecraftForge.EVENT_BUS.register(new CityProbe());
         MinecraftForge.EVENT_BUS.register(new OreAudit());

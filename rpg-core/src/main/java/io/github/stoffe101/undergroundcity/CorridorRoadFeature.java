@@ -12,9 +12,15 @@ import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.feature.Feature;
 import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
 
+import net.minecraft.Util;
+import net.minecraft.world.level.LevelHeightAccessor;
+import net.minecraft.world.level.chunk.ChunkGenerator;
+import net.minecraft.world.level.levelgen.RandomState;
+
 import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Builds the inter-city roads and bridges while NEW chunks are generated, so it can never rewrite an existing save.
@@ -39,26 +45,47 @@ public final class CorridorRoadFeature extends Feature<CorridorRoadConfig> {
         return plans == null ? List.of() : plans;
     }
 
+    private static final Map<ServerLevel, CompletableFuture<List<CorridorPlan>>> PREPARING = new WeakHashMap<>();
+
     private static synchronized List<CorridorPlan> plansFor(FeaturePlaceContext<CorridorRoadConfig> context) {
         ServerLevel server = context.level().getLevel();
         List<CorridorPlan> plans = PLANS.get(server);
         if (plans != null) return plans;
+        CompletableFuture<List<CorridorPlan>> preparing = PREPARING.remove(server);
+        plans = preparing != null ? preparing.join() : plan(context.config().plans(), context.chunkGenerator(), server.getChunkSource().randomState(), context.level(), "when the first road chunk was generated");
+        PLANS.put(server, plans);
+        return plans;
+    }
+
+    /**
+     * Plans a level's roads on a background worker as soon as the level loads. The plan depends only on the seed and the route data, and planning reads the terrain noise along
+     * three roads of a thousand blocks: about nine and a half seconds, measured twice in a scripted journey, when it was done for the first road chunk the server generated. That
+     * chunk came mid-play (walking toward the road, and again after a save and reopen started a new integrated server) and the server fell nine seconds behind: the world froze.
+     * The first road chunk now takes the finished plan, or waits for the rest of it; a level without the roads, or not laid out as regions, plans nothing.
+     */
+    static synchronized void prepare(ServerLevel level) {
+        if (level.dimension() != Level.OVERWORLD || PLANS.containsKey(level) || PREPARING.containsKey(level)) return;
+        var generator = level.getChunkSource().getGenerator();
+        if (!WorldLayout.regional(generator)) return;
+        var feature = level.registryAccess().registryOrThrow(net.minecraft.core.registries.Registries.CONFIGURED_FEATURE)
+            .get(net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(UndergroundCity.MOD_ID, "corridor_roads"));
+        if (feature == null || !(feature.config() instanceof CorridorRoadConfig config)) return;
+        var random = level.getChunkSource().randomState();
+        PREPARING.put(level, CompletableFuture.supplyAsync(() -> plan(config.plans(), generator, random, level, "in the background as the world loaded"), Util.backgroundExecutor()));
+    }
+
+    private static List<CorridorPlan> plan(List<CorridorPlan> plans, ChunkGenerator generator, RandomState random, LevelHeightAccessor heights, String when) {
         long started = System.nanoTime();
-        var generator = context.chunkGenerator();
-        var random = server.getChunkSource().randomState();
-        var region = context.level();
         CorridorPlan.Terrain terrain = new CorridorPlan.Terrain() {
-            @Override public int surface(int x, int z) { return generator.getBaseHeight(x, z, Heightmap.Types.WORLD_SURFACE_WG, region, random); }
-            @Override public int floor(int x, int z) { return generator.getBaseHeight(x, z, Heightmap.Types.OCEAN_FLOOR_WG, region, random); }
+            @Override public int surface(int x, int z) { return generator.getBaseHeight(x, z, Heightmap.Types.WORLD_SURFACE_WG, heights, random); }
+            @Override public int floor(int x, int z) { return generator.getBaseHeight(x, z, Heightmap.Types.OCEAN_FLOOR_WG, heights, random); }
         };
-        plans = context.config().plans();
         for (CorridorPlan plan : plans) {
             plan.build(terrain);
             LogUtils.getLogger().info("[UC-ROAD] {}: {} blocks, {} profile samples, {} bridge samples, steepest step {} half blocks",
                 plan.id(), Math.round(plan.length()), plan.samples(), plan.bridgeSamples(), plan.maxProfileStep());
         }
-        LogUtils.getLogger().info("[UC-ROAD] Planned {} road(s) from terrain in {} ms", plans.size(), (System.nanoTime() - started) / 1_000_000);
-        PLANS.put(server, plans);
+        LogUtils.getLogger().info("[UC-ROAD] Planned {} road(s) from terrain in {} ms, {}", plans.size(), (System.nanoTime() - started) / 1_000_000, when);
         return plans;
     }
 
