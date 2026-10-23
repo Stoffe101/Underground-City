@@ -1,7 +1,7 @@
 {
   "allowDoors": false,
   "allowFillers": false,
-  "filler": "a",
+  "filler": "c",
   "maxcellars": 0,
   "maxfloors": 4,
   "mincellars": 0,
@@ -43,5 +43,5 @@
     }
   ],
   "refpalette": "underground_city:bw_apartments",
-  "rubble": "a"
+  "rubble": "c"
 }

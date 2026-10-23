@@ -20,7 +20,13 @@ from dataclasses import dataclass, field
 
 FLOOR_H = 6
 SIZE = 16
-CHAR_POOL = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!$%&*+,-./:;<=>?@[]^_`{|}~"
+# Characters Lost Cities itself draws with in every city chunk, from its style palettes: a raised block's retaining wall ("border", y) and the wall on top (w), the street (S), its base (b)
+# and variant (B), a park's raised ground and a corridor's roof (x), corridor glass (+), sphere glass and border (Z, 9), bridge and highway supports (v). A building palette is merged over
+# the style's in the building's own chunk, so a building that gives one of these characters a block of its own redraws that part of the city with it: a road check found a Blackwater
+# office's retaining wall made of sofas, and the pub's, the bakery's and a Valewood house's would have been beds and a toilet. They are never given out.
+LOST_CITIES_RESERVED = "ywSbBx+Z9v"
+CHAR_POOL = "".join(c for c in "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!$%&*,-./:;<=>?@[]^_`{|}~#'()" if c not in LOST_CITIES_RESERVED) \
+    + "".join(chr(c) for c in range(0xC0, 0x100) if c not in (0xD7, 0xF7))   # Latin-1 letters, for a palette that outgrows ASCII (Lost Cities keys palettes by Java char)
 DIRS = {"north": (0, -1), "south": (0, 1), "east": (1, 0), "west": (-1, 0)}
 OPPOSITE = {"north": "south", "south": "north", "east": "west", "west": "east"}
 LEFT_OF = {"north": "west", "west": "south", "south": "east", "east": "north"}   # turning left from facing

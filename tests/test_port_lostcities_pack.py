@@ -55,6 +55,12 @@ class PortTheFixture(unittest.TestCase):
         self.assertNotIn("slices", report)
         self.assertNotIn("##", report)
 
+    def test_a_palette_that_takes_a_lost_cities_style_character_is_named(self):
+        # the fixture's ground part gives "x" (a park's raised ground and a corridor roof in Lost Cities' style) a block of its own
+        result = porter.port(self.source, self.dest)
+        self.assertEqual(result["style_characters_redefined"], {"parts/fixture_house_ground.json": ["x"]})
+        self.assertTrue(result["loadable"])
+
     def test_a_mapping_decides_before_the_fallbacks(self):
         report = porter.port(self.source, self.dest, mapping={"create:shaft": "minecraft:chain[axis=y]"})
         self.assertIn("minecraft:chain[axis=y]", every_json(self.dest / "data"))

@@ -47,191 +47,191 @@
     },
     {
       "block": "minecraft:polished_blackstone_bricks",
-      "char": "9"
-    },
-    {
-      "block": "minecraft:iron_door[facing=south,half=lower,hinge=left,open=false]",
       "char": "a"
     },
     {
-      "block": "minecraft:iron_door[facing=south,half=upper,hinge=left,open=false]",
-      "char": "b"
-    },
-    {
-      "block": "minecraft:iron_door[facing=south,half=lower,hinge=right,open=false]",
+      "block": "minecraft:iron_door[facing=south,half=lower,hinge=left,open=false]",
       "char": "c"
     },
     {
-      "block": "minecraft:iron_door[facing=south,half=upper,hinge=right,open=false]",
+      "block": "minecraft:iron_door[facing=south,half=upper,hinge=left,open=false]",
       "char": "d"
     },
     {
-      "block": "minecraft:sea_lantern",
+      "block": "minecraft:iron_door[facing=south,half=lower,hinge=right,open=false]",
       "char": "e"
     },
     {
-      "block": "minecraft:iron_door[facing=north,half=lower,hinge=left,open=false]",
+      "block": "minecraft:iron_door[facing=south,half=upper,hinge=right,open=false]",
       "char": "f"
     },
     {
-      "block": "minecraft:iron_door[facing=north,half=upper,hinge=left,open=false]",
+      "block": "minecraft:sea_lantern",
       "char": "g"
     },
     {
-      "block": "minecraft:iron_door[facing=north,half=lower,hinge=right,open=false]",
+      "block": "minecraft:iron_door[facing=north,half=lower,hinge=left,open=false]",
       "char": "h"
     },
     {
-      "block": "minecraft:iron_door[facing=north,half=upper,hinge=right,open=false]",
+      "block": "minecraft:iron_door[facing=north,half=upper,hinge=left,open=false]",
       "char": "i"
     },
     {
-      "block": "minecraft:cyan_concrete",
+      "block": "minecraft:iron_door[facing=north,half=lower,hinge=right,open=false]",
       "char": "j"
     },
     {
-      "block": "modernlife:turntable[facing=south,powered=false]",
+      "block": "minecraft:iron_door[facing=north,half=upper,hinge=right,open=false]",
       "char": "k"
     },
     {
-      "block": "modernlife:oak_small_table[type=single]",
+      "block": "minecraft:cyan_concrete",
       "char": "l"
     },
     {
-      "block": "modernlife:guitar_amplifier[facing=south]",
+      "block": "modernlife:turntable[facing=south,powered=false]",
       "char": "m"
     },
     {
-      "block": "modernlife:dual_monitor[facing=south]",
+      "block": "modernlife:oak_small_table[type=single]",
       "char": "n"
     },
     {
-      "block": "modernlife:dark_oak_kitchen_cabinet[facing=west]",
+      "block": "modernlife:guitar_amplifier[facing=south]",
       "char": "o"
     },
     {
-      "block": "modernlife:dark_oak_wall_shelf[facing=west]",
+      "block": "modernlife:dual_monitor[facing=south]",
       "char": "p"
     },
     {
-      "block": "modernlife:coffee_mug[facing=west]",
+      "block": "modernlife:dark_oak_kitchen_cabinet[facing=west]",
       "char": "q"
     },
     {
-      "block": "modernlife:dark_oak_chair[facing=east]",
+      "block": "modernlife:dark_oak_wall_shelf[facing=west]",
       "char": "r"
     },
     {
-      "block": "modernlife:red_sofa[facing=north,type=left]",
+      "block": "modernlife:coffee_mug[facing=west]",
       "char": "s"
     },
     {
-      "block": "modernlife:red_sofa[facing=north,type=middle]",
+      "block": "modernlife:dark_oak_chair[facing=east]",
       "char": "t"
     },
     {
-      "block": "modernlife:red_sofa[facing=north,type=right]",
+      "block": "modernlife:red_sofa[facing=north,type=left]",
       "char": "u"
     },
     {
-      "block": "modernlife:dark_oak_small_table[type=single]",
-      "char": "v"
-    },
-    {
-      "block": "modernlife:red_sofa[facing=east,type=left]",
-      "char": "w"
-    },
-    {
-      "block": "modernlife:red_sofa[facing=east,type=middle]",
-      "char": "x"
-    },
-    {
-      "block": "modernlife:red_sofa[facing=east,type=right]",
-      "char": "y"
-    },
-    {
-      "block": "minecraft:verdant_froglight[axis=y]",
+      "block": "modernlife:red_sofa[facing=north,type=middle]",
       "char": "z"
     },
     {
-      "block": "minecraft:pearlescent_froglight[axis=y]",
+      "block": "modernlife:red_sofa[facing=north,type=right]",
       "char": "A"
     },
     {
-      "block": "minecraft:end_rod[facing=up]",
-      "char": "B"
-    },
-    {
-      "block": "minecraft:oak_stairs[facing=north,half=bottom,shape=straight]",
+      "block": "modernlife:dark_oak_small_table[type=single]",
       "char": "C"
     },
     {
-      "block": "modernlife:black_sofa[facing=south,type=left]",
+      "block": "modernlife:red_sofa[facing=east,type=left]",
       "char": "D"
     },
     {
-      "block": "modernlife:black_sofa[facing=south,type=middle]",
+      "block": "modernlife:red_sofa[facing=east,type=middle]",
       "char": "E"
     },
     {
-      "block": "modernlife:black_sofa[facing=south,type=right]",
+      "block": "modernlife:red_sofa[facing=east,type=right]",
       "char": "F"
     },
     {
-      "block": "modernlife:black_sofa[facing=north,type=left]",
+      "block": "minecraft:verdant_froglight[axis=y]",
       "char": "G"
     },
     {
-      "block": "modernlife:black_sofa[facing=north,type=middle]",
+      "block": "minecraft:pearlescent_froglight[axis=y]",
       "char": "H"
     },
     {
-      "block": "modernlife:black_sofa[facing=north,type=right]",
+      "block": "minecraft:end_rod[facing=up]",
       "char": "I"
     },
     {
-      "block": "modernlife:dark_oak_coffee_table[type=w_end]",
+      "block": "minecraft:oak_stairs[facing=north,half=bottom,shape=straight]",
       "char": "J"
     },
     {
-      "block": "modernlife:dark_oak_coffee_table[type=e_end]",
+      "block": "modernlife:black_sofa[facing=south,type=left]",
       "char": "K"
     },
     {
-      "block": "modernlife:kitchen_sink[facing=west]",
+      "block": "modernlife:black_sofa[facing=south,type=middle]",
       "char": "L"
     },
     {
-      "block": "modernlife:modern_oak_bookshelf[facing=north]",
+      "block": "modernlife:black_sofa[facing=south,type=right]",
       "char": "M"
     },
     {
-      "block": "modernlife:dual_monitor[facing=west]",
+      "block": "modernlife:black_sofa[facing=north,type=left]",
       "char": "N"
     },
     {
-      "block": "minecraft:barrel[facing=up,open=false]",
+      "block": "modernlife:black_sofa[facing=north,type=middle]",
       "char": "O"
     },
     {
-      "block": "modernlife:modern_oak_bookshelf[facing=east]",
+      "block": "modernlife:black_sofa[facing=north,type=right]",
       "char": "P"
     },
     {
-      "block": "minecraft:ochre_froglight[axis=y]",
+      "block": "modernlife:dark_oak_coffee_table[type=w_end]",
       "char": "Q"
     },
     {
-      "block": "modernlife:air_conditioner[facing=south]",
+      "block": "modernlife:dark_oak_coffee_table[type=e_end]",
       "char": "R"
     },
     {
+      "block": "modernlife:kitchen_sink[facing=west]",
+      "char": "T"
+    },
+    {
+      "block": "modernlife:modern_oak_bookshelf[facing=north]",
+      "char": "U"
+    },
+    {
+      "block": "modernlife:dual_monitor[facing=west]",
+      "char": "V"
+    },
+    {
+      "block": "minecraft:barrel[facing=up,open=false]",
+      "char": "W"
+    },
+    {
+      "block": "modernlife:modern_oak_bookshelf[facing=east]",
+      "char": "X"
+    },
+    {
+      "block": "minecraft:ochre_froglight[axis=y]",
+      "char": "Y"
+    },
+    {
+      "block": "modernlife:air_conditioner[facing=south]",
+      "char": "!"
+    },
+    {
       "block": "modernlife:air_conditioner[facing=north]",
-      "char": "S"
+      "char": "$"
     },
     {
       "block": "underground_city:alarm_panel[facing=north,light=off]",
-      "char": "T"
+      "char": "%"
     }
   ]
 }

@@ -1,7 +1,7 @@
 {
   "allowDoors": false,
   "allowFillers": false,
-  "filler": "9",
+  "filler": "a",
   "maxcellars": 0,
   "maxfloors": 2,
   "mincellars": 0,
@@ -29,5 +29,5 @@
     }
   ],
   "refpalette": "underground_city:bw_store",
-  "rubble": "9"
+  "rubble": "a"
 }

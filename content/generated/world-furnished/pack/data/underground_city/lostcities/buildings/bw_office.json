@@ -1,7 +1,7 @@
 {
   "allowDoors": false,
   "allowFillers": false,
-  "filler": "9",
+  "filler": "a",
   "maxcellars": 0,
   "maxfloors": 3,
   "mincellars": 0,
@@ -36,5 +36,5 @@
     }
   ],
   "refpalette": "underground_city:bw_office",
-  "rubble": "9"
+  "rubble": "a"
 }

@@ -39,6 +39,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import private_pack_tool as packs  # noqa: E402
 import validate_city_blocks as blocks  # noqa: E402
+from citykit import LOST_CITIES_RESERVED  # noqa: E402
 
 REPORT = "uc-port-report.json"
 PACK_FORMAT_1201 = 15
@@ -75,6 +76,7 @@ class Porter:
                        "mob_markers_removed": 0, "loot_dropped": 0, "files_copied": 0, "worldstyles_to_review": 0}
         self.foreign: dict[str, str] = {}      # replaced block id -> what it became
         self.problems: list[str] = []
+        self.style_chars: dict[str, list[str]] = {}   # palette -> Lost Cities style characters it gives a block of its own (a warning: see LOST_CITIES_RESERVED)
 
     # ------------------------------------------------------------------------------------------------ one block spec
 
@@ -133,6 +135,10 @@ class Porter:
 
     def palette(self, entries: list, where: str) -> list:
         self.counts["palettes"] += 1
+        # a building's palette is merged over the city style's in its chunk, so these characters redraw the retaining walls and streets around it (intended only in a style's own palette)
+        taken = sorted({str(e.get("char", "")) for e in entries} & set(LOST_CITIES_RESERVED))
+        if taken and not where.startswith(("styles/", "citystyles/")):
+            self.style_chars[where] = taken
         return [self.entry(e, f"{where} '{e.get('char', '?')}'") for e in entries]
 
     # ------------------------------------------------------------------------------------------------ a whole pack
@@ -162,6 +168,7 @@ class Porter:
     def report(self) -> dict:
         return {"schema_version": 1, "counts": self.counts, "replaced_blocks": dict(sorted(self.foreign.items())), "registry_checked": self.registry is not None,
                 "problems": self.problems, "loadable": not self.problems,
+                "style_characters_redefined": dict(sorted(self.style_chars.items())),
                 "note": "Counts and block ids only; no content. A port with problems must not be loaded: fix the mapping and port again."}
 
 

@@ -34,6 +34,15 @@ class CityBlockTests(unittest.TestCase):
     def test_garbage_is_reported_not_raised(self):
         self.assertEqual(len(v.problems_of("Not A Block", REGISTRY)), 1)
 
+    def test_a_palette_never_takes_a_character_lost_cities_draws_the_city_with(self):
+        # a Blackwater office once gave "y" (the raised block's retaining wall) to a sofa, and the wall under it came out as sofas
+        palette = citykit.Palette("t")
+        chars = {palette.char(f"minecraft:block_{i}") for i in range(120)}
+        self.assertFalse(chars & set(citykit.LOST_CITIES_RESERVED))
+        for path in sorted((Path(__file__).resolve().parents[1] / "content/generated/world-furnished/pack/data/underground_city/lostcities/palettes").glob("*.json")):
+            used = {entry["char"] for entry in __import__("json").loads(path.read_text(encoding="utf-8"))["palette"]}
+            self.assertFalse(used & set(citykit.LOST_CITIES_RESERVED), f"{path.name} redraws the city with {sorted(used & set(citykit.LOST_CITIES_RESERVED))}")
+
 
 if __name__ == "__main__":
     unittest.main()
