@@ -25,10 +25,10 @@ final class PathWalker {
     private final double within, withinY;
     private final String label;
     private List<Vec3> nodes = new ArrayList<>();
-    private int next, ticks, sinceProgress, replans, legs, jumps, doors, planWait, jumpHold;
+    private int next, ticks, sinceProgress, replans, legs, jumps, doors, planWait, jumpHold, swims;
     private double best = Double.MAX_VALUE;
     private int bestNode = -1;
-    private boolean done, failed, keysDown, planning;
+    private boolean done, failed, keysDown, planning, swimming;
     private Vec3 stuckAt;
     private int sidestep;
     private String summary = "";
@@ -76,7 +76,7 @@ final class PathWalker {
     }
 
     private void release() {
-        if (jumpHold > 0) { Playtest.keyUp("space"); jumpHold = 0; }
+        if (jumpHold > 0 || swimming) { Playtest.keyUp("space"); jumpHold = 0; swimming = false; }
         if (sidestep > 0) { Playtest.keyUp("a"); Playtest.keyUp("d"); sidestep = 0; }
         if (!keysDown) return;
         Playtest.keyUp("w");
@@ -85,7 +85,7 @@ final class PathWalker {
 
     /** A jump is the Space key held for a few ticks: the game reads whether it is down at a tick, so a press and release in one instant jumps nothing. */
     private void jump() {
-        if (jumpHold > 0) return;
+        if (jumpHold > 0 || swimming) return;
         Playtest.keyDown("space");
         jumpHold = 4;
         jumps++;
@@ -94,7 +94,7 @@ final class PathWalker {
     private void finish(boolean fail, String why) {
         release();
         done = true; failed = fail;
-        summary = label + ": " + why + " after " + ticks + " ticks (" + String.format(java.util.Locale.ROOT, "%.0f", ticks / 20.0) + " s), " + legs + " legs, " + replans + " re-plans when stuck, " + jumps + " jumps, " + doors + " doors";
+        summary = label + ": " + why + " after " + ticks + " ticks (" + String.format(java.util.Locale.ROOT, "%.0f", ticks / 20.0) + " s), " + legs + " legs, " + replans + " re-plans when stuck, " + jumps + " jumps, " + doors + " doors" + (swims > 0 ? ", swam up " + swims + " times" : "");
         Playtest.log(summary);
     }
 
@@ -105,6 +105,10 @@ final class PathWalker {
         if (me == null || done) return;
         ticks++;
         if (jumpHold > 0 && --jumpHold == 0) Playtest.keyUp("space");
+        // head under water: swim up with the jump key, as a person does (journey run 53 walked into a flooded pit and drowned pushing at its wall)
+        if (me.isEyeInFluid(net.minecraft.tags.FluidTags.WATER)) {
+            if (!swimming) { Playtest.keyDown("space"); swimming = true; swims++; }
+        } else if (swimming) { Playtest.keyUp("space"); swimming = false; jumpHold = 0; }
         Vec3 goal = target.get();
         if (goal == null) { finish(true, "the target is gone"); return; }
         double left = flat(me.position(), goal);

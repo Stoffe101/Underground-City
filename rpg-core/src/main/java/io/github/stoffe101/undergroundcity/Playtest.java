@@ -176,6 +176,13 @@ public final class Playtest {
         DevWorldLauncher.acceptExperimentalWarning(mc);
         if (System.nanoTime() - started > LIMIT_NANOS) { fail("timed out in step " + (current == null ? "(none)" : current.name())); finish(); return; }
         if (mc.player == null || mc.level == null || mc.getSingleplayerServer() == null) return;
+        // no scenario expects the player to die; a dead player loads no chunks, so every later step would only wait out its budget (journey run 53 drowned and waited ten minutes)
+        if (mc.player.isDeadOrDying()) {
+            var cause = mc.player.getLastDamageSource();
+            fail("the player died" + (cause == null ? "" : " (" + cause.getMsgId() + ")") + " at " + mc.player.blockPosition().toShortString() + " in step " + (current == null ? "(none)" : current.name()));
+            finish();
+            return;
+        }
         if (!scenarioBuilt) {
             scenarioBuilt = true;
             wait("let the world settle", 100);
