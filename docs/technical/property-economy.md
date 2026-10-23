@@ -34,6 +34,23 @@ Ten categories are *priced*; **three have a building**. The model can say whethe
 | Welcome | 2 free motel cycles, once per person, recorded in the ledger |
 | Upgrades (owners only) | Locking racks 260 (3 more containers, 1 more private), Workshop fit-out 600 (heavy workstations), Running water 320 (water may be placed; lava never) |
 
+## Homes in the furnished cities (D-127)
+
+**Implemented; GameTested (`CityHomesGameTests`, 3 cases); nobody has rented one in a real client.**
+
+The furnished cities' buildings carry units (a tenement's flats, a house, a workshop's or warehouse's premises), and `ladder.json` has **city templates** that tie a kind of building to a category and a share that is to let:
+
+| Building | Category | To let | Rent / h | Purchase |
+| --- | --- | --- | --- | --- |
+| Ironhaven tenement flats | Small apartment | 34% | 40 | 2,000 |
+| Blackwater apartment block flats | Comfortable apartment | 25% | 55 | 3,000 |
+| Valewood cottage | Small house | 40% | 85 | 5,400 |
+| Valewood houses (two plans) | Small house | 30% | 85 | 5,400 |
+| Ironhaven workshop premises | Commercial workshop | 20% | 135 | 10,500 |
+| Ironhaven warehouse premises | Warehouse or production facility | 15% | 170 | 14,000 |
+
+Which units are to let is a pure function of the world seed, the building and the unit, so both players see the same street. A unit becomes an ordinary registered home (`city:<type>:<chunk>:<unit>`, titled with an address such as "Flat 3, 12 Rivet Lane") the first time it matters: when a player near it opens the Home page, or touches its building's door. From then on it is rented, bought, billed in active household time, guarded and moved out of exactly like the Row's homes; the city price factor applies as for any home in a city circle. A tenant of a flat holds a key to the building's street door; a house's own door is its door. Nobody of the household lives in a unit that is to let, and no stash is placed in one. Seven of the ten categories now have at least one building (motel room, small and comfortable apartment, small house, house with workshop, commercial workshop, warehouse); larger apartment, farmhouse and premium residence still have none. The economy model checks the templates like the Row's listings (premises are modelled as Crew-paid, at twice the mean household income).
+
 ## Time: rent runs on active household time (D-012, D-099)
 
 * A home has one clock. It advances while **at least one resident is online** and **never while all are offline**, and by exactly the same amount whether one resident is online or four (a unit test with two residents shows the clock moved once). A resident is the owner or tenant, or **any member of the owning Crew** (`CrewLedger.residentsOf`), so a Crew home's clock runs while any member is online.

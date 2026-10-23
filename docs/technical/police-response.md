@@ -17,7 +17,9 @@ Nothing else raises a response. A creative or spectating player is never policed
 * **Choose when:** a witness needs a person in sight, and the people of a city are in the street by day, so a night break-in is seen less often.
 * **Choose how long:** the arrival time is the class's, so a thief decides whether the rooms of an alarmed building are worth the minutes they cost; the stash's vigilance (existing) rises with each forcing.
 * **Choose where to be:** officers wait at the door and chase on foot at a sprinting pace; the response ends when the thief is out of reach for the class's window.
-* **Not available yet:** disabling an alarm by a skill, a tool or hacking a panel; cameras and motion sensors; cutting power; a fence who buys marked goods; a disguise. They are the obvious next steps and none exists.
+* **Work the panel (D-128):** an alarmed furnished building has a panel by its street door; a Technician can jam it inside the entry delay, or before anybody comes in (see [Alarm panels](#alarm-panels)).
+* **Sell to a fence (D-125):** marked goods can be sold at night, at a discount, to a fence (see [Fences](#fences)).
+* **Not available yet:** cameras and motion sensors; cutting power; a disguise.
 
 ## What a response does
 
@@ -58,7 +60,36 @@ When a Household Safe's lock gives way (`PropertyCacheBlockEntity.forcedOpenBy`)
 * a marked stack stacks only with other marked stacks of the same city;
 * stock that arrives in the safe later is not marked until the safe is forced again, and nothing marks goods anywhere else.
 
-What marking does not do: it does not stop a person using the goods, and **no fence yet buys or launders them**: the underground buyers of the work-order system do not know about the mark, and whether Q Shop's counter accepts or refuses an item that carries extra NBT has **not been tested**. How a marked stack is sold at a discount is future work. The honest statement is: stolen goods can be lost to an arrest or a checkpoint; there is no designed, tested way yet to turn them into money.
+What marking does not do: it does not stop a person using the goods. The work-order buyers do not know about the mark, and whether Q Shop's counter accepts or refuses an item that carries extra NBT has **not been tested**. The designed way to turn marked goods into money is a fence (below).
+
+## Fences
+
+**D-125. Implemented; GameTested (`FenceGameTests`, 8 cases); checked by the economic model; nobody has sold to one.**
+
+A fence is a person of a furnished building's back office who keeps the night: from 21:00 to 03:00 they are at their spot (`fence` in the building's plan) and speaking to them offers "I have something to sell", which opens the fence's own screen. Two fences exist (`data/underground_city/fences/`):
+
+| City | Fence | Where | Rate | Same city | Budget | Refill |
+| --- | --- | --- | --- | --- | --- | --- |
+| Ironhaven | The Yard | the warehouse's office | 45% | 30% and +1 heat in Ironhaven | 240 | 40 credits every 10 active minutes |
+| Blackwater | The Back Room | the club's back office | 50% | 32% and +1 heat in Blackwater | 320 | 45 credits every 10 active minutes |
+
+* **Only stolen goods, only from the pockets.** A fence lists the stacks of the seller's inventory that carry the stolen mark and an item worth (`fences/values.json`); honest goods and anything in a backpack are not offered.
+* **Never a way to launder.** An item's worth is its cheapest honest price (shelves, shops, exchange); a fence pays its rate plus up to ten points of the seller's underground payout skill, never above 60 percent of the worth, so nothing that can be bought can be fenced for what it cost. The economic model fails if a worth is set above an honest price, or an item fences for as much as it costs (`fence_problems`).
+* **A demand cap.** A fence has a budget; a sale larger than what is left is partial (the rest stays in the pockets) and the budget refills in active time only. The model measures the hourly take after the budget at 51 percent (The Yard) and 57 percent (The Back Room) of the best legal hour at level 5 and fails above 150 percent.
+* **Crash-safe.** The sale is one prepared journal record (`WorkOrderLedger` kind SALE: the goods' removal, the credits, the fence's budget and the heat) written before anything changes and settled once on recovery.
+* **Not shown:** a person selling to a fence in a generated city at night; whether the rates feel worth the risk.
+
+## Alarm panels
+
+**D-128. Implemented; GameTested (`AlarmPanelGameTests`, 8 cases); not seen in a real client yet.**
+
+An alarmed furnished building (a class with a response: the flats, the workshop, the warehouse, the office, the club, the shops, the pub, the corner store and the bakery; 10 of the 13 buildings) has an **alarm panel** on a plain wall a few steps inside its street door, placed by the generator (`scripts/city_content.py`, an `alarm` spot in the building's plan). The panel's light is set by the server for the panels round each player every two seconds: **dark** when this building's alarm is not wired, **red** when it is armed, **amber** (flashing) while an entry delay runs, **blue** while it is jammed. Anybody can see the light through a window or an open door, which is how a thief cases a building.
+
+* **The entry delay.** A break-in of an armed building that has a panel in the world does not ring at once: the panel beeps for **25 seconds** and then rings, and the response is the class's own, exactly as an alarm without a panel. A snapped pick still rings at once. A clean pick still slips past an alarm that can be slipped past (above).
+* **Working the panel.** A Technician with Bypass Tooling right-clicks the panel: a Bypass Kit is spent the moment the trace starts, the server picks a hidden signal (five symbols of four; six in a high-security building), the client shows it on the trace screen and sends back one answer. **Signal Analysis** slows the signal (16 ticks a symbol instead of 12) and **Security Systems** gives 12 seconds to key it in instead of 8.
+* **The right answer** jams the building's alarm for **ten active minutes**: the delay ends, and for those minutes nobody's entry rings it. **A wrong, early or late answer, or one from more than six blocks away,** rings the alarm at once and raises the thief's heat in the city by one.
+* Anybody else who clicks the panel learns only what its light says. A panel can be worked before anybody comes in by somebody already inside.
+* **Limits:** delays, traces and jams are kept in memory only (a restart forgets them, and a jammed panel is armed again); a delay is dropped when its thief leaves the game; a stock Lost Cities building has no panel and its alarm rings at once as before.
 
 ## Evidence
 
@@ -93,10 +124,10 @@ What the run does not show: a thief who moves (the script stands still), two off
 
 ## What is not done
 
-* **Little real-client evidence.** One scripted run (above) has seen an officer find a way through a real Lost Cities street and make an arrest, after a path bug it exposed was fixed. Nobody has seen whether officers arrive from somewhere believable in other streets, whether a *moving* thief is caught or escapes, or whether being chased is fun or merely irritating. `PoliceResponse.status()` (`/uc_police status`, operators) counts raised responses, arrivals, arrests, escapes and "no street found" so a real run can report them.
+* **Little real-client evidence.** One scripted run (above) has seen an officer find a way through a real Lost Cities street and make an arrest, after a path bug it exposed was fixed. Nobody has seen whether officers arrive from somewhere believable in other streets, whether a *moving* thief is caught or escapes in a real street, or whether being chased is fun or merely irritating. GameTests (October 22) prove that officers turn after a thief who moves, that a partner standing beside an officer with marked goods is never arrested for the thief's break-in, that two thieves at one building and one thief at two buildings get separate responses, and that a witness's call is slower than an alarm. `PoliceResponse.status()` (`/uc_police status`, operators) counts raised responses, arrivals, arrests, escapes and "no street found" so a real run can report them.
 * No jail, warrant, bail, wanted level, vehicle pursuit, SWAT or lethal force. A response is bounded and reversible: a fine up to the wallet, goods lost, heat that decays.
 * Officers do not enter buildings. A thief who stays inside is not arrested; the officers wait at the door until the window ends. Whether that reads as "a standoff" or "the AI is stuck" needs a person.
-* Alarms are a hash, not blocks: there is no alarm panel, camera or siren a thief can find, disable or avoid by seeing it. (Modern Life ships `warning_alarm` and `cctv_camera` blocks which a later pass could place in the furnished buildings as visible tells; nothing here depends on them.)
+* A stock Lost Cities building's alarm is still a hash with nothing to see; only the furnished buildings have a panel (D-128). There are no cameras or sirens.
 * A shop owner or crew mate does not react to a break-in; a witness is a roll, not a person who runs to a phone. A resident who is at home in a furnished building counts as a witness (see [households](households.md)) and remembers the thief for three active hours, but does not chase, shout or phone anybody.
 * Striking a civilian still raises 2 heat and nothing else (see [population](population.md)).
 
@@ -117,4 +148,4 @@ Still true and worth knowing: it would probably give a player a good way to defe
 
 ## Files
 
-`PoliceResponse`, `StolenGoods`, `CheckpointService.arrest`, `TownspersonEntity` (officer mode), `BuildingBreachEvent` (the `alarm` flag and the live player), `CityBuildings.Response`, `data/underground_city/building_security/classes.json`, `scripts/city_content.py` (the furnished classes), `PoliceResponseGameTests`.
+`PoliceResponse`, `AlarmPanels`, `AlarmPanelBlock`, `FenceService`, `FenceCatalog`, `FenceScreen`, `StolenGoods`, `CheckpointService.arrest`, `TownspersonEntity` (officer mode), `BuildingBreachEvent` (the `alarm` flag and the live player), `CityBuildings.Response`, `data/underground_city/building_security/classes.json`, `scripts/city_content.py` (the furnished classes and the panels), `data/underground_city/fences/`, `PoliceResponseGameTests`, `AlarmPanelGameTests`, `FenceGameTests`.

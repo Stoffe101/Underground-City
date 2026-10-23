@@ -13,7 +13,7 @@ The first playtest: the three cities looked alike (one generic Lost Cities set),
 * **Which building where** is data, not code: `data/underground_city/city_character/<city>.json` gives, for a city, rings by fraction of the city's radius with weighted building ids, and the city's style. `CityCharacter` applies it on Lost Cities' own `CharacteristicsEvent` (its public API, reached by reflection so the build does not depend on it): every city chunk gets the city's style; a building chunk gets a building chosen by a hash of the world seed and the chunk, so the same world always gets the same city; multi-building lots are converted to single lots unless the city keeps them.
 * **What a building also carries.** A security class and a rule with a priority that outranks the stock fallback (`building_security/furnished.json`, with the alarm profiles of [police response](police-response.md)); a sidecar of spots (door, bed, stove, seat, counter, desk, bench, anvil, shelf, stash, in the building's own coordinates) that [households](households.md) read; notes.
 
-### The ten buildings
+### The thirteen buildings
 
 | City | Building | Floors | Class | Spots | Where it stands (rings of the city radius) |
 | --- | --- | --- | --- | --- | --- |
@@ -26,6 +26,9 @@ The first playtest: the three cities looked alike (one generic Lost Cities set),
 | Blackwater | `bw_apartments` (four storeys, eight flats, concrete and glass) | 4 | flat tower | 11 | middle and outer |
 | Blackwater | `bw_office` (reception, three floors of desks) | 3 | office | 7 | the centre |
 | Blackwater | `bw_club` (bar, dance floor, a back room) | 2 | club | 5 | the centre and middle |
+| Ironhaven | `ih_pub` (October 22: the Anvil; a bar with stools, four tables and a hearth below, two rooms to let and the landlord's flat above) | 2 | storefront | 8 | the centre and middle |
+| Blackwater | `bw_store` (October 22: a corner store; aisles, chilled cabinets and a till, a flat to let up its own stair) | 2 | storefront | 7 | the middle and outer rings |
+| Valewood | `vw_bakery` (October 22: ovens, a counter of cakes and a till, a table in the window; a flat to let above) | 2 | storefront | 7 | the centre and middle |
 
 The two tenement-type buildings share one plan (`city_blocks.tenement`) and are drawn by each city's own materials, so they do not read alike. Residential neighbourhood: Valewood (houses, cottages, the shop at the centre). Commercial block: Blackwater's centre (offices and a club among apartment towers).
 
@@ -35,6 +38,28 @@ The two tenement-type buildings share one plan (`city_blocks.tenement`) and are 
 | --- | --- | --- | --- | --- |
 | How it is decided | an exterior door is a lock (a lockpick on the real screen, D-105); two thirds of city buildings are sealed in the stock classes | the plan places the furniture blocks; the generator draws them | `HouseholdService` puts a resident beside each bed and a worker at each counter or desk by the clock | a stash by the class's chance, found by picking its lock; counters and desks are furniture, not shops |
 | Evidence | GameTests and a generated-world burglary on a stock block; not on a furnished one | the plan-versus-world diff; photographs (below) | GameTests with test rooms; not in a furnished building | stash GameTests; not in a furnished building |
+
+### Coverage measured on October 23 (city probe, seed 5908, the furnished package)
+
+A probe of the 507 chunks within six chunks of each city centre, after the three new buildings were added (`run_city_probe.py`-style dedicated server, `check_city_probe.py`: **0 problems in 507 chunks**; `validate_city_blocks.py` against the 1,459 blocks the same game registered: 0 problems in 13 palettes after the pub's stools were fixed):
+
+| City | Chunks | Building chunks | Furnished | By type |
+| --- | --- | --- | --- | --- |
+| Valewood | 169 | 65 | 65 (100%) | shop 18, house A 17, house B 12, bakery 10, cottage 8 |
+| Ironhaven | 169 | 53 | 53 (100%) | flats 28, workshop 11, warehouse 10, pub 4 |
+| Blackwater | 169 | 61 | 61 (100%) | office 28, apartments 20, club 11, corner store 2 |
+
+The other chunks are streets, parks and open lots. Of the 179 buildings, by what a player can do there (by type, from the plans; not walked through):
+
+| | Types | Buildings in the probe |
+| --- | --- | --- |
+| **Accessible** (a street door that is a lock to pick, or a key for a tenant) | 13 of 13 | 179 |
+| **Furnished** | 13 of 13 | 179 |
+| **Inhabited** by the clock (a bed, a counter or a desk in the plan) | 13 of 13 | 179 |
+| **A shop counter** (D-126) | 7 (shop, bakery, workshop, warehouse, pub, club, corner store) | 66 |
+| **A unit to let** (D-127), at its template's share | 10 (both blocks of flats, both houses, cottage, workshop, warehouse, pub, bakery, store) | 122 buildings carry units; about a third of the units are to let |
+| **A fence at night** (D-125) | 2 (warehouse, club) | 21 |
+| **An alarm panel** (D-128) | 10 | 142 |
 
 ## How it is checked (D-119)
 
@@ -53,10 +78,18 @@ October 21, in a real client (a software renderer, 1920 by 1080, a disposable wo
 * **Through the window:** the kitchen of a house, a table with chairs, a cooker, in a lit room.
 * More frames (interiors of each building, a night frame, Ironhaven and Blackwater) are listed in the sprint report with what each showed; whatever the report does not name was not looked at.
 
+## October 22: homes to let, alarm panels, people who come and go, and four flaws fixed
+
+* **Units (D-127).** Every building's sidecar now names its units: the tenements' flats (two a floor), a house or cottage as a whole, the Ironhaven workshop's and warehouse's premises. The property ladder's city templates say which kind of building lets which category at which share (`properties/ladder.json` `city_listings`); see [property-economy.md](property-economy.md#homes-in-the-furnished-cities). Nobody of the household lives in a unit that is to let.
+* **Three more buildings.** A pub, a corner store and a bakery, one per city (table above), each with a shopkeeper's counter of its own kind (`shop:pub`, `shop:store`, `shop:bakery`: four finite lines each, never below the usual price) and rooms or a flat to let (city templates in `properties/ladder.json`: the pub's rooms as motel rooms at 50 percent, the bakery's flat as a small apartment at 35, the store's flat as a comfortable apartment at 30). **Not probed against the registry, generated or photographed yet** at the time of writing.
+* **Alarm panels (D-128).** The ten alarmed buildings (the two blocks of flats, the workshop, the warehouse, the office, the club, the Valewood shop, the pub, the corner store and the bakery) carry an `underground_city:alarm_panel` on a plain wall a few steps inside the street door, placed by `scripts/city_content.py` (`place_alarm_panel`: the nearest open cell at head height in from the door with a plain wall beside it, the door's own wall first) and an `alarm` spot in the plan; see [police-response.md](police-response.md#alarm-panels).
+* **Coming and going (D-129).** People leave and come home through the street door; see [households.md](households.md#coming-and-going).
+* **Four flaws the photographs found, fixed in the generator:** the club's redstone lamps were marked lit with no power and the room read almost black, so froglights now sit flush in the ceiling over the floor, bar and booths and lit end rods stand as neon tubes in the corners and either side of the DJ booth; the tenement bedrooms had a bed, a stand and a shelf and read bare, so each has a rug, a mirror, a clock on the stand and a plant; the Valewood kitchen's way in ran between two chairs, so the table moved to the south-west corner (the dining seat spot moved with it); the cottage's ploughed bed read as a trench in the lawn, so it is a planted bed of berry bushes and ferns on podzol behind a low spruce border with a composter. **Not yet re-photographed or re-probed against the registry** at the time of writing; the blocks used are vanilla or Modern Life ids read from its own blockstate files.
+
 ## What is not true yet
 
-* Nobody has walked through a furnished building or sat in a chair. There is no police response *to* furnished buildings beyond the class alarm profiles, and the shops sell nothing (the counters are furniture).
-* The buildings are small, few, and repeat: ten types for three cities. Every building of a type is identical (mirrored for variety); no building has an individual history.
+* Nobody has walked through a furnished building or sat in a chair. Shopkeepers sell their city's stock over the counter (D-126) and two back offices hold a fence at night (D-125), but nobody has bought or sold in one in a real client.
+* The buildings are small, few, and repeat: thirteen types for three cities. Every building of a type is identical (mirrored for variety); no building has an individual history.
 * The commercial block is one ring of Blackwater with three building types. There are no streets of shops, no market, no signage beyond the shop awning.
 * No daylight and artificial light audit beyond the photographs; no sound; no decoration of the streets themselves.
 * The package is opt-in and not part of the default pack; it has not been in a CI journey.

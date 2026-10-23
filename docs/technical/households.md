@@ -20,9 +20,20 @@ It is the indoor twin of the street people of [population](population.md) and ke
 * **The household remembers a forced door** (`HouseholdService.Memory`, a saved record, at most 512 buildings, most recent last): who forced it, when (in active ticks) and whether anybody at home saw them. For three active hours a resident or worker of that building says so when spoken to. To the thief, if somebody saw them: "You. I know your face. You were in my house." To anybody else: a remark that the lock was forced. The record survives a save (tested) and is bounded (tested).
 * **Dialogue** otherwise follows the person's day (a morning, day or evening line; a worker's line at the counter). The lines are a short fixed list in the code, not data: a known gap.
 
+## Coming and going
+
+**D-129. Implemented; GameTested (`theShopkeeperWalksInThroughTheStreetDoorAtEightAndOutAgainAtSix`); seen only as part of scripted journey runs, not looked for.**
+
+The schedule moves people in and out on the hour (a shopkeeper comes at eight and goes at six; two thirds of residents go out after breakfast and come home at five). When that happens while a player is near, the person is not simply removed or added:
+
+* **A leaver** appears just inside the building's street door (its first `door` spot), the door opens for them as it would for anybody inside (`BuildingGuard`'s exit window), and they walk to a street spot in front of the building (Lost Cities' street, else a floor two to six steps out) and stroll there until nobody is within 24 blocks.
+* **Somebody coming home** appears on the street in front and walks up to the door; at the door it opens and they go in. Their indoor body appears at their spot afterwards, as before.
+* **Each person has their own minute** of the hour (spread over the first forty minutes). Until it they are where they were: a leaver is still at home to be seen leaving, and somebody coming home is not already in. They are seen to commute only in the ten minutes after their minute, once; a player who arrives later finds them simply in or out.
+* **Bounds:** a commuter counts towards the same caps as the household bodies, is gone within a minute and a half whatever happens, never serves at a counter (a shopkeeper on the way to work does not open the shop in the street), and nobody commutes past a building nobody is near. Only the street door is used; nobody opens an interior door or walks further than the street in front.
+
 ## What it is not
 
-* They do not walk about the city, open doors, buy, sell, work a shop's economy, own anything the Crew ledger knows, or respond beyond a line of speech and the witness link. The shopkeeper does not sell: the exchange, the Q Shop counter and the civilian shop are what they were.
+* They do not walk about the city beyond the street in front of their door, open doors other than their street door on the way out or in, own anything the Crew ledger knows, or respond beyond a line of speech and the witness link. A shopkeeper sells over the counter (D-126) and a fence buys at night (D-125); see [police-response.md](police-response.md#fences).
 * A building that was not furnished by a package with spots (every stock Lost Cities building) has nobody in it.
 * There are no children, no pets, no visitors, no neighbours who call on each other, no guests at a club, no one who is angry for longer than three hours.
 * Nobody is simulated while their building is not loaded.
@@ -31,4 +42,4 @@ It is the indoor twin of the street people of [population](population.md) and ke
 
 ## Files
 
-`BuildingSpots`, `HouseholdPlan`, `HouseholdService`, `TownspersonEntity` (resident mode and the building key), `PopulationService` (dialogue and subtitle), `PoliceResponse` (the resident witness message), `CityBuildings.known`, `HouseholdGameTests`.
+`BuildingSpots`, `HouseholdPlan`, `HouseholdService` (the household, the commuters), `TownspersonEntity` (resident, commuter and the building key), `PopulationService` (dialogue and subtitle), `PoliceResponse` (the resident witness message), `CityBuildings.known`, `HouseholdGameTests`.
