@@ -789,24 +789,39 @@ final class JourneyScenario {
         until("no screen", () -> mc().screen == null, 100);
         // place the table on the ground in front and open it
         hold("the crafting table", Items.CRAFTING_TABLE);
+        // place the table: aim at the top of firm ground two blocks ahead and click only when the crosshair is there (a software-rendered frame can lag the aim by several ticks);
+        // then open it the same way
         final BlockPos[] spot = new BlockPos[1];
-        Playtest.queue("look at the ground two blocks ahead", () -> {
+        final int[] tick = {0}, tries = {0};
+        Playtest.queue("place the table on the ground ahead with a right click", () -> { tick[0] = 0; tries[0] = 0; spot[0] = null; }, () -> {
             var p = mc().player;
-            Direction facing = p.getDirection();
-            BlockPos ground = p.blockPosition().relative(facing, 2).below();
-            for (int dy = 2; dy >= -2; dy--) {
-                BlockPos g = p.blockPosition().relative(facing, 2).offset(0, dy - 1, 0);
-                if (!mc().level.getBlockState(g).isAir() && mc().level.getBlockState(g.above()).isAir() && mc().level.getBlockState(g.above(2)).isAir()) { ground = g; break; }
+            if (spot[0] == null || tick[0] % 30 == 0 && tick[0] > 0 && !mc().level.getBlockState(spot[0]).is(Blocks.CRAFTING_TABLE)) {
+                if (spot[0] != null && ++tries[0] > 6) { Playtest.fail("the crafting table could not be placed in " + tries[0] + " tries"); return true; }
+                // a firm, full top two blocks ahead (turning a quarter each retry), with room above it
+                Direction facing = Direction.from2DDataValue((p.getDirection().get2DDataValue() + tries[0]) & 3);
+                spot[0] = null;
+                for (int dist : new int[]{2, 3}) for (int dy = 1; dy >= -2 && spot[0] == null; dy--) {
+                    BlockPos g = p.blockPosition().relative(facing, dist).offset(0, dy - 1, 0);
+                    if (mc().level.getBlockState(g).isFaceSturdy(mc().level, g, Direction.UP) && mc().level.getBlockState(g.above()).canBeReplaced() && mc().level.getBlockState(g.above(2)).isAir()) spot[0] = g.above();
+                }
+                if (spot[0] == null) spot[0] = p.blockPosition().relative(facing, 2);
             }
-            spot[0] = ground.above();
-            look(Vec3.atCenterOf(ground).add(0, 0.5, 0));
-        });
-        Playtest.wait("aim", 4);
-        Playtest.queue("place it with a right click", () -> { Playtest.mouseButton(3, true); Playtest.mouseButton(3, false); });
-        until("the table stands there", () -> spot[0] != null && mc().level.getBlockState(spot[0]).is(Blocks.CRAFTING_TABLE), 60);
-        Playtest.queue("open it", () -> { look(Vec3.atCenterOf(spot[0])); });
-        Playtest.wait("aim", 4);
-        Playtest.queue("right click the table", () -> { Playtest.mouseButton(3, true); Playtest.mouseButton(3, false); });
+            if (mc().level.getBlockState(spot[0]).is(Blocks.CRAFTING_TABLE)) return true;
+            look(Vec3.atCenterOf(spot[0].below()).add(0, 0.5, 0));
+            int phase = tick[0]++ % 30;
+            boolean onIt = mc().hitResult instanceof BlockHitResult b && b.getType() == HitResult.Type.BLOCK && b.getBlockPos().equals(spot[0].below()) && b.getDirection() == Direction.UP;
+            if (phase == 18 && onIt) { Playtest.mouseButton(3, true); Playtest.mouseButton(3, false); }
+            return false;
+        }, 400);
+        Playtest.queue("the table stands there", () -> { if (spot[0] == null || !mc().level.getBlockState(spot[0]).is(Blocks.CRAFTING_TABLE)) Playtest.fail("no crafting table stands where it was placed"); });
+        final int[] openTick = {0};
+        Playtest.queue("open the table with a right click", () -> openTick[0] = 0, () -> {
+            if (mc().screen instanceof CraftingScreen) return true;
+            look(Vec3.atCenterOf(spot[0]));
+            boolean onIt = mc().hitResult instanceof BlockHitResult b && b.getType() == HitResult.Type.BLOCK && b.getBlockPos().equals(spot[0]);
+            if (openTick[0]++ % 24 == 16 && onIt) { Playtest.mouseButton(3, true); Playtest.mouseButton(3, false); }
+            return false;
+        }, 300);
         until("the crafting screen", () -> mc().screen instanceof CraftingScreen, 100);
         // six stone pickaxes: cobblestone in the top row and sticks down the middle, six of each per square, then Shift-click the result
         slotClick("the cobblestone", () -> inventorySlotWith((AbstractContainerScreen<?>) mc().screen, st -> st.is(Items.COBBLESTONE)), 1, false);
@@ -1048,7 +1063,9 @@ final class JourneyScenario {
 
     // ------------------------------------------------------------------------------------------------ 8. the bridge and Valewood
 
+    /** The road between Ironhaven and {@code city}: the plan the road feature built in this world (with its profile and bridges) once a road chunk exists, else the datapack's geometry. */
     private static CorridorPlan roadTo(String city) {
+        for (CorridorPlan plan : CorridorRoadFeature.plans(level())) if (plan.id().contains("ironhaven") && plan.id().contains(city)) return plan;
         for (CorridorPlan plan : DevCommands.plans(mc().getSingleplayerServer())) {
             String id = plan.id();
             if (id.contains("ironhaven") && id.contains(city)) return plan;
@@ -1069,14 +1086,42 @@ final class JourneyScenario {
             double[] start = plan.pointAt(F.roadFrom);
             Playtest.log("JOURNEY road " + plan.id() + " is " + (int) plan.length() + " blocks; open " + (int) first + " to " + (int) last + "; its Ironhaven end is " + String.format(Locale.ROOT, "%.0f", Math.hypot(start[0] - mc().player.getX(), start[1] - mc().player.getZ())) + " blocks from the player");
         });
-        walk("walk from the Row to the road's Ironhaven end", () -> {
+        // the approach is cross-country (about 700 blocks from the Row, through or round Ironhaven's blocks); when the walker gets stuck the rest of the approach is a teleport, logged as
+        // scripted with the distance left, and the road and its bridge are still walked with the W key
+        final PathWalker[] approach = new PathWalker[1];
+        final int[] approachTicks = {0};
+        final double[][] stuckAt = {null};
+        Supplier<Vec3> roadStart = () -> {
             CorridorPlan plan = roadTo("valewood");
             if (plan == null) return null;
             double[] p = plan.pointAt(F.roadFrom);
             return new Vec3(p[0], mc().player.getY(), p[1]);
-        }, 6.0, 12000);
+        };
+        Playtest.queue("walk from the Row to the road's Ironhaven end", () -> { approachTicks[0] = 0; approach[0] = new PathWalker("walk from the Row to the road's Ironhaven end", roadStart, 6.0); }, () -> {
+            approach[0].tick();
+            if (++approachTicks[0] > 14000 && !approach[0].done()) approach[0].stop();
+            return approach[0].done() || approachTicks[0] > 14000;
+        }, 15000);
+        Playtest.queue("the approach: walked, or the rest scripted", () -> {
+            Vec3 target = roadStart.get();
+            double left = target == null ? 0 : Math.hypot(target.x - mc().player.getX(), target.z - mc().player.getZ());
+            if (approach[0].done() && !approach[0].failed()) { Playtest.log("JOURNEY walked from the Row to the road: " + approach[0].summary()); return; }
+            stuckAt[0] = new double[]{mc().player.getX(), mc().player.getZ(), left};
+            scripted(String.format(Locale.ROOT, "the cross-country walk from the Row to the road stopped at %.0f, %.0f (%s); the remaining %.0f blocks to the road's Ironhaven end were a teleport",
+                mc().player.getX(), mc().player.getZ(), approach[0].summary(), left));
+            Playtest.command("gamemode spectator");
+            Playtest.command("uc_dev road " + F.road + " " + (int) Math.round(F.roadFrom));
+        });
+        until("on the road with the ground under the player", () -> {
+            if (stuckAt[0] == null) return true;
+            Vec3 target = roadStart.get();
+            return target != null && Math.hypot(target.x - mc().player.getX(), target.z - mc().player.getZ()) < 8 && Scenarios.groundBelowPlayer();
+        }, 12000);
+        Playtest.queue("back to survival after a teleport", () -> { if (stuckAt[0] != null) Playtest.command("gamemode survival"); });
+        Playtest.wait("settle", 40);
         shot("25-road-start");
         final RoadWalker[] walker = new RoadWalker[1];
+        until("the road's profile is built (its chunks have been generated)", () -> { CorridorPlan p = roadTo("valewood"); return p != null && p.built(); }, 2400);
         Playtest.queue("walk the road and its bridge to Valewood with the W key", () -> {
             CorridorPlan plan = roadTo("valewood");
             walker[0] = new RoadWalker(plan, false, F.roadFrom, F.roadTo);
