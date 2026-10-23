@@ -165,7 +165,10 @@ final class PlayerPath {
                 }
             }
         }
-        if (!reached) {
+        // the frontier only when the goal's column itself was out of reach: when the search stood above or below it (a quarry face four blocks under the step a person stands on), the
+        // nearest cell reached is right, and the frontier nearer that height led a journey's walker down a cave beside the pit to y 25
+        boolean columnReached = Math.hypot(closest.getX() + 0.5 - tx, closest.getZ() + 0.5 - tz) <= within + 1.0;
+        if (!reached && !columnReached) {
             BlockPos frontier = null;
             double frontierH = Double.MAX_VALUE;
             for (Node node : open) {
