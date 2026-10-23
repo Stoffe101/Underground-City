@@ -276,6 +276,27 @@ Start a new world as in 6f (`-PucWorldLayout=archipelago -PucPack=world,furnishe
 
 Things to write down: whether the places look like they belong; whether stopping was worth it; whether encounters came too often, too rarely or at bad moments; whether the SecurityCraft devices feel like part of this game.
 
+## 6h. Becoming a thief: casing, locks, searching rooms, fences and the Thief page (about 45 minutes, a NEW world only)
+
+**Written for the October 23 third pass (D-142 to D-152).** A script played one new burglar through a real client, from casing a Valewood house to learning the first Thief skill (Thief run 12, `RESULT pass`; the report lists its 22 shortcuts); **no person has done any of it**. The Thief track is every career's: play it as a Farmer, a Smith or anyone.
+
+Start a new world as in 6f (`-PucWorldLayout=archipelago -PucPack=world,furnished,scarcity`). Lockpicks are crafted (two iron nuggets and a stick make two) or bought in the Old Cannery's den on the Valewood-Blackwater road, which also sells a Pro Pick Set now and then.
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Press **K** and open the **Thief** page | Thief level 1, no Thief points, the tree in three columns (Locks, Stealth, Fencing) with Casing at the top; career points are separate |
+| 2 | By day in Valewood, crouch with an empty hand and right-click a house's street door | the casing card: how well off the place is (six pips: Comfortable for a house), the lock (a deadbolt) and what you could read with Casing. A house **to let** shows nothing: it is a vacant listing, not a target |
+| 3 | Pick the door (lockpicks in hand, right-click) | the lock screen; three pins. A notice: +75 Thief XP for the first time inside a comfortable house. Heat rises in the city |
+| 4 | Right-click the furniture: night stands, kitchen cupboards and drawers, the fridge, bookshelves, the bin | a short bar and "Found in the …": room-fitting finds, marked stolen. Try the same piece again: "Somebody has been through this already" (it refills after four hours of play). A resident in the room may see you |
+| 5 | Try a **shop** in its hours: walk in by the street door; try to search its furniture | the door opens for a customer; the search is refused while the place is open |
+| 6 | After 21:00 take the goods to the Blackwater club (**The Back Room**) or Ironhaven's warehouse (**The Yard**) | the club's iron door opens for somebody carrying stolen goods (no pick); upstairs in the back office the fence's screen pays half of what the goods are worth; paper and bread are not bought |
+| 7 | Open the Thief page again | Thief level 2 after one house and one sale (80 XP); spend the point on **Casing** and case a house again: now the alarm, the cameras and who is in |
+| 8 | In Blackwater's apartment tower, the club or Ironhaven's warehouse, look above the street door inside | a camera. Walk in front of it in a building that is not open: "A camera has you", and the police are called |
+| 9 | Let an officer see you, then run and break their line of sight (round a corner, through a door) and keep going | the officers go to where they last saw you and search round it; out of their sight for 30 seconds and 20 blocks away: "You got away", and Thief XP |
+| 10 | Rent a flat in an Ironhaven tenement (Find a home) and go in and out by its iron street door | the iron door opens for you (and nobody else); the building's camera ignores you |
+
+Things to write down: whether casing told you what you needed before you broke in; whether the lock felt like skill or luck; whether a house's finds felt worth the risk and the walk to a fence; whether the police felt fair (could you see why they found or lost you?); whether the first Thief point came at a good moment.
+
 ## 7. Logs, screenshots and bug reports
 
 * Server log: `rpg-core\run-dev\logs\latest.log` (authenticated pack: `build\server-pack\server\logs\latest.log`); crash reports: `rpg-core\run-dev\crash-reports\`.
