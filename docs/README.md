@@ -55,6 +55,7 @@ The docs here distinguish **confirmed product direction**, **design proposals**,
 - [The people of the cities: roster, schedule, budget (D-108)](technical/population.md)
 - [Furnished cities: original buildings by city, built from code and checked against the real game (D-117 to D-119)](technical/furnished-cities.md)
 - [Alarms, witnesses, police and stolen goods; SecurityCraft evaluated (D-121, D-122)](technical/police-response.md)
+- [The Thief track and the burglary loop: tiers, casing, searchable rooms, locks and tools, cameras, police who look, fences' doors (D-143 to D-150)](technical/thief-and-burglary.md)
 - [The hybrid resource economy: no natural ore, shelves, a regenerating quarry, the reachability audit (D-120, D-123)](technical/hybrid-economy.md)
 - [The people who live and work in the furnished buildings (D-124)](technical/households.md)
 - [AI-assisted development, docs and PR workflow](technical/agent-workflow.md)
