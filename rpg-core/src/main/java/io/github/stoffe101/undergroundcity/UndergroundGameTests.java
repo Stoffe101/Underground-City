@@ -1015,7 +1015,8 @@ public final class UndergroundGameTests {
             // Without the blueprint: a craft request for the pistol is refused on the server, and takes nothing.
             String refused = OptionalModProbes.craftAtTaczTable(player, "gun", "tacz:glock_17");
             check(OptionalModProbes.countTagged(player, "tacz:modern_kinetic_gun", "GunId", "tacz:glock_17") == 0, "No pistol without the blueprint (" + refused + ")");
-            check(player.getInventory().countItem(Items.IRON_INGOT) == iron && player.getInventory().countItem(Items.COPPER_INGOT) == copper, "A refused craft consumed nothing");
+            check(player.getInventory().countItem(Items.IRON_INGOT) == iron && player.getInventory().countItem(Items.COPPER_INGOT) == copper,
+                "A refused craft consumed nothing: iron " + iron + " -> " + player.getInventory().countItem(Items.IRON_INGOT) + ", copper " + copper + " -> " + player.getInventory().countItem(Items.COPPER_INGOT));
             // The decision itself, for another gun the player has no blueprint for, and for one they have.
             ItemStack other = new ItemStack(ForgeRegistries.ITEMS.getValue(ResourceLocation.parse("tacz:modern_kinetic_gun")));
             other.getOrCreateTag().putString("GunId", "tacz:ak47");
