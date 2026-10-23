@@ -66,6 +66,11 @@ def main() -> int:
                     xtst.XTestFakeKeyEvent(display, code, 0, 0)
             elif command == "button":
                 xtst.XTestFakeButtonEvent(display, int(parts[1]), int(parts[2]), 0)
+            elif command == "click":
+                # a press and its release in one flush, so the game reads both in one input poll: sent as two commands, a slow software-rendered frame can run four
+                # catch-up ticks between them, and the game repeats "use" every four ticks while the button is down (one click opened a door and shut it again)
+                xtst.XTestFakeButtonEvent(display, int(parts[1]), 1, 0)
+                xtst.XTestFakeButtonEvent(display, int(parts[1]), 0, 0)
             elif command == "move":
                 xtst.XTestFakeMotionEvent(display, 0, int(parts[1]), int(parts[2]), 0)
             else:

@@ -96,6 +96,8 @@ public final class Playtest {
     static void keyUp(String key) { input("up " + key); }
     static void tap(String key) { input("tap " + key); }
     static void mouseButton(int button, boolean down) { input("button " + button + " " + (down ? 1 : 0)); }
+    /** A press and release in one go, read by the game in one input poll (two separate events can be ticks apart under software rendering, and a held use repeats). */
+    static void click(int button) { input("click " + button); }
     /** Parks the pointer over the middle of the game window so the (window-manager-less) X keyboard focus is the game. */
     /** A real left click at a GUI-space position (what a player would do with the mouse). */
     static void clickGui(int guiX, int guiY) {

@@ -156,7 +156,8 @@ final class PathWalker {
                 Vec3 centre = at.getX() == standing.getX() && at.getZ() == standing.getZ() ? new Vec3(node.x, eye.y - 0.3, node.z) : Vec3.atCenterOf(at);
                 me.setYRot((float) Math.toDegrees(Math.atan2(-(centre.x - eye.x), centre.z - eye.z)));
                 me.setXRot((float) -Math.toDegrees(Math.atan2(centre.y - eye.y, flat(eye, centre))));
-                if (ticks % 6 == 0) { Playtest.mouseButton(3, true); Playtest.mouseButton(3, false); doors++; }
+                // one click, press and release read together: a held use repeats every four ticks, which opened a door and shut it again on a slow frame (journey runs 63 and 64)
+                if (ticks % 6 == 0) { Playtest.click(3); doors++; }
                 return;
             }
         }
