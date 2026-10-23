@@ -51,17 +51,43 @@ final class PlayerPath {
         return !shape.isEmpty() && shape.max(Direction.Axis.Y) <= 0.1875;
     }
 
-    /** A floor a person stands on: a collision shape whose top reaches at least half a block (slabs, stairs and full blocks; not a carpet over air, not a fence top). */
+    /**
+     * A floor a person stands on: a collision shape whose top reaches at least half a block and covers at least a quarter of the block (slabs, stairs and full blocks; not a carpet over air,
+     * not a fence top, not the thin top of iron bars or a pane, which a journey's planner once offered as a step out of a trench and the walker tried fifteen times).
+     */
     private static boolean floor(ServerLevel level, BlockPos below) {
         BlockState state = level.getBlockState(below);
         if (!state.getFluidState().isEmpty() || state.is(BlockTags.FENCES) || state.is(BlockTags.WALLS) || state.is(BlockTags.FENCE_GATES)) return false;
         VoxelShape shape = state.getCollisionShape(level, below);
-        return !shape.isEmpty() && shape.max(Direction.Axis.Y) >= 0.5;
+        if (shape.isEmpty()) return false;
+        double top = shape.max(Direction.Axis.Y);
+        if (top < 0.5) return false;
+        double area = 0;
+        for (var box : shape.toAabbs()) if (box.maxY >= top - 1e-6) area += (box.maxX - box.minX) * (box.maxZ - box.minZ);
+        return area >= 0.25;
     }
 
     static boolean standable(ServerLevel level, BlockPos feet) {
         if (!level.isLoaded(feet) || !level.isLoaded(feet.below())) return false;
         return passable(level, feet) && clear(level, feet.above()) && floor(level, feet.below());
+    }
+
+    /**
+     * Where a search from a player standing at {@code from} begins: the block their feet are in when a person can stand there, else the nearest standable block that their body overlaps (a
+     * player can stand half in a block whose thing is thin: beside a railing of iron bars, a journey's planner began on top of the bars and routed straight through them), else {@link #settle}.
+     */
+    private static BlockPos start(ServerLevel level, Vec3 from) {
+        BlockPos feet = BlockPos.containing(from.x, from.y + 0.01, from.z);
+        if (standable(level, feet)) return feet;
+        BlockPos nearest = null;
+        double best = Double.MAX_VALUE;
+        for (double ox : new double[]{-0.3, 0.3}) for (double oz : new double[]{-0.3, 0.3}) {
+            BlockPos p = BlockPos.containing(from.x + ox, from.y + 0.01, from.z + oz);
+            if (p.equals(feet) || !standable(level, p)) continue;
+            double d = Math.hypot(p.getX() + 0.5 - from.x, p.getZ() + 0.5 - from.z);
+            if (d < best) { best = d; nearest = p; }
+        }
+        return nearest != null ? nearest : settle(level, feet);
     }
 
     /** The standable cell at or just around the column of {@code at} (within three blocks up or down), or null. */
@@ -74,11 +100,14 @@ final class PlayerPath {
     }
 
     /**
-     * Waypoints (block-bottom centres) from {@code from} to within {@code within} blocks (flat distance) of {@code to}. When the goal cannot be reached inside the node budget the route to the closest
-     * cell reached is returned (an empty list when not even the start can be stood in), so a caller can walk as far as it goes and plan again from there.
+     * Waypoints (block-bottom centres) from {@code from} to within {@code within} blocks (flat distance) of {@code to}. When the goal cannot be reached inside the node budget the route goes to the
+     * cell nearest the goal on the search's open frontier, the places it had not finished exploring, so a caller can walk as far as it goes and plan again from there; only when the frontier is
+     * empty (everything reachable was explored) is it the nearest cell reached. An empty list when not even the start can be stood in. The frontier matters: the nearest cell reached can be
+     * the bottom of a dead end (a journey's player dropped into a one-block trench between a building and a cliff, closed by iron bars at both ends, because it was the nearest point to a road
+     * 225 blocks away), and a dead end's cells are all explored, so it is never on the frontier.
      */
     static List<Vec3> find(ServerLevel level, Vec3 from, Vec3 to, double within) {
-        BlockPos start = settle(level, BlockPos.containing(from));
+        BlockPos start = start(level, from);
         if (start == null) return List.of();
         double tx = to.x, tz = to.z, ty = to.y;
         PriorityQueue<Node> open = new PriorityQueue<>((a, b) -> Double.compare(a.f(), b.f()));
@@ -89,6 +118,7 @@ final class PlayerPath {
         BlockPos closest = start;
         double closestH = h(start, tx, ty, tz);
         int expanded = 0;
+        boolean reached = false;
         while (!open.isEmpty() && expanded++ < MAX_NODES) {
             Node node = open.poll();
             BlockPos at = node.pos();
@@ -96,7 +126,7 @@ final class PlayerPath {
             double flat = Math.hypot(at.getX() + 0.5 - tx, at.getZ() + 0.5 - tz);
             double hh = h(at, tx, ty, tz);
             if (hh < closestH) { closestH = hh; closest = at; }
-            if (flat <= within && Math.abs(at.getY() - ty) <= 3) { closest = at; break; }
+            if (flat <= within && Math.abs(at.getY() - ty) <= 3) { closest = at; reached = true; break; }
             for (int[] step : STEPS) {
                 boolean diagonal = step[0] != 0 && step[1] != 0;
                 for (int dy : new int[]{0, 1, -1, -2, -3}) {
@@ -123,6 +153,16 @@ final class PlayerPath {
                     break;   // one vertical choice per horizontal step: the first that stands (level, then up, then down)
                 }
             }
+        }
+        if (!reached) {
+            BlockPos frontier = null;
+            double frontierH = Double.MAX_VALUE;
+            for (Node node : open) {
+                if (node.g() > best.getOrDefault(node.pos().asLong(), Double.MAX_VALUE) + 1e-9) continue;
+                double hh = h(node.pos(), tx, ty, tz);
+                if (hh < frontierH) { frontierH = hh; frontier = node.pos(); }
+            }
+            if (frontier != null) closest = frontier;
         }
         List<Vec3> route = new ArrayList<>();
         for (BlockPos p = closest; p != null; p = parent.get(p.asLong())) route.add(Vec3.atBottomCenterOf(p));
