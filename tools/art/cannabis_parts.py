@@ -1,6 +1,6 @@
-"""Hand-drawn Sable Leaf parts that are not leaves: the flowering cola, the seedling, the stem and the nutrient stake."""
+"""Hand-drawn Cannabis parts that are not leaves: the flowering cola, the seedling, the stem and the nutrient stake."""
 from uc_art import Sprite, rgb
-from sable import LEAF, LEAF_DEEP, LEAF_YOUNG
+from cannabis_art import LEAF, LEAF_DEEP, LEAF_YOUNG
 
 PALETTE = {'o': rgb('#e9a458'), 'w': rgb('#fbe7b4'), 'g': LEAF_DEEP[1], 'G': LEAF[2], 'l': LEAF[3], 'h': LEAF_YOUNG[4],
            'd': LEAF_DEEP[0], 'p': rgb('#8a6fb0'), 'y': rgb('#e8d65a'), 'Y': rgb('#b9a53a'), 's': rgb('#6b7480')}

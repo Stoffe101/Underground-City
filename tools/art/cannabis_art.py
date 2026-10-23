@@ -1,4 +1,4 @@
-"""Sable Leaf: the Farmer's fictional restricted crop, drawn to read as a cannabis-like palmate plant.
+"""Cannabis: the Farmer's restricted crop (D-142), drawn as a palmate cannabis plant.
 
 Botanical cues used (general botanical anatomy, no cultivation detail): palmately compound leaves with an odd number of
 narrow, pointed, serrated leaflets radiating from one point; the middle leaflet longest and the outer pair smallest; a
@@ -88,14 +88,14 @@ if __name__ == '__main__':
 
 def preview(path: str) -> None:
     from uc_art import contact_sheet
-    import sable_parts
+    import cannabis_parts
     items = {}
     for n in (3, 5, 7):
         items[f'leaf{n}'] = palmate_leaf(n)
         items[f'leaf{n}young'] = palmate_leaf(n, palette=LEAF_YOUNG)
         items[f'leaf{n}deep'] = palmate_leaf(n, palette=LEAF_DEEP)
-    items['cola'] = sable_parts.cola()
-    items['seedling'] = sable_parts.seedling()
-    items['stem'] = sable_parts.stem()
-    items['stake'] = sable_parts.stake()
+    items['cola'] = cannabis_parts.cola()
+    items['seedling'] = cannabis_parts.seedling()
+    items['stem'] = cannabis_parts.stem()
+    items['stake'] = cannabis_parts.stake()
     contact_sheet(items, scale=14, cols=6).save(path)

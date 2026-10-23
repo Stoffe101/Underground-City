@@ -1844,9 +1844,9 @@ final class Scenarios {
         waitForMeshes(1500);
         glance("jade-terminal", 4.5, 1.7, 6.5, 4.5, 0.5, 2.5);
         glance("jade-ledger", 14.5, 1.7, 25.5, 11.5, 0.5, 25.5);
-        Playtest.queue("a Sable Leaf crop in the greenhouse bed, nearly grown", () -> {
+        Playtest.queue("a cannabis crop in the greenhouse bed, nearly grown", () -> {
             BlockPos o = DistrictBuilder.originOf(level(), "founders_row");
-            Playtest.command("setblock " + (o.getX() + 27) + " " + o.getY() + " " + (o.getZ() + 3) + " underground_city:sable_leaf_crop[age=2,nourished=false]");
+            Playtest.command("setblock " + (o.getX() + 27) + " " + o.getY() + " " + (o.getZ() + 3) + " underground_city:cannabis_plant[age=2,nourished=false]");
         });
         glance("jade-crop", 27.5, 1.7, 6.5, 27.5, 0.4, 3.5);
         Playtest.queue("look at the sky and open the inventory", () -> {
@@ -1860,7 +1860,7 @@ final class Scenarios {
         Playtest.wait("frame", 8);
         Playtest.queue("focus JEI's search box (ctrl + f)", () -> { Playtest.keyDown("ctrl"); Playtest.tap("f"); Playtest.keyUp("ctrl"); });
         Playtest.wait("settle", 10);
-        Playtest.queue("type 'sable'", () -> { for (String key : new String[]{"s", "a", "b", "l", "e"}) Playtest.tap(key); });
+        Playtest.queue("type 'cannabis'", () -> { for (String key : new String[]{"c", "a", "n", "n", "a", "b", "i", "s"}) Playtest.tap(key); });
         Playtest.wait("let the list filter", 40);
         Playtest.queue("photograph the search", () -> Playtest.screenshotNextFrame("uc-jei-search"));
         Playtest.wait("frame", 8);

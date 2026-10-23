@@ -318,20 +318,20 @@ def build(data: dict, contracts: dict) -> dict[Path, bytes]:
         if c.get("rewards"):
             document["rewards"] = [{k: v for k, v in r.items()} for r in c["rewards"]]
         files[Path(f"rpg-core/src/main/resources/data/{NAMESPACE}/work_orders/{c['id']}.json")] = jdump(document).encode()
-    crop = f"{NAMESPACE}:sable_leaf_crop"
+    crop = f"{NAMESPACE}:cannabis_plant"
     variants = {}
     # the plant's textures, models and blockstate come from tools/art (gen_crop.py)
     mature = {"condition": "minecraft:block_state_property", "block": crop, "properties": {"age": "3"}}
-    files[Path(f"rpg-core/src/main/resources/data/{NAMESPACE}/loot_tables/blocks/sable_leaf_crop.json")] = jdump({
-        "type": "minecraft:block", "random_sequence": f"{NAMESPACE}:blocks/sable_leaf_crop",
+    files[Path(f"rpg-core/src/main/resources/data/{NAMESPACE}/loot_tables/blocks/cannabis_plant.json")] = jdump({
+        "type": "minecraft:block", "random_sequence": f"{NAMESPACE}:blocks/cannabis_plant",
         "pools": [
             {"rolls": 1, "entries": [{"type": "minecraft:alternatives", "children": [
-                {"type": "minecraft:item", "name": f"{NAMESPACE}:sable_leaf_bale", "conditions": [mature],
+                {"type": "minecraft:item", "name": f"{NAMESPACE}:cannabis_flower", "conditions": [mature],
                  "functions": [{"function": "minecraft:set_count", "count": {"type": "minecraft:uniform", "min": 2, "max": 3}}]},
-                {"type": "minecraft:item", "name": f"{NAMESPACE}:sable_cutting"}]}]},
+                {"type": "minecraft:item", "name": f"{NAMESPACE}:cannabis_seeds"}]}]},
             {"rolls": 1, "conditions": [mature, {"condition": "minecraft:random_chance", "chance": 0.4}],
-             "entries": [{"type": "minecraft:item", "name": f"{NAMESPACE}:sable_cutting"}]}]}).encode()
-    lang["block.underground_city.sable_leaf_crop"] = "Sable Leaf Plant"
+             "entries": [{"type": "minecraft:item", "name": f"{NAMESPACE}:cannabis_seeds"}]}]}).encode()
+    lang["block.underground_city.cannabis_plant"] = "Cannabis Plant"
     lang["key.underground_city.tracker"] = "Show or hide the active order"
     lang["key.underground_city.hud"] = "Show or hide the status display"
     lang["key.underground_city.hud_settings"] = "Open the status display settings"

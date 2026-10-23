@@ -598,7 +598,7 @@ public final class CrewGameTests {
                 int historyBefore = crew.log.size();
                 WorkOrderService.accept(dealer, orders, state.find(dealer.getUUID()).orElseThrow(), order.id());
                 UUID nonce = orders.player(dealer.getUUID()).getUUID("order");
-                dealer.getInventory().setItem(0, new net.minecraft.world.item.ItemStack(UndergroundCity.item("sable_leaf_bale"), 6));
+                dealer.getInventory().setItem(0, new net.minecraft.world.item.ItemStack(UndergroundCity.item("cannabis_flower"), 6));
                 WorkOrderService.complete(dealer, orders, nonce, pos);
                 check(orders.trust(dealer.getUUID(), "marrow") == 1, "the member who delivered earned the buyer's trust");
                 check(orders.trust(friend.getUUID(), "marrow") == 0, "the other member did not inherit the trust");

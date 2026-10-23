@@ -110,7 +110,7 @@ class SkillTreeTests(unittest.TestCase):
                     self.assertLessEqual(n["effects"].get(key, 0), per_node[key], f"{n['id']} {key}")
             unknown = {k for n in tree["nodes"] for k in n["effects"]} - {"licences", "inspection_modifier", "exchange_discount", *ceilings}
             self.assertFalse(unknown, f"{career}: effects nothing consumes: {unknown}")
-        # the yield effect has exactly one consumer, the Sable Leaf plant, so only the Farmer's tree may carry it
+        # the yield effect has exactly one consumer, the cannabis plant, so only the Farmer's tree may carry it
         for career, tree in self.trees.items():
             if career != "farmer":
                 self.assertFalse(any(n["effects"].get("yield_percent") for n in tree["nodes"]), career)

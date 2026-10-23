@@ -7,7 +7,7 @@ import java.util.Set;
  * One capability in a career tree. Nodes are verbs, not stat padding: they unlock contracts
  * (through {@code requires_skill} in a work order), act as licences in the city laws, cut
  * checkpoint search odds, discount regional exchange goods, raise what a delivered contract pays, raise what the
- * Sable Leaf plant yields, or cheapen a home's upgrades. Every effect is consumed by a real system and is capped
+ * cannabis plant yields, or cheapen a home's upgrades. Every effect is consumed by a real system and is capped
  * for a whole tree ({@link #MAX_LEGAL_PAYOUT} and the like), so no build trivialises the economy. A node may
  * need several others ({@code requires} is all-of); a {@code crossover} node joins a legal and an underground
  * line. No node excludes another, so a character can follow the legal branch, the underground branch, or both.
@@ -48,7 +48,7 @@ public record SkillNode(String id, String career, String branch, String title, S
         List<String> parts = new java.util.ArrayList<>();
         if (legalPayoutPercent > 0) parts.add("+" + legalPayoutPercent + "% on legal contracts");
         if (undergroundPayoutPercent > 0) parts.add("+" + undergroundPayoutPercent + "% on underground contracts");
-        if (yieldPercent > 0) parts.add("+" + yieldPercent + "% Sable Leaf yield");
+        if (yieldPercent > 0) parts.add("+" + yieldPercent + "% Cannabis yield");
         if (upgradeDiscountPercent > 0) parts.add("-" + upgradeDiscountPercent + "% home upgrades");
         if (exchangeDiscount > 0) parts.add(Math.round(exchangeDiscount * 100) + "% off exchange goods");
         if (inspectionModifier < 0) parts.add(Math.round(inspectionModifier * 100) + "% search chance");

@@ -32,8 +32,8 @@ import java.util.UUID;
 
 /**
  * One whole production-to-profit loop, run through the game's own code paths (D-098): goods bought at the Valewood exchange, crafted with the vanilla crafting
- * recipes into Cultivation Nutrient and Sable Leaf cuttings, planted by right-click (which asks for the Restricted Cultivation skill), fed by right-click, grown by the
- * block's own random tick, harvested by a player (which asks the grafting skill for extra bales), carried to the licensed buyer in Blackwater and delivered, with the
+ * recipes into Cultivation Nutrient and cannabis seeds, planted by right-click (which asks for the Restricted Cultivation skill), fed by right-click, grown by the
+ * block's own random tick, harvested by a player (which asks the grafting skill for extra flower), carried to the licensed buyer in Blackwater and delivered, with the
  * credits and the career XP checked at the end. It is the loop that {@code scripts/economy_model.py} prices; the audit line it prints is what the model's
  * numbers are compared with. Time is not simulated (random ticks are forced), so it proves that the chain is closed and pays, not how long it takes a person.
  */
@@ -96,7 +96,7 @@ public final class ProductionLoopGameTests {
         throw new AssertionError("setup: " + ForgeRegistries.ITEMS.getKey(item) + " in the inventory");
     }
 
-    private record Outcome(long spent, long paid, int bales, int randomTicks, int cuttingsLeft, int xpGained) {}
+    private record Outcome(long spent, long paid, int flower, int randomTicks, int cuttingsLeft, int xpGained) {}
 
     /** Everything stage one builds and stage two uses. The light engine needs a few ticks to light the plots, so the loop runs in two stages. */
     private static final class Loop {
@@ -131,7 +131,7 @@ public final class ProductionLoopGameTests {
             QShopEconomy.applyBalance(player, 600);
             loop.xpBefore = citizen.careerXp();
 
-            // 1. trade: five catalysts and two seed stocks at the Valewood exchange (a batch of nutrient is one catalyst; a batch of cuttings is one catalyst and one seed stock)
+            // 1. trade: five catalysts and two seed stocks at the Valewood exchange (a batch of nutrient is one catalyst; a batch of seeds is one catalyst and one seed stock)
             city(helper, loop.terminal, "valewood");
             RegionalMarket.purchase(player, loop.terminal, loop.ledger, citizen, UndergroundCity.MOD_ID + ":agro_catalyst", 5, UUID.randomUUID());
             RegionalMarket.purchase(player, loop.terminal, loop.ledger, citizen, UndergroundCity.MOD_ID + ":rare_seeds", 2, UUID.randomUUID());
@@ -141,10 +141,10 @@ public final class ProductionLoopGameTests {
             player.getInventory().add(new ItemStack(Items.GLASS_BOTTLE, 3));
             player.getInventory().add(new ItemStack(Items.WHEAT_SEEDS, 2));
 
-            // 2. make: three batches of nutrient (nine doses) and two of cuttings (four cuttings)
+            // 2. make: three batches of nutrient (nine doses) and two of seeds (four seeds)
             for (int i = 0; i < 3; i++) craft(helper, player, core("cultivation_nutrient"), new ItemStack(core("agro_catalyst")), new ItemStack(Items.BONE_MEAL), new ItemStack(Items.GLASS_BOTTLE));
-            for (int i = 0; i < 2; i++) craft(helper, player, core("sable_cutting"), new ItemStack(core("rare_seeds")), new ItemStack(core("agro_catalyst")), new ItemStack(Items.WHEAT_SEEDS));
-            check(player.getInventory().countItem(core("cultivation_nutrient")) == 9 && player.getInventory().countItem(core("sable_cutting")) == 4, "nine doses and four cuttings");
+            for (int i = 0; i < 2; i++) craft(helper, player, core("cannabis_seeds"), new ItemStack(core("rare_seeds")), new ItemStack(core("agro_catalyst")), new ItemStack(Items.WHEAT_SEEDS));
+            check(player.getInventory().countItem(core("cultivation_nutrient")) == 9 && player.getInventory().countItem(core("cannabis_seeds")) == 4, "nine doses and four seeds");
 
             // 3. lay out the plots: moist farmland, glowstone beside each (the plant needs light 12; the light engine lights them over the next ticks)
             for (int i = 0; i < 3; i++) {
@@ -166,12 +166,12 @@ public final class ProductionLoopGameTests {
     private static Outcome finish(GameTestHelper helper, Loop loop) {
         ServerLevel level = loop.level;
         FakePlayer player = loop.player;
-        Block crop = ForgeRegistries.BLOCKS.getValue(net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(UndergroundCity.MOD_ID, "sable_leaf_crop"));
+        Block crop = ForgeRegistries.BLOCKS.getValue(net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(UndergroundCity.MOD_ID, "cannabis_plant"));
         int randomTicks = 0;
         for (int i = 0; i < 3; i++) {
-            hold(player, core("sable_cutting"));
+            hold(player, core("cannabis_seeds"));
             var planted = player.gameMode.useItemOn(player, level, player.getInventory().getItem(0), InteractionHand.MAIN_HAND, hit(loop.soil[i], Direction.UP));
-            check(level.getBlockState(loop.plots[i]).is(crop), "the cutting was planted by right-click (the Restricted Cultivation skill allows it): result " + planted + ", block " + level.getBlockState(loop.plots[i])
+            check(level.getBlockState(loop.plots[i]).is(crop), "the seed was planted by right-click (the Restricted Cultivation skill allows it): result " + planted + ", block " + level.getBlockState(loop.plots[i])
                 + ", soil " + level.getBlockState(loop.soil[i]) + ", light " + level.getRawBrightness(loop.plots[i], 0) + ", skill " + SkillService.has(player, RestrictedCuttingItem.SKILL));
         }
         for (BlockPos plot : loop.plots) {
@@ -191,8 +191,8 @@ public final class ProductionLoopGameTests {
         }
         check(player.getInventory().countItem(core("cultivation_nutrient")) == 0, "three plants took exactly the nine doses");
 
-        // 4. harvest: a player breaking each mature plant; the bales are picked up
-        Item bale = core("sable_leaf_bale"), cutting = core("sable_cutting");
+        // 4. harvest: a player breaking each mature plant; the flower is picked up
+        Item bud = core("cannabis_flower"), seed = core("cannabis_seeds");
         for (BlockPos plot : loop.plots) {
             player.gameMode.destroyBlock(plot);
             for (ItemEntity drop : level.getEntitiesOfClass(ItemEntity.class, new AABB(plot).inflate(1.5))) {
@@ -200,8 +200,8 @@ public final class ProductionLoopGameTests {
                 drop.discard();
             }
         }
-        int bales = player.getInventory().countItem(bale);
-        check(bales >= 6, "three mature plants gave at least the six bales of the licensed order: " + bales);
+        int flower = player.getInventory().countItem(bud);
+        check(flower >= 6, "three mature plants gave at least the six flower of the licensed order: " + flower);
 
         // 5. sell: the licensed supply contract, delivered at the dispensary in Blackwater (the order needs the Controlled-Crop Licence)
         city(helper, loop.terminal, "blackwater");
@@ -210,26 +210,26 @@ public final class ProductionLoopGameTests {
         WorkOrderService.accept(player, loop.ledger, loop.citizen, order.id());
         WorkOrderService.complete(player, loop.ledger, loop.ledger.player(player.getUUID()).getUUID("order"), loop.terminal);
         long paid = (long) QShopEconomy.balance(player) - before;
-        check(player.getInventory().countItem(bale) == bales - 6, "the delivery took exactly six bales");
-        return new Outcome(loop.spent, paid, bales, randomTicks, player.getInventory().countItem(cutting), loop.citizen.careerXp() - loop.xpBefore);
+        check(player.getInventory().countItem(bud) == flower - 6, "the delivery took exactly six flower");
+        return new Outcome(loop.spent, paid, flower, randomTicks, player.getInventory().countItem(seed), loop.citizen.careerXp() - loop.xpBefore);
     }
 
     private static void judge(Outcome o, boolean grafting) {
         WorkOrder order = WorkOrderCatalog.INSTANCE.find(UndergroundCity.MOD_ID + ":licensed_cultivar_supply");
-        // a cutting is worth what its batch cost: half a catalyst and half a seed stock
+        // a seed is worth what its batch cost: half a catalyst and half a seed stock
         RegionalStock catalyst = RegionalCatalog.INSTANCE.find(UndergroundCity.MOD_ID + ":agro_catalyst"), seeds = RegionalCatalog.INSTANCE.find(UndergroundCity.MOD_ID + ":rare_seeds");
         double cuttingValue = (catalyst.unitPrice() + seeds.unitPrice()) / 2.0;
-        double spentNet = o.spent - o.cuttingsLeft * cuttingValue;   // the cuttings left over go into the next cycle
-        double perBale = spentNet / o.bales;
-        System.out.println("[UC-LOOP-AUDIT] grafting=" + grafting + ": bought goods for " + o.spent + " credits, harvested " + o.bales + " bales from 3 plants (" + o.randomTicks + " random ticks), "
-            + o.cuttingsLeft + " cuttings left (worth " + Math.round(o.cuttingsLeft * cuttingValue) + "), delivered 6 for " + o.paid + " and " + o.xpGained + " XP: cost per bale " + String.format("%.1f", perBale)
-            + ", profit on the delivery " + Math.round(o.paid - 6 * perBale) + " (the surplus " + (o.bales - 6) + " bales are unsold)");
+        double spentNet = o.spent - o.cuttingsLeft * cuttingValue;   // the seeds left over go into the next cycle
+        double perBale = spentNet / o.flower;
+        System.out.println("[UC-LOOP-AUDIT] grafting=" + grafting + ": bought goods for " + o.spent + " credits, harvested " + o.flower + " flower from 3 plants (" + o.randomTicks + " random ticks), "
+            + o.cuttingsLeft + " seeds left (worth " + Math.round(o.cuttingsLeft * cuttingValue) + "), delivered 6 for " + o.paid + " and " + o.xpGained + " XP: cost per flower " + String.format("%.1f", perBale)
+            + ", profit on the delivery " + Math.round(o.paid - 6 * perBale) + " (the surplus " + (o.flower - 6) + " flower are unsold)");
         check(o.paid == order.credits(), "the delivery paid the order's credits (this farmer holds no contract-rate skill): " + o.paid + " of " + order.credits());
         check(o.xpGained >= order.xp(), "the delivery paid its career XP: " + o.xpGained);
-        check(perBale > 8 && perBale < 30, "a bale costs between 8 and 30 credits to grow (the model prices it at 18): " + perBale);
-        check(o.paid - 6 * perBale > 0, "growing six bales and selling them licensed is a profit: " + (o.paid - 6 * perBale));
-        // the licence cannot be dodged by buying the goods and delivering them unchanged: nothing the exchange sells is a bale
-        check(RegionalCatalog.INSTANCE.find(UndergroundCity.MOD_ID + ":sable_leaf_bale") == null, "the exchange does not sell bales");
+        check(perBale > 8 && perBale < 30, "a flower costs between 8 and 30 credits to grow (the model prices it at 18): " + perBale);
+        check(o.paid - 6 * perBale > 0, "growing six flower and selling them licensed is a profit: " + (o.paid - 6 * perBale));
+        // the licence cannot be dodged by buying the goods and delivering them unchanged: nothing the exchange sells is a flower
+        check(RegionalCatalog.INSTANCE.find(UndergroundCity.MOD_ID + ":cannabis_flower") == null, "the exchange does not sell flower");
     }
 
     private static void runLoop(GameTestHelper helper, boolean grafting) {
@@ -263,9 +263,9 @@ public final class ProductionLoopGameTests {
         BlockPos soil = helper.absolutePos(new BlockPos(3, 1, 4));
         level.setBlockAndUpdate(soil, Blocks.FARMLAND.defaultBlockState());
         level.setBlockAndUpdate(soil.above(), Blocks.AIR.defaultBlockState());
-        player.getInventory().setItem(0, new ItemStack(core("sable_cutting"), 2));
+        player.getInventory().setItem(0, new ItemStack(core("cannabis_seeds"), 2));
         player.gameMode.useItemOn(player, level, player.getInventory().getItem(0), InteractionHand.MAIN_HAND, hit(soil, Direction.UP));
-        check(level.getBlockState(soil.above()).isAir() && player.getInventory().countItem(core("sable_cutting")) == 2, "an unskilled farmer planted the controlled crop");
+        check(level.getBlockState(soil.above()).isAir() && player.getInventory().countItem(core("cannabis_seeds")) == 2, "an unskilled farmer planted the controlled crop");
         helper.succeed();
     }
 }

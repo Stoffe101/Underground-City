@@ -48,7 +48,7 @@ public final class SkillService {
         return SkillRules.payout(order.credits(), order.underground(), SkillCatalog.INSTANCE.tree(citizen.career), citizen.skills());
     }
 
-    /** Percent more Sable Leaf bales per harvest (0 for a character without the grafting skills). */
+    /** Percent more cannabis flower per harvest (0 for a character without the grafting skills). */
     public static int yieldPercent(CitizenState.Citizen citizen) {
         return SkillRules.yieldPercent(SkillCatalog.INSTANCE.tree(citizen.career), citizen.skills());
     }

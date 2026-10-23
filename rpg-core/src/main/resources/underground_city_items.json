@@ -127,7 +127,7 @@
       "stack": 16
     },
     {
-      "id": "sable_cutting",
+      "id": "cannabis_seeds",
       "kind": "seed",
       "stack": 64
     },
@@ -137,7 +137,7 @@
       "stack": 64
     },
     {
-      "id": "sable_leaf_bale",
+      "id": "cannabis_flower",
       "kind": "product",
       "stack": 64
     },

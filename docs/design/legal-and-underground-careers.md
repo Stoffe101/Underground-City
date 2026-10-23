@@ -1,7 +1,7 @@
 # Legal and underground career paths
 
 Status: **implemented in Core as a data-driven vertical slice** (skill trees, contracts, city law, checkpoints,
-contraband, buyer trust, heat, exceptional loot, the Sable Leaf crop, the Technician's trace, an in-terminal Skills
+contraband, buyer trust, heat, exceptional loot, the cannabis crop, the Technician's trace, an in-terminal Skills
 page). Evidence for each piece is listed in [Status](#status). Nothing here is a finished economy; balance is
 arithmetic over data (`scripts/validate_underground_balance.py`) and needs real 30-60 minute co-op sessions.
 
@@ -139,11 +139,11 @@ is **arithmetic over data, not a playtest**.
   Core-only run must stay valid.
 - Rare components arrive as packed items that the exchange unpacks into what it sells; they are never currency.
 
-## The Sable Leaf crop (Farmer, fictional restricted crop)
+## The cannabis crop (Farmer, restricted crop; called "Cannabis" before D-142)
 
 An abstract mechanic, not a real-world drug: `RestrictedCropBlock` grows in four stages, only at light level 12 or
 higher and only after the plant has been nourished with a Cultivation Nutrient (right-click). A mature plant
-yields Sable Leaf Bales (2-3) or a cutting. Bone meal does not work. Planting a cutting needs the Restricted
+yields Cannabis Flower (2-3) or seeds. Bone meal does not work. Planting a cutting needs the Restricted
 Cultivation skill (`RestrictedCuttingItem`); the bale is the contraband item that the law categories classify.
 
 ## Spirits and the Vintner (D-067)
@@ -182,7 +182,7 @@ anti-cheat. Pads are numbered and use distinct colours, keys 1-4 work, and ESC c
 | Underground and legal contracts with rewards, trust and requirements | implemented; GameTests on the real datapack |
 | City law, contraband classification, checkpoint search, heat, no-reroll | implemented; GameTests. A zone can have a **post with a guard** (`/uc_checkpoints place`, D-062) who voices the search; the die is unchanged. A rider's vehicle hold (a Motorboat, a chest boat or cart, or the crate parts of an Immersive Vehicles vehicle, D-077) is searched with them and a parked vehicle is not |
 | Exceptional loot and TaCZ gun NBT preservation | implemented; TaCZ cases run only in the `-PucPack=firearms` job |
-| Sable Leaf crop | implemented; GameTests |
+| cannabis crop | implemented; GameTests |
 | Technician trace (server and client screen) | implemented; GameTests for the server rules; the client screen is captured by the visual harness; a scripted-player scenario (`trace`) drives the real screen with the real keyboard (see the sprint report for its result) |
 | Skills, contract and market pages in the terminal | implemented; real-client captures are reviewed in `content/qa/reviewed-runs.json` |
 | Balance | arithmetic validator only; **no playtest** |

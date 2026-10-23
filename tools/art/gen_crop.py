@@ -1,4 +1,4 @@
-"""Sable Leaf crop: textures and the four growth-stage block models (plus a 'fed' variant of each with a nutrient stake).
+"""Cannabis crop: textures and the four growth-stage block models (plus a 'fed' variant of each with a nutrient stake).
 
 The model is built from flat leaf quads that all start at the stem, so no leaf floats: a leaf pointing north is a square
 quad whose south edge midpoint sits on the stem; the texture is turned so that its fingers point away from it. Yaw
@@ -8,7 +8,7 @@ from __future__ import annotations
 import json, math, os, sys
 sys.path.insert(0, os.path.dirname(__file__))
 from uc_art import Sprite
-import sable, sable_parts
+import cannabis_art, cannabis_parts
 from faces import FACE_CORNERS
 
 ASSETS = os.path.join(os.path.dirname(__file__), '..', '..', 'rpg-core', 'src', 'main', 'resources', 'assets', 'underground_city')
@@ -20,15 +20,15 @@ DIRS = {'N': (0, -1), 'E': (1, 0), 'S': (0, 1), 'W': (-1, 0)}
 
 def write_textures():
     textures = {
-        'sable_leaf3': sable.palmate_leaf(3, palette=sable.LEAF_YOUNG),
-        'sable_leaf5': sable.palmate_leaf(5, palette=sable.LEAF),
-        'sable_leaf5_deep': sable.palmate_leaf(5, palette=sable.LEAF_DEEP),
-        'sable_leaf7': sable.palmate_leaf(7, palette=sable.LEAF),
-        'sable_leaf7_deep': sable.palmate_leaf(7, palette=sable.LEAF_DEEP),
-        'sable_cola': sable_parts.cola(),
-        'sable_seedling': sable_parts.seedling(),
-        'sable_stem': sable_parts.stem(),
-        'sable_stake': sable_parts.stake(),
+        'cannabis_leaf3': cannabis_art.palmate_leaf(3, palette=cannabis_art.LEAF_YOUNG),
+        'cannabis_leaf5': cannabis_art.palmate_leaf(5, palette=cannabis_art.LEAF),
+        'cannabis_leaf5_deep': cannabis_art.palmate_leaf(5, palette=cannabis_art.LEAF_DEEP),
+        'cannabis_leaf7': cannabis_art.palmate_leaf(7, palette=cannabis_art.LEAF),
+        'cannabis_leaf7_deep': cannabis_art.palmate_leaf(7, palette=cannabis_art.LEAF_DEEP),
+        'cannabis_cola': cannabis_parts.cola(),
+        'cannabis_seedling': cannabis_parts.seedling(),
+        'cannabis_stem': cannabis_parts.stem(),
+        'cannabis_stake': cannabis_parts.stake(),
     }
     for name, sprite in textures.items():
         sprite.save(os.path.join(TEX, name + '.png'))
@@ -189,30 +189,30 @@ def model(age: int, fed: bool) -> dict:
     els = stage_elements(age)
     if fed:
         els.append(stake_el())
-    texmap = {'leaf3': 'underground_city:block/sable_leaf3', 'leaf5': 'underground_city:block/sable_leaf5',
-              'leaf5_deep': 'underground_city:block/sable_leaf5_deep', 'leaf7': 'underground_city:block/sable_leaf7',
-              'leaf7_deep': 'underground_city:block/sable_leaf7_deep', 'cola': 'underground_city:block/sable_cola',
-              'seedling': 'underground_city:block/sable_seedling', 'stem': 'underground_city:block/sable_stem',
-              'stake': 'underground_city:block/sable_stake', 'particle': 'underground_city:block/sable_leaf5'}
+    texmap = {'leaf3': 'underground_city:block/cannabis_leaf3', 'leaf5': 'underground_city:block/cannabis_leaf5',
+              'leaf5_deep': 'underground_city:block/cannabis_leaf5_deep', 'leaf7': 'underground_city:block/cannabis_leaf7',
+              'leaf7_deep': 'underground_city:block/cannabis_leaf7_deep', 'cola': 'underground_city:block/cannabis_cola',
+              'seedling': 'underground_city:block/cannabis_seedling', 'stem': 'underground_city:block/cannabis_stem',
+              'stake': 'underground_city:block/cannabis_stake', 'particle': 'underground_city:block/cannabis_leaf5'}
     return {'render_type': 'minecraft:cutout', 'ambientocclusion': False, 'textures': texmap, 'elements': els}
 
 
 def write_models():
     for age in range(4):
         for fed in (False, True):
-            name = f'sable_leaf_crop_stage{age}' + ('_fed' if fed else '')
+            name = f'cannabis_plant_stage{age}' + ('_fed' if fed else '')
             with open(os.path.join(MODELS, name + '.json'), 'w') as fh:
                 json.dump(model(age, fed), fh, indent=1)
     variants = {}
     for age in range(4):
         for fed in (False, True):
-            variants[f'age={age},nourished={"true" if fed else "false"}'] = {'model': f'underground_city:block/sable_leaf_crop_stage{age}' + ('_fed' if fed else '')}
+            variants[f'age={age},nourished={"true" if fed else "false"}'] = {'model': f'underground_city:block/cannabis_plant_stage{age}' + ('_fed' if fed else '')}
     os.makedirs(os.path.join(ASSETS, 'blockstates'), exist_ok=True)
-    with open(os.path.join(ASSETS, 'blockstates', 'sable_leaf_crop.json'), 'w') as fh:
+    with open(os.path.join(ASSETS, 'blockstates', 'cannabis_plant.json'), 'w') as fh:
         json.dump({'variants': variants}, fh, indent=1)
 
 
 if __name__ == '__main__':
     write_textures()
     write_models()
-    print('sable leaf textures and models written')
+    print('cannabis textures and models written')

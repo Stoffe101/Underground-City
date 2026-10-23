@@ -25,7 +25,7 @@ import java.util.UUID;
 
 /**
  * The skill trees' effects, each shown to be consumed by the system that owns it (D-098): the validator's rules, the contract rate on a real delivery, the
- * Sable Leaf yield on a real harvest, and the trade discount on a home's upgrades (the last one lives in {@code PropertyGameTests}, which owns the fixture).
+ * Cannabis yield on a real harvest, and the trade discount on a home's upgrades (the last one lives in {@code PropertyGameTests}, which owns the fixture).
  */
 @GameTestHolder(UndergroundCity.MOD_ID)
 @PrefixGameTestTemplate(false)
@@ -139,22 +139,48 @@ public final class SkillEffectGameTests {
         helper.succeed();
     }
 
-    // ------------------------------------------------------------------------------------------------------------ the Sable Leaf yield
+    // ------------------------------------------------------------------------------------------------------------ the Cannabis yield
+
+    /** D-142: a save made before the crop was called Cannabis holds the old ids; every lookup by an old id must find the renamed object, with the stack's count and tags kept. */
+    @GameTest(template = "empty")
+    public static void theCropsOldIdsLoadAsCannabis(GameTestHelper helper) {
+        check(net.minecraft.core.registries.BuiltInRegistries.ITEM.get(RenamedIds.id("sable_leaf_bale")) == UndergroundCity.item("cannabis_flower"), "the old harvest id does not find Cannabis Flower");
+        check(net.minecraft.core.registries.BuiltInRegistries.ITEM.get(RenamedIds.id("sable_cutting")) == UndergroundCity.item("cannabis_seeds"), "the old planting id does not find Cannabis Seeds");
+        check(net.minecraft.core.registries.BuiltInRegistries.BLOCK.get(RenamedIds.id("sable_leaf_crop")) == UndergroundCity.CANNABIS_PLANT.get(), "the old crop id does not find the Cannabis Plant");
+        // a stack as an older save wrote it: the old id, a count and a stolen mark
+        net.minecraft.nbt.CompoundTag saved = new net.minecraft.nbt.CompoundTag();
+        saved.putString("id", "underground_city:sable_leaf_bale");
+        saved.putByte("Count", (byte) 7);
+        net.minecraft.nbt.CompoundTag tag = new net.minecraft.nbt.CompoundTag();
+        tag.putString(StolenGoods.KEY, "valewood");
+        saved.put("tag", tag);
+        ItemStack loaded = ItemStack.of(saved);
+        check(loaded.is(UndergroundCity.item("cannabis_flower")) && loaded.getCount() == 7 && StolenGoods.city(loaded).equals("valewood"), "an old saved stack did not load as seven marked Cannabis Flower: " + loaded + " " + loaded.getTag());
+        // a planted crop as an older chunk palette held it: the old block name with its properties, read with the codec the chunk serializer uses
+        net.minecraft.nbt.CompoundTag state = new net.minecraft.nbt.CompoundTag();
+        state.putString("Name", "underground_city:sable_leaf_crop");
+        net.minecraft.nbt.CompoundTag properties = new net.minecraft.nbt.CompoundTag();
+        properties.putString("age", "2"); properties.putString("nourished", "true");
+        state.put("Properties", properties);
+        BlockState read = BlockState.CODEC.parse(net.minecraft.nbt.NbtOps.INSTANCE, state).result().orElse(Blocks.AIR.defaultBlockState());
+        check(read.is(UndergroundCity.CANNABIS_PLANT.get()) && read.getValue(RestrictedCropBlock.AGE) == 2 && read.getValue(RestrictedCropBlock.NOURISHED), "an old palette entry did not load as a fed Cannabis Plant of age 2: " + read);
+        helper.succeed();
+    }
 
     @GameTest(template = "empty")
-    public static void extraBalesFollowTheRateExactly(GameTestHelper helper) {
-        check(RestrictedCropBlock.extraBales(0, 0.0) == 0, "no skill, no extra bale");
-        check(RestrictedCropBlock.extraBales(30, 0.0) == 1 && RestrictedCropBlock.extraBales(30, 0.74) == 1, "30% of 2.5 is 0.75: a roll under 0.75 gives one more");
-        check(RestrictedCropBlock.extraBales(30, 0.75) == 0 && RestrictedCropBlock.extraBales(30, 0.99) == 0, "a roll of 0.75 or more gives none");
-        check(RestrictedCropBlock.extraBales(40, 0.99) == 1, "40% of 2.5 is exactly one bale, whatever the roll");
-        check(RestrictedCropBlock.extraBales(-5, 0.0) == 0, "a negative rate gives nothing");
+    public static void extraFlowerFollowsTheRateExactly(GameTestHelper helper) {
+        check(RestrictedCropBlock.extraFlower(0, 0.0) == 0, "no skill, no extra flower");
+        check(RestrictedCropBlock.extraFlower(30, 0.0) == 1 && RestrictedCropBlock.extraFlower(30, 0.74) == 1, "30% of 2.5 is 0.75: a roll under 0.75 gives one more");
+        check(RestrictedCropBlock.extraFlower(30, 0.75) == 0 && RestrictedCropBlock.extraFlower(30, 0.99) == 0, "a roll of 0.75 or more gives none");
+        check(RestrictedCropBlock.extraFlower(40, 0.99) == 1, "40% of 2.5 is exactly one flower, whatever the roll");
+        check(RestrictedCropBlock.extraFlower(-5, 0.0) == 0, "a negative rate gives nothing");
         helper.succeed();
     }
 
     private static int harvest(GameTestHelper helper, FakePlayer player, int count) {
         ServerLevel level = helper.getLevel();
-        Block crop = ForgeRegistries.BLOCKS.getValue(net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(UndergroundCity.MOD_ID, "sable_leaf_crop"));
-        Item bale = UndergroundCity.item("sable_leaf_bale");
+        Block crop = ForgeRegistries.BLOCKS.getValue(net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(UndergroundCity.MOD_ID, "cannabis_plant"));
+        Item flower = UndergroundCity.item("cannabis_flower");
         int best = 0, total = 0;
         for (int i = 0; i < count; i++) {
             BlockPos pos = helper.absolutePos(new BlockPos(i % 8, 2, i / 8));
@@ -165,7 +191,7 @@ public final class SkillEffectGameTests {
             player.gameMode.destroyBlock(pos);
             int got = 0;
             for (ItemEntity entity : level.getEntitiesOfClass(ItemEntity.class, new AABB(pos).inflate(1.5))) {
-                if (entity.getItem().is(bale)) got += entity.getItem().getCount();
+                if (entity.getItem().is(flower)) got += entity.getItem().getCount();
                 entity.discard();
             }
             best = Math.max(best, got);
@@ -176,7 +202,7 @@ public final class SkillEffectGameTests {
     }
 
     @GameTest(template = "empty")
-    public static void graftingAddsBalesToARealHarvestAndNothingElseDoes(GameTestHelper helper) {
+    public static void graftingAddsFlowerToARealHarvestAndNothingElseDoes(GameTestHelper helper) {
         FakePlayer plain = FakePlayerFactory.get(helper.getLevel(), new GameProfile(UUID.randomUUID(), "uc_plain"));
         FakePlayer grafter = FakePlayerFactory.get(helper.getLevel(), new GameProfile(UUID.randomUUID(), "uc_graft"));
         CitizenState state = CitizenState.get(plain.server);
@@ -185,9 +211,9 @@ public final class SkillEffectGameTests {
         state.unlockSkill(grafter.getUUID(), "farmer.selective_grafting");
         check(SkillService.yieldPercent(grafter) == 30 && SkillService.yieldPercent(plain) == 0, "the skill gives the grafter 30% and the other farmer nothing");
         int without = harvest(helper, plain, 40), with = harvest(helper, grafter, 40);
-        check(without / 1000 <= 3 && without % 1000 >= 40 * 2, "without the skill every harvest is the loot table's two or three bales: best " + without / 1000 + ", total " + without % 1000);
-        check(with / 1000 == 4, "with the skill some harvest of forty reached four bales: best " + with / 1000);
-        check(with % 1000 > without % 1000 + 10, "the grafter's forty harvests gave clearly more bales (" + with % 1000 + " against " + without % 1000 + ")");
+        check(without / 1000 <= 3 && without % 1000 >= 40 * 2, "without the skill every harvest is the loot table's two or three flower: best " + without / 1000 + ", total " + without % 1000);
+        check(with / 1000 == 4, "with the skill some harvest of forty reached four flower: best " + with / 1000);
+        check(with % 1000 > without % 1000 + 10, "the grafter's forty harvests gave clearly more flower (" + with % 1000 + " against " + without % 1000 + ")");
         check(with % 1000 < 40 * 4, "the bonus never doubled the harvest");
         helper.succeed();
     }

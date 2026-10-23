@@ -4,7 +4,7 @@
     python tools/art/build_all.py            write the files into rpg-core/src/main/resources/assets/underground_city
     python tools/art/build_all.py --check    draw them into a scratch copy and fail when a committed file differs
 
-The generators in this folder are the source of truth for the item sprites, the Sable Leaf plant (textures and block models), the terminal,
+The generators in this folder are the source of truth for the item sprites, the cannabis plant (textures and block models), the terminal,
 secured terminal, household safe and public ledger (textures, block models and blockstates), the GUI chrome, icons, skylines and the display
 font. Everything is drawn from character maps and primitive shapes; no third-party pixel is read. PNGs are compared by decoded pixels
 (encoder output varies), everything else byte for byte. Needs Pillow only.
@@ -24,7 +24,7 @@ ROOT = HERE.parents[1]
 ASSETS = Path("rpg-core/src/main/resources/assets/underground_city")
 #: Folders (relative to the assets root) that the generators own completely: a committed file there that no generator draws is an orphan.
 OWNED = ("textures/gui", "textures/font", "font", "textures/entity/citizen")
-OWNED_FILES = {"textures/block": ("sable_", "terminal_", "secure_", "safe_", "ledger_", "scrap_"), "textures/item": ("",)}
+OWNED_FILES = {"textures/block": ("cannabis_", "terminal_", "secure_", "safe_", "ledger_", "scrap_"), "textures/item": ("",)}
 
 
 def write_everything() -> None:

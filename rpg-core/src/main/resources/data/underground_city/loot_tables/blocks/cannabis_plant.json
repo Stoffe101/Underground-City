@@ -1,6 +1,6 @@
 {
   "type": "minecraft:block",
-  "random_sequence": "underground_city:blocks/sable_leaf_crop",
+  "random_sequence": "underground_city:blocks/cannabis_plant",
   "pools": [
     {
       "rolls": 1,
@@ -10,11 +10,11 @@
           "children": [
             {
               "type": "minecraft:item",
-              "name": "underground_city:sable_leaf_bale",
+              "name": "underground_city:cannabis_flower",
               "conditions": [
                 {
                   "condition": "minecraft:block_state_property",
-                  "block": "underground_city:sable_leaf_crop",
+                  "block": "underground_city:cannabis_plant",
                   "properties": {
                     "age": "3"
                   }
@@ -33,7 +33,7 @@
             },
             {
               "type": "minecraft:item",
-              "name": "underground_city:sable_cutting"
+              "name": "underground_city:cannabis_seeds"
             }
           ]
         }
@@ -44,7 +44,7 @@
       "conditions": [
         {
           "condition": "minecraft:block_state_property",
-          "block": "underground_city:sable_leaf_crop",
+          "block": "underground_city:cannabis_plant",
           "properties": {
             "age": "3"
           }
@@ -57,7 +57,7 @@
       "entries": [
         {
           "type": "minecraft:item",
-          "name": "underground_city:sable_cutting"
+          "name": "underground_city:cannabis_seeds"
         }
       ]
     }

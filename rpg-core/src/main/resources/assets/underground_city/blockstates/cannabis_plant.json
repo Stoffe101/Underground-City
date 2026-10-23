@@ -1,0 +1,28 @@
+{
+ "variants": {
+  "age=0,nourished=false": {
+   "model": "underground_city:block/cannabis_plant_stage0"
+  },
+  "age=0,nourished=true": {
+   "model": "underground_city:block/cannabis_plant_stage0_fed"
+  },
+  "age=1,nourished=false": {
+   "model": "underground_city:block/cannabis_plant_stage1"
+  },
+  "age=1,nourished=true": {
+   "model": "underground_city:block/cannabis_plant_stage1_fed"
+  },
+  "age=2,nourished=false": {
+   "model": "underground_city:block/cannabis_plant_stage2"
+  },
+  "age=2,nourished=true": {
+   "model": "underground_city:block/cannabis_plant_stage2_fed"
+  },
+  "age=3,nourished=false": {
+   "model": "underground_city:block/cannabis_plant_stage3"
+  },
+  "age=3,nourished=true": {
+   "model": "underground_city:block/cannabis_plant_stage3_fed"
+  }
+ }
+}

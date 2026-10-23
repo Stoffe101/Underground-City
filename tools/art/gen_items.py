@@ -131,20 +131,23 @@ LIQ = ramp('#b9d84a')
 
 
 @item
-def sable_cutting():
-    """A cutting: a green stem topped with a palmate leaf pair, its cut end wrapped in damp foil."""
+def cannabis_seeds():
+    """A small paper seed packet with a seven-fingered cannabis leaf printed on it, two seeds spilled in front."""
     s = Sprite()
-    s.polygon([(7, 9), (9, 9), (9, 14), (7, 14)], LEAF[2])
-    s.line(7, 9, 7, 13, LEAF[3]); s.line(9, 9, 9, 13, LEAF[1])
-    s.rect(6, 12, 10, 14, STEEL[3]); s.line(6, 12, 10, 12, STEEL[4]); s.line(6, 14, 10, 14, STEEL[1]); s.put(10, 13, STEEL[1])
-    # fan of leaflets
-    for (x0, y0, x1, y1, c) in ((8, 9, 8, 1, 3), (8, 9, 4, 2, 2), (8, 9, 12, 2, 1), (8, 9, 2, 5, 2), (8, 9, 14, 5, 1), (8, 9, 3, 8, 2), (8, 9, 13, 8, 1)):
-        s.line(x0, y0, x1, y1, LEAF[c])
-        if c == 3:
-            s.line(x0 + 1, y0, x1 + 1, y1, LEAF[2])
-    s.put(8, 1, LEAF_LIME[4])
-    s.put(7, 8, LEAF[4]); s.put(9, 8, LEAF[1])
-    return finish(s, outline=LEAF[0])
+    bevel_rect(s, 2, 1, 12, 13, PAPER, strong=False)
+    s.line(3, 2, 11, 2, PAPER[1])                                                         # the folded top
+    # the printed leaf: seven leaflets fanning from the stalk, the middle ones longest and two pixels wide at their middle
+    cx, cy = 7, 10
+    for (x1, y1, c, wide) in ((7, 3, 3, True), (4, 4, 2, True), (10, 4, 2, True), (3, 7, 2, False), (11, 7, 2, False), (4, 10, 1, False), (10, 10, 1, False)):
+        s.line(cx, cy, x1, y1, LEAF[c])
+        if wide:
+            mx, my = (cx + x1) // 2, (cy + y1) // 2
+            s.put(mx + (1 if x1 >= cx else -1), my, LEAF[c - 1]); s.put(mx, my - 1, LEAF[c])
+    s.put(7, 3, LEAF_LIME[4]); s.line(7, 10, 7, 12, LEAF[0])
+    # two seeds: small brown ovals with a light flank
+    for (x, y) in ((11, 14), (13, 13)):
+        s.rect(x, y, x + 1, y + 1, SOIL[1]); s.put(x, y, SOIL[3])
+    return finish(s)
 
 
 @item
@@ -166,20 +169,21 @@ def cultivation_nutrient():
 
 
 @item
-def sable_leaf_bale():
-    """A compressed bale of leaf, strapped twice, with an orange tag."""
+def cannabis_flower():
+    """A fresh cannabis bud: a tight green cluster of calyxes with orange pistils and a frost of trichomes, two sugar leaves at its base."""
     s = Sprite()
-    bevel_rect(s, 2, 4, 13, 12, LEAF, strong=False)
-    # pressed leaf texture: short diagonal strokes in two greens
-    for y in range(5, 12):
-        for x in range(3, 13):
-            if (x * 3 + y * 5) % 7 == 0:
-                s.put(x, y, LEAF[3])
-            elif (x * 5 + y * 2) % 6 == 0:
-                s.put(x, y, LEAF[0])
-    s.rect(5, 4, 6, 12, SOIL[1]); s.line(5, 4, 5, 12, SOIL[3]); s.rect(10, 4, 11, 12, SOIL[1]); s.line(10, 4, 10, 12, SOIL[3])
-    s.rect(7, 6, 9, 8, AMBER[3]); s.line(7, 6, 9, 6, AMBER[4]); s.line(7, 8, 9, 8, AMBER[1]); s.put(8, 7, INK)
-    return finish(s)
+    # sugar leaves at the base, then the bud itself built up of overlapping calyx discs
+    s.line(4, 13, 7, 10, LEAF[1]); s.line(12, 13, 9, 10, LEAF[1]); s.line(5, 13, 7, 11, LEAF[2]); s.line(11, 13, 9, 11, LEAF[2])
+    for (cx, cy, rad) in ((8, 11, 3.2), (6, 9, 2.6), (10, 9, 2.6), (8, 7, 3.0), (7, 5, 2.2), (9, 4, 2.0), (8, 2, 1.4)):
+        disc(s, cx, cy, rad, LEAF_LIME)
+    s.line(8, 13, 8, 15, LEAF[1])                                                        # the cut stem
+    # pistils: short orange hairs curling out of the calyxes
+    for (x, y) in ((5, 8), (11, 8), (6, 11), (10, 11), (8, 5), (6, 4), (10, 6), (9, 2)):
+        s.put(x, y, AMBER[2]); s.put(x + (1 if x < 8 else -1), y - 1, AMBER[3])
+    # trichome frost
+    for (x, y) in ((7, 7), (9, 9), (8, 10), (6, 6), (10, 4), (7, 12), (9, 6)):
+        s.put(x, y, WHITE[4])
+    return finish(s, outline=LEAF[0])
 
 
 @item

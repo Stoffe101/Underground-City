@@ -135,13 +135,13 @@ class SpecialItemTests(unittest.TestCase):
         posts = {p.stem for p in (RES / "data/underground_city/checkpoints").glob("*.json")}
         self.assertEqual(posts, set(gates), "orphaned or missing checkpoint")
 
-    def test_sable_leaf_crop_has_four_growth_stages(self):
+    def test_cannabis_plant_has_four_growth_stages(self):
         """Each stage (and its fed variant) is a model whose textures exist and are 16x16 with drawn pixels."""
         from PIL import Image
         assets = RES / "assets/underground_city"
         for age in range(4):
             for suffix in ("", "_fed"):
-                model = json.loads((assets / f"models/block/sable_leaf_crop_stage{age}{suffix}.json").read_text())
+                model = json.loads((assets / f"models/block/cannabis_plant_stage{age}{suffix}.json").read_text())
                 self.assertTrue(model["elements"], f"stage {age}{suffix} has no geometry")
                 for name, ref in model["textures"].items():
                     if name == "particle" and ref == "#leaf":
@@ -150,7 +150,7 @@ class SpecialItemTests(unittest.TestCase):
                     image = Image.open(assets / "textures" / f"{ref.split(':', 1)[1]}.png")
                     self.assertEqual(image.size, (16, 16), ref)
                     self.assertGreater(image.convert("RGBA").getchannel("A").getextrema()[1], 0, ref)
-        state = json.loads((assets / "blockstates/sable_leaf_crop.json").read_text())
+        state = json.loads((assets / "blockstates/cannabis_plant.json").read_text())
         self.assertEqual(len(state["variants"]), 8)
 
 if __name__ == "__main__":

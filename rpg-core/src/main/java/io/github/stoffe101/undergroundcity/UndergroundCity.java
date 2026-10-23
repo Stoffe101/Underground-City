@@ -50,7 +50,7 @@ public final class UndergroundCity {
         () -> new BlockItem(PUBLIC_LEDGER.get(), new Item.Properties()));
 
     /** The Farmer's controlled crop (a real crop block; its seed item is registered with the other Core items). */
-    public static final RegistryObject<Block> SABLE_CROP = BLOCKS.register("sable_leaf_crop",
+    public static final RegistryObject<Block> CANNABIS_PLANT = BLOCKS.register("cannabis_plant",
         () -> new RestrictedCropBlock(BlockBehaviour.Properties.copy(net.minecraft.world.level.block.Blocks.WHEAT)));
 
     /** The Technician's job site: placed by operators or the district builder, never craftable or breakable by survival players. */
@@ -120,7 +120,7 @@ public final class UndergroundCity {
     public UndergroundCity(FMLJavaModLoadingContext context) {
         for (CoreItems.Definition definition : CoreItems.definitions()) {
             CORE_ITEMS.put(definition.id(), ITEMS.register(definition.id(), () -> definition.kind().equals("seed")
-                ? new RestrictedCuttingItem(SABLE_CROP.get(), new Item.Properties().stacksTo(definition.stack()))
+                ? new RestrictedCuttingItem(CANNABIS_PLANT.get(), new Item.Properties().stacksTo(definition.stack()))
                 : new Item(new Item.Properties().stacksTo(definition.stack()))));
             CORE_ITEM_KINDS.put(definition.id(), definition.kind());
         }
@@ -132,6 +132,7 @@ public final class UndergroundCity {
         LostCitiesLink.register(context.getModEventBus());
         RegionalWorldgen.register(context.getModEventBus());
         PrivateContent.register(context.getModEventBus());   // privately licensed packs from a folder outside the checkout, if one is configured (D-116)
+        RenamedIds.register(context.getModEventBus());       // the crop's old ids load as Cannabis in older saves (D-142)
         ITEMS.register(context.getModEventBus());
         context.getModEventBus().addListener(this::addCreativeTab);
         TerminalNetwork.register();
@@ -139,6 +140,7 @@ public final class UndergroundCity {
         LockNetwork.register();
         FenceNetwork.register();
         MinecraftForge.EVENT_BUS.register(this);
+        MinecraftForge.EVENT_BUS.register(new RenamedIds());
         MinecraftForge.EVENT_BUS.register(new WorkOrderService());
         MinecraftForge.EVENT_BUS.register(new SupplierNpc());
         MinecraftForge.EVENT_BUS.register(new PropertyCommands());

@@ -85,7 +85,7 @@
       "branch": "crossover",
       "title": "Selective Grafting",
       "short_title": "Sel. Grafting",
-      "description": "Graft Sable Leaf the way a nursery does: more bales from every plant.",
+      "description": "Graft cannabis the way a nursery does: more flower from every plant.",
       "cost": 2,
       "min_level": 9,
       "requires": [
@@ -118,7 +118,7 @@
       "id": "farmer.restricted_cultivation",
       "branch": "underground",
       "title": "Restricted Cultivation",
-      "description": "Raise controlled cultivars under lamps. Needed to plant Sable Leaf.",
+      "description": "Raise controlled cultivars under lamps. Needed to plant cannabis.",
       "cost": 3,
       "min_level": 6,
       "requires": [

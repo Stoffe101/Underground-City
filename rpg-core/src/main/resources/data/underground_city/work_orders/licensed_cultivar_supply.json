@@ -1,12 +1,12 @@
 {
   "schema_version": 3,
-  "title": "Licensed controlled-crop supply",
+  "title": "Licensed cannabis supply",
   "career": "farmer",
   "level": 10,
   "foreign_visits": 0,
   "requirements": [
     {
-      "item": "underground_city:sable_leaf_bale",
+      "item": "underground_city:cannabis_flower",
       "count": 6
     }
   ],

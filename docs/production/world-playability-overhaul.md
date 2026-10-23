@@ -1,5 +1,7 @@
 # Sprint report, October 20 to 21, 2026: world, playability and modpack overhaul after the first human playtest
 
+> **Terminology (D-142):** this report predates the owner's direction of October 24, 2026. The crop it calls "Sable Leaf" (its cuttings and bales) is called **Cannabis** in the game now (Cannabis Seeds, Cannabis Plant, Cannabis Flower); the report keeps the words it was written with.
+
 Branch `feature/world-playability-overhaul`, stacked on `feature/economy-property-progression` (draft PR [#25](https://github.com/Stoffe101/Underground-City/pull/25), whose base is the PR [#24](https://github.com/Stoffe101/Underground-City/pull/24) branch). **Nothing was merged**, `main` and the other pull requests are untouched, no history was rewritten, and no existing world was opened, migrated or overwritten: every generation, burglary, road and street measurement ran in a brand-new disposable world.
 
 Owner brief: "Underground City: World, Playability and Modpack Overhaul", after the first human playtest. Decisions D-104 to D-113 in [decisions.md](decisions.md) record what was chosen and what is still open.

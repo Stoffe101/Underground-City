@@ -194,13 +194,13 @@ public final class VisualCaptureHarness {
         new TerminalData.LawRow("firearms_restricted","Restricted weapons","permit",false));
     private static final TerminalData.Extra QUIET_BALES=new TerminalData.Extra(true,"Underground Trade",false,"Marrow, grey-market broker","blackwater",0,1,List.of());
     private static final TerminalData.Extra RESERVE_LOAD=new TerminalData.Extra(true,"Grey Market Contacts",false,"Marrow, grey-market broker","blackwater",2,1,
-        List.of("2 x Sable Leaf Cutting"));
+        List.of("2 x Cannabis Seeds"));
     private static TerminalData.Row undergroundRow(String id,String title,int level,int credits,int xp,int count,int held,boolean accepted,TerminalData.Extra extra) {
         return new TerminalData.Row("underground_city:"+id,title,level,credits,xp,2,accepted,0,
-            List.of(new TerminalData.Req("underground_city:sable_leaf_bale",count,held)),extra);
+            List.of(new TerminalData.Req("underground_city:cannabis_flower",count,held)),extra);
     }
     private static final TerminalData.Row LICENSED_ROW=new TerminalData.Row("underground_city:licensed_cultivar_supply","Licensed controlled-crop supply",10,225,400,2,false,0,
-        List.of(new TerminalData.Req("underground_city:sable_leaf_bale",6,0)),
+        List.of(new TerminalData.Req("underground_city:cannabis_flower",6,0)),
         new TerminalData.Extra(false,"Controlled-Crop Licence",false,"Blackwater Licensed Dispensary","blackwater",0,0,List.of()));
     /** The first half hour part way through: registered, met the employer, accepted an order. */
     private static List<TerminalData.Step> journeyFixture() {
@@ -212,7 +212,7 @@ public final class VisualCaptureHarness {
     private static TerminalData rich(String region,boolean accepted,int held,List<TerminalData.LawRow> laws) {
         boolean blackwater=region.equals("blackwater");
         List<TerminalData.Contact> contacts=region.isEmpty()?List.of():blackwater
-            ?List.of(new TerminalData.Contact("marrow","Marrow, grey-market broker","blackwater",true,"Pays for Sable Leaf bales, no questions, within limits.",1),
+            ?List.of(new TerminalData.Contact("marrow","Marrow, grey-market broker","blackwater",true,"Pays for cannabis flower, no questions, within limits.",1),
                 new TerminalData.Contact("blackwater_dispensary","Blackwater Licensed Dispensary","blackwater",false,"A permitted handler that buys controlled crops from licensed growers.",0))
             :List.of(new TerminalData.Contact("hollis","Hollis & Sons Haulage","valewood",true,"Takes unstamped plate and parts that never saw a register.",0),
                 new TerminalData.Contact("valewood_coop","Valewood Hunting Co-op","valewood",false,"Buys licensed shotguns and sidearms from registered dealers.",0));

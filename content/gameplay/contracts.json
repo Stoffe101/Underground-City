@@ -84,7 +84,7 @@
     },
     {
       "id": "licensed_cultivar_supply",
-      "title": "Licensed controlled-crop supply",
+      "title": "Licensed cannabis supply",
       "career": "farmer",
       "level": 10,
       "legality": "legal",
@@ -94,14 +94,14 @@
       "xp": 400,
       "requirements": [
         {
-          "item": "underground_city:sable_leaf_bale",
+          "item": "underground_city:cannabis_flower",
           "count": 6
         }
       ]
     },
     {
       "id": "quiet_bales",
-      "title": "Quiet bale delivery",
+      "title": "Quiet cannabis delivery",
       "career": "farmer",
       "level": 9,
       "legality": "underground",
@@ -114,7 +114,7 @@
       "xp": 380,
       "requirements": [
         {
-          "item": "underground_city:sable_leaf_bale",
+          "item": "underground_city:cannabis_flower",
           "count": 6
         }
       ],
@@ -136,13 +136,13 @@
       "xp": 600,
       "requirements": [
         {
-          "item": "underground_city:sable_leaf_bale",
+          "item": "underground_city:cannabis_flower",
           "count": 12
         }
       ],
       "rewards": [
         {
-          "item": "underground_city:sable_cutting",
+          "item": "underground_city:cannabis_seeds",
           "count": 2
         }
       ],
@@ -648,7 +648,7 @@
       "tacz:m4a1": 313
     },
     "harvest_units": {
-      "underground_city:sable_leaf_bale": 18,
+      "underground_city:cannabis_flower": 18,
       "underground_city:data_ledger": 130
     },
     "rewards": {
@@ -656,7 +656,7 @@
       "underground_city:prototype_alloy_ingot": 84,
       "underground_city:circuit_prototype": 96,
       "underground_city:optics_schematic": 102,
-      "underground_city:sable_cutting": 22.5,
+      "underground_city:cannabis_seeds": 22.5,
       "taczblueprints:blueprint_shotgun": 150,
       "taczblueprints:blueprint_smg": 150,
       "taczblueprints:blueprint_rifle": 200

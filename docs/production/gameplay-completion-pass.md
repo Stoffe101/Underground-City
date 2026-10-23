@@ -1,5 +1,7 @@
 # Sprint report, October 22 to 23, 2026: gameplay completion, living world and integration pass
 
+> **Terminology (D-142):** this report predates the owner's direction of October 24, 2026. The crop it calls "Sable Leaf" (its cuttings and bales) is called **Cannabis** in the game now (Cannabis Seeds, Cannabis Plant, Cannabis Flower); the report keeps the words it was written with.
+
 Branch `feature/world-playability-overhaul`, draft PR [#25](https://github.com/Stoffe101/Underground-City/pull/25). Owner brief: "Underground City: Autonomous Gameplay Completion, Living World & Integration Pass". Decisions D-125 to D-133 in [decisions.md](decisions.md).
 
 **Nobody has played any of this.** Everything below was run by scripts, Forge GameTests, a Python model, probes of the game's own generator and a scripted real client (software-rendered, in a virtual display, driven by synthetic key and mouse events). "Passed" means a script passed. Where a step was set up by a command or by reading the world instead of by input, it says so.
