@@ -588,6 +588,11 @@ final class JourneyScenario {
                 key[0] = new String[] {"w", "a", "d"}[(unaimed[0] / 40 - 1) % 3];
                 nudge[0] = 5;
                 Playtest.keyDown(key[0]);
+                BlockPos again = block.get();   // and look again for what is in sight from the new place
+                if (again != null) target[0] = again;
+                var hit = mc().hitResult;
+                Playtest.log(label + ": out of sight from " + mc().player.blockPosition().toShortString() + " (the crosshair is on "
+                    + (hit instanceof BlockHitResult b && hit.getType() == HitResult.Type.BLOCK ? mc().level.getBlockState(b.getBlockPos()).getBlock() + " at " + b.getBlockPos().toShortString() : "nothing") + "); a step " + key[0]);
             }
             return false;
         }, budget);
@@ -607,9 +612,16 @@ final class JourneyScenario {
             final int n = i;
             mine("chop log " + (i + 1) + " by hand", () -> {
                 if (F.tree == null) return null;
-                // the lowest log of the trunk that is still there, up to four high (reachable from the ground)
-                for (int y = 0; y < 4; y++) { BlockPos p = F.tree.above(y); if (mc().level.getBlockState(p).is(BlockTags.LOGS)) return p; }
-                return null;
+                // the lowest log of the trunk that is still there and in sight, up to four high (reachable from the ground); else the lowest still there
+                BlockPos lowest = null;
+                for (int y = 0; y < 4; y++) {
+                    BlockPos p = F.tree.above(y);
+                    if (!mc().level.getBlockState(p).is(BlockTags.LOGS)) continue;
+                    if (lowest == null) lowest = p;
+                    var hit = mc().level.clip(new net.minecraft.world.level.ClipContext(mc().player.getEyePosition(), Vec3.atCenterOf(p), net.minecraft.world.level.ClipContext.Block.OUTLINE, net.minecraft.world.level.ClipContext.Fluid.NONE, mc().player));
+                    if (hit.getType() == HitResult.Type.BLOCK && hit.getBlockPos().equals(p) && Vec3.atCenterOf(p).distanceTo(mc().player.getEyePosition()) < 4.5) return p;
+                }
+                return lowest;
             }, 400);
         }
         Playtest.queue("pick up the logs", () -> { });
