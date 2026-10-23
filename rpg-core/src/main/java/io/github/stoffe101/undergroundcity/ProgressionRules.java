@@ -14,7 +14,7 @@ public final class ProgressionRules {
     public static final String THIEVERY = "thievery";
     public static final Set<String> GENERAL_SKILLS = Set.of("driving", "fitness", "shooting", "trading", "social", THIEVERY);
     /** The Thief track's top level and its XP curve: level n begins at 90 x (n - 1)^2 (level 2 at 90, 5 at 1,440, 10 at 7,290, 25 at 51,840). */
-    public static final int THIEF_MAX_LEVEL = 25, THIEF_XP_STEP = 90;
+    public static final int THIEF_MAX_LEVEL = 25, THIEF_XP_STEP = 80;   // level 2 after one house and one sale (90 left a weak haul short: the Thief scenario made 98 to 127)
 
     private ProgressionRules() {}
 

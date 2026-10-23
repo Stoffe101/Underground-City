@@ -13,7 +13,7 @@ Status: **implemented; GameTested (`ThiefGameTests`, 16 cases, and the police, b
 
 ## The Thief track (D-143)
 
-A general skill on every character, separate from the career. **Level** = 1 + floor(sqrt(XP / 90)), at most 25; each level after the first is one **Thief point**, which never mixes with career points. An older save loads with an empty track.
+A general skill on every character, separate from the career. **Level** = 1 + floor(sqrt(XP / 80)), at most 25; each level after the first is one **Thief point**, which never mixes with career points. An older save loads with an empty track.
 
 | Thief XP for | Amount | Paid |
 | --- | --- | --- |

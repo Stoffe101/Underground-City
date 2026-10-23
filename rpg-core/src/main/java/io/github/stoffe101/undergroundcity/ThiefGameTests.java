@@ -111,8 +111,9 @@ public final class ThiefGameTests {
         CitizenState.Citizen d = again.find(id).orElseThrow();
         check(d.thiefXp() == 1000 && d.thiefLevel() == 4 && d.skills().contains("thief.casing") && d.skills().contains("gunsmith.fundamentals") && d.careerXp() == 2000,
             "Thief progress did not survive a save: " + d.thiefXp() + " " + d.skills());
-        check(ProgressionRules.thiefLevelForXp(ProgressionRules.thiefXpAtLevel(25) + 10_000) == 25 && ProgressionRules.thiefLevelForXp(89) == 1 && ProgressionRules.thiefLevelForXp(90) == 2,
-            "the Thief curve is not 90 x (level - 1)^2 capped at 25");
+        int step = ProgressionRules.THIEF_XP_STEP;
+        check(ProgressionRules.thiefLevelForXp(ProgressionRules.thiefXpAtLevel(25) + 10_000) == 25 && ProgressionRules.thiefLevelForXp(step - 1) == 1 && ProgressionRules.thiefLevelForXp(step) == 2
+            && ProgressionRules.thiefXpAtLevel(3) == 4 * step, "the Thief curve is not step x (level - 1)^2 capped at 25");
         helper.succeed();
     }
 
