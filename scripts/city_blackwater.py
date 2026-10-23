@@ -263,14 +263,23 @@ def store() -> Building:
     # chilled cabinets along the back wall, two aisles of shelving, a magazine rack
     for x in range(4, 12):
         k.fridge(g, x, 1, Z0 + 1, "south")
+    # the aisles read bare in the October 23 photographs (a shelf over every other cabinet): now a shelf over each, a second shelf above, goods on the ends
     for z in (6, 9):
         for x in range(4, 9):
             g.put(x, 1, z, ml("dark_oak_kitchen_cabinet", facing="north" if z == 6 else "south"))
-            g.put(x, 2, z, ml("dark_oak_wall_shelf", facing="north" if z == 6 else "south") if x % 2 else "minecraft:air")
-    # the till by the door: a counter along x = 11 from z 9 to 12, the clerk behind it at x = 12
+            g.put(x, 2, z, ml("double_dark_oak_wall_shelf", facing="north" if z == 6 else "south"))
+            g.put(x, 3, z, ml("dark_oak_wall_shelf", facing="north" if z == 6 else "south"))
+        g.put(3, 1, z, "minecraft:barrel[facing=up,open=true]"); g.put(9, 1, z, "minecraft:barrel[facing=up,open=true]")
+    # a produce stand in the window by the door: open crates, melons and pumpkins
+    for x in (4, 5):
+        g.put(x, 1, 12, "minecraft:barrel[facing=up,open=true]")
+    g.put(6, 1, 12, "minecraft:melon"); g.put(4, 1, 13, "minecraft:pumpkin"); g.put(5, 1, 13, "minecraft:melon")
+    g.put(9, 1, 13, ml("trash_can", facing="north")); g.put(7, 1, 13, ml("floor_mat", facing="north")); g.put(8, 1, 13, ml("floor_mat", facing="north"))
+    # the till by the door: a counter along x = 11 from z 9 to 12, the clerk behind it at x = 12; a receipt printer, a mug, a plant, and the camera screen behind
     for z in range(9, 13):
         g.put(11, 1, z, ml("dark_oak_kitchen_cabinet", facing="west"))
-    g.put(11, 2, 10, ml("monitor", facing="west")); g.put(11, 2, 12, "minecraft:flower_pot")
+    g.put(11, 2, 10, ml("printer", facing="west")); g.put(11, 2, 11, ml("coffee_mug", facing="west")); g.put(11, 2, 12, "minecraft:flower_pot")
+    g.put(13, 2, 10, ml("cctv_screen", facing="west"))
     g.put(12, 1, 8, k.seat("dark_oak", "south"))
     g.put(12, 3, 3, ml("cctv_camera", facing="south"))
     for (x, z) in ((5, 4), (9, 4), (6, 8), (6, 11), (10, 11)):

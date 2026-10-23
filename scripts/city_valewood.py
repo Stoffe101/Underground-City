@@ -291,7 +291,7 @@ def shop(bid: str, look: Look) -> Building:
     # the counter (z 6) with the till on it, shelves on the back wall, crates on the floor
     for x in range(5, 11):
         g.put(x, 1, 6, ml("oak_kitchen_cabinet", facing="south"))
-    g.put(9, 2, 6, ml("monitor", facing="south"))
+    g.put(9, 2, 6, ml("printer", facing="south"))                              # the till
     for x in range(4, 12):
         g.put(x, 1, Z0 + 1, ml("modern_oak_bookshelf", facing="south"))
     for x in (4, 6, 9, 11):
@@ -365,7 +365,7 @@ def bakery(bid: str, look: Look) -> Building:
     # the counter (z 7) with cakes on it and the till; the baker stands behind it at z 6
     for x in range(5, 11):
         g.put(x, 1, 7, ml("oak_kitchen_cabinet", facing="south"))
-    g.put(5, 2, 7, "minecraft:cake[bites=0]"); g.put(7, 2, 7, "minecraft:cake[bites=2]"); g.put(10, 2, 7, ml("monitor", facing="south"))
+    g.put(5, 2, 7, "minecraft:cake[bites=0]"); g.put(7, 2, 7, "minecraft:cake[bites=2]"); g.put(10, 2, 7, ml("printer", facing="south"))   # the till: a receipt printer, not a screen (a monitor read as a television, October 23)
     # a table and two chairs in the east window
     k.table(g, 11, 1, 10, 1, 1, "oak", "small"); k.chair(g, 11, 1, 9, "south"); k.chair(g, 12, 1, 10, "west")
     g.put(4, 1, 10, "minecraft:flower_pot"); g.put(5, 1, 11, "minecraft:potted_azalea_bush")

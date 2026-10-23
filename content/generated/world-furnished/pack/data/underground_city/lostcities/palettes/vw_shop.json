@@ -57,7 +57,7 @@
       "char": "f"
     },
     {
-      "block": "modernlife:monitor[facing=south]",
+      "block": "modernlife:printer[facing=south]",
       "char": "g"
     },
     {
