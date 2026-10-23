@@ -48,7 +48,7 @@ public final class RoadCheck {
             JsonArray built = new JsonArray();
             for (CorridorPlan plan : CorridorRoadFeature.plans(event.getServer().overworld())) for (CorridorPlan.End end : plan.ends()) {
                 var result = RoadApproaches.build(event.getServer().overworld(), plan, end);
-                built.add(plan.id() + " at " + (int) end.x() + " " + (int) end.z() + ": " + result);
+                built.add(plan.id() + " at " + (int) end.x() + " " + (int) end.z() + ": " + result + "; " + pits(event.getServer().overworld(), end, result));
                 LOGGER.info("[UC-ROADS] approach built at {} {} {}: {}", plan.id(), (int) end.x(), (int) end.z(), result);
             }
             report.add("approaches", built);
@@ -60,6 +60,32 @@ public final class RoadCheck {
         finished = true;
         event.getServer().halt(false);
     }
+    /**
+     * Pits in a ramp just built: block columns of its band that stand two or more blocks below every neighbour of theirs in the band, which a person who steps in cannot step out of
+     * (journey run 55's walker fell into a five-deep shaft the old ramp had skipped).
+     */
+    private static String pits(ServerLevel level, CorridorPlan.End end, RoadApproaches.Result result) {
+        var cells = RoadApproaches.band(end, 0, result.cityAt(), RoadApproaches.HALF + 0.5);
+        java.util.Map<Long, Integer> stand = new java.util.HashMap<>();
+        var p = new net.minecraft.core.BlockPos.MutableBlockPos();
+        for (var cell : cells) stand.put(net.minecraft.core.BlockPos.asLong(cell.x(), 0, cell.z()), RoadApproaches.top(level, cell.x(), cell.z(), result.deckY(), p));
+        int pits = 0;
+        StringBuilder where = new StringBuilder();
+        for (var cell : cells) {
+            int h = stand.get(net.minecraft.core.BlockPos.asLong(cell.x(), 0, cell.z()));
+            if (h == Integer.MIN_VALUE) continue;
+            int neighbours = 0, higher = 0;
+            for (int[] d : new int[][]{{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) {
+                Integer n = stand.get(net.minecraft.core.BlockPos.asLong(cell.x() + d[0], 0, cell.z() + d[1]));
+                if (n == null || n == Integer.MIN_VALUE) continue;
+                neighbours++;
+                if (n >= h + 2) higher++;
+            }
+            if (neighbours >= 2 && higher == neighbours) { pits++; if (pits <= 5) where.append(' ').append(cell.x()).append(',').append(h).append(',').append(cell.z()); }
+        }
+        return cells.size() + " columns in the band, " + pits + " pits" + (pits > 0 ? " at" + where : "");
+    }
+
     /**
      * Where each road meets its city (a scripted journey found the Valewood end of the Ironhaven road facing a two-block bank of earth): along the centreline, from four blocks out on the deck
      * until the city's own built ground (or {@link #END_REACH} blocks into the city circle), the height a person would stand at in each column, and the largest step up and down between neighbouring columns. A step up of more

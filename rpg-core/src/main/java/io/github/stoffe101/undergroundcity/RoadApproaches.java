@@ -154,7 +154,7 @@ public final class RoadApproaches {
     }
 
     /** The highest block that holds a person in the column, searched around the deck's height (Integer.MIN_VALUE when there is none); {@code p} is left on it. */
-    private static int top(ServerLevel level, int x, int z, int deckY, BlockPos.MutableBlockPos p) {
+    static int top(ServerLevel level, int x, int z, int deckY, BlockPos.MutableBlockPos p) {
         for (int y = deckY + SEARCH_UP; y >= deckY - SEARCH_DOWN; y--) {
             BlockState state = level.getBlockState(p.set(x, y, z));
             if (!state.getFluidState().isEmpty()) return Integer.MIN_VALUE;
