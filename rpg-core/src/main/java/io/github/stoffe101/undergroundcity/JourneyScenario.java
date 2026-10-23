@@ -115,12 +115,12 @@ final class JourneyScenario {
 
     // ------------------------------------------------------------------------------------------------ small tools
 
-    private static Minecraft mc() { return Minecraft.getInstance(); }
-    private static ServerLevel level() { return mc().getSingleplayerServer().overworld(); }
-    private static ServerPlayer me() { return mc().getSingleplayerServer().getPlayerList().getPlayer(mc().player.getUUID()); }
+    static Minecraft mc() { return Minecraft.getInstance(); }
+    static ServerLevel level() { return mc().getSingleplayerServer().overworld(); }
+    static ServerPlayer me() { return mc().getSingleplayerServer().getPlayerList().getPlayer(mc().player.getUUID()); }
 
     /** Runs on the integrated server's thread and waits for the answer (reads of shared server state are made where the server makes them). */
-    private static <T> T server(Supplier<T> read) {
+    static <T> T server(Supplier<T> read) {
         try { return mc().getSingleplayerServer().submit(read).get(20, TimeUnit.SECONDS); }
         catch (Exception error) { throw new IllegalStateException("server read failed: " + error, error); }
     }
@@ -142,7 +142,7 @@ final class JourneyScenario {
     static boolean says(String shown, String label) { return plain(shown).startsWith(plain(label)); }
 
     /** The first visible widget of the open screen whose label starts with {@code label}. */
-    private static AbstractWidget widget(String label) {
+    static AbstractWidget widget(String label) {
         Screen screen = mc().screen;
         if (screen == null) return null;
         for (var child : screen.children()) {
@@ -152,7 +152,7 @@ final class JourneyScenario {
     }
 
     /** Moves the real pointer onto a button found by its label, waits a frame, and clicks it. A missing button is a failure; an inactive one is clicked anyway when {@code expectActive} is false. */
-    private static void click(String label, boolean expectActive) {
+    static void click(String label, boolean expectActive) {
         final AbstractWidget[] found = new AbstractWidget[1];
         Playtest.queue("point at '" + label + "'", () -> {
             found[0] = widget(label);
@@ -165,7 +165,7 @@ final class JourneyScenario {
         Playtest.wait("the click lands", 6);
     }
 
-    private static void clickAt(String label, Supplier<int[]> where) {
+    static void clickAt(String label, Supplier<int[]> where) {
         final int[][] at = new int[1][];
         Playtest.queue("point at " + label, () -> {
             at[0] = where.get();
@@ -177,10 +177,10 @@ final class JourneyScenario {
         Playtest.wait("the click lands", 6);
     }
 
-    private static void until(String label, BooleanSupplier done, int ticks) { Playtest.queue(label, () -> { }, done, ticks); }
+    static void until(String label, BooleanSupplier done, int ticks) { Playtest.queue(label, () -> { }, done, ticks); }
 
     /** Presses Escape until no screen is open (a single key press can be lost while a frame is being drawn), at most ten times. */
-    private static void closeScreen(String label) {
+    static void closeScreen(String label) {
         final int[] t = {0};
         Playtest.queue(label, () -> { t[0] = 0; Playtest.focusWindow(); }, () -> {
             if (mc().screen == null) return true;
@@ -198,7 +198,7 @@ final class JourneyScenario {
      * Walks to a place to speak to {@code who} from: a free cell beside them with a clear view of their face (behind a desk, beside a colleague, a person picks the gap), or, when there is none,
      * as close as the path goes.
      */
-    private static void walkToSpeak(String label, Supplier<net.minecraft.world.entity.npc.Villager> who, int budget) {
+    static void walkToSpeak(String label, Supplier<? extends net.minecraft.world.entity.Entity> who, int budget) {
         final PathWalker[] walker = new PathWalker[1];
         Playtest.queue(label, () -> {
             var v = who.get();
@@ -253,7 +253,7 @@ final class JourneyScenario {
     }
 
     /** Turns the view to a point (what moving the mouse in the world does). */
-    private static void look(Vec3 at) {
+    static void look(Vec3 at) {
         var p = mc().player;
         Vec3 eye = p.getEyePosition();
         Vec3 d = at.subtract(eye);
@@ -262,7 +262,7 @@ final class JourneyScenario {
         p.setXRot((float) -Math.toDegrees(Math.atan2(d.y, Math.hypot(d.x, d.z))));
     }
 
-    private static boolean aimedAt(BlockPos pos) {
+    static boolean aimedAt(BlockPos pos) {
         HitResult hit = mc().hitResult;
         return hit instanceof BlockHitResult b && hit.getType() == HitResult.Type.BLOCK && b.getBlockPos().equals(pos);
     }
@@ -344,7 +344,7 @@ final class JourneyScenario {
      * Right-clicks a citizen with the real mouse until their conversation opens: aim at the head from where the player stands, click only when the crosshair is on them (somebody else standing in
      * the way is stepped round with A or D, as a person would), and a conversation that opened with somebody else is closed with Escape and tried again.
      */
-    private static void speakTo(String label, Supplier<net.minecraft.world.entity.npc.Villager> who) {
+    static void speakTo(String label, Supplier<? extends net.minecraft.world.entity.Entity> who) {
         // one try is TRY ticks with one aim: under software rendering a frame can take several ticks, and the game picks what the crosshair is on when it draws, so a click is made only
         // once the aim has been held long enough for the pick to have caught up, and only when the crosshair is on the person meant
         final int TRY = 24;
@@ -1424,7 +1424,7 @@ final class JourneyScenario {
     }
 
     /** Right-clicks a block with the real mouse until {@code done}. */
-    private static void use(String label, Supplier<BlockPos> block, BooleanSupplier done, int budget) {
+    static void use(String label, Supplier<BlockPos> block, BooleanSupplier done, int budget) {
         final int[] t = {0};
         Playtest.queue(label, Playtest::focusWindow, () -> {
             if (done.getAsBoolean()) return true;

@@ -272,18 +272,19 @@ final class BurglaryScenario {
     /**
      * Solves the lock on the screen in front of the player with the real pointer, pin by pin: the pointer goes to the pin's sweet spot (asked of the server, one tick old) and the button is held until
      * the pin sets. With {@code sloppy} the hand first presses a fifth of the bar away from the sweet spot until the pick is strained to about 45 percent (a noisy pick, which trips an alarm that a clean
-     * one would slip past), then works the lock honestly.
+     * one would slip past), then works the lock honestly. A spool pin (D-145) that turns the pick back moves its sweet spot: the hand lets go and aims again, as a person watching the lamp would.
      */
     static void solve(String label, boolean sloppy) {
         final int[] state = {sloppy ? -1 : 0}, wait = {0}, pinsBefore = {0}, guard = {0}, geometry = new int[3], retries = {0};
-        final double[] sweet = {-1}, scale = {1}, strain = {0};
+        final double[] sweet = {-1}, scale = {1}, strain = {0}, live = {-1}, aimed = {-1};
+        final int[] spools = {0};
         Playtest.queue("solve " + label + " on the real screen", () -> { }, () -> {
             var mc = Minecraft.getInstance();
             if (!(mc.screen instanceof LockpickScreen screen)) { Playtest.mouseButton(1, false); return state[0] > 0 || guard[0] > 0; }
             if (++guard[0] > 2400) { Playtest.fail(label + " was not solved in 2400 ticks"); return true; }
             var server = mc.getSingleplayerServer();
             if (state[0] != 3) server.execute(() -> { var active = LockService.activeFor(mc.player.getUUID()); if (active != null) { sweet[0] = active.session.sweetSpot(); strain[0] = active.session.strainPercent(); } });
-            else server.execute(() -> { var active = LockService.activeFor(mc.player.getUUID()); if (active != null) strain[0] = active.session.strainPercent(); });
+            else server.execute(() -> { var active = LockService.activeFor(mc.player.getUUID()); if (active != null) { live[0] = active.session.sweetSpot(); strain[0] = active.session.strainPercent(); } });
             switch (state[0]) {
                 case -1 -> {
                     // the sloppy phase: geometry first, then press well off the sweet spot until the pick is strained
@@ -302,12 +303,18 @@ final class BurglaryScenario {
                 case 1 -> {
                     if (sweet[0] < 0) return false;
                     Playtest.input("move " + Math.round((geometry[0] + sweet[0] * geometry[2]) * scale[0]) + " " + Math.round((geometry[1] + 10) * scale[0]));
+                    aimed[0] = sweet[0]; live[0] = -1;
                     wait[0] = 8; state[0] = 2;
                 }
                 case 2 -> { if (--wait[0] <= 0) { pinsBefore[0] = screen.debugPinsSet(); Playtest.mouseButton(1, true); wait[0] = 0; state[0] = 3; } }
                 case 3 -> {
                     wait[0]++;
                     if (screen.debugPinsSet() > pinsBefore[0]) { Playtest.mouseButton(1, false); sweet[0] = -1; state[0] = 1; retries[0] = 0; }
+                    else if (live[0] >= 0 && Math.abs(live[0] - aimed[0]) > 0.05) {
+                        // the sweet spot moved under the hand without the pin setting: a spool pin turned the pick back
+                        Playtest.mouseButton(1, false); sweet[0] = -1; state[0] = 1;
+                        Playtest.log("LOCK " + label + ": a spool pin turned the pick back (" + (++spools[0]) + "); aiming again");
+                    }
                     else if (wait[0] > 90) { Playtest.mouseButton(1, false); sweet[0] = -1; state[0] = 1; if (++retries[0] > 4) { Playtest.fail(label + ": a pin would not set after five tries"); return true; } }
                 }
                 default -> { }
