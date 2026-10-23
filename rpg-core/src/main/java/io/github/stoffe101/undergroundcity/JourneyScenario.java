@@ -689,7 +689,7 @@ final class JourneyScenario {
         double bestD = 20;
         for (BlockPos q : BlockPos.betweenClosed(eye.offset(-4, -4, -4), eye.offset(4, 3, 4))) {
             if (!stone(mc().level.getBlockState(q))) continue;
-            if (q.getY() < p.getBlockY() - 1) continue;   // never dig below the feet: no holes to fall into
+            if (q.getY() < p.getBlockY()) continue;   // only the walls at foot level and above: digging the floor one block at a time sank a run four blocks into a shaft it could not climb out of
             double d = Vec3.atCenterOf(q).distanceToSqr(p.getEyePosition());
             if (d > 16) continue;
             var hit = mc().level.clip(new net.minecraft.world.level.ClipContext(p.getEyePosition(), Vec3.atCenterOf(q), net.minecraft.world.level.ClipContext.Block.OUTLINE, net.minecraft.world.level.ClipContext.Fluid.NONE, p));
