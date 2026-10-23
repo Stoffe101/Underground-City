@@ -23,7 +23,7 @@ public record SkillNode(String id, String career, String branch, String title, S
     /** The tree of the specialization every career can follow, with its own XP, level and points. */
     public static final String THIEF = "thief";
     /** Longest effect line of a specialization skill (its detail panel shows one line). */
-    public static final int MAX_EFFECT_TEXT = 72;
+    public static final int MAX_EFFECT_TEXT = 40;   // one line of the detail panel beside its button at the narrowest GUI (1280x720, scale 2)
     /** Display order of the branches in the terminal: legal on the left, underground on the right, everything else between. */
     public static final List<String> BRANCH_ORDER = List.of("legal", "core", "utility", "crossover", "underground");
     public static final int MAX_NODES_PER_TREE = 16;

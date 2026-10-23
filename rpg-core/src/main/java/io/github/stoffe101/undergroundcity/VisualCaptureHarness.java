@@ -79,7 +79,7 @@ public final class VisualCaptureHarness {
         };
         int budget=pose.equals("fence-partial")?55:400;   // full: enough for everything (349); partial: less than most rows
         // open (after dark): a closed fence greys every button and the full and short-budget screens looked alike
-        return new FenceService.Quote("ironhaven","The Yard","The night man in a warehouse office. Metal, tools and parts; cash in small amounts.",45,30,budget,true,rows);
+        return new FenceService.Quote("ironhaven","The Yard","A warehouse office at night. Metal, tools, parts and old watches.",45,30,budget,true,rows);
     }
 
     private static TerminalData exchange(String region,double balance) {
@@ -367,6 +367,12 @@ public final class VisualCaptureHarness {
         cases.add(new Case("uc-qshop-main",null,null,1));
         cases.add(new Case("uc-qshop-low-funds",null,null,2));
         cases.add(new Case("uc-qshop-trade-modal",null,null,3));
+        // -Duc.visualCapture.only=uc-thief,uc-casing: only the screens whose names start so (a check of a few new screens at several viewports without the whole set)
+        String only=System.getProperty("uc.visualCapture.only","");
+        if(!only.isBlank()) {
+            java.util.List<String> prefixes=java.util.Arrays.stream(only.split(",")).map(String::trim).filter(p->!p.isEmpty()).toList();
+            cases.removeIf(c->prefixes.stream().noneMatch(c.name()::startsWith));
+        }
         started=true; show(mc);
     }
     private static void show(Minecraft mc) {

@@ -658,7 +658,7 @@
       "expected_file": "uc-casing-expert.png",
       "owner": "underground_city",
       "group": "casing",
-      "description": "Casing card for a thief with Casing and Know Their Routines: alarm, cameras, who is in, when it is empty, the safe, a recent break-in"
+      "description": "Casing card for a thief with Casing and Routines: alarm, cameras, who is in, when it is empty, the safe, a recent break-in"
     },
     {
       "id": "casing.locked",

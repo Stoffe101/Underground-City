@@ -20,6 +20,9 @@ public final class CasingScreen extends UcScreen {
         this.r = report;
     }
 
+    /** Scripted-player hook: what the card shows, as the server wrote it. */
+    Casing.Report report() { return r; }
+
     @Override protected int accent() { return TIER_COLOUR[Math.max(0, Math.min(6, r.tier()))]; }
     @Override protected String titleText() { return "Casing the place"; }
     @Override protected UcUi.Icon titleIcon() { return UcUi.Icon.TARGET; }
@@ -43,7 +46,9 @@ public final class CasingScreen extends UcScreen {
         int colour = accent();
         for (int i = 0; i < 6; i++) {
             int px0 = x + w - 6 * 12 + i * 12;
-            g.fill(px0, y + 2, px0 + 9, y + 9, i < r.tier() ? colour : 0xff1b2a38);
+            // an empty pip is an outline: filled dark, three of six looked like three of three (the real client at 1280x720)
+            if (i < r.tier()) g.fill(px0, y + 2, px0 + 9, y + 9, colour);
+            else { g.fill(px0, y + 2, px0 + 9, y + 9, 0xff4a5f73); g.fill(px0 + 1, y + 3, px0 + 8, y + 8, 0xff101a24); }
         }
         String word = Thievery.tierWord(r.tier());
         UcUi.text(g, font, word, x + w - 6 * 12 - 6 - font.width(word), y + 2, colour);
@@ -57,7 +62,7 @@ public final class CasingScreen extends UcScreen {
         // what the thief can read, two columns
         int ry = dy + 42, colW = (w - 8) / 2;
         String unknownCasing = "Learn Casing to tell";
-        String unknownRoutines = "Learn Know Their Routines";
+        String unknownRoutines = "Learn Routines";   // the skill's short title, as the tree's cards show it (the full one did not fit a column at GUI scale 2)
         row(g, x, ry, colW, UcUi.Icon.WARNING, "Alarm", r.alarm() < 0 ? null : switch (r.alarm()) { case 0 -> "None"; case 1 -> "Fitted, not armed"; case 2 -> "Armed"; default -> "Armed, panel inside"; },
             r.alarm() >= 2 ? UcUi.UNDERGROUND_TEXT : UcUi.SOFT, unknownCasing);
         row(g, x + colW + 8, ry, colW, UcUi.Icon.TARGET, "Cameras", r.cameras() < 0 ? null : r.cameras() == 0 ? "None seen" : String.valueOf(r.cameras()), r.cameras() > 0 ? UcUi.AMBER : UcUi.SOFT, unknownCasing);
@@ -77,7 +82,7 @@ public final class CasingScreen extends UcScreen {
     }
 
     @Override protected void renderFooter(GuiGraphics g, int y) {
-        String hint = r.skill() == 0 ? "Thief skills read more of a place: Casing first." : r.skill() == 1 ? "Know Their Routines reads when it is empty." : "A careful thief comes back when it is empty.";
+        String hint = r.skill() == 0 ? "Learn Casing to read more of a place." : r.skill() == 1 ? "Learn Routines to know when it empties." : "A careful thief comes back when it is empty.";
         UcUi.text(g, font, UcUi.fit(font, hint, pw - 2 * PAD - 90), px + PAD, y + 9, UcUi.DIM);
     }
 }

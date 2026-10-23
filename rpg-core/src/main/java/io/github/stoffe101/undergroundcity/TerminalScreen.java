@@ -762,10 +762,13 @@ public final class TerminalScreen extends UcScreen {
         String[] titles = thiefView() ? new String[] {"Locks", "Stealth", "Fencing"} : new String[] {"Legal", "Trade", "Underground"};
         int[] colors = thiefView() ? new int[] {UcUi.AMBER, STEALTH, UcUi.UNDERGROUND} : new int[] {UcUi.LEGAL, UcUi.SOFT, UcUi.UNDERGROUND};
         UcUi.Icon[] icons = thiefView() ? new UcUi.Icon[] {UcUi.Icon.LOCK, UcUi.Icon.TARGET, UcUi.Icon.TAG} : new UcUi.Icon[] {UcUi.Icon.LEGAL, null, UcUi.Icon.UNDERGROUND};
+        int[] headingEnd = new int[3];
         for (int c = 0; c < 3; c++) {
             int x = cx + c * (colW + gap);
             g.fill(x, cy + 12, x + colW, cy + 13, UcUi.shade(colors[c], 0.5f));
-            UcUi.display(g, font, titles[c], x + 2 + (icons[c] != null ? 14 : 0), cy + 2, colors[c]);
+            int textX = x + 2 + (icons[c] != null ? 14 : 0);
+            UcUi.display(g, font, titles[c], textX, cy + 2, colors[c]);
+            headingEnd[c] = textX + UcUi.displayWidth(font, titles[c]);
             if (icons[c] != null) UcUi.icon(g, icons[c], x - 2, cy - 2, colors[c]);
         }
         // the tree is clipped to its viewport and scrolled; the headings above and the detail panel below stay put
@@ -804,10 +807,15 @@ public final class TerminalScreen extends UcScreen {
             int thumbY = treeTop + (int) ((long) (track - thumb) * skillScroll / skillMaxScroll);
             g.fill(cx + cw - 3, treeTop, cx + cw - 1, treeBottom, 0xff16222d);
             g.fill(cx + cw - 3, thumbY, cx + cw - 1, thumbY + thumb, draggingTree ? UcUi.AMBER : UcUi.SOFT);
-            // the hint sits in the empty end of the middle heading, never over a heading or a card
+            // the hint sits in the empty end of a heading (the middle one first), never over a heading or a card; with no room it is left out (the bar says the same).
+            // The Thief page's "Stealth" and its icon left no room in the middle at GUI scale 2 (the real client, Thief run 11)
             String hint = skillScroll < skillMaxScroll ? "More below" : "More above";
-            int hintRight = cx + colW + gap + colW - 4;
-            UcUi.text(g, font, hint, hintRight - font.width(hint), cy + 3, UcUi.DIM);
+            for (int c : new int[] {1, 2, 0}) {
+                int hintRight = cx + c * (colW + gap) + colW - 4;
+                if (hintRight - font.width(hint) < headingEnd[c] + 6) continue;
+                UcUi.text(g, font, hint, hintRight - font.width(hint), cy + 3, UcUi.DIM);
+                break;
+            }
         }
         renderSkillDetail(g);
     }

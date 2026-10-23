@@ -2,7 +2,7 @@
   "schema_version": 1,
   "city": "blackwater",
   "title": "The Back Room",
-  "blurb": "Behind the club's office door, after closing. Electronics, valuables and anything small.",
+  "blurb": "The club's back office, after closing. Electronics and valuables.",
   "rate_percent": 50,
   "same_city_rate_percent": 32,
   "same_city_heat": 1,

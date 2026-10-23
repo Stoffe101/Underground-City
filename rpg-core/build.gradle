@@ -152,6 +152,7 @@ minecraft {
                 def screenWidth = providers.gradleProperty('ucVisualWidth').orElse('1920').get()
                 def screenHeight = providers.gradleProperty('ucVisualHeight').orElse('1080').get()
                 jvmArgs '-Duc.visualCapture=true', "-Duc.visualCapture.scale=${scale}"
+                if (providers.gradleProperty('ucVisualOnly').isPresent()) jvmArgs "-Duc.visualCapture.only=${providers.gradleProperty('ucVisualOnly').get()}"
                 args '--width', screenWidth, '--height', screenHeight
             }
         }
