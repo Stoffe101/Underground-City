@@ -144,14 +144,16 @@ final class PathWalker {
         while (flat(me.position(), node) < NODE_REACHED && next < nodes.size() - 1) node = nodes.get(++next);
         if (flat(me.position(), node) < lastReach && next == nodes.size() - 1) { next++; return; }
         // a closed door on the way: face it and open it with a right click, as a person does
-        BlockPos nodeBlock = BlockPos.containing(node);
-        for (BlockPos at : new BlockPos[]{nodeBlock, nodeBlock.above()}) {
+        // (the walker's own block too: journey run 63 stood in a doorway when the door shut again, and walked into its leaf fifteen times, the next node being past it)
+        BlockPos nodeBlock = BlockPos.containing(node), standing = me.blockPosition();
+        for (BlockPos at : new BlockPos[]{standing, standing.above(), nodeBlock, nodeBlock.above()}) {
             BlockState state = mc.level.getBlockState(at);
             boolean closed = state.getBlock() instanceof DoorBlock && !state.getValue(DoorBlock.OPEN)
                 || state.getBlock() instanceof net.minecraft.world.level.block.FenceGateBlock && !state.getValue(net.minecraft.world.level.block.FenceGateBlock.OPEN);
             if (closed && flat(me.position(), Vec3.atCenterOf(at)) < 2.2) {
                 Vec3 eye = me.getEyePosition();
-                Vec3 centre = Vec3.atCenterOf(at);
+                // standing in the doorway, the leaf is between the walker and its next node: look that way at the leaf (the block's centre is behind the walker's own eyes)
+                Vec3 centre = at.getX() == standing.getX() && at.getZ() == standing.getZ() ? new Vec3(node.x, eye.y - 0.3, node.z) : Vec3.atCenterOf(at);
                 me.setYRot((float) Math.toDegrees(Math.atan2(-(centre.x - eye.x), centre.z - eye.z)));
                 me.setXRot((float) -Math.toDegrees(Math.atan2(centre.y - eye.y, flat(eye, centre))));
                 if (ticks % 6 == 0) { Playtest.mouseButton(3, true); Playtest.mouseButton(3, false); doors++; }
