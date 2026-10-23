@@ -47,11 +47,27 @@ public final class PoliceResponseGameTests {
         final BlockPos door, street;
         final ServerPlayer thief;
         final CityBuildings.Building building;
-        Scene(GameTestHelper helper, String name, CityBuildings.Response response) {
+        Scene(GameTestHelper helper, String name, CityBuildings.Response response) { this(helper, name, response, false); }
+
+        /**
+         * With {@code aloft}, the scene stands on a stone floor of its own high above the test grid, with clear air round it: the GameTest template is one block, so a scene on the flat floor
+         * reaches into its neighbours' cells, and whether an officer can see the thief (D-146) would depend on what the neighbouring tests happen to have built there (hosted run 281).
+         */
+        Scene(GameTestHelper helper, String name, CityBuildings.Response response, boolean aloft) {
             this.helper = helper;
             level = helper.getLevel();
-            door = helper.absolutePos(new BlockPos(2, 2, 2));
-            street = helper.absolutePos(new BlockPos(9, 2, 9));
+            BlockPos base = helper.absolutePos(new BlockPos(2, 2, 2));
+            int lift = aloft ? level.getMaxBuildHeight() - 40 - base.getY() : 0;
+            door = base.above(lift);
+            street = helper.absolutePos(new BlockPos(9, 2, 9)).above(lift);
+            if (aloft) {
+                var stone = net.minecraft.world.level.block.Blocks.STONE.defaultBlockState();
+                var air = net.minecraft.world.level.block.Blocks.AIR.defaultBlockState();
+                for (int dx = -18; dx <= 18; dx++) for (int dz = -18; dz <= 18; dz++) {
+                    level.setBlock(door.offset(dx, -1, dz), stone, 2);
+                    for (int dy = 0; dy <= 4; dy++) level.setBlock(door.offset(dx, dy, dz), air, 2);
+                }
+            }
             thief = player(helper, name, "farmer");
             thief.setPos(door.getX() + 0.5, door.getY(), door.getZ() + 1.5);
             building = building(helper, door, response);
@@ -268,7 +284,7 @@ public final class PoliceResponseGameTests {
 
     @GameTest(template = "empty")
     public static void officersFollowAThiefWhoMovesAndOnlyTheThiefIsArrested(GameTestHelper helper) {
-        try (Scene s = new Scene(helper, "uc_pol_chase", ALARMED)) {
+        try (Scene s = new Scene(helper, "uc_pol_chase", ALARMED, true)) {
             arrive(s);
             BlockPos fled = s.door.offset(12, 0, 6);
             s.thief.setPos(fled.getX() + 0.5, fled.getY(), fled.getZ() + 0.5);
