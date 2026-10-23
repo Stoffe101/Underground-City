@@ -79,6 +79,8 @@ public final class Journey {
         WorkOrderLedger ledger = WorkOrderLedger.get(player.server);
         if (ledger.faulted()) return null;
         backfillHome(player, citizens, citizen.get());
+        Objective fence = fenceObjective(player, citizen.get());
+        if (fence != null) return fence;
         for (Def def : STEPS) {
             if (def.id().equals("registered") || done(citizen.get(), ledger, player.getUUID(), def.id())) continue;
             BlockPos target = null;
@@ -95,6 +97,20 @@ public final class Journey {
             return new Objective(def.title(), def.hint(), def.page(), target, name);
         }
         return goal(player, citizen.get());
+    }
+
+    /**
+     * A thief with Fence Contacts who carries stolen goods (D-143): the side display points at the nearest fence anybody has been near, and says whether they are dealing now. Without the skill, or
+     * with nothing to sell, nothing changes.
+     */
+    static Objective fenceObjective(ServerPlayer player, CitizenState.Citizen citizen) {
+        if (!citizen.skills().contains("thief.fence_contacts") || !FenceService.carriesStolen(player)) return null;
+        var known = FenceService.Directory.get(player.server).nearest(player.blockPosition());
+        if (known == null) return new Objective("Find a fence", "Fences deal at night behind Blackwater's clubs and in Ironhaven's warehouses. Walk past one and you will know it.", "", null, "");
+        FenceCatalog.Fence fence = FenceCatalog.INSTANCE.forCity(known.getValue()).orElse(null);
+        int hour = PopulationPlan.hourOf(HouseholdService.dayTime(player.serverLevel()));
+        String when = fence == null ? "" : fence.about(hour) ? " They are dealing now." : " They deal from " + String.format(java.util.Locale.ROOT, "%02d:00", fence.fromHour()) + ".";
+        return new Objective("Sell what you took", (fence == null ? "A fence" : fence.title()) + " in " + capitalize(known.getValue()) + "." + when, "", known.getKey(), fence == null ? "Fence" : fence.title());
     }
 
     /** Where the road out begins: the end of an open road, and the city it leads to. */

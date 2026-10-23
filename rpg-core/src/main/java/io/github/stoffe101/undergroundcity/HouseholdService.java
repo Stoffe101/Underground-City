@@ -113,7 +113,7 @@ public final class HouseholdService {
     @SubscribeEvent
     public void breach(BuildingBreachEvent event) {
         ServerPlayer actor = event.actor();
-        if (actor == null || !(actor.level() instanceof ServerLevel level)) return;
+        if (actor == null || !(actor.level() instanceof ServerLevel level) || event.outcome() == BuildingBreachEvent.Outcome.NOISE) return;
         try {
             Optional<CityBuildings.Building> found = CityBuildings.INSTANCE.at(level, event.door());
             if (found.isEmpty() || BuildingSpots.INSTANCE.forType(found.get().type()) == null) return;   // only furnished buildings have households
@@ -258,6 +258,7 @@ public final class HouseholdService {
             BuildingSpots.Plan plan = BuildingSpots.INSTANCE.forType(building.type());
             PopulationCatalog.Def def = PopulationCatalog.INSTANCE.city(building.city());
             if (plan == null || def == null) continue;
+            FenceService.Directory.note(level, building, plan);   // a fence's building, once anybody has been near it, is somewhere a Fence Contact can point (D-143)
             for (HouseholdPlan.Resident who : HouseholdPlan.residents(building.city(), level.getSeed(), building.key(), plan, def.names())) {
                 if (out.contains(who.id())) continue;
                 if (CityHomes.spotLet(level.getSeed(), building, plan, plan.spots().get(who.spot()))) continue;   // their flat or house is to let: nobody of the household lives there (D-127)

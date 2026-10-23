@@ -139,7 +139,7 @@ def stair_run(lower: Part, upper: Part, x: int, z_bottom: int, material: str = "
 
 def house(bid: str, look: Look) -> Building:
     p = Palette(bid)
-    b = Building(bid, p, use="house", city=CITY, min_floors=2, max_floors=2, filler="minecraft:stone_bricks", security="cottage",
+    b = Building(bid, p, use="house", city=CITY, min_floors=2, max_floors=2, filler="minecraft:stone_bricks", security="house",
                  notes="A detached two-storey house: living room and kitchen below, two bedrooms and a bathroom above, a garden all round.")
     X0, Z0, X1, Z1 = 3, 4, 12, 11    # the footprint, walls included
     g = b.new_part("ground", ground=True)

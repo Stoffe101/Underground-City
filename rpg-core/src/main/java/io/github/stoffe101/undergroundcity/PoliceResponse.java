@@ -51,6 +51,12 @@ public final class PoliceResponse {
     static final int RING_SECONDS = 20, RING_EVERY_TICKS = 40, ALARM_SALT = 3;
     /** Officers close in from this far, speak from this far, and arrest from this far; the thief is lost beyond the escape range. */
     static final double CHASE_RANGE = 40, CHALLENGE_RANGE = 14, ARREST_RANGE = 3.0, ESCAPE_RANGE = 110;
+    /**
+     * How far an officer sees (D-146), how long the officers search after they last saw the thief before they give up (half that for a thief with Clean Getaway), how far the search spreads round
+     * the last place seen, and how far the officers must be for a thief out of sight to count as away.
+     */
+    static final double SIGHT = 32, SEARCH_SPREAD = 8, LOST_DISTANCE = 20;
+    static final int GIVE_UP_SECONDS = 30;
     static final int ARREST_HEAT = 3, LEAVE_TICKS = 160, MAX_TRIES = 5, CANDIDATE_SPOTS = 6;
     /** A clean pick does not trip an armed alarm whose chance is below this (an alarm in every building of its class is too good to slip past). */
     static final double QUIET_BYPASS_MAX_CHANCE = 0.9;
@@ -74,6 +80,10 @@ public final class PoliceResponse {
         final List<UUID> officers = new ArrayList<>();
         boolean arrived, challenged;
         int tries;
+        /** Where an officer last saw the thief, and when (active ticks); null until somebody has (D-146: officers chase what they can see, then search where it was). */
+        BlockPos lastSeen;
+        long lastSeenAt;
+        int searchStep;
 
         Dispatch(ServerPlayer player, ServerLevel level, BlockPos door, String city, String securityClass, long buildingKey, String why, long arriveAt, CityBuildings.Response response) {
             this.player = player; burglar = player.getUUID(); dimension = level.dimension(); this.door = door; this.city = city; this.securityClass = securityClass; this.buildingKey = buildingKey;
@@ -106,7 +116,8 @@ public final class PoliceResponse {
         boolean lockAlarm = event.alarm();
         boolean wired = response != null && event.outcome() == BuildingBreachEvent.Outcome.OPENED && armed(level, building, response);
         // entering quietly: a clean pick does not trip an alarm that can be slipped past, and tells the thief something was there to slip past
-        boolean slipped = wired && event.quiet() && response.alarmChance() < QUIET_BYPASS_MAX_CHANCE;
+        // a Ghost (D-143) slips all but a certain alarm
+        boolean slipped = wired && event.quiet() && response.alarmChance() < (Thievery.has(player, "thief.ghost") ? 1.0 : QUIET_BYPASS_MAX_CHANCE);
         if (slipped) Notice.send(player, Notice.Kind.INFO, "Quiet entry", "Something in here is wired to an alarm. " + ("keypad".equals(event.securityClass())
             ? "Its own code did not set it off." : "Your pick was clean and it did not hear you."));
         boolean armed = lockAlarm || (wired && !slipped);
@@ -154,16 +165,24 @@ public final class PoliceResponse {
         return BuildingStash.roll(level, building, ALARM_SALT) < response.alarmChance();
     }
 
+    /** How far a crouched thief with Soft Steps is noticed, and how much less likely a Ghost is to be noticed at all (D-143). */
+    static final double SOFT_STEPS_RADIUS = 6, GHOST_WITNESS_FACTOR = 0.75;
+
+    static double witnessRadius(ServerPlayer player) { return player.isCrouching() && Thievery.has(player, "thief.soft_steps") ? SOFT_STEPS_RADIUS : WITNESS_RADIUS; }
+
     /** One roll for the whole group of people in sight of the door: the city's witness chance, raised by the thief's heat there, once per person who could see. */
     static boolean witnessed(ServerLevel level, ServerPlayer player, BuildingBreachEvent event) {
         CityLaws.Law law = CityLaws.INSTANCE.find(event.city());
         if (law == null) return false;
-        List<TownspersonEntity> seers = level.getEntitiesOfClass(TownspersonEntity.class, new AABB(event.door()).inflate(WITNESS_RADIUS),
-            person -> person.isAlive() && !person.police() && person.hasLineOfSight(player));
+        // a thief with Soft Steps who is crouched is noticed only close by (D-143); a wall still hides anybody
+        double radius = witnessRadius(player);
+        List<TownspersonEntity> seers = level.getEntitiesOfClass(TownspersonEntity.class, new AABB(event.door()).inflate(radius),
+            person -> person.isAlive() && !person.police() && person.distanceTo(player) <= radius + 1 && person.hasLineOfSight(player));
         if (seers.isEmpty()) return false;
         WorkOrderLedger ledger = WorkOrderLedger.get(level.getServer());
         CitizenState.Citizen citizen = CitizenState.get(level.getServer()).find(player.getUUID()).orElse(null);
         double each = LawMath.witnessChance(law, ledger.heat(player.getUUID(), event.city()), citizen == null ? 0 : SkillService.inspectionModifier(citizen));
+        if (Thievery.has(player, "thief.ghost")) each *= GHOST_WITNESS_FACTOR;
         double chance = 1 - Math.pow(1 - each, Math.min(3, seers.size()));
         UUID id = player.getUUID();
         return LawMath.roll(chance, LawMath.mix(id.getMostSignificantBits(), id.getLeastSignificantBits(), event.door().asLong(), event.activeTick(), 0x5E3A11L));
@@ -215,30 +234,61 @@ public final class PoliceResponse {
             return false;
         }
         List<TownspersonEntity> officers = officers(level, d);
-        if (officers.isEmpty() || now >= d.windowEnds) { escapes++; Notice.send(player, Notice.Kind.INFO, "The police have gone", "They looked for you and found nobody. Your heat in " + PopulationService.capitalise(d.city) + " stays up for a while."); dismiss(server, d); return true; }
+        if (officers.isEmpty() || now >= d.windowEnds) { escaped(player, d); Notice.send(player, Notice.Kind.INFO, "The police have gone", "They looked for you and found nobody. Your heat in " + PopulationService.capitalise(d.city) + " stays up for a while."); dismiss(server, d); return true; }
         boolean sameLevel = player.level() == level;
         double nearest = Double.MAX_VALUE;
         TownspersonEntity closest = null;
+        boolean seen = false;
+        // officers are not psychic (D-146): they chase the thief only while one of them can see them, and otherwise go to where the thief was last seen (the door, until somebody has) and search round it
         for (TownspersonEntity officer : officers) {
             double distance = sameLevel ? officer.distanceTo(player) : Double.MAX_VALUE;
             if (distance < nearest) { nearest = distance; closest = officer; }
-            if (sameLevel && distance <= CHASE_RANGE) officer.errand(player.blockPosition(), 1.25);
-            else officer.errand(d.door, 1.0);
+            if (sameLevel && distance <= SIGHT && officer.hasLineOfSight(player)) seen = true;
         }
-        if (!sameLevel || (nearest > ESCAPE_RANGE && player.distanceToSqr(d.door.getX() + 0.5, d.door.getY(), d.door.getZ() + 0.5) > ESCAPE_RANGE * ESCAPE_RANGE)) {
-            escapes++;
+        if (seen) { d.lastSeen = player.blockPosition(); d.lastSeenAt = now; }
+        BlockPos searchAt = d.lastSeen != null ? d.lastSeen : d.door;
+        for (int i = 0; i < officers.size(); i++) {
+            TownspersonEntity officer = officers.get(i);
+            if (seen && sameLevel && officer.distanceTo(player) <= CHASE_RANGE) officer.errand(player.blockPosition(), 1.25);
+            else if (officer.blockPosition().distSqr(searchAt) > 9) officer.errand(searchAt, 1.15);
+            else officer.errand(searchPoint(level, searchAt, d, i), 0.9);   // at the last place seen: look round it
+        }
+        long giveUp = (Thievery.has(player, "thief.clean_getaway") ? GIVE_UP_SECONDS / 2 : GIVE_UP_SECONDS) * 20L;
+        boolean lost = !seen && (d.lastSeen == null ? now - d.arriveAt >= giveUp : now - d.lastSeenAt >= giveUp) && nearest > LOST_DISTANCE;
+        if (!sameLevel || lost || (nearest > ESCAPE_RANGE && player.distanceToSqr(d.door.getX() + 0.5, d.door.getY(), d.door.getZ() + 0.5) > ESCAPE_RANGE * ESCAPE_RANGE)) {
+            escaped(player, d);
             Notice.send(player, Notice.Kind.INFO, "You got away", "The police lost you. Keep your head down.");
             dismiss(server, d);
             return true;
         }
-        if (closest != null && nearest <= CHALLENGE_RANGE && !d.challenged) {
+        if (closest != null && nearest <= CHALLENGE_RANGE && !d.challenged && seen) {
             d.challenged = true;
             closest.getLookControl().setLookAt(player);
             player.sendSystemMessage(Component.literal(closest.getName().getString() + ": Police! Stay where you are.").withStyle(ChatFormatting.GOLD));
             Notice.send(player, Notice.Kind.WARN, "Police", "An officer is coming for you. Run, or hide.");
         }
-        if (closest != null && nearest <= ARREST_RANGE && Math.abs(closest.getY() - player.getY()) <= 2.5) return arrest(server, player, closest, d);
+        if (closest != null && nearest <= ARREST_RANGE && Math.abs(closest.getY() - player.getY()) <= 2.5 && closest.hasLineOfSight(player)) return arrest(server, player, closest, d);
         return false;
+    }
+
+    /** A thief slipped a response: counted, and worth Thief XP once (by the building's tier). */
+    private static void escaped(ServerPlayer player, Dispatch d) {
+        escapes++;
+        CityBuildings.SecurityClass c = CityBuildings.INSTANCE.securityClass(d.securityClass);
+        Thievery.escaped(player, d.buildingKey * 31 + d.arriveAt, c == null ? 1 : Math.max(1, c.tier()));
+    }
+
+    /** Where an officer looks next round the last place seen: a fixed walk of points a few blocks out, different for each officer, on standing ground. */
+    static BlockPos searchPoint(ServerLevel level, BlockPos around, Dispatch d, int officer) {
+        int step = (d.searchStep++ / 3) + officer * 5;
+        double angle = step * 2.399963;   // the golden angle: points spread evenly round the place
+        double r = SEARCH_SPREAD * (0.4 + 0.6 * ((step * 0.618034) % 1.0));
+        BlockPos guess = around.offset((int) Math.round(Math.cos(angle) * r), 0, (int) Math.round(Math.sin(angle) * r));
+        for (int dy = 2; dy >= -3; dy--) {
+            BlockPos p = guess.offset(0, dy, 0);
+            if (level.isLoaded(p) && level.getBlockState(p).isAir() && level.getBlockState(p.above()).isAir() && level.getBlockState(p.below()).isFaceSturdy(level, p.below(), net.minecraft.core.Direction.UP)) return p;
+        }
+        return around;
     }
 
     private static ServerPlayer resolve(MinecraftServer server, Dispatch d) {

@@ -1,6 +1,8 @@
 {
   "schema_version": 1,
   "pins": 5,
+  "spools": 2,
+  "requires_tool": "pro_pick_set",
   "tolerance": 0.052,
   "hold_ticks": 12,
   "strain_limit": 100,

@@ -34,7 +34,9 @@ public final class LockProfiles extends SimpleJsonResourceReloadListener {
         if (!json.has("schema_version") || json.get("schema_version").getAsInt() != 1) throw new IllegalArgumentException("Unsupported lock-profile schema: " + id);
         return new LockpickSession.Profile(id, json.get("pins").getAsInt(), json.get("tolerance").getAsDouble(), json.get("hold_ticks").getAsInt(), json.get("strain_limit").getAsDouble(),
             json.get("strain_per_tick").getAsDouble(), json.get("ease_per_tick").getAsDouble(), json.get("time_limit_ticks").getAsInt(), json.get("feel_noise").getAsDouble(),
-            json.get("tremor").getAsDouble(), json.get("lockout_ticks").getAsInt(), json.get("alarm_chance").getAsDouble());
+            json.get("tremor").getAsDouble(), json.get("lockout_ticks").getAsInt(), json.get("alarm_chance").getAsDouble(),
+            json.has("spools") ? json.get("spools").getAsInt() : 0, json.has("requires_tool") ? json.get("requires_tool").getAsString() : "",
+            json.has("requires_skill") ? json.get("requires_skill").getAsString() : "", json.has("rakeable") ? json.get("rakeable").getAsDouble() : 0);
     }
 
     /** The named profile, or the deadbolt when a name is not known (a stale data reference must never leave a door with no lock at all). */

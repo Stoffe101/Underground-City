@@ -1,8 +1,10 @@
 {
   "schema_version": 1,
+  "note": "Building classes (D-105, D-122) and their tiers (D-144): 1 shabby, 2 modest, 3 comfortable, 4 well-off, 5 wealthy, 6 exceptional, 0 not a target. The tier sets the safe (a household safe to 3, a wall safe at 4 and 5, a vault safe at 6) and how good a search is.",
   "classes": {
     "cottage": {
       "label": "cottage",
+      "tier": 1,
       "lock_profile": "latch",
       "locked_exterior": true,
       "stash_policy": "underground_city:apartment_common",
@@ -10,60 +12,131 @@
     },
     "flat_block": {
       "label": "apartment block",
+      "tier": 2,
       "lock_profile": "deadbolt",
       "locked_exterior": true,
       "stash_policy": "underground_city:apartment_common",
       "stash_chance": 0.7,
-      "response": { "alarm_chance": 0.25, "dispatch_seconds": 120, "officers": 1, "window_seconds": 120 }
+      "response": {
+        "alarm_chance": 0.25,
+        "dispatch_seconds": 120,
+        "officers": 1,
+        "window_seconds": 120
+      }
     },
     "flat_tower": {
       "label": "apartment tower",
-      "lock_profile": "commercial",
+      "tier": 4,
+      "lock_profile": "secured",
       "locked_exterior": true,
       "stash_policy": "underground_city:apartment_affluent",
       "stash_chance": 0.7,
-      "response": { "alarm_chance": 0.6, "dispatch_seconds": 90, "officers": 2, "window_seconds": 150 }
+      "response": {
+        "alarm_chance": 0.6,
+        "dispatch_seconds": 90,
+        "officers": 2,
+        "window_seconds": 150
+      }
     },
     "workshop": {
       "label": "workshop",
+      "tier": 3,
       "lock_profile": "commercial",
       "locked_exterior": true,
       "stash_policy": "underground_city:industrial",
       "stash_chance": 0.6,
-      "response": { "alarm_chance": 0.35, "dispatch_seconds": 100, "officers": 1, "window_seconds": 120 }
+      "response": {
+        "alarm_chance": 0.35,
+        "dispatch_seconds": 100,
+        "officers": 1,
+        "window_seconds": 120
+      }
     },
     "office": {
       "label": "office",
-      "lock_profile": "commercial",
+      "tier": 4,
+      "lock_profile": "secured",
       "locked_exterior": true,
       "stash_policy": "underground_city:office",
       "stash_chance": 0.6,
-      "response": { "alarm_chance": 0.7, "dispatch_seconds": 75, "officers": 2, "window_seconds": 150 }
+      "response": {
+        "alarm_chance": 0.7,
+        "dispatch_seconds": 75,
+        "officers": 2,
+        "window_seconds": 150
+      }
     },
     "vault": {
       "label": "high-value premises",
+      "tier": 6,
       "lock_profile": "high_security",
       "locked_exterior": true,
       "stash_policy": "underground_city:illegal_cache",
       "stash_chance": 1.0,
-      "response": { "alarm_chance": 1.0, "dispatch_seconds": 45, "officers": 3, "window_seconds": 180 }
+      "response": {
+        "alarm_chance": 1.0,
+        "dispatch_seconds": 45,
+        "officers": 3,
+        "window_seconds": 180
+      }
     },
     "public": {
       "label": "public building",
+      "tier": 0,
       "locked_exterior": false
     }
   },
   "rules": [
-    { "type_prefix": "center", "class": "vault" },
-    { "type_prefix": "shopping", "class": "public" },
-    { "type_prefix": "town", "class": "cottage" },
-    { "city": "ironhaven", "floors_max": 3, "class": "workshop" },
-    { "city": "ironhaven", "floors_min": 4, "class": "flat_block" },
-    { "city": "valewood", "floors_max": 2, "class": "cottage" },
-    { "city": "valewood", "floors_min": 3, "class": "flat_block" },
-    { "city": "blackwater", "floors_max": 2, "class": "workshop" },
-    { "city": "blackwater", "floors_min": 3, "floors_max": 4, "class": "office" },
-    { "city": "blackwater", "floors_min": 5, "class": "flat_tower" },
-    { "class": "flat_block" }
+    {
+      "type_prefix": "center",
+      "class": "vault"
+    },
+    {
+      "type_prefix": "shopping",
+      "class": "public"
+    },
+    {
+      "type_prefix": "town",
+      "class": "cottage"
+    },
+    {
+      "city": "ironhaven",
+      "floors_max": 3,
+      "class": "workshop"
+    },
+    {
+      "city": "ironhaven",
+      "floors_min": 4,
+      "class": "flat_block"
+    },
+    {
+      "city": "valewood",
+      "floors_max": 2,
+      "class": "cottage"
+    },
+    {
+      "city": "valewood",
+      "floors_min": 3,
+      "class": "flat_block"
+    },
+    {
+      "city": "blackwater",
+      "floors_max": 2,
+      "class": "workshop"
+    },
+    {
+      "city": "blackwater",
+      "floors_min": 3,
+      "floors_max": 4,
+      "class": "office"
+    },
+    {
+      "city": "blackwater",
+      "floors_min": 5,
+      "class": "flat_tower"
+    },
+    {
+      "class": "flat_block"
+    }
   ]
 }

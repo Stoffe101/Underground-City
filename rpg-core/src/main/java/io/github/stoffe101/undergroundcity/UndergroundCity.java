@@ -114,6 +114,8 @@ public final class UndergroundCity {
     }
 
 
+    /** How many uses a durable Core tool has: the Pro Pick Set takes one per lock opened and four when a pin snaps (D-143). */
+    static final int DURABLE_USES = 40;
     private static final java.util.Map<String, RegistryObject<Item>> CORE_ITEMS = new java.util.LinkedHashMap<>();
     private static final java.util.Map<String, String> CORE_ITEM_KINDS = new java.util.LinkedHashMap<>();
 
@@ -121,6 +123,7 @@ public final class UndergroundCity {
         for (CoreItems.Definition definition : CoreItems.definitions()) {
             CORE_ITEMS.put(definition.id(), ITEMS.register(definition.id(), () -> definition.kind().equals("seed")
                 ? new RestrictedCuttingItem(CANNABIS_PLANT.get(), new Item.Properties().stacksTo(definition.stack()))
+                : definition.kind().equals("durable") ? new Item(new Item.Properties().durability(DURABLE_USES))   // the Pro Pick Set (D-143) wears with use
                 : new Item(new Item.Properties().stacksTo(definition.stack()))));
             CORE_ITEM_KINDS.put(definition.id(), definition.kind());
         }
@@ -138,9 +141,12 @@ public final class UndergroundCity {
         TerminalNetwork.register();
         CrewNetwork.register();
         LockNetwork.register();
+        BurglaryNetwork.register();
         FenceNetwork.register();
         MinecraftForge.EVENT_BUS.register(this);
         MinecraftForge.EVENT_BUS.register(new RenamedIds());
+        MinecraftForge.EVENT_BUS.register(new BurglarySearch());
+        MinecraftForge.EVENT_BUS.register(new SecurityDevices());
         MinecraftForge.EVENT_BUS.register(new WorkOrderService());
         MinecraftForge.EVENT_BUS.register(new SupplierNpc());
         MinecraftForge.EVENT_BUS.register(new PropertyCommands());
@@ -202,15 +208,16 @@ public final class UndergroundCity {
         event.addListener(PropertyPolicies.INSTANCE);
         event.addListener(ExceptionalLoot.INSTANCE);
         event.addListener(SkillCatalog.INSTANCE);
+        event.addListener(SkillCatalog.Specializations.INSTANCE);
         event.addListener(PropertyCatalog.INSTANCE);
         event.addListener(ContrabandCatalog.INSTANCE);
         event.addListener(CityLaws.INSTANCE);
         event.addListener(BuyerCatalog.INSTANCE);
         event.addListener(CheckpointCatalog.INSTANCE);
         event.addListener(DistrictCatalog.INSTANCE);
-        event.addListener(SkillCatalog.Specializations.INSTANCE);
         event.addListener(StarterKits.INSTANCE);
         event.addListener(LockProfiles.INSTANCE);
+        event.addListener(BurglarySearch.LOADER);
         event.addListener(CityBuildings.INSTANCE);
         event.addListener(PopulationCatalog.INSTANCE);
         event.addListener(FenceCatalog.INSTANCE);

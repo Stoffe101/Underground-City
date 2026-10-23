@@ -60,7 +60,7 @@ public final class PropertyCacheBlock extends BaseEntityBlock {
         }
         if (entry.kind() == PropertyCacheBlockEntity.Entry.Kind.PICK) {
             var city = CityRegions.INSTANCE.nearest(serverLevel, pos).orElse("");
-            String refusal = LockService.begin(serverPlayer, serverLevel, new LockService.Target(LockService.Kind.SAFE, pos.immutable(), entry.profile(), city, "safe", "Household safe", entry.picksNeeded()));
+            String refusal = LockService.begin(serverPlayer, serverLevel, new LockService.Target(LockService.Kind.SAFE, pos.immutable(), entry.profile(), city, "safe", cache.label(), entry.picksNeeded()));
             if (refusal != null) serverPlayer.sendSystemMessage(Component.literal(refusal));
             return InteractionResult.CONSUME;
         }

@@ -45,7 +45,7 @@ public final class AlarmPanels {
     static final int ENTRY_SECONDS = 25, JAM_MINUTES = 10;
     static final double REACH_SQUARED = 36.0;
     static final int BASE_LENGTH = 5, BASE_PER_SYMBOL = 12, BASE_INPUT_TICKS = 20 * 8, ANALYSIS_PER_SYMBOL = 4, SYSTEMS_INPUT_TICKS = 20 * 4;
-    static final String SKILL = "technician.bypass_tooling", ANALYSIS = "technician.signal_analysis", SYSTEMS = "technician.security_systems";
+    static final String SKILL = "technician.bypass_tooling", ANALYSIS = "technician.signal_analysis", SYSTEMS = "technician.security_systems", WIRE_WORK = "thief.wire_work";
 
     /** One entry delay: who came in, at which building, through which door, and the server tick it runs out. */
     record Entry(ServerPlayer player, UUID thief, ResourceKey<Level> dimension, long buildingKey, BlockPos door, BlockPos panel, long endsAt) {}
@@ -167,8 +167,9 @@ public final class AlarmPanels {
         if (player.isCreative() || player.isSpectator()) { tell(player, "The panel is armed (creative players are never policed)."); return; }
         CitizenState.Citizen citizen = CitizenState.get(player.server).find(player.getUUID()).orElse(null);
         if (citizen == null) { tell(player, "Register as a citizen first."); return; }
-        if (!SkillService.has(citizen, SKILL)) {
-            tell(player, "A keypad with a red light: this building's alarm is armed. Getting past it takes a Technician's Bypass Tooling and a Bypass Kit.");
+        // a Technician's Bypass Tooling, or a thief's Wire Work whatever their trade (D-143)
+        if (!SkillService.has(citizen, SKILL) && !SkillService.has(citizen, WIRE_WORK)) {
+            tell(player, "A keypad with a red light: this building's alarm is armed. Getting past it takes a Bypass Kit and either a Technician's Bypass Tooling or a thief's Wire Work.");
             return;
         }
         if (SESSIONS.containsKey(player.getUUID()) || SecureTerminalService.hasSession(player.getUUID())) { tell(player, "You are already working a trace."); return; }
@@ -215,6 +216,7 @@ public final class AlarmPanels {
         tell(player, "The light goes blue. The panel is jammed for " + JAM_MINUTES + " minutes: it will not call anybody, whoever comes in.");
         Notice.send(player, Notice.Kind.LOOT, "Alarm jammed", "The panel will call nobody for " + JAM_MINUTES + " minutes.");
         CitizenState.get(player.server).bumpJourney(player.getUUID(), "alarms_jammed");
+        Thievery.bypassed(player, b.key(), "alarm panel");
     }
 
     private static void fail(ServerPlayer player, Session session, String why) {

@@ -48,15 +48,59 @@ public final class LockService {
     /** What is being picked: a door of a city building, or a Household Safe. */
     public record Target(Kind kind, BlockPos pos, String profile, String city, String securityClass, String label, int picksNeeded) {}
 
-    /** One player's lock in progress. */
+    /** One player's lock in progress. {@code proSet} when the thief works it with a Pro Pick Set rather than lockpicks; {@code raked} once a rake has been tried. */
     static final class Active {
         final UUID player;
         final Target target;
         final LockpickSession session;
+        final boolean proSet;
         double position = 0.5;
-        boolean pressing;
+        boolean pressing, raked;
         int lastFeel = -1, lastPins = -1, lastStrain = -1, quiet;
-        Active(UUID player, Target target, LockpickSession session) { this.player = player; this.target = target; this.session = session; }
+        Active(UUID player, Target target, LockpickSession session) { this(player, target, session, false); }
+        Active(UUID player, Target target, LockpickSession session, boolean proSet) { this.player = player; this.target = target; this.session = session; this.proSet = proSet; }
+    }
+
+    /** The Pro Pick Set (D-143): a professional set that a thief with Professional Tools works instead of lockpicks; it wears with use and is not lost when a pin snaps. */
+    static final String PRO_SET = "pro_pick_set";
+    static final int PRO_WEAR_OPENED = 1, PRO_WEAR_SNAPPED = 4;
+
+    static boolean isProSet(ItemStack stack) { return stack.is(UndergroundCity.item(PRO_SET)); }
+
+    /** The Pro Pick Set the player carries, or empty. */
+    static ItemStack proSet(Player player) {
+        if (isProSet(player.getMainHandItem())) return player.getMainHandItem();
+        for (ItemStack stack : player.getInventory().items) if (isProSet(stack)) return stack;
+        return ItemStack.EMPTY;
+    }
+
+    /** True when the player can work a Pro Pick Set: they carry one and have learned Professional Tools. */
+    static boolean worksProSet(ServerPlayer player) { return !proSet(player).isEmpty() && Thievery.has(player, "thief.pro_tools"); }
+
+    /** Why this player cannot even try this lock (a tool or a skill it needs), or null. */
+    static String requirement(ServerPlayer player, LockpickSession.Profile profile, Target target) {
+        if (!profile.requiresSkill().isEmpty() && !Thievery.has(player, profile.requiresSkill())) {
+            SkillNode node = SkillCatalog.INSTANCE.find(profile.requiresSkill());
+            return "A " + describe(profile) + ". It opens only to a thief with " + (node == null ? profile.requiresSkill() : node.title()) + ".";
+        }
+        if (profile.requiresTool().equals(PRO_SET) && !worksProSet(player)) {
+            return proSet(player).isEmpty() ? "A " + describe(profile) + ". Lockpicks are no use on it: it needs a Pro Pick Set." : "A " + describe(profile) + ". You carry a Pro Pick Set but have not learned Professional Tools.";
+        }
+        return null;
+    }
+
+    /** A burglar's words for a kind of lock. */
+    static String describe(LockpickSession.Profile profile) {
+        return switch (profile.id()) {
+            case "latch" -> "simple latch"; case "deadbolt" -> "deadbolt"; case "commercial" -> "commercial lock"; case "secured" -> "secured lock with a spool pin";
+            case "high_security" -> "high-security lock"; case "safe" -> "household safe"; case "wall_safe" -> "wall safe"; case "vault_safe" -> "vault safe";
+            default -> "lock";
+        };
+    }
+
+    /** The thief's hands on this lock: Steady Hands and Feel for the Pins, from the player's skills. */
+    static LockpickSession.Hands hands(ServerPlayer player) {
+        return LockpickSession.Hands.of(Thievery.has(player, "thief.steady_hands"), Thievery.has(player, "thief.feel_for_pins"));
     }
 
     private static final Map<UUID, Active> ACTIVE = new HashMap<>();
@@ -94,18 +138,51 @@ public final class LockService {
     /** Starts a pick. Returns the reason it cannot start, or {@code null} when the player now has a lock in their hands (the client has been told to show it). */
     public static String begin(ServerPlayer player, ServerLevel level, Target target) {
         if (busy(player.getUUID())) return "You are already working a lock.";
-        if (picks(player) < target.picksNeeded()) {
-            return target.picksNeeded() <= 1 ? "Locked. A lockpick would open it." : "Locked. Forcing this needs " + target.picksNeeded() + " lockpicks.";
+        LockpickSession.Profile profile = LockProfiles.INSTANCE.find(target.profile());
+        String requirement = requirement(player, profile, target);
+        if (requirement != null) return requirement;
+        // a Pro Pick Set replaces lockpicks for a thief who can work it; a safecracker needs one pick fewer on a safe
+        boolean pro = worksProSet(player);
+        int needed = target.kind() == Kind.SAFE && Thievery.has(player, "thief.safecracking") ? Math.max(1, target.picksNeeded() - 1) : target.picksNeeded();
+        if (!pro && picks(player) < needed) {
+            return needed <= 1 ? "Locked. A lockpick would open it." : "Locked. Forcing this needs " + needed + " lockpicks.";
         }
         if (WorkOrderLedger.get(level.getServer()).faulted()) return "Locks are unavailable until the server is restarted.";
         long now = clock(level.getServer());
         long jam = PropertyLocks.get(level.getServer()).jamRemaining(target.pos(), now);
         if (jam > 0) return "A snapped pick is jammed in this lock. Try again in about " + Math.max(1, (jam + 19) / 20) + " seconds.";
-        LockpickSession.Profile profile = LockProfiles.INSTANCE.find(target.profile());
-        Active active = new Active(player.getUUID(), target, new LockpickSession(profile, seedFor(level, target.pos())));
+        Active active = new Active(player.getUUID(), target, new LockpickSession(profile, seedFor(level, target.pos()), hands(player)), pro);
         ACTIVE.put(player.getUUID(), active);
-        LockNetwork.open(player, target.label(), active.session);
+        LockNetwork.open(player, target.label(), active.session, profile.rakeChance() > 0 && Thievery.has(player, "thief.raking"));
         return null;
+    }
+
+    /** Odds and noise of a rake (D-143): one try per lock, only on a lock that can be raked, only for a thief who has learned Raking. */
+    static final double RAKE_FAIL_JOLT = 0.3;
+
+    /**
+     * The player rakes the lock in their hands: one quick, loud try. It works at the lock's rake chance (a latch 70 percent, a deadbolt 35); otherwise the pick takes a jolt. Either way it is noisy:
+     * a raked door is never a quiet entry, and a failed rake is a noise people nearby may notice. The roll is the server's.
+     */
+    public static void rake(ServerPlayer player) {
+        Active active = ACTIVE.get(player.getUUID());
+        if (active == null || !active.session.active() || active.raked) return;
+        LockpickSession.Profile profile = active.session.profile();
+        if (profile.rakeChance() <= 0 || !Thievery.has(player, "thief.raking")) return;
+        active.raked = true;
+        ServerLevel level = player.serverLevel();
+        level.playSound(null, active.target.pos(), SoundEvents.CHAIN_HIT, SoundSource.PLAYERS, 1.0f, 1.4f);
+        if (level.getRandom().nextDouble() < profile.rakeChance()) {
+            active.session.rakedOpen();
+            active.pressing = false;
+            finish(level.getServer(), player, active);
+            ACTIVE.remove(player.getUUID());
+            return;
+        }
+        active.session.jolt(RAKE_FAIL_JOLT);
+        if (active.target.kind() == Kind.DOOR) MinecraftForge.EVENT_BUS.post(new BuildingBreachEvent(player.getUUID(), active.target.pos(), active.target.city(), active.target.securityClass(), BuildingBreachEvent.Outcome.NOISE, clock(level.getServer()), false, player));
+        if (!active.session.active()) { finish(level.getServer(), player, active); ACTIVE.remove(player.getUUID()); }
+        else LockNetwork.progress(player, active.session);
     }
 
     // ------------------------------------------------------------------------------------------------ input and ticks
@@ -157,7 +234,7 @@ public final class LockService {
         LockpickSession session = active.session;
         session.tick(active.position, active.pressing);
         if (session.active()) {
-            boolean changed = session.feel() != active.lastFeel || session.pinsSet() != active.lastPins || session.strainPercent() != active.lastStrain;
+            boolean changed = session.feel() != active.lastFeel || session.pinsSet() != active.lastPins || session.strainPercent() != active.lastStrain || session.justTurned();
             if (changed || ++active.quiet >= 5) {
                 active.quiet = 0;
                 active.lastFeel = session.feel(); active.lastPins = session.pinsSet(); active.lastStrain = session.strainPercent();
@@ -178,12 +255,13 @@ public final class LockService {
         RandomSource random = level.getRandom();
         switch (session.state()) {
             case OPENED -> {
-                LockNetwork.finished(player, LockpickSession.State.OPENED, "Click. It is open.");
-                if (target.kind() == Kind.DOOR) openedDoor(server, level, player, target, now, random, session.peakStrainPercent() < QUIET_STRAIN_PERCENT);
-                else openedSafe(level, player, target, now, random);
+                LockNetwork.finished(player, LockpickSession.State.OPENED, active.raked ? "Raked open. Loud, but it is open." : "Click. It is open.");
+                if (target.kind() == Kind.DOOR) openedDoor(server, level, player, target, now, random, !active.raked && session.peakStrainPercent() < quietStrain(player), active.proSet);
+                else openedSafe(level, player, target, now, random, active.proSet);
             }
             case BROKEN -> {
-                consumePicks(player, 1);
+                if (active.proSet) wearProSet(player, PRO_WEAR_SNAPPED);
+                else consumePicks(player, 1);
                 PropertyLocks.get(server).jam(target.pos(), now + session.profile().lockoutTicks());
                 boolean alarm = random.nextDouble() < session.profile().alarmChance();
                 LockNetwork.finished(player, LockpickSession.State.BROKEN, alarm ? "The pick snapped, and something rang inside." : "The pick snapped in the lock.");
@@ -207,31 +285,43 @@ public final class LockService {
         catch (RuntimeException error) { LOGGER.warn("Heat from a break-in could not be recorded: {}", error.toString()); }
     }
 
-    private static void wear(ServerPlayer player, RandomSource random) {
+    private static void wear(ServerPlayer player, RandomSource random, boolean proSet) {
+        if (proSet) { wearProSet(player, PRO_WEAR_OPENED); return; }
         if (random.nextDouble() < WEAR_ON_SUCCESS && consumePicks(player, 1) == 1) Notice.send(player, Notice.Kind.INFO, "Worn pick", "The pick bent in that lock and is no use again.");
+    }
+
+    /** The Pro Pick Set takes wear; when it is worn through it is gone. */
+    static void wearProSet(ServerPlayer player, int amount) {
+        ItemStack set = proSet(player);
+        if (set.isEmpty()) return;
+        set.hurtAndBreak(amount, player, p -> Notice.send(player, Notice.Kind.INFO, "Pick set worn out", "Your Pro Pick Set is finished. A new one is a serious expense."));
     }
 
     /** A door picked without the pick ever coming under more than this percent of its strain limit was picked quietly (D-122): an alarm built into the building does not hear it. */
     static final int QUIET_STRAIN_PERCENT = 40;
 
-    private static void openedDoor(MinecraftServer server, ServerLevel level, ServerPlayer player, Target target, long now, RandomSource random, boolean quiet) {
+    /** A Ghost (D-143) picks quietly with a little more strain to spare. */
+    static int quietStrain(ServerPlayer player) { return Thievery.has(player, "thief.ghost") ? 55 : QUIET_STRAIN_PERCENT; }
+
+    private static void openedDoor(MinecraftServer server, ServerLevel level, ServerPlayer player, Target target, long now, RandomSource random, boolean quiet, boolean proSet) {
         BlockState state = level.getBlockState(target.pos());
         if (state.getBlock() instanceof DoorBlock door) {
             PropertyLocks.get(server).breach(target.pos(), now + BREACH_TICKS);
             door.setOpen(player, level, state, target.pos(), true);
         }
-        wear(player, random);
+        wear(player, random, proSet);
         heat(server, player, target.city(), HEAT_OPENED);
-        // the building's stash is decided once, the first time anybody gets in
-        CityBuildings.INSTANCE.at(level, target.pos()).ifPresent(building -> BuildingStash.furnish(level, building, target.pos(), now));
+        // the building's stash is decided once, the first time anybody gets in; the first time this thief gets in is worth Thief XP (D-143)
+        CityBuildings.INSTANCE.at(level, target.pos()).ifPresent(building -> { BuildingStash.furnish(level, building, target.pos(), now); Thievery.entered(player, building); });
         MinecraftForge.EVENT_BUS.post(new BuildingBreachEvent(player.getUUID(), target.pos(), target.city(), target.securityClass(), BuildingBreachEvent.Outcome.OPENED, now, false, player).quiet(quiet));
         Notice.send(player, Notice.Kind.HEAT, quiet ? "Lock picked cleanly" : "Lock picked", quiet ? "The door is open for a moment. A clean pick is a quiet one." : "The door is open for a moment. Whoever lives here will notice.");
     }
 
-    private static void openedSafe(ServerLevel level, ServerPlayer player, Target target, long now, RandomSource random) {
+    private static void openedSafe(ServerLevel level, ServerPlayer player, Target target, long now, RandomSource random, boolean proSet) {
         if (level.getBlockEntity(target.pos()) instanceof PropertyCacheBlockEntity safe) {
             safe.forcedOpenBy(level, player, now);
-            wear(player, random);
+            wear(player, random, proSet);
+            Thievery.crackedSafe(player, target.pos(), safe.tier());
             player.openMenu(safe);
         }
     }

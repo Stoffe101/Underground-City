@@ -25,19 +25,29 @@ public final class FenceCatalog extends SimpleJsonResourceReloadListener {
 
     /** The most a fence ever pays for an item, as a share of its worth, whatever the skills (so a fenced item is always worth less than an honest one). */
     static final int MAX_RATE_PERCENT = 60;
+    /** The most for a fence-only good (D-144): it has no honest price to undercut, so a skilled thief may get more of its worth. */
+    static final int MAX_FENCE_ONLY_PERCENT = 80;
 
     /**
      * A city's fence network. {@code ratePercent} of the worth for goods taken in another city, {@code sameCityRatePercent} (and {@code sameCityHeat} more heat) for goods taken in this one; the network
      * can pay {@code budget} credits at most, and finds {@code refillCredits} more every {@code refillMinutes} of active play. The fence is about between {@code fromHour} and {@code toHour}.
      */
-    public record Fence(String city, String title, String blurb, int ratePercent, int sameCityRatePercent, int sameCityHeat, int budget, int refillCredits, int refillMinutes, int fromHour, int toHour) {
+    public record Fence(String city, String title, String blurb, int ratePercent, int sameCityRatePercent, int sameCityHeat, int budget, int refillCredits, int refillMinutes, int fromHour, int toHour,
+                        java.util.Set<String> specialties) {
+        public Fence(String city, String title, String blurb, int ratePercent, int sameCityRatePercent, int sameCityHeat, int budget, int refillCredits, int refillMinutes, int fromHour, int toHour) {
+            this(city, title, blurb, ratePercent, sameCityRatePercent, sameCityHeat, budget, refillCredits, refillMinutes, fromHour, toHour, java.util.Set.of());
+        }
+        public Fence { specialties = specialties == null ? java.util.Set.of() : java.util.Set.copyOf(specialties); }
         long refillTicks() { return refillMinutes * 1200L; }
+        /** True for goods this fence wants most (D-144): a thief with Specialist Buyers is paid a premium for them. */
+        boolean wants(String item) { return specialties.contains(item); }
         /** True at an hour of the day (0 to 23) when the fence is about. A span that passes midnight (21 to 3) is read as such. */
         boolean about(int hour) { return fromHour <= toHour ? hour >= fromHour && hour < toHour : hour >= fromHour || hour < toHour; }
     }
 
     private volatile Map<String, Fence> fences = Map.of();
     private volatile Map<String, Integer> values = Map.of();
+    private volatile java.util.Set<String> fenceOnly = java.util.Set.of();
 
     private FenceCatalog() { super(new Gson(), "fences"); }
 
@@ -45,6 +55,7 @@ public final class FenceCatalog extends SimpleJsonResourceReloadListener {
     protected void apply(Map<ResourceLocation, JsonElement> data, ResourceManager resources, ProfilerFiller profiler) {
         Map<String, Fence> nextFences = new LinkedHashMap<>();
         Map<String, Integer> nextValues = new LinkedHashMap<>();
+        java.util.Set<String> nextOnly = new java.util.LinkedHashSet<>();
         try {
             for (var entry : data.entrySet()) {
                 JsonObject json = entry.getValue().getAsJsonObject();
@@ -55,6 +66,7 @@ public final class FenceCatalog extends SimpleJsonResourceReloadListener {
                         if (worth < 1 || worth > 2000) throw new IllegalArgumentException(entry.getKey() + ": the worth of " + v.getKey() + " must be 1 to 2000 credits");
                         nextValues.put(v.getKey(), worth);
                     }
+                    if (json.has("fence_only")) for (JsonElement id : json.getAsJsonArray("fence_only")) nextOnly.add(id.getAsString());
                     continue;
                 }
                 Fence fence = parse(json);
@@ -62,6 +74,7 @@ public final class FenceCatalog extends SimpleJsonResourceReloadListener {
             }
             fences = Map.copyOf(nextFences);
             values = Map.copyOf(nextValues);
+            fenceOnly = java.util.Set.copyOf(nextOnly);
             LOGGER.info("Loaded {} Underground City fence networks and {} fenced item values", fences.size(), values.size());
         } catch (RuntimeException error) {
             LOGGER.error("Fence data is invalid; keeping the previous fences", error);
@@ -79,7 +92,9 @@ public final class FenceCatalog extends SimpleJsonResourceReloadListener {
         if (heat < 0 || heat > 3) throw new IllegalArgumentException(city + ": same_city_heat must be 0 to 3");
         int from = json.get("from_hour").getAsInt(), to = json.get("to_hour").getAsInt();
         if (from < 0 || from > 23 || to < 0 || to > 24 || from == to) throw new IllegalArgumentException(city + ": hours must be 0 to 24 and not empty");
-        return new Fence(city, json.get("title").getAsString(), json.has("blurb") ? json.get("blurb").getAsString() : "", rate, same, heat, budget, refill, minutes, from, to);
+        java.util.Set<String> specialties = new java.util.LinkedHashSet<>();
+        if (json.has("specialties")) for (JsonElement id : json.getAsJsonArray("specialties")) specialties.add(id.getAsString());
+        return new Fence(city, json.get("title").getAsString(), json.has("blurb") ? json.get("blurb").getAsString() : "", rate, same, heat, budget, refill, minutes, from, to, specialties);
     }
 
     public Optional<Fence> forCity(String city) { return Optional.ofNullable(fences.get(city)); }
@@ -88,6 +103,8 @@ public final class FenceCatalog extends SimpleJsonResourceReloadListener {
     /** What a fence thinks one of this item is worth, or 0 when a fence will not buy it. */
     public int worth(String itemId) { return values.getOrDefault(itemId, 0); }
     public Map<String, Integer> values() { return values; }
+    /** True for goods that have no honest price at all (D-144). */
+    public boolean fenceOnly(String itemId) { return fenceOnly.contains(itemId); }
 
     /** Test seam: replaces the catalogue (GameTests run without reloading data packs). */
     void setForTest(Map<String, Fence> f, Map<String, Integer> v) { fences = Map.copyOf(f); values = Map.copyOf(v); }

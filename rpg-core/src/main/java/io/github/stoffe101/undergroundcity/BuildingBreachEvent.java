@@ -10,7 +10,8 @@ import java.util.UUID;
  * police and evidence systems listen here: {@link LockService}'s own heat rule, and {@link PoliceResponse}, which decides whether anybody noticed and, if so, sends officers (D-122).
  */
 public final class BuildingBreachEvent extends Event {
-    public enum Outcome { OPENED, SNAPPED }
+    /** {@code NOISE} is a lock worked loudly without getting in (a failed rake, D-143): only a witness can make anything of it. */
+    public enum Outcome { OPENED, SNAPPED, NOISE }
 
     private final UUID player;
     private final BlockPos door;

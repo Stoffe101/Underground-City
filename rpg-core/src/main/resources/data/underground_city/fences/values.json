@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "note": "What a fence thinks one item is worth, in credits (D-125). The worth is the cheapest honest price of the item where one exists (the cities' shelves and the regional exchange), so a fence, who pays at most 60 percent of it, never pays more than the item costs to buy. Items with no worth here are not bought at all: nothing a person can come by for free (stone, logs, dirt) and nothing worthless (paper, bread).",
+  "note": "What a fence thinks one item is worth, in credits (D-125). The worth is the cheapest honest price of the item where one exists (the cities' shelves and the regional exchange), so a fence, who pays at most 60 percent of it, never pays more than the item costs to buy. Items with no worth here are not bought at all: nothing a person can come by for free (stone, logs, dirt) and nothing worthless (paper, bread). Goods with no honest price at all (fence-only goods: what burglars find in homes and offices, D-144) are listed under fence_only; a fence may pay more of their worth (up to 80 percent with the Thief skills) because nothing honest can be undercut by them.",
   "values": {
     "minecraft:iron_ingot": 9,
     "minecraft:copper_ingot": 7,
@@ -22,6 +22,41 @@
     "underground_city:encrypted_design": 80,
     "underground_city:pocket_watch": 60,
     "underground_city:jewellery_box": 90,
-    "underground_city:old_laptop": 120
-  }
+    "underground_city:old_laptop": 120,
+    "underground_city:wristwatch": 45,
+    "underground_city:gold_ring": 70,
+    "underground_city:pearl_necklace": 140,
+    "underground_city:smartphone": 55,
+    "underground_city:tablet": 80,
+    "underground_city:digital_camera": 75,
+    "underground_city:vintage_wine": 60,
+    "underground_city:rare_vinyl": 50,
+    "underground_city:designer_handbag": 120,
+    "underground_city:cash_box": 90,
+    "underground_city:power_drill": 40,
+    "underground_city:small_painting": 220,
+    "underground_city:bearer_bonds": 400,
+    "minecraft:music_disc_13": 30,
+    "minecraft:music_disc_cat": 30
+  },
+  "fence_only": [
+    "minecraft:music_disc_13",
+    "minecraft:music_disc_cat",
+    "underground_city:bearer_bonds",
+    "underground_city:cash_box",
+    "underground_city:designer_handbag",
+    "underground_city:digital_camera",
+    "underground_city:gold_ring",
+    "underground_city:jewellery_box",
+    "underground_city:old_laptop",
+    "underground_city:pearl_necklace",
+    "underground_city:pocket_watch",
+    "underground_city:power_drill",
+    "underground_city:rare_vinyl",
+    "underground_city:small_painting",
+    "underground_city:smartphone",
+    "underground_city:tablet",
+    "underground_city:vintage_wine",
+    "underground_city:wristwatch"
+  ]
 }

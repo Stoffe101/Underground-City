@@ -1,6 +1,7 @@
 {
   "schema_version": 1,
   "pins": 3,
+  "rakeable": 0.35,
   "tolerance": 0.09,
   "hold_ticks": 8,
   "strain_limit": 100,

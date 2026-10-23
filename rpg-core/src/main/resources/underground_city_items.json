@@ -190,6 +190,76 @@
       "id": "old_laptop",
       "kind": "rare",
       "stack": 16
+    },
+    {
+      "id": "pro_pick_set",
+      "kind": "durable",
+      "stack": 1
+    },
+    {
+      "id": "wristwatch",
+      "kind": "rare",
+      "stack": 16
+    },
+    {
+      "id": "gold_ring",
+      "kind": "rare",
+      "stack": 16
+    },
+    {
+      "id": "pearl_necklace",
+      "kind": "rare",
+      "stack": 16
+    },
+    {
+      "id": "smartphone",
+      "kind": "rare",
+      "stack": 16
+    },
+    {
+      "id": "tablet",
+      "kind": "rare",
+      "stack": 16
+    },
+    {
+      "id": "digital_camera",
+      "kind": "rare",
+      "stack": 16
+    },
+    {
+      "id": "vintage_wine",
+      "kind": "rare",
+      "stack": 16
+    },
+    {
+      "id": "rare_vinyl",
+      "kind": "rare",
+      "stack": 16
+    },
+    {
+      "id": "designer_handbag",
+      "kind": "rare",
+      "stack": 16
+    },
+    {
+      "id": "cash_box",
+      "kind": "rare",
+      "stack": 16
+    },
+    {
+      "id": "power_drill",
+      "kind": "rare",
+      "stack": 16
+    },
+    {
+      "id": "small_painting",
+      "kind": "rare",
+      "stack": 16
+    },
+    {
+      "id": "bearer_bonds",
+      "kind": "rare",
+      "stack": 16
     }
   ]
 }

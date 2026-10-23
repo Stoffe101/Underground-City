@@ -9,12 +9,12 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 public final class ClientLock {
     private ClientLock() {}
 
-    static void open(String label, int pins, int timeLimit, int holdTicks, float tremor, float phase) {
-        Minecraft.getInstance().setScreen(new LockpickScreen(label, pins, timeLimit, holdTicks, tremor, phase));
+    static void open(String label, int pins, int timeLimit, int holdTicks, float tremor, float phase, boolean rakeable, int spools) {
+        Minecraft.getInstance().setScreen(new LockpickScreen(label, pins, timeLimit, holdTicks, tremor, phase).thief(rakeable, spools));
     }
 
-    static void progress(int feel, int pinsSet, int strain, int timeLeft, int serverTick) {
-        if (Minecraft.getInstance().screen instanceof LockpickScreen screen) screen.update(feel, pinsSet, strain, timeLeft, serverTick);
+    static void progress(int feel, int pinsSet, int strain, int timeLeft, int serverTick, int spool) {
+        if (Minecraft.getInstance().screen instanceof LockpickScreen screen) { screen.update(feel, pinsSet, strain, timeLeft, serverTick); screen.spool(spool); }
     }
 
     static void finished(int state, String note) {

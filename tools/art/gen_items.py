@@ -632,6 +632,184 @@ def old_laptop():
     return finish(s)
 
 
+# ----------------------------------------------------------------------------------------------- what burglars find (D-144)
+GREEN_GLASS = ramp('#2f6b45')
+LEATHER = ramp('#7a4a2c')
+BLACK = ramp('#2b2f36')
+
+
+@item
+def pro_pick_set():
+    """A rolled-out leather tool wrap holding a row of bright picks and a tension wrench: a professional's set."""
+    s = Sprite()
+    bevel_rect(s, 1, 6, 14, 13, LEATHER, strong=False)
+    s.line(1, 9, 14, 9, LEATHER[1])
+    for i, x in enumerate(range(3, 13, 2)):
+        s.line(x, 3 + (i % 2), x, 11, STEEL[3]); s.put(x, 3 + (i % 2), STEEL[4])
+        s.put(x + 1, 4 + (i % 2), STEEL[1])
+    s.line(12, 4, 14, 4, STEEL[2]); s.line(14, 4, 14, 10, STEEL[2])                       # the wrench
+    s.rect(1, 12, 14, 13, LEATHER[0]); s.put(7, 12, BRASS[3]); s.put(8, 12, BRASS[3])      # the strap and its buckle
+    return finish(s)
+
+
+@item
+def wristwatch():
+    """A steel wristwatch: a square case with a dark face, two hands, and a strap above and below."""
+    s = Sprite()
+    s.rect(6, 1, 9, 4, BLACK[2]); s.rect(6, 11, 9, 14, BLACK[2])
+    s.line(6, 1, 6, 4, BLACK[3]); s.line(6, 11, 6, 14, BLACK[3])
+    bevel_rect(s, 4, 4, 11, 11, STEEL)
+    s.rect(5, 5, 10, 10, BLUE[0])
+    s.line(7, 7, 7, 5, WHITE[4]); s.line(7, 7, 9, 8, WHITE[3]); s.put(7, 7, AMBER[3])
+    s.put(12, 7, STEEL[3])
+    return finish(s)
+
+
+@item
+def gold_ring():
+    """A plain gold band seen at an angle, a spark of light on its rim."""
+    s = Sprite()
+    disc(s, 8, 9, 5.0, AMBER, hole=2.6)
+    s.put(5, 6, WHITE[4]); s.put(6, 5, WHITE[4])
+    return finish(s, outline=BRASS[0])
+
+
+@item
+def pearl_necklace():
+    """A loop of white pearls with a gold clasp at the bottom."""
+    s = Sprite()
+    import math
+    for i in range(14):
+        a = math.pi * 2 * i / 14
+        x, y = 8 + 5.5 * math.cos(a), 7.5 + 5.0 * math.sin(a)
+        disc(s, x, y, 1.2, WHITE)
+    s.rect(7, 12, 8, 13, BRASS[3]); s.put(7, 12, BRASS[4])
+    return finish(s, outline=PAPER[0])
+
+
+@item
+def smartphone():
+    """A black phone with a lit screen, a row of app squares and a camera dot."""
+    s = Sprite()
+    bevel_rect(s, 4, 1, 11, 14, BLACK)
+    s.rect(5, 3, 10, 12, BLUE[1]); s.line(5, 3, 10, 3, BLUE[3])
+    for (x, y, c) in ((6, 5, CYAN[3]), (8, 5, AMBER[3]), (6, 7, RED[3]), (8, 7, LEAF[3]), (6, 9, PURPLE[3]), (8, 9, WHITE[3])):
+        s.put(x, y, c); s.put(x + 1, y, c)
+    s.put(7, 2, BLACK[4]); s.rect(7, 13, 8, 13, BLACK[3])
+    return finish(s)
+
+
+@item
+def tablet():
+    """A wide tablet with a bright screen showing a chart."""
+    s = Sprite()
+    bevel_rect(s, 1, 3, 14, 12, BLACK)
+    s.rect(2, 4, 13, 11, BLUE[1])
+    s.line(3, 10, 6, 7, CYAN[3]); s.line(6, 7, 8, 8, CYAN[3]); s.line(8, 8, 12, 5, CYAN[4])
+    s.line(3, 11, 12, 11, BLUE[2])
+    return finish(s)
+
+
+@item
+def digital_camera():
+    """A compact camera: a silver body, a big round lens, a flash and a shutter button."""
+    s = Sprite()
+    bevel_rect(s, 1, 5, 14, 13, STEEL)
+    disc(s, 8, 9, 3.4, BLACK)
+    disc(s, 8, 9, 1.6, BLUE)
+    s.put(7, 8, WHITE[4])
+    s.rect(11, 6, 13, 7, WHITE[4]); s.rect(2, 4, 4, 4, GUNMETAL[2])
+    return finish(s)
+
+
+@item
+def vintage_wine():
+    """A dark green wine bottle with a cream label, a red seal and a coat of dust."""
+    s = Sprite()
+    s.rect(7, 1, 8, 4, RED[2]); s.put(7, 1, RED[3])
+    s.rect(7, 4, 8, 5, GREEN_GLASS[2])
+    s.polygon([(5, 6), (10, 6), (11, 8), (11, 15), (4, 15), (4, 8)], GREEN_GLASS[1])
+    s.line(5, 8, 5, 14, GREEN_GLASS[3])
+    s.rect(5, 9, 10, 12, PAPER[3]); s.line(6, 10, 9, 10, INK); s.put(7, 11, RED[2]); s.put(8, 11, RED[2])
+    for (x, y) in ((9, 7), (6, 14), (10, 13)):
+        s.put(x, y, PAPER[1])
+    return finish(s)
+
+
+@item
+def rare_vinyl():
+    """A black record half out of its sleeve, a red label in the middle."""
+    s = Sprite()
+    bevel_rect(s, 1, 2, 10, 13, PURPLE, strong=False)
+    s.line(2, 4, 9, 4, PURPLE[4])
+    disc(s, 10, 8, 5.5, BLACK)
+    for r in (4.5, 3.4):
+        for a in range(0, 360, 30):
+            import math
+            s.put(int(10 + r * math.cos(math.radians(a))), int(8 + r * math.sin(math.radians(a))), BLACK[3])
+    disc(s, 10, 8, 1.8, RED)
+    s.put(10, 8, BLACK[0])
+    return finish(s)
+
+
+@item
+def designer_handbag():
+    """A structured leather handbag in deep red, a gold clasp and a curved handle."""
+    s = Sprite()
+    s.line(5, 6, 5, 3, BRASS[2]); s.line(5, 3, 10, 3, BRASS[3]); s.line(10, 3, 10, 6, BRASS[2])
+    s.polygon([(3, 7), (12, 7), (14, 14), (1, 14)], RED[2])
+    s.line(3, 7, 12, 7, RED[4]); s.line(1, 14, 14, 14, RED[0]); s.line(2, 10, 13, 10, RED[1])
+    s.rect(7, 9, 8, 11, BRASS[3]); s.put(7, 9, BRASS[4])
+    return finish(s)
+
+
+@item
+def cash_box():
+    """A grey steel cash tin with a carrying handle and a brass keyhole."""
+    s = Sprite()
+    bevel_rect(s, 2, 6, 13, 13, GUNMETAL)
+    s.line(2, 8, 13, 8, GUNMETAL[1])
+    s.line(5, 6, 5, 4, STEEL[3]); s.line(5, 4, 10, 4, STEEL[4]); s.line(10, 4, 10, 6, STEEL[3])
+    s.rect(7, 10, 8, 11, BRASS[3]); s.put(7, 11, INK)
+    return finish(s)
+
+
+@item
+def power_drill():
+    """A cordless drill: a yellow body, a black grip and battery, a steel bit."""
+    s = Sprite()
+    bevel_rect(s, 3, 3, 11, 7, AMBER)
+    s.rect(11, 4, 12, 6, BLACK[2]); s.line(13, 5, 15, 5, STEEL[3])
+    s.polygon([(5, 7), (8, 7), (8, 12), (5, 12)], BLACK[2])
+    bevel_rect(s, 3, 12, 10, 14, BLACK)
+    s.put(4, 4, AMBER[4]); s.put(7, 8, RED[3])
+    return finish(s)
+
+
+@item
+def small_painting():
+    """A small landscape in an ornate gold frame: a sky, a hill and a tree."""
+    s = Sprite()
+    bevel_rect(s, 1, 2, 14, 13, BRASS)
+    s.rect(3, 4, 12, 11, CYAN[3]); s.rect(3, 4, 12, 6, CYAN[4])
+    s.polygon([(3, 9), (7, 7), (12, 9), (12, 11), (3, 11)], LEAF[2])
+    s.rect(9, 6, 10, 8, LEAF[1]); s.put(9, 9, SOIL[2])
+    disc(s, 5, 5, 0.8, AMBER)
+    return finish(s)
+
+
+@item
+def bearer_bonds():
+    """A bundle of engraved certificates tied with a red ribbon and a wax seal."""
+    s = Sprite()
+    for i, y in enumerate((3, 5, 7)):
+        bevel_rect(s, 2 + i, y, 13 - i, y + 7, PAPER, strong=False)
+    s.line(4, 9, 11, 9, LEAF[1]); s.line(4, 11, 9, 11, LEAF[1])
+    s.line(2, 10, 13, 10, RED[2]); s.line(8, 7, 8, 14, RED[2])
+    disc(s, 8, 10, 1.4, RED)
+    return finish(s)
+
+
 # ----------------------------------------------------------------------------------------------- the road (D-139)
 @item
 def sealed_envelope():

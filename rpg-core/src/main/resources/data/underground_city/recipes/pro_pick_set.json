@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "group": "underground_city_restricted",
+  "ingredients": [
+    {
+      "item": "underground_city:refined_alloy"
+    },
+    {
+      "item": "underground_city:precision_machinery_parts"
+    },
+    {
+      "item": "underground_city:lockpick"
+    },
+    {
+      "item": "underground_city:lockpick"
+    }
+  ],
+  "result": {
+    "item": "underground_city:pro_pick_set",
+    "count": 1
+  }
+}

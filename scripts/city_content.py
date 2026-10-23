@@ -43,13 +43,17 @@ def citystyles(buildings: list[citykit.Building]) -> dict[str, dict]:
 
 
 # classes the furnished buildings need beyond the stock ones (cottage, flat_block, flat_tower, workshop, office, vault, public)
+# Each class has a tier (D-144): 1 shabby, 2 modest, 3 comfortable, 4 well-off, 5 wealthy, 6 exceptional. "panel": False keeps a class's alarm without an alarm panel in its plan, so moving a
+# building to such a class changes what Core does with it and never how its chunks generate.
 NEW_SECURITY_CLASSES = {
-    "storefront": {"label": "shop", "lock_profile": "commercial", "locked_exterior": True, "stash_policy": "underground_city:office", "stash_chance": 0.5,
+    "storefront": {"label": "shop", "tier": 3, "lock_profile": "commercial", "locked_exterior": True, "stash_policy": "underground_city:office", "stash_chance": 0.5,
                    "response": {"alarm_chance": 0.5, "dispatch_seconds": 90, "officers": 1, "window_seconds": 120}},
-    "warehouse": {"label": "warehouse", "lock_profile": "commercial", "locked_exterior": True, "stash_policy": "underground_city:industrial", "stash_chance": 0.7,
-                  "response": {"alarm_chance": 0.4, "dispatch_seconds": 100, "officers": 1, "window_seconds": 120}},
-    "club": {"label": "club", "lock_profile": "high_security", "locked_exterior": True, "stash_policy": "underground_city:illegal_cache", "stash_chance": 0.6,
+    "warehouse": {"label": "warehouse", "tier": 4, "lock_profile": "secured", "locked_exterior": True, "stash_policy": "underground_city:industrial", "stash_chance": 0.7,
+                  "response": {"alarm_chance": 0.6, "dispatch_seconds": 100, "officers": 1, "window_seconds": 120}},
+    "club": {"label": "club", "tier": 5, "lock_profile": "high_security", "locked_exterior": True, "stash_policy": "underground_city:illegal_cache", "stash_chance": 0.6,
              "response": {"alarm_chance": 0.8, "dispatch_seconds": 60, "officers": 2, "window_seconds": 150}},
+    "house": {"label": "house", "tier": 3, "lock_profile": "deadbolt", "locked_exterior": True, "stash_policy": "underground_city:apartment_affluent", "stash_chance": 0.6, "panel": False,
+              "response": {"alarm_chance": 0.4, "dispatch_seconds": 110, "officers": 1, "window_seconds": 120}},
 }
 STOCK_SECURITY_CLASSES = {"cottage", "flat_block", "flat_tower", "workshop", "office", "vault", "public"}
 
@@ -61,7 +65,8 @@ NOT_A_WALL = ("door", "glass", "pane", "bars", "trapdoor", "fence", "air", "sign
 
 
 def alarmed(security: str) -> bool:
-    return security in ALARMED_STOCK_CLASSES or "response" in NEW_SECURITY_CLASSES.get(security, {})
+    spec = NEW_SECURITY_CLASSES.get(security, {})
+    return security in ALARMED_STOCK_CLASSES or ("response" in spec and spec.get("panel", True))
 
 
 def place_alarm_panel(b: citykit.Building) -> None:
@@ -159,7 +164,7 @@ def package() -> dict[str, bytes]:
         rules.append({"type_prefix": f"{NAMESPACE}:{b.id}", "class": b.security, "priority": 10})
     files[f"data/{NAMESPACE}/building_security/furnished.json"] = json_bytes({
         "schema_version": 1,
-        "classes": {name: spec for name, spec in NEW_SECURITY_CLASSES.items() if name in used},
+        "classes": {name: {k: v for k, v in spec.items() if k != "panel"} for name, spec in NEW_SECURITY_CLASSES.items() if name in used},
         "rules": rules,
     })
     for module in (city_valewood, city_ironhaven, city_blackwater):

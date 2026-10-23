@@ -50,17 +50,24 @@ public final class BuildingStash {
         List<BlockPos> spots = candidates(level, building, entrance);
         if (spots.isEmpty()) { LOGGER.info("No place for a stash in {} at chunk {},{}", building.type(), building.chunkX(), building.chunkZ()); return Optional.empty(); }
         BlockPos at = spots.get((int) (roll(level, building, 2) * spots.size()));
-        place(level, at, policy, now);
+        place(level, at, policy, now, security.tier(), security.safeProfile());
         return Optional.of(at);
     }
 
-    static void place(ServerLevel level, BlockPos at, PropertyPolicy policy, long now) {
+    static void place(ServerLevel level, BlockPos at, PropertyPolicy policy, long now) { place(level, at, policy, now, 0, ""); }
+
+    /** Places a safe; one in a city building takes the building's tier and its kind of safe (D-144). */
+    static void place(ServerLevel level, BlockPos at, PropertyPolicy policy, long now, int tier, String safeProfile) {
         Direction facing = Direction.NORTH;
         for (Direction direction : Direction.Plane.HORIZONTAL) {
             if (level.getBlockState(at.relative(direction)).isAir()) { facing = direction; break; }
         }
         level.setBlock(at, UndergroundCity.PROPERTY_CACHE.get().defaultBlockState().setValue(PropertyCacheBlock.FACING, facing), Block.UPDATE_ALL);
-        if (level.getBlockEntity(at) instanceof PropertyCacheBlockEntity cache) cache.register(level, policy, now);
+        if (level.getBlockEntity(at) instanceof PropertyCacheBlockEntity cache) {
+            // a household safe keeps its policy's own lock; a wall safe or a vault safe (a well-off place and up) takes the building's
+            if (tier > 0) cache.fitFor(tier, "safe".equals(safeProfile) ? "" : safeProfile);
+            cache.register(level, policy, now);
+        }
     }
 
     /** Sound spots on the first floors, in a fixed order (so the {@code k}-th is the same on every machine): empty, floored, roofed, against a wall, away from doors. */

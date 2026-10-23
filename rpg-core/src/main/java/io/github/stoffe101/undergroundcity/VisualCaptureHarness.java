@@ -141,6 +141,9 @@ public final class VisualCaptureHarness {
             case "lock-strain" -> LockpickScreen.forCapture("High-security",5,2,0,88,0.3,0.9,true);
             case "lock-opened" -> LockpickScreen.forCapture("Deadbolt",3,3,3,10,0.5,0.4,false).poseResult(LockpickSession.State.OPENED,"Click. It is open.");
             case "lock-snapped" -> LockpickScreen.forCapture("Commercial",4,1,0,100,0.4,0.77,true).poseResult(LockpickSession.State.BROKEN,"The pick snapped in the lock.");
+            case "lock-spool" -> LockpickScreen.forCapture("Apartment tower",4,1,2,18,0.7,0.46,false).poseSpool(1,false);
+            case "lock-turned" -> LockpickScreen.forCapture("High-security",5,2,1,46,0.5,0.58,true).poseSpool(2,false);
+            case "lock-rake" -> LockpickScreen.forCapture("Cottage",2,0,0,0,0.95,0.5,false).poseSpool(0,true);
             default -> LockpickScreen.forCapture("Latch",2,1,1,0,0.0,0.3,false).poseResult(LockpickSession.State.TIMED_OUT,"You ran out of time. The lock is as it was.");
         };
     }
@@ -175,6 +178,37 @@ public final class VisualCaptureHarness {
         }
         if(free<0) throw new IllegalStateException("The capture fixture spends more skill points than level "+level+" earns");
         return new TerminalData("valewood",career,level,125*(level-1)*(level-1),230,true,null,1,"valewood",List.of(),List.of(),free,rows,List.of(),VALEWOOD_LAW,0,"");
+    }
+    /** The Thief page from the real Thief tree (D-143) for a character of this Thief level with these skills; the states come from the server's own rules. */
+    private static TerminalData thiefSkills(int level,java.util.Set<String> learned) {
+        List<SkillNode> tree=new ArrayList<>();
+        try(var reader=new java.io.InputStreamReader(VisualCaptureHarness.class.getResourceAsStream("/data/"+UndergroundCity.MOD_ID+"/specialization_trees/thief.json"),java.nio.charset.StandardCharsets.UTF_8)) {
+            for(var element:com.google.gson.JsonParser.parseReader(reader).getAsJsonObject().getAsJsonArray("nodes")) tree.add(SkillCatalog.parse(SkillNode.THIEF,element.getAsJsonObject()));
+        } catch(java.io.IOException error) { throw new IllegalStateException("Cannot read the Thief tree",error); }
+        java.util.Map<String,SkillNode> index=new java.util.HashMap<>();
+        for(SkillNode node:tree) index.put(node.id(),node);
+        int free=SkillRules.thiefPointsEarned(level)-SkillRules.pointsSpent(tree,learned);
+        if(free<0) throw new IllegalStateException("The capture fixture spends more Thief points than level "+level+" earns");
+        List<TerminalData.SkillRow> rows=new ArrayList<>();
+        for(SkillNode node:SkillRules.displayOrder(tree)) {
+            String blocker=SkillRules.blocker(node,index,level,learned,free);
+            int state=learned.contains(node.id())?2:blocker==null?1:0;
+            rows.add(new TerminalData.SkillRow(node.id(),node.branch(),node.title(),node.description(),node.cost(),node.minLevel(),
+                state,state==2||blocker==null?"":blocker,node.requires(),node.shortTitle(),node.effectSummary()));
+        }
+        int xp=ProgressionRules.thiefXpAtLevel(level)+ProgressionRules.THIEF_XP_STEP;
+        TerminalData base=farmerData();
+        return new TerminalData(base.city(),base.career(),base.level(),base.xp(),base.balance(),base.economy(),base.active(),base.foreignVisits(),base.region(),base.jobs(),base.offers(),
+            base.skillPoints(),base.skills(),base.contacts(),base.laws(),base.heat(),base.lawSummary(),base.journey(),base.outlet(),
+            new TerminalData.Thief(level,xp,ProgressionRules.thiefXpAtLevel(level+1),free,List.copyOf(rows)));
+    }
+    /** A casing card as the server would send it, for a beginner and for a thief who knows what to look for. */
+    private static Casing.Report casingFixture(String pose) {
+        return switch(pose) {
+            case "casing-novice" -> new Casing.Report("Apartment block","Ironhaven",2,"a deadbolt","A lockpick will do.",true,-1,-1,-1,"",-1,-1,false,0);
+            case "casing-locked" -> new Casing.Report("High-value premises","Blackwater",6,"a high-security lock","A high-security lock. Lockpicks are no use on it: it needs a Pro Pick Set.",false,-1,-1,-1,"",-1,-1,false,1);
+            default -> new Casing.Report("Apartment tower","Blackwater",4,"a secured lock with a spool pin","A lockpick will do, with care: it has 1 spool pin.",true,3,2,1,"Empty from about 09:00 (in 3 hours)",2,1,true,2);
+        };
     }
     /** A level-9 farmer built from the real tree: the foundation, a legal skill, the controlled crop and the logistics skill learned, one point free. */
     private static TerminalData farmerData() {
@@ -267,9 +301,17 @@ public final class VisualCaptureHarness {
         cases=new ArrayList<>();
         for(var page:TerminalScreen.Page.values()) {
             boolean rich=page==TerminalScreen.Page.SKILLS || page==TerminalScreen.Page.BLACK_MARKET || page==TerminalScreen.Page.GUIDE;
-            cases.add(new Case("uc-terminal-"+page.name().toLowerCase(java.util.Locale.ROOT),page,
-                rich?rich("valewood",false,0,VALEWOOD_LAW):fixture(2,8,false,true),0,false,page==TerminalScreen.Page.SKILLS?"farmer.restricted_cultivation":null));
+            TerminalData data=page==TerminalScreen.Page.THIEF?thiefSkills(6,java.util.Set.of("thief.casing","thief.steady_hands","thief.soft_steps","thief.fence_contacts"))
+                :rich?rich("valewood",false,0,VALEWOOD_LAW):fixture(2,8,false,true);
+            cases.add(new Case("uc-terminal-"+page.name().toLowerCase(java.util.Locale.ROOT),page,data,0,false,
+                page==TerminalScreen.Page.SKILLS?"farmer.restricted_cultivation":page==TerminalScreen.Page.THIEF?"thief.raking":null));
         }
+        cases.add(new Case("uc-thief-expert",TerminalScreen.Page.THIEF,thiefSkills(16,java.util.Set.of("thief.casing","thief.steady_hands","thief.raking","thief.feel_for_pins","thief.pro_tools",
+            "thief.soft_steps","thief.quick_hands","thief.routines","thief.camera_sense","thief.fence_contacts","thief.haggler")),0,false,"thief.ghost"));
+        cases.add(new Case("uc-thief-new",TerminalScreen.Page.THIEF,thiefSkills(1,java.util.Set.of()),0,false,"thief.casing"));
+        cases.add(Case.challenge("uc-casing-novice","casing-novice"));
+        cases.add(Case.challenge("uc-casing-expert","casing-expert"));
+        cases.add(Case.challenge("uc-casing-locked","casing-locked"));
         cases.add(new Case("uc-skills-vintner",TerminalScreen.Page.SKILLS,careerSkills("vintner",11,java.util.Set.of("vintner.fundamentals","vintner.cellar_craft","vintner.still_craft")),0,false,"vintner.bootleg_trade"));
         cases.add(new Case("uc-skills-smith",TerminalScreen.Page.SKILLS,careerSkills("smith",11,java.util.Set.of("smith.fundamentals","smith.structural_works","smith.armoury_contracts","smith.unlisted_fabrication")),0,false,"smith.contraband_armoury"));
         cases.add(new Case("uc-skills-gunsmith",TerminalScreen.Page.SKILLS,careerSkills("gunsmith",11,java.util.Set.of("gunsmith.fundamentals","gunsmith.licensed_repairs","gunsmith.dealer_licence")),0,false,"gunsmith.unregistered_builds"));
@@ -316,7 +358,7 @@ public final class VisualCaptureHarness {
         for(String pose:new String[]{"nocrew","nocrew-invited","unregistered","unavailable","members","members-member","money","money-consent","money-shared","money-shared-nospend","home","home-notice","home-owned","home-find","home-find-many","home-solo","rules-permissions","rules-mode","rules-mode-active","rules-disband"}) {
             cases.add(Case.crew("uc-crew-"+pose,pose));
         }
-        for(String pose:new String[]{"idle","close","pressing","strain","opened","snapped","timeout"}) cases.add(Case.lock("uc-lock-"+pose,pose));
+        for(String pose:new String[]{"idle","close","pressing","strain","opened","snapped","timeout","spool","turned","rake"}) cases.add(Case.lock("uc-lock-"+pose,pose));
         for(String pose:new String[]{"counter","poor","scrolled","deliveries","empty","limited"}) cases.add(Case.civilian("uc-civilian-shop-"+pose,pose));
         for(String pose:new String[]{"settings","left","minimal"}) cases.add(Case.hud("uc-hud-"+pose,pose));
         cases.add(Case.dialogue("uc-dialogue-registrar","registrar"));
@@ -378,6 +420,8 @@ public final class VisualCaptureHarness {
             ChallengeScreen screen=ChallengeScreen.forCapture(new byte[]{1,3,0,2,2,1},ChallengeScreen.Kind.ALARM,AlarmPanels.BASE_PER_SYMBOL,AlarmPanels.BASE_INPUT_TICKS);
             mc.setScreen(screen);
             if(capture.challenge.equals("alarm-show")) screen.poseShowing(3,true); else screen.poseInput(3,0.6);
+        } else if(capture.challenge!=null && capture.challenge.startsWith("casing-")) {
+            mc.setScreen(new CasingScreen(casingFixture(capture.challenge)));
         } else if(capture.challenge!=null && capture.challenge.startsWith("fence-")) {
             mc.setScreen(FenceScreen.forCapture(fenceQuote(capture.challenge),0));
         } else if(capture.challenge!=null) {

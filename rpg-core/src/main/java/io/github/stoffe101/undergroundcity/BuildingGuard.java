@@ -183,7 +183,19 @@ public final class BuildingGuard {
         Optional<CityBuildings.Building> found = protectedAt(level, lower);
         if (found.isEmpty() || !found.get().locked()) return;
         BlockState lowerState = lower.equals(event.getPos()) ? state : level.getBlockState(lower);
+        // an open shop's street door is a shop door (D-146): customers walk in while the shopkeeper is at the counter; crouching with an empty hand still cases it
+        if (ShopCounters.openNow(level, found.get()) && !(Casing.wants(player) && lowerState.getBlock() instanceof DoorBlock && outsideSide(level, lower, lowerState, player.position()))) {
+            PropertyLocks.get(level.getServer()).exitOpen(lower, LockService.clock(level.getServer()) + EXIT_TICKS);
+            return;
+        }
         if (!(lowerState.getBlock() instanceof DoorBlock) || !exterior(level, lower, lowerState)) return;
+        // casing (D-144): crouched with an empty hand at a street door, from the street, a thief reads the place instead of trying it
+        if (Casing.wants(player) && outsideSide(level, lower, lowerState, player.position()) && !CityHomes.holdsKey(player, found.get())) {
+            event.setCanceled(true);
+            event.setCancellationResult(InteractionResult.SUCCESS);
+            if (event.getHand() == InteractionHand.MAIN_HAND) BurglaryNetwork.casing(player, Casing.read(player, level, found.get(), lower));
+            return;
+        }
         long now = LockService.clock(level.getServer());
         boolean keypad = SecurityCraftTrial.isKeypadDoor(lowerState);
         // a keypad door that stands open shuts on a click, as any door does; SecurityCraft would ask for its code again (security run 10: a held click opened it, then asked)
@@ -243,6 +255,7 @@ public final class BuildingGuard {
         Optional<CityBuildings.Building> found = protectedAt(level, lower);
         if (found.isEmpty() || !found.get().locked() || !exterior(level, lower, state)) return false;
         if (PropertyLocks.get(level.getServer()).openOnPurpose(lower)) return false;
+        if (ShopCounters.openNow(level, found.get())) return false;   // a shop's door may stand open in business hours
         for (Player near : level.getEntitiesOfClass(Player.class, new net.minecraft.world.phys.AABB(lower).inflate(8.0))) if (near.isCreative()) return false;
         door.setOpen(null, level, state, lower, false);
         shutByWatch++;

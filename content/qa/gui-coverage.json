@@ -624,6 +624,69 @@
       "owner": "underground_city",
       "group": "shop_counter",
       "description": "The same counter with six credits: every purchase refused with its reason"
+    },
+    {
+      "id": "operations_terminal.thief",
+      "expected_file": "uc-terminal-thief.png",
+      "owner": "underground_city",
+      "group": "operations_terminal",
+      "description": "Thief page (D-143): the Thief tree every career can follow, in three columns (locks, stealth, fencing), its own points, level and XP"
+    },
+    {
+      "id": "operations_terminal.thief_expert",
+      "expected_file": "uc-thief-expert.png",
+      "owner": "underground_city",
+      "group": "operations_terminal",
+      "description": "Thief page of an experienced thief: most of the tree learned, the last skill selected"
+    },
+    {
+      "id": "operations_terminal.thief_new",
+      "expected_file": "uc-thief-new.png",
+      "owner": "underground_city",
+      "group": "operations_terminal",
+      "description": "Thief page of a character who has never stolen anything: no points, the first skill locked by level"
+    },
+    {
+      "id": "casing.novice",
+      "expected_file": "uc-casing-novice.png",
+      "owner": "underground_city",
+      "group": "casing",
+      "description": "Casing card (D-144) for a beginner: the tier and the lock only, the rest named by the skill that would read it"
+    },
+    {
+      "id": "casing.expert",
+      "expected_file": "uc-casing-expert.png",
+      "owner": "underground_city",
+      "group": "casing",
+      "description": "Casing card for a thief with Casing and Know Their Routines: alarm, cameras, who is in, when it is empty, the safe, a recent break-in"
+    },
+    {
+      "id": "casing.locked",
+      "expected_file": "uc-casing-locked.png",
+      "owner": "underground_city",
+      "group": "casing",
+      "description": "Casing card at a door the thief cannot try: a high-security lock without a Pro Pick Set"
+    },
+    {
+      "id": "lockpick.spool",
+      "expected_file": "uc-lock-spool.png",
+      "owner": "underground_city",
+      "group": "lockpick",
+      "description": "Lock screen with a spool pin announced (Feel for the Pins, D-145)"
+    },
+    {
+      "id": "lockpick.turned",
+      "expected_file": "uc-lock-turned.png",
+      "owner": "underground_city",
+      "group": "lockpick",
+      "description": "Lock screen the moment a spool pin turned back"
+    },
+    {
+      "id": "lockpick.rake",
+      "expected_file": "uc-lock-rake.png",
+      "owner": "underground_city",
+      "group": "lockpick",
+      "description": "Lock screen with the Rake button (Raking, D-143)"
     }
   ],
   "unintegrated_future_interfaces": [

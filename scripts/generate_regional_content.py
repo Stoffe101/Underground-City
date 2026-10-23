@@ -39,7 +39,7 @@ def validate(data: dict) -> None:
     if len(all_ids) != len(commodity_ids) + len(product_ids) + len(tool_ids) + len(data.get("specials", [])):
         raise SystemExit("Duplicate item IDs in regional content")
     for x in data.get("specials", []):
-        if x["kind"] not in ("seed", "product", "tool", "rare") or x["city"] not in CITIES:
+        if x["kind"] not in ("seed", "product", "tool", "rare", "durable") or x["city"] not in CITIES:
             raise SystemExit(f"Invalid special item {x['id']}")
         for key, count in x.get("inputs", {}).items():
             if ":" not in key and key not in commodity_ids:
@@ -283,7 +283,7 @@ def build(data: dict, contracts: dict) -> dict[Path, bytes]:
             "type": "minecraft:crafting_shapeless", "category": "equipment", "group": f"{NAMESPACE}_tools",
             "ingredients": ingredients, "result": {"item": f"{NAMESPACE}:{t['id']}", "count": t["count"]}}).encode()
     for x in data.get("specials", []):
-        emit_item(x, x["kind"], 16 if x["kind"] in ("rare", "tool") else 64)
+        emit_item(x, x["kind"], 1 if x["kind"] == "durable" else 16 if x["kind"] in ("rare", "tool") else 64)
         if x.get("inputs"):
             ingredients = []
             for key, count in x["inputs"].items():

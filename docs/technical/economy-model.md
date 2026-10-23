@@ -268,8 +268,8 @@ Everything between the markers is written by `--update-doc` and checked by a uni
 
 | city       | fence         | rate              | best rate | budget | per hour | best legal/h (L5) | share |
 |------------|---------------|-------------------|-----------|--------|----------|-------------------|-------|
-| blackwater | The Back Room | 50% (32% at home) | 60%       | 320    | 270      | 472               | 57%   |
-| ironhaven  | The Yard      | 45% (30% at home) | 55%       | 240    | 240      | 472               | 51%   |
+| blackwater | The Back Room | 50% (32% at home) | 60%       | 600    | 420      | 472               | 89%   |
+| ironhaven  | The Yard      | 45% (30% at home) | 55%       | 450    | 360      | 472               | 76%   |
 
 ### Loops the data allows
 

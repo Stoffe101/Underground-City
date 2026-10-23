@@ -48,6 +48,9 @@ public final class PropertyCacheBlockEntity extends RandomizableContainerBlockEn
     /** True once somebody has opened this safe after registration placed an exceptional find: the "something special" cue is spent. */
     private boolean revealed;
     private UUID lastIntruder;
+    /** The lock of a safe placed in a city building (D-144: a wall safe or a vault safe in a wealthy place), "" for the policy's; and the building's tier (0 when not in one). */
+    private String lock = "";
+    private int tier;
 
     public PropertyCacheBlockEntity(BlockPos pos, BlockState state) {
         super(UndergroundCity.PROPERTY_CACHE_ENTITY.get(), pos, state);
@@ -62,6 +65,12 @@ public final class PropertyCacheBlockEntity extends RandomizableContainerBlockEn
     public long last() { return last; }
     public boolean forcedAt(long now) { return now < forcedUntil; }
     public UUID lastIntruder() { return lastIntruder; }
+    public int tier() { return tier; }
+    /** The safe's kind in a burglar's words, by its lock. */
+    public String label() { return switch (lock) { case "wall_safe" -> "Wall safe"; case "vault_safe" -> "Vault safe"; default -> "Household safe"; }; }
+
+    /** A safe in a city building takes the building's lock and tier (D-144). */
+    public void fitFor(int tier, String lockProfile) { this.tier = Math.max(0, Math.min(6, tier)); this.lock = lockProfile == null ? "" : lockProfile; setChanged(); }
     public int stock() {
         int count = 0;
         for (ItemStack stack : items) if (!stack.isEmpty()) count++;
@@ -151,8 +160,9 @@ public final class PropertyCacheBlockEntity extends RandomizableContainerBlockEn
         if (active == null) return Entry.refused(registered() ? "This safe's profile is unavailable." : "This safe is not part of a property yet. Ask an operator to register it.");
         if (CitizenState.get(player.server).find(player.getUUID()).isEmpty()) return Entry.refused("Register as a citizen first.");
         restock(level, now);
-        if (forcedAt(now)) { cue(level, player, false); return new Entry(Entry.Kind.OPEN, "", active.lockProfile(), 0); }
-        return new Entry(Entry.Kind.PICK, "", active.lockProfile(), active.lockpicks());
+        String profile = lock.isEmpty() ? active.lockProfile() : lock;
+        if (forcedAt(now)) { cue(level, player, false); return new Entry(Entry.Kind.OPEN, "", profile, 0); }
+        return new Entry(Entry.Kind.PICK, "", profile, active.lockpicks());
     }
 
     /** The lock gave way: the safe stays open for its window, its residents grow more watchful and the break-in is posted for witness and evidence systems. */
@@ -162,7 +172,7 @@ public final class PropertyCacheBlockEntity extends RandomizableContainerBlockEn
         vigilanceAnchor = now; breakins++; lastIntruder = player.getUUID();
         // what is in the safe when its lock gives way is stolen goods for whoever carries it out (D-122); stock that arrives later is not marked until the next forcing
         String city = CityRegions.INSTANCE.cityAt(level, worldPosition).orElse("");
-        for (ItemStack stack : items) StolenGoods.mark(stack, city);
+        for (ItemStack stack : items) StolenGoods.mark(stack, city, player.getUUID());
         setChanged();
         MinecraftForge.EVENT_BUS.post(new PropertyForcedEntryEvent(player.getUUID(), worldPosition, policy, vigilance, now));
         cue(level, player, true);
@@ -225,6 +235,8 @@ public final class PropertyCacheBlockEntity extends RandomizableContainerBlockEn
         tag.putLong("forced_until", forcedUntil); tag.putInt("vigilance", vigilance); tag.putInt("generation", generation);
         tag.putInt("breakins", breakins); tag.putBoolean("exceptional", exceptional); tag.putBoolean("revealed", revealed);
         if (lastIntruder != null) tag.putUUID("last_intruder", lastIntruder);
+        if (!lock.isEmpty()) tag.putString("lock", lock);
+        if (tier > 0) tag.putInt("tier", tier);
     }
 
     @Override public void load(CompoundTag tag) {
@@ -236,5 +248,6 @@ public final class PropertyCacheBlockEntity extends RandomizableContainerBlockEn
         vigilance = Math.max(0, Math.min(PropertyRestock.MAX_VIGILANCE, tag.getInt("vigilance")));
         generation = Math.max(0, tag.getInt("generation")); breakins = Math.max(0, tag.getInt("breakins")); exceptional = tag.getBoolean("exceptional"); revealed = tag.getBoolean("revealed");
         lastIntruder = tag.hasUUID("last_intruder") ? tag.getUUID("last_intruder") : null;
+        lock = tag.getString("lock"); tier = Math.max(0, Math.min(6, tag.getInt("tier")));
     }
 }

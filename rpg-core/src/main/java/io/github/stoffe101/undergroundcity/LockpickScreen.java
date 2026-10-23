@@ -15,7 +15,8 @@ import org.lwjgl.glfw.GLFW;
  * outcome runs on the server ({@link LockpickSession}); this screen reports the pick's place and the button, and draws what it is told. The sweet spots are never sent here, and the feel is
  * shown as words and brightness, never as colour alone.
  *
- * <p>Mouse: slide, hold the left button. Keyboard: left and right arrows slide, space presses. Escape stops (the pick is not lost).
+ * <p>Mouse: slide, hold the left button. Keyboard: left and right arrows slide, space presses. Escape stops (the pick is not lost). A thief who has learned Raking may rake a cheap lock instead
+ * (the Rake button, or R): one quick, loud try (D-143). A spool pin turns back once when pressed; the screen says so, and a thief who can feel the pins is told before it happens.
  */
 @OnlyIn(Dist.CLIENT)
 public final class LockpickScreen extends UcScreen {
@@ -42,6 +43,10 @@ public final class LockpickScreen extends UcScreen {
     private String note = "";
     private boolean qa;
     private int barX, barY, barW;
+    /** Thief extras (D-143): whether this lock may be raked (and has been), how many spool pins it has (0 unless the thief can feel them), and what the current pin is doing. */
+    private boolean rakeable, raked;
+    private int spools, spoolState, turnedAt = -100;
+    private UcButton rake;
 
     LockpickScreen(String label, int pins, int timeLimit, int holdTicks, float tremor, float phase) {
         super(Component.literal("Underground City | Lock"));
@@ -65,6 +70,21 @@ public final class LockpickScreen extends UcScreen {
 
     /** Capture harness: the screen after the server ended the pick. */
     LockpickScreen poseResult(LockpickSession.State state, String words) { result = state; note = words; return this; }
+
+    /** The thief's extras for this lock: a Rake button, and how many spool pins it has when the thief can feel them. */
+    LockpickScreen thief(boolean rakeable, int spools) { this.rakeable = rakeable; this.spools = Math.max(0, spools); return this; }
+
+    /** The server's word on spool pins: 1 the current pin is one (told only to a thief who can feel it), 2 one just turned back. */
+    void spool(int state) {
+        if (state == 2) {
+            turnedAt = age;
+            if (minecraft != null) minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.CHAIN_STEP, 0.6f, 1.2f));
+        }
+        spoolState = state;
+    }
+
+    /** Capture harness: a pose with a spool pin ahead, or one that just turned back. */
+    LockpickScreen poseSpool(int state, boolean canRake) { rakeable = canRake; spools = 1; spoolState = state; if (state == 2) turnedAt = age; return this; }
 
     void update(int feel, int pinsSet, int strain, int timeLeft, int serverTick) {
         if (pinsSet > this.pinsSet && minecraft != null) {
@@ -96,10 +116,20 @@ public final class LockpickScreen extends UcScreen {
 
     @Override protected void init() {
         clearWidgets();
-        layoutPanel(320, 214, 420, 250);
+        layoutPanel(320, rakeable ? 236 : 214, 420, rakeable ? 270 : 250);
         barW = Math.min(pw - 2 * PAD - 24, 340);
         barX = px + (pw - barW) / 2;
         barY = py + HEADER + 62;
+        rake = add(new UcButton(px + pw / 2 - 70, barY + 4 + 26 + 56, 140, 18, "Rake it (R)", b -> doRake()).kind(UcButton.Kind.DANGER).icon(UcUi.Icon.KEY)
+            .tooltip("One quick, loud try. A latch gives most of the time, a deadbolt about a third. Nobody calls a raked door quiet."));
+        rake.visible = rakeable && !raked && result == null;
+    }
+
+    private void doRake() {
+        if (!rakeable || raked || result != null || qa) return;
+        raked = true;
+        rake.visible = false;
+        LockNetwork.sendRake();
     }
 
     @Override public void tick() {
@@ -110,6 +140,7 @@ public final class LockpickScreen extends UcScreen {
         if (Math.abs(shownFeel - glow) < 0.03f) glow = shownFeel;
         if (pendingFeel < shownFeel && age - feelChangedAge >= DWELL) { shownFeel = pendingFeel; feelChangedAge = age; }
         if (closeIn > 0 && --closeIn == 0) { onClose(); return; }
+        if (rake != null) rake.visible = rakeable && !raked && result == null;
         if (qa || result != null) return;
         if (keyboardMode) position = Mth.clamp(position + ((right ? 1 : 0) - (left ? 1 : 0)) * 0.012, 0.0, 1.0);
         boolean pressing = mouseDown || spaceDown;
@@ -146,6 +177,7 @@ public final class LockpickScreen extends UcScreen {
         if (key == GLFW.GLFW_KEY_LEFT || key == GLFW.GLFW_KEY_A) { left = true; keyboardMode = true; return true; }
         if (key == GLFW.GLFW_KEY_RIGHT || key == GLFW.GLFW_KEY_D) { right = true; keyboardMode = true; return true; }
         if (key == GLFW.GLFW_KEY_SPACE) { spaceDown = true; return true; }
+        if (key == GLFW.GLFW_KEY_R && rakeable && !raked) { doRake(); return true; }
         return super.keyPressed(key, scan, modifiers);
     }
 
@@ -174,13 +206,20 @@ public final class LockpickScreen extends UcScreen {
         for (int i = 0; i < pins; i++) {
             int x = cx - row / 2 + i * (lampW + gap);
             boolean set = i < pinsSet, current = i == pinsSet && result == null;
-            g.fill(x, y, x + lampW, y + 10, 0xff05080c);
+            boolean spoolHere = current && spoolState == 1;
+            g.fill(x, y, x + lampW, y + 10, spoolHere ? UcUi.WARN : 0xff05080c);
             g.fill(x + 1, y + 1, x + lampW - 1, y + 9, set ? UcUi.shade(UcUi.OK, 0.8f) : current ? UcUi.mix(0xff1b2a38, UcUi.AMBER, pressing ? 0.55f : 0.25f) : 0xff1b2a38);
             if (set) g.fill(x + 1, y + 1, x + lampW - 1, y + 2, UcUi.OK);
         }
         String status = result != null ? note : pinsSet >= pins ? "Open" : "Pin " + (pinsSet + 1) + " of " + pins;
         UcUi.displayCentre(g, font, result != null ? resultTitle() : status, cx, y + 16, result == null ? UcUi.TEXT : resultColour());
         if (result != null && !note.isEmpty()) UcUi.text(g, font, UcUi.fit(font, note, pw - 2 * PAD), cx - font.width(UcUi.fit(font, note, pw - 2 * PAD)) / 2, y + 30, UcUi.SOFT);
+        else if (result == null) {
+            // spool pins: the moment one turns back, and (for a thief who can feel them) the warning before it does
+            String hint = age - turnedAt < 40 ? "It turned back. Ease off and find the pin again." : spoolState == 1 ? "A spool pin: it will turn back once. Be ready to find it again."
+                : spools > 0 ? "This lock has " + spools + (spools == 1 ? " spool pin." : " spool pins.") : "";
+            if (!hint.isEmpty()) { String fit = UcUi.fit(font, hint, pw - 2 * PAD); UcUi.text(g, font, fit, cx - font.width(fit) / 2, y + 30, age - turnedAt < 40 ? UcUi.WARN : UcUi.AMBER); }
+        }
 
         // the bar: a slot, tick marks, the glow of the feel, the pick
         int by = barY + 4, bh = 26;
@@ -245,6 +284,12 @@ public final class LockpickScreen extends UcScreen {
         };
     }
 
+    private static final String[] HOW_TO_RAKE = {
+        "Slide: mouse or arrows   Press: hold click or Space   R rakes",
+        "Mouse or arrows slide   Hold click or Space   R rakes",
+        "Mouse or arrows slide   Hold click   R rakes",
+    };
+
     private static final String[] HOW_TO = {
         "Slide: mouse or arrows   Press: hold left button or Space",
         "Slide: mouse or arrows   Press: hold click or Space",
@@ -257,8 +302,9 @@ public final class LockpickScreen extends UcScreen {
         String stop = "Esc stops";
         int room = pw - 2 * PAD - 28 - font.width(stop);
         // the first wording that fits whole: a real 1280 by 720 client at GUI scale 2 cut the long one at "hold l..."
-        String how = HOW_TO[0];
-        for (String option : HOW_TO) {
+        String[] options = rakeable && !raked ? HOW_TO_RAKE : HOW_TO;
+        String how = options[0];
+        for (String option : options) {
             how = option;
             if (font.width(option) <= room) break;
         }

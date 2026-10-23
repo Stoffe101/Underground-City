@@ -64,7 +64,8 @@ public final class LockpickSessionGameTests {
             if (runStart >= 0 && (best == null || last - runStart > best[1] - best[0])) best = new double[] {runStart, last};
             if (best == null) continue;
             double aim = careless ? best[0] : (best[0] + best[1]) / 2;
-            for (int t = 0; t < 40 && session.active() && session.pin() == pin; t++) hand.tick(aim, true);
+            // a person reads the screen while pressing: when a spool pin turns back ("It turned back") they ease off and look for the spot again
+            for (int t = 0; t < 40 && session.active() && session.pin() == pin; t++) { hand.tick(aim, true); if (session.justTurned()) break; }
         }
         return session.state();
     }

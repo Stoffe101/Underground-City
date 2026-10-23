@@ -65,6 +65,24 @@ public final class ShopCounters extends SimpleJsonResourceReloadListener {
     }
 
     public Optional<Shop> forBuilding(String buildingType) { return Optional.ofNullable(byBuilding.get(buildingType)); }
+
+    /**
+     * True while a shop is open for business (D-146): it is a building with a counter, and somebody of its household whose place is that counter is in now (the household's own clock, so a shop is
+     * open by day and shut at night, as its shopkeeper is). An open shop's street door is not locked: customers walk in to the counter, and its cameras do not take a customer for a burglar.
+     */
+    static boolean openNow(net.minecraft.server.level.ServerLevel level, CityBuildings.Building building) {
+        Optional<Shop> shop = INSTANCE.forBuilding(building.type());
+        if (shop.isEmpty()) return false;
+        BuildingSpots.Plan plan = BuildingSpots.INSTANCE.forType(building.type());
+        PopulationCatalog.Def def = PopulationCatalog.INSTANCE.city(building.city());
+        if (plan == null || def == null) return false;
+        long time = HouseholdService.dayTime(level);
+        for (HouseholdPlan.Resident who : HouseholdPlan.residents(building.city(), level.getSeed(), building.key(), plan, def.names())) {
+            if (!who.role().equals("worker") || !plan.spots().get(who.spot()).kind().equals(shop.get().spot())) continue;
+            if (HouseholdService.whereNow(who, plan, level.getSeed(), time) != HouseholdPlan.AWAY) return true;
+        }
+        return false;
+    }
     public Map<String, Shop> all() { return byBuilding; }
 
     /** The shop a household body keeps, if they are its shopkeeper: a worker of a building that has a shop, standing for the spot the shop serves from. */
