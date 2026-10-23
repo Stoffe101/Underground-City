@@ -47,6 +47,29 @@ public final class RoadMarkerGameTests {
         helper.succeed();
     }
 
+    /**
+     * A ramp never makes the server generate a chunk (journey runs stalled 4 to 43 s as each was built): it covers every chunk the build touches, and an end whose chunks are not
+     * loaded is not ready; once they are, it is.
+     */
+    @GameTest(template = "empty")
+    public static void aRampWaitsForItsChunksRatherThanGeneratingThem(GameTestHelper helper) {
+        var level = helper.getLevel();
+        CorridorPlan.End far = new CorridorPlan.End(1_000_003.5, 2_000_001.5, 0, 0.6, 0.8);
+        var chunks = RoadApproaches.chunks(far);
+        for (int k = 0; k < RoadApproaches.APPROACH; k++) for (int u = -RoadApproaches.HALF; u <= RoadApproaches.HALF; u++) {
+            var column = new net.minecraft.world.level.ChunkPos((int) Math.floor(far.x() + far.dirX() * k - far.dirZ() * u) >> 4, (int) Math.floor(far.z() + far.dirZ() * k + far.dirX() * u) >> 4);
+            check(chunks.contains(column), "The ramp's chunks include the one under column " + k + ", " + u + ": " + column);
+        }
+        check(chunks.size() <= 12, "A diagonal ramp touches a handful of chunks: " + chunks.size());
+        check(!RoadApproaches.ready(level, far), "An end a million blocks out is not loaded and not ready");
+        check(chunks.stream().allMatch(c -> level.getChunkSource().getChunkNow(c.x, c.z) == null), "Asking whether it is ready loaded nothing");
+        BlockPos here = helper.absolutePos(BlockPos.ZERO);
+        CorridorPlan.End near = new CorridorPlan.End(here.getX() + 0.5, here.getZ() + 0.5, 0, 1, 0);
+        for (var c : RoadApproaches.chunks(near)) level.getChunk(c.x, c.z);
+        check(RoadApproaches.ready(level, near), "Once its chunks are loaded, an end is ready");
+        helper.succeed();
+    }
+
     /** The travel step points at the road out (a journey walked 720 blocks from the Row to a road's end with nothing saying where it was). */
     @GameTest(template = "empty")
     public static void theTravelStepPointsAtTheRoadOutOfTheCity(GameTestHelper helper) {
