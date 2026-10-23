@@ -42,6 +42,29 @@ Branch `feature/world-playability-overhaul`, draft PR [#25](https://github.com/S
 The first tour's diner frame was lost to a fault of the tour (its stage clock started when the class loaded, minutes before the world existed); fixed, and the diner was photographed in the second tour.
 
 <!-- journey:begin -->
+### The first-player journey with the road's new company (scripted real client, `-PucPlaytest=journey`)
+
+The journey of the previous pass (D-132) now also meets a courier on the first stretch out of Ironhaven, takes the letter in the dialogue, walks to the Crossroads Diner and buys over the cook's counter, and pays the letter in at the Valewood terminal.
+
+**Run 64, a brand-new furnished archipelago world, the whole journey: `RESULT pass`**, 28 steps with real key and mouse input, 1,456 s of real time. The new steps: **14d** the courier's letter taken (Pip Arkwright, about 260 blocks along the road from its Ironhaven end, set up at the third asking), **14c** a baked potato bought at the Crossroads Diner (4 credits, real clicks), **15a** the letter paid once at the Valewood terminal (+51 credits), then the rest of the journey as before (a locked building that stays shut, a rival-city visit, a second order, an exchange purchase, an emptied shelf, the walk back across the bridge, 241 s). Four shortcuts, each logged:
+
+1. The tree's position was looked up in the world.
+2. **The last 8 blocks from the Row to the road's Ironhaven end were a teleport.** The road-end ramp had not been laid, and the walker could not climb from the ditch below the deck. See below.
+3. The courier was set up with `/uc_encounters meet` rather than waited for (its five minutes of road time and its roll).
+4. The Valewood charcoal shelf was emptied on the server to stand in for another buyer.
+
+**What the runs found on the way (58 to 64), each fixed:**
+
+* The courier could not stand anywhere on the guarded road. The Ironhaven-Valewood road is two thirds bridges, and an 80-block clearance round shelters and places left no verge (run 58). The clearance is now 40, and 70 from a place.
+* The verge that is left is forest, and a plot of plain air was found nowhere in 320 blocks (run 59). An encounter now stands in wild growth, which is put back after.
+* `meet` took the first road in the list rather than the road the player was on, and said nothing about why it refused. It now takes the player's road and lists the refusals.
+* The scripted walker stuck six blocks down a dip beside the road after the courier (run 60). It now climbs back onto the deck first.
+* The step asked for a courier before the land ahead was loaded and walked past the verge (run 61). It now waits for the road's chunks ahead.
+* A second courier was set up because the first stood 113 blocks off, beyond a 96-block search (run 62). The step now reads the server's record.
+* The walker stuck in the diner's doorway when the door was shut again (run 63; what shut it is not known). It now opens a door it is standing in.
+* **The Ironhaven end's ramp was not laid on the way out in runs 58 and 64.** It waited for every chunk up to 112 blocks in; it was laid on the way back. Fixed after run 64: a ramp is laid once its own 64 blocks are loaded and reads its longer reach only from loaded chunks ([archipelago-world.md](../technical/archipelago-world.md#where-the-roads-meet-the-cities-d-137-october-23)). The whole journey was run again on this change (run 65, below).
+
+Development runs 59 to 62 started at the travel step (the earlier steps set up by the server, logged), and run 62 passed every step from there. They are not evidence for steps 1 to 13.
 <!-- journey:end -->
 
 ### What a person still has to judge
