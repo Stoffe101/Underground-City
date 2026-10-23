@@ -191,7 +191,7 @@ public final class WaysideShelters {
                 return false;
             }
             @Override public boolean reserved(int x, int z) {
-                if (!level.hasChunk(x >> 4, z >> 4)) return true;
+                if (level.getChunkSource().getChunkNow(x >> 4, z >> 4) == null) return true;   // hasChunk counts a chunk still being generated, and a read of it would make the server wait
                 if (CityRegions.INSTANCE.cityAt(level, new BlockPos(x, level.getSeaLevel(), z)).isPresent()) return true;
                 String dimension = level.dimension().location().toString();
                 for (CheckpointCatalog.Checkpoint post : CheckpointCatalog.INSTANCE.all()) {

@@ -98,7 +98,7 @@ final class WorldRoadVerifier {
     }
 
     private void verify(ServerLevel level) {
-        List<CorridorPlan> plans = CorridorRoadFeature.plans(level);
+        List<CorridorPlan> plans = CorridorRoadFeature.ready(level);   // a reopened world's plan is the one made in the background as it loaded
         if (plans.isEmpty()) throw new IllegalStateException("Road chunks generated but the feature never built a plan");
         JsonArray routes = new JsonArray();
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();

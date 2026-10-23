@@ -129,7 +129,8 @@ public final class RoadMarkers {
     static boolean areaLoaded(ServerLevel level, double x, double z, int radius) {
         int sea = level.getSeaLevel();
         for (int dx : new int[]{-radius, 0, radius}) for (int dz : new int[]{-radius, 0, radius}) {
-            if (!level.isLoaded(new BlockPos((int) Math.floor(x) + dx, sea, (int) Math.floor(z) + dz))) return false;
+            // getChunkNow, not isLoaded: isLoaded counts a chunk that is still being generated, and the reads that follow would make the server wait for it
+            if (level.getChunkSource().getChunkNow(((int) Math.floor(x) + dx) >> 4, ((int) Math.floor(z) + dz) >> 4) == null) return false;
         }
         return true;
     }

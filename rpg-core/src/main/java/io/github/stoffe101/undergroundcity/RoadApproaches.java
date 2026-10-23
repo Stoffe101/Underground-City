@@ -42,7 +42,7 @@ public final class RoadApproaches {
     static final String KEY = "underground_city_road_approaches", ENABLED = "#enabled";
     static final int APPROACH = 64, NEAR = 160, HALF = 3, CUT_HEIGHT = 30, SEARCH_UP = 24, SEARCH_DOWN = 16;
     private static final int FLAGS = Block.UPDATE_CLIENTS;
-    private static final BlockState FILL = Blocks.DIRT.defaultBlockState(), PATH = Blocks.DIRT_PATH.defaultBlockState(), AIR = Blocks.AIR.defaultBlockState();
+    static final BlockState FILL = Blocks.DIRT.defaultBlockState(), PATH = Blocks.DIRT_PATH.defaultBlockState(), AIR = Blocks.AIR.defaultBlockState();
 
     /** A new archipelago world started by this version carries the approaches; an older one never does. */
     static void enable(ServerLevel level) {
@@ -56,7 +56,7 @@ public final class RoadApproaches {
     public void tick(TickEvent.LevelTickEvent event) {
         if (event.phase != TickEvent.Phase.END || !(event.level instanceof ServerLevel level) || level.dimension() != Level.OVERWORLD || level.getGameTime() % 40 != 7) return;
         if (level.players().isEmpty() || !enabled(level)) return;
-        List<CorridorPlan> plans = CorridorRoadFeature.plans(level);
+        List<CorridorPlan> plans = CorridorRoadFeature.ready(level);
         if (plans.isEmpty()) return;
         PlacedSites state = PlacedSites.get(level, KEY);
         for (CorridorPlan plan : plans) {
@@ -109,7 +109,7 @@ public final class RoadApproaches {
         // first built ground
         for (Cell cell : band(end, -0.75, cityAt, HALF + 0.5)) {
             int target = deckY + (int) Math.round((cityLevel - deckY) * Math.max(0, cell.k()) / cityAt);
-            int n = column(level, cell.x(), cell.z(), target, Math.abs(cell.u()) <= 0.5, p);
+            int n = column(level, cell.x(), cell.z(), target, Math.abs(cell.u()) <= 0.5 ? PATH : null, p);
             if (n < 0) leftAlone++; else changed += n;
         }
         return new Result(deckY, cityAt, cityLevel, changed, leftAlone, steepest);
@@ -167,7 +167,7 @@ public final class RoadApproaches {
      * Makes one column stand at {@code target} (the top block): natural blocks above are cut, a natural dip below is filled with earth, and a path tops the middle. Returns the blocks
      * changed, or -1 when something the city built (or water) is in the way and the column is left as it was.
      */
-    private static int column(ServerLevel level, int x, int z, int target, boolean middle, BlockPos.MutableBlockPos p) {
+    static int column(ServerLevel level, int x, int z, int target, BlockState surface, BlockPos.MutableBlockPos p) {
         // a building's lot is the city's, garden and all (the building guard protects the same volume from players)
         if (cityOwned(level, p.set(x, target, z))) return -1;
         // look first, change after: a column with anything built in its cut or under its fill is not touched at all
@@ -187,7 +187,9 @@ public final class RoadApproaches {
         }
         for (int y = ground + 1; y <= target; y++) { level.setBlock(p.set(x, y, z), FILL, FLAGS); n++; }
         BlockState top = level.getBlockState(p.set(x, target, z));
-        if (middle && top.is(BlockTags.DIRT) && !top.is(Blocks.DIRT_PATH)) { level.setBlock(p, PATH, FLAGS); n++; }
+        // a path is worn into earth only (as before, D-137); any other surface (a driveway's gravel) covers whatever natural ground is there
+        boolean lay = surface != null && !top.is(surface.getBlock()) && (surface.is(Blocks.DIRT_PATH) ? top.is(BlockTags.DIRT) : natural(top));
+        if (lay) { level.setBlock(p, surface, FLAGS); n++; }
         return n;
     }
 

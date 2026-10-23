@@ -47,6 +47,22 @@ public final class CorridorRoadFeature extends Feature<CorridorRoadConfig> {
 
     private static final Map<ServerLevel, CompletableFuture<List<CorridorPlan>>> PREPARING = new WeakHashMap<>();
 
+    /**
+     * The built plans when they exist, never waiting: those the road chunks used, or else those planned in the background as the world loaded. A world reopened after all its
+     * road chunks were generated never generates another, so without this the background plan would never be taken (the roadside places and encounters, D-138 and D-139, need
+     * the bridges, the water and the deck heights in a reopened world too).
+     */
+    public static synchronized List<CorridorPlan> ready(ServerLevel level) {
+        List<CorridorPlan> plans = PLANS.get(level);
+        if (plans != null) return plans;
+        CompletableFuture<List<CorridorPlan>> preparing = PREPARING.get(level);
+        if (preparing == null || !preparing.isDone() || preparing.isCompletedExceptionally()) return List.of();
+        plans = preparing.join();
+        PREPARING.remove(level);
+        PLANS.put(level, plans);
+        return plans;
+    }
+
     private static synchronized List<CorridorPlan> plansFor(FeaturePlaceContext<CorridorRoadConfig> context) {
         ServerLevel server = context.level().getLevel();
         List<CorridorPlan> plans = PLANS.get(server);
