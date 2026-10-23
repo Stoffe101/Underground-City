@@ -62,10 +62,20 @@ public final class ClientHud {
         }
     }
 
+    /** Where the stack was drawn in the last frame, {x, y, w, h} in GUI pixels, or null when it was not (the corner notices move out of its way: {@link ToastPlacement}). */
+    private static volatile int[] drawn;
+
+    static int[] drawn() { return drawn; }
+
     private static void draw(GuiGraphics g, int width, int height) {
         Minecraft mc = Minecraft.getInstance();
+        drawn = null;
         if (!visible || mc.screen != null || mc.options.hideGui || mc.player == null) return;
-        render(g, mc, width, height, state, ClientOrderTracker.current(), ClientOrderTracker.objective(), mc.level == null ? 0 : mc.level.getDayTime(), HudConfig.Settings.fromConfig());
+        HudLayout.Plan plan = render(g, mc, width, height, state, ClientOrderTracker.current(), ClientOrderTracker.objective(), mc.level == null ? 0 : mc.level.getDayTime(), HudConfig.Settings.fromConfig());
+        if (plan == null || !plan.any()) return;
+        int top = Integer.MAX_VALUE, left = 0;
+        for (int i = 0; i < plan.shown().length; i++) if (plan.shown()[i]) { top = Math.min(top, plan.y()[i]); left = plan.x()[i]; }
+        drawn = new int[] {left, top, plan.width(), plan.height()};
     }
 
     // ------------------------------------------------------------------------------------------------ drawing
@@ -77,8 +87,8 @@ public final class ClientHud {
     private static final int ROW_H = 12, CARD_PAD = 4;
 
     /** Draws the stack for a screen of the given size (the overlay, and the settings screen's preview). Does nothing when the status is switched off. */
-    static void render(GuiGraphics g, Minecraft mc, int width, int height, HudState hud, OrderTracker.Tracked order, Journey.Objective objective, long dayTime, HudConfig.Settings settings) {
-        if (!settings.enabled) return;
+    static HudLayout.Plan render(GuiGraphics g, Minecraft mc, int width, int height, HudState hud, OrderTracker.Tracked order, Journey.Objective objective, long dayTime, HudConfig.Settings settings) {
+        if (!settings.enabled) return null;
         Font font = mc.font;
         List<Row> rows = rows(hud, dayTime, settings);
         boolean guidance = settings.guidance && ClientOrderTracker.guidanceVisible();
@@ -88,7 +98,7 @@ public final class ClientHud {
         // top to bottom: the status, the accepted order, the next step; when there is no room the order goes first, then the status, and the next step stays longest
         HudLayout.Plan plan = HudLayout.plan(settings.anchor, width, height,
             new HudLayout.Card[] {new HudLayout.Card(statusH, 2), new HudLayout.Card(orderH, 1), new HudLayout.Card(objectiveH, 3)}, (float) settings.scale);
-        if (!plan.any()) return;
+        if (!plan.any()) return plan;
         for (int i = 0; i < 3; i++) {
             if (!plan.shown()[i]) continue;
             g.pose().pushPose();
@@ -101,6 +111,7 @@ public final class ClientHud {
             }
             g.pose().popPose();
         }
+        return plan;
     }
 
     private static int alpha(int argb, double opacity) { return ((int) (((argb >>> 24) & 255) * opacity)) << 24 | (argb & 0xffffff); }

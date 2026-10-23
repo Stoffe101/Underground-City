@@ -97,6 +97,26 @@ final class HudLayout {
         return new Plan(scale, shown, x, y, w, h);
     }
 
+    /**
+     * The game's corner notices (toasts: ours, a recipe unlocked, an advancement) slide in at the top right, {@link #TOAST_WIDTH} wide, one under another; three of ours take about
+     * {@link #TOAST_COLUMN} pixels. Where the stack stands in that column they are moved (a journey screenshot at 1280x720 showed two of them over the status card): below the stack when the
+     * space under it holds the column, else beside it on its left, at the top; on a window too small for either they stay where the game puts them. Returns the shift {dx, dy} of the whole
+     * column; the stack's rectangle is {@code sx, sy, sw, sh} (zero width when no stack is drawn).
+     */
+    static final int TOAST_WIDTH = 190, TOAST_COLUMN = 96;
+
+    static int[] toastShift(int screenW, int screenH, int sx, int sy, int sw, int sh) {
+        int tx = screenW - TOAST_WIDTH;
+        if (sw <= 0 || sh <= 0 || sx + sw <= tx || sy >= TOAST_COLUMN) return new int[] {0, 0};
+        int below = sy + sh + GAP;
+        boolean overHotbar = tx + TOAST_WIDTH > screenW / 2 - HOTBAR_HALF_WIDTH && tx < screenW / 2 + HOTBAR_HALF_WIDTH;
+        int bottomLimit = screenH - MARGIN - (overHotbar ? HOTBAR_RESERVE : reserved(Anchor.BOTTOM_RIGHT));
+        if (below + TOAST_COLUMN <= bottomLimit) return new int[] {0, below};
+        int dx = sx - GAP - screenW;   // the column's right edge a gap left of the stack
+        if (tx + dx >= MARGIN) return new int[] {dx, 0};
+        return new int[] {0, 0};
+    }
+
     private static int stackHeight(Card[] cards, boolean[] shown) {
         int total = 0, count = 0;
         for (int i = 0; i < cards.length; i++) if (shown[i]) { total += cards[i].height(); count++; }

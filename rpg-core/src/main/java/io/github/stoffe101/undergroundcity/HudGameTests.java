@@ -181,6 +181,45 @@ public final class HudGameTests {
         helper.succeed();
     }
 
+    /** The corner notices (toasts) never cover the status stack: moved below it or beside it, inside the screen and off the hotbar, wherever both fit (D-109 follow-up). */
+    @GameTest(template = "empty")
+    public static void cornerNoticesStayOffTheStatusStack(GameTestHelper helper) {
+        int moved = 0;
+        for (HudLayout.Anchor anchor : HudLayout.Anchor.values()) {
+            for (int[] screen : SCREENS) {
+                for (float wanted : new float[] {0.6f, 1.0f, 1.5f}) {
+                    HudLayout.Plan plan = HudLayout.plan(anchor, screen[0], screen[1], stack(66, 82, 58), wanted);
+                    if (!plan.any()) continue;
+                    int top = Integer.MAX_VALUE, left = 0;
+                    for (int i = 0; i < 3; i++) if (plan.shown()[i]) { top = Math.min(top, plan.y()[i]); left = plan.x()[i]; }
+                    int[] shift = HudLayout.toastShift(screen[0], screen[1], left, top, plan.width(), plan.height());
+                    String where = anchor + " on " + screen[0] + "x" + screen[1] + " at " + wanted + ", shift " + shift[0] + "," + shift[1];
+                    int tx0 = screen[0] - HudLayout.TOAST_WIDTH + shift[0], tx1 = screen[0] + shift[0], ty0 = shift[1], ty1 = shift[1] + HudLayout.TOAST_COLUMN;
+                    boolean overlaps = tx0 < left + plan.width() && tx1 > left && ty0 < top + plan.height() && ty1 > top;
+                    if (shift[0] == 0 && shift[1] == 0) {
+                        // not moved: either nothing was in the way, or the window is too small for either place (only the two tiny test windows)
+                        check(!overlaps || screen[0] <= 427 && screen[1] <= 240, "The notices cover the stack on a window big enough to move them: " + where);
+                        continue;
+                    }
+                    moved++;
+                    check(!overlaps, "Moved notices still cover the stack: " + where);
+                    check(tx0 >= HudLayout.MARGIN && tx1 <= screen[0] && ty0 >= 0 && ty1 <= screen[1], "Moved notices stay on the screen: " + where);
+                    if (tx1 > screen[0] / 2 - HudLayout.HOTBAR_HALF_WIDTH && tx0 < screen[0] / 2 + HudLayout.HOTBAR_HALF_WIDTH) check(ty1 <= screen[1] - HudLayout.HOTBAR_RESERVE, "Moved notices stay off the hotbar: " + where);
+                }
+            }
+        }
+        check(moved > 0, "Some layout moved the notices");
+        // the screenshot that found it: 1280x720 at GUI scale 2, the stack at the top right; the notices go under it
+        HudLayout.Plan seen = HudLayout.plan(HudLayout.Anchor.TOP_RIGHT, 640, 360, stack(66, 0, 58), 1.0f);
+        int[] shift = HudLayout.toastShift(640, 360, seen.x()[0], seen.y()[0], seen.width(), seen.height());
+        check(shift[0] == 0 && shift[1] >= seen.y()[0] + seen.height(), "At 1280x720 GUI 2 the notices go under the stack: " + shift[0] + "," + shift[1]);
+        // a stack on the left leaves the top right to the notices
+        HudLayout.Plan leftHand = HudLayout.plan(HudLayout.Anchor.TOP_LEFT, 640, 360, stack(66, 82, 58), 1.0f);
+        int[] none = HudLayout.toastShift(640, 360, leftHand.x()[0], leftHand.y()[0], leftHand.width(), leftHand.height());
+        check(none[0] == 0 && none[1] == 0, "A stack on the left does not move the notices");
+        helper.succeed();
+    }
+
     private static void check(boolean condition, String reason) {
         if (!condition) throw new AssertionError(reason);
     }

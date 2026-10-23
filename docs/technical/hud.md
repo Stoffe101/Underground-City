@@ -30,6 +30,16 @@ The default is the **top right, below the status-effect row**. The reasons, each
 
 A player who moves Xaero's minimap to the top right gets the status effects pushed and our stack on top of it; the settings screen moves ours (seven anchors: top left, top centre, top right, left side, right side, bottom left, bottom right).
 
+## Corner notices (D-135)
+
+The game draws its toasts (our notices, a recipe unlocked, an advancement) at the top right, one under another, where the stack stands by default. A real client's screenshots (the alarm-panel scenario, 1280x720 at GUI scale 2) showed two notices over the status card, and two over the trace screen's pads while the signal was flashing. Now:
+
+* **While the stack is drawn**, the whole toast column is moved out of its way (`HudLayout.toastShift`, pure arithmetic): **below the stack** when the space under it holds about three notices and stays off the hotbar and the bottom-right read-outs, else **beside it on its left**, at the top; on a window too small for either it stays where the game puts it. A stack on the left, or in the middle of the right side below the toasts, moves nothing.
+* **On a screen** (a terminal, the inventory) the stack is not drawn and the toasts stay in their corner, as the game places them; the chat screen keeps the stack, so it keeps the move.
+* **A notice that arrives while the lock screen or the trace screen is open is held** and shown when the screen closes (at most six are kept; a flood drops the oldest). Those screens are timed, and a notice over a pad costs the player the round.
+
+How: Forge has no event around the toast pass, so a client-only mixin (`ToastComponentMixin`, official and Searge names, optional like the others) shifts the pose before the game draws its toasts and restores it after. The arithmetic is tested at the eight window sizes of the stack's own test (`HudGameTests.cornerNoticesStayOffTheStatusStack`): moved notices never cover the stack, stay on the screen and off the hotbar. What the screenshots show after the change is in the sprint report.
+
 ## Settings
 
 Mods, Underground City, Config opens the settings screen (`HudSettingsScreen`), as does the HUD settings key (unbound by default). It has: on or off, the anchor (click for the next, Shift-click for the previous), size (0.6 to 1.5), solidity (0.3 to 1), and a switch for each line and for the order cards. A live preview of the real stack is drawn at the real place beside the panel. Every change is saved at once to `config/underground_city-client.toml` (a client file; a server never reads it). **H** hides the status in play, **O** hides the order cards as before.

@@ -10,6 +10,9 @@
     "GroundPathNavigationMixin",
     "ChunkGeneratorStructuresMixin"
   ],
+  "client": [
+    "ToastComponentMixin"
+  ],
   "injectors": {
     "defaultRequire": 0
   }
