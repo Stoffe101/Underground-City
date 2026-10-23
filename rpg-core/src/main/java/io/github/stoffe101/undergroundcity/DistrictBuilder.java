@@ -182,6 +182,17 @@ public final class DistrictBuilder {
 
     /** Builds {@code district} with its minimum corner at {@code origin}. Throws IllegalStateException with the reason on refusal. */
     public static Result build(ServerLevel level, DistrictCatalog.District district, BlockPos origin) {
+        Job job = begin(level, district, origin, false);
+        job.step(Long.MAX_VALUE);
+        return job.finish();
+    }
+
+    /**
+     * Checks the lot and saves what is there, for a build done a slice at a time (D-148): {@link Job#step} then places blocks until a time budget is spent, and {@link Job#finish} places the
+     * people, registers the homes and records the build for undo. {@link #build} does all of it at once. With {@code resume}, block entities the district itself places are allowed in the lot
+     * (a build cut off by a crash is begun again on the same lot).
+     */
+    static Job begin(ServerLevel level, DistrictCatalog.District district, BlockPos origin, boolean resume) {
         State state = state(level);
         String key = key(district, level, origin);
         if (state.built.containsKey(key)) throw new IllegalStateException(district.title() + " is already built " + (district.repeatable() ? "here" : "in this world") + ". Undo it first.");
@@ -200,8 +211,10 @@ public final class DistrictBuilder {
         if (!level.hasChunksAt(lo, hi)) throw new IllegalStateException("The lot is not fully loaded. Stand in the middle of the area and try again.");
         // 1. Validate the data and the lot before touching anything.
         Map<DistrictCatalog.Op, BlockState> states = validate(level, district);
+        java.util.Set<BlockPos> own = new java.util.HashSet<>();
+        if (resume) for (DistrictCatalog.Op op : district.ops()) if (states.get(op) != null && states.get(op).hasBlockEntity()) for (BlockPos p : BlockPos.betweenClosed(origin.offset(op.a()), origin.offset(op.b()))) own.add(p.immutable());
         for (BlockPos pos : BlockPos.betweenClosed(lo, hi)) {
-            if (level.getBlockEntity(pos) != null) {
+            if (level.getBlockEntity(pos) != null && !own.contains(pos)) {
                 throw new IllegalStateException("Refusing to build: there is a container or machine at " + pos.getX() + " " + pos.getY() + " " + pos.getZ()
                     + " inside the lot. Choose a clear area.");
             }
@@ -219,65 +232,130 @@ public final class DistrictBuilder {
         }
         ListTag saved = new ListTag();
         for (BlockState entry : palette) saved.add(NbtUtils.writeBlockState(entry));
-        // 3. Build; a failure part-way puts the previous blocks back.
-        int blocks = 0, safes = 0, secure = 0, terminals = 0;
-        boolean clerkPlaced = false;
-        UUID clerk = null;
-        List<UUID> citizens = new ArrayList<>();
-        int placedCitizens = 0;
-        List<String> registeredHomes = new ArrayList<>();
-        try {
-            int opsDone = 0;
-            for (DistrictCatalog.Op op : district.ops()) {
-                if (op.kind().equals("clerk") || op.kind().equals("npc") || op.kind().equals("residence") || !op.applies()) continue;
-                if (origin.equals(faultAt) && opsDone++ >= faultAfterOps) throw new UnsupportedOperationException("simulated fault in the middle of a build");
-                BlockState place = states.get(op);
-                for (BlockPos pos : BlockPos.betweenClosed(origin.offset(op.a()), origin.offset(op.b()))) {
-                    level.setBlock(pos, place, Block.UPDATE_ALL);
-                    blocks++;
-                }
-                BlockPos at = origin.offset(op.a());
-                switch (op.kind()) {
-                    case "safe" -> {
-                        PropertyPolicy policy = PropertyPolicies.INSTANCE.find(UndergroundCity.MOD_ID + ":" + op.text());
-                        ((PropertyCacheBlockEntity) level.getBlockEntity(at)).register(level, policy, WorkOrderLedger.get(level.getServer()).clock());
-                        safes++;
-                    }
-                    case "secure_terminal" -> secure++;
-                    case "sign" -> writeSign(level, at, op.sign());
-                    case "terminal" -> terminals++;
-                    case "loot" -> {
-                        // filled from its table the first time anybody opens it (the game's own rule), once: an explored building is not a renewable income
-                        if (level.getBlockEntity(at) instanceof net.minecraft.world.level.block.entity.RandomizableContainerBlockEntity container) {
-                            container.setLootTable(new net.minecraft.resources.ResourceLocation(op.loot()), at.asLong() ^ level.getSeed());
-                        }
-                    }
-                    default -> { }
-                }
-            }
-            for (DistrictCatalog.Op op : district.ops()) {
-                if (!op.kind().equals("clerk") || SupplierNpc.hasClerk(level.getServer())) continue;
-                clerk = SupplierNpc.spawnFor(level, origin.offset(op.reference()), origin.offset(op.a())).getUUID();
-                clerkPlaced = true;
-            }
-            registerHomes(level, district, origin, registeredHomes);
-            int slot = 0;
-            for (DistrictCatalog.Op op : district.npcOps()) {
-                if (!op.applies()) { citizens.add(NONE); slot++; continue; }
-                citizens.add(CityNpcs.spawn(level, district.id(), slot++, op.npc(), origin.offset(op.a()), op.reference() == null ? null : origin.offset(op.reference())).getUUID());
-                placedCitizens++;
-            }
-        } catch (RuntimeException error) {
-            for (UUID id : citizens) discard(level, id);
-            if (clerk != null) discard(level, clerk); // the supplier registry releases a discarded clerk on its own
-            unregisterHomes(level, registeredHomes);
-            restore(level, lo, hi, palette, before);
-            throw error;
+        return new Job(level, district, origin.immutable(), key, lo, hi, states, palette, before, saved);
+    }
+
+    /** A district build under way (see {@link #begin}). A failure at any point puts the previous blocks back. */
+    static final class Job {
+        final ServerLevel level;
+        final DistrictCatalog.District district;
+        final BlockPos origin, lo, hi;
+        private final String key;
+        private final Map<DistrictCatalog.Op, BlockState> states;
+        private final List<BlockState> palette;
+        private final int[] before;
+        private final ListTag saved;
+        private int op = -1, opsDone, blocks, safes, secure, terminals;
+        private java.util.Iterator<BlockPos> cells;
+        private boolean placed, over;
+
+        private Job(ServerLevel level, DistrictCatalog.District district, BlockPos origin, String key, BlockPos lo, BlockPos hi, Map<DistrictCatalog.Op, BlockState> states,
+                    List<BlockState> palette, int[] before, ListTag saved) {
+            this.level = level; this.district = district; this.origin = origin; this.key = key; this.lo = lo; this.hi = hi;
+            this.states = states; this.palette = palette; this.before = before; this.saved = saved;
         }
-        state.built.put(key, new Entry(level.dimension().location().toString(), origin.immutable(), saved, before, clerk, citizens));
-        state.setDirty();
-        level.getServer().overworld().getDataStorage().save();
-        return new Result(blocks, safes, secure, terminals, clerkPlaced, CityRegions.INSTANCE.cityAt(level, origin).isPresent(), placedCitizens, registeredHomes.size());
+
+        /** Every block of the district is placed. */
+        boolean placed() { return placed; }
+
+        /** The lot's chunks are all in the world (a slice is placed only then: nothing here loads or generates a chunk). */
+        boolean loaded() { return level.hasChunksAt(lo, hi); }
+
+        private static boolean entityOp(DistrictCatalog.Op op) { return op.kind().equals("clerk") || op.kind().equals("npc") || op.kind().equals("residence") || !op.applies(); }
+
+        /** Places blocks, operation by operation, until every block is placed (true) or {@code budgetNanos} has passed (false). Long.MAX_VALUE places them all. */
+        boolean step(long budgetNanos) {
+            if (over) throw new IllegalStateException("this build is over");
+            if (placed) return true;
+            long until = budgetNanos == Long.MAX_VALUE ? Long.MAX_VALUE : System.nanoTime() + budgetNanos;
+            List<DistrictCatalog.Op> ops = district.ops();
+            try {
+                int sinceCheck = 0;
+                while (true) {
+                    if (cells == null || !cells.hasNext()) {
+                        if (cells != null) after(ops.get(op));
+                        cells = null;
+                        do { op++; } while (op < ops.size() && entityOp(ops.get(op)));
+                        if (op >= ops.size()) { placed = true; return true; }
+                        if (origin.equals(faultAt) && opsDone++ >= faultAfterOps) throw new UnsupportedOperationException("simulated fault in the middle of a build");
+                        DistrictCatalog.Op next = ops.get(op);
+                        cells = BlockPos.betweenClosed(origin.offset(next.a()), origin.offset(next.b())).iterator();
+                    }
+                    level.setBlock(cells.next(), states.get(ops.get(op)), Block.UPDATE_ALL);
+                    blocks++;
+                    if (++sinceCheck >= 256) { sinceCheck = 0; if (System.nanoTime() >= until) return false; }
+                }
+            } catch (RuntimeException error) {
+                abort();
+                throw error;
+            }
+        }
+
+        /** What an operation's block needs once it stands: a safe's policy, a sign's words, a loot container's table. */
+        private void after(DistrictCatalog.Op op) {
+            BlockPos at = origin.offset(op.a());
+            switch (op.kind()) {
+                case "safe" -> {
+                    PropertyPolicy policy = PropertyPolicies.INSTANCE.find(UndergroundCity.MOD_ID + ":" + op.text());
+                    ((PropertyCacheBlockEntity) level.getBlockEntity(at)).register(level, policy, WorkOrderLedger.get(level.getServer()).clock());
+                    safes++;
+                }
+                case "secure_terminal" -> secure++;
+                case "sign" -> writeSign(level, at, op.sign());
+                case "terminal" -> terminals++;
+                case "loot" -> {
+                    // filled from its table the first time anybody opens it (the game's own rule), once: an explored building is not a renewable income
+                    if (level.getBlockEntity(at) instanceof net.minecraft.world.level.block.entity.RandomizableContainerBlockEntity container) {
+                        container.setLootTable(new net.minecraft.resources.ResourceLocation(op.loot()), at.asLong() ^ level.getSeed());
+                    }
+                }
+                default -> { }
+            }
+        }
+
+        /** Places the rest of the blocks if any are left, then the clerk, the homes and the citizens, and records the build for undo. */
+        Result finish() {
+            if (!placed) step(Long.MAX_VALUE);
+            State state = state(level);
+            if (state.built.containsKey(key)) { abort(); throw new IllegalStateException(district.title() + " was built by somebody else meanwhile."); }
+            boolean clerkPlaced = false;
+            UUID clerk = null;
+            List<UUID> citizens = new ArrayList<>();
+            int placedCitizens = 0;
+            List<String> registeredHomes = new ArrayList<>();
+            try {
+                for (DistrictCatalog.Op op : district.ops()) {
+                    if (!op.kind().equals("clerk") || SupplierNpc.hasClerk(level.getServer())) continue;
+                    clerk = SupplierNpc.spawnFor(level, origin.offset(op.reference()), origin.offset(op.a())).getUUID();
+                    clerkPlaced = true;
+                }
+                registerHomes(level, district, origin, registeredHomes);
+                int slot = 0;
+                for (DistrictCatalog.Op op : district.npcOps()) {
+                    if (!op.applies()) { citizens.add(NONE); slot++; continue; }
+                    citizens.add(CityNpcs.spawn(level, district.id(), slot++, op.npc(), origin.offset(op.a()), op.reference() == null ? null : origin.offset(op.reference())).getUUID());
+                    placedCitizens++;
+                }
+            } catch (RuntimeException error) {
+                for (UUID id : citizens) discard(level, id);
+                if (clerk != null) discard(level, clerk); // the supplier registry releases a discarded clerk on its own
+                unregisterHomes(level, registeredHomes);
+                abort();
+                throw error;
+            }
+            over = true;
+            state.built.put(key, new Entry(level.dimension().location().toString(), origin, saved, before, clerk, citizens));
+            state.setDirty();
+            level.getServer().overworld().getDataStorage().save();
+            return new Result(blocks, safes, secure, terminals, clerkPlaced, CityRegions.INSTANCE.cityAt(level, origin).isPresent(), placedCitizens, registeredHomes.size());
+        }
+
+        /** Puts back what the lot held before (a failed or abandoned build). */
+        void abort() {
+            if (over) return;
+            over = true;
+            restore(level, lo, hi, palette, before);
+        }
     }
 
     /** The ledger id of a district's home: unique per world because a district with homes is never repeatable. */

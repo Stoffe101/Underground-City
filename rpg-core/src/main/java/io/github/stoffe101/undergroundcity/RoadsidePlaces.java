@@ -299,7 +299,8 @@ public final class RoadsidePlaces {
         PlacedSites places = PlacedSites.get(level, KEY);
         for (var built : places.where.entrySet()) {
             Place place = CATALOG.find(built.getKey());
-            DistrictCatalog.District district = place == null ? null : builtVariant(level, place);
+            Construction going = BUILDING.get(built.getKey());
+            DistrictCatalog.District district = going != null ? going.district : place == null ? null : builtVariant(level, place);
             if (district != null) lots.add(box(BlockPos.of(built.getValue()), district, 6));
         }
         return lots;
@@ -355,9 +356,16 @@ public final class RoadsidePlaces {
         return road == null ? null : serve(level, plans, place, candidates, px, pz, state, loadedRadius, deck(road));
     }
 
-    /** As above, with the deck's height supplied (a test's synthetic road has no built profile). */
+    /** As above, with the deck's height supplied (a test's synthetic road has no built profile). Builds the place at once (the road check and the GameTests). */
     static Outcome serve(ServerLevel level, List<CorridorPlan> plans, Place place, List<Double> candidates, double px, double pz, PlacedSites state, int loadedRadius, DoubleToIntFunction deck) {
-        if (state.done.contains(place.id())) return null;
+        return serve(level, plans, place, candidates, px, pz, state, loadedRadius, deck, false);
+    }
+
+    /** As above; with {@code sliced} the place goes up a slice per tick ({@link Construction}, D-148) and the outcome is "building". */
+    static Outcome serve(ServerLevel level, List<CorridorPlan> plans, Place place, List<Double> candidates, double px, double pz, PlacedSites state, int loadedRadius, DoubleToIntFunction deck, boolean sliced) {
+        if (state.done.contains(place.id()) || BUILDING.containsKey(place.id())) return null;
+        String marker = marker(state, place.id());
+        if (marker != null) return resume(level, plans, place, state, marker, deck, sliced);
         PlacedSites.Failure earlier = state.failed.get(place.id());
         if (earlier != null && level.getGameTime() - earlier.lastTime() < WaysideShelters.RETRY_TICKS) return null;
         CorridorPlan plan = plans.stream().filter(p -> p.id().equals(place.road())).findFirst().orElse(null);
@@ -379,36 +387,23 @@ public final class RoadsidePlaces {
             if (tried++ == TRIES) break;
             DistrictCatalog.District district = DistrictCatalog.INSTANCE.find(place.variants().get(site.facing()));
             if (district == null || WaysideShelters.builtOver(level, site.origin(), district)) continue;
-            state.done.add(place.id());
-            state.where.put(place.id(), site.origin().asLong());
-            state.setDirty();
+            DistrictBuilder.Job job;
             try {
-                int levelled = levelLot(level, district, site.origin());
-                if (levelled > 0) LOGGER.info("[UC] roadside place {}: {} columns of its lot levelled to its ground", place.id(), levelled);
-                DistrictBuilder.build(level, district, site.origin());
+                job = DistrictBuilder.begin(level, district, site.origin(), false);
             } catch (IllegalStateException refused) {
                 LOGGER.info("[UC] roadside place {}: site {} refused ({})", place.id(), site.origin().toShortString(), refused.getMessage());
-                state.done.remove(place.id());
-                state.where.remove(place.id());
                 continue;
-            } catch (RuntimeException error) {
-                LOGGER.error("[UC] roadside place {}: building at {} failed", place.id(), site.origin().toShortString(), error);
-                state.done.remove(place.id());
-                state.where.remove(place.id());
-                state.fail(place.id(), level.getGameTime(), error.toString());
-                PlacedSites.Failure f = state.failed.get(place.id());
-                if (f.attempts() >= WaysideShelters.MAX_ATTEMPTS) state.done.add(place.id());
-                state.setDirty();
-                return new Outcome(place.id(), "failed", site.origin(), site.facing(), site.relief(), 0, 0, (System.nanoTime() - started) / 1_000_000L);
             }
-            state.failed.remove(place.id());
+            state.where.put(place.id(), site.origin().asLong());
+            state.done.add(place.id() + BUILDING_MARK + site.facing());
             state.setDirty();
-            int graded = skirt(level, plans, district, site.origin());
-            int[] drive = driveway(level, plan, place, site.facing(), site.origin(), deck);
-            long millis = (System.nanoTime() - started) / 1_000_000L;
-            LOGGER.info("[UC] roadside place {} built at {} facing {} (relief {}, {} columns graded round it, driveway {} blocks, steepest step {}) in {} ms",
-                place.id(), site.origin().toShortString(), site.facing(), site.relief(), graded, drive[0], drive[1], millis);
-            return new Outcome(place.id(), "built", site.origin(), site.facing(), site.relief(), drive[0], drive[1], millis);
+            Construction construction = new Construction(place, plan, plans, site.origin(), site.facing(), site.relief(), district, job, deck, started);
+            if (sliced) {
+                BUILDING.put(place.id(), construction);
+                return new Outcome(place.id(), "building", site.origin(), site.facing(), site.relief(), 0, 0, (System.nanoTime() - started) / 1_000_000L);
+            }
+            construction.step(level, state, Long.MAX_VALUE);
+            return construction.outcome();
         }
         NEXT.put(place.id(), index + 1);
         LOGGER.info("[UC] roadside place {}: no lot fits at candidate {} (s {}): {}; trying the next", place.id(), index, Math.round(candidates.get(index)), explain(ground, plan, place, candidates.get(index), deck, new Reasons(level, plans)));
@@ -442,19 +437,20 @@ public final class RoadsidePlaces {
         int ground = origin.getY() - 1, changed = 0;
         BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos();
         BlockState grass = Blocks.GRASS_BLOCK.defaultBlockState();
-        for (int x = x0 - SKIRT; x <= x1 + SKIRT; x++) for (int z = z0 - SKIRT; z <= z1 + SKIRT; z++) {
-            int dx = x < x0 ? x0 - x : x > x1 ? x - x1 : 0, dz = z < z0 ? z0 - z : z > z1 ? z - z1 : 0;
-            int d = Math.max(dx, dz);
-            if (d == 0 || d > SKIRT || level.getChunkSource().getChunkNow(x >> 4, z >> 4) == null) continue;
-            boolean road = false;
-            for (CorridorPlan plan : plans) if (plan.nearest(x + 0.5, z + 0.5) != null) { road = true; break; }
-            if (road) continue;
-            int land = RoadApproaches.top(level, x, z, ground, p);
-            if (land == Integer.MIN_VALUE) continue;
-            int target = (int) Math.round(ground + (land - ground) * (d / (SKIRT + 1.0)));
-            if (target != land && RoadApproaches.column(level, x, z, target, grass, p) > 0) changed++;
-        }
+        for (int x = x0 - SKIRT; x <= x1 + SKIRT; x++) for (int z = z0 - SKIRT; z <= z1 + SKIRT; z++) if (skirtColumn(level, plans, x, z, x0, x1, z0, z1, ground, grass, p)) changed++;
         return changed;
+    }
+
+    /** One column of {@link #skirt}: whether it changed. */
+    static boolean skirtColumn(ServerLevel level, List<CorridorPlan> plans, int x, int z, int x0, int x1, int z0, int z1, int ground, BlockState grass, BlockPos.MutableBlockPos p) {
+        int dx = x < x0 ? x0 - x : x > x1 ? x - x1 : 0, dz = z < z0 ? z0 - z : z > z1 ? z - z1 : 0;
+        int d = Math.max(dx, dz);
+        if (d == 0 || d > SKIRT || level.getChunkSource().getChunkNow(x >> 4, z >> 4) == null) return false;
+        for (CorridorPlan plan : plans) if (plan.nearest(x + 0.5, z + 0.5) != null) return false;
+        int land = RoadApproaches.top(level, x, z, ground, p);
+        if (land == Integer.MIN_VALUE) return false;
+        int target = (int) Math.round(ground + (land - ground) * (d / (SKIRT + 1.0)));
+        return target != land && RoadApproaches.column(level, x, z, target, grass, p) > 0;
     }
 
     /**
@@ -497,10 +493,173 @@ public final class RoadsidePlaces {
         return new int[]{(int) Math.ceil(length), steepest};
     }
 
+    // ------------------------------------------------------------------------------------------ building a slice at a time (D-148)
+
+    /** The longest a roadside place's construction may take in one tick. Harrow Farm, the largest, took 448 ms in a single tick before (the October 23 road check). */
+    static final long SLICE_NANOS = 15_000_000L;
+    /** Places going up now, by place id. In memory only: the world's marker ({@link #BUILDING_MARK}) lets a restart resume one. */
+    private static final Map<String, Construction> BUILDING = new LinkedHashMap<>();
+    /** The marker, in the world's roadside record, of a place under way: the place id, this, and its facing. */
+    static final String BUILDING_MARK = "#building:";
+
+    private static String marker(PlacedSites state, String place) {
+        for (String done : state.done) if (done.startsWith(place + BUILDING_MARK)) return done;
+        return null;
+    }
+
+    /** A place that was under way when the server last stopped short of finishing it: begun again on the same lot (its blocks are placed again; nothing is placed twice). */
+    private static Outcome resume(ServerLevel level, List<CorridorPlan> plans, Place place, PlacedSites state, String marker, DoubleToIntFunction deck, boolean sliced) {
+        String facing = marker.substring(marker.indexOf(BUILDING_MARK) + BUILDING_MARK.length());
+        Long where = state.where.get(place.id());
+        CorridorPlan plan = plans.stream().filter(p -> p.id().equals(place.road())).findFirst().orElse(null);
+        DistrictCatalog.District district = DistrictCatalog.INSTANCE.find(place.variants().getOrDefault(facing, ""));
+        if (where == null || plan == null || district == null) { state.done.remove(marker); state.where.remove(place.id()); state.setDirty(); return null; }
+        BlockPos origin = BlockPos.of(where);
+        if (!level.hasChunksAt(origin.offset(district.min()), origin.offset(district.max()))) return null;   // not yet: its lot is not all in the world
+        if (DistrictBuilder.isBuilt(level, district.id())) {
+            state.done.remove(marker); state.done.add(place.id()); state.setDirty();
+            return new Outcome(place.id(), "built", origin, facing, 0, 0, 0, 0);
+        }
+        DistrictBuilder.Job job;
+        try {
+            job = DistrictBuilder.begin(level, district, origin, true);
+        } catch (IllegalStateException refused) {
+            LOGGER.warn("[UC] roadside place {}: the construction cut off at {} cannot be resumed ({}); it will be looked for again", place.id(), origin.toShortString(), refused.getMessage());
+            state.done.remove(marker); state.where.remove(place.id()); state.fail(place.id(), level.getGameTime(), refused.getMessage()); state.setDirty();
+            return new Outcome(place.id(), "failed", origin, facing, 0, 0, 0, 0);
+        }
+        LOGGER.info("[UC] roadside place {}: resuming its construction at {} (cut off when the server stopped)", place.id(), origin.toShortString());
+        Construction construction = new Construction(place, plan, plans, origin, facing, 0, district, job, deck, System.nanoTime());
+        if (sliced) { BUILDING.put(place.id(), construction); return new Outcome(place.id(), "building", origin, facing, 0, 0, 0, 0); }
+        construction.step(level, state, Long.MAX_VALUE);
+        return construction.outcome();
+    }
+
+    /**
+     * A roadside place going up (D-148): its lot levelled, the place built, its people placed, the ground round it graded and the driveway laid, in that order, a slice per tick of at
+     * most {@link #SLICE_NANOS}, so the first traveller to come near feels no hitch. Nothing here loads or generates a chunk: a slice waits while the lot is not all in the world.
+     */
+    static final class Construction {
+        final Place place;
+        final CorridorPlan plan;
+        final List<CorridorPlan> plans;
+        final BlockPos origin;
+        final String facing;
+        final int relief;
+        final DistrictCatalog.District district;
+        final DistrictBuilder.Job job;
+        final DoubleToIntFunction deck;
+        private final int x0, x1, z0, z1, ground;
+        private final long begunAt;
+        private int phase, column, levelled, graded, slices;
+        private int[] drive = {0, 0};
+        private long spentNanos, worstNanos;
+        private String status = "building";
+
+        Construction(Place place, CorridorPlan plan, List<CorridorPlan> plans, BlockPos origin, String facing, int relief, DistrictCatalog.District district, DistrictBuilder.Job job,
+                     DoubleToIntFunction deck, long begunAt) {
+            this.place = place; this.plan = plan; this.plans = plans; this.origin = origin; this.facing = facing; this.relief = relief; this.district = district; this.job = job;
+            this.deck = deck; this.begunAt = begunAt;
+            x0 = origin.getX() + district.min().getX(); x1 = origin.getX() + district.max().getX();
+            z0 = origin.getZ() + district.min().getZ(); z1 = origin.getZ() + district.max().getZ();
+            ground = origin.getY() - 1;
+        }
+
+        boolean finished() { return phase >= 5; }
+        String status() { return status; }
+        int slices() { return slices; }
+        long worstMillis() { return worstNanos / 1_000_000L; }
+
+        Outcome outcome() {
+            return new Outcome(place.id(), status, origin, facing, relief, drive[0], drive[1], (System.nanoTime() - begunAt) / 1_000_000L);
+        }
+
+        /** One slice of the work, within {@code budget} nanoseconds (Long.MAX_VALUE: all of it). Returns true when the construction is over, built or failed. */
+        boolean step(ServerLevel level, PlacedSites state, long budget) {
+            if (phase >= 5) return true;
+            if (!job.loaded()) return false;   // the lot's chunks went out of the world: wait for them rather than load them
+            long t0 = System.nanoTime(), until = budget == Long.MAX_VALUE ? Long.MAX_VALUE : t0 + budget;
+            BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos();
+            BlockState grass = Blocks.GRASS_BLOCK.defaultBlockState();
+            try {
+                while (phase < 5 && System.nanoTime() < until) {
+                    switch (phase) {
+                        case 0 -> {   // the lot's natural ground levelled to its standing level
+                            int depth = z1 - z0 + 1, columns = (x1 - x0 + 1) * depth;
+                            for (int n = 0; n < 8 && column < columns; n++, column++) if (RoadApproaches.column(level, x0 + column / depth, z0 + column % depth, ground, null, p) > 0) levelled++;
+                            if (column >= columns) { phase = 1; column = 0; }
+                        }
+                        case 1 -> { if (job.step(budget == Long.MAX_VALUE ? Long.MAX_VALUE : Math.max(1, until - System.nanoTime()))) phase = 2; }
+                        case 2 -> { job.finish(); phase = 3; }
+                        case 3 -> {   // the band round the lot graded into it
+                            int depth = z1 - z0 + 1 + 2 * SKIRT, columns = (x1 - x0 + 1 + 2 * SKIRT) * depth;
+                            for (int n = 0; n < 16 && column < columns; n++, column++)
+                                if (skirtColumn(level, plans, x0 - SKIRT + column / depth, z0 - SKIRT + column % depth, x0, x1, z0, z1, ground, grass, p)) graded++;
+                            if (column >= columns) { phase = 4; column = 0; }
+                        }
+                        case 4 -> { drive = driveway(level, plan, place, facing, origin, deck); phase = 5; }
+                        default -> { }
+                    }
+                }
+            } catch (RuntimeException error) {
+                job.abort();
+                phase = 5;
+                status = "failed";
+                LOGGER.error("[UC] roadside place {}: building at {} failed", place.id(), origin.toShortString(), error);
+                state.done.removeIf(d -> d.startsWith(place.id() + BUILDING_MARK));
+                state.where.remove(place.id());
+                state.fail(place.id(), level.getGameTime(), error.toString());
+                PlacedSites.Failure f = state.failed.get(place.id());
+                if (f.attempts() >= WaysideShelters.MAX_ATTEMPTS) state.done.add(place.id());
+                state.setDirty();
+                return true;
+            } finally {
+                long took = System.nanoTime() - t0;
+                spentNanos += took;
+                worstNanos = Math.max(worstNanos, took);
+                slices++;
+            }
+            if (phase < 5) return false;
+            status = "built";
+            state.failed.remove(place.id());
+            state.done.removeIf(d -> d.startsWith(place.id() + BUILDING_MARK));
+            state.done.add(place.id());
+            state.setDirty();
+            LOGGER.info("[UC] roadside place {} built at {} facing {} (relief {}, {} columns of its lot levelled, {} graded round it, driveway {} blocks, steepest step {}) in {} slice(s) over {} ms; {} ms of work, the longest slice {} ms",
+                place.id(), origin.toShortString(), facing, relief, levelled, graded, drive[0], drive[1], slices, (System.nanoTime() - begunAt) / 1_000_000L, spentNanos / 1_000_000L, worstNanos / 1_000_000L);
+            return true;
+        }
+    }
+
+    /** Works the places going up, within one slice's budget in all. */
+    private static void construct(ServerLevel level) {
+        PlacedSites state = PlacedSites.get(level, KEY);
+        long until = System.nanoTime() + SLICE_NANOS;
+        for (var it = BUILDING.values().iterator(); it.hasNext(); ) {
+            long left = until - System.nanoTime();
+            if (left <= 0) break;
+            if (it.next().step(level, state, left)) it.remove();
+        }
+    }
+
+    /** A server that stops finishes what is going up (its lots are in the world) rather than leave it half built; what cannot be finished is resumed at the next start. */
+    @SubscribeEvent
+    public static void stopping(net.minecraftforge.event.server.ServerStoppingEvent event) {
+        if (BUILDING.isEmpty()) return;
+        ServerLevel level = event.getServer().overworld();
+        PlacedSites state = PlacedSites.get(level, KEY);
+        for (Construction c : BUILDING.values()) {
+            try { c.step(level, state, Long.MAX_VALUE); }
+            catch (RuntimeException error) { LOGGER.warn("[UC] roadside place {}: could not be finished as the server stopped ({}); it resumes at the next start", c.place.id(), error.toString()); }
+        }
+        BUILDING.clear();
+    }
+
     // ------------------------------------------------------------------------------------------ events
     @SubscribeEvent
     public static void tick(TickEvent.LevelTickEvent event) {
         if (event.phase != TickEvent.Phase.END || !(event.level instanceof ServerLevel level) || level.dimension() != Level.OVERWORLD) return;
+        if (!BUILDING.isEmpty()) construct(level);
         if (level.getGameTime() % CHECK_TICKS != 17 || level.players().isEmpty() || !enabled(level)) return;
         List<CorridorPlan> plans = CorridorRoadFeature.ready(level);   // the built plans: bridges, water and deck heights are known
         if (plans.isEmpty()) return;
@@ -511,7 +670,8 @@ public final class RoadsidePlaces {
             Map<String, List<Double>> candidates = plan(plan, places);
             for (Place place : places) {
                 for (ServerPlayer player : level.players()) {
-                    if (serve(level, plans, place, candidates.get(place.id()), player.getX(), player.getZ(), state, SEARCH + 32) != null) break;
+                    CorridorPlan road = plans.stream().filter(p -> p.id().equals(place.road())).findFirst().orElse(null);
+                    if (road != null && serve(level, plans, place, candidates.get(place.id()), player.getX(), player.getZ(), state, SEARCH + 32, deck(road), true) != null) break;
                 }
                 keepPeople(level, place, state);
             }
@@ -580,5 +740,8 @@ public final class RoadsidePlaces {
     }
 
     /** Test seam. */
-    static void resetForTest() { NEXT.clear(); }
+    static void resetForTest() { NEXT.clear(); BUILDING.clear(); }
+
+    /** Test seam: the construction of a place going up, or null. */
+    static Construction building(String place) { return BUILDING.get(place); }
 }

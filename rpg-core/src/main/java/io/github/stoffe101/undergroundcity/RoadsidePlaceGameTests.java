@@ -171,8 +171,17 @@ public final class RoadsidePlaceGameTests {
                 PlacedSites state = new PlacedSites();
                 java.util.function.DoubleToIntFunction deck = s -> y;
                 check(RoadsidePlaces.serve(level, plans, diner, List.of(100.0), ox + 600.0, oz + 600.0, state, 24, deck) == null, "nothing is decided far from a traveller");
-                RoadsidePlaces.Outcome outcome = RoadsidePlaces.serve(level, plans, diner, List.of(100.0), ox + 0.5, oz + 0.5, state, 24, deck);
-                check(outcome != null && outcome.status().equals("built"), "a traveller close by gets the diner built: " + outcome);
+                // the way a server does it (D-148): the place goes up a slice at a time; two milliseconds a slice here, so that it takes several
+                RoadsidePlaces.Outcome outcome = RoadsidePlaces.serve(level, plans, diner, List.of(100.0), ox + 0.5, oz + 0.5, state, 24, deck, true);
+                check(outcome != null && outcome.status().equals("building"), "a traveller close by gets the diner started: " + outcome);
+                check(!state.done.contains("crossroads_diner") && state.done.stream().anyMatch(d -> d.startsWith("crossroads_diner" + RoadsidePlaces.BUILDING_MARK)), "the world marks the diner as under way: " + state.done);
+                RoadsidePlaces.Construction going = RoadsidePlaces.building("crossroads_diner");
+                int guard = 0;
+                while (!going.step(level, state, 2_000_000L)) check(++guard < 20_000, "the diner never finished going up");
+                check(going.slices() > 1, "the diner went up in one slice: the work was not spread over ticks");
+                outcome = going.outcome();
+                check(outcome.status().equals("built"), "a traveller close by gets the diner built: " + outcome);
+                check(state.done.stream().noneMatch(d -> d.contains(RoadsidePlaces.BUILDING_MARK)), "the marker of a finished place stays behind: " + state.done);
                 origin = outcome.origin();
                 check(state.done.contains("crossroads_diner") && state.where.get("crossroads_diner") == origin.asLong(), "the world remembers where it stands");
                 check(origin.getY() == y + 1, "the lot stands on the platform: " + origin);
