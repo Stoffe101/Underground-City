@@ -16,8 +16,14 @@ import java.util.Set;
 public record SkillNode(String id, String career, String branch, String title, String description,
                         int cost, int minLevel, List<String> requires, double inspectionModifier,
                         List<String> licences, double exchangeDiscount, String shortTitle,
-                        int legalPayoutPercent, int undergroundPayoutPercent, int yieldPercent, int upgradeDiscountPercent) {
+                        int legalPayoutPercent, int undergroundPayoutPercent, int yieldPercent, int upgradeDiscountPercent, String effectText) {
     public static final Set<String> BRANCHES = Set.of("core", "legal", "underground", "utility", "crossover");
+    /** The Thief tree's columns (D-143): getting in, staying unseen, and turning what was taken into credits. */
+    public static final Set<String> THIEF_BRANCHES = Set.of("core", "entry", "stealth", "network");
+    /** The tree of the specialization every career can follow, with its own XP, level and points. */
+    public static final String THIEF = "thief";
+    /** Longest effect line of a specialization skill (its detail panel shows one line). */
+    public static final int MAX_EFFECT_TEXT = 72;
     /** Display order of the branches in the terminal: legal on the left, underground on the right, everything else between. */
     public static final List<String> BRANCH_ORDER = List.of("legal", "core", "utility", "crossover", "underground");
     public static final int MAX_NODES_PER_TREE = 16;
@@ -32,7 +38,19 @@ public record SkillNode(String id, String career, String branch, String title, S
         requires = List.copyOf(requires);
         licences = List.copyOf(licences);
         if (shortTitle == null || shortTitle.isBlank()) shortTitle = title; // the button falls back to an ellipsis if even this is too wide
+        if (effectText == null) effectText = "";
     }
+
+    /** A node without a written effect line (every career skill: their effects are worded from the numbers). */
+    public SkillNode(String id, String career, String branch, String title, String description, int cost, int minLevel, List<String> requires,
+                     double inspectionModifier, List<String> licences, double exchangeDiscount, String shortTitle,
+                     int legalPayoutPercent, int undergroundPayoutPercent, int yieldPercent, int upgradeDiscountPercent) {
+        this(id, career, branch, title, description, cost, minLevel, requires, inspectionModifier, licences, exchangeDiscount, shortTitle,
+            legalPayoutPercent, undergroundPayoutPercent, yieldPercent, upgradeDiscountPercent, "");
+    }
+
+    /** True for a skill of the Thief tree, which every career can follow (D-143). */
+    public boolean thief() { return THIEF.equals(career); }
 
     /** The node as it was before the percentage effects existed; keeps the older call sites and the tests short. */
     public SkillNode(String id, String career, String branch, String title, String description, int cost, int minLevel, List<String> requires,
@@ -40,8 +58,9 @@ public record SkillNode(String id, String career, String branch, String title, S
         this(id, career, branch, title, description, cost, minLevel, requires, inspectionModifier, licences, exchangeDiscount, shortTitle, 0, 0, 0, 0);
     }
 
-    /** The branch is drawn in the middle column unless it is one of the two lines. */
-    public int column() { return branch.equals("legal") ? 0 : branch.equals("underground") ? 2 : 1; }
+    /** The branch is drawn in the middle column unless it is one of the two lines (getting in and fencing, on the Thief tree). */
+    public int column() { return column(branch); }
+    public static int column(String branch) { return branch.equals("legal") || branch.equals("entry") ? 0 : branch.equals("underground") || branch.equals("network") ? 2 : 1; }
 
     /** What the node does, in the words the terminal shows under its description. Empty for a pure foundation or a pure contract gate. */
     public String effectSummary() {
@@ -53,6 +72,7 @@ public record SkillNode(String id, String career, String branch, String title, S
         if (exchangeDiscount > 0) parts.add(Math.round(exchangeDiscount * 100) + "% off exchange goods");
         if (inspectionModifier < 0) parts.add(Math.round(inspectionModifier * 100) + "% search chance");
         if (!licences.isEmpty()) parts.add("licence: " + String.join(", ", licences).replace('_', ' '));
+        if (!effectText.isEmpty()) parts.add(effectText);
         return String.join("; ", parts);
     }
 }

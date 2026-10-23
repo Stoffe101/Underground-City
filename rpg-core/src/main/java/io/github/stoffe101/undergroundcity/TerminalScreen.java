@@ -26,7 +26,7 @@ import java.util.Map;
 @OnlyIn(Dist.CLIENT)
 public final class TerminalScreen extends UcScreen {
     public enum Page {
-        CONTRACTS("Work", UcUi.Icon.CRATE), SKILLS("Skills", UcUi.Icon.POINT), IMPORTS("Trade", UcUi.Icon.SHOP),
+        CONTRACTS("Work", UcUi.Icon.CRATE), SKILLS("Skills", UcUi.Icon.POINT), THIEF("Thief", UcUi.Icon.KEY), IMPORTS("Trade", UcUi.Icon.SHOP),
         BLACK_MARKET("Law", UcUi.Icon.SCALES), GUIDE("Guide", UcUi.Icon.BOOK);
         final String label;
         final UcUi.Icon icon;
@@ -72,7 +72,7 @@ public final class TerminalScreen extends UcScreen {
         if (accepted != null) selected = Math.max(0, indexOf(list, accepted.id()));
         else if (carry != null && carry.jobId() != null) selected = Math.max(0, indexOf(list, carry.jobId()));
         if (carry != null && carry.skillId() != null) {
-            for (int i = 0; i < data.skills().size(); i++) if (data.skills().get(i).id().equals(carry.skillId())) selectedSkill = i;
+            for (int i = 0; i < tree().size(); i++) if (tree().get(i).id().equals(carry.skillId())) selectedSkill = i;
         }
     }
 
@@ -94,8 +94,8 @@ public final class TerminalScreen extends UcScreen {
     }
     /** The middle of a skill card, or null when the card is not inside the scrolled viewport. */
     int[] skillCentre(String id) {
-        for (int i = 0; i < data.skills().size() && i < nodeX.length; i++) {
-            if (!data.skills().get(i).id().equals(id)) continue;
+        for (int i = 0; i < tree().size() && i < nodeX.length; i++) {
+            if (!tree().get(i).id().equals(id)) continue;
             int y = nodeY[i] - skillScroll + nodeH / 2;
             return y < treeTop || y >= treeBottom ? null : new int[]{nodeX[i] + nodeW / 2, y};
         }
@@ -103,7 +103,7 @@ public final class TerminalScreen extends UcScreen {
     }
     Carry carry() {
         String job = row() == null ? null : row().id();
-        String skill = data.skills().isEmpty() ? null : data.skills().get(Math.min(selectedSkill, data.skills().size() - 1)).id();
+        String skill = tree().isEmpty() ? null : tree().get(Math.min(selectedSkill, tree().size() - 1)).id();
         return new Carry(current, undergroundView, job, skill);
     }
 
@@ -118,6 +118,17 @@ public final class TerminalScreen extends UcScreen {
     @Override protected void renderHeaderRight(GuiGraphics g, int right) {
         boolean registered = !data.city().equals("UNREGISTERED");
         int x = right;
+        if (registered && thiefView()) {
+            TerminalData.Thief thief = data.thief();
+            String level = "THIEF L" + thief.level();
+            int w = UcUi.displayWidth(font, level) + 22;
+            x -= w;
+            UcUi.chip(g, font, level, x, py + 9, UcUi.AMBER, UcUi.Icon.KEY);
+            String xp = thief.level() >= ProgressionRules.THIEF_MAX_LEVEL ? thief.xp() + " XP (top level)" : thief.xp() + " / " + thief.nextXp() + " XP";
+            x -= 8 + font.width(xp);
+            UcUi.text(g, font, xp, x, py + 12, UcUi.SOFT);
+            return;
+        }
         if (registered) {
             String career = capitalize(data.career()).toUpperCase(Locale.ROOT);
             int w = UcUi.displayWidth(font, career) + 22;
@@ -141,7 +152,27 @@ public final class TerminalScreen extends UcScreen {
         boolean registered = !data.city().equals("UNREGISTERED");
         int x = px + PAD;
         int leftEnd = x;   // where the left-hand group ends: the place on the right gives way to it (a 1280x720 journey frame showed "1 skill poin" run into "Now in Ironhaven")
-        if (registered) {
+        if (registered && thiefView()) {
+            // the Thief page's footer is the Thief track's: its level, the way to the next one and the points to spend
+            TerminalData.Thief thief = data.thief();
+            UcUi.icon(g, UcUi.Icon.KEY, x, y + 4, UcUi.AMBER);
+            String level = "THIEF L" + thief.level();
+            UcUi.display(g, font, level, x + 19, ty, UcUi.TEXT);
+            int bx = x + 19 + UcUi.displayWidth(font, level) + 8;
+            int from = ProgressionRules.thiefXpAtLevel(thief.level());
+            float share = thief.level() >= ProgressionRules.THIEF_MAX_LEVEL ? 1f : (thief.xp() - from) / (float) Math.max(1, thief.nextXp() - from);
+            UcUi.bar(g, bx, ty, 64, 7, Math.max(0f, Math.min(1f, share)), UcUi.AMBER);
+            String xp = thief.xp() + " XP";
+            UcUi.text(g, font, xp, bx + 70, ty, UcUi.DIM);
+            leftEnd = bx + 70 + font.width(xp);
+            if (thief.points() > 0) {
+                int sx = leftEnd + 10;
+                String points = thief.points() + (thief.points() == 1 ? " Thief point" : " Thief points");
+                UcUi.icon(g, UcUi.Icon.POINT, sx, y + 4, UcUi.AMBER);
+                UcUi.text(g, font, points, sx + 18, ty, UcUi.AMBER);
+                leftEnd = sx + 18 + font.width(points);
+            }
+        } else if (registered) {
             UcUi.icon(g, UcUi.careerIcon(data.career()), x, y + 4, UcUi.careerColor(data.career()));
             String level = capitalize(data.career()).toUpperCase(Locale.ROOT) + " L" + data.level();
             UcUi.display(g, font, level, x + 19, ty, UcUi.TEXT);
@@ -204,7 +235,7 @@ public final class TerminalScreen extends UcScreen {
         cancel = add(new UcButton(0, 0, 70, 20, "Cancel", b -> send(2)).kind(UcButton.Kind.DANGER));
         register = add(new UcButton(cx, cy + ch - 24, cw, 20, "Register: choose your city and trade", b -> TerminalNetwork.requestRegistrationScreen()).kind(UcButton.Kind.PRIMARY).icon(UcUi.Icon.CITY));
         unlock = add(new UcButton(0, 0, 120, 20, "Unlock", b -> {
-            if (terminalPosition != null && selectedSkill < data.skills().size()) { unlock.active = false; TerminalNetwork.requestSkill(terminalPosition, data.skills().get(selectedSkill).id()); }
+            if (terminalPosition != null && selectedSkill < tree().size()) { unlock.active = false; TerminalNetwork.requestSkill(terminalPosition, tree().get(selectedSkill).id()); }
         }).kind(UcButton.Kind.PRIMARY));
         showMe = add(new UcButton(0, 0, 100, 18, "Show me", b -> { Page page = pageOf(nextStep() == null ? "" : nextStep().page()); if (page != null) showPage(page); }).icon(UcUi.Icon.ARROW_RIGHT));
         for (int i = 0; i < MAX_OFFERS; i++) {
@@ -217,6 +248,10 @@ public final class TerminalScreen extends UcScreen {
     }
 
     // ------------------------------------------------------------------------------------------------ state
+    /** The Skills page draws the career's tree; the Thief page (D-143) the Thief tree every career can follow, with its own points. */
+    private boolean skillsPage() { return current == Page.SKILLS || current == Page.THIEF; }
+    private boolean thiefView() { return current == Page.THIEF; }
+    private List<TerminalData.SkillRow> tree() { return thiefView() ? data.thief().skills() : data.skills(); }
     private List<TerminalData.Row> jobs() { return data.jobs().stream().filter(job -> job.extra().underground() == undergroundView).toList(); }
     private TerminalData.Row row() { List<TerminalData.Row> list = jobs(); return list.isEmpty() ? null : list.get(Math.max(0, Math.min(selected, list.size() - 1))); }
     private boolean exchangeOpen() { return (!data.region().isEmpty() || data.shopOnly()) && !data.offers().isEmpty(); }
@@ -232,7 +267,12 @@ public final class TerminalScreen extends UcScreen {
         for (UcButton button : buyLot) button.active = false;
         TerminalNetwork.requestRegionalBuy(terminalPosition, data.offers().get(index + offerScroll).id(), quantity);
     }
-    public void showPage(Page page) { current = page; refresh(); }
+    public void showPage(Page page) {
+        boolean treeChanged = (page == Page.THIEF) != (current == Page.THIEF);
+        current = page;
+        if (treeChanged) { selectedSkill = 0; skillScroll = 0; layoutTree(); }
+        refresh();
+    }
     public Page currentPage() { return current; }
     /** QA hook: choose the legal or the underground contract list. */
     public void showView(boolean underground) { setView(underground); }
@@ -240,7 +280,7 @@ public final class TerminalScreen extends UcScreen {
     public void selectJob(int index) { selected = index; ensureVisible(); refresh(); }
     /** QA hook: pick a skill node by id. */
     public void selectSkill(String id) {
-        for (int i = 0; i < data.skills().size(); i++) if (data.skills().get(i).id().equals(id)) selectedSkill = i;
+        for (int i = 0; i < tree().size(); i++) if (tree().get(i).id().equals(id)) selectedSkill = i;
         revealSelectedSkill();
         refresh();
     }
@@ -290,6 +330,7 @@ public final class TerminalScreen extends UcScreen {
             rail[i].active = true;
             if (page == Page.CONTRACTS) rail[i].badge(registered ? (int) data.jobs().stream().filter(job -> job.available() > 0).count() : -1);
             if (page == Page.SKILLS) rail[i].badge(registered && data.skillPoints() > 0 ? data.skillPoints() : -1);
+            if (page == Page.THIEF) rail[i].badge(registered && data.thief().points() > 0 ? data.thief().points() : -1);
             if (page == Page.GUIDE) rail[i].badge(registered ? (int) data.journey().stream().filter(step -> !step.done()).count() : -1);
         }
         boolean contracts = current == Page.CONTRACTS, trade = current == Page.IMPORTS;
@@ -299,7 +340,7 @@ public final class TerminalScreen extends UcScreen {
         shop.tooltip(data.economy() ? "Buy and sell common goods using credits." : "Q Shop 1.8.4 and citizenship are required.");
         layoutOffers();
         // work page
-        register.visible = !registered && (contracts || current == Page.SKILLS);
+        register.visible = !registered && (contracts || skillsPage());
         legalChip.visible = undergroundChip.visible = contracts && registered;
         legalChip.label("Legal " + count(false)).selected(!undergroundView);
         undergroundChip.label("Underground " + count(true)).selected(undergroundView);
@@ -322,12 +363,12 @@ public final class TerminalScreen extends UcScreen {
         // guide page
         showMe.visible = current == Page.GUIDE && nextStep() != null && !nextStep().page().isEmpty();
         // skills page
-        boolean skills = current == Page.SKILLS && !data.skills().isEmpty();
+        boolean skills = skillsPage() && !tree().isEmpty();
         unlock.visible = skills;
         if (skills) {
-            selectedSkill = Math.max(0, Math.min(selectedSkill, data.skills().size() - 1));
-            TerminalData.SkillRow row = data.skills().get(selectedSkill);
-            unlock.label(row.state() == 2 ? "Unlocked" : "Unlock: " + row.cost() + (row.cost() == 1 ? " point" : " points")).icon(row.state() == 2 ? UcUi.Icon.CHECK : UcUi.Icon.POINT);
+            selectedSkill = Math.max(0, Math.min(selectedSkill, tree().size() - 1));
+            TerminalData.SkillRow row = tree().get(selectedSkill);
+            unlock.label(row.state() == 2 ? "Unlocked" : "Unlock: " + row.cost() + (thiefView() ? " Thief" : "") + (row.cost() == 1 ? " point" : " points")).icon(row.state() == 2 ? UcUi.Icon.CHECK : UcUi.Icon.POINT);
             unlock.active = terminalPosition != null && row.state() == 1;
             unlock.tooltip(row.state() == 2 ? "" : row.reason());
             unlock.setX(cx + cw - 8 - 130); unlock.setY(cy + ch - 28); unlock.setWidth(130);
@@ -432,10 +473,10 @@ public final class TerminalScreen extends UcScreen {
 
     // ------------------------------------------------------------------------------------------------ skill tree layout
     private void layoutTree() {
-        int n = data.skills().size();
+        int n = tree().size();
         nodeX = new int[n]; nodeY = new int[n]; nodeTier = new int[n]; nodeCol = new int[n];
         Map<String, Integer> index = new HashMap<>();
-        for (int i = 0; i < n; i++) index.put(data.skills().get(i).id(), i);
+        for (int i = 0; i < n; i++) index.put(tree().get(i).id(), i);
         int gap = 6;
         for (int i = 0; i < n; i++) nodeTier[i] = depth(i, index, 0);
         // A node sits one row below its lowest parent and never on the row of another node in its own column, so two skills that follow the same
@@ -447,8 +488,8 @@ public final class TerminalScreen extends UcScreen {
         java.util.Arrays.sort(order, java.util.Comparator.<Integer>comparingInt(i -> nodeTier[i]).thenComparingInt(i -> i));
         int maxRow = 0;
         for (int i : order) {
-            TerminalData.SkillRow skill = data.skills().get(i);
-            int col = skill.branch().equals("legal") ? 0 : skill.branch().equals("underground") ? 2 : 1;
+            TerminalData.SkillRow skill = tree().get(i);
+            int col = SkillNode.column(skill.branch());
             nodeCol[i] = col;
             int r = 0;
             for (String id : skill.requires()) { Integer parent = index.get(id); if (parent != null) r = Math.max(r, row[parent] + 1); }
@@ -497,21 +538,30 @@ public final class TerminalScreen extends UcScreen {
 
     private void scrollSkills(int pixels) { skillScroll = snapScroll(skillScroll + pixels); }
 
-    private boolean inTree(double mouseX, double mouseY) { return current == Page.SKILLS && mouseX >= cx && mouseX < cx + cw && mouseY >= treeTop && mouseY < treeBottom; }
+    private boolean inTree(double mouseX, double mouseY) { return skillsPage() && mouseX >= cx && mouseX < cx + cw && mouseY >= treeTop && mouseY < treeBottom; }
 
     private int depth(int i, Map<String, Integer> index, int guard) {
         if (guard > 8) return 0;
         int best = 0;
-        for (String id : data.skills().get(i).requires()) {
+        for (String id : tree().get(i).requires()) {
             Integer parent = index.get(id);
             if (parent != null) best = Math.max(best, 1 + depth(parent, index, guard + 1));
         }
         return best;
     }
 
+    /** The Thief tree's stealth column: a cool violet, apart from the career colours. */
+    private static final int STEALTH = 0xff9d8cf0;
+
     private int branchColor(TerminalData.SkillRow row) {
-        return row.branch().equals("underground") ? UcUi.UNDERGROUND : row.branch().equals("legal") ? UcUi.LEGAL
-            : row.branch().equals("crossover") ? UcUi.mix(UcUi.LEGAL, UcUi.UNDERGROUND, 0.5f) : UcUi.SOFT;
+        return switch (row.branch()) {
+            case "underground", "network" -> UcUi.UNDERGROUND;
+            case "legal" -> UcUi.LEGAL;
+            case "crossover" -> UcUi.mix(UcUi.LEGAL, UcUi.UNDERGROUND, 0.5f);
+            case "entry" -> UcUi.AMBER;
+            case "stealth" -> STEALTH;
+            default -> UcUi.SOFT;
+        };
     }
 
     private int skillAt(double mouseX, double mouseY) {
@@ -558,13 +608,13 @@ public final class TerminalScreen extends UcScreen {
     @Override public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
         if (current == Page.CONTRACTS) { jobScroll = Math.max(0, Math.min(jobScroll - (int) Math.signum(delta), Math.max(0, jobs().size() - visibleRows()))); return true; }
         if (current == Page.IMPORTS) { offerScroll = Math.max(0, offerScroll - (int) Math.signum(delta)); layoutOffers(); return true; }
-        if (current == Page.SKILLS && skillMaxScroll > 0) { scrollSkills(-(int) Math.signum(delta) * skillStep); return true; }
+        if (skillsPage() && skillMaxScroll > 0) { scrollSkills(-(int) Math.signum(delta) * skillStep); return true; }
         return super.mouseScrolled(mouseX, mouseY, delta);
     }
 
     @Override public boolean keyPressed(int key, int scan, int modifiers) {
         if (key >= 49 && key <= 53) { showPage(Page.values()[key - 49]); return true; }
-        if (current == Page.SKILLS && (key == 264 || key == 265)) { scrollSkills((key == 264 ? 1 : -1) * skillStep); return true; }
+        if (skillsPage() && (key == 264 || key == 265)) { scrollSkills((key == 264 ? 1 : -1) * skillStep); return true; }
         if (current == Page.CONTRACTS && (key == 264 || key == 265)) {
             int size = jobs().size();
             if (size > 0) { selected = Math.max(0, Math.min(size - 1, selected + (key == 264 ? 1 : -1))); ensureVisible(); refresh(); }
@@ -579,7 +629,7 @@ public final class TerminalScreen extends UcScreen {
         UcUi.well(g, px + PAD - 2, cy - 2, railW + 4, ch + 4);
         switch (current) {
             case CONTRACTS -> renderWork(g, mouseX, mouseY);
-            case SKILLS -> renderSkills(g, mouseX, mouseY);
+            case SKILLS, THIEF -> renderSkills(g, mouseX, mouseY);
             case IMPORTS -> renderTrade(g, mouseX, mouseY);
             case BLACK_MARKET -> renderLaw(g);
             case GUIDE -> renderGuide(g);
@@ -702,15 +752,16 @@ public final class TerminalScreen extends UcScreen {
 
     // ---- SKILLS
     private void renderSkills(GuiGraphics g, int mouseX, int mouseY) {
-        if (data.skills().isEmpty()) {
-            emptyState(g, UcUi.Icon.POINT, "No skill tree yet", "Register to open your trade's skill tree: a legal branch, an underground branch and the foundations between them. None locks out another.");
+        if (tree().isEmpty()) {
+            if (thiefView()) emptyState(g, UcUi.Icon.KEY, "No Thief tree yet", "Register to open the Thief tree. Any trade can follow it: Thief XP comes from getting into places, cracking safes and selling what you took.");
+            else emptyState(g, UcUi.Icon.POINT, "No skill tree yet", "Register to open your trade's skill tree: a legal branch, an underground branch and the foundations between them. None locks out another.");
             return;
         }
-        // column headings
+        // column headings: the career's legal and underground lines, or the Thief's getting in, staying unseen and selling on
         int gap = 6, colW = nodeW;
-        String[] titles = {"Legal", "Trade", "Underground"};
-        int[] colors = {UcUi.LEGAL, UcUi.SOFT, UcUi.UNDERGROUND};
-        UcUi.Icon[] icons = {UcUi.Icon.LEGAL, null, UcUi.Icon.UNDERGROUND};
+        String[] titles = thiefView() ? new String[] {"Locks", "Stealth", "Fencing"} : new String[] {"Legal", "Trade", "Underground"};
+        int[] colors = thiefView() ? new int[] {UcUi.AMBER, STEALTH, UcUi.UNDERGROUND} : new int[] {UcUi.LEGAL, UcUi.SOFT, UcUi.UNDERGROUND};
+        UcUi.Icon[] icons = thiefView() ? new UcUi.Icon[] {UcUi.Icon.LOCK, UcUi.Icon.TARGET, UcUi.Icon.TAG} : new UcUi.Icon[] {UcUi.Icon.LEGAL, null, UcUi.Icon.UNDERGROUND};
         for (int c = 0; c < 3; c++) {
             int x = cx + c * (colW + gap);
             g.fill(x, cy + 12, x + colW, cy + 13, UcUi.shade(colors[c], 0.5f));
@@ -721,16 +772,16 @@ public final class TerminalScreen extends UcScreen {
         g.enableScissor(cx - 2, treeTop - 1, cx + cw + 2, treeBottom + 1);
         // links first, so nodes sit on top: thin and muted, brighter when the parent is owned, amber on the way to the selected skill
         Map<String, Integer> index = new HashMap<>();
-        for (int i = 0; i < data.skills().size(); i++) index.put(data.skills().get(i).id(), i);
+        for (int i = 0; i < tree().size(); i++) index.put(tree().get(i).id(), i);
         for (int pass = 0; pass < 2; pass++) {
-            for (int i = 0; i < data.skills().size(); i++) {
+            for (int i = 0; i < tree().size(); i++) {
                 boolean selectedLink = i == selectedSkill;
                 if ((pass == 1) != selectedLink) continue;
-                for (String parent : data.skills().get(i).requires()) {
+                for (String parent : tree().get(i).requires()) {
                     Integer p = index.get(parent);
                     if (p == null) continue;
-                    boolean lit = data.skills().get(p).state() == 2;
-                    int color = selectedLink ? UcUi.AMBER : lit ? UcUi.shade(branchColor(data.skills().get(i)), 0.7f) : 0xff2c4358;
+                    boolean lit = tree().get(p).state() == 2;
+                    int color = selectedLink ? UcUi.AMBER : lit ? UcUi.shade(branchColor(tree().get(i)), 0.7f) : 0xff2c4358;
                     int t = selectedLink ? 2 : 1;
                     int x0 = nodeX[p] + nodeW / 2, y0 = nodeY[p] - skillScroll + nodeH, x1 = nodeX[i] + nodeW / 2, y1 = nodeY[i] - skillScroll;
                     int mid = y1 - 5;
@@ -741,7 +792,7 @@ public final class TerminalScreen extends UcScreen {
             }
         }
         int hover = skillAt(mouseX, mouseY);
-        for (int i = 0; i < data.skills().size(); i++) {
+        for (int i = 0; i < tree().size(); i++) {
             int top = nodeY[i] - skillScroll;
             if (top + nodeH < treeTop || top > treeBottom) continue;   // not in view
             renderNode(g, i, i == selectedSkill, i == hover);
@@ -762,7 +813,7 @@ public final class TerminalScreen extends UcScreen {
     }
 
     private void renderNode(GuiGraphics g, int i, boolean sel, boolean over) {
-        TerminalData.SkillRow row = data.skills().get(i);
+        TerminalData.SkillRow row = tree().get(i);
         int x = nodeX[i], y = nodeY[i] - skillScroll, w = nodeW, h = nodeH;
         int color = branchColor(row);
         int fill = row.state() == 2 ? UcUi.mix(0xff0d1620, color, 0.26f) : row.state() == 1 ? 0xff182b3b : 0xff111a24;
@@ -771,8 +822,11 @@ public final class TerminalScreen extends UcScreen {
         g.fill(x, y, x + w, y + h, border);
         g.fill(x + 1, y + 1, x + w - 1, y + h - 1, fill);
         g.fill(x + 1, y + 1, x + 25, y + h - 1, 0xff0a121a);
-        UcUi.Icon icon = row.branch().equals("underground") ? UcUi.Icon.UNDERGROUND : row.branch().equals("legal") ? UcUi.Icon.LEGAL
-            : row.branch().equals("crossover") ? UcUi.Icon.SCALES : UcUi.careerIcon(data.career());
+        UcUi.Icon icon = switch (row.branch()) {
+            case "underground" -> UcUi.Icon.UNDERGROUND; case "legal" -> UcUi.Icon.LEGAL; case "crossover" -> UcUi.Icon.SCALES;
+            case "entry" -> UcUi.Icon.LOCK; case "stealth" -> UcUi.Icon.TARGET; case "network" -> UcUi.Icon.TAG;
+            default -> thiefView() ? UcUi.Icon.KEY : UcUi.careerIcon(data.career());
+        };
         UcUi.icon(g, icon, x + 5, y + 7, row.state() == 0 ? UcUi.FAINT : color);
         // the full name on up to two lines, then the state: never a truncated skill name
         List<String> lines = UcUi.wrapLines(font, row.title(), w - 32);
@@ -786,12 +840,12 @@ public final class TerminalScreen extends UcScreen {
     }
 
     private void renderSkillDetail(GuiGraphics g) {
-        TerminalData.SkillRow row = data.skills().get(Math.min(selectedSkill, data.skills().size() - 1));
+        TerminalData.SkillRow row = tree().get(Math.min(selectedSkill, tree().size() - 1));
         int y = cy + ch - 64, color = branchColor(row);
         UcUi.well(g, cx, y, cw, 64);
         g.fill(cx + 1, y + 1, cx + 4, y + 63, color);
         UcUi.display(g, font, UcUi.fit(font, row.title(), cw - 160), cx + 10, y + 6, color);
-        String meta = row.state() == 2 ? "Unlocked" : row.cost() + (row.cost() == 1 ? " point" : " points") + "  |  level " + row.minLevel();
+        String meta = row.state() == 2 ? "Unlocked" : row.cost() + (thiefView() ? " Thief" : "") + (row.cost() == 1 ? " point" : " points") + "  |  " + (thiefView() ? "Thief level " : "level ") + row.minLevel();
         UcUi.text(g, font, meta, cx + 10, y + 17, row.state() == 2 ? UcUi.OK : UcUi.AMBER);
         boolean hasEffects = !row.effects().isEmpty();
         UcUi.wrapped(g, font, row.description(), cx + 10, y + 29, cw - 156, UcUi.SOFT, hasEffects ? 2 : 3);

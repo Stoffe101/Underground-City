@@ -208,6 +208,7 @@ public final class UndergroundCity {
         event.addListener(BuyerCatalog.INSTANCE);
         event.addListener(CheckpointCatalog.INSTANCE);
         event.addListener(DistrictCatalog.INSTANCE);
+        event.addListener(SkillCatalog.Specializations.INSTANCE);
         event.addListener(StarterKits.INSTANCE);
         event.addListener(LockProfiles.INSTANCE);
         event.addListener(CityBuildings.INSTANCE);

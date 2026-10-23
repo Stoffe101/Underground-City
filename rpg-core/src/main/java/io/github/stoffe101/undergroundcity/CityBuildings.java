@@ -54,10 +54,28 @@ public final class CityBuildings extends SimpleJsonResourceReloadListener {
         }
     }
 
-    /** A class of building: how its doors are locked, what its stash holds and how it answers a noticed break-in ({@code response} is null for a building with no alarm of its own). */
-    public record SecurityClass(String id, String lockProfile, boolean lockedExterior, String stashPolicy, double stashChance, String label, Response response) {
+    /**
+     * A class of building: how its doors are locked, what its stash holds and how it answers a noticed break-in ({@code response} is null for a building with no alarm of its own). Its
+     * <b>tier</b> (D-144: 1 shabby to 6 exceptional, 0 not a target) says how well off it is, and so how hard it is and how much is worth taking; {@code safeProfile} is the lock of its safe.
+     */
+    public record SecurityClass(String id, String lockProfile, boolean lockedExterior, String stashPolicy, double stashChance, String label, Response response, int tier, String safeProfile) {
+        public SecurityClass {
+            if (tier < 0 || tier > 6) throw new IllegalArgumentException("tier of " + id + " must be 0 to 6");
+            if (safeProfile == null || safeProfile.isEmpty()) safeProfile = defaultSafe(tier);
+        }
+        public SecurityClass(String id, String lockProfile, boolean lockedExterior, String stashPolicy, double stashChance, String label, Response response) {
+            this(id, lockProfile, lockedExterior, stashPolicy, stashChance, label, response, lockedExterior ? defaultTier(lockProfile) : 0, "");
+        }
         public SecurityClass(String id, String lockProfile, boolean lockedExterior, String stashPolicy, double stashChance, String label) { this(id, lockProfile, lockedExterior, stashPolicy, stashChance, label, null); }
     }
+
+    /** The tier a class has when its data does not say: read from its lock. */
+    static int defaultTier(String lockProfile) {
+        return switch (lockProfile == null ? "" : lockProfile) { case "latch" -> 1; case "deadbolt" -> 2; case "commercial" -> 3; case "secured" -> 4; case "high_security" -> 5; default -> 2; };
+    }
+
+    /** The safe of a tier: a plain household safe up to tier 3, a wall safe (a safecracker's) at 4 and 5, a vault safe at 6. */
+    static String defaultSafe(int tier) { return tier >= 6 ? "vault_safe" : tier >= 4 ? "wall_safe" : "safe"; }
 
     /** One rule of the heuristic: a city (or "*"), a building type prefix (or "") and a floor range choose a class; the first rule that fits wins. */
     public record Rule(String city, String typePrefix, int floorsMin, int floorsMax, String securityClass, int priority) {
@@ -97,9 +115,11 @@ public final class CityBuildings extends SimpleJsonResourceReloadListener {
             if (!json.has("schema_version") || json.get("schema_version").getAsInt() != 1) throw new IllegalArgumentException("Unsupported building-security schema: " + key);
             if (json.has("classes")) for (var entry : json.getAsJsonObject("classes").entrySet()) {
                 JsonObject c = entry.getValue().getAsJsonObject();
-                nextClasses.put(entry.getKey(), new SecurityClass(entry.getKey(), c.has("lock_profile") ? c.get("lock_profile").getAsString() : "deadbolt",
-                    c.has("locked_exterior") && c.get("locked_exterior").getAsBoolean(), c.has("stash_policy") ? c.get("stash_policy").getAsString() : "",
-                    c.has("stash_chance") ? c.get("stash_chance").getAsDouble() : 0, c.has("label") ? c.get("label").getAsString() : entry.getKey(), response(c)));
+                String lock = c.has("lock_profile") ? c.get("lock_profile").getAsString() : "deadbolt";
+                boolean locked = c.has("locked_exterior") && c.get("locked_exterior").getAsBoolean();
+                nextClasses.put(entry.getKey(), new SecurityClass(entry.getKey(), lock, locked, c.has("stash_policy") ? c.get("stash_policy").getAsString() : "",
+                    c.has("stash_chance") ? c.get("stash_chance").getAsDouble() : 0, c.has("label") ? c.get("label").getAsString() : entry.getKey(), response(c),
+                    c.has("tier") ? c.get("tier").getAsInt() : locked ? defaultTier(lock) : 0, c.has("safe_profile") ? c.get("safe_profile").getAsString() : ""));
             }
             if (json.has("rules")) for (var entry : json.getAsJsonArray("rules")) {
                 JsonObject r = entry.getAsJsonObject();

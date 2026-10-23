@@ -22,8 +22,14 @@ public final class SkillService {
 
     public static int pointsAvailable(CitizenState.Citizen citizen) { return pointsEarned(citizen) - pointsSpent(citizen); }
 
+    /** Thief points (D-143): earned by Thief levels, spent only on the Thief tree, never taken from the career's points. */
+    public static int thiefPointsEarned(CitizenState.Citizen citizen) { return SkillRules.thiefPointsEarned(citizen.thiefLevel()); }
+    public static int thiefPointsSpent(CitizenState.Citizen citizen) { return SkillRules.pointsSpent(SkillCatalog.INSTANCE.tree(SkillNode.THIEF), citizen.skills()); }
+    public static int thiefPointsAvailable(CitizenState.Citizen citizen) { return thiefPointsEarned(citizen) - thiefPointsSpent(citizen); }
+
     /** Null when the node may be unlocked now, otherwise why not. */
     public static String blocker(CitizenState.Citizen citizen, SkillNode node) {
+        if (node.thief()) return SkillRules.blocker(node, SkillCatalog.INSTANCE.index(), citizen.thiefLevel(), citizen.skills(), thiefPointsAvailable(citizen));
         if (!node.career().equals(citizen.career)) return "Belongs to another profession";
         return SkillRules.blocker(node, SkillCatalog.INSTANCE.index(), citizen.careerLevel(), citizen.skills(), pointsAvailable(citizen));
     }
@@ -97,7 +103,9 @@ public final class SkillService {
         if (blocker != null) throw new IllegalStateException(blocker);
         state.unlockSkill(player.getUUID(), node.id());
         player.server.overworld().getDataStorage().save();
-        player.sendSystemMessage(Component.literal("Learned " + node.title() + ". " + pointsAvailable(citizen) + " skill points left."));
-        Notice.send(player, Notice.Kind.SKILL, "Skill learned", node.title() + ". " + pointsAvailable(citizen) + (pointsAvailable(citizen) == 1 ? " point left." : " points left."));
+        int left = node.thief() ? thiefPointsAvailable(citizen) : pointsAvailable(citizen);
+        String kind = node.thief() ? " Thief point" : " skill point";
+        player.sendSystemMessage(Component.literal("Learned " + node.title() + ". " + left + kind + (left == 1 ? "" : "s") + " left."));
+        Notice.send(player, Notice.Kind.SKILL, node.thief() ? "Thief skill learned" : "Skill learned", node.title() + ". " + left + (left == 1 ? " point left." : " points left."));
     }
 }
