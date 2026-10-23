@@ -421,7 +421,8 @@ public final class VisualCaptureHarness {
         if(cases.get(current).challenge!=null && cases.get(current).challenge.startsWith("notices-")) {
             var g=event.getGuiGraphics();
             int y=4;
-            // in the game they sit in the screen's corner; on a very wide screen that is far outside the terminal, so for review they sit beside the panel
+            // a review of the plates themselves, not of where the game puts them: in the game they sit in the screen's corner, and while that corner would cover an open screen's panel
+            // (this terminal at 1280x720 or 1920x1080) they wait until it closes (HudLayout.toastsCoverPanel); here they are drawn beside the panel, or over its edge where there is no room
             int x=Math.min(g.guiWidth()-190-2,event.getScreen() instanceof UcScreen ui?ui.panelRight()+6:g.guiWidth());
             for(UcToast toast:noticeCaptures) {
                 g.pose().pushPose();

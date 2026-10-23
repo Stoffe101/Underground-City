@@ -207,7 +207,7 @@ public final class RegistrationScreen extends UcScreen {
 
     private void renderCities(GuiGraphics g, int mouseX, int mouseY) {
         if (introHeight() > 0) {
-            UcUi.wrapped(g, font, "Three rival cities, four trades, two ways to earn: legal work and the underground. Choose where your story starts. Nothing here locks you in.",
+            UcUi.wrapped(g, font, "Three rival cities, five trades, two ways to earn: legal work and the underground. Choose where your story starts. Nothing here locks you in.",
                 bodyX(), bodyY() + 2, bodyW(), UcUi.SOFT, 3);
         }
         int hover = hovered(mouseX, mouseY);

@@ -130,7 +130,14 @@ public final class FenceScreen extends UcScreen {
             : "Not dealing at this hour. Come back after dark.";
         UcUi.wrapped(g, font, terms, x, y, w, quote.about() ? UcUi.SOFT : UcUi.WARN, 2);
         if (quote.about() && !quote.rows().isEmpty() && quote.total() > quote.budget()) {
-            UcUi.wrapped(g, font, "Short of cash tonight: " + quote.budget() + " of the " + quote.total() + " credits it would take. A sale is cut to what it can pay; the rest waits for its budget to refill.", x, y + 20, w, UcUi.WARN, 1);
+            // one line (the list starts under it): the longest wording that fits, so a wide screen is not left with "the rest waits..." (a 1920x1080 capture)
+            String[] short_ = {
+                "Short of cash tonight: " + quote.budget() + " of the " + quote.total() + " credits it would take. A sale is cut to what it can pay; the rest waits for its budget to refill.",
+                "Short of cash tonight: " + quote.budget() + " of the " + quote.total() + " credits it would take. A sale is cut to what it can pay now.",
+                "Short of cash: " + quote.budget() + " of " + quote.total() + " cr. Sales are cut to what it can pay."};
+            String line = short_[short_.length - 1];
+            for (String option : short_) if (font.width(option) <= w) { line = option; break; }
+            UcUi.wrapped(g, font, line, x, y + 20, w, UcUi.WARN, 1);
         } else if (!quote.blurb().isEmpty()) UcUi.wrapped(g, font, quote.blurb(), x, y + 20, w, UcUi.DIM, 1);
         int top = listTop();
         if (quote.rows().isEmpty()) {
