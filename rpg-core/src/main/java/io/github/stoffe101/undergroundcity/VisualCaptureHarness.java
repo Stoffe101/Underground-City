@@ -77,8 +77,9 @@ public final class VisualCaptureHarness {
             default -> List.of(new FenceService.Row("underground_city:jewellery_box","valewood",2,40),new FenceService.Row("minecraft:gold_ingot","valewood",5,17),
                 new FenceService.Row("underground_city:old_laptop","ironhaven",1,36),new FenceService.Row("minecraft:clock","blackwater",1,67),new FenceService.Row("underground_city:pocket_watch","valewood",3,27));
         };
-        int budget=pose.equals("fence-partial")?55:240;
-        return new FenceService.Quote("ironhaven","The Yard","The night man in a warehouse office. Metal, tools and parts; cash in small amounts.",45,30,budget,false,rows);
+        int budget=pose.equals("fence-partial")?55:400;   // full: enough for everything (349); partial: less than most rows
+        // open (after dark): a closed fence greys every button and the full and short-budget screens looked alike
+        return new FenceService.Quote("ironhaven","The Yard","The night man in a warehouse office. Metal, tools and parts; cash in small amounts.",45,30,budget,true,rows);
     }
 
     private static TerminalData exchange(String region,double balance) {
@@ -312,7 +313,7 @@ public final class VisualCaptureHarness {
         cases.add(new Case("uc-counter-poor",TerminalScreen.Page.IMPORTS,counter(6),0));
         cases.add(Case.ledger("uc-ledger"));
         cases.add(Case.notices("uc-notices"));
-        for(String pose:new String[]{"nocrew","nocrew-invited","unregistered","unavailable","members","members-member","money","money-consent","money-shared","money-shared-nospend","home","home-notice","home-owned","home-find","home-solo","rules-permissions","rules-mode","rules-mode-active","rules-disband"}) {
+        for(String pose:new String[]{"nocrew","nocrew-invited","unregistered","unavailable","members","members-member","money","money-consent","money-shared","money-shared-nospend","home","home-notice","home-owned","home-find","home-find-many","home-solo","rules-permissions","rules-mode","rules-mode-active","rules-disband"}) {
             cases.add(Case.crew("uc-crew-"+pose,pose));
         }
         for(String pose:new String[]{"idle","close","pressing","strain","opened","snapped","timeout"}) cases.add(Case.lock("uc-lock-"+pose,pose));

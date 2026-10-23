@@ -55,6 +55,17 @@ public record CrewView(boolean storageOk, String problem, UUID self, String self
     public record Offer(boolean canRent, boolean canBuy, int rent, int deposit, int upkeep, boolean welcome, String category, String summary, String facilities, int containers, int claims, int factor) {
         public static final Offer LEGACY = new Offer(false, true, 0, 0, 0, false, "", "", "", 0, 0, 100);
     }
+    /** The cash a home asks for on the day you move in: nothing for the welcome hours, else the deposit and the first hour, or the price when it can only be bought. */
+    static long moveInCost(LeaseRow row) {
+        Offer o = row.offer();
+        if (o.canRent()) return o.welcome() ? 0 : (long) o.deposit() + o.rent();
+        return row.price();
+    }
+
+    /** The order of the homes on offer: the city's free welcome first, then the least cash to move in, then the nearest. */
+    static final java.util.Comparator<LeaseRow> MOVE_IN_ORDER = java.util.Comparator.<LeaseRow>comparingInt(row -> row.offer().welcome() ? 0 : 1)
+        .thenComparingLong(CrewView::moveInCost).thenComparingInt(LeaseRow::distance).thenComparing(LeaseRow::id);
+
     public record LeaseRow(String id, String title, String kind, int price, boolean starter, int distance, Offer offer) {
         public LeaseRow(String id, String title, String kind, int price, boolean starter, int distance) { this(id, title, kind, price, starter, distance, Offer.LEGACY); }
     }
@@ -125,7 +136,6 @@ public record CrewView(boolean storageOk, String problem, UUID self, String self
                 tenancy(ledger, player, r, crew, rules, mine)));
         }
         for (Residence r : ledger.allResidences()) {
-            if (nearby.size() >= MAX_NEARBY) break;
             if (r.owned() || r.reservedBy != null || !r.dimension.equals(dimension)) continue;
             double distance = Math.sqrt(r.distanceSqr(player.blockPosition()));
             if (distance > 64) continue;
@@ -141,6 +151,9 @@ public record CrewView(boolean storageOk, String problem, UUID self, String self
             }
             nearby.add(new LeaseRow(r.id, r.title, r.kind, price, terms == null && ledger.usesStarter(player.getUUID(), r), (int) distance, offer));
         }
+        // what a player can move into now comes first: a journey run found the free welcome rooms on the third page, behind homes a new player cannot pay for
+        nearby.sort(MOVE_IN_ORDER);
+        if (nearby.size() > MAX_NEARBY) nearby.subList(MAX_NEARBY, nearby.size()).clear();
         List<UpgradeRow> upgrades = new ArrayList<>();
         int tradeDiscount = SkillService.upgradeDiscountPercent(player);
         for (PropertyRules.Upgrade up : PropertyCatalog.INSTANCE.upgrades().values()) if (upgrades.size() < MAX_UPGRADES) {

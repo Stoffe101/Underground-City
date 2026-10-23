@@ -108,4 +108,25 @@ public final class CityHomesGameTests {
         }
         helper.succeed();
     }
+
+    /** The homes on offer are listed by what a player can move into now (D-136): the free welcome rooms first, then the least cash on the day, then the nearest; a list longer than the screen's cap keeps those. */
+    @GameTest(template = "empty")
+    public static void theHomeListPutsWhatYouCanMoveIntoNowFirst(GameTestHelper helper) {
+        CrewView.Offer flat = new CrewView.Offer(true, true, 46, 92, 9, false, "Small apartment", "", "", 5, 2, 115);
+        CrewView.Offer motel = new CrewView.Offer(true, false, 10, 0, 0, true, "Motel room", "", "", 2, 1, 100);
+        CrewView.Offer room = new CrewView.Offer(true, false, 10, 20, 0, false, "Motel room", "", "", 2, 1, 100);
+        CrewView.Offer buyOnly = new CrewView.Offer(false, true, 0, 0, 20, false, "Workshop", "", "", 8, 2, 100);
+        java.util.List<CrewView.LeaseRow> rows = new java.util.ArrayList<>(List.of(
+            new CrewView.LeaseRow("row_flats:flat_1", "Row Flat 1", "flat", 2300, false, 10, flat),
+            new CrewView.LeaseRow("city:pub:room_1", "Room 1", "room", 0, false, 40, room),
+            new CrewView.LeaseRow("city:workshop", "Workshop", "premises", 600, false, 5, buyOnly),
+            new CrewView.LeaseRow("row_motel:motel_2", "Row Motel Room 2", "motel", 0, false, 30, motel),
+            new CrewView.LeaseRow("row_motel:motel_1", "Row Motel Room 1", "motel", 0, false, 30, motel)));
+        rows.sort(CrewView.MOVE_IN_ORDER);
+        java.util.List<String> order = rows.stream().map(CrewView.LeaseRow::id).toList();
+        check(order.equals(List.of("row_motel:motel_1", "row_motel:motel_2", "city:pub:room_1", "row_flats:flat_1", "city:workshop")), "the order is " + order);
+        check(CrewView.moveInCost(rows.get(0)) == 0 && CrewView.moveInCost(rows.get(2)) == 30 && CrewView.moveInCost(rows.get(3)) == 138 && CrewView.moveInCost(rows.get(4)) == 600,
+            "the move-in costs are wrong");
+        helper.succeed();
+    }
 }

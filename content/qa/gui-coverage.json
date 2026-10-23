@@ -465,6 +465,13 @@
       "description": "Home page, Find a home tab: a motel room with the city's welcome, a flat and a house to rent or buy, with the Ironhaven price factor, For me / For the Crew and Pay from toggles"
     },
     {
+      "id": "crew.home_find_many",
+      "expected_file": "uc-crew-home-find-many.png",
+      "owner": "underground_city",
+      "group": "crew",
+      "description": "Find a home for a new player with no Crew, four credits and seven homes in reach: the free welcome rooms listed first (D-136), the page count and arrows in the tab row, clear of the first card's Rent and Buy"
+    },
+    {
       "id": "crew.home_solo",
       "expected_file": "uc-crew-home-solo.png",
       "owner": "underground_city",

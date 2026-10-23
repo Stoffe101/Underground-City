@@ -471,8 +471,19 @@ public final class CrewScreen extends UcScreen {
             btn("home_tab_" + i, tx, cy, w, 16, tabs[i], () -> { homeTab = index; build(); }).kind(UcButton.Kind.CHIP).accent(UcUi.LEGAL).selected(homeTab == i);
             tx += w + 4;
         }
+        tabsRight = tx;
         if (homeTab == 0) buildMine(); else buildFind();
     }
+
+    /** Where the Home page's tabs end (the page arrows of "Find a home" go to their right when there is room). */
+    private int tabsRight;
+    /** The page arrows and the "1 / 4" before them take this much of the tab row's right end. */
+    private static final int PAGER_W = 96;
+
+    /** True when the page arrows sit in the tab row; otherwise they take a row of their own above the first offer (they used to be drawn under the first offer's buttons). */
+    private boolean pagerInTabRow() { return tabsRight <= cx + cw - PAGER_W; }
+
+    private int pagerY() { return pagerInTabRow() ? cy : cy + (findHasChoices() ? 42 : 22); }
 
     private void buildMine() {
         CrewView.HomeRow home = chosenHome();
@@ -552,7 +563,7 @@ public final class CrewScreen extends UcScreen {
     private boolean findHasChoices() { return view.inCrew() && view.can(Perm.MANAGE_PROPERTY); }
 
     /** Where the first offer card starts: below the tabs, and below the for/pay chips when there are any. */
-    private int findTop() { return cy + (findHasChoices() ? 42 : 24); }
+    private int findTop() { return cy + (findHasChoices() ? 42 : 24) + (!pagerInTabRow() && view.nearby().size() > 1 ? 18 : 0); }
 
     private void buildFind() {
         // who it is for and where the money comes from
@@ -569,8 +580,8 @@ public final class CrewScreen extends UcScreen {
         int pages = Math.max(1, (view.nearby().size() + per - 1) / per);
         findPage = Math.min(findPage, pages - 1);
         if (pages > 1) {
-            btn("find_prev", cx + cw - 56, cy + 22, 22, 16, "<", () -> { findPage = Math.max(0, findPage - 1); build(); }).kind(UcButton.Kind.CHIP).active = findPage > 0;
-            btn("find_next", cx + cw - 24, cy + 22, 22, 16, ">", () -> { findPage = Math.min(pages - 1, findPage + 1); build(); }).kind(UcButton.Kind.CHIP).active = findPage < pages - 1;
+            btn("find_prev", cx + cw - 48, pagerY(), 22, 16, "<", () -> { findPage = Math.max(0, findPage - 1); build(); }).kind(UcButton.Kind.CHIP).active = findPage > 0;
+            btn("find_next", cx + cw - 22, pagerY(), 22, 16, ">", () -> { findPage = Math.min(pages - 1, findPage + 1); build(); }).kind(UcButton.Kind.CHIP).active = findPage < pages - 1;
         }
         int top = findTop();
         for (int i = findPage * per; i < Math.min(view.nearby().size(), (findPage + 1) * per); i++) {
@@ -746,7 +757,7 @@ public final class CrewScreen extends UcScreen {
             if (o.factor() != 100) UcUi.text(g, font, "prices x" + String.format(Locale.ROOT, "%.2f", o.factor() / 100.0), cx + cw - 128, row + 28, UcUi.FAINT);
         }
         int pages = Math.max(1, (view.nearby().size() + per - 1) / per);
-        if (pages > 1) UcUi.textRight(g, font, (findPage + 1) + " / " + pages, cx + cw - 62, cy + 26, UcUi.FAINT);
+        if (pages > 1) UcUi.textRight(g, font, (findPage + 1) + " / " + pages, cx + cw - 54, pagerY() + 4, UcUi.FAINT);
     }
 
     // ---- RULES
