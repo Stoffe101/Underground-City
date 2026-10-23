@@ -171,7 +171,7 @@ public final class DistrictBuilder {
         Map<DistrictCatalog.Op, BlockState> states = new HashMap<>();
         for (DistrictCatalog.Op op : district.ops()) {
             if (!op.applies()) continue; // an operation that names an absent mod is skipped, never an error
-            BlockState parsed = op.kind().equals("fill") || op.kind().equals("block") || op.kind().equals("sign") ? parse(level, op.text()) : special(op);
+            BlockState parsed = op.kind().equals("fill") || op.kind().equals("block") || op.kind().equals("sign") || op.kind().equals("loot") ? parse(level, op.text()) : special(op);
             if (parsed != null) states.put(op, parsed);
             if (op.kind().equals("safe") && PropertyPolicies.INSTANCE.find(UndergroundCity.MOD_ID + ":" + op.text()) == null) {
                 throw new IllegalStateException("Unknown property policy " + op.text());
@@ -246,6 +246,12 @@ public final class DistrictBuilder {
                     case "secure_terminal" -> secure++;
                     case "sign" -> writeSign(level, at, op.sign());
                     case "terminal" -> terminals++;
+                    case "loot" -> {
+                        // filled from its table the first time anybody opens it (the game's own rule), once: an explored building is not a renewable income
+                        if (level.getBlockEntity(at) instanceof net.minecraft.world.level.block.entity.RandomizableContainerBlockEntity container) {
+                            container.setLootTable(new net.minecraft.resources.ResourceLocation(op.loot()), at.asLong() ^ level.getSeed());
+                        }
+                    }
                     default -> { }
                 }
             }
@@ -275,7 +281,7 @@ public final class DistrictBuilder {
     }
 
     /** The ledger id of a district's home: unique per world because a district with homes is never repeatable. */
-    static String homeId(DistrictCatalog.District district, DistrictCatalog.Home home) { return district.id() + ":" + home.id(); }
+    static String homeId(DistrictCatalog.District district, DistrictCatalog.Home home) { return district.homePrefix() + ":" + home.id(); }
 
     /** Registers the district's homes with the Crew ledger. A world whose ledger cannot be read refuses the build rather than leaving homes that nobody can lease. */
     private static void registerHomes(ServerLevel level, DistrictCatalog.District district, BlockPos origin, List<String> registered) {

@@ -361,8 +361,8 @@ class DistrictTests(unittest.TestCase):
                     safes += 1
                     self.assertTrue((DATA / "property_policies" / f"{op['policy']}.json").exists(), op["policy"])
                 if op["op"] in ("fill", "block", "sign"):
-                    # Vanilla blocks only, except an operation that names its mod: it applies only where that mod is installed.
-                    namespace = op.get("requires_mod", "minecraft")
+                    # Vanilla blocks (or Core's own, always present: a salvage yard's scrap heap), except an operation that names its mod: it applies only where that mod is installed.
+                    namespace = op.get("requires_mod", "(?:minecraft|underground_city)")
                     self.assertRegex(op["block"], rf"^{namespace}:[a-z_]+(\[[a-z_=0-9,]+\])?$")
                 terminals += op["op"] == "terminal"; clerks += op["op"] == "clerk"; secure += op["op"] == "secure_terminal"
                 if op["op"] == "npc":
@@ -392,7 +392,14 @@ class DistrictTests(unittest.TestCase):
             # Citizens: bounded, named, with a role Core knows, short lines, and each employer bound to a real terminal of the lot.
             self.assertLessEqual(len(citizens), 20)
             terminal_spots = [op["at"] for op in district["ops"] if op["op"] == "terminal"]
-            self.assertEqual({npc["role"] for npc in citizens} - {"registrar", "employer", "resident", "guard", "vendor", "instructor", "warden"}, set())
+            self.assertEqual({npc["role"] for npc in citizens} - {"registrar", "employer", "resident", "guard", "vendor", "instructor", "warden", "shopkeeper"}, set())
+            for npc in citizens:
+                # a district's shopkeeper (D-138) keeps a counter that exists
+                if npc["role"] == "shopkeeper":
+                    self.assertRegex(npc["shop"], r"^[a-z0-9_]+:[a-z0-9_/]+$")
+                    key = npc["shop"].split(":", 1)[1]
+                    self.assertTrue((DATA / "shop_counters" / "roadside" / f"{key}.json").exists() or any(
+                        json.loads(p.read_text(encoding="utf-8")).get("building") == npc["shop"] for p in (DATA / "shop_counters").rglob("*.json")), npc["shop"])
             self.assertEqual(len({npc["name"] for npc in citizens}), len(citizens), "citizen names must be unique")
             for npc in citizens:
                 self.assertTrue(0 < len(npc["name"]) <= 40, npc["name"])

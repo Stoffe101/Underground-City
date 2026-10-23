@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "city": "valewood",
+  "item": "minecraft:pumpkin_pie",
+  "unit_price": 11,
+  "initial": 6,
+  "capacity": 10,
+  "units_per_interval": 2,
+  "interval_ticks": 24000,
+  "max_order": 4,
+  "outlets": [
+    "shop:roadside_diner"
+  ]
+}

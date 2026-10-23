@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "city": "blackwater",
+  "item": "underground_city:lockpick",
+  "unit_price": 22,
+  "initial": 4,
+  "capacity": 6,
+  "units_per_interval": 1,
+  "interval_ticks": 48000,
+  "max_order": 2,
+  "outlets": [
+    "shop:den"
+  ]
+}

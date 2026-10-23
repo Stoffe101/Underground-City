@@ -628,6 +628,19 @@ def old_laptop():
     return finish(s)
 
 
+# ----------------------------------------------------------------------------------------------- the road (D-139)
+@item
+def sealed_envelope():
+    """A courier's envelope: a cream envelope with its flap folded down, a red wax seal and a brown address label."""
+    s = Sprite()
+    bevel_rect(s, 1, 4, 14, 12, PAPER)
+    s.line(1, 4, 7, 9, PAPER[1]); s.line(14, 4, 8, 9, PAPER[1])
+    s.line(2, 4, 7, 8, PAPER[4]); s.line(13, 4, 8, 8, PAPER[4])
+    disc(s, 7.5, 9, 1.6, [RED[0], RED[1], RED[2], RED[3], RED[4]])
+    s.rect(9, 10, 13, 11, BURLAP[3]); s.line(10, 10, 12, 10, INK)
+    return finish(s)
+
+
 def save_all(only=None):
     os.makedirs(ITEM_DIR, exist_ok=True)
     for name, fn in ITEMS.items():

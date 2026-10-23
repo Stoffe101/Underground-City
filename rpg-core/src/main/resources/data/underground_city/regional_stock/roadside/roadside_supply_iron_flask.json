@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "city": "ironhaven",
+  "item": "thirstwastaken2:iron_flask",
+  "unit_price": 160,
+  "initial": 2,
+  "capacity": 3,
+  "units_per_interval": 1,
+  "interval_ticks": 72000,
+  "max_order": 1,
+  "outlets": [
+    "shop:roadside_supply"
+  ],
+  "requires_mod": "thirstwastaken2"
+}

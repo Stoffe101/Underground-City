@@ -240,6 +240,37 @@ def alarm_panel_case():
     return s
 
 
+# ------------------------------------------------------------------------------------------------ Scrap heap (D-138)
+RUST = ramp('#8a4b2a')
+
+
+@tex
+def scrap_heap():
+    """A tangle of salvage seen from any side: dark iron, rusted plate, a bright edge of steel, a copper coil and a bolt or two."""
+    s = Sprite()
+    rnd = random.Random(1701)
+    for y in range(16):
+        for x in range(16):
+            s.put(x, y, GUNMETAL[rnd.choice((0, 1, 1, 2))])
+    for (x0, y0, x1, y1) in ((1, 2, 6, 5), (9, 1, 14, 3), (3, 9, 8, 12), (10, 8, 14, 13), (0, 13, 3, 15)):
+        for y in range(y0, y1 + 1):
+            for x in range(x0, x1 + 1):
+                s.put(x, y, RUST[rnd.choice((1, 2, 2, 3))])
+        s.line(x0, y0, x1, y0, RUST[3])
+        s.line(x0, y1, x1, y1, RUST[0])
+    for (x0, y0, x1) in ((7, 6, 13), (2, 7, 6), (5, 14, 12)):
+        s.line(x0, y0, x1, y0, STEEL[3])
+        s.line(x0, y0 + 1, x1, y0 + 1, STEEL[1])
+    for (x, y) in ((11, 4), (12, 5), (13, 4), (12, 3)):
+        s.put(x, y, COPPER[3])
+    s.put(12, 4, COPPER[1])
+    for (x, y) in ((4, 3), (12, 10), (6, 11), (2, 14)):
+        s.put(x, y, STEEL[3]); s.put(x + 1, y + 1, INK)
+    for (x, y) in ((8, 0), (15, 6), (0, 10), (9, 15)):
+        s.put(x, y, INK)
+    return s
+
+
 # ------------------------------------------------------------------------------------------------------------ models
 def box(f, t, faces, rotation=None, shade=True):
     el = {'from': f, 'to': t, 'faces': faces}
@@ -328,6 +359,8 @@ def write_models():
                 element['faces'].pop('down', None)
         with open(os.path.join(MODELS, name + '.json'), 'w') as fh:
             json.dump(model, fh, indent=1)
+    with open(os.path.join(MODELS, 'scrap_heap.json'), 'w') as fh:
+        json.dump({'parent': 'minecraft:block/cube_all', 'textures': {'all': 'underground_city:block/scrap_heap'}}, fh, indent=1)
     for light in PANEL_LIGHTS:
         model = panel_model(light)
         model['parent'] = 'minecraft:block/block'
@@ -347,6 +380,8 @@ def write_states():
             json.dump(facing_states(name), fh, indent=1)
     with open(os.path.join(sd, 'alarm_panel.json'), 'w') as fh:
         json.dump(panel_states(), fh, indent=1)
+    with open(os.path.join(sd, 'scrap_heap.json'), 'w') as fh:
+        json.dump({'variants': {'': {'model': 'underground_city:block/scrap_heap'}}}, fh, indent=1)
 
 
 def build():

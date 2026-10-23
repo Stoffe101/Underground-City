@@ -243,6 +243,9 @@ def build(data: dict, contracts: dict) -> dict[Path, bytes]:
         "item.underground_city.alarm_panel": "Alarm Panel",
         "block.underground_city.public_ledger": "Public Ledger",
         "item.underground_city.public_ledger": "Public Ledger",
+        "block.underground_city.scrap_heap": "Scrap Heap",
+        "item.underground_city.scrap_heap": "Scrap Heap",
+        "item.underground_city.sealed_envelope": "Sealed Envelope",
     }
 
     def emit_item(entry, kind, stack):
@@ -379,6 +382,11 @@ def build(data: dict, contracts: dict) -> dict[Path, bytes]:
         {"parent": f"{NAMESPACE}:block/alarm_panel_armed"}).encode()
     files[Path(f"rpg-core/src/main/resources/assets/{NAMESPACE}/models/item/public_ledger.json")] = jdump(
         {"parent": f"{NAMESPACE}:block/public_ledger"}).encode()
+    # a salvage yard's scrap heap (D-138) and a courier's sealed letter (D-139): registered in Java, drawn by tools/art
+    files[Path(f"rpg-core/src/main/resources/assets/{NAMESPACE}/models/item/scrap_heap.json")] = jdump(
+        {"parent": f"{NAMESPACE}:block/scrap_heap"}).encode()
+    files[Path(f"rpg-core/src/main/resources/assets/{NAMESPACE}/models/item/sealed_envelope.json")] = jdump(
+        {"parent": "minecraft:item/generated", "textures": {"layer0": f"{NAMESPACE}:item/sealed_envelope"}}).encode()
     blueprint = json.loads((ROOT / "content/region-blueprints/cities.json").read_text(encoding="utf-8"))
     for city in blueprint["cities"]:
         files[Path(f"rpg-core/src/main/resources/data/{NAMESPACE}/regions/{city['id']}.json")] = jdump({

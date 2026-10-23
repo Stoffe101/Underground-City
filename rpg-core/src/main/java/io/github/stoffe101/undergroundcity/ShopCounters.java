@@ -77,6 +77,20 @@ public final class ShopCounters extends SimpleJsonResourceReloadListener {
         return HouseholdService.servesAt(body, shop.get().spot()) ? shop : Optional.empty();
     }
 
+    /**
+     * Opens the counter that a district's shopkeeper keeps (a roadside place's cook, foreman or clerk, D-138): the shop named by {@code shopKey} (a {@code shop_counters} entry's
+     * {@code building}), at the place the keeper stands, under the same rules as a household worker's counter. Returns false when no shop has that key.
+     */
+    static boolean openKept(ServerPlayer player, net.minecraft.world.entity.LivingEntity keeper, String shopKey) {
+        Optional<Shop> shop = INSTANCE.forBuilding(shopKey);
+        if (shop.isEmpty() || keeper == null || !keeper.isAlive()) return false;
+        BlockPos at = keeper.blockPosition();
+        OPEN.put(at.asLong(), new Open(shop.get(), keeper.getUUID(), player.server.getTickCount() + OPEN_TICKS));
+        OPEN.entrySet().removeIf(e -> e.getValue().closesAt() < player.server.getTickCount());
+        TerminalNetwork.open(player, at);
+        return true;
+    }
+
     /** Opens the counter of the shopkeeper {@code body} for {@code player} (the terminal screen's Trade page, with this shop's lines only). */
     static void open(ServerPlayer player, TownspersonEntity body) {
         Optional<Shop> shop = shopOf(body);
@@ -92,7 +106,7 @@ public final class ShopCounters extends SimpleJsonResourceReloadListener {
         Open open = OPEN.get(pos.asLong());
         if (open == null) return Optional.empty();
         if (open.closesAt() < level.getServer().getTickCount()) { OPEN.remove(pos.asLong()); return Optional.empty(); }
-        if (!(level.getEntity(open.keeper()) instanceof TownspersonEntity keeper) || !keeper.isAlive() || keeper.distanceToSqr(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5) > KEEPER_SQUARED) {
+        if (!(level.getEntity(open.keeper()) instanceof net.minecraft.world.entity.LivingEntity keeper) || !keeper.isAlive() || keeper.distanceToSqr(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5) > KEEPER_SQUARED) {
             OPEN.remove(pos.asLong());
             return Optional.empty();
         }

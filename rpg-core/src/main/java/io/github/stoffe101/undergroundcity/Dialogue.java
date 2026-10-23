@@ -1,5 +1,6 @@
 package io.github.stoffe101.undergroundcity;
 
+import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
@@ -96,6 +97,7 @@ final class Dialogue {
             case "employer" -> "Employer: " + careerTitle(npc.career());
             case "guard" -> "Gate guard";
             case "warden" -> "Road warden";
+            case "shopkeeper" -> ShopCounters.INSTANCE.forBuilding(npc.shop()).map(ShopCounters.Shop::title).orElse("Shopkeeper");
             default -> "Resident";
         };
     }
@@ -148,6 +150,10 @@ final class Dialogue {
                 out.add(new Choice("stock", "What is on the exchange today?", true, ""));
                 out.add(new Choice("rumour", "Any news from the market?", true, ""));
             }
+            case "shopkeeper" -> {
+                out.add(new Choice("shop", "What have you got?", citizen != null, citizen == null ? "Register first" : ""));
+                out.add(new Choice("rumour", "Anything I should know?", true, ""));
+            }
             case "instructor" -> {
                 out.add(new Choice("rules", "How does the range work?", true, ""));
                 out.add(new Choice("score", "What is my best score?", citizen != null, citizen == null ? "Register first" : ""));
@@ -168,6 +174,7 @@ final class Dialogue {
         if (!id.equals("end")) LAST_CHOICE.put(player.getUUID(), now);
         Entity entity = player.level().getEntity(entityId);
         if (entity instanceof TownspersonEntity person) { PopulationService.choose(player, person, id); return; }
+        if (entity instanceof Villager stranger && RoadEncounters.isEncounter(stranger)) { RoadEncounters.choose(player, stranger, id); return; }
         if (!(entity instanceof Villager villager) || !CityNpcs.isCityNpc(villager) || player.distanceToSqr(villager) > REACH_SQUARED) return;
         var found = CityNpcs.definition(villager);
         if (found.isEmpty()) return;
@@ -181,6 +188,13 @@ final class Dialogue {
             case "end" -> release(villager);   // the screen was closed on the client: no reply, just let the citizen go
             case "bye" -> { release(villager); TerminalNetwork.closeDialogue(player); }
             case "stock" -> open(player, villager, npc, stockText(player, villager, citizen));
+            case "shop" -> {
+                release(villager);
+                TerminalNetwork.closeDialogue(player);
+                if (citizen == null || !ShopCounters.openKept(player, villager, npc.shop())) {
+                    player.sendSystemMessage(Component.literal(citizen == null ? "Register first: the counter only serves citizens." : npc.name() + " has nothing to sell right now.").withStyle(ChatFormatting.GRAY));
+                }
+            }
             case "rules" -> open(player, villager, npc, "Stand behind the line and fire at the targets. Every hit is scored by how close it lands to the centre, and the board keeps your best. Nobody pays for a range: it is practice for the licence, not a job.");
             case "score" -> open(player, villager, npc, citizen == null ? "Register first." : citizen.journey("range_best") > 0
                 ? "Your best so far is " + citizen.journey("range_best") + " out of 10 on a single shot, and " + citizen.journey("range_hits") + " hits in all." : "You have not hit a target yet. Take a gun to the line.");

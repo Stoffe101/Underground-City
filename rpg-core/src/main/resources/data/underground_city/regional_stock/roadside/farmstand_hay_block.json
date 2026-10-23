@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "city": "valewood",
+  "item": "minecraft:hay_block",
+  "unit_price": 15,
+  "initial": 4,
+  "capacity": 8,
+  "units_per_interval": 2,
+  "interval_ticks": 36000,
+  "max_order": 4,
+  "outlets": [
+    "shop:farmstand"
+  ]
+}

@@ -430,6 +430,8 @@ public final class TerminalNetwork {
 
     /** Called after physical right-click, not by a remote client action. */
     public static void open(ServerPlayer player, BlockPos pos) {
+        // D-139: a courier's letter addressed to this city is handed over at any terminal or counter in it, before the screen shows the balance
+        try { RoadEncounters.deliver(player, pos); } catch (RuntimeException error) { com.mojang.logging.LogUtils.getLogger().error("Letter delivery failed for {}", player.getGameProfile().getName(), error); }
         CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new OpenTerminal(pos.immutable(), TerminalData.snapshot(player, pos)));
     }
 

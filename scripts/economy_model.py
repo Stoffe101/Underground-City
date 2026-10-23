@@ -441,6 +441,48 @@ def quarry_and_shelves(model: Model) -> list[list]:
     return rows
 
 
+# ------------------------------------------------------------------------------------------------------------------ salvage yards (D-138)
+
+SALVAGE_BLOCKS = {"underground_city:scrap_heap": DATA / "loot_tables/blocks/scrap_heap.json"}
+
+
+def expected_drops(table: dict) -> dict[str, float]:
+    """The mean count of each item one roll of a simple block loot table gives (pools of integer rolls, weighted entries, uniform set_count)."""
+    out: dict[str, float] = {}
+    for pool in table["pools"]:
+        entries = pool["entries"]
+        total = sum(e.get("weight", 1) for e in entries)
+        for e in entries:
+            if e["type"] != "minecraft:item":
+                continue
+            count = 1.0
+            for f in e.get("functions", []):
+                if f["function"] == "minecraft:set_count":
+                    c = f["count"]
+                    count = (c["min"] + c["max"]) / 2.0 if isinstance(c, dict) else float(c)
+            out[e["name"]] = out.get(e["name"], 0.0) + pool["rolls"] * count * e.get("weight", 1) / total
+    return out
+
+
+def salvage_rows(model: "Model") -> list[dict]:
+    """Each salvage yard: one row per place (its four rotations are one yard; a world builds one), heaps, interval, and the mean items an active hour if every heap is stripped."""
+    yards: dict[str, dict] = {}
+    for path in sorted(SITES.glob("*.json")):
+        site = json.loads(path.read_text(encoding="utf-8"))
+        heaps = [v for v in site["veins"] if v["block"] in SALVAGE_BLOCKS]
+        if not heaps:
+            continue
+        family = site["district"].rsplit("_", 1)[0] if site["district"].rsplit("_", 1)[-1] in ("n", "e", "s", "w") else site["district"]
+        per_hour = len(heaps) * 60.0 / site["interval_minutes"]
+        drops: dict[str, float] = {}
+        for block, table_path in SALVAGE_BLOCKS.items():
+            n = sum(1 for v in heaps if v["block"] == block) * 60.0 / site["interval_minutes"]
+            for item, mean in expected_drops(json.loads(table_path.read_text(encoding="utf-8"))).items():
+                drops[item] = drops.get(item, 0.0) + mean * n
+        yards[family] = {"yard": family, "heaps": len(heaps), "interval": site["interval_minutes"], "heaps_per_hour": per_hour, "drops": drops}
+    return list(yards.values())
+
+
 # ------------------------------------------------------------------------------------------------------------------ fences (D-125)
 
 def honest_prices(model: Model) -> dict[str, float]:
@@ -787,6 +829,14 @@ def invariants(model: Model) -> list[str]:
         if row["level"] == 5 and row["ore"] > 0 and max(row["shelf"], row["quarry"]) < floor * row["ore"]:
             problems.append(f"scarcity: a level-5 {row['career']} earns {max(row['shelf'], row['quarry']):.0f}/h without ore, under {floor:.0%} of the {row['ore']:.0f}/h of the ore world")
     problems += fence_problems(model)
+    # a salvage yard is a side source: its iron (nuggets, nine to an ingot) never out-supplies the regrowing sites' iron, and it is not a machined-parts mine
+    quarry_iron = ScarcityModel("quarry", model.scale).quarry.get("minecraft:iron_ingot", 0.0)
+    for y in salvage_rows(model):
+        iron = y["drops"].get("minecraft:iron_nugget", 0.0) / 9.0 + y["drops"].get("minecraft:iron_ingot", 0.0)
+        if iron > quarry_iron:
+            problems.append(f"salvage: {y['yard']} gives {iron:.1f} iron an active hour, more than the regrowing sites' {quarry_iron:.1f}")
+        if y["drops"].get("underground_city:machined_parts", 0.0) > 2.0:
+            problems.append(f"salvage: {y['yard']} gives {y['drops']['underground_city:machined_parts']:.1f} machined parts an active hour; a yard is not a parts mine")
     # no loops
     problems += exploit_checks(model)
     problems += [f"shop undercuts an order: {x}" for x in shop_sell_vs_orders(model)]
@@ -888,6 +938,9 @@ def report(model: Model, markdown: bool = False) -> str:
     out.append(table(losers, ["career", "L", "order", "credits", "shelf cost"]) if losers else "none")
     out.append(h("Where a scarcity world's ore comes from: cheapest shelf price, units an hour the shelves sustain (all cities), units an hour the regrowing sites give back (the old quarry and the Valewood pit, shared by everybody)"))
     out.append(table(quarry_and_shelves(model), ["ore", "cheapest shelf", "shelves/h", "sites/h"]))
+    out.append(h("Salvage yards (D-138): heaps that refill in active time, and the mean items an active hour if every heap is stripped (one rotation of each yard stands in a world)"))
+    out.append(table([[y["yard"], y["heaps"], y["interval"], f"{y['heaps_per_hour']:.0f}", ", ".join(f"{k.split(':')[1]} {v:.1f}" for k, v in sorted(y["drops"].items()))] for y in salvage_rows(model)],
+                     ["yard", "heaps", "minutes", "heaps/h", "items/h"]))
     rows = [[r["city"], r["title"], f"{r['rate']}% ({r['same_city']}% at home)", f"{r['best_rate']}%", r["budget"], f"{r['hourly']:.0f}", f"{r['best_legal']:.0f}", f"{r['share']:.0%}"] for r in fence_rows(model)]
     out.append(h("Fences (D-125): rate, best rate with every payout skill, opening budget, the most they pay an hour after it, against the best legal hour at level 5"))
     out.append(table(rows, ["city", "fence", "rate", "best rate", "budget", "per hour", "best legal/h (L5)", "share"]))

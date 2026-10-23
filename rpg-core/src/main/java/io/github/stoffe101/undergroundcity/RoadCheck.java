@@ -42,11 +42,14 @@ public final class RoadCheck {
         report.addProperty("layout", WorldLayout.INSTANCE.current().map(WorldLayout.Layout::id).orElse("none"));
         report.add("roads", verifier.report());
         report.add("shelters", shelters(event.getServer()));
+        // D-138: the roadside places, where the world enabled them, served as a player's arrival would
+        if (RoadsidePlaces.enabled(event.getServer().overworld())) report.add("roadside_places", roadside(event.getServer()));
+        else report.addProperty("roadside_places", "not enabled in this world");
         report.add("ends", ends(event.getServer()));
         // D-137: build each end's approach as a player's first visit would, then measure again
         if (RoadApproaches.enabled(event.getServer().overworld())) {
             JsonArray built = new JsonArray();
-            for (CorridorPlan plan : CorridorRoadFeature.plans(event.getServer().overworld())) for (CorridorPlan.End end : plan.ends()) {
+            for (CorridorPlan plan : CorridorRoadFeature.ready(event.getServer().overworld())) for (CorridorPlan.End end : plan.ends()) {
                 var result = RoadApproaches.build(event.getServer().overworld(), plan, end);
                 built.add(plan.id() + " at " + (int) end.x() + " " + (int) end.z() + ": " + result + "; " + pits(event.getServer().overworld(), end, result));
                 LOGGER.info("[UC-ROADS] approach built at {} {} {}: {}", plan.id(), (int) end.x(), (int) end.z(), result);
@@ -95,7 +98,7 @@ public final class RoadCheck {
 
     private static JsonArray ends(MinecraftServer server) {
         ServerLevel level = server.overworld();
-        List<CorridorPlan> plans = CorridorRoadFeature.plans(level).isEmpty() ? DevCommands.plans(server) : CorridorRoadFeature.plans(level);
+        List<CorridorPlan> plans = CorridorRoadFeature.ready(level).isEmpty() ? DevCommands.plans(server) : CorridorRoadFeature.ready(level);
         JsonArray out = new JsonArray();
         for (CorridorPlan plan : plans) {
             double first = -1, last = -1;
@@ -136,6 +139,20 @@ public final class RoadCheck {
                         || RoadApproaches.cityOwned(level, new net.minecraft.core.BlockPos(x, stand - 1, z)))) { entry.addProperty("city_ground_at", k); break; }
                 }
                 entry.addProperty("deck_stand", deck);
+                // a wall where the straight line meets the city is walked round, not climbed: where the line has a step, ask the player's own path finder for a way on into the
+                // city from the last ground before it (to a point 32 blocks further along the line, anywhere within 12 blocks of it)
+                if (maxUp > 1) {
+                    double[] a = plan.pointAt(edge), b = plan.pointAt(edge - inward * 4);
+                    double dx = a[0] - b[0], dz = a[1] - b[1], len = Math.max(1e-6, Math.hypot(dx, dz));
+                    int reached = entry.has("city_ground_at") ? entry.get("city_ground_at").getAsInt() : END_REACH;
+                    double fx = a[0] + dx / len * (reached - 2), fz = a[1] + dz / len * (reached - 2), tx = a[0] + dx / len * (reached + 32), tz = a[1] + dz / len * (reached + 32);
+                    for (int cx = ((int) Math.min(fx, tx) - 48) >> 4; cx <= ((int) Math.max(fx, tx) + 48) >> 4; cx++)
+                        for (int cz = ((int) Math.min(fz, tz) - 48) >> 4; cz <= ((int) Math.max(fz, tz) + 48) >> 4; cz++) level.getChunk(cx, cz);
+                    int fy = previous == null ? deck : previous;
+                    var route = PlayerPath.find(level, new net.minecraft.world.phys.Vec3(fx, fy, fz), new net.minecraft.world.phys.Vec3(tx, fy, tz), 12.0, 16.0);
+                    entry.addProperty("path_into_city", route.isEmpty() ? "none" : route.size() + " waypoints");
+                    LOGGER.info("[UC-ROADS] {} {} end: a way round the step into the city: {}", plan.id(), end == 0 ? "start" : "finish", route.isEmpty() ? "none" : route.size() + " waypoints");
+                }
                 entry.addProperty("max_step_up", maxUp);
                 entry.addProperty("max_step_down", maxDown);
                 entry.addProperty("worst_up_at", upAt);
@@ -176,6 +193,46 @@ public final class RoadCheck {
                 else entry.addProperty("given_up", state.done.contains(key));
                 entry.addProperty("millis", (System.nanoTime() - started) / 1_000_000L);
                 out.add(entry);
+            }
+        }
+        return out;
+    }
+
+    /**
+     * Each roadside place (D-138) served at its candidate spots in order, with the chunks around each generated first as a player's own approach would: where it was built, which way it
+     * faces, how uneven its lot was, its driveway's length and steepest step, and how long the decision and the build took on the server thread.
+     */
+    private static JsonArray roadside(MinecraftServer server) {
+        ServerLevel level = server.overworld();
+        List<CorridorPlan> plans = CorridorRoadFeature.ready(level);   // the built plans (bridges, water, deck heights)
+        PlacedSites state = PlacedSites.get(level, RoadsidePlaces.KEY);
+        // a measurement world measured again: a place given up last time is looked for afresh (this tool runs only in a disposable world)
+        for (RoadsidePlaces.Place place : RoadsidePlaces.CATALOG.all()) if (!state.where.containsKey(place.id())) { state.done.remove(place.id()); state.failed.remove(place.id()); }
+        RoadsidePlaces.resetForTest();
+        JsonArray out = new JsonArray();
+        int radius = RoadsidePlaces.SEARCH + 80;
+        for (CorridorPlan plan : plans) {
+            List<RoadsidePlaces.Place> places = RoadsidePlaces.CATALOG.onRoad(plan.id());
+            var candidates = RoadsidePlaces.plan(plan, places);
+            for (RoadsidePlaces.Place place : places) {
+                List<Double> spots = candidates.get(place.id());
+                JsonObject entry = new JsonObject();
+                entry.addProperty("place", place.id());
+                entry.addProperty("road", plan.id());
+                entry.addProperty("candidates", spots.size());
+                JsonArray tries = new JsonArray();
+                for (int i = 0; i <= spots.size() && !state.done.contains(place.id()); i++) {
+                    double[] at = plan.pointAt(spots.isEmpty() ? 0 : spots.get(Math.min(i, spots.size() - 1)));
+                    for (int cx = ((int) at[0] - radius) >> 4; cx <= ((int) at[0] + radius) >> 4; cx++) for (int cz = ((int) at[1] - radius) >> 4; cz <= ((int) at[1] + radius) >> 4; cz++) level.getChunk(cx, cz);
+                    RoadsidePlaces.Outcome outcome = RoadsidePlaces.serve(level, plans, place, spots, at[0], at[1], state, RoadsidePlaces.SEARCH + 32);
+                    if (outcome != null) tries.add(outcome.toString());
+                }
+                entry.add("tries", tries);
+                Long where = state.where.get(place.id());
+                entry.addProperty("built", where != null);
+                if (where != null) entry.addProperty("origin", net.minecraft.core.BlockPos.of(where).toShortString());
+                out.add(entry);
+                LOGGER.info("[UC-ROADS] roadside place {}: {}", place.id(), entry);
             }
         }
         return out;

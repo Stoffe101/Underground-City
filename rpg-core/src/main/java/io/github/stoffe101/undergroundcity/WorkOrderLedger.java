@@ -25,7 +25,7 @@ import java.util.WeakHashMap;
  * saved. Recovery runs before the player can interact. No second wallet lives here.
  */
 public final class WorkOrderLedger {
-    private static final String PURCHASE = "purchase", SEIZURE = "seizure", SALE = "sale";
+    private static final String PURCHASE = "purchase", SEIZURE = "seizure", SALE = "sale", ENCOUNTER = "encounter";
     /** How many searches a person's history keeps (the latest ones; who was searched where, what was found and what it cost). */
     static final int SEARCH_HISTORY = 12;
     /** One heat step cools every five minutes of active play. */
@@ -187,6 +187,12 @@ public final class WorkOrderLedger {
             // A sale to a fence never touches an accepted order or career XP; it may warm the city the goods were taken in.
             record.putInt("sales", Math.addExact(record.getInt("sales"), 1));
             record.putLong("fenced_credits", Math.addExact(record.getLong("fenced_credits"), pending.getLong("credits")));
+            applyTargets(record, pending);
+            record.remove("pending");
+        } else if (ENCOUNTER.equals(pending.getString("kind"))) {
+            // A roadside encounter (D-139) never touches an accepted order; its career XP was restored by the recovery that settles it.
+            record.putInt("encounters", Math.addExact(record.getInt("encounters"), 1));
+            record.putLong("encounter_credits", Math.addExact(record.getLong("encounter_credits"), pending.getLong("credits")));
             applyTargets(record, pending);
             record.remove("pending");
         } else if (SEIZURE.equals(pending.getString("kind"))) {
@@ -376,6 +382,35 @@ public final class WorkOrderLedger {
         recent.add(net.minecraft.nbt.StringTag.valueOf(sale.toString()));
         while (recent.size() > 8) recent.remove(0);
         record.put("recent_sales", recent);
+        putPlayer(player, record); persist(); // BEFORE touching inventory or Q Shop
+    }
+
+    boolean hasEncounter(UUID player, UUID instance) {
+        ListTag recent = player(player).getList("recent_encounters", Tag.TAG_STRING);
+        for (int i = 0; i < recent.size(); i++) if (recent.getString(i).equals(instance.toString())) return true;
+        return false;
+    }
+
+    /**
+     * Durably commits the outcome of a roadside encounter (D-139): the encounter's id, the absolute inventory (what was handed over gone, what was given in place), wallet and career-XP
+     * targets and any heat, together, BEFORE the live player or the Q Shop wallet changes. {@code credits} is what the player was paid (negative when they paid). Recovery replays the
+     * targets and {@link #settle} retires the record; an encounter already settled for this player is refused, so a repeated choice or a copied envelope never pays twice.
+     */
+    void prepareEncounter(UUID player, UUID instance, String encounter, long credits, ListTag inventoryAfter, double balanceAfter, int xpAfter, Map<String, Integer> heatAfter) {
+        checkHealthy();
+        CompoundTag record = player(player);
+        if (record.contains("pending")) throw new IllegalStateException("Finish recovery first");
+        if (hasEncounter(player, instance)) throw new IllegalStateException("That was already settled");
+        if (!Double.isFinite(balanceAfter) || balanceAfter < 0 || xpAfter < 0 || xpAfter > ProgressionRules.MAX_XP) throw new IllegalArgumentException("Invalid settlement");
+        CompoundTag pending = new CompoundTag();
+        pending.putString("kind", ENCOUNTER); pending.putString("encounter", encounter); pending.putLong("credits", credits);
+        pending.put("inventory", inventoryAfter.copy()); pending.putDouble("balance", balanceAfter); pending.putInt("xp", xpAfter);
+        putTargets(pending, Map.of(), heatAfter);
+        record.put("pending", pending);
+        ListTag recent = record.getList("recent_encounters", Tag.TAG_STRING);
+        recent.add(net.minecraft.nbt.StringTag.valueOf(instance.toString()));
+        while (recent.size() > 64) recent.remove(0);
+        record.put("recent_encounters", recent);
         putPlayer(player, record); persist(); // BEFORE touching inventory or Q Shop
     }
 

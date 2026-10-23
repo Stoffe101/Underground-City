@@ -42,15 +42,20 @@ public final class ResourceSitesGameTests {
         check(district != null, "the site's district is missing: " + site.district());
         check(site.intervalMinutes() >= ResourceSiteCatalog.MIN_INTERVAL_MINUTES && site.veins().size() <= ResourceSiteCatalog.MAX_VEINS, "the site is outside its bounds");
         check(site.oresPerHourCeiling() <= 60.0, "the site could out-supply the shelves: " + site.oresPerHourCeiling() + " ores an active hour");
-        var allowed = java.util.Set.of(Blocks.IRON_ORE, Blocks.COAL_ORE, Blocks.COPPER_ORE);
+        var allowed = java.util.Set.of(Blocks.IRON_ORE, Blocks.COAL_ORE, Blocks.COPPER_ORE, UndergroundCity.SCRAP_HEAP.get());
         java.util.Set<BlockPos> seen = new java.util.HashSet<>();
         for (var vein : site.veins()) {
-            check(vein.block().defaultBlockState().is(Tags.Blocks.ORES) && allowed.contains(vein.block()), "a vein is not a base-metal ore: " + vein.block());
+            // a vein is a base-metal ore, or a salvage yard's scrap heap (D-138), which is not ore at all and yields less than one
+            check((vein.block().defaultBlockState().is(Tags.Blocks.ORES) || vein.block() == UndergroundCity.SCRAP_HEAP.get()) && allowed.contains(vein.block()), "a vein is not a base-metal ore or a scrap heap: " + vein.block());
             BlockPos at = vein.at();
             check(at.getX() >= district.min().getX() && at.getX() <= district.max().getX() && at.getY() >= district.min().getY() && at.getY() <= district.max().getY()
                 && at.getZ() >= district.min().getZ() && at.getZ() <= district.max().getZ(), "a vein lies outside its district: " + at);
             check(seen.add(at), "two veins at " + at);
-            check(district.ops().stream().anyMatch(op -> op.kind().equals("block") && op.a().equals(at) && op.text().equals(net.minecraftforge.registries.ForgeRegistries.BLOCKS.getKey(vein.block()).toString())),
+            // a single block, or a fill whose box holds the cell (a salvage yard lays its heaps as fills)
+            check(district.ops().stream().anyMatch(op -> (op.kind().equals("block") || op.kind().equals("fill")) && op.text().equals(net.minecraftforge.registries.ForgeRegistries.BLOCKS.getKey(vein.block()).toString())
+                    && at.getX() >= Math.min(op.a().getX(), op.b().getX()) && at.getX() <= Math.max(op.a().getX(), op.b().getX())
+                    && at.getY() >= Math.min(op.a().getY(), op.b().getY()) && at.getY() <= Math.max(op.a().getY(), op.b().getY())
+                    && at.getZ() >= Math.min(op.a().getZ(), op.b().getZ()) && at.getZ() <= Math.max(op.a().getZ(), op.b().getZ())),
                 "the district does not place the ore of the vein at " + at);
         }
     }

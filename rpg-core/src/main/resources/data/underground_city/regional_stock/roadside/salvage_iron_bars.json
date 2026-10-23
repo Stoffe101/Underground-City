@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "city": "ironhaven",
+  "item": "minecraft:iron_bars",
+  "unit_price": 5,
+  "initial": 12,
+  "capacity": 24,
+  "units_per_interval": 6,
+  "interval_ticks": 36000,
+  "max_order": 12,
+  "outlets": [
+    "shop:salvage"
+  ]
+}

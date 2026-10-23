@@ -203,7 +203,7 @@ public final class WaysideShelterGameTests {
     private static List<CityRegions.Region> realCities = List.of();
     private static List<CheckpointCatalog.Checkpoint> realZones = List.of();
 
-    private static synchronized void emptyTheWorldData() {
+    static synchronized void emptyTheWorldData() {
         if (emptied++ == 0) {
             realCities = CityRegions.INSTANCE.all();
             realZones = CheckpointCatalog.INSTANCE.all();
@@ -212,7 +212,7 @@ public final class WaysideShelterGameTests {
         CheckpointCatalog.INSTANCE.replaceForTest(List.of());
     }
 
-    private static synchronized void restoreTheWorldData() {
+    static synchronized void restoreTheWorldData() {
         if (--emptied == 0) {
             CityRegions.INSTANCE.replaceForTest(realCities);
             CheckpointCatalog.INSTANCE.replaceForTest(realZones);

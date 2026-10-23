@@ -257,6 +257,7 @@ public final class DevBootstrap {
             placeQuarry(level, origin, footprint(width, depth));
             placeValewoodPit(level);
             RoadApproaches.enable(level);   // D-137: a walkable way from each road's end into its city, built when somebody first comes near it
+            RoadsidePlaces.enable(level);   // D-138: the diner, farm, yard, depot, motel and cannery beside the roads, built as players come near their spots
         }
         // The gate is the middle of the lane's far (south) end; stand a few blocks outside it, facing the lane.
         BlockPos gate = origin.offset(district.min().getX() + width / 2, 0, depth + 2);

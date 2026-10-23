@@ -162,25 +162,30 @@ Everything between the markers is written by `--update-doc` and checked by a uni
 
 ### Rent against income (a household of one)
 
-| home                | rent/h | at level | mean net/h | share | weakest career | share |
-|---------------------|--------|----------|------------|-------|----------------|-------|
-| row_motel:motel_1   | 10     | 1        | 165        | 6%    | gunsmith 112   | 9%    |
-| row_motel:motel_2   | 10     | 1        | 165        | 6%    | gunsmith 112   | 9%    |
-| row_motel:motel_3   | 10     | 1        | 165        | 6%    | gunsmith 112   | 9%    |
-| row_motel:motel_4   | 10     | 1        | 165        | 6%    | gunsmith 112   | 9%    |
-| row_flats:flat_1    | 40     | 4        | 350        | 11%   | farmer 237     | 17%   |
-| row_flats:flat_2    | 40     | 4        | 350        | 11%   | farmer 237     | 17%   |
-| row_flats:row_house | 100    | 8        | 413        | 24%   | farmer 339     | 30%   |
-| city:ih_flats       | 40     | 4        | 350        | 11%   | farmer 237     | 17%   |
-| city:bw_apartments  | 55     | 5        | 391        | 14%   | vintner 315    | 17%   |
-| city:vw_cottage     | 85     | 7        | 413        | 21%   | farmer 339     | 25%   |
-| city:vw_house_a     | 85     | 7        | 413        | 21%   | farmer 339     | 25%   |
-| city:vw_house_b     | 85     | 7        | 413        | 21%   | farmer 339     | 25%   |
-| city:ih_workshop    | 135    | 12       | 882        | 15%   | vintner 369    | 37%   |
-| city:ih_warehouse   | 170    | 15       | 935        | 18%   | vintner 369    | 46%   |
-| city:ih_pub         | 10     | 1        | 165        | 6%    | gunsmith 112   | 9%    |
-| city:vw_bakery      | 40     | 4        | 350        | 11%   | farmer 237     | 17%   |
-| city:bw_store       | 55     | 5        | 391        | 14%   | vintner 315    | 17%   |
+| home                      | rent/h | at level | mean net/h | share | weakest career | share |
+|---------------------------|--------|----------|------------|-------|----------------|-------|
+| row_motel:motel_1         | 10     | 1        | 165        | 6%    | gunsmith 112   | 9%    |
+| row_motel:motel_2         | 10     | 1        | 165        | 6%    | gunsmith 112   | 9%    |
+| row_motel:motel_3         | 10     | 1        | 165        | 6%    | gunsmith 112   | 9%    |
+| row_motel:motel_4         | 10     | 1        | 165        | 6%    | gunsmith 112   | 9%    |
+| row_flats:flat_1          | 40     | 4        | 350        | 11%   | farmer 237     | 17%   |
+| row_flats:flat_2          | 40     | 4        | 350        | 11%   | farmer 237     | 17%   |
+| row_flats:row_house       | 100    | 8        | 413        | 24%   | farmer 339     | 30%   |
+| rs_saltmarsh_motel:room_1 | 10     | 1        | 165        | 6%    | gunsmith 112   | 9%    |
+| rs_saltmarsh_motel:room_2 | 10     | 1        | 165        | 6%    | gunsmith 112   | 9%    |
+| rs_saltmarsh_motel:room_3 | 10     | 1        | 165        | 6%    | gunsmith 112   | 9%    |
+| rs_saltmarsh_motel:room_4 | 10     | 1        | 165        | 6%    | gunsmith 112   | 9%    |
+| rs_harrow_farm:farmhouse  | 115    | 6        | 407        | 28%   | vintner 315    | 37%   |
+| city:ih_flats             | 40     | 4        | 350        | 11%   | farmer 237     | 17%   |
+| city:bw_apartments        | 55     | 5        | 391        | 14%   | vintner 315    | 17%   |
+| city:vw_cottage           | 85     | 7        | 413        | 21%   | farmer 339     | 25%   |
+| city:vw_house_a           | 85     | 7        | 413        | 21%   | farmer 339     | 25%   |
+| city:vw_house_b           | 85     | 7        | 413        | 21%   | farmer 339     | 25%   |
+| city:ih_workshop          | 135    | 12       | 882        | 15%   | vintner 369    | 37%   |
+| city:ih_warehouse         | 170    | 15       | 935        | 18%   | vintner 369    | 46%   |
+| city:ih_pub               | 10     | 1        | 165        | 6%    | gunsmith 112   | 9%    |
+| city:vw_bakery            | 40     | 4        | 350        | 11%   | farmer 237     | 17%   |
+| city:bw_store             | 55     | 5        | 391        | 14%   | vintner 315    | 17%   |
 
 ### Active hours until each housing milestone (household policy in `simulate`)
 
@@ -252,6 +257,12 @@ Everything between the markers is written by `--update-doc` and checked by a uni
 | iron_ingot   | 9              | 32.0      | 28      |
 | lapis_lazuli | 11             | 5.7       | 0       |
 | redstone     | 6              | 18.7      | 0       |
+
+### Salvage yards (D-138): heaps that refill in active time, and the mean items an active hour if every heap is stripped (one rotation of each yard stands in a world)
+
+| yard               | heaps | minutes | heaps/h | items/h                                                                          |
+|--------------------|-------|---------|---------|----------------------------------------------------------------------------------|
+| rs_kessler_salvage | 54    | 60      | 54      | chain 2.2, copper_ingot 8.1, iron_nugget 135.0, redstone 7.3, machined_parts 1.1 |
 
 ### Fences (D-125): rate, best rate with every payout skill, opening budget, the most they pay an hour after it, against the best legal hour at level 5
 

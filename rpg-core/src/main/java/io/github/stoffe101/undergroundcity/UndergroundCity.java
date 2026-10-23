@@ -67,6 +67,18 @@ public final class UndergroundCity {
     public static final RegistryObject<Item> ALARM_PANEL_ITEM = ITEMS.register("alarm_panel",
         () -> new BlockItem(ALARM_PANEL.get(), new Item.Properties()));
 
+    /**
+     * A heap of scrap at a salvage yard (D-138): stripped with a pickaxe for metal and parts (its loot table), and filled again by the yard's resource site in active play time only
+     * ({@link ResourceSites}). It never drops itself, so a player cannot carry a heap home and farm it.
+     */
+    public static final RegistryObject<Block> SCRAP_HEAP = BLOCKS.register("scrap_heap",
+        () -> new Block(BlockBehaviour.Properties.of().mapColor(MapColor.TERRACOTTA_BROWN).strength(1.8f, 6.0f).requiresCorrectToolForDrops()
+            .sound(net.minecraft.world.level.block.SoundType.METAL)));
+    public static final RegistryObject<Item> SCRAP_HEAP_ITEM = ITEMS.register("scrap_heap",
+        () -> new BlockItem(SCRAP_HEAP.get(), new Item.Properties()));
+    /** A courier's sealed letter from a roadside encounter (D-139): pays its fee once, at any terminal or counter in the city it is addressed to. */
+    public static final RegistryObject<Item> SEALED_ENVELOPE = ITEMS.register("sealed_envelope", () -> new EnvelopeItem(new Item.Properties().stacksTo(1)));
+
     private static final DeferredRegister<net.minecraft.world.level.block.entity.BlockEntityType<?>> BLOCK_ENTITIES =
         DeferredRegister.create(ForgeRegistries.BLOCK_ENTITY_TYPES, MOD_ID);
     // Unbreakable by survival players: a smash-and-grab would bypass lock, vigilance and restock rules.
@@ -200,6 +212,8 @@ public final class UndergroundCity {
         event.addListener(PopulationCatalog.INSTANCE);
         event.addListener(FenceCatalog.INSTANCE);
         event.addListener(ShopCounters.INSTANCE);
+        event.addListener(RoadsidePlaces.CATALOG);
+        event.addListener(RoadEncounters.CATALOG);
     }
 
     private void addCreativeTab(BuildCreativeModeTabContentsEvent event) {
