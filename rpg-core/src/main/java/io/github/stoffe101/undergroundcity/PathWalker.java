@@ -58,16 +58,16 @@ final class PathWalker {
         planned = null;
         Vec3 aim = goal;
         double d = flat(from, goal);
-        if (d > LEG) aim = from.add(goal.subtract(from).multiply(LEG / d, 0, LEG / d)).add(0, goal.y - from.y, 0);
+        // a leg on the way aims at the walker's own height: aiming at the goal's (a quarry 20 blocks down) pulled a walker into a pit, and aiming at no height at all let one climb
+        // down into a ravine 45 blocks deep; the last leg alone goes to the goal's height
+        if (d > LEG) aim = from.add(goal.subtract(from).multiply(LEG / d, 0, LEG / d));
         final Vec3 leg = aim;
         final boolean last = d <= LEG;
         server.execute(() -> {
             List<Vec3> out = new ArrayList<>();
             try {
                 // a route a person can walk: the player's own collision, not a mob's (see PlayerPath)
-                // a leg on the way only has to reach its column, at whatever height the ground is there: asking it for the target's height (a quarry's stone 20 blocks down) sent a journey's
-                // walker into a valley whose cells were nearer that height, and down into a pit it could not climb out of
-                out.addAll(PlayerPath.find(server.overworld(), from, leg, last ? Math.max(0.8, within - 0.5) : 3.0, last ? Math.min(3.0, withinY) : 512.0));
+                out.addAll(PlayerPath.find(server.overworld(), from, leg, last ? Math.max(0.8, within - 0.5) : 3.0, last ? Math.min(3.0, withinY) : 3.0));
             } catch (RuntimeException error) {
                 Playtest.log(label + ": planning failed: " + error);
             }
