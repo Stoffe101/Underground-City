@@ -18,6 +18,8 @@ One card, then (optionally) the accepted order and the next step of the guided f
 | Trade | the citizen record: trade, level, progress to the next level, unspent skill points | registered |
 | Heat | the heat ledger, for the city the player is in (else their home city) | only when above zero |
 
+**Where the next step points (October 23).** The next-step card draws an arrow and a named line when its step is a place: the employer for "Meet your employer", and now the road out for "Travel to a rival city" (`Journey.roadOut`): in the player's home city, the nearest end of a road that leaves it ("Road to Valewood", "Road to Blackwater"); outside every city, the end ahead where a road enters a rival city; in a rival city already, nothing (the step is a terminal there). A scripted journey had walked about 720 blocks from Founders Row to the nearest road's end with nothing on the screen saying where it was. A world whose road chunks are not generated yet uses the configured roads' geometry. GameTested (`RoadMarkerGameTests.theTravelStepPointsAtTheRoadOutOfTheCity`); not yet seen in a screenshot.
+
 All of it is the server's number (`HudState`, `HudService`). The client never computes a price, a rent or a level; it draws the snapshot and its own clock. A snapshot is built for each real player at most every two seconds (players are staggered across those two seconds), sent only when it differs from the last one sent, and discarded on login, logout, respawn and a change of dimension. Fake players (tests, machines) get none.
 
 ## Where it stands, and why there (measured, not assumed)

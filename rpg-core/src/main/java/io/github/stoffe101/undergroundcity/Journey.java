@@ -87,10 +87,53 @@ public final class Journey {
                 Villager employer = find(level, "employer", citizen.get().career);
                 if (employer != null) { target = employer.blockPosition(); name = employer.getName().getString(); }
             }
+            if (def.id().equals("travel")) {
+                String here = CityRegions.INSTANCE.cityAt(level, player.blockPosition()).orElse("");
+                RoadOut out = roadOut(roads(level), here, citizen.get().city, player.getX(), player.getZ());
+                if (out != null) { target = BlockPos.containing(out.x(), player.getY(), out.z()); name = "Road to " + capitalize(out.to()); }
+            }
             return new Objective(def.title(), def.hint(), def.page(), target, name);
         }
         return goal(player, citizen.get());
     }
+
+    /** Where the road out begins: the end of an open road, and the city it leads to. */
+    record RoadOut(double x, double z, String to) {}
+
+    private static final Map<net.minecraft.server.MinecraftServer, List<CorridorPlan>> CONFIGURED_ROADS = new java.util.WeakHashMap<>();
+
+    /** The roads of the world: the built plans, or (before any road chunk has been generated, as in a new world) the configured ones, per server; only their geometry is used here. */
+    private static List<CorridorPlan> roads(ServerLevel level) {
+        List<CorridorPlan> built = CorridorRoadFeature.plans(level);
+        if (!built.isEmpty()) return built;
+        synchronized (CONFIGURED_ROADS) { return CONFIGURED_ROADS.computeIfAbsent(level.getServer(), DevCommands::plans); }
+    }
+
+    /**
+     * The way to a rival city for the travel step (a scripted journey walked about 720 blocks from the Row to the nearest road's end with nothing on the screen saying where it was): in a city,
+     * the nearest end of a road that leaves it for another city; outside every city, the nearest end where a road enters a city not the player's own; in a rival city already, nothing (the
+     * step is a terminal there). A road's id names its two cities in order, and its ends are listed in the same order ({@link CorridorPlan#ends}).
+     */
+    static RoadOut roadOut(List<CorridorPlan> plans, String here, String home, double x, double z) {
+        if (!here.isEmpty() && !here.equals(home)) return null;
+        RoadOut best = null;
+        double bestD = Double.MAX_VALUE;
+        for (CorridorPlan plan : plans) {
+            String[] cities = plan.id().split("_", 2);
+            CorridorPlan.End[] ends = plan.ends();
+            if (cities.length != 2 || ends.length != 2) continue;
+            for (int i = 0; i < 2; i++) {
+                String at = cities[i], other = cities[1 - i];
+                // in the home city: where its roads leave it; outside: where a road enters a rival city (on the road already, that is the end ahead)
+                if (here.isEmpty() ? at.equals(home) : !at.equals(here)) continue;
+                double d = Math.hypot(ends[i].x() - x, ends[i].z() - z);
+                if (d < bestD) { bestD = d; best = new RoadOut(ends[i].x(), ends[i].z(), here.isEmpty() ? at : other); }
+            }
+        }
+        return best;
+    }
+
+    private static String capitalize(String id) { return id == null || id.isEmpty() ? "" : Character.toUpperCase(id.charAt(0)) + id.substring(1); }
 
     /** A household that held a home before the home milestone existed (or got one by an operator's hand) has done that step. */
     private static void backfillHome(ServerPlayer player, CitizenState citizens, CitizenState.Citizen citizen) {
