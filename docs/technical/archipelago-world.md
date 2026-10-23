@@ -144,6 +144,8 @@ Measured by the road check in a new world (seed 5908, `world,furnished,scarcity`
 
 **Walked by a scripted real client.** Journey runs 36 and 37 walked up the ramp at the Valewood end of the Ironhaven road to a street door with no teleport (run 37: 19 s), and development run 40 walked from Founders Row through Ironhaven to the ramp at the Ironhaven end and onto the road (721 blocks, 433 s, no teleport). The road check measures the line only; no person has walked any of them.
 
+**The ramps stalled the server, and no longer generate anything themselves (October 23).** Laid the first time somebody came within 96 blocks, a ramp read and changed city chunks that a player arriving along the road had not loaded yet, and asked for them on the server thread: the journey runs' logs show a stall of 4 to 43 seconds within seconds of each ramp, the Valewood ones worst. A ramp now waits until every chunk it touches is loaded; a player within 160 blocks keeps a ticket on them so the world generates them on its workers, as it does for any player. Measured in [lost-cities-stalls.md](lost-cities-stalls.md#the-road-end-ramps-october-23).
+
 ### Roadside stops (the existing wayside shelters, run on the new corridors)
 
 `WaysideShelters` places a shelter or a well every 300 to 450 blocks of open road, when a player comes near; it had only ever been run on the legacy roads. `RoadCheck` now serves every planned stop of the three corridors as a player's approach would (the same `serve` the level tick runs, in a disposable world, after the chunks around each stop are generated):
