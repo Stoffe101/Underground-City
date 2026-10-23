@@ -144,7 +144,7 @@
       "id": "farmer.underground_trade",
       "branch": "underground",
       "title": "Underground Trade",
-      "description": "Open a line to a Blackwater buyer. Unlocks quiet bale delivery contracts.",
+      "description": "Open a line to a Blackwater buyer. Unlocks quiet cannabis deliveries.",
       "cost": 3,
       "min_level": 9,
       "requires": [

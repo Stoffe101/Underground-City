@@ -11,7 +11,7 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-OLD = re.compile(r"\bsable(?:[ _-]?leaf)?\b|sable_(?:cutting|leaf|cola|seedling|stem|stake)", re.IGNORECASE)
+OLD = re.compile(r"\bsable(?:[ _-]?leaf)?\b|sable_(?:cutting|leaf|cola|seedling|stem|stake)|SableLeaf|sableLeaf", re.IGNORECASE)
 #: the alias table that keeps older saves loading, and this test
 ALLOWED_FILES = {"rpg-core/src/main/java/io/github/stoffe101/undergroundcity/RenamedIds.java", "rpg-core/src/main/java/io/github/stoffe101/undergroundcity/SkillEffectGameTests.java",
                  "tests/test_terminology.py"}

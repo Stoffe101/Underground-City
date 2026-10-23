@@ -249,7 +249,7 @@ public final class ProductionLoopGameTests {
 
     // each loop is its own batch: it swaps the city circles for several ticks, and nothing else may run beside it
     @GameTest(template = "empty", batch = "uc_loop_plain", timeoutTicks = 400)
-    public static void theSableLeafLoopRunsFromExchangeGoodsToAPaidDeliveryAtAProfit(GameTestHelper helper) { runLoop(helper, false); }
+    public static void theCannabisLoopRunsFromExchangeGoodsToAPaidDeliveryAtAProfit(GameTestHelper helper) { runLoop(helper, false); }
 
     @GameTest(template = "empty", batch = "uc_loop_grafting", timeoutTicks = 400)
     public static void theSameLoopWithTheGraftingSkillGivesAtLeastTheSameAndUsuallyMore(GameTestHelper helper) { runLoop(helper, true); }

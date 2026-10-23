@@ -56,8 +56,8 @@ and replenishes with active play; deliveries are settled through the fsynced `Wo
 | Broker heirloom seed stock | Farmer, legal | Cultivar Broker | | 150 | Heirloom Seed Packet |
 | Estate pantry | Farmer, legal | Estate Wholesale | | 260 | |
 | Licensed controlled-crop supply | Farmer, legal | Controlled-Crop Licence | Blackwater dispensary | 200 | |
-| Quiet bale delivery | Farmer, underground | Underground Trade | Marrow (Blackwater) | 220 | buyer trust |
-| Reserve load | Farmer, underground | Grey Market Contacts, trust 2 | Marrow | 440 | 2 cuttings |
+| Quiet cannabis delivery | Farmer, underground | Underground Trade | Marrow (Blackwater) | 220 | buyer trust |
+| Reserve load | Farmer, underground | Grey Market Contacts, trust 2 | Marrow | 440 | 2 Cannabis Seeds |
 | Table wine for the tavern | Vintner, legal, **Vinery** | Cellar Craft | town exchange | 185 | |
 | Fill an estate cellar | Vintner, legal, **Vinery** | Estate Vintages | | 220 | |
 | Licensed spirits for the taproom | Vintner, legal, **Kaleidoscope Tavern** | Distiller's Licence | Blackwater Harbour Taproom | 140 | |
@@ -139,12 +139,12 @@ is **arithmetic over data, not a playtest**.
   Core-only run must stay valid.
 - Rare components arrive as packed items that the exchange unpacks into what it sells; they are never currency.
 
-## The cannabis crop (Farmer, restricted crop; called "Cannabis" before D-142)
+## The cannabis crop (Farmer, restricted crop; renamed by D-142)
 
 An abstract mechanic, not a real-world drug: `RestrictedCropBlock` grows in four stages, only at light level 12 or
 higher and only after the plant has been nourished with a Cultivation Nutrient (right-click). A mature plant
-yields Cannabis Flower (2-3) or seeds. Bone meal does not work. Planting a cutting needs the Restricted
-Cultivation skill (`RestrictedCuttingItem`); the bale is the contraband item that the law categories classify.
+yields Cannabis Flower (2-3) or seeds. Bone meal does not work. Planting Cannabis Seeds needs the Restricted
+Cultivation skill (`RestrictedCuttingItem`); Cannabis Flower is the contraband item that the law categories classify.
 
 ## Spirits and the Vintner (D-067)
 
