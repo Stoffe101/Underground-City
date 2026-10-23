@@ -19,7 +19,7 @@ Branch `feature/world-playability-overhaul`, draft PR [#25](https://github.com/S
 
 | Check | Result |
 | --- | --- |
-| Forge GameTests (the economy profile, every test) | **All 342 required tests passed** (run 68). Runs 64 to 67 failed one or two: the ramp test's chunk bound (raised with the ramp's new reach, below) and a witness test whose "in plain sight" street had blocks left on it by an earlier batch's test at the same grid slot (GameTest clears only three blocks round a one-block template); the test now clears its own street. |
+| Forge GameTests (the economy profile, every test) | **All 342 required tests passed** (local run 72, on the final code). On the way, test-only faults were found and fixed. Local runs 64 to 67 failed one or two tests: the ramp test's chunk bound (raised with the ramp's new reach), and a witness test whose "in plain sight" street had blocks left on it by an earlier batch's test at the same grid slot (GameTest clears only three blocks round a one-block template); that test now clears its own street. Hosted CI failed two tests once each: a cultivation test that waited a fixed 40 ticks for its lamp's light on a runner 178 ticks behind (it now waits until the plant could stand there), and the encounter world test, whose stone pad stopped one column short of the farthest spot it can give the stranded driver (now wider). |
 | Python suite (`python -m unittest discover -s tests`) | **316 tests, OK** (the pinned-jar scan now lists SecurityCraft's nether-star recipes as allowed, since the trial removes every SecurityCraft recipe) |
 | `python scripts/validate_repo.py` | passed |
 | SecurityCraft trial, real client (`-PucPlaytest=security`, run 11) | **`SECURITY PASS`, `RESULT pass`**; runs 1 to 10 and what each found are in [securitycraft-trial.md](../technical/securitycraft-trial.md#results) |
@@ -46,14 +46,21 @@ The first tour's diner frame was lost to a fault of the tour (its stage clock st
 
 The journey of the previous pass (D-132) now also meets a courier on the first stretch out of Ironhaven, takes the letter in the dialogue, walks to the Crossroads Diner and buys over the cook's counter, and pays the letter in at the Valewood terminal.
 
-**Run 64, a brand-new furnished archipelago world, the whole journey: `RESULT pass`**, 28 steps with real key and mouse input, 1,456 s of real time. The new steps: **14d** the courier's letter taken (Pip Arkwright, about 260 blocks along the road from its Ironhaven end, set up at the third asking), **14c** a baked potato bought at the Crossroads Diner (4 credits, real clicks), **15a** the letter paid once at the Valewood terminal (+51 credits), then the rest of the journey as before (a locked building that stays shut, a rival-city visit, a second order, an exchange purchase, an emptied shelf, the walk back across the bridge, 241 s). Four shortcuts, each logged:
+**Run 65, the evidence run (a brand-new furnished archipelago world, the whole journey, on the final code): `RESULT pass`**, 28 steps with real key and mouse input, 1,508 s of real time, **walked the whole way** (the Row to the road's Ironhaven end on foot in 349 s, up the new ramp, no teleport). The road's new steps:
+* **14d:** the courier's letter taken in the dialogue (Nell Okafor, about 260 blocks along the road from its Ironhaven end).
+* **14c:** a baked potato bought at the Crossroads Diner over the cook's counter, for 4 credits, with real clicks.
+* **15a:** the letter paid once at the Valewood terminal (+51 credits).
 
-1. The tree's position was looked up in the world.
-2. **The last 8 blocks from the Row to the road's Ironhaven end were a teleport.** The road-end ramp had not been laid, and the walker could not climb from the ditch below the deck. See below.
-3. The courier was set up with `/uc_encounters meet` rather than waited for (its five minutes of road time and its roll).
-4. The Valewood charcoal shelf was emptied on the server to stand in for another buyer.
+The rest of the journey ran as before: arrival, registration, the employer, the first order, the counter, the motel room, a skill, a reconnect, a locked building that stays shut, a rival-city visit, a second order, an exchange purchase, an emptied shelf, and the walk back across the bridge (241 s). Three shortcuts, each logged:
+* the tree's position was looked up in the world;
+* the courier was set up with `/uc_encounters meet` instead of waiting out its five minutes of road time and its roll;
+* the Valewood charcoal shelf was emptied on the server to stand in for another buyer.
 
-**What the runs found on the way (58 to 64), each fixed:**
+Its frames, looked at: the courier's dialogue ("Chain snapped, and this has to reach Valewood today"), the cook's ("Stew's hot, pie's yesterday's"), and the diner counter's trade page. On that page the subtitle said the counter's stock was shared with the city's other shops, which is untrue at a roadside place, and it was cut off. It now reads "Open while the shopkeeper is in" (not re-photographed). The cook's badge reads Ironhaven while the diner sells Valewood's lines; this is not changed.
+
+**Run 64**, the same journey one fix earlier, also passed (28 steps, 1,456 s), with one shortcut more. The last 8 blocks to the road's Ironhaven end were a teleport: the ramp there had not been laid, and the walker could not climb from the ditch below the deck (see below).
+
+**What the runs found on the way (58 to 65), each fixed:**
 
 * The courier could not stand anywhere on the guarded road. The Ironhaven-Valewood road is two thirds bridges, and an 80-block clearance round shelters and places left no verge (run 58). The clearance is now 40, and 70 from a place.
 * The verge that is left is forest, and a plot of plain air was found nowhere in 320 blocks (run 59). An encounter now stands in wild growth, which is put back after.
@@ -62,7 +69,7 @@ The journey of the previous pass (D-132) now also meets a courier on the first s
 * The step asked for a courier before the land ahead was loaded and walked past the verge (run 61). It now waits for the road's chunks ahead.
 * A second courier was set up because the first stood 113 blocks off, beyond a 96-block search (run 62). The step now reads the server's record.
 * The walker stuck in the diner's doorway when the door was shut again (run 63; what shut it is not known). It now opens a door it is standing in.
-* **The Ironhaven end's ramp was not laid on the way out in runs 58 and 64.** It waited for every chunk up to 112 blocks in; it was laid on the way back. Fixed after run 64: a ramp is laid once its own 64 blocks are loaded and reads its longer reach only from loaded chunks ([archipelago-world.md](../technical/archipelago-world.md#where-the-roads-meet-the-cities-d-137-october-23)). The whole journey was run again on this change (run 65, below).
+* **The Ironhaven end's ramp was not laid on the way out in runs 58 and 64.** It waited for every chunk up to 112 blocks in; it was laid on the way back. Fixed after run 64: a ramp is laid once its own 64 blocks are loaded and reads its longer reach only from loaded chunks ([archipelago-world.md](../technical/archipelago-world.md#where-the-roads-meet-the-cities-d-137-october-23)). Run 65 then laid it on the way out, noting that the far reach's chunks were not all in the world, and the walker walked up it.
 
 Development runs 59 to 62 started at the travel step (the earlier steps set up by the server, logged), and run 62 passed every step from there. They are not evidence for steps 1 to 13.
 <!-- journey:end -->

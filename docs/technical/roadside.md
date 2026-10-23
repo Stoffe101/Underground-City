@@ -1,6 +1,6 @@
 # Roadside places and road encounters (D-138, D-139)
 
-Status: **implemented; GameTested headlessly (5 roadside-place and 6 encounter cases) and in the Python suite (`tests/test_roadside.py`); placement measured in a generated archipelago world by the road check; the diner stop, a courier encounter and a letter delivery are in the scripted real-client journey.** Nobody has played any of it. See the sprint report (`docs/production/living-world-roadside.md`) for the measurements and runs.
+Status: **implemented; GameTested headlessly (5 roadside-place and 6 encounter cases) and in the Python suite (`tests/test_roadside.py`); placement measured in a generated archipelago world by the road check; the diner stop, a courier encounter and a letter delivery are in the scripted real-client journey, which passed in a brand-new world (run 65).** Nobody has played any of it. See the sprint report (`docs/production/living-world-roadside.md`) for the measurements and runs.
 
 The owner's correction of October 23: thirteen-minute crossings are fine; empty roads are not. Cities, Founders Row and the roads stay where they are. What changes is what stands beside the roads and what can happen on them, and only in **new** worlds.
 
