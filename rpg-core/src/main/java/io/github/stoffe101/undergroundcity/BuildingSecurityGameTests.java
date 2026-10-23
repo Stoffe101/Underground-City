@@ -551,6 +551,24 @@ public final class BuildingSecurityGameTests {
         }
     }
 
+    /** Thief scenario run 3: a Valewood house's front step is under its eaves and its hall is roofed, so neither cell beside the door saw the sky and the door was never locked (D-150). */
+    @GameTest(template = "empty", batch = "uc_building_porch", timeoutTicks = 200)
+    public static void aFrontDoorUnderTheEavesIsStillAStreetDoor(GameTestHelper helper) {
+        try (House house = new House(helper)) {
+            BlockState closed = house.level.getBlockState(house.doorLower);
+            // eaves over the front step: the cell in front of the door is roofed, the next one out is open to the sky
+            for (int x = 2; x <= 4; x++) house.level.setBlock(house.outside(x, 3, 1), Blocks.STONE.defaultBlockState(), 2);
+            check(!BuildingGuard.exposed(house.level, house.doorLower.relative(Direction.NORTH).above()), "the fixture's eaves do not cover the front step");
+            check(BuildingGuard.exterior(house.level, house.doorLower, closed), "a front door whose step is under the eaves is taken for an inside door, and never locked");
+            check(BuildingGuard.outsideSide(house.level, house.doorLower, closed, new Vec3(house.doorLower.getX() + 0.5, house.doorLower.getY(), house.doorLower.getZ() - 2.5)), "the street beyond the step is not the outside");
+            check(!BuildingGuard.outsideSide(house.level, house.doorLower, closed, new Vec3(house.doorLower.getX() + 0.5, house.doorLower.getY(), house.doorLower.getZ() + 1.5)), "the hall is taken for the outside");
+            // a porch closed off by a wall two steps out is not a way to the street
+            for (int x = 2; x <= 4; x++) for (int y = 0; y <= 2; y++) house.level.setBlock(house.outside(x, y, 2), Blocks.STONE_BRICKS.defaultBlockState(), 2);
+            check(!BuildingGuard.exterior(house.level, house.doorLower, closed), "a door into a closed porch, roofed and walled, is taken for a street door");
+            helper.succeed();
+        }
+    }
+
     // ------------------------------------------------------------------------------------------------ the stash
 
     @GameTest(template = "empty", batch = "uc_building_stash", timeoutTicks = 200)

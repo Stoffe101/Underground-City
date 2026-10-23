@@ -58,7 +58,7 @@ final class DoorWalk {
                     if (!(state.getBlock() instanceof DoorBlock) || state.getValue(DoorBlock.HALF) != DoubleBlockHalf.LOWER || state.getValue(DoorBlock.OPEN)) continue;
                     if (!BuildingGuard.exterior(level, pos, state)) continue;
                     Direction facing = state.getValue(DoorBlock.FACING);
-                    boolean frontSky = BuildingGuard.exposed(level, pos.relative(facing).above()), backSky = BuildingGuard.exposed(level, pos.relative(facing.getOpposite()).above());
+                    boolean frontSky = BuildingGuard.leadsOut(level, pos, facing), backSky = BuildingGuard.leadsOut(level, pos, facing.getOpposite());
                     if (frontSky == backSky || frontSky != frontIsStreet) continue;
                     Direction out = frontSky ? facing : facing.getOpposite();
                     boolean clear = true;

@@ -259,7 +259,7 @@ public final class SecurityCraftTrial {
         CityBuildings.Building building = CityBuildings.INSTANCE.at(level, lower).orElseThrow(() -> new IllegalStateException("That door is not a city building's."));
         if (!BuildingGuard.exterior(level, lower, old)) throw new IllegalStateException("That is not a street door.");
         Direction facing = old.getValue(DoorBlock.FACING);
-        Direction inside = BuildingGuard.exposed(level, lower.relative(facing).above()) ? facing.getOpposite() : facing;
+        Direction inside = BuildingGuard.leadsOut(level, lower, facing) ? facing.getOpposite() : facing;
         // the door: the old one out (no drops), the keypad door in, owned by the system, with Core's code
         level.setBlock(lower.above(), net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(), 2 | 16);
         level.setBlock(lower, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(), 2 | 16);

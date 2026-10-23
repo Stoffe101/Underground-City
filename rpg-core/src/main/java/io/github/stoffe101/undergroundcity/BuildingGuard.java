@@ -137,10 +137,28 @@ public final class BuildingGuard {
         return true;
     }
 
-    /** True when the door's front or back side is open to the sky (the street, a roof): the side a visitor stands on. A door with both sides under a roof is an inside door. */
+    /** True when the door's front or back side leads outside (the street, a roof): the side a visitor stands on. A door with both sides under a roof, well in, is an inside door. */
     static boolean exterior(ServerLevel level, BlockPos lower, BlockState state) {
         Direction facing = state.getValue(DoorBlock.FACING);
-        return exposed(level, lower.relative(facing).above()) || exposed(level, lower.relative(facing.getOpposite()).above());
+        return leadsOut(level, lower, facing) || leadsOut(level, lower, facing.getOpposite());
+    }
+
+    /** How far beyond a door a covered step may reach before the open sky: the eaves or a porch roof over a front door (D-150). */
+    static final int COVERED_STEP = 3;
+
+    /**
+     * Whether one side of a door leads outside: the cell before it is open to the sky (the rule before D-150, kept so that no door that was locked becomes an inside door), or open floor leads
+     * from the door, within {@link #COVERED_STEP} blocks, to a cell that is. A Valewood house's front door has its step under the eaves and a roofed hall behind it, so neither cell beside it
+     * was open to the sky and the door was taken for an inside door, never locked (found by the Thief scenario, run 3). A wall, a closed door or furniture in the way ends the search.
+     */
+    static boolean leadsOut(ServerLevel level, BlockPos lower, Direction side) {
+        if (exposed(level, lower.relative(side).above())) return true;
+        for (int k = 1; k < COVERED_STEP; k++) {
+            BlockPos cell = lower.relative(side, k);
+            if (level.getBlockState(cell).blocksMotion() || level.getBlockState(cell.above()).blocksMotion()) return false;
+            if (exposed(level, lower.relative(side, k + 1).above())) return true;
+        }
+        return false;
     }
 
     /**
@@ -161,7 +179,7 @@ public final class BuildingGuard {
     /** True when the player stands on the sky side of the door (a visitor); a person on the inside can always leave. */
     static boolean outsideSide(ServerLevel level, BlockPos lower, BlockState state, Vec3 at) {
         Direction facing = state.getValue(DoorBlock.FACING);
-        boolean frontSky = exposed(level, lower.relative(facing).above()), backSky = exposed(level, lower.relative(facing.getOpposite()).above());
+        boolean frontSky = leadsOut(level, lower, facing), backSky = leadsOut(level, lower, facing.getOpposite());
         if (frontSky && backSky) return true;
         return inFront(lower, state, at) ? frontSky : backSky;
     }

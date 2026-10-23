@@ -151,7 +151,7 @@ public final class BurglaryHarness {
         BlockState doorState = level.getBlockState(door);
         Direction facing = doorState.getValue(DoorBlock.FACING);
         // stand on the sky side
-        BlockPos outside = BuildingGuard.exposed(level, door.relative(facing).above()) ? door.relative(facing) : door.relative(facing.getOpposite());
+        BlockPos outside = BuildingGuard.leadsOut(level, door, facing) ? door.relative(facing) : door.relative(facing.getOpposite());
         thief.moveTo(outside.getX() + 0.5, outside.getY(), outside.getZ() + 0.5);
         fact("the door is locked from the street", BuildingGuard.exterior(level, door, doorState) && BuildingGuard.outsideSide(level, door, doorState, thief.position()), "exterior door, visitor on the sky side");
 
@@ -283,7 +283,7 @@ public final class BurglaryHarness {
         fact("the lapsed door is shut again", after.getBlock() instanceof DoorBlock && !after.getValue(DoorBlock.OPEN), "open=" + (after.getBlock() instanceof DoorBlock ? after.getValue(DoorBlock.OPEN) : "n/a"));
         ServerPlayer stranger = visitor(level, "UC_Stranger");
         Direction facing = after.getValue(DoorBlock.FACING);
-        BlockPos outside = BuildingGuard.exposed(level, door.relative(facing).above()) ? door.relative(facing) : door.relative(facing.getOpposite());
+        BlockPos outside = BuildingGuard.leadsOut(level, door, facing) ? door.relative(facing) : door.relative(facing.getOpposite());
         stranger.moveTo(outside.getX() + 0.5, outside.getY(), outside.getZ() + 0.5);
         stranger.gameMode.useItemOn(stranger, level, ItemStack.EMPTY, InteractionHand.MAIN_HAND, click(door, facing));
         fact("a stranger cannot open it by hand after the restart", !level.getBlockState(door).getValue(DoorBlock.OPEN), "closed");
