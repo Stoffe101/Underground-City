@@ -1,6 +1,6 @@
 # The SecurityCraft trial (D-140)
 
-Status: **experimental, opt-in, not adopted.** SecurityCraft 1.20.1-v1.10.2.1 is pinned as the dev-pack set `securitycraft` (runtime-only, hash-checked, never committed) and no default launch includes it. Core's adapter (`SecurityCraftTrial`) is GameTest-free by design (SecurityCraft is not on the GameTest classpath); it is exercised by one scripted real-client scenario, `-PucPlaytest=security` (`SecurityScenario`), which passed on October 23 (run 11, below). D-121 (SecurityCraft not adopted as a second authority) still stands; whether to adopt anything from this trial is the owner's decision.
+Status: **experimental, opt-in, not adopted.** SecurityCraft v1.10.2.1 for Minecraft 1.20.1 is pinned as the dev-pack set `securitycraft` (runtime-only, hash-checked, never committed) and no default launch includes it. Core's adapter (`SecurityCraftTrial`) is GameTest-free by design (SecurityCraft is not on the GameTest classpath); it is exercised by one scripted real-client scenario, `-PucPlaytest=security` (`SecurityScenario`), which passed on October 23 (run 11, below). D-121 (SecurityCraft not adopted as a second authority) still stands; whether to adopt anything from this trial is the owner's decision.
 
 ## Why a trial, and what was looked at first
 
