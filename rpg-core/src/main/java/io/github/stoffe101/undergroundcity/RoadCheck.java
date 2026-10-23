@@ -33,36 +33,66 @@ public final class RoadCheck {
         started = true;
     }
 
+    /** What is left to measure once the roads are surveyed, one item a tick: generating the chunks of every stop, place and road end in a single tick kept them all in memory until the tick ended (the October 23 check ran out of memory at the last road end). */
+    private java.util.ArrayDeque<Runnable> work;
+    private JsonObject report;
+
     @SubscribeEvent
     public void tick(TickEvent.ServerTickEvent event) {
         if (OUTPUT == null || OUTPUT.isBlank() || finished || !started || event.phase != TickEvent.Phase.END) return;
         if (verifier == null) verifier = new WorldRoadVerifier();
-        if (verifier.step(event.getServer())) return;
-        JsonObject report = new JsonObject();
-        report.addProperty("layout", WorldLayout.INSTANCE.current().map(WorldLayout.Layout::id).orElse("none"));
-        report.add("roads", verifier.report());
-        report.add("shelters", shelters(event.getServer()));
-        // D-138: the roadside places, where the world enabled them, served as a player's arrival would
-        if (RoadsidePlaces.enabled(event.getServer().overworld())) report.add("roadside_places", roadside(event.getServer()));
-        else report.addProperty("roadside_places", "not enabled in this world");
-        report.add("ends", ends(event.getServer()));
-        // D-137: build each end's approach as a player's first visit would, then measure again
-        if (RoadApproaches.enabled(event.getServer().overworld())) {
-            JsonArray built = new JsonArray();
-            for (CorridorPlan plan : CorridorRoadFeature.ready(event.getServer().overworld())) for (CorridorPlan.End end : plan.ends()) {
-                var result = RoadApproaches.build(event.getServer().overworld(), plan, end);
-                built.add(plan.id() + " at " + (int) end.x() + " " + (int) end.z() + ": " + result + "; " + pits(event.getServer().overworld(), end, result));
-                LOGGER.info("[UC-ROADS] approach built at {} {} {}: {}", plan.id(), (int) end.x(), (int) end.z(), result);
-            }
-            report.add("approaches", built);
-            report.add("ends_after_approaches", ends(event.getServer()));
-        } else report.addProperty("approaches", "not enabled in this world (it was not started as a new archipelago world)");
+        if (work == null) {
+            if (verifier.step(event.getServer())) return;
+            plan(event.getServer());
+            return;
+        }
+        if (!work.isEmpty()) { work.poll().run(); return; }
         try { Files.writeString(Path.of(OUTPUT), report + "\n", StandardCharsets.UTF_8); }
         catch (IOException error) { throw new IllegalStateException("Cannot write the road check", error); }
         LOGGER.info("[UC-ROADS] road check written to {}", OUTPUT);
         finished = true;
         event.getServer().halt(false);
     }
+
+    /** Queues the measurements after the survey: the shelters, the roadside places, the road ends, and (where the world has them) each end's approach and the ends again. */
+    private void plan(MinecraftServer server) {
+        work = new java.util.ArrayDeque<>();
+        report = new JsonObject();
+        report.addProperty("layout", WorldLayout.INSTANCE.current().map(WorldLayout.Layout::id).orElse("none"));
+        report.add("roads", verifier.report());
+        ServerLevel level = server.overworld();
+        JsonArray shelters = new JsonArray();
+        report.add("shelters", shelters);
+        List<CorridorPlan> all = DevCommands.plans(server);
+        for (CorridorPlan plan : all) {
+            List<Double> ideal = WaysideShelters.positions(plan, WaysideShelters.MAX_GAP, WaysideShelters.EDGE);
+            for (int i = 0; i < ideal.size(); i++) { final int stop = i; work.add(() -> shelter(server, all, plan, ideal, stop, shelters)); }
+        }
+        // D-138: the roadside places, where the world enabled them, served as a player's arrival would
+        if (RoadsidePlaces.enabled(level)) {
+            JsonArray places = new JsonArray();
+            report.add("roadside_places", places);
+            work.add(() -> roadside(server, places));
+        } else report.addProperty("roadside_places", "not enabled in this world");
+        JsonArray ends = new JsonArray();
+        report.add("ends", ends);
+        int pairs = endCount(server);
+        for (int i = 0; i < pairs; i++) { final int only = i; work.add(() -> ends(server, ends, only)); }
+        // D-137: build each end's approach as a player's first visit would, then measure again
+        if (RoadApproaches.enabled(level)) {
+            JsonArray built = new JsonArray(), after = new JsonArray();
+            report.add("approaches", built);
+            report.add("ends_after_approaches", after);
+            for (CorridorPlan plan : CorridorRoadFeature.ready(level)) for (CorridorPlan.End end : plan.ends()) work.add(() -> {
+                var result = RoadApproaches.build(level, plan, end);
+                built.add(plan.id() + " at " + (int) end.x() + " " + (int) end.z() + ": " + result + "; " + pits(level, end, result));
+                LOGGER.info("[UC-ROADS] approach built at {} {} {}: {}", plan.id(), (int) end.x(), (int) end.z(), result);
+            });
+            for (int i = 0; i < pairs; i++) { final int only = i; work.add(() -> ends(server, after, only)); }
+        } else report.addProperty("approaches", "not enabled in this world (it was not started as a new archipelago world)");
+        LOGGER.info("[UC-ROADS] the roads are surveyed; {} more measurement(s) to make, one a tick", work.size());
+    }
+
     /**
      * Pits in a ramp just built: block columns of its band that stand two or more blocks below every neighbour of theirs in the band, which a person who steps in cannot step out of
      * (journey run 55's walker fell into a five-deep shaft the old ramp had skipped).
@@ -96,15 +126,24 @@ public final class RoadCheck {
      */
     static final int END_REACH = 120;
 
-    private static JsonArray ends(MinecraftServer server) {
+    private static List<CorridorPlan> endPlans(MinecraftServer server) {
         ServerLevel level = server.overworld();
-        List<CorridorPlan> plans = CorridorRoadFeature.ready(level).isEmpty() ? DevCommands.plans(server) : CorridorRoadFeature.ready(level);
-        JsonArray out = new JsonArray();
+        return CorridorRoadFeature.ready(level).isEmpty() ? DevCommands.plans(server) : CorridorRoadFeature.ready(level);
+    }
+
+    /** How many road ends {@link #ends} measures (two a road). */
+    private static int endCount(MinecraftServer server) { return endPlans(server).size() * 2; }
+
+    /** Measures the {@code only}-th road end (two a road, in order) into {@code out}. */
+    private static void ends(MinecraftServer server, JsonArray out, int only) {
+        ServerLevel level = server.overworld();
+        List<CorridorPlan> plans = endPlans(server);
+        int index = -1;
         for (CorridorPlan plan : plans) {
             double first = -1, last = -1;
             for (double at = 0; at <= plan.length(); at += 1) if (plan.openAt(at)) { if (first < 0) first = at; last = at; }
-            if (first < 0) continue;
             for (int end = 0; end < 2; end++) {
+                if (++index != only || first < 0) continue;
                 double edge = end == 0 ? first : last, inward = end == 0 ? -1 : 1;
                 JsonObject entry = new JsonObject();
                 entry.addProperty("road", plan.id());
@@ -162,55 +201,45 @@ public final class RoadCheck {
                 LOGGER.info("[UC-ROADS] {} {} end: steps up to {} (at {}), down to {}; walkable {}", plan.id(), end == 0 ? "start" : "finish", maxUp, upAt, maxDown, maxUp <= 1);
             }
         }
-        return out;
     }
 
     /**
      * The wayside stops of every corridor, served as if a player stood at each one (the same {@link WaysideShelters#serve} the level tick runs): which were built and where, and which were
      * given up for want of level, dry ground. The chunks around each stop are generated first, as a player's own approach would. It builds in the disposable measurement world only.
      */
-    private static JsonArray shelters(MinecraftServer server) {
+    private static void shelter(MinecraftServer server, List<CorridorPlan> plans, CorridorPlan plan, List<Double> ideal, int i, JsonArray out) {
         ServerLevel level = server.overworld();
-        List<CorridorPlan> plans = DevCommands.plans(server);
         PlacedSites state = PlacedSites.get(level, PlacedSites.SHELTERS);
-        JsonArray out = new JsonArray();
         int radius = WaysideShelters.SEARCH + 40;
-        for (CorridorPlan plan : plans) {
-            List<Double> ideal = WaysideShelters.positions(plan, WaysideShelters.MAX_GAP, WaysideShelters.EDGE);
-            for (int i = 0; i < ideal.size(); i++) {
-                double[] at = plan.pointAt(ideal.get(i));
-                for (int cx = ((int) at[0] - radius) >> 4; cx <= ((int) at[0] + radius) >> 4; cx++) for (int cz = ((int) at[1] - radius) >> 4; cz <= ((int) at[1] + radius) >> 4; cz++) level.getChunk(cx, cz);
-                long started = System.nanoTime();
-                WaysideShelters.serve(level, plans, plan, ideal, at[0], at[1], state);
-                String key = plan.id() + "#" + i;
-                JsonObject entry = new JsonObject();
-                entry.addProperty("key", key);
-                entry.addProperty("kind", WaysideShelters.kindOf(plan.id(), i));
-                entry.addProperty("ideal", Math.round(at[0]) + ", " + Math.round(at[1]));
-                Long where = state.where.get(key);
-                entry.addProperty("built", where != null);
-                if (where != null) entry.addProperty("origin", net.minecraft.core.BlockPos.of(where).toShortString());
-                else entry.addProperty("given_up", state.done.contains(key));
-                entry.addProperty("millis", (System.nanoTime() - started) / 1_000_000L);
-                out.add(entry);
-            }
-        }
-        return out;
+        double[] at = plan.pointAt(ideal.get(i));
+        for (int cx = ((int) at[0] - radius) >> 4; cx <= ((int) at[0] + radius) >> 4; cx++) for (int cz = ((int) at[1] - radius) >> 4; cz <= ((int) at[1] + radius) >> 4; cz++) level.getChunk(cx, cz);
+        long started = System.nanoTime();
+        WaysideShelters.serve(level, plans, plan, ideal, at[0], at[1], state);
+        String key = plan.id() + "#" + i;
+        JsonObject entry = new JsonObject();
+        entry.addProperty("key", key);
+        entry.addProperty("kind", WaysideShelters.kindOf(plan.id(), i));
+        entry.addProperty("ideal", Math.round(at[0]) + ", " + Math.round(at[1]));
+        Long where = state.where.get(key);
+        entry.addProperty("built", where != null);
+        if (where != null) entry.addProperty("origin", net.minecraft.core.BlockPos.of(where).toShortString());
+        else entry.addProperty("given_up", state.done.contains(key));
+        entry.addProperty("millis", (System.nanoTime() - started) / 1_000_000L);
+        out.add(entry);
     }
 
     /**
      * Each roadside place (D-138) served at its candidate spots in order, with the chunks around each generated first as a player's own approach would: where it was built, which way it
      * faces, how uneven its lot was, its driveway's length and steepest step, and how long the decision and the build took on the server thread.
      */
-    private static JsonArray roadside(MinecraftServer server) {
+    private void roadside(MinecraftServer server, JsonArray out) {
         ServerLevel level = server.overworld();
         List<CorridorPlan> plans = CorridorRoadFeature.ready(level);   // the built plans (bridges, water, deck heights)
         PlacedSites state = PlacedSites.get(level, RoadsidePlaces.KEY);
         // a measurement world measured again: a place given up last time is looked for afresh (this tool runs only in a disposable world)
         for (RoadsidePlaces.Place place : RoadsidePlaces.CATALOG.all()) if (!state.where.containsKey(place.id())) { state.done.remove(place.id()); state.failed.remove(place.id()); }
         RoadsidePlaces.resetForTest();
-        JsonArray out = new JsonArray();
-        int radius = RoadsidePlaces.SEARCH + 80;
+        java.util.List<Runnable> attempts = new java.util.ArrayList<>();
         for (CorridorPlan plan : plans) {
             List<RoadsidePlaces.Place> places = RoadsidePlaces.CATALOG.onRoad(plan.id());
             var candidates = RoadsidePlaces.plan(plan, places);
@@ -221,20 +250,28 @@ public final class RoadCheck {
                 entry.addProperty("road", plan.id());
                 entry.addProperty("candidates", spots.size());
                 JsonArray tries = new JsonArray();
-                for (int i = 0; i <= spots.size() && !state.done.contains(place.id()); i++) {
-                    double[] at = plan.pointAt(spots.isEmpty() ? 0 : spots.get(Math.min(i, spots.size() - 1)));
-                    for (int cx = ((int) at[0] - radius) >> 4; cx <= ((int) at[0] + radius) >> 4; cx++) for (int cz = ((int) at[1] - radius) >> 4; cz <= ((int) at[1] + radius) >> 4; cz++) level.getChunk(cx, cz);
-                    RoadsidePlaces.Outcome outcome = RoadsidePlaces.serve(level, plans, place, spots, at[0], at[1], state, RoadsidePlaces.SEARCH + 32);
-                    if (outcome != null) tries.add(outcome.toString());
-                }
                 entry.add("tries", tries);
-                Long where = state.where.get(place.id());
-                entry.addProperty("built", where != null);
-                if (where != null) entry.addProperty("origin", net.minecraft.core.BlockPos.of(where).toShortString());
-                out.add(entry);
-                LOGGER.info("[UC-ROADS] roadside place {}: {}", place.id(), entry);
+                attempts.add(() -> attempt(server, plans, place, spots, 0, state, entry, tries, out));
             }
         }
-        return out;
+        for (int k = attempts.size() - 1; k >= 0; k--) work.addFirst(attempts.get(k));
+    }
+
+    /** One candidate spot of a place, with the chunks around it generated first as a player's own approach would; the next spot is queued at the front if this one did not settle it. */
+    private void attempt(MinecraftServer server, List<CorridorPlan> plans, RoadsidePlaces.Place place, List<Double> spots, int i, PlacedSites state, JsonObject entry, JsonArray tries, JsonArray out) {
+        ServerLevel level = server.overworld();
+        int radius = RoadsidePlaces.SEARCH + 80;
+        if (i <= spots.size() && !state.done.contains(place.id())) {
+            double[] at = plans.stream().filter(p -> p.id().equals(place.road())).findFirst().map(p -> p.pointAt(spots.isEmpty() ? 0 : spots.get(Math.min(i, spots.size() - 1)))).orElse(new double[]{0, 0});
+            for (int cx = ((int) at[0] - radius) >> 4; cx <= ((int) at[0] + radius) >> 4; cx++) for (int cz = ((int) at[1] - radius) >> 4; cz <= ((int) at[1] + radius) >> 4; cz++) level.getChunk(cx, cz);
+            RoadsidePlaces.Outcome outcome = RoadsidePlaces.serve(level, plans, place, spots, at[0], at[1], state, RoadsidePlaces.SEARCH + 32);
+            if (outcome != null) tries.add(outcome.toString());
+            if (i < spots.size() && !state.done.contains(place.id())) { work.addFirst(() -> attempt(server, plans, place, spots, i + 1, state, entry, tries, out)); return; }
+        }
+        Long where = state.where.get(place.id());
+        entry.addProperty("built", where != null);
+        if (where != null) entry.addProperty("origin", net.minecraft.core.BlockPos.of(where).toShortString());
+        out.add(entry);
+        LOGGER.info("[UC-ROADS] roadside place {}: {}", place.id(), entry);
     }
 }
