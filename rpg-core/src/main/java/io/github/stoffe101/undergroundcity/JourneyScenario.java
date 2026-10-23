@@ -821,27 +821,7 @@ final class JourneyScenario {
         // place the table: aim at the top of firm ground two blocks ahead and click only when the crosshair is there (a software-rendered frame can lag the aim by several ticks);
         // then open it the same way
         final BlockPos[] spot = new BlockPos[1];
-        final int[] tick = {0}, tries = {0};
-        Playtest.queue("place the table on the ground ahead with a right click", () -> { tick[0] = 0; tries[0] = 0; spot[0] = null; }, () -> {
-            var p = mc().player;
-            if (spot[0] == null || tick[0] % 30 == 0 && tick[0] > 0 && !mc().level.getBlockState(spot[0]).is(Blocks.CRAFTING_TABLE)) {
-                if (spot[0] != null && ++tries[0] > 6) { Playtest.fail("the crafting table could not be placed in " + tries[0] + " tries"); return true; }
-                // a firm, full top two blocks ahead (turning a quarter each retry), with room above it
-                Direction facing = Direction.from2DDataValue((p.getDirection().get2DDataValue() + tries[0]) & 3);
-                spot[0] = null;
-                for (int dist : new int[]{2, 3}) for (int dy = 1; dy >= -2 && spot[0] == null; dy--) {
-                    BlockPos g = p.blockPosition().relative(facing, dist).offset(0, dy - 1, 0);
-                    if (mc().level.getBlockState(g).isFaceSturdy(mc().level, g, Direction.UP) && mc().level.getBlockState(g.above()).canBeReplaced() && mc().level.getBlockState(g.above(2)).isAir()) spot[0] = g.above();
-                }
-                if (spot[0] == null) spot[0] = p.blockPosition().relative(facing, 2);
-            }
-            if (mc().level.getBlockState(spot[0]).is(Blocks.CRAFTING_TABLE)) return true;
-            look(Vec3.atCenterOf(spot[0].below()).add(0, 0.5, 0));
-            int phase = tick[0]++ % 30;
-            boolean onIt = mc().hitResult instanceof BlockHitResult b && b.getType() == HitResult.Type.BLOCK && b.getBlockPos().equals(spot[0].below()) && b.getDirection() == Direction.UP;
-            if (phase == 18 && onIt) { Playtest.mouseButton(3, true); Playtest.mouseButton(3, false); }
-            return false;
-        }, 400);
+        placeAhead("the table", Blocks.CRAFTING_TABLE, spot);
         Playtest.queue("the table stands there", () -> { if (spot[0] == null || !mc().level.getBlockState(spot[0]).is(Blocks.CRAFTING_TABLE)) Playtest.fail("no crafting table stands where it was placed"); });
         final int[] openTick = {0};
         Playtest.queue("open the table with a right click", () -> openTick[0] = 0, () -> {
@@ -1164,6 +1144,33 @@ final class JourneyScenario {
         shot("26-valewood-arrival");
     }
 
+    /**
+     * Places the held block on firm ground ahead with a right click: a full, sturdy top two or three blocks away with room above it (a garden plant is not ground), aimed at until the
+     * crosshair is on that top (a software-rendered frame lags the aim), retried a quarter turn round each time, at most six times. {@code spot} receives where it should stand.
+     */
+    private static void placeAhead(String label, net.minecraft.world.level.block.Block block, BlockPos[] spot) {
+        final int[] tick = {0}, tries = {0};
+        Playtest.queue("place " + label + " on the ground ahead with a right click", () -> { tick[0] = 0; tries[0] = 0; spot[0] = null; }, () -> {
+            var p = mc().player;
+            if (spot[0] == null || tick[0] % 30 == 0 && tick[0] > 0 && !mc().level.getBlockState(spot[0]).is(block)) {
+                if (spot[0] != null && ++tries[0] > 6) { Playtest.fail(label + " could not be placed in " + tries[0] + " tries"); return true; }
+                Direction facing = Direction.from2DDataValue((p.getDirection().get2DDataValue() + tries[0]) & 3);
+                spot[0] = null;
+                for (int dist : new int[]{2, 3}) for (int dy = 1; dy >= -2 && spot[0] == null; dy--) {
+                    BlockPos g = p.blockPosition().relative(facing, dist).offset(0, dy - 1, 0);
+                    if (mc().level.getBlockState(g).isFaceSturdy(mc().level, g, Direction.UP) && mc().level.getBlockState(g.above()).canBeReplaced() && mc().level.getBlockState(g.above(2)).isAir()) spot[0] = g.above();
+                }
+                if (spot[0] == null) spot[0] = p.blockPosition().relative(facing, 2);
+            }
+            if (mc().level.getBlockState(spot[0]).is(block)) return true;
+            look(Vec3.atCenterOf(spot[0].below()).add(0, 0.5, 0));
+            int phase = tick[0]++ % 30;
+            boolean onIt = mc().hitResult instanceof BlockHitResult b && b.getType() == HitResult.Type.BLOCK && b.getBlockPos().equals(spot[0].below()) && b.getDirection() == Direction.UP;
+            if (phase == 18 && onIt) { Playtest.mouseButton(3, true); Playtest.mouseButton(3, false); }
+            return false;
+        }, 400);
+    }
+
     /** Puts an item on the hotbar the way a person does when it is in the main inventory (E, click it, click the last hotbar square, Escape), then selects it with its number key. */
     private static void hold(String label, Item item) {
         final boolean[] needed = {false};
@@ -1245,17 +1252,7 @@ final class JourneyScenario {
         // the welcome-pack terminal, placed in the street
         hold("the welcome-pack terminal", UndergroundCity.TERMINAL_ITEM.get());
         final BlockPos[] spot = new BlockPos[1];
-        Playtest.queue("look at open street ground two blocks ahead", () -> {
-            var p = mc().player;
-            for (Direction d : new Direction[]{p.getDirection(), p.getDirection().getClockWise(), p.getDirection().getCounterClockWise(), p.getDirection().getOpposite()}) {
-                BlockPos g = p.blockPosition().relative(d, 2).below();
-                if (!mc().level.getBlockState(g).isAir() && mc().level.getBlockState(g.above()).isAir() && mc().level.getBlockState(g.above(2)).isAir()) { spot[0] = g.above(); break; }
-            }
-            if (spot[0] == null) spot[0] = p.blockPosition().relative(p.getDirection(), 2);
-            look(Vec3.atCenterOf(spot[0].below()).add(0, 0.5, 0));
-        });
-        Playtest.wait("aim", 4);
-        use("place the terminal", () -> spot[0].below(), () -> spot[0] != null && mc().level.getBlockState(spot[0]).is(UndergroundCity.TERMINAL.get()), 200);
+        placeAhead("the terminal", UndergroundCity.TERMINAL.get(), spot);
         Playtest.queue("placed", () -> { F.placedTerminal = spot[0]; if (!mc().level.getBlockState(spot[0]).is(UndergroundCity.TERMINAL.get())) Playtest.fail("the terminal could not be placed in the street"); });
         use("open the terminal", () -> F.placedTerminal, () -> mc().screen instanceof TerminalScreen, 200);
         shot("28-valewood-terminal");
