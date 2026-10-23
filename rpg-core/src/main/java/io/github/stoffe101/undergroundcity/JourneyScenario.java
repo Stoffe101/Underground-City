@@ -43,11 +43,13 @@ import java.util.function.Supplier;
  * real crafting screens; deliver at the employer's terminal (paid in credits and experience); accept the second order; buy rations at the civilian counter, then try something the wallet cannot cover
  * (refused, nothing moves); rent a motel room on the Home page (the city's free welcome hours) and put a loaf in its barrel; learn a skill on the SKILLS page; walk at a locked city door without picks
  * (it stays shut); save, quit to the title screen and open the world again (everything is still there); walk to the road and across a bridge to Valewood; place the welcome-pack terminal there and deliver
- * the second order, buy on the Valewood exchange and try to buy from a shelf another buyer has just emptied (refused); walk back across the bridge.
+ * the second order, buy on the Valewood exchange and try to buy from a shelf another buyer has just emptied (refused); walk back across the bridge. On the way out (D-138, D-139): take a
+ * courier's letter for Valewood on the road (it is paid at the Valewood terminal), and stop at the Crossroads Diner beside the road to buy a baked potato over its counter.
  *
  * <p>What is scripted rather than played, each named in the log as it happens: the route a person would choose is the game's own pathfinding (the keys still do the walking); where a tree or stone is is
  * looked up in the world; the walk from the Row to the road's first open block may be cut short by a teleport (logged with the distance) when no route is found; a shelf is emptied on the server to
- * stand in for another buyer. It is evidence that the game can be played this way by a script in a software-rendered client, not that it is fun.</p>
+ * stand in for another buyer; the courier is set up the road with an operator command instead of waiting out the encounter's road time and roll. It is evidence that the game can be
+ * played this way by a script in a software-rendered client, not that it is fun.</p>
  */
 final class JourneyScenario {
     private JourneyScenario() {}
@@ -1168,9 +1170,54 @@ final class JourneyScenario {
         shot("25-road-start");
         final RoadWalker[] walker = new RoadWalker[1];
         until("the road's profile is built (its chunks have been generated)", () -> { CorridorPlan p = roadTo("valewood"); return p != null && p.built(); }, 2400);
-        Playtest.queue("walk the road and its bridge to Valewood with the W key", () -> {
+        // D-138, D-139: the road is no longer empty. Clear of the city a courier waves the traveller down with a letter for Valewood (delivered at the terminal there, further on),
+        // and half way along the walk stops at the Crossroads Diner to buy something hot over its counter
+        final double[] diner = {-1};
+        Playtest.queue("where the Crossroads Diner should stand", () -> {
+            Double at = server(() -> {
+                CorridorPlan plan = roadTo("valewood");
+                var place = RoadsidePlaces.CATALOG.find("crossroads_diner");
+                if (plan == null || place == null) return null;
+                var spots = RoadsidePlaces.plan(plan, RoadsidePlaces.CATALOG.onRoad(plan.id())).get(place.id());
+                return spots == null || spots.isEmpty() ? null : spots.get(0);
+            });
+            diner[0] = at == null ? -1 : at;
+            Playtest.log("JOURNEY the Crossroads Diner's first spot is at s " + (at == null ? "none" : Math.round(at)) + " on " + F.road);
+        });
+        Playtest.queue("walk the first stretch of the road with the W key", () -> {
             CorridorPlan plan = roadTo("valewood");
-            walker[0] = new RoadWalker(plan, false, F.roadFrom, F.roadTo);
+            double sign = Math.signum(F.roadTo - F.roadFrom);
+            walker[0] = new RoadWalker(plan, false, F.roadFrom, F.roadFrom + sign * (RoadEncounters.CITY_CLEARANCE + 30));
+        }, () -> { walker[0].tick(); return walker[0].done(); }, 24000);
+        Playtest.queue("clear of the city", () -> Playtest.log("JOURNEY road walk, first stretch: " + walker[0].summary()));
+        roadsideCourier();
+        // back up onto the deck from the verge: the road walker follows the centreline and does not climb out of a dip beside the road (journey run 60 stuck six blocks down one)
+        final double[] rejoin = {-1};
+        Playtest.queue("where to get back on the road", () -> {
+            CorridorPlan plan = roadTo("valewood");
+            CorridorPlan.Hit hit = plan == null ? null : plan.project(mc().player.getX(), mc().player.getZ());
+            rejoin[0] = hit == null ? -1 : hit.s() + Math.signum(F.roadTo - F.roadFrom) * 6;
+        });
+        walkOrTeleport("back up onto the road", () -> {
+            CorridorPlan plan = roadTo("valewood");
+            if (plan == null || rejoin[0] < 0 || !plan.built()) return mc().player.position();
+            double[] p = plan.pointAt(rejoin[0]);
+            return new Vec3(p[0], CorridorPlan.deckBlockY(plan.deckHalfAt(rejoin[0])) + 1, p[1]);
+        }, 1.5, 2400);
+        Playtest.queue("walk the road to the Crossroads Diner with the W key", () -> {
+            CorridorPlan plan = roadTo("valewood");
+            CorridorPlan.Hit hit = plan.project(mc().player.getX(), mc().player.getZ());
+            double from = hit == null ? F.roadFrom : hit.s();
+            double stop = diner[0] < 0 ? F.roadTo : Math.max(Math.min(F.roadFrom, F.roadTo), Math.min(Math.max(F.roadFrom, F.roadTo), diner[0] + (F.roadTo > F.roadFrom ? -24 : 24)));
+            walker[0] = new RoadWalker(plan, false, from, stop);
+        }, () -> { walker[0].tick(); return walker[0].done(); }, 24000);
+        Playtest.queue("at the diner's stretch", () -> Playtest.log("JOURNEY road walk to the diner: " + walker[0].summary()));
+        roadsideDiner(diner);
+        Playtest.queue("walk on to Valewood with the W key", () -> {
+            CorridorPlan plan = roadTo("valewood");
+            CorridorPlan.Hit hit = plan.project(mc().player.getX(), mc().player.getZ());
+            double from = hit == null ? F.roadFrom : hit.s();
+            walker[0] = new RoadWalker(plan, false, from, F.roadTo);
         }, () -> { walker[0].tick(); return walker[0].done(); }, 24000);
         Playtest.queue("arrived in Valewood", () -> {
             String city = server(() -> CityRegions.INSTANCE.cityAt(level(), me().blockPosition()).orElse(""));
@@ -1179,6 +1226,133 @@ final class JourneyScenario {
             else pass("14a travel across a real bridge to another city on foot");
         });
         shot("26-valewood-arrival");
+    }
+
+    /** The diner's cook, once the diner stands: the shopkeeper whose counter is the diner's. */
+    private static net.minecraft.world.entity.npc.Villager dinerCook() {
+        return server(() -> {
+            Long where = PlacedSites.get(level(), RoadsidePlaces.KEY).where.get("crossroads_diner");
+            if (where == null) return null;
+            BlockPos origin = BlockPos.of(where);
+            for (var v : level().getEntitiesOfClass(net.minecraft.world.entity.npc.Villager.class, new net.minecraft.world.phys.AABB(origin).inflate(48)))
+                if (CityNpcs.definition(v).map(n -> n.shop().equals("roadside:crossroads_diner")).orElse(false)) return v;
+            return null;
+        });
+    }
+
+    /** Off the road at the Crossroads Diner (D-138): it is built as the traveller nears it; walk to the cook, ask what there is, buy a baked potato over the counter. */
+    private static void roadsideDiner(double[] diner) {
+        until("the Crossroads Diner has been built as the traveller came near", () -> server(() -> PlacedSites.get(level(), RoadsidePlaces.KEY).done.contains("crossroads_diner")), 2400);
+        Playtest.queue("the diner", () -> {
+            Long where = server(() -> PlacedSites.get(level(), RoadsidePlaces.KEY).where.get("crossroads_diner"));
+            Playtest.log("JOURNEY the Crossroads Diner " + (where == null ? "was NOT built (given up or not reached)" : "stands at " + BlockPos.of(where).toShortString()));
+            if (where == null) Playtest.fail("the Crossroads Diner was not built beside the road");
+        });
+        shot("25b-diner-from-the-road");
+        walkToSpeak("step off the road to the diner's cook", JourneyScenario::dinerCook, 3000);
+        speakTo("the diner's cook", JourneyScenario::dinerCook);
+        shot("25c-diner-cook");
+        choose("What have you got?", "terminal");
+        click("TRADE", true);
+        Playtest.wait("draw", 10);
+        shot("25d-diner-counter");
+        final String[] potato = {null};
+        final double[] before = new double[1];
+        Playtest.queue("the diner's counter", () -> {
+            if (!(mc().screen instanceof TerminalScreen t)) { Playtest.fail("the diner's counter did not open"); return; }
+            for (var o : t.data().offers()) {
+                Playtest.log("JOURNEY diner offer " + o.id() + " " + o.item() + " " + o.price() + " credits, " + o.stock() + " left");
+                if (o.item().equals("minecraft:baked_potato")) potato[0] = o.id();
+            }
+            before[0] = wallet();
+        });
+        clickAt("Buy 1 on the baked potato line", () -> mc().screen instanceof TerminalScreen t && potato[0] != null ? t.offerBuyCentre(potato[0]) : null);
+        until("the potato arrives", () -> count(Items.BAKED_POTATO) >= 1, 200);
+        Playtest.queue("bought at the diner", () -> {
+            double w = wallet();
+            Playtest.log("JOURNEY bought at the Crossroads Diner: wallet " + before[0] + " -> " + w);
+            if (w >= before[0]) Playtest.fail("the diner's counter did not take the credits");
+            else pass("14c stop at a roadside diner and buy over its counter (real clicks)");
+        });
+        closeScreen("close the counter");
+        walkOrTeleport("back to the road", () -> {
+            CorridorPlan plan = roadTo("valewood");
+            if (plan == null) return mc().player.position();
+            CorridorPlan.Hit hit = plan.project(mc().player.getX(), mc().player.getZ());
+            double[] p = plan.pointAt(hit == null ? F.roadFrom : hit.s());
+            return new Vec3(p[0], CorridorPlan.deckBlockY(plan.deckHalfAt(hit == null ? F.roadFrom : hit.s())) + 1, p[1]);
+        }, 1.5, 3000);
+    }
+
+    /** A road encounter (D-139): a courier with a letter for Valewood is set up the road (an operator command, logged as scripted), spoken to, and the letter taken. */
+    private static void roadsideCourier() {
+        final Supplier<net.minecraft.world.entity.npc.Villager> courier = () -> server(() -> {
+            for (var v : level().getEntitiesOfClass(net.minecraft.world.entity.npc.Villager.class, me().getBoundingBox().inflate(256)))
+                if (RoadEncounters.isEncounter(v)) return v;
+            return null;
+        });
+        // the command sets the courier at the first fitting verge up the road; where there is none in reach (bridges, a shelter's or a place's clearance), it says to walk on a little
+        // and try again, which is what this does, two dozen blocks at a time with the W key (journey run 58 asked once, 150 blocks out, over the water, and found none)
+        // and the road's chunks up ahead are in the world first: run 61's first asks were refused as not loaded while the land ahead still generated, and by the time it had,
+        // the walk had carried the player past the only dry verge (about s 172 to 270 on this road) onto the bridges
+        final int[] tries = {0}, wait = {0}, loading = {0};
+        final RoadWalker[] on = new RoadWalker[1];
+        Playtest.queue("a courier waits up the road (operator command, standing in for the encounter's own timing; walking on and asking again where there is no verge)", () -> {
+            scripted("the courier encounter was set up the road with /uc_encounters meet instead of waiting out its five minutes of road time and its roll");
+            tries[0] = 0; wait[0] = 0; on[0] = null; loading[0] = 0;
+        }, () -> {
+            if (on[0] != null) {
+                on[0].tick();
+                if (!on[0].done()) return false;
+                on[0] = null;
+                loading[0] = 0;
+            }
+            if (wait[0] == 0 && loading[0] < 600 && !server(() -> {
+                    CorridorPlan plan = roadTo("valewood");
+                    CorridorPlan.Hit hit = plan == null ? null : plan.project(me().getX(), me().getZ());
+                    if (hit == null) return true;
+                    double sign = Math.signum(F.roadTo - F.roadFrom);
+                    for (int ahead = 12; ahead <= 240; ahead += 8) {
+                        double[] p = plan.pointAt(hit.s() + sign * ahead);
+                        for (int dx = -16; dx <= 16; dx += 16) for (int dz = -16; dz <= 16; dz += 16)
+                            if (level().getChunkSource().getChunkNow(((int) p[0] + dx) >> 4, ((int) p[1] + dz) >> 4) == null) return false;
+                    }
+                    return true;
+                })) { loading[0]++; return false; }
+            if (wait[0] == 0) {
+                tries[0]++;
+                Playtest.command("uc_encounters meet " + mc().player.getGameProfile().getName() + " courier_letter");
+                wait[0] = 1;
+                return false;
+            }
+            if (++wait[0] < 30) return false;
+            wait[0] = 0;
+            CorridorPlan plan = roadTo("valewood");
+            CorridorPlan.Hit hit = plan == null ? null : plan.project(mc().player.getX(), mc().player.getZ());
+            // the server's own record says whether the asking set one up (run 62 set a second: the first stood 113 blocks off, beyond a villager search of 96)
+            boolean standing = server(() -> RoadEncounters.state(level().getServer()).active.values().stream().anyMatch(a -> a.encounter.equals("courier_letter")));
+            if (standing) { Playtest.log("JOURNEY a courier stood up the road at asking " + tries[0] + ", from s " + (hit == null ? "?" : Math.round(hit.s()))); return true; }
+            if (tries[0] >= 12 || plan == null || hit == null) return true;
+            double sign = Math.signum(F.roadTo - F.roadFrom);
+            on[0] = new RoadWalker(plan, false, hit.s(), hit.s() + sign * 24);
+            return false;
+        }, 12000);
+        Playtest.queue("the courier", () -> {
+            var v = courier.get();
+            Playtest.log("JOURNEY courier " + (v == null ? "NOT in the world" : v.getName().getString() + " at " + v.blockPosition().toShortString()));
+            if (v == null) Playtest.fail("the courier encounter did not stand up the road");
+        });
+        walkToSpeak("walk to the courier", courier, 2000);
+        speakTo("the courier", courier);
+        shot("25e-courier");
+        choose("I'll take it to Valewood", "dialogue");
+        Playtest.queue("the letter is in the pocket", () -> {
+            int letters = count(UndergroundCity.SEALED_ENVELOPE.get());
+            Playtest.log("JOURNEY letters carried: " + letters);
+            if (letters != 1) Playtest.fail("taking the courier's letter gave " + letters + " letters");
+            else pass("14d a roadside encounter: a courier's letter taken for Valewood (dialogue, real clicks)");
+        });
+        closeScreen("goodbye");
     }
 
     /**
@@ -1312,8 +1486,17 @@ final class JourneyScenario {
         final BlockPos[] spot = new BlockPos[1];
         placeAhead("the terminal", UndergroundCity.TERMINAL.get(), spot, pos -> server(() -> BuildingGuard.protectedAt(level(), pos).isEmpty() && BuildingGuard.protectedAt(level(), pos.below()).isEmpty()));
         Playtest.queue("placed", () -> { F.placedTerminal = spot[0]; if (!mc().level.getBlockState(spot[0]).is(UndergroundCity.TERMINAL.get())) Playtest.fail("the terminal could not be placed in the street"); });
+        final double[] beforeLetter = new double[1];
+        Playtest.queue("the wallet before the terminal takes the letter", () -> beforeLetter[0] = wallet());
         use("open the terminal", () -> F.placedTerminal, () -> mc().screen instanceof TerminalScreen, 200);
         shot("28-valewood-terminal");
+        Playtest.queue("the courier's letter was delivered at the Valewood terminal", () -> {
+            int letters = count(UndergroundCity.SEALED_ENVELOPE.get());
+            double w = wallet();
+            Playtest.log("JOURNEY letter at the Valewood terminal: letters left " + letters + ", wallet " + beforeLetter[0] + " -> " + w);
+            if (letters != 0 || w <= beforeLetter[0]) Playtest.fail("the letter was not delivered and paid at the Valewood terminal");
+            else pass("15a deliver a roadside letter in the city it was addressed to (paid once, at a terminal)");
+        });
         Playtest.queue("a visit to a rival city", () -> {
             int visits = server(() -> WorkOrderLedger.get(mc().getSingleplayerServer()).foreignVisits(mc().player.getUUID(), "ironhaven"));
             if (visits >= 1) pass("14b a rival city visit is recorded at a terminal inside Valewood"); else Playtest.fail("no visit recorded in Valewood");

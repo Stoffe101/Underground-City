@@ -33,11 +33,14 @@ public final class PhotoTour {
     private static final long STAGE_LIMIT_NANOS = Long.getLong("uc.photoTour.limitSeconds", 420L) * 1_000_000_000L;
     /** A building-relative shot names a furnished building and one of its spots instead of coordinates: {@code building} (its type), {@code nth} (which instance, nearest to the city centre first), {@code spot} (a kind) and {@code spot_nth}, a camera {@code back} blocks in front of the spot, {@code eye} blocks above the floor (the camera, not the feet), looking at it. */
     private record Shot(String name, double x, Double y, double z, double dy, float yaw, float pitch, int settle, boolean gui, int hour,
-                        String building, int nth, String spot, int spotNth, double back, double eye, Float yawOverride) {}
+                        String building, int nth, String spot, int spotNth, double back, double eye, Float yawOverride, String place, double side) {}
 
     private static List<Shot> shots;
     private static int current, ticks, lastSections, stableTicks;
     private static boolean positioned, captureRequested, captured, finished;
+    /** A roadside place (D-138) is built only when somebody comes near its spot: the camera waits by the road until it stands. */
+    private static volatile boolean placeBuilt;
+    private static int placeTicks;
     private static long stageStarted = System.nanoTime();
     private static volatile double targetX, targetZ;
     private static volatile boolean aimed;
@@ -59,7 +62,7 @@ public final class PhotoTour {
                     o.has("settle") ? o.get("settle").getAsInt() : 160, o.has("gui") && o.get("gui").getAsBoolean(), o.has("hour") ? o.get("hour").getAsInt() : 6000,
                     o.has("building") ? o.get("building").getAsString() : null, o.has("nth") ? o.get("nth").getAsInt() : 0, o.has("spot") ? o.get("spot").getAsString() : "door",
                     o.has("spot_nth") ? o.get("spot_nth").getAsInt() : 0, o.has("back") ? o.get("back").getAsDouble() : 3.0, o.has("eye") ? o.get("eye").getAsDouble() : 1.62,
-                    o.has("yaw") ? o.get("yaw").getAsFloat() : null));
+                    o.has("yaw") ? o.get("yaw").getAsFloat() : null, o.has("place") ? o.get("place").getAsString() : null, o.has("side") ? o.get("side").getAsDouble() : 0));
             }
         } catch (IOException | RuntimeException error) {
             throw new IllegalStateException("Cannot read the photo tour list " + LIST, error);
@@ -108,7 +111,7 @@ public final class PhotoTour {
         try {
             var file = mc.gameDirectory.toPath().resolve("screenshots").resolve(shots().get(current).name() + ".png");
             if (!Files.isRegularFile(file) || Files.size(file) < 1024) return;
-            captured = false; positioned = false; ticks = 0; stageStarted = System.nanoTime(); lastSections = 0; stableTicks = 0;
+            captured = false; positioned = false; ticks = 0; stageStarted = System.nanoTime(); lastSections = 0; stableTicks = 0; placeBuilt = false; placeTicks = 0;
             if (++current == shots().size()) {
                 Files.writeString(mc.gameDirectory.toPath().resolve("photo-tour-complete.txt"), "shots=" + shots().size() + "\n");
                 System.out.println("[UC-PHOTO] tour complete: " + shots().size() + " frames");
@@ -125,6 +128,41 @@ public final class PhotoTour {
         // the first thing a new citizen sees is the registration screen; a photographer is not a citizen, so any screen that opened by itself is closed
         if (mc.screen != null) { mc.setScreen(null); return; }
         Shot shot = shots().get(current);
+        if (shot.place() != null && !placeBuilt) {
+            if (placeTicks == 0) stageStarted = System.nanoTime();   // the stage starts now, not when the class loaded (photo tour 24's first place timed out while its world was created)
+            if (placeTicks++ % 40 == 0) {
+                var playerId = mc.player.getUUID();
+                server.execute(() -> {
+                    var player = server.getPlayerList().getPlayer(playerId);
+                    var level = server.overworld();
+                    if (player == null) return;
+                    player.setGameMode(GameType.SPECTATOR);
+                    level.setDayTime(shot.hour());
+                    // a photographer's world is a disposable one: give it the roadside places if its start did not
+                    if (!RoadsidePlaces.enabled(level)) RoadsidePlaces.enable(level);
+                    if (PlacedSites.get(level, RoadsidePlaces.KEY).where.containsKey(shot.place())) { placeBuilt = true; return; }
+                    var place = RoadsidePlaces.CATALOG.find(shot.place());
+                    if (place == null) throw new IllegalStateException("No roadside place " + shot.place());
+                    if (PlacedSites.get(level, RoadsidePlaces.KEY).done.contains(shot.place())) { System.out.println("[UC-PHOTO] " + shot.name() + ": " + shot.place() + " was given up; skipping it"); placeBuilt = true; return; }
+                    // stand above its first candidate spot (or its share of the road while the road is not planned yet) and let it be built
+                    double[] at = null;
+                    for (CorridorPlan plan : CorridorRoadFeature.ready(level)) if (plan.id().equals(place.road())) {
+                        var spots = RoadsidePlaces.plan(plan, RoadsidePlaces.CATALOG.onRoad(plan.id())).get(place.id());
+                        if (spots != null && !spots.isEmpty()) at = plan.pointAt(spots.get(0));
+                    }
+                    if (at == null) for (CorridorPlan plan : DevCommands.plans(server)) if (plan.id().equals(place.road())) {
+                        double first = RoadMarkers.firstOpen(plan), last = RoadMarkers.lastOpen(plan);
+                        at = plan.pointAt(first + place.at() * (last - first));
+                    }
+                    if (at == null) throw new IllegalStateException("No road " + place.road());
+                    var generator = level.getChunkSource().getGenerator();
+                    int y = generator.getBaseHeight((int) at[0], (int) at[1], Heightmap.Types.WORLD_SURFACE_WG, level, level.getChunkSource().randomState()) + 24;
+                    player.teleportTo(level, at[0], y, at[1], 0, 60);
+                });
+            }
+            if (System.nanoTime() - stageStarted > STAGE_LIMIT_NANOS) { System.out.println("[UC-PHOTO] " + shot.name() + ": " + shot.place() + " was not built in time"); placeBuilt = true; }
+            return;
+        }
         if (!positioned) {
             targetX = shot.x(); targetZ = shot.z(); aimed = false;
             var playerId = mc.player.getUUID();
@@ -139,7 +177,23 @@ public final class PhotoTour {
                 level.setWeatherParameters(6000, 0, false, false);
                 double x = shot.x(), z = shot.z(), y;
                 float yaw = shot.yaw();
-                if (shot.building() != null) {
+                if (shot.place() != null && PlacedSites.get(level, RoadsidePlaces.KEY).where.containsKey(shot.place())) {
+                    // a roadside place: from in front of it (its front looks at the road), turned {@code side} degrees round it, {@code back} blocks beyond its front edge, {@code eye} above its ground
+                    var place = RoadsidePlaces.CATALOG.find(shot.place());
+                    var district = RoadsidePlaces.builtVariant(level, place);
+                    BlockPos origin = BlockPos.of(PlacedSites.get(level, RoadsidePlaces.KEY).where.get(shot.place()));
+                    String facingName = place.variants().entrySet().stream().filter(e -> e.getValue().equals(district.id())).map(java.util.Map.Entry::getKey).findFirst().orElse("north");
+                    net.minecraft.core.Direction front = net.minecraft.core.Direction.byName(facingName);
+                    double cx = origin.getX() + (district.min().getX() + district.max().getX() + 1) / 2.0, cz = origin.getZ() + (district.min().getZ() + district.max().getZ() + 1) / 2.0;
+                    int[] size = place.size(facingName);
+                    double half = (front.getAxis() == net.minecraft.core.Direction.Axis.Z ? size[1] : size[0]) / 2.0;
+                    double angle = Math.toRadians(shot.side()), fx = front.getStepX(), fz = front.getStepZ();
+                    double rx = fx * Math.cos(angle) - fz * Math.sin(angle), rz = fx * Math.sin(angle) + fz * Math.cos(angle);
+                    x = cx + rx * (half + shot.back()); z = cz + rz * (half + shot.back());
+                    y = origin.getY() + shot.eye() - 1.62;
+                    yaw = (float) Math.toDegrees(Math.atan2(-(cx - x), cz - z));
+                    System.out.println("[UC-PHOTO] " + shot.name() + ": " + shot.place() + " at " + origin.toShortString() + " facing " + facingName);
+                } else if (shot.building() != null) {
                     var building = locate(level, shot);
                     var plan = BuildingSpots.INSTANCE.forType(shot.building());
                     var spots = plan.indexesOf(shot.spot());
