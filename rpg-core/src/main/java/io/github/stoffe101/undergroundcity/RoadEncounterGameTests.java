@@ -232,7 +232,7 @@ public final class RoadEncounterGameTests {
         ServerLevel level = helper.getLevel();
         BlockPos arena = helper.absolutePos(BlockPos.ZERO);
         int y = level.getMaxBuildHeight() - 100, ox = arena.getX(), oz = arena.getZ() + 1400;
-        BlockPos lo = new BlockPos(ox - 100, y - 4, oz - 30), hi = new BlockPos(ox + 100, y + 6, oz + 30);
+        BlockPos lo = new BlockPos(ox - 124, y - 4, oz - 30), hi = new BlockPos(ox + 124, y + 6, oz + 30);
         for (int cx = lo.getX() >> 4; cx <= hi.getX() >> 4; cx++) for (int cz = lo.getZ() >> 4; cz <= hi.getZ() >> 4; cz++) level.setChunkForced(cx, cz, true);
         WaysideShelterGameTests.emptyTheWorldData();
         CorridorPlan plan = new CorridorPlan("ironhaven_valewood", new double[]{ox - 400, ox + 400}, new double[]{oz, oz}, 7, List.of());
@@ -249,7 +249,9 @@ public final class RoadEncounterGameTests {
             RoadEncounters.State state = RoadEncounters.state(level.getServer());   // the world's own record: a person joins only for an encounter the world knows
             RoadEncounters.Active load, driver;
             try {
-                for (BlockPos at : BlockPos.betweenClosed(new BlockPos(ox - 96, y, oz - 26), new BlockPos(ox + 96, y, oz + 26))) level.setBlock(at, Blocks.STONE.defaultBlockState(), 2);
+                // the pad reaches well past the farthest spot the driver can be given (up to 72 blocks up the road from x = ox + 20, and five blocks either side of it):
+                // ending at ox + 96, it left the farthest roll reading a column of sky, and a hosted run refused the driver (October 23)
+                for (BlockPos at : BlockPos.betweenClosed(new BlockPos(ox - 120, y, oz - 26), new BlockPos(ox + 120, y, oz + 26))) level.setBlock(at, Blocks.STONE.defaultBlockState(), 2);
                 FakePlayer traveller = FakePlayerFactory.get(level, new GameProfile(UUID.randomUUID(), "uc_enc_traveller"));
                 // the road runs from x = ox - 400; the traveller is at x = ox - 60 heading east
                 load = RoadEncounters.start(level, state, List.of(plan), plan, 340, 1, traveller, RoadEncounters.CATALOG.find("spilled_load"));
@@ -258,8 +260,10 @@ public final class RoadEncounterGameTests {
                 check(Math.abs(load.anchor.getZ() - oz) > plan.reach(), "off the deck: " + load.anchor);
                 check(load.anchor.getY() == y + 1, "on the ground: " + load.anchor);
                 check(load.people.isEmpty() && load.props.size() == RoadEncounters.CATALOG.find("spilled_load").props().size(), "nobody, and its props: " + load.props.size());
+                RoadEncounters.refusals();
                 driver = RoadEncounters.start(level, state, List.of(plan), plan, 420, 1, traveller, RoadEncounters.CATALOG.find("stranded_driver"));
-                check(driver != null && driver.people.size() == 1 && driver.destination.isEmpty() == CityRegions.INSTANCE.all().isEmpty(), "a stranded driver with their car: " + (driver == null ? null : driver.people));
+                check(driver != null && driver.people.size() == 1 && driver.destination.isEmpty() == CityRegions.INSTANCE.all().isEmpty(), "a stranded driver with their car: "
+                    + (driver == null ? "none (refused: " + RoadEncounters.refusals() + ")" : driver.people));
                 check(state.active.containsKey(load.id) && state.active.containsKey(driver.id) && state.traveller(traveller.getUUID()).last.equals("stranded_driver"), "the world remembers both, and what the traveller met last");
                 var reloaded = RoadEncounters.State.load(state.save(new net.minecraft.nbt.CompoundTag()));
                 check(reloaded.active.keySet().equals(state.active.keySet()) && reloaded.active.get(driver.id).props.size() == driver.props.size(), "the record survives a save and load");
