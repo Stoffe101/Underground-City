@@ -227,7 +227,7 @@ Things to write down: was the lock screen readable; did a quiet pick feel like a
 
 ## 6f. The first hour, shops, homes in the cities, fences and alarm panels (about 60 minutes, a NEW world only)
 
-**Written for the October 22 to 23 pass (D-125 to D-136).** A script played most of the first hour through a real client (the sprint report, [gameplay-completion-pass.md](gameplay-completion-pass.md), lists every step and which parts were set up by commands); **no person has done any of it**. The first hour is the most important thing to try: the script cannot tell whether it is clear, slow, confusing or fun.
+**Written for the October 22 to 23 pass (D-125 to D-137).** A script played most of the first hour through a real client (the sprint report, [gameplay-completion-pass.md](gameplay-completion-pass.md), lists every step and which parts were set up by commands); **no person has done any of it**. The first hour is the most important thing to try: the script cannot tell whether it is clear, slow, confusing or fun.
 
 Start exactly as in 6e (a new world with the furnished cities and no natural ore):
 
@@ -237,14 +237,14 @@ Start exactly as in 6e (a new world with the furnished cities and no natural ore
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Arrive, register (any city, **Smith** to follow the script), and follow the arrow on the side display | the employer's office in Founders Row; the side display and the arrow stay clear of notices (they slide in below or beside the display) |
+| 1 | Arrive, register (any city, **Smith** to follow the script), and follow the arrow on the side display | the employer's office in Founders Row; the side display and the arrow stay clear of notices (they slide in below or beside the display; while a terminal or a shop covers their corner they wait and appear when it closes) |
 | 2 | Speak to the employer, open the orders, try the iron-tools order, then accept the stone-tools one | the iron order is greyed (level); the stone order is accepted and shows on the display |
 | 3 | Chop a tree, walk east to **the old quarry** (a stepped pit), mine cobblestone from its walls | logs and cobblestone; the quarry's seams grow back after 20 minutes of play |
 | 4 | Craft planks, a crafting table, sticks and three stone pickaxes; deliver them at the employer | 24 credits and career XP |
 | 5 | On the terminal's TRADE page open the civilian shop and buy rations; try something you cannot afford | bread for 20 credits; the unaffordable click changes nothing |
 | 6 | Press **K**, open HOME, then **Find a home** | the free motel rooms are listed **first** (the city's welcome: two free hours); rent one, walk into it, put something in its barrel |
 | 7 | Spend the skill point on the SKILLS page; save and quit, reopen | everything is as you left it, no second registration |
-| 8 | Walk to the Valewood road and across the bridge (the script needed a teleport for the part from the landing to the road: **is there an obvious way to the road?**) | about four minutes on the road; Valewood's houses have gardens and porches |
+| 8 | After the second order's step says **Travel to a rival city**, follow its arrow ("Road to Valewood" or "Road to Blackwater") through Ironhaven to the road, up the ramp onto it, and across the bridge | the road is about 720 blocks from the landing, through Ironhaven's blocks (**time it: how long, and was the way obvious?**); about four minutes on the road; at each end a cut ramp joins the road to the city; Valewood's houses have gardens and porches |
 | 9 | In a furnished **shop, pub, corner store or bakery**, speak to the person behind the counter | their shop's goods on the Trade page, from a small shelf shared with that city's shops of the kind |
 | 10 | Between 08:00 and 08:40 (game time) watch a shop's street door; between 17:00 and 17:40 a house's or a tenement's | the shopkeeper walks up the street and in (and out again after 18:00); residents come home from five o'clock, each at their own minute |
 | 11 | Ask for **Find a home** inside Ironhaven's tenements, the pub, the bakery or the corner store | flats and rooms to let on the Row's terms; a home is never emptied of your things for not paying |
@@ -252,6 +252,8 @@ Start exactly as in 6e (a new world with the furnished cities and no natural ore
 | 13 | After 21:00 take a stolen item to **The Yard** (Ironhaven's warehouse office) or **The Back Room** (Blackwater's club office) | the fence's screen: 45 or 50 percent of the item's honest price, less for goods stolen in its own city; a short budget says on each row what it can pay now |
 
 Operator commands that help: `/uc_police status`, `/uc_household status`, `/uc_site status`, `/time set 18000`. Do not use an old world.
+
+Also look, wherever a building stands higher than the ground beside it, at its retaining wall: it should be the city's stone bricks (before October 23 such walls were sofas, beds or bookshelves).
 
 Things to write down: where you were lost in the first ten minutes; whether the arrow and the side display were enough; whether the walk from the landing to the road was obvious; whether the shopkeepers and the people walking in and out made the streets feel alive; whether the alarm panel was readable and fair; whether the fence's prices felt worth the risk.
 
