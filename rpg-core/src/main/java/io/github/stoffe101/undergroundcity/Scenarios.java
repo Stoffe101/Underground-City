@@ -15,6 +15,7 @@ final class Scenarios {
             case "arrival" -> arrival();
             case "doorwalk" -> doorwalk();
             case "burglary" -> BurglaryScenario.build();
+            case "alarm" -> AlarmScenario.build();
             case "journey" -> JourneyScenario.build();
             case "lockjitter" -> lockjitter();
             case "walk" -> walk();
@@ -626,7 +627,7 @@ final class Scenarios {
     private static net.minecraft.server.level.ServerLevel level() { return Minecraft.getInstance().getSingleplayerServer().overworld(); }
 
     /** Moves the player (through the integrated server) to {@code at}, looking at {@code target}. */
-    private static void standLooking(Vec3 at, Vec3 target) {
+    static void standLooking(Vec3 at, Vec3 target) {
         Vec3 delta = target.subtract(at.add(0, 1.62, 0)); // the view starts at the eyes, not the feet
         float yaw = (float) Math.toDegrees(Math.atan2(-delta.x, delta.z));
         float pitch = (float) -Math.toDegrees(Math.atan2(delta.y, Math.hypot(delta.x, delta.z)));
@@ -996,7 +997,7 @@ final class Scenarios {
         } catch (ReflectiveOperationException error) { throw new IllegalStateException(error); }
     }
 
-    private static void unlockWithPrerequisites(CitizenState citizens, java.util.UUID uuid, String node) {
+    static void unlockWithPrerequisites(CitizenState citizens, java.util.UUID uuid, String node) {
         var skill = SkillCatalog.INSTANCE.find(node);
         for (String parent : skill.requires()) unlockWithPrerequisites(citizens, uuid, parent);
         if (!citizens.find(uuid).orElseThrow().skills().contains(node)) citizens.unlockSkill(uuid, node);
@@ -1028,7 +1029,7 @@ final class Scenarios {
     }
 
     /** Watches the sequence flash on the real screen, as a person would, and returns what was seen once it is over. */
-    private static void watchTrace(java.util.List<Integer> seen, String label) {
+    static void watchTrace(java.util.List<Integer> seen, String label) {
         final int[] previous = {-1};
         Playtest.queue(label + ": watch the pads", () -> { seen.clear(); previous[0] = -1; }, () -> {
             if (!(Minecraft.getInstance().screen instanceof ChallengeScreen screen)) return true;
@@ -1039,7 +1040,7 @@ final class Scenarios {
         }, 400);
     }
 
-    private static void typeTrace(java.util.List<Integer> seen, boolean wrong, String label) {
+    static void typeTrace(java.util.List<Integer> seen, boolean wrong, String label) {
         final int[] next = {0}, gap = {0};
         Playtest.queue(label + ": enter the symbols with the keyboard", () -> { next[0] = 0; gap[0] = 0; Playtest.focusWindow(); }, () -> {
             if (!(Minecraft.getInstance().screen instanceof ChallengeScreen)) return true;

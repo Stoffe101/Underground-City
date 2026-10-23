@@ -274,7 +274,7 @@ final class BurglaryScenario {
      * the pin sets. With {@code sloppy} the hand first presses a fifth of the bar away from the sweet spot until the pick is strained to about 45 percent (a noisy pick, which trips an alarm that a clean
      * one would slip past), then works the lock honestly.
      */
-    private static void solve(String label, boolean sloppy) {
+    static void solve(String label, boolean sloppy) {
         final int[] state = {sloppy ? -1 : 0}, wait = {0}, pinsBefore = {0}, guard = {0}, geometry = new int[3], retries = {0};
         final double[] sweet = {-1}, scale = {1}, strain = {0};
         Playtest.queue("solve " + label + " on the real screen", () -> { }, () -> {
