@@ -137,7 +137,8 @@ public final class PoliceResponseGameTests {
             PoliceResponse.noticed(s.thief, opened(s.thief, s.door, now));
             check(PoliceResponse.dispatches() == 1, "an armed alarm raised " + PoliceResponse.dispatches() + " responses");
             var d = PoliceResponse.dispatchAt(0);
-            check(d.why.equals("alarm") && d.arriveAt == now + 60 * 20L && d.officersWanted == 2, "the response is not the class's: " + d.why + " " + (d.arriveAt - now) + " " + d.officersWanted);
+            // the alarm's own answer: its time and its officers (a townsperson of a neighbouring test who happens to see the thief adds "and witness" to the reason, nothing else; hosted layouts vary)
+            check(d.why.startsWith("alarm") && d.arriveAt == now + 60 * 20L && d.officersWanted == 2, "the response is not the class's: " + d.why + " " + (d.arriveAt - now) + " " + d.officersWanted);
             long first = d.arriveAt;
             PoliceResponse.noticed(s.thief, new BuildingBreachEvent(s.thief.getUUID(), s.door, "valewood", "test_alarmed", BuildingBreachEvent.Outcome.SNAPPED, now + 100, true, s.thief));
             check(PoliceResponse.dispatches() == 1 && PoliceResponse.dispatchAt(0).arriveAt <= first, "a second noise raised a second response or delayed the first");
@@ -211,7 +212,7 @@ public final class PoliceResponseGameTests {
             long now = LockService.clock(s.level.getServer());
             // a noisy pick trips it, a clean one slips past it
             PoliceResponse.noticed(s.thief, new BuildingBreachEvent(s.thief.getUUID(), inArmed, "valewood", "test_alarmed", BuildingBreachEvent.Outcome.OPENED, now, false, s.thief).quiet(false));
-            check(PoliceResponse.dispatches() == 1 && PoliceResponse.dispatchAt(0).why.equals("alarm"), "a noisy pick did not trip an armed alarm");
+            check(PoliceResponse.dispatches() == 1 && PoliceResponse.dispatchAt(0).why.startsWith("alarm"), "a noisy pick did not trip an armed alarm");
             PoliceResponse.resetForTest();
             PoliceResponse.noticed(s.thief, new BuildingBreachEvent(s.thief.getUUID(), inArmed, "valewood", "test_alarmed", BuildingBreachEvent.Outcome.OPENED, now, false, s.thief).quiet(true));
             check(PoliceResponse.dispatches() == 0, "a clean pick still tripped an alarm that can be slipped past");
