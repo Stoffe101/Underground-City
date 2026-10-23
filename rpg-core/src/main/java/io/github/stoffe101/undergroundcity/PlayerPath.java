@@ -35,8 +35,20 @@ final class PlayerPath {
         return state.getBlock() instanceof DoorBlock door && state.is(BlockTags.WOODEN_DOORS) || state.getBlock() instanceof FenceGateBlock;
     }
 
+    /** A block the planner may look at: in a chunk that is generated and loaded now; anything else reads as a wall. */
+    private static final BlockState UNKNOWN = net.minecraft.world.level.block.Blocks.BARRIER.defaultBlockState();
+
+    /**
+     * The block at {@code pos}, or a wall where the chunk is not generated yet. The planner runs on the server thread, and a plain read there of a chunk that is still being generated
+     * (which {@code isLoaded} counts as loaded) makes the whole server wait for it: the journey's walks into new city logged 15 to 29 second stalls. A person cannot walk into a chunk
+     * that does not exist yet either.
+     */
+    private static BlockState state(ServerLevel level, BlockPos pos) {
+        return level.getChunkSource().getChunkNow(pos.getX() >> 4, pos.getZ() >> 4) == null ? UNKNOWN : level.getBlockState(pos);
+    }
+
     private static boolean clear(ServerLevel level, BlockPos pos) {
-        BlockState state = level.getBlockState(pos);
+        BlockState state = state(level, pos);
         if (openable(state)) return true;
         if (!state.getFluidState().isEmpty()) return false;
         return state.getCollisionShape(level, pos).isEmpty();
@@ -45,7 +57,7 @@ final class PlayerPath {
     /** Where the feet can be: open, or a thing a person simply walks over (a carpet, a thin layer of snow), which the game steps onto without a jump. A rug is not a wall. */
     private static boolean passable(ServerLevel level, BlockPos feet) {
         if (clear(level, feet)) return true;
-        BlockState state = level.getBlockState(feet);
+        BlockState state = state(level, feet);
         if (!state.getFluidState().isEmpty()) return false;
         VoxelShape shape = state.getCollisionShape(level, feet);
         return !shape.isEmpty() && shape.max(Direction.Axis.Y) <= 0.1875;
@@ -56,7 +68,7 @@ final class PlayerPath {
      * not a fence top, not the thin top of iron bars or a pane, which a journey's planner once offered as a step out of a trench and the walker tried fifteen times).
      */
     private static boolean floor(ServerLevel level, BlockPos below) {
-        BlockState state = level.getBlockState(below);
+        BlockState state = state(level, below);
         if (!state.getFluidState().isEmpty() || state.is(BlockTags.FENCES) || state.is(BlockTags.WALLS) || state.is(BlockTags.FENCE_GATES)) return false;
         VoxelShape shape = state.getCollisionShape(level, below);
         if (shape.isEmpty()) return false;
@@ -68,7 +80,7 @@ final class PlayerPath {
     }
 
     static boolean standable(ServerLevel level, BlockPos feet) {
-        if (!level.isLoaded(feet) || !level.isLoaded(feet.below())) return false;
+        if (level.getChunkSource().getChunkNow(feet.getX() >> 4, feet.getZ() >> 4) == null) return false;
         return passable(level, feet) && clear(level, feet.above()) && floor(level, feet.below());
     }
 
@@ -152,9 +164,9 @@ final class PlayerPath {
                     if (diagonal) {                                          // no cutting a corner through a wall or a door frame
                         BlockPos a = at.offset(step[0], Math.max(0, dy), 0), b = at.offset(0, Math.max(0, dy), step[1]);
                         if (!passable(level, a) || !clear(level, a.above()) || !passable(level, b) || !clear(level, b.above())) continue;
-                        if (openable(level.getBlockState(next)) || openable(level.getBlockState(at))) continue;
+                        if (openable(state(level, next)) || openable(state(level, at))) continue;
                     }
-                    double cost = (diagonal ? 1.414 : 1.0) + (dy == 1 ? 0.8 : dy < 0 ? 0.3 * -dy : 0) + (openable(level.getBlockState(next)) ? 1.5 : 0) + (occupied.contains(next.asLong()) ? 6.0 : 0);
+                    double cost = (diagonal ? 1.414 : 1.0) + (dy == 1 ? 0.8 : dy < 0 ? 0.3 * -dy : 0) + (openable(state(level, next)) ? 1.5 : 0) + (occupied.contains(next.asLong()) ? 6.0 : 0);
                     double g = node.g() + cost;
                     if (g < best.getOrDefault(next.asLong(), Double.MAX_VALUE)) {
                         best.put(next.asLong(), g);
