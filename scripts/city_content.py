@@ -56,7 +56,8 @@ STOCK_SECURITY_CLASSES = {"cottage", "flat_block", "flat_tower", "workshop", "of
 
 # stock classes that have an alarm (a "response" in data/underground_city/building_security/classes.json)
 ALARMED_STOCK_CLASSES = {"flat_block", "flat_tower", "workshop", "office", "vault"}
-NOT_A_WALL = ("door", "glass", "pane", "bars", "trapdoor", "fence", "air", "sign", "banner", "ladder", "torch", "lantern", "button", "lever")
+NOT_A_WALL = ("door", "glass", "pane", "bars", "trapdoor", "fence", "air", "sign", "banner", "ladder", "torch", "lantern", "button", "lever", "slab", "stairs", "carpet", "bed",
+              "cake", "pot", "chest", "barrel", "campfire", "rod", "chain", "wall_", "candle", "rail", "plate", "flower", "sapling", "hopper", "table", "bookshelf")
 
 
 def alarmed(security: str) -> bool:
@@ -78,7 +79,9 @@ def place_alarm_panel(b: citykit.Building) -> None:
         if c == " ":
             return False
         spec = part.palette.entries[c]
-        return isinstance(spec, str) and not any(word in spec for word in NOT_A_WALL)
+        if not isinstance(spec, str) or not spec.startswith("minecraft:") or any(word in spec for word in NOT_A_WALL):
+            return False                                                       # furniture, a shelf, a cake on a counter, a monitor: not a wall
+        return "[" not in spec or spec.split("[", 1)[1].rstrip("]").split("=")[0] == "axis"
 
     for door in (s for s in b.spots if s.kind == "door"):
         out = citykit.DIRS[door.facing]

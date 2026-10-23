@@ -1,0 +1,253 @@
+{
+  "palette": [
+    {
+      "blocks": [
+        {
+          "block": "minecraft:andesite",
+          "random": 120
+        },
+        {
+          "block": "minecraft:polished_andesite",
+          "random": 1000
+        }
+      ],
+      "char": "0"
+    },
+    {
+      "block": "modernlife:hedge[facing=south]",
+      "char": "1"
+    },
+    {
+      "block": "modernlife:hedge[facing=north]",
+      "char": "2"
+    },
+    {
+      "block": "modernlife:hedge[facing=east]",
+      "char": "3"
+    },
+    {
+      "block": "modernlife:hedge[facing=west]",
+      "char": "4"
+    },
+    {
+      "block": "modernlife:street_light[facing=south,part=bottom]",
+      "char": "5"
+    },
+    {
+      "block": "modernlife:street_light[facing=south,part=mid]",
+      "char": "6"
+    },
+    {
+      "block": "modernlife:street_light[facing=south,part=top]",
+      "char": "7"
+    },
+    {
+      "block": "minecraft:gray_concrete",
+      "char": "8"
+    },
+    {
+      "block": "minecraft:black_concrete",
+      "char": "9"
+    },
+    {
+      "block": "minecraft:white_concrete",
+      "char": "a"
+    },
+    {
+      "block": "minecraft:smooth_quartz",
+      "char": "b"
+    },
+    {
+      "block": "minecraft:light_blue_stained_glass_pane",
+      "char": "c"
+    },
+    {
+      "block": "modernlife:iron_glass_door[facing=south,half=lower,hinge=left,open=false,powered=false]",
+      "char": "d"
+    },
+    {
+      "block": "modernlife:iron_glass_door[facing=south,half=upper,hinge=left,open=false,powered=false]",
+      "char": "e"
+    },
+    {
+      "block": "modernlife:iron_glass_door[facing=south,half=lower,hinge=right,open=false,powered=false]",
+      "char": "f"
+    },
+    {
+      "block": "modernlife:iron_glass_door[facing=south,half=upper,hinge=right,open=false,powered=false]",
+      "char": "g"
+    },
+    {
+      "block": "modernlife:refrigerator[facing=south,half=lower]",
+      "char": "h"
+    },
+    {
+      "block": "modernlife:refrigerator[facing=south,half=upper]",
+      "char": "i"
+    },
+    {
+      "block": "modernlife:dark_oak_kitchen_cabinet[facing=north]",
+      "char": "j"
+    },
+    {
+      "block": "minecraft:air",
+      "char": "k"
+    },
+    {
+      "block": "modernlife:dark_oak_wall_shelf[facing=north]",
+      "char": "l"
+    },
+    {
+      "block": "modernlife:dark_oak_kitchen_cabinet[facing=south]",
+      "char": "m"
+    },
+    {
+      "block": "modernlife:dark_oak_wall_shelf[facing=south]",
+      "char": "n"
+    },
+    {
+      "block": "modernlife:dark_oak_kitchen_cabinet[facing=west]",
+      "char": "o"
+    },
+    {
+      "block": "modernlife:monitor[facing=west]",
+      "char": "p"
+    },
+    {
+      "block": "minecraft:flower_pot",
+      "char": "q"
+    },
+    {
+      "block": "modernlife:dark_oak_chair[facing=south]",
+      "char": "r"
+    },
+    {
+      "block": "modernlife:cctv_camera[facing=south]",
+      "char": "s"
+    },
+    {
+      "block": "minecraft:sea_lantern",
+      "char": "t"
+    },
+    {
+      "block": "minecraft:oak_stairs[facing=north,half=bottom,shape=straight]",
+      "char": "u"
+    },
+    {
+      "block": "minecraft:iron_bars",
+      "char": "v"
+    },
+    {
+      "block": "modernlife:modern_white_door[facing=west,half=lower,hinge=left,open=false,powered=false]",
+      "char": "w"
+    },
+    {
+      "block": "modernlife:modern_white_door[facing=west,half=upper,hinge=left,open=false,powered=false]",
+      "char": "x"
+    },
+    {
+      "block": "modernlife:modern_white_door[facing=south,half=lower,hinge=left,open=false,powered=false]",
+      "char": "y"
+    },
+    {
+      "block": "modernlife:modern_white_door[facing=south,half=upper,hinge=left,open=false,powered=false]",
+      "char": "z"
+    },
+    {
+      "block": "minecraft:cyan_bed[facing=east,part=foot]",
+      "char": "A"
+    },
+    {
+      "block": "minecraft:cyan_bed[facing=east,part=head]",
+      "char": "B"
+    },
+    {
+      "block": "modernlife:dark_oak_night_stand[facing=west]",
+      "char": "C"
+    },
+    {
+      "block": "modernlife:modern_dark_oak_bookshelf[facing=south]",
+      "char": "D"
+    },
+    {
+      "block": "minecraft:potted_bamboo",
+      "char": "E"
+    },
+    {
+      "block": "modernlife:refrigerator[facing=west,half=lower]",
+      "char": "F"
+    },
+    {
+      "block": "modernlife:refrigerator[facing=west,half=upper]",
+      "char": "G"
+    },
+    {
+      "block": "modernlife:dark_oak_kitchen_drawer_cabinet[facing=west]",
+      "char": "H"
+    },
+    {
+      "block": "modernlife:stove[facing=west,open_door=false]",
+      "char": "I"
+    },
+    {
+      "block": "modernlife:kitchen_sink[facing=west]",
+      "char": "J"
+    },
+    {
+      "block": "modernlife:microwave[facing=west,open_door=false]",
+      "char": "K"
+    },
+    {
+      "block": "modernlife:dark_oak_small_table[type=w_end]",
+      "char": "L"
+    },
+    {
+      "block": "modernlife:dark_oak_small_table[type=e_end]",
+      "char": "M"
+    },
+    {
+      "block": "modernlife:dark_oak_chair[facing=north]",
+      "char": "N"
+    },
+    {
+      "block": "modernlife:white_sofa[facing=north,type=left]",
+      "char": "O"
+    },
+    {
+      "block": "modernlife:white_sofa[facing=north,type=middle]",
+      "char": "P"
+    },
+    {
+      "block": "modernlife:white_sofa[facing=north,type=right]",
+      "char": "Q"
+    },
+    {
+      "block": "modernlife:dark_oak_small_table[type=single]",
+      "char": "R"
+    },
+    {
+      "block": "modernlife:flatscreen_tv[facing=south]",
+      "char": "S"
+    },
+    {
+      "block": "minecraft:glass_pane",
+      "char": "T"
+    },
+    {
+      "block": "modernlife:air_conditioner[facing=south]",
+      "char": "U"
+    },
+    {
+      "block": "modernlife:air_conditioner[facing=north]",
+      "char": "V"
+    },
+    {
+      "block": "minecraft:lightning_rod[facing=up,powered=false,waterlogged=false]",
+      "char": "W"
+    },
+    {
+      "block": "underground_city:alarm_panel[facing=north,light=off]",
+      "char": "X"
+    }
+  ]
+}

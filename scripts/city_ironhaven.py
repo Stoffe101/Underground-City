@@ -198,15 +198,103 @@ def warehouse() -> Building:
     return b
 
 
+# ---------------------------------------------------------------------------------------------------- the pub
+
+def pub() -> Building:
+    """The pub: a bar along the north wall with stools, tables and a fire on the ground floor; two rooms to let and the landlord's flat above, off a corridor from the stair."""
+    p = Palette("ih_pub")
+    b = Building("ih_pub", p, use="pub", city=CITY, min_floors=2, max_floors=2, filler=STONE, security="storefront",
+                 notes="A pub: the bar, tables and a fire below; two rooms to let and the landlord's flat above.")
+    X0, Z0, X1, Z1 = 1, 1, 14, 14
+    LANTERN = "minecraft:lantern[hanging=true,waterlogged=false]"
+    g = b.new_part("ground", ground=True)
+    yard(g)
+    g.floor(X0, Z0, X1, Z1, "minecraft:dark_oak_planks")
+    walls(g, X0, Z0, X1, Z1, BRICK, STONE)
+    g.floor(X0 + 1, Z0 + 1, X1 - 1, Z1 - 1, "minecraft:spruce_planks", y=4)
+    g.floor(X0 + 1, Z0 + 1, X1 - 1, Z1 - 1, STONE, y=5)
+    g.door(7, 1, Z1, "south", "dark_oak_door", hinge="left"); g.door(8, 1, Z1, "south", "dark_oak_door", hinge="right")
+    for x in (3, 4, 11, 12):
+        g.window(x, 2, Z1, GLASS, 2)
+    for z in (4, 10):
+        g.window(X0, 2, z, GLASS, 2)
+    # the bar: a counter along z = 4 from x 3 to 10, the way behind it at x 11; bottles on shelves and casks along the north wall
+    for x in range(3, 11):
+        g.put(x, 1, 4, ml("dark_oak_kitchen_cabinet", facing="south"))
+    for x in (3, 5, 8, 10):
+        g.put(x, 2, Z0 + 1, ml("dark_oak_wall_shelf", facing="south"))
+    for x in (2, 4, 9):
+        g.put(x, 1, 2, "minecraft:barrel[facing=up,open=false]")
+    g.put(5, 2, 4, ml("coffee_mug", facing="south")); g.put(9, 2, 4, ml("coffee_mug", facing="south"))
+    for x in (4, 6, 8, 10):
+        g.put(x, 1, 5, ml("stool"))
+    # four tables of two, and a fire in a brick hearth on the west wall
+    for (tx, tz) in ((4, 8), (4, 11), (9, 8), (9, 11)):
+        k.table(g, tx, 1, tz, 1, 1, "dark_oak", "small")
+        k.chair(g, tx - 1, 1, tz, "east", "dark_oak"); k.chair(g, tx + 1, 1, tz, "west", "dark_oak")
+    g.put(2, 1, 7, "minecraft:campfire[facing=east,lit=true,signal_fire=false,waterlogged=false]")
+    for (z, y) in ((6, 1), (8, 1), (6, 2), (8, 2), (7, 2), (7, 3)):
+        g.put(2, y, z, BRICK)
+    for (x, z) in ((5, 6), (9, 6), (5, 10), (9, 10), (7, 3)):
+        g.put(x, 3, z, LANTERN)
+    # the stair along the east wall, from z = 12 north to the floor above
+    u = b.new_part("floor", floor=1)
+    u.floor(0, 0, 15, 15, "air")
+    u.floor(X0, Z0, X1, Z1, "minecraft:spruce_planks")
+    walls(u, X0, Z0, X1, Z1, BRICK, BRICK)
+    u.floor(X0 + 1, Z0 + 1, X1 - 1, Z1 - 1, "minecraft:oak_planks", y=4)
+    u.floor(X0 + 1, Z0 + 1, X1 - 1, Z1 - 1, STONE, y=5)
+    k.stair_run(g, u, 13, 12, "north")
+    for (x, z) in ((12, 8), (12, 9), (13, 10)):
+        u.put(x, 1, z, "minecraft:dark_oak_fence")                            # a rail round the stairwell
+    u.fill(2, 1, 6, 13, 3, 6, BRICK)                                           # the rooms' wall on the north side of the corridor (z 7)
+    u.fill(7, 1, 2, 7, 3, 5, BRICK)                                            # between the two rooms
+    u.fill(2, 1, 8, 11, 3, 8, BRICK)                                           # the landlord's flat south of the corridor
+    u.fill(12, 1, 10, 12, 3, 13, BRICK)
+    u.door(4, 1, 6, "south", "spruce_door"); u.door(10, 1, 6, "south", "spruce_door", hinge="right")
+    u.door(6, 1, 8, "north", "spruce_door")
+    u.fill(2, 1, 7, 2, 5, 7, BRICK)                                            # the hearth's chimney passes the corridor's west end
+    # room 1 (x 2..6, z 2..5) and room 2 (x 8..13, z 2..5): a bed, a stand, a wardrobe, a table and a chair, a window
+    for (bx, stand, shelf, tx, cx) in ((3, 4, 6, 5, 6), (9, 10, 13, 12, 11)):
+        k.bed(u, bx, 1, 3, "north", "brown")
+        u.put(stand, 1, 2, ml("oak_night_stand", facing="south"))
+        u.put(shelf, 1, 2, ml("modern_oak_bookshelf", facing="south"))
+        u.put(tx, 1, 4, ml("oak_small_table", type="single")); u.put(cx, 1, 5, ml("oak_chair", facing="north"))
+        u.put(bx + 1, 1, 4, "minecraft:brown_carpet")
+        u.put(bx + 1, 3, 4, LANTERN)
+    for x in (3, 5, 9, 12):
+        u.window(x, 2, Z0, GLASS, 2)
+    # the landlord's flat (x 2..11, z 9..13): a bed, a kitchen run, a table, a sofa; the takings in a corner
+    k.bed(u, 3, 1, 12, "west", "red")
+    u.put(2, 1, 11, ml("oak_night_stand", facing="east"))
+    k.counter_run(u, 7, 1, 13, "east", "north", ["fridge", "drawers", "stove", "sink"], "oak")
+    k.table(u, 8, 1, 10, 1, 1, "oak", "small"); k.chair(u, 7, 1, 10, "east"); k.chair(u, 9, 1, 10, "west")
+    k.sofa(u, 4, 1, 9, "east", "south", "brown", 2)
+    for x in (4, 9):
+        u.window(x, 2, Z1, GLASS, 2)
+    k.lamp_ceiling(u, 5, 11); k.lamp_ceiling(u, 9, 11); u.put(8, 3, 7, LANTERN)
+    t = b.new_part("top", top=True)
+    parapet_roof(t, X0, Z0, X1, Z1, BRICK)
+    chimney(t, 2, 7)
+    water_tank(t, 9, 9)
+    b.spots += [Spot("door", 7, 1, Z1, "south", "front door"), Spot("counter", 7, 1, 3, "south", "the bar"),
+                Spot("seat", 3, 1, 8, "east", "a table by the fire"), Spot("seat", 8, 1, 11, "east", "a table by the window"),
+                Spot("bed", 4, 7, 12, "west", "the landlord's bed"), Spot("stove", 9, 7, 12, "north", "the landlord's kitchen"),
+                Spot("seat", 7, 7, 10, "east", "the landlord's table"), Spot("stash", 11, 7, 12, "west", "the takings")]
+    b.units.append(k.Unit("room_1", "Room 1", (2, 7, 2, 6, 9, 5)))
+    b.units.append(k.Unit("room_2", "Room 2", (8, 7, 2, 13, 9, 5)))
+    return b
+
+
 def buildings() -> list[Building]:
-    return [flats(), workshop(), warehouse()]
+    return [flats(), workshop(), warehouse(), pub()]
 
 
 def zones() -> list[tuple[float, list[tuple[str, int]]]]:
     """Tenements and workshops in the dense core, workshops and warehouses toward the edge."""
     return [
-        (0.35, [("ih_flats", 4), ("ih_workshop", 2), ("ih_warehouse", 1)]),
-        (0.70, [("ih_flats", 2), ("ih_workshop", 3), ("ih_warehouse", 2)]),
+        (0.35, [("ih_flats", 4), ("ih_workshop", 2), ("ih_warehouse", 1), ("ih_pub", 1)]),
+        (0.70, [("ih_flats", 2), ("ih_workshop", 3), ("ih_warehouse", 2), ("ih_pub", 1)]),
         (1.00, [("ih_workshop", 2), ("ih_warehouse", 4), ("ih_flats", 1)]),
     ]
 

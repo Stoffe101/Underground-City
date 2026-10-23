@@ -34,6 +34,10 @@
         {
           "id": "underground_city:bw_club",
           "weight": 1
+        },
+        {
+          "id": "underground_city:bw_store",
+          "weight": 2
         }
       ],
       "within": 0.7
@@ -50,6 +54,10 @@
         },
         {
           "id": "underground_city:bw_club",
+          "weight": 1
+        },
+        {
+          "id": "underground_city:bw_store",
           "weight": 1
         }
       ],

@@ -17,6 +17,10 @@
         {
           "id": "underground_city:ih_warehouse",
           "weight": 1
+        },
+        {
+          "id": "underground_city:ih_pub",
+          "weight": 1
         }
       ],
       "within": 0.35
@@ -34,6 +38,10 @@
         {
           "id": "underground_city:ih_warehouse",
           "weight": 2
+        },
+        {
+          "id": "underground_city:ih_pub",
+          "weight": 1
         }
       ],
       "within": 0.7

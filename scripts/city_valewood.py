@@ -332,17 +332,90 @@ def shop(bid: str, look: Look) -> Building:
     return b
 
 
+# ---------------------------------------------------------------------------------------------------- the bakery
+
+def bakery(bid: str, look: Look) -> Building:
+    """A bakery: ovens and flour on the back wall, a counter with cakes and a till, a table in the window; a flat to let above, with its own door off the stair landing."""
+    p = Palette(bid)
+    b = Building(bid, p, use="shop", city=CITY, min_floors=2, max_floors=2, filler="minecraft:stone_bricks", security="storefront",
+                 notes="A bakery: ovens, a counter and a table in the window below, a flat to let above.")
+    X0, Z0, X1, Z1 = 2, 3, 13, 12
+    g = b.new_part("ground", ground=True)
+    g.floor(0, 0, 15, 15, "minecraft:stone_bricks")
+    for i in (0, 15):
+        for j in range(0, 16, 5):
+            g.put(i, 1, j, FENCE); g.put(j, 1, i, FENCE)
+    shell(g, look, X0, Z0, X1, Z1)
+    g.floor(X0 + 1, Z0 + 1, X1 - 1, Z1 - 1, "minecraft:terracotta")
+    for x in range(4, 12):
+        if x not in (7, 8):
+            g.window(x, 2, Z1, "minecraft:glass", 2)
+    g.door(7, 1, Z1, "south", look.door); g.door(8, 1, Z1, "south", look.door, hinge="right")
+    for x in range(3, 13):                                                     # a striped awning
+        g.put(x, 4, Z1 + 1, "minecraft:yellow_wool" if x % 2 else "minecraft:white_wool")
+    g.window(X1, 2, 6, GLASS, 2); g.window(X1, 2, 9, GLASS, 2)
+    # the bakehouse along the back wall: two ovens (a smoker and a furnace), sacks of flour, a sink
+    g.put(5, 1, Z0 + 1, "minecraft:smoker[facing=south,lit=true]"); g.put(6, 1, Z0 + 1, "minecraft:furnace[facing=south,lit=true]")
+    g.put(9, 1, Z0 + 1, ml("kitchen_sink", facing="south")); g.put(10, 1, Z0 + 1, ml("oak_kitchen_cabinet", facing="south"))
+    for (x, z) in ((11, 4), (12, 4), (12, 5)):
+        g.put(x, 1, z, "minecraft:barrel[facing=up,open=false]")
+    g.put(12, 2, 4, "minecraft:hay_block[axis=y]")
+    for x in (5, 9):
+        g.put(x, 2, Z0 + 1, ml("oak_wall_shelf", facing="south"))
+    # the counter (z 7) with cakes on it and the till; the baker stands behind it at z 6
+    for x in range(5, 11):
+        g.put(x, 1, 7, ml("oak_kitchen_cabinet", facing="south"))
+    g.put(5, 2, 7, "minecraft:cake[bites=0]"); g.put(7, 2, 7, "minecraft:cake[bites=2]"); g.put(10, 2, 7, ml("monitor", facing="south"))
+    # a table and two chairs in the east window
+    k.table(g, 11, 1, 10, 1, 1, "oak", "small"); k.chair(g, 11, 1, 9, "south"); k.chair(g, 12, 1, 10, "west")
+    g.put(4, 1, 10, "minecraft:flower_pot"); g.put(5, 1, 11, "minecraft:potted_azalea_bush")
+    for (x, z) in ((6, 9), (10, 5)):
+        k.lamp_ceiling(g, x, z)
+    # the stair to the flat in the west of the floor, then a landing and the flat's own door
+    u = b.new_part("floor", floor=1)
+    u.floor(0, 0, 15, 15, "air")
+    shell(u, look, X0, Z0, X1, Z1)
+    stair_run(g, u, 3, 11)
+    for z in range(7, 11):
+        u.put(3, 0, z, "air")
+    u.fill(3, 1, 7, 3, 1, 11, "air")
+    for z in range(7, 11):
+        u.put(4, 1, z, FENCE)
+    u.fill(5, 1, Z0 + 1, 5, 3, Z1 - 1, look.wall)                              # the flat's west wall; the landing (x 3..4, z 4..6) is outside it
+    u.door(5, 1, 5, "west", look.door)
+    # the flat (x 5..12, z 4..11; the west strip by the landing is the stairwell): a bedroom to the north, a kitchen and sitting room to the south
+    u.fill(6, 1, 7, 12, 3, 7, look.wall)
+    u.door(9, 1, 7, "south", look.door)
+    k.bed(u, 9, 1, 4, "east", look.beds[1]); u.put(8, 1, 4, ml("oak_night_stand", facing="south")); u.put(12, 1, 4, ml("modern_oak_bookshelf", facing="south"))
+    u.put(11, 1, 4, ml("oak_night_stand", facing="south")); u.put(6, 1, 6, "minecraft:potted_fern")
+    k.counter_run(u, 12, 1, 8, "south", "west", ["fridge", "stove", "sink"], "oak")
+    k.table(u, 8, 1, 9, 1, 1, "oak", "small"); k.chair(u, 7, 1, 9, "east"); k.chair(u, 9, 1, 9, "west")
+    k.sofa(u, 6, 1, 11, "east", "north", look.sofa, 2)
+    for x in (7, 10):
+        u.window(x, 2, Z1, GLASS, 2); u.window(x, 2, Z0, GLASS, 2)
+    u.window(X1, 2, 5, GLASS, 2)
+    k.lamp_ceiling(u, 9, 5); k.lamp_ceiling(u, 9, 10)
+    t = b.new_part("top", top=True)
+    gable_roof(t, look, X0, Z0, X1, Z1)
+    t.fill(5, 0, 4, 5, 5, 4, look.roof_block)                                  # the oven chimney
+    b.spots += [Spot("door", 7, 1, Z1, "south", "shop door"), Spot("counter", 7, 1, 6, "south", "the counter"), Spot("stove", 6, 1, 5, "north", "the ovens"),
+                Spot("seat", 11, 1, 9, "south", "a table in the window"),
+                Spot("bed", 9, 7, 5, "north", "flat bed"), Spot("stove", 11, 7, 9, "east", "flat kitchen"), Spot("seat", 7, 7, 9, "east", "flat table")]
+    b.units.append(k.Unit("flat", "Flat", (6, 7, 4, 12, 9, 11)))
+    return b
+
+
 def buildings() -> list[Building]:
     house_a = house("vw_house_a", WHITE_BRICK)
     house_b = k.mirror_building(house("vw_house_b_src", TIMBER), "vw_house_b")
-    return [house_a, house_b, cottage("vw_cottage", STONE_COTTAGE), shop("vw_shop", WHITE_BRICK)]
+    return [house_a, house_b, cottage("vw_cottage", STONE_COTTAGE), shop("vw_shop", WHITE_BRICK), bakery("vw_bakery", TIMBER)]
 
 
 def zones() -> list[tuple[float, list[tuple[str, int]]]]:
     """Which buildings stand how far from the centre (a fraction of the city radius): the market shops in the middle, houses round them, cottages and gardens at the edge."""
     return [
-        (0.30, [("vw_shop", 3), ("vw_house_a", 1), ("vw_house_b", 1)]),
-        (0.70, [("vw_house_a", 3), ("vw_house_b", 3), ("vw_cottage", 2), ("vw_shop", 1)]),
+        (0.30, [("vw_shop", 3), ("vw_bakery", 2), ("vw_house_a", 1), ("vw_house_b", 1)]),
+        (0.70, [("vw_house_a", 3), ("vw_house_b", 3), ("vw_cottage", 2), ("vw_shop", 1), ("vw_bakery", 1)]),
         (1.00, [("vw_cottage", 4), ("vw_house_a", 2), ("vw_house_b", 2)]),
     ]
 

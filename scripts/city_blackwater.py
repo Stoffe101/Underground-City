@@ -232,16 +232,91 @@ def club() -> Building:
     return b
 
 
+# ---------------------------------------------------------------------------------------------------- the corner store
+
+def store() -> Building:
+    """A corner store: a glass front, two aisles of shelving, chilled cabinets on the back wall and the till by the door; a modern flat to let above, up a stair with its own door."""
+    p = Palette("bw_store")
+    b = Building("bw_store", p, use="shop", city=CITY, min_floors=2, max_floors=2, filler=BLACK, security="storefront",
+                 notes="A corner store: aisles, chilled cabinets and a till below, a flat to let above.")
+    X0, Z0, X1, Z1 = 1, 1, 14, 14
+
+    def shell(part: Part) -> None:
+        part.floor(X0, Z0, X1, Z1, CONCRETE)
+        part.ring(X0, Z0, X1, Z1, 1, 5, CONCRETE)
+        part.ring(X0, Z0, X1, Z1, 1, 1, BLACK)
+        for (x, z) in ((X0, Z0), (X1, Z0), (X0, Z1), (X1, Z1)):
+            part.fill(x, 1, z, x, 5, z, BLACK)
+        part.floor(X0 + 1, Z0 + 1, X1 - 1, Z1 - 1, WHITE, y=4)
+        part.floor(X0 + 1, Z0 + 1, X1 - 1, Z1 - 1, CONCRETE, y=5)
+
+    g = b.new_part("ground", ground=True)
+    plaza(g)
+    shell(g)
+    g.floor(X0 + 1, Z0 + 1, X1 - 1, Z1 - 1, "minecraft:smooth_quartz")
+    for x in range(X0 + 2, X1 - 1):                                            # the glass front
+        if x not in (7, 8):
+            g.put(x, 2, Z1, GLASS); g.put(x, 3, Z1, GLASS)
+    for dx, hinge in ((0, "left"), (1, "right")):
+        for y in (1, 2):
+            g.put(7 + dx, y, Z1, f"modernlife:iron_glass_door[facing=south,half={'lower' if y == 1 else 'upper'},hinge={hinge},open=false,powered=false]")
+    # chilled cabinets along the back wall, two aisles of shelving, a magazine rack
+    for x in range(4, 12):
+        k.fridge(g, x, 1, Z0 + 1, "south")
+    for z in (6, 9):
+        for x in range(4, 9):
+            g.put(x, 1, z, ml("dark_oak_kitchen_cabinet", facing="north" if z == 6 else "south"))
+            g.put(x, 2, z, ml("dark_oak_wall_shelf", facing="north" if z == 6 else "south") if x % 2 else "minecraft:air")
+    # the till by the door: a counter along x = 11 from z 9 to 12, the clerk behind it at x = 12
+    for z in range(9, 13):
+        g.put(11, 1, z, ml("dark_oak_kitchen_cabinet", facing="west"))
+    g.put(11, 2, 10, ml("monitor", facing="west")); g.put(11, 2, 12, "minecraft:flower_pot")
+    g.put(12, 1, 8, ml("dark_oak_chair", facing="south"))
+    g.put(12, 3, 3, ml("cctv_camera", facing="south"))
+    for (x, z) in ((5, 4), (9, 4), (6, 8), (6, 11), (10, 11)):
+        g.put(x, 4, z, LAMP)                                                   # lights flush in the ceiling
+    # the stair at the west wall, climbing north from z 12 to the landing at z 7 on the floor above
+    u = b.new_part("floor", floor=1)
+    u.floor(0, 0, 15, 15, "air")
+    shell(u)
+    for x in range(X0 + 2, X1 - 1, 3):
+        u.put(x, 2, Z1, GLASS); u.put(x, 3, Z1, GLASS); u.put(x, 2, Z0, GLASS); u.put(x, 3, Z0, GLASS)
+    k.stair_run(g, u, 2, 12, "north")
+    for (x, z) in ((3, 8), (3, 9), (2, 10)):
+        u.put(x, 1, z, "minecraft:iron_bars")
+    u.fill(4, 1, Z0 + 1, 4, 3, Z1 - 1, WHITE)                                  # the flat's west wall; the landing (x 2..3, z 2..7) is outside it
+    u.put(4, 1, 5, "modernlife:modern_white_door[facing=west,half=lower,hinge=left,open=false,powered=false]")
+    u.put(4, 2, 5, "modernlife:modern_white_door[facing=west,half=upper,hinge=left,open=false,powered=false]")
+    # the flat (x 5..13, z 2..13): a bedroom to the north, an open kitchen and living room to the south
+    u.fill(5, 1, 6, 13, 3, 6, WHITE)
+    u.put(9, 1, 6, "modernlife:modern_white_door[facing=south,half=lower,hinge=left,open=false,powered=false]")
+    u.put(9, 2, 6, "modernlife:modern_white_door[facing=south,half=upper,hinge=left,open=false,powered=false]")
+    k.bed(u, 11, 1, 3, "east", "cyan"); u.put(13, 1, 4, ml("dark_oak_night_stand", facing="west")); u.put(7, 1, 2, ml("modern_dark_oak_bookshelf", facing="south"))
+    u.put(6, 1, 4, "minecraft:potted_bamboo")
+    k.counter_run(u, 13, 1, 8, "south", "west", ["fridge", "drawers", "stove", "sink", "microwave"], "dark_oak")
+    k.table(u, 9, 1, 9, 2, 1, "dark_oak", "small"); k.chair(u, 9, 1, 8, "south", "dark_oak"); k.chair(u, 10, 1, 10, "north", "dark_oak")
+    k.sofa(u, 6, 1, 12, "east", "north", "white", 3); u.put(7, 1, 10, ml("dark_oak_small_table", type="single")); u.put(7, 2, 10, ml("flatscreen_tv", facing="south"))
+    for (x, z) in ((9, 4), (9, 11)):
+        u.put(x, 4, z, LAMP)
+    t = b.new_part("top", top=True)
+    roof_terrace(t, X0, Z0, X1, Z1)
+    b.spots += [Spot("door", 7, 1, Z1, "south", "the shop door"), Spot("counter", 12, 1, 11, "west", "the till"), Spot("shelf", 6, 1, 7, "north", "the aisles"),
+                Spot("bed", 11, 7, 4, "north", "flat bed"), Spot("stove", 12, 7, 10, "east", "flat kitchen"), Spot("seat", 9, 7, 8, "south", "flat table"),
+                Spot("stash", 12, 1, 13, "west", "under the till")]
+    b.units.append(k.Unit("flat", "Flat", (5, 7, 2, 13, 9, 13)))
+    return b
+
+
 def buildings() -> list[Building]:
-    return [apartments(), office(), club()]
+    return [apartments(), office(), club(), store()]
 
 
 def zones() -> list[tuple[float, list[tuple[str, int]]]]:
     """Offices and clubs in the dense core by the water, apartment blocks toward the edge."""
     return [
         (0.35, [("bw_office", 4), ("bw_club", 2), ("bw_apartments", 2)]),
-        (0.70, [("bw_apartments", 4), ("bw_office", 2), ("bw_club", 1)]),
-        (1.00, [("bw_apartments", 3), ("bw_office", 1), ("bw_club", 1)]),
+        (0.70, [("bw_apartments", 4), ("bw_office", 2), ("bw_club", 1), ("bw_store", 2)]),
+        (1.00, [("bw_apartments", 3), ("bw_office", 1), ("bw_club", 1), ("bw_store", 1)]),
     ]
 
 

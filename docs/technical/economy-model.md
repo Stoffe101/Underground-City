@@ -178,6 +178,9 @@ Everything between the markers is written by `--update-doc` and checked by a uni
 | city:vw_house_b     | 85     | 7        | 413        | 21%   | farmer 339     | 25%   |
 | city:ih_workshop    | 135    | 12       | 882        | 15%   | vintner 369    | 37%   |
 | city:ih_warehouse   | 170    | 15       | 935        | 18%   | vintner 369    | 46%   |
+| city:ih_pub         | 10     | 1        | 165        | 6%    | gunsmith 112   | 9%    |
+| city:vw_bakery      | 40     | 4        | 350        | 11%   | farmer 237     | 17%   |
+| city:bw_store       | 55     | 5        | 391        | 14%   | vintner 315    | 17%   |
 
 ### Active hours until each housing milestone (household policy in `simulate`)
 

@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "outlet": "shop:store",
+  "building": "underground_city:bw_store",
+  "spot": "counter",
+  "city": "blackwater",
+  "title": "Corner Store"
+}
