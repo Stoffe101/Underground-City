@@ -631,6 +631,8 @@ public final class UndergroundGameTests {
     public static void sableLeafGrowsOnlyWithNutrientAndYieldsBalesNotMoney(GameTestHelper helper) {
         var level = helper.getLevel();
         BlockPos ground = helper.absolutePos(new BlockPos(2, 1, 2));
+        // The test cell may sit inside natural terrain (the grid of tests moves when tests are added; a hosted run found the lamp's light walled off from the plant): clear its room first.
+        for (int dx = -1; dx <= 2; dx++) for (int dz = -1; dz <= 1; dz++) for (int dy = 1; dy <= 3; dy++) level.setBlockAndUpdate(ground.offset(dx, dy, dz), Blocks.AIR.defaultBlockState());
         level.setBlockAndUpdate(ground, Blocks.FARMLAND.defaultBlockState());
         level.setBlockAndUpdate(ground.east(), Blocks.GLOWSTONE.defaultBlockState()); // a grow lamp: brightness 15 whatever the weather
         level.setBlockAndUpdate(ground.above(), UndergroundCity.SABLE_CROP.get().defaultBlockState());
