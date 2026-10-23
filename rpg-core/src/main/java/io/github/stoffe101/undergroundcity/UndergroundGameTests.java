@@ -627,7 +627,7 @@ public final class UndergroundGameTests {
 
     // ------------------------------------------------------------------------------------------ crop
 
-    @GameTest(template = "empty")
+    @GameTest(template = "empty", timeoutTicks = 800)
     public static void sableLeafGrowsOnlyWithNutrientAndYieldsBalesNotMoney(GameTestHelper helper) {
         var level = helper.getLevel();
         BlockPos ground = helper.absolutePos(new BlockPos(2, 1, 2));
@@ -636,8 +636,17 @@ public final class UndergroundGameTests {
         level.setBlockAndUpdate(ground, Blocks.FARMLAND.defaultBlockState());
         level.setBlockAndUpdate(ground.east(), Blocks.GLOWSTONE.defaultBlockState()); // a grow lamp: brightness 15 whatever the weather
         level.setBlockAndUpdate(ground.above(), UndergroundCity.SABLE_CROP.get().defaultBlockState());
-        // The light engine runs between ticks, so the plant is only judged once the lamp's light has settled.
-        helper.runAfterDelay(40, () -> sableLeafBody(helper, ground));
+        // The light engine runs between ticks, so the plant is only judged once the lamp's light has reached it. A fixed wait of 40 ticks failed on a hosted runner (the stage
+        // never came), where a busy light engine or a cell with no sky above can take longer.
+        whenLit(helper, ground.above(), 0, () -> sableLeafBody(helper, ground));
+    }
+
+    /** Runs {@code then} once the block at {@code pos} has the light a crop needs (checked every ten ticks, at least twenty in); fails with the light it had if it never comes. */
+    private static void whenLit(GameTestHelper helper, BlockPos pos, int waited, Runnable then) {
+        int light = helper.getLevel().getRawBrightness(pos, 0);
+        if (waited >= 20 && light >= RestrictedCropBlock.LIGHT_NEEDED) { then.run(); return; }
+        check(waited < 600, "The lamp's light never reached the plant: light " + light + " after " + waited + " ticks, " + RestrictedCropBlock.LIGHT_NEEDED + " needed");
+        helper.runAfterDelay(10, () -> whenLit(helper, pos, waited + 10, then));
     }
 
     private static void sableLeafBody(GameTestHelper helper, BlockPos ground) {
@@ -656,7 +665,8 @@ public final class UndergroundGameTests {
             check(player.getMainHandItem().isEmpty() && level.getBlockState(pos).getValue(RestrictedCropBlock.NOURISHED), "One dose is consumed per stage");
             int guard = 0;
             while (level.getBlockState(pos).getValue(RestrictedCropBlock.AGE) < stage && guard++ < 2000) crop.randomTick(level.getBlockState(pos), level, pos, random);
-            check(level.getBlockState(pos).getValue(RestrictedCropBlock.AGE) == stage && !level.getBlockState(pos).getValue(RestrictedCropBlock.NOURISHED), "Stage " + stage + " not reached or dose not used up");
+            check(level.getBlockState(pos).getValue(RestrictedCropBlock.AGE) == stage && !level.getBlockState(pos).getValue(RestrictedCropBlock.NOURISHED),
+                "Stage " + stage + " not reached or dose not used up (light " + level.getRawBrightness(pos, 0) + ", " + RestrictedCropBlock.LIGHT_NEEDED + " needed)");
         }
         // Mature: another dose does nothing, bone meal does nothing.
         player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(core("cultivation_nutrient")));
