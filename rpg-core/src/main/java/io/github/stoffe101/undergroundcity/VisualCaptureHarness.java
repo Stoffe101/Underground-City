@@ -61,15 +61,13 @@ public final class VisualCaptureHarness {
     private static TerminalData waysideDesk(double balance) {
         return new TerminalData("ironhaven","farmer",3,520,balance,true,null,0,"",List.of(),WAYSIDE_OFFERS,0,List.of(),List.of(),List.of(),0,"",List.of(),"wayside");
     }
-    /** A shopkeeper's counter (D-126): the Ironhaven hardware shop's lines on the Trade page. */
+    /** A shopkeeper's counter (D-126): the Ironhaven hardware shop's real lines on the Trade page (copper sold out). */
     private static TerminalData counter(double balance) {
         List<TerminalData.Offer> offers=List.of(
             new TerminalData.Offer("underground_city:materials/iron_ingot_ironhaven","minecraft:iron_ingot",9,14,32,16),
             new TerminalData.Offer("underground_city:materials/coal_ironhaven","minecraft:coal",3,30,48,24),
-            new TerminalData.Offer("underground_city:materials/copper_ingot_ironhaven","minecraft:copper_ingot",7,0,24,16),
-            new TerminalData.Offer("underground_city:shops/hardware_lockpick_ironhaven","underground_city:lockpick",14,3,6,2),
-            new TerminalData.Offer("underground_city:shops/hardware_shears_ironhaven","minecraft:shears",11,5,8,2));
-        return new TerminalData("ironhaven","smith",3,520,balance,true,null,1,"ironhaven",List.of(),offers,0,List.of(),List.of(),List.of(),0,"",List.of(),"shop:hardware|Foundry Street Hardware");
+            new TerminalData.Offer("underground_city:materials/copper_ingot_ironhaven","minecraft:copper_ingot",7,0,24,16));
+        return new TerminalData("ironhaven","smith",3,520,balance,true,null,1,"ironhaven",List.of(),offers,0,List.of(),List.of(),List.of(),0,"",List.of(),"shop:hardware|Hardware and Metals");
     }
 
     /** A fence's quote (D-125): stolen goods in the pockets, priced at the fence's rate; partial when the budget is low, empty when nothing is marked. */
