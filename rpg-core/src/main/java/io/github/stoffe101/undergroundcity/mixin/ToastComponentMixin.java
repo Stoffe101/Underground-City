@@ -15,8 +15,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  */
 @Mixin(value = ToastComponent.class, remap = false)
 public abstract class ToastComponentMixin {
-    @Inject(method = {"render(Lnet/minecraft/client/gui/GuiGraphics;)V", "m_94920_(Lnet/minecraft/client/gui/GuiGraphics;)V"}, at = @At("HEAD"), remap = false)
-    private void underground_city$outOfTheStatusStacksWay(GuiGraphics graphics, CallbackInfo ci) { ToastPlacement.begin(graphics); }
+    @Inject(method = {"render(Lnet/minecraft/client/gui/GuiGraphics;)V", "m_94920_(Lnet/minecraft/client/gui/GuiGraphics;)V"}, at = @At("HEAD"), cancellable = true, remap = false)
+    private void underground_city$outOfTheStatusStacksWay(GuiGraphics graphics, CallbackInfo ci) {
+        if (ToastPlacement.hidden()) { ci.cancel(); return; }   // nothing drawn over a timed screen; a toast's clock keeps running, so a short one is simply missed (its words are in the chat)
+        ToastPlacement.begin(graphics);
+    }
 
     @Inject(method = {"render(Lnet/minecraft/client/gui/GuiGraphics;)V", "m_94920_(Lnet/minecraft/client/gui/GuiGraphics;)V"}, at = @At("RETURN"), remap = false)
     private void underground_city$putBack(GuiGraphics graphics, CallbackInfo ci) { ToastPlacement.end(graphics); }

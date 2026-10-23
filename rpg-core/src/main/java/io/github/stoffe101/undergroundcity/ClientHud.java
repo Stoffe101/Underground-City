@@ -49,7 +49,9 @@ public final class ClientHud {
 
     @SubscribeEvent
     public static void overlay(RegisterGuiOverlaysEvent event) {
-        event.registerAbove(VanillaGuiOverlay.HOTBAR.id(), "status_hud", (gui, graphics, partialTick, width, height) -> draw(graphics, width, height));
+        // above the chat: on a small window (1280x720 at GUI scale 3) the default 320-pixel chat reaches under a right-hand stack, and its lines were drawn over the cards; the chat screen
+        // (T) shows every line in full, and the stack is not drawn while it is open
+        event.registerAbove(VanillaGuiOverlay.CHAT_PANEL.id(), "status_hud", (gui, graphics, partialTick, width, height) -> draw(graphics, width, height));
     }
 
     @Mod.EventBusSubscriber(modid = UndergroundCity.MOD_ID, value = Dist.CLIENT)

@@ -2,7 +2,6 @@ package io.github.stoffe101.undergroundcity;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.screens.ChatScreen;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 
@@ -16,12 +15,15 @@ public final class ToastPlacement {
 
     private static boolean pushed;
 
-    /** Called before the game draws its toasts. */
+    /** True while no toast may be drawn at all: a timed screen (the lock, the trace) is open, and a notice over a pad costs the round. */
+    public static boolean hidden() { return ClientNotice.timed(Minecraft.getInstance()); }
+
+    /** Called before the game draws its toasts (not when {@link #hidden}). */
     public static void begin(GuiGraphics g) {
         Minecraft mc = Minecraft.getInstance();
         int[] stack = ClientHud.drawn();
-        int[] shift = stack == null || mc.screen != null && !(mc.screen instanceof ChatScreen) ? new int[] {0, 0}
-            : HudLayout.toastShift(g.guiWidth(), g.guiHeight(), stack[0], stack[1], stack[2], stack[3]);
+        // the stack is drawn only when no screen is open, so on any screen the toasts keep their corner
+        int[] shift = stack == null || mc.screen != null ? new int[] {0, 0} : HudLayout.toastShift(g.guiWidth(), g.guiHeight(), stack[0], stack[1], stack[2], stack[3]);
         g.pose().pushPose();
         g.pose().translate(shift[0], shift[1], 0);
         pushed = true;
