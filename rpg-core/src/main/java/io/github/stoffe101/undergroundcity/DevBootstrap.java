@@ -22,7 +22,9 @@ import org.slf4j.Logger;
  */
 public final class DevBootstrap {
     private static final Logger LOGGER = LogUtils.getLogger();
-    static final String DISTRICT = "founders_row", RANGE = "firing_range", FLATS = "row_flats", MOTEL = "row_motel", QUARRY = "old_quarry";
+    static final String DISTRICT = "founders_row", RANGE = "firing_range", FLATS = "row_flats", MOTEL = "row_motel", QUARRY = "old_quarry", PIT = "valewood_pit";
+    /** The Valewood pit stands this far back along the road from where the road enters Valewood's circle, this far to one side of it, and no nearer than this to any road. */
+    static final int PIT_BACK = 80, PIT_ASIDE = 45, PIT_SEARCH = 40, PIT_ROAD_CLEARANCE = 16;
     static final int SEARCH_RADIUS = 160, MAX_RELIEF = 3;
     /** The landing is graded (LandingGrader), so a lot may be this uneven before grading and still be the least work. */
     static final int LANDING_RELIEF = 24, LANDING_SEARCH_RADIUS = 200;
@@ -134,6 +136,57 @@ public final class DevBootstrap {
         }
     }
 
+    /**
+     * The Valewood pit (D-134): a second, smaller regrowing site on Valewood's island, so the base metals also renew on the island with the fewest metal shelves. It goes beside the road to
+     * Ironhaven, {@link #PIT_BACK} blocks back from where the road enters Valewood's circle and {@link #PIT_ASIDE} to one side, on level, dry ground that is neither a city's nor within
+     * {@link #PIT_ROAD_CLEARANCE} blocks of any road. In a new archipelago world only; skipped with a log line where nothing fits, and the world works without it.
+     */
+    static void placeValewoodPit(ServerLevel level) {
+        DistrictCatalog.District pit = DistrictCatalog.INSTANCE.find(PIT);
+        if (pit == null || DistrictBuilder.isBuilt(level, PIT)) return;
+        try {
+            java.util.List<CorridorPlan> plans = DevCommands.plans(level.getServer());
+            CorridorPlan road = plans.stream().filter(p -> p.id().equals("ironhaven_valewood") || p.id().equals("valewood_ironhaven")).findFirst().orElse(null);
+            if (road == null) { LOGGER.info("[UC-DEV] the Valewood pit was not placed: no road between Ironhaven and Valewood in this world"); return; }
+            // where the road meets Valewood's circle: its last open point on Valewood's side (the id names the end it runs to)
+            boolean valewoodLast = road.id().endsWith("valewood");
+            double edge = -1;
+            for (double at = 0; at <= road.length(); at += 2) if (road.openAt(at) && (valewoodLast || edge < 0)) edge = at;
+            if (edge < 0) { LOGGER.info("[UC-DEV] the Valewood pit was not placed: the road has no open stretch"); return; }
+            double back = valewoodLast ? edge - PIT_BACK : edge + PIT_BACK;
+            double[] point = road.pointAt(back), ahead = road.pointAt(back + 4), behind = road.pointAt(back - 4);
+            double tx = ahead[0] - behind[0], tz = ahead[1] - behind[1], len = Math.max(1e-6, Math.hypot(tx, tz));
+            double nx = -tz / len, nz = tx / len;   // across the road
+            int width = pit.max().getX() - pit.min().getX() + 1, depth = pit.max().getZ() - pit.min().getZ() + 1;
+            DistrictSites.Ground natural = ground(level);
+            DistrictSites.Ground offRoad = new DistrictSites.Ground() {
+                @Override public int height(int x, int z) { return natural.height(x, z); }
+                @Override public boolean wet(int x, int z) { return natural.wet(x, z); }
+                @Override public boolean reserved(int x, int z) {
+                    if (natural.reserved(x, z)) return true;
+                    for (CorridorPlan plan : plans) if (plan.project(x, z).distance() < PIT_ROAD_CLEARANCE) return true;
+                    return false;
+                }
+            };
+            DistrictSites.Site found = null;
+            for (int side : new int[] {1, -1}) {
+                int cx = (int) Math.round(point[0] + nx * PIT_ASIDE * side) - width / 2, cz = (int) Math.round(point[1] + nz * PIT_ASIDE * side) - depth / 2;
+                found = DistrictSites.find(offRoad, cx, cz, width, depth, MAX_RELIEF, PIT_SEARCH).orElse(null);
+                if (found != null) break;
+            }
+            if (found == null) { LOGGER.info("[UC-DEV] the Valewood pit was not placed: no level, dry ground off the road within {} blocks of {} {}", PIT_SEARCH, Math.round(point[0]), Math.round(point[1])); return; }
+            BlockPos origin = new BlockPos(found.x(), found.y(), found.z());
+            for (int cx = (origin.getX() + pit.min().getX()) >> 4; cx <= (origin.getX() + pit.max().getX()) >> 4; cx++) {
+                for (int cz = (origin.getZ() + pit.min().getZ()) >> 4; cz <= (origin.getZ() + pit.max().getZ()) >> 4; cz++) level.getChunk(cx, cz);
+            }
+            DistrictBuilder.build(level, pit, origin);
+            LOGGER.info("[UC-DEV] Valewood pit built at {} (relief {}, {} blocks along the road from Valewood's edge, {} blocks from the search point)", origin.toShortString(), found.relief(), PIT_BACK,
+                Math.round(found.distance()));
+        } catch (RuntimeException error) {
+            LOGGER.warn("[UC-DEV] the Valewood pit could not be placed: {}", error.toString());
+        }
+    }
+
     private static void placeBeside(ServerLevel level, DistrictCatalog.District district, BlockPos origin, String what, String side, boolean graded) {
         if (DistrictBuilder.isBuilt(level, district.id())) return;
         int width = district.max().getX() - district.min().getX() + 1, depth = district.max().getZ() - district.min().getZ() + 1;
@@ -200,7 +253,10 @@ public final class DevBootstrap {
         DistrictBuilder.build(level, district, origin);
         placeRange(level, origin, landing);
         placeFlats(level, origin, landing);
-        if (landing) placeQuarry(level, origin, footprint(width, depth));
+        if (landing) {
+            placeQuarry(level, origin, footprint(width, depth));
+            placeValewoodPit(level);
+        }
         // The gate is the middle of the lane's far (south) end; stand a few blocks outside it, facing the lane.
         BlockPos gate = origin.offset(district.min().getX() + width / 2, 0, depth + 2);
         level.setDefaultSpawnPos(gate, 180.0f);

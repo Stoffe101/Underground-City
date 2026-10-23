@@ -40,3 +40,26 @@ class OldQuarry(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ValewoodPit(unittest.TestCase):
+    """The second site (D-134): sound, bounded, base metals only, placed by its own district, and slower than the old quarry."""
+
+    def test_every_pit_is_sound_and_ids_are_unique(self):
+        for pit in quarry.PITS:
+            self.assertEqual(pit.validate(), [], pit.site_id)
+        self.assertEqual(len({p.site_id for p in quarry.PITS}), len(quarry.PITS))
+
+    def test_the_pit_is_smaller_and_slower_than_the_quarry(self):
+        pit, old = quarry.PIT, quarry.QUARRY
+        self.assertLess(len(pit.veins) * 60.0 / pit.interval, len(old.veins) * 60.0 / old.interval)
+        self.assertEqual({v[3] for v in pit.veins}, {"minecraft:iron_ore", "minecraft:coal_ore", "minecraft:copper_ore"})
+
+    def test_every_vein_of_the_pit_is_placed_by_its_district(self):
+        district = json.loads(quarry.PIT_DISTRICT_FILE.read_text(encoding="utf-8"))
+        site = json.loads(quarry.PIT_SITE_FILE.read_text(encoding="utf-8"))
+        placed = {tuple(op["at"]): op["block"] for op in district["ops"] if op["op"] == "block"}
+        for vein in site["veins"]:
+            self.assertEqual(placed.get(tuple(vein["at"])), vein["block"], vein)
+        self.assertEqual(site["district"], district["id"])
+        self.assertFalse(district.get("repeatable", False))

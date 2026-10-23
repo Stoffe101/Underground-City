@@ -31,7 +31,13 @@ public final class ResourceSitesGameTests {
 
     @GameTest(template = "empty")
     public static void theQuarryDataIsBoundedAndEveryVeinIsABaseMetalOreInsideItsDistrict(GameTestHelper helper) {
-        var site = quarry();
+        quarry();
+        check(ResourceSiteCatalog.INSTANCE.find("valewood_pit") != null, "the Valewood pit (D-134) did not load from data");
+        for (var site : ResourceSiteCatalog.INSTANCE.all()) checkSite(site);
+        helper.succeed();
+    }
+
+    private static void checkSite(ResourceSiteCatalog.Site site) {
         DistrictCatalog.District district = DistrictCatalog.INSTANCE.find(site.district());
         check(district != null, "the site's district is missing: " + site.district());
         check(site.intervalMinutes() >= ResourceSiteCatalog.MIN_INTERVAL_MINUTES && site.veins().size() <= ResourceSiteCatalog.MAX_VEINS, "the site is outside its bounds");
@@ -47,7 +53,6 @@ public final class ResourceSitesGameTests {
             check(district.ops().stream().anyMatch(op -> op.kind().equals("block") && op.a().equals(at) && op.text().equals(net.minecraftforge.registries.ForgeRegistries.BLOCKS.getKey(vein.block()).toString())),
                 "the district does not place the ore of the vein at " + at);
         }
-        helper.succeed();
     }
 
     @GameTest(template = "empty", batch = "uc_district", timeoutTicks = 400)

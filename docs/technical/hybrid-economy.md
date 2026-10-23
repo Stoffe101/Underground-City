@@ -1,6 +1,6 @@
 # The hybrid resource economy (D-120, D-123)
 
-Status: **implemented as data, an audit, a regional-exchange line set, one regenerating site and GameTests; the scarcity package was measured on a real generated world (below: 443,563 ore blocks without it, 0 with it, after one fix the first measurement forced), the quarry has not yet been dug by a person, and nobody has played an hour of it.** This document says what exists, what each number is for and where the evidence stops.
+Status: **implemented as data, an audit, a regional-exchange line set, two regenerating sites and GameTests; the scarcity package was measured on a real generated world (below: 443,563 ore blocks without it, 0 with it, after one fix the first measurement forced), the quarry has not yet been dug by a person, and nobody has played an hour of it.** This document says what exists, what each number is for and where the evidence stops.
 
 ## What the owner asked for
 
@@ -12,6 +12,7 @@ A new world has **no natural ores**. Materials come from four places, each bound
 | --- | --- | --- |
 | **Shelves** | Ten finite, shared raw-material lines in the regional exchange, sold in the cities only: iron (three cities, at 9, 11 and 12 credits), coal, copper, charcoal, redstone, lapis, gold, diamond. A shelf is a few units, refills a few at a time in active ticks and never stockpiles (a full shelf is worth at most 1,200 credits, enforced). | `content/gameplay/materials-supply.json`, `scripts/generate_survival_supply.py`, `data/underground_city/regional_stock/materials/` |
 | **The quarry** | One built district, the old quarry (a stepped pit beside the arrival landing), with fourteen vein cells: six iron, five coal, three copper. A mined vein grows back after **20 minutes of active play time** and never while nobody is online. At most 42 ores an active hour, if a person mines every vein the moment it is back. | `scripts/generate_resource_site.py`, `districts/old_quarry.json`, `resource_sites/ironhaven_quarry.json`, `ResourceSites` |
+| **The Valewood pit** (D-134) | A second, smaller built district on Valewood's island, beside the road to Ironhaven about 80 blocks back from where it enters the city, with ten vein cells: four iron, three copper, three coal. A mined vein grows back after **25 minutes of active play time**. At most 24 ores an active hour. | the same generator, `districts/valewood_pit.json`, `resource_sites/valewood_pit.json`, `DevBootstrap.placeValewoodPit` |
 | **Salvage and crafting** | Whatever the base game and the pack already give: smelting what the shelves and the quarry sell, the backpack tiers, vehicle parts, machined parts. Nothing was removed or added to recipes for this. | existing recipes |
 | **Natural ore** | **None in a new archipelago world made with the scarcity package** (measured: 0 ore blocks in 1,215 generated chunks, against 443,563 without it). The opt-in package `underground_city_scarcity` is one Forge biome modifier (`forge:remove_features` for the ore step) that applies to chunks generated after it is installed, **plus** a switch in the archipelago's own noise settings that turns off the game's noise-based ore veins (see "The ore audit"). | `content/generated/world-scarcity/`, `scripts/scarcity_content.py`, `RegionalWorldgen.derive` |
 
@@ -42,6 +43,16 @@ These prices are first guesses. They are checked for one thing only: **an order 
 * **No offline gain.** The clock does not advance while nobody is on, so a world left alone for a week renews nothing, and a vein mined a minute before logging out is still waiting when its player returns.
 * **Bounds.** At most 64 veins and no interval under five minutes are accepted by the loader; the generator refuses a layout whose ceiling is above 60 ores an hour, and the unit tests repeat the check.
 * **Status.** `/uc_site status` (operators) lists each site, where it stands, how many veins wait and how many ores an hour it could give.
+
+## The Valewood pit (D-134)
+
+Valewood is the island with the fewest metal shelves (iron at 12 credits, one unit every 30 minutes; charcoal; nothing else), so a Farmer or a Vintner who lives there had no renewable metal within a few minutes' walk. The pit is the same idea as the old quarry, smaller and slower:
+
+* **Where.** In a *new* archipelago world only, placed by `DevBootstrap.placeValewoodPit` when the landing is built: the point 80 blocks back along the Ironhaven road from where it enters Valewood's city circle, 45 blocks to one side of the road (either side), then the nearest level, dry lot within 40 blocks that is neither inside a city's reserved ring nor within 16 blocks of any road. Where nothing fits it is skipped with a log line. An existing world is never given one; an operator may build it with `/uc_district build valewood_pit` at a chosen spot.
+* **Shape.** A 13 by 13 block pit, four terraces deep, with ten veins in the treads (`scripts/generate_resource_site.py` describes both pits and checks each block by block: every vein set in stone with an open face, inside the lot, base metals only, under the 60-an-hour ceiling).
+* **Renewal.** The same `ResourceSites` rules as the quarry: active play time only, never while nobody is online, never over a block somebody placed.
+* **What it changes in the model.** The scarcity world's renewable supply rises from 42 to 66 base-metal ores an active hour for everybody together (iron 18 to 28, coal 15 to 22, copper 9 to 16); the Smith's best scarcity-world income rises by about 2 percent; every invariant still holds ([economy-model.md](economy-model.md)).
+* **Evidence.** Unit tests (`tests/test_resource_site.py`), the data GameTest over every loaded site, and the placement in a real new world (see the sprint report for the log line and the distance from the road). **Nobody has dug it, and its regrowth was not watched in a client.**
 
 ## The ore audit: what the scarcity package removes (October 22)
 

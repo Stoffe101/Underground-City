@@ -881,13 +881,13 @@ def report(model: Model, markdown: bool = False) -> str:
     out.append(table(rows, ["tier", "vehicle", "acquired by", "price", "materials value", "at level", "mean net/h", "hours", "meant to be"]))
     # a scarcity world
     rows = [[r["career"], r["level"], f"{r['ore']:.0f}", f"{r['shelf']:.0f}", f"{r['quarry']:.0f}", f"{max(r['shelf'], r['quarry']) / r['ore']:.0%}" if r["ore"] > 0 else "-"] for r in scarcity_rows(model)]
-    out.append(h("A scarcity world (no ore to mine, D-120): legal net credits per active hour with metals from the shelves only, or with the quarry's base metals (every mod)"))
-    out.append(table(rows, ["career", "level", "ore world", "shelves", "quarry + shelves", "best as a share of the ore world"]))
+    out.append(h("A scarcity world (no ore to mine, D-120): legal net credits per active hour with metals from the shelves only, or with the regrowing sites' base metals (every mod)"))
+    out.append(table(rows, ["career", "level", "ore world", "shelves", "sites + shelves", "best as a share of the ore world"]))
     losers = [[o.career, o.level, o.id, o.credits, f"{o.cash:.0f}"] for o in ScarcityModel("shelf", model.scale).orders if o.net <= 0 and o.cash > 0]
     out.append(h("Orders that cost more than they pay when every ore unit is bought from a shelf (a scarcity world; the quarry's base metals do not help these)"))
     out.append(table(losers, ["career", "L", "order", "credits", "shelf cost"]) if losers else "none")
-    out.append(h("Where a scarcity world's ore comes from: cheapest shelf price, units an hour the shelves sustain (all cities), units an hour the quarry grows back (shared by everybody)"))
-    out.append(table(quarry_and_shelves(model), ["ore", "cheapest shelf", "shelves/h", "quarry/h"]))
+    out.append(h("Where a scarcity world's ore comes from: cheapest shelf price, units an hour the shelves sustain (all cities), units an hour the regrowing sites give back (the old quarry and the Valewood pit, shared by everybody)"))
+    out.append(table(quarry_and_shelves(model), ["ore", "cheapest shelf", "shelves/h", "sites/h"]))
     rows = [[r["city"], r["title"], f"{r['rate']}% ({r['same_city']}% at home)", f"{r['best_rate']}%", r["budget"], f"{r['hourly']:.0f}", f"{r['best_legal']:.0f}", f"{r['share']:.0%}"] for r in fence_rows(model)]
     out.append(h("Fences (D-125): rate, best rate with every payout skill, opening budget, the most they pay an hour after it, against the best legal hour at level 5"))
     out.append(table(rows, ["city", "fence", "rate", "best rate", "budget", "per hour", "best legal/h (L5)", "share"]))

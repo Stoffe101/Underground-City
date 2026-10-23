@@ -207,30 +207,30 @@ Everything between the markers is written by `--update-doc` and checked by a uni
 | 5    | large_car | bench (proposed) | 8800  | not priced      | 12       | 441        | 20.0  | 20          |
 | 6    | truck     | bench (proposed) | 13000 | not priced      | 12       | 441        | 29.5  | 30          |
 
-### A scarcity world (no ore to mine, D-120): legal net credits per active hour with metals from the shelves only, or with the quarry's base metals (every mod)
+### A scarcity world (no ore to mine, D-120): legal net credits per active hour with metals from the shelves only, or with the regrowing sites' base metals (every mod)
 
-| career     | level | ore world | shelves | quarry + shelves | best as a share of the ore world |
-|------------|-------|-----------|---------|------------------|----------------------------------|
-| farmer     | 1     | 143       | 143     | 143              | 100%                             |
-| vintner    | 1     | 147       | 147     | 147              | 100%                             |
-| smith      | 1     | 282       | 282     | 282              | 100%                             |
-| gunsmith   | 1     | 112       | 112     | 112              | 100%                             |
-| technician | 1     | 140       | 140     | 140              | 100%                             |
-| farmer     | 3     | 201       | 201     | 201              | 100%                             |
-| vintner    | 3     | 255       | 255     | 255              | 100%                             |
-| smith      | 3     | 391       | 378     | 426              | 109%                             |
-| gunsmith   | 3     | 380       | 309     | 406              | 107%                             |
-| technician | 3     | 297       | 277     | 277              | 93%                              |
-| farmer     | 5     | 337       | 321     | 348              | 103%                             |
-| vintner    | 5     | 315       | 315     | 315              | 100%                             |
-| smith      | 5     | 407       | 405     | 446              | 110%                             |
-| gunsmith   | 5     | 424       | 437     | 432              | 103%                             |
-| technician | 5     | 472       | 464     | 464              | 98%                              |
-| farmer     | 8     | 339       | 327     | 348              | 103%                             |
-| vintner    | 8     | 346       | 346     | 346              | 100%                             |
-| smith      | 8     | 440       | 445     | 478              | 109%                             |
-| gunsmith   | 8     | 424       | 437     | 432              | 103%                             |
-| technician | 8     | 519       | 515     | 515              | 99%                              |
+| career     | level | ore world | shelves | sites + shelves | best as a share of the ore world |
+|------------|-------|-----------|---------|-----------------|----------------------------------|
+| farmer     | 1     | 143       | 143     | 143             | 100%                             |
+| vintner    | 1     | 147       | 147     | 147             | 100%                             |
+| smith      | 1     | 282       | 282     | 282             | 100%                             |
+| gunsmith   | 1     | 112       | 112     | 112             | 100%                             |
+| technician | 1     | 140       | 140     | 140             | 100%                             |
+| farmer     | 3     | 201       | 201     | 201             | 100%                             |
+| vintner    | 3     | 255       | 255     | 255             | 100%                             |
+| smith      | 3     | 391       | 378     | 434             | 111%                             |
+| gunsmith   | 3     | 380       | 309     | 406             | 107%                             |
+| technician | 3     | 297       | 277     | 277             | 93%                              |
+| farmer     | 5     | 337       | 321     | 348             | 103%                             |
+| vintner    | 5     | 315       | 315     | 315             | 100%                             |
+| smith      | 5     | 407       | 405     | 456             | 112%                             |
+| gunsmith   | 5     | 424       | 437     | 432             | 103%                             |
+| technician | 5     | 472       | 464     | 464             | 98%                              |
+| farmer     | 8     | 339       | 327     | 348             | 103%                             |
+| vintner    | 8     | 346       | 346     | 346             | 100%                             |
+| smith      | 8     | 440       | 445     | 487             | 111%                             |
+| gunsmith   | 8     | 424       | 437     | 432             | 103%                             |
+| technician | 8     | 519       | 515     | 515             | 99%                              |
 
 ### Orders that cost more than they pay when every ore unit is bought from a shelf (a scarcity world; the quarry's base metals do not help these)
 
@@ -240,18 +240,18 @@ Everything between the markers is written by `--update-doc` and checked by a uni
 | technician | 2 | repeaters           | 68      | 72         |
 | technician | 1 | torches             | 32      | 96         |
 
-### Where a scarcity world's ore comes from: cheapest shelf price, units an hour the shelves sustain (all cities), units an hour the quarry grows back (shared by everybody)
+### Where a scarcity world's ore comes from: cheapest shelf price, units an hour the shelves sustain (all cities), units an hour the regrowing sites give back (the old quarry and the Valewood pit, shared by everybody)
 
-| ore          | cheapest shelf | shelves/h | quarry/h |
-|--------------|----------------|-----------|----------|
-| charcoal     | 2              | 26.0      | 0        |
-| coal         | 3              | 34.7      | 15       |
-| copper_ingot | 7              | 13.3      | 9        |
-| diamond      | 150            | 1.2       | 0        |
-| gold_ingot   | 38             | 3.3       | 0        |
-| iron_ingot   | 9              | 32.0      | 18       |
-| lapis_lazuli | 11             | 5.7       | 0        |
-| redstone     | 6              | 18.7      | 0        |
+| ore          | cheapest shelf | shelves/h | sites/h |
+|--------------|----------------|-----------|---------|
+| charcoal     | 2              | 26.0      | 0       |
+| coal         | 3              | 34.7      | 22      |
+| copper_ingot | 7              | 13.3      | 16      |
+| diamond      | 150            | 1.2       | 0       |
+| gold_ingot   | 38             | 3.3       | 0       |
+| iron_ingot   | 9              | 32.0      | 28      |
+| lapis_lazuli | 11             | 5.7       | 0       |
+| redstone     | 6              | 18.7      | 0       |
 
 ### Fences (D-125): rate, best rate with every payout skill, opening budget, the most they pay an hour after it, against the best legal hour at level 5
 
