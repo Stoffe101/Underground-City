@@ -551,6 +551,31 @@ public final class BuildingSecurityGameTests {
         }
     }
 
+    /** Thief scenario run 7: the club's (and the Ironhaven flats') street doors are iron, which no hand opens; the guard let people through and nothing opened the door (D-151). */
+    @GameTest(template = "empty", batch = "uc_building_iron", timeoutTicks = 200)
+    public static void anIronStreetDoorOpensForWhoeverTheGuardLetsThrough(GameTestHelper helper) {
+        try (House house = new House(helper)) {
+            var iron = Blocks.IRON_DOOR.defaultBlockState().setValue(DoorBlock.FACING, Direction.NORTH);
+            // both halves at once, without shape updates: half an oak door and half an iron one is no door, and the game would remove it
+            house.level.setBlock(house.doorLower, iron.setValue(DoorBlock.HALF, DoubleBlockHalf.LOWER), 2 | 16);
+            house.level.setBlock(house.doorLower.above(), iron.setValue(DoorBlock.HALF, DoubleBlockHalf.UPPER), 2 | 16);
+            ServerPlayer resident = player(helper, "uc_bgi_in", "farmer");
+            resident.setGameMode(GameType.SURVIVAL);
+            resident.moveTo(house.doorLower.getX() + 0.5, house.doorLower.getY(), house.doorLower.getZ() + 1.5);   // in the room
+            knock(resident, house.doorLower, Direction.SOUTH);
+            check(house.level.getBlockState(house.doorLower).getValue(DoorBlock.OPEN), "somebody inside could not open an iron street door to leave");
+            knock(resident, house.doorLower, Direction.SOUTH);
+            check(!house.level.getBlockState(house.doorLower).getValue(DoorBlock.OPEN), "a click on the open iron door did not shut it");
+            ServerPlayer stranger = player(helper, "uc_bgi_out", "farmer");
+            stranger.setGameMode(GameType.SURVIVAL);
+            stranger.getInventory().clearContent();
+            stranger.moveTo(house.doorLower.getX() + 0.5, house.doorLower.getY(), house.doorLower.getZ() - 1.5);   // in the street
+            knock(stranger, house.doorLower, Direction.NORTH);
+            check(!house.level.getBlockState(house.doorLower).getValue(DoorBlock.OPEN), "an iron street door opened to a stranger with no key and no picks");
+            helper.succeed();
+        }
+    }
+
     /** Thief scenario run 3: a Valewood house's front step is under its eaves and its hall is roofed, so neither cell beside the door saw the sky and the door was never locked (D-150). */
     @GameTest(template = "empty", batch = "uc_building_porch", timeoutTicks = 200)
     public static void aFrontDoorUnderTheEavesIsStillAStreetDoor(GameTestHelper helper) {

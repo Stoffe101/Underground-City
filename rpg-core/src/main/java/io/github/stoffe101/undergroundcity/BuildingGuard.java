@@ -204,6 +204,7 @@ public final class BuildingGuard {
         // an open shop's street door is a shop door (D-146), and a fence's door at the fence's hours lets in whoever brings stolen goods (D-147); crouching with an empty hand still cases it
         if (openToPublic(level, found.get(), player) && !(Casing.wants(player) && lowerState.getBlock() instanceof DoorBlock && outsideSide(level, lower, lowerState, player.position()))) {
             PropertyLocks.get(level.getServer()).exitOpen(lower, LockService.clock(level.getServer()) + EXIT_TICKS);
+            byHand(event, player, level, lower, lowerState);
             return;
         }
         if (!(lowerState.getBlock() instanceof DoorBlock) || !exterior(level, lower, lowerState)) return;
@@ -233,11 +234,12 @@ public final class BuildingGuard {
             }
             return;
         }
-        if (PropertyLocks.get(level.getServer()).breached(lower, now)) return;               // somebody picked it a moment ago
-        if (lowerState.getValue(DoorBlock.OPEN)) return;                                      // a click on a door that stands open only shuts it
+        if (PropertyLocks.get(level.getServer()).breached(lower, now)) { byHand(event, player, level, lower, lowerState); return; }   // somebody picked it a moment ago
+        if (lowerState.getValue(DoorBlock.OPEN)) { byHand(event, player, level, lower, lowerState); return; }   // a click on a door that stands open only shuts it
         if (!outsideSide(level, lower, lowerState, player.position()) || CityHomes.holdsKey(player, found.get())) {
             // from the inside a door always opens, and a tenant of a flat in the building has a key to its street door (D-127); either way it shuts itself again a few seconds later
             PropertyLocks.get(level.getServer()).exitOpen(lower, now + EXIT_TICKS);
+            byHand(event, player, level, lower, lowerState);
             return;
         }
         // from the street a trial keypad door asks for its code itself; Core judges the entry when it opens. A lockpick still works on it, through Core's lock.
@@ -261,6 +263,17 @@ public final class BuildingGuard {
     static boolean openToPublic(ServerLevel level, CityBuildings.Building building, ServerPlayer player) {
         if (ShopCounters.openNow(level, building)) return true;
         return FenceService.receivingNow(level, building) && (player == null || FenceService.carriesStolen(player));
+    }
+
+    /**
+     * An iron door does not open by hand. Where the guard lets a person through one (from the inside, with a key, a shop in its hours, a fence's at theirs, a lock picked a moment ago), Core
+     * opens or shuts it as a click would a wooden door (D-151): the Ironhaven flats' street doors are iron, and a tenant could not get in, nor a thief out of the club.
+     */
+    static void byHand(PlayerInteractEvent.RightClickBlock event, ServerPlayer player, ServerLevel level, BlockPos lower, BlockState lowerState) {
+        if (!(lowerState.getBlock() instanceof DoorBlock door) || door.type().canOpenByHand()) return;
+        event.setCanceled(true);
+        event.setCancellationResult(InteractionResult.SUCCESS);
+        if (event.getHand() == InteractionHand.MAIN_HAND) door.setOpen(player, level, lowerState, lower, !lowerState.getValue(DoorBlock.OPEN));
     }
 
     // ------------------------------------------------------------------------------------------------ the door itself
