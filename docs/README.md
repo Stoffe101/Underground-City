@@ -77,6 +77,8 @@ The docs here distinguish **confirmed product direction**, **design proposals**,
 - [Sprint report, October 19, 2026: simulation world, Sophisticated Backpacks, progression without monsters, Lost Cities stalls, first-start stability](production/sprint-2026-10-19.md)
 - [Sprint report, October 20, 2026: economy model, property and rent, skill effects, checkpoint searches of carried storage, vehicle tiers](production/sprint-2026-10-20.md)
 - [Sprint report, October 20 to 21, 2026: world, playability and modpack overhaul after the first human playtest](production/world-playability-overhaul.md)
+- [Sprint report, October 21, 2026: furnished cities, security and police, a hybrid resource economy, residents](production/living-cities-overhaul.md)
+- [Sprint report, October 22 to 23, 2026: gameplay completion, living world and integration pass, with the first-player journey](production/gameplay-completion-pass.md)
 
 ## Legal and assets
 

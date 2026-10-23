@@ -132,3 +132,16 @@ What each row has been through (boot, GameTests, real client) is in the sprint r
 ### Medical supplies: researched, nothing adopted (October 19, 2026)
 
 The owner asked, as a lower priority, for at most one simple medical-supply integration with no unrestricted instant healing and no injury system. Candidates were read from their Modrinth listings only (no jar was read and nothing was run): **Bandagez** is an injury-and-bandage system, which is the complicated injury model the owner excluded (rejected); the small medkit mods found are built with a mod generator whose healing values are fixed in the item and not configurable (rejected as unrestricted and unvetted). The base game already offers restricted healing through food (saturation and regeneration), golden apples and potions. **Nothing was selected;** a medical item is still a gap (backlog), and no document claims one.
+
+### October 22 candidate review: loot containers, street lighting and furnishing (nothing adopted)
+
+The gameplay-completion brief asked for mods only where they keep the game cohesive, Forge 1.20.1, licence-checked, runtime-only and never Create. Read from the Modrinth API (licence, loaders, sides, the latest Forge 1.20.1 file); **no jar was read or run**, so every line below is metadata, not compatibility evidence.
+
+| Candidate | Latest Forge 1.20.1 file | Licence | Verdict |
+| --- | --- | --- | --- |
+| Lootr | `lootr-forge-1.20-0.7.35.94.jar` (2025-11-26), client and server | MIT | **Not adopted.** Per-player loot containers would be a second owner of what Core already owns: a building's stash, its marked stolen goods and the respawning home loot are Core's (single authority). Revisit only if Core's own containers are dropped. |
+| Macaw's Lights and Lamps | current | all rights reserved | **Not adopted.** Street lamps would help the outskirts at night, but the furnished buildings light themselves with vanilla froglights, lanterns and end rods, and a runtime-only download of an all-rights-reserved mod adds a permission question for no missing mechanic. |
+| IndustrialDeco (street lamps) | `industrialdeco-1.2.0.jar` (2026-10-12) | CC-BY-NC-SA-4.0 | **Not evaluated further:** a very small project whose current file is eleven days old. |
+| Another Furniture, [Let's Do] Furniture, Paladin's Furniture, Valhelsia Furniture, Unusual Furniture, Exline's Furniture | current | custom, custom, LGPL code with Polyform Shield assets, all rights reserved, CC-BY-ND-4.0, all rights reserved | **None needed.** Thirteen furnished building types are built from vanilla and Modern Life blocks (already in the pack) and checked block by block against the real registry; a second furniture mod would be a second style. |
+
+No mod was added, removed or re-pinned in this pass; the pinned sets in [dev-pack.md](dev-pack.md) are unchanged.
