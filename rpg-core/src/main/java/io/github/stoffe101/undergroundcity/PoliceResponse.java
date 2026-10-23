@@ -107,7 +107,8 @@ public final class PoliceResponse {
         boolean wired = response != null && event.outcome() == BuildingBreachEvent.Outcome.OPENED && armed(level, building, response);
         // entering quietly: a clean pick does not trip an alarm that can be slipped past, and tells the thief something was there to slip past
         boolean slipped = wired && event.quiet() && response.alarmChance() < QUIET_BYPASS_MAX_CHANCE;
-        if (slipped) Notice.send(player, Notice.Kind.INFO, "Quiet entry", "Something in here is wired to an alarm. Your pick was clean and it did not hear you.");
+        if (slipped) Notice.send(player, Notice.Kind.INFO, "Quiet entry", "Something in here is wired to an alarm. " + ("keypad".equals(event.securityClass())
+            ? "Its own code did not set it off." : "Your pick was clean and it did not hear you."));
         boolean armed = lockAlarm || (wired && !slipped);
         // the building's alarm panel (D-128): a jammed panel calls nobody; an armed one with a panel by the door gives the entry delay to work it instead of ringing at once
         if (armed && AlarmPanels.jammed(level, building)) {

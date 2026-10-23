@@ -185,18 +185,29 @@ public final class BuildingGuard {
         BlockState lowerState = lower.equals(event.getPos()) ? state : level.getBlockState(lower);
         if (!(lowerState.getBlock() instanceof DoorBlock) || !exterior(level, lower, lowerState)) return;
         long now = LockService.clock(level.getServer());
+        boolean keypad = SecurityCraftTrial.isKeypadDoor(lowerState);
+        // a keypad door that stands open shuts on a click, as any door does; SecurityCraft would ask for its code again (security run 10: a held click opened it, then asked)
+        if (keypad && lowerState.getValue(DoorBlock.OPEN)) {
+            event.setCanceled(true);
+            event.setCancellationResult(InteractionResult.SUCCESS);
+            if (event.getHand() == InteractionHand.MAIN_HAND) ((DoorBlock) lowerState.getBlock()).setOpen(player, level, lowerState, lower, false);
+            return;
+        }
+        // a keypad door (the SecurityCraft trial, D-140) would ask for its code on the way out too, even while it stands unlocked after somebody came in: Core opens it for the person leaving
+        if (keypad && (!outsideSide(level, lower, lowerState, player.position()) || CityHomes.holdsKey(player, found.get()))) {
+            PropertyLocks.get(level.getServer()).exitOpen(lower, now + EXIT_TICKS);
+            event.setCanceled(true);
+            event.setCancellationResult(InteractionResult.SUCCESS);
+            if (event.getHand() == InteractionHand.MAIN_HAND) {
+                ((DoorBlock) lowerState.getBlock()).setOpen(player, level, lowerState, lower, true);
+            }
+            return;
+        }
         if (PropertyLocks.get(level.getServer()).breached(lower, now)) return;               // somebody picked it a moment ago
         if (lowerState.getValue(DoorBlock.OPEN)) return;                                      // a click on a door that stands open only shuts it
-        boolean keypad = SecurityCraftTrial.isKeypadDoor(lowerState);
         if (!outsideSide(level, lower, lowerState, player.position()) || CityHomes.holdsKey(player, found.get())) {
             // from the inside a door always opens, and a tenant of a flat in the building has a key to its street door (D-127); either way it shuts itself again a few seconds later
             PropertyLocks.get(level.getServer()).exitOpen(lower, now + EXIT_TICKS);
-            if (keypad) {
-                // a keypad door (the SecurityCraft trial, D-140) would ask for its code on the way out too: Core opens it for the person leaving
-                event.setCanceled(true);
-                event.setCancellationResult(InteractionResult.SUCCESS);
-                if (event.getHand() == InteractionHand.MAIN_HAND) ((DoorBlock) lowerState.getBlock()).setOpen(player, level, lowerState, lower, true);
-            }
             return;
         }
         // from the street a trial keypad door asks for its code itself; Core judges the entry when it opens. A lockpick still works on it, through Core's lock.

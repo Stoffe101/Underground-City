@@ -101,6 +101,8 @@ public final class SecurityCraftTrial {
         long building; String city = ""; BlockPos door; String code = "";
         final List<BlockPos> lasers = new ArrayList<>(), alarms = new ArrayList<>(), cameras = new ArrayList<>(), lights = new ArrayList<>();
         final Map<UUID, String> keyholders = new LinkedHashMap<>();
+        /** Wall blocks a laser was set into, by position: what stood there (for a later removal; not saved, the trial's world is disposable). */
+        final Map<Long, BlockState> replaced = new LinkedHashMap<>();
         long lastTrip = -TRIP_COOLDOWN, sirenUntil;
         int trips, codeEntries, keyholderEntries;
 
@@ -269,24 +271,35 @@ public final class SecurityCraftTrial {
         Install install = new Install();
         install.building = building.key(); install.city = building.city(); install.door = lower.immutable(); install.code = newCode(level.random);
         setCode(level, lower, install.code);
-        // the laser across the hall, two steps in, at ankle height: as wide as the hall allows, up to five apart
+        // the laser across the hall at ankle height, one to four steps in: two laser blocks set into the hall's side walls (a tenement's entrance is a corridor a door wide),
+        // or standing at the ends of a wider hall's open floor; the field between them is what a person walks through
         Direction across = inside.getClockWise();
-        BlockPos row = lower.relative(inside, 2);
-        if (level.getBlockState(row).isAir() && level.getBlockState(row.above()).isAir()) {
+        for (int k = 1; k <= 4 && install.lasers.isEmpty(); k++) {
+            BlockPos row = lower.relative(inside, k);
+            if (!level.getBlockState(row).isAir() || !level.getBlockState(row.above()).isAir()) continue;
             int left = reach(level, row, across.getOpposite()), right = reach(level, row, across);
-            if (left + right >= 2) {
-                BlockPos a = row.relative(across.getOpposite(), left), b = row.relative(across, right);
-                for (BlockPos end : List.of(a, b)) placeAsSystem(level, end, block("laser_block").defaultBlockState(), "laser_block");
-                // the field is drawn when the second laser is placed by its owner; the redstone module makes a crossing a signal that Core reads
-                insertModule(level, a, stack("redstone_module"));
-                install.lasers.add(a); install.lasers.add(b);
+            BlockPos a = row.relative(across.getOpposite(), left + 1), b = row.relative(across, right + 1);   // the first solid blocks either side: the walls
+            if (left + right + 1 > 5 || !wall(level, a) || !wall(level, b)) continue;
+            install.replaced.put(a.asLong(), level.getBlockState(a)); install.replaced.put(b.asLong(), level.getBlockState(b));
+            for (BlockPos end : List.of(a, b)) placeAsSystem(level, end, block("laser_block").defaultBlockState(), "laser_block");
+            // the field is drawn when the second laser is placed by its owner; the redstone module makes a crossing a signal that Core reads
+            insertModule(level, a, stack("redstone_module"));
+            install.lasers.add(a); install.lasers.add(b);
+        }
+        // the siren, the camera and the light on the walls just inside the door, at head height and above: the nearest open cells with a wall to hang from
+        List<BlockPos> used = new ArrayList<>();
+        for (String device : List.of("alarm", "security_camera", "motion_activated_light")) {
+            List<BlockPos> into = device.equals("alarm") ? install.alarms : device.equals("security_camera") ? install.cameras : install.lights;
+            search:
+            for (int up = 2; up <= 3; up++) for (int k = 1; k <= 3; k++) for (int a = 0; a <= 2; a++) for (int sign : a == 0 ? new int[]{1} : new int[]{1, -1}) {
+                BlockPos at = lower.relative(inside, k).relative(across, a * sign).above(up);
+                if (used.contains(at) || !level.getBlockState(at).isAir()) continue;
+                for (Direction from : new Direction[]{inside.getOpposite(), across, across.getOpposite(), inside}) {
+                    if (!wall(level, at.relative(from))) continue;
+                    if (tryHang(level, at, from.getOpposite(), device, device, into)) { used.add(at); break search; }
+                }
             }
         }
-        // the siren and the camera on the wall over the inside of the door, the light beside them
-        BlockPos over = lower.relative(inside).above(2);
-        tryHang(level, over, inside, "alarm", "alarm", install.alarms);
-        tryHang(level, over.relative(across), inside, "security_camera", "security_camera", install.cameras);
-        tryHang(level, over.relative(across.getOpposite()), inside, "motion_activated_light", "motion_activated_light", install.lights);
         for (BlockPos camera : install.cameras) insertModule(level, camera, allowlist(install));
         State state = state(level.getServer());
         state.installs.put(install.door.asLong(), install);
@@ -303,15 +316,23 @@ public final class SecurityCraftTrial {
         return n;
     }
 
+    /** A solid, full block of a building's wall (not glass, a door or furniture): a laser can be set into it, a device hung on it. */
+    private static boolean wall(ServerLevel level, BlockPos pos) {
+        BlockState state = level.getBlockState(pos);
+        return !state.isAir() && state.isCollisionShapeFullBlock(level, pos) && state.isSolidRender(level, pos) && !(state.getBlock() instanceof DoorBlock) && level.getBlockEntity(pos) == null;
+    }
+
     /** Hangs a wall device at {@code at} (air, against the wall behind it) facing into the room; keeps the position when it stuck. */
-    private static void tryHang(ServerLevel level, BlockPos at, Direction into, String blockId, String itemId, List<BlockPos> out) {
-        if (!level.getBlockState(at).isAir() || level.getBlockState(at.relative(into.getOpposite())).isAir()) return;
+    private static boolean tryHang(ServerLevel level, BlockPos at, Direction into, String blockId, String itemId, List<BlockPos> out) {
+        if (!level.getBlockState(at).isAir() || level.getBlockState(at.relative(into.getOpposite())).isAir()) return false;
         BlockState state = block(blockId).defaultBlockState();
         if (state.hasProperty(BlockStateProperties.FACING)) state = state.setValue(BlockStateProperties.FACING, into);
         else if (state.hasProperty(BlockStateProperties.HORIZONTAL_FACING)) state = state.setValue(BlockStateProperties.HORIZONTAL_FACING, into);
-        if (!state.canSurvive(level, at)) return;
+        if (!state.canSurvive(level, at)) return false;
         placeAsSystem(level, at, state, itemId);
-        if (level.getBlockState(at).getBlock() == state.getBlock()) out.add(at.immutable());
+        if (level.getBlockState(at).getBlock() != state.getBlock()) return false;
+        out.add(at.immutable());
+        return true;
     }
 
     static Install at(MinecraftServer server, BlockPos lower) { return state(server).installs.get(lower.asLong()); }
@@ -358,7 +379,8 @@ public final class SecurityCraftTrial {
     /** Every few ticks: a laser that SecurityCraft powered (somebody crossed it) or anybody standing in its field; Core decides whether they belong. Then the siren's time. */
     @SubscribeEvent
     public static void tick(TickEvent.LevelTickEvent event) {
-        if (event.phase != TickEvent.Phase.END || !(event.level instanceof ServerLevel level) || level.dimension() != Level.OVERWORLD || level.getGameTime() % 4 != 1 || !loaded()) return;
+        // every tick: a software-rendered client can move a block and more between two of its position updates, and a check every few ticks let a walker through (run 3)
+        if (event.phase != TickEvent.Phase.END || !(event.level instanceof ServerLevel level) || level.dimension() != Level.OVERWORLD || !loaded()) return;
         State state = state(level.getServer());
         if (state.installs.isEmpty()) return;
         long now = level.getGameTime();
@@ -367,7 +389,8 @@ public final class SecurityCraftTrial {
             if (install.lasers.size() < 2 || now - install.lastTrip < TRIP_COOLDOWN || !loadedNow(level, install.lasers.get(0)) || !loadedNow(level, install.lasers.get(1))) continue;
             BlockPos a = install.lasers.get(0), b = install.lasers.get(1);
             boolean powered = poweredLaser(level.getBlockState(a)) || poweredLaser(level.getBlockState(b));
-            AABB field = new AABB(a).minmax(new AABB(b)).inflate(0.1, 0.9, 0.1);
+            // the beam's own row of blocks: with the walker's own width a crossing is inside it for some seven ticks at a walk (run 5 found a wider box reaching into the doorway)
+            AABB field = new AABB(a).minmax(new AABB(b));
             List<ServerPlayer> inside = level.getEntitiesOfClass(ServerPlayer.class, field, p -> !p.isSpectator() && !p.isCreative());
             if (!powered && inside.isEmpty()) continue;
             ServerPlayer intruder = inside.stream().filter(p -> !install.keyholders.containsKey(p.getUUID())).findFirst().orElse(null);

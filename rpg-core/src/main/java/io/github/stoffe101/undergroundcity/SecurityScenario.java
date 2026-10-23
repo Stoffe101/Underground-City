@@ -19,7 +19,8 @@ import net.minecraft.world.phys.Vec3;
  * placed, and no SecurityCraft recipe reaches the client.
  *
  * <p>What is scripted rather than played: the registration (a command), the install and the keyholder (operator commands), the choice of building, the player's place in front
- * of the door (a teleport), the step into the doorway and the gives. The code screen, the typing, the door, the laser, the alarm and the refusals are the real game.
+ * of the door (a teleport), the walk held on the door's line (a sideways correction, logged when it happens), the aim (the view is turned to the door before a click) and the gives.
+ * The code screen, the typing, the door, the laser, the alarm and the refusals are the real game.
  */
 final class SecurityScenario {
     private SecurityScenario() {}
@@ -31,6 +32,7 @@ final class SecurityScenario {
         volatile boolean searched;
         volatile int dispatchesBefore, tripsBefore, heatBefore, entriesBefore;
         volatile String screen = "";
+        volatile boolean heldOnLine;
     }
 
     static void build() {
@@ -170,7 +172,8 @@ final class SecurityScenario {
                 f.entriesBefore = f.install.codeEntries;
                 f.dispatchesBefore = PoliceResponse.dispatches();
             });
-        }, () -> f.spot == null || Minecraft.getInstance().player.position().distanceTo(f.spot.stand()) < 1.5, 600);
+        // and the client has the door's chunk: run 8's stranger walked through a door the client had not loaded yet (no collision), its keyholder into the real one
+        }, () -> f.spot == null || Minecraft.getInstance().player.position().distanceTo(f.spot.stand()) < 1.5 && Minecraft.getInstance().level.getBlockState(f.spot.door()).getBlock() instanceof DoorBlock, 3600);   // the city's chunks may still be generating (run 9 waited 30 s)
         Playtest.wait("settle", 25);
         final int[] ticks = {0};
         Playtest.queue(label + ": hold W and right-click the door until a screen opens", () -> { ticks[0] = 0; if (f.spot != null) { Playtest.focusWindow(); Playtest.keyDown("w"); } }, () -> {
@@ -180,6 +183,14 @@ final class SecurityScenario {
             mc.player.setYRot(f.spot.yaw());
             mc.player.setXRot(0);
             if (mc.screen != null) return true;
+            // the walk is held on the door's line (a scripted assist): run 8's keyholder was nudged a fifth of a block aside while it waited and caught the column beside the step
+            Vec3 at = mc.player.position(), stand = f.spot.stand();
+            double aside = f.spot.out().getStepX() != 0 ? at.z - stand.z : at.x - stand.x;
+            if (Math.abs(aside) > 0.05) {
+                if (!f.heldOnLine) Playtest.log("SECURITY " + label + " walk held on the door's line (" + String.format(java.util.Locale.ROOT, "%.2f", aside) + " aside)");
+                f.heldOnLine = true;
+                mc.player.setPos(f.spot.out().getStepX() != 0 ? at.x : stand.x, at.y, f.spot.out().getStepX() != 0 ? stand.z : at.z);
+            }
             if (f.spot.past(mc.player.position()) > -1.0) { if (ticks[0] % 4 == 1) Playtest.mouseButton(3, true); else if (ticks[0] % 4 == 2) Playtest.mouseButton(3, false); }
             return false;
         }, 400);
@@ -210,46 +221,31 @@ final class SecurityScenario {
             if (f.install != null && typed.length() != f.install.code.length()) Playtest.fail(label + ": the code field holds " + typed.length() + " characters after typing " + f.install.code.length());
         });
         Playtest.queue(label + ": press Enter", () -> Playtest.tap("Return"));
-        Playtest.wait("the server answers", 30);
-        Playtest.queue(label + ": if the screen is still open, press its button", () -> {
-            var screen = Minecraft.getInstance().screen;
-            if (screen == null) return;
-            for (var child : screen.children()) if (child instanceof AbstractButton button) {
-                String text = button.getMessage().getString().toLowerCase(java.util.Locale.ROOT);
-                Playtest.log("SECURITY " + label + " button: '" + text + "'");
-            }
-            for (var child : screen.children()) if (child instanceof AbstractButton button && button.isActive()) {
-                String text = button.getMessage().getString().toLowerCase(java.util.Locale.ROOT);
-                if (text.contains("enter") || text.contains("open") || text.contains("submit") || text.contains("ok") || text.contains("check") || text.contains("✔") || text.contains("√")) {
-                    Playtest.log("SECURITY " + label + " pressing '" + text + "'");
-                    button.onPress();
-                    break;
-                }
-            }
-        });
-        Playtest.wait("the server answers", 30);
-        Playtest.queue(label + ": the door is open", () -> {
-            if (f.spot == null) return;
+        // walk straight in as the door opens: SecurityCraft shuts a keypad door three seconds after it opens (run 2 lost it while taking a photograph)
+        final boolean[] sawOpen = {false};
+        Playtest.queue(label + ": the door opens", () -> { }, () -> {
+            if (f.spot == null) return true;
+            if (DoorWalk.doorOpen(Minecraft.getInstance().getSingleplayerServer().overworld(), f.spot)) sawOpen[0] = true;
+            return sawOpen[0];
+        }, 80);
+        Playtest.queue(label + ": the door is open; walk in across the laser", () -> {
             var mc = Minecraft.getInstance();
-            boolean open = DoorWalk.doorOpen(mc.getSingleplayerServer().overworld(), f.spot);
-            Playtest.log("SECURITY " + label + " door " + (open ? "OPEN" : "closed") + ", screen " + (mc.screen == null ? "closed" : mc.screen.getClass().getSimpleName()));
-            if (!open) Playtest.fail(label + ": the right code typed on SecurityCraft's screen did not open the door");
+            Playtest.log("SECURITY " + label + " door " + (sawOpen[0] ? "OPEN" : "closed") + ", screen " + (mc.screen == null ? "closed" : mc.screen.getClass().getSimpleName()));
+            if (!sawOpen[0]) { Playtest.fail(label + ": the right code typed on SecurityCraft's screen did not open the door"); return; }
             if (mc.screen != null) mc.setScreen(null);
-        });
-        Playtest.queue(label + ": screenshot of the open door", () -> Playtest.screenshotNextFrame("uc-security-" + label + "-2-open"));
-        Playtest.wait("frame", 8);
-    }
-
-    /** Walks through the doorway and across the laser two steps in, then reads what Core did. */
-    private static void crossLaser(String label, Facts f, boolean expectAlarm) {
-        Playtest.queue(label + ": walk in across the laser", () -> {
-            if (f.install == null || f.install.lasers.size() < 2) return;
-            f.tripsBefore = f.install.trips;
+            if (f.install != null) f.tripsBefore = f.install.trips;
             f.dispatchesBefore = PoliceResponse.dispatches();
             Playtest.focusWindow();
             Playtest.keyDown("w");
-        }, () -> f.install == null || f.install.lasers.size() < 2 || f.spot.past(Minecraft.getInstance().player.position()) > 3.2, 200);
+        }, () -> !sawOpen[0] || f.install == null || f.spot.past(Minecraft.getInstance().player.position())
+            > (f.install.lasers.size() < 2 ? 2.5 : f.spot.past(Vec3.atCenterOf(f.install.lasers.get(0))) + 0.9), 200);
         Playtest.queue(label + ": stop", () -> Playtest.keyUp("w"));
+        Playtest.queue(label + ": screenshot inside", () -> Playtest.screenshotNextFrame("uc-security-" + label + "-2-inside"));
+        Playtest.wait("frame", 8);
+    }
+
+    /** After walking in across the laser (in {@link #enterByCode}): what Core made of the crossing. */
+    private static void crossLaser(String label, Facts f, boolean expectAlarm) {
         Playtest.wait("Core reads the laser", 20);
         Playtest.queue(label + ": look back at the laser and the siren", () -> {
             if (f.install == null || f.install.lasers.isEmpty()) return;
@@ -292,9 +288,24 @@ final class SecurityScenario {
             Scenarios.standLooking(inside, Vec3.atCenterOf(f.spot.door()).add(0, 0.4, 0));
         });
         Playtest.wait("hold the aim", 20);
-        Playtest.queue(label + ": click", () -> { Playtest.focusWindow(); Playtest.mouseButton(3, true); });
-        Playtest.wait("hold", 4);
-        Playtest.queue(label + ": release", () -> Playtest.mouseButton(3, false));
+        // the pointer goes to the middle of the window first: with the mouse grabbed, that move turns the view (run 6 clicked the floor), so the aim is set again after it
+        final int[] ticks = {0};
+        Playtest.queue(label + ": park the pointer, aim at the door again and click", () -> { ticks[0] = 0; Playtest.focusWindow(); }, () -> {
+            if (f.spot == null) return true;
+            var mc = Minecraft.getInstance();
+            ticks[0]++;
+            Vec3 eye = mc.player.getEyePosition(), target = Vec3.atCenterOf(f.spot.door()).add(0, 0.4, 0), delta = target.subtract(eye);
+            mc.player.setYRot((float) Math.toDegrees(Math.atan2(-delta.x, delta.z)));
+            mc.player.setXRot((float) -Math.toDegrees(Math.atan2(delta.y, Math.hypot(delta.x, delta.z))));
+            if (ticks[0] == 8) {
+                String aimed = mc.hitResult instanceof net.minecraft.world.phys.BlockHitResult block && block.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK
+                    ? block.getBlockPos().toShortString() + " " + mc.level.getBlockState(block.getBlockPos()).getBlock() : String.valueOf(mc.hitResult == null ? null : mc.hitResult.getType());
+                Playtest.log("SECURITY " + label + " leaving: the cursor is on " + aimed + " from " + mc.player.position());
+                Playtest.mouseButton(3, true);
+            }
+            if (ticks[0] == 10) Playtest.mouseButton(3, false);   // a short press: a held button uses the door again every four ticks, as in the game (run 10 opened it and then asked)
+            return ticks[0] >= 14;
+        }, 60);
         Playtest.wait("the server answers", 15);
         Playtest.queue(label + ": the door opened for the person leaving, without a code screen", () -> {
             if (f.spot == null) return;

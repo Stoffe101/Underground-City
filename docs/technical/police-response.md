@@ -19,7 +19,7 @@ Nothing else raises a response. A creative or spectating player is never policed
 * **Choose where to be:** officers wait at the door and chase on foot at a sprinting pace; the response ends when the thief is out of reach for the class's window.
 * **Work the panel (D-128):** an alarmed furnished building has a panel by its street door; a Technician can jam it inside the entry delay, or before anybody comes in (see [Alarm panels](#alarm-panels)).
 * **Sell to a fence (D-125):** marked goods can be sold at night, at a discount, to a fence (see [Fences](#fences)).
-* **Not available yet:** cameras and motion sensors; cutting power; a disguise.
+* **Not available yet:** cameras and motion sensors as Core devices; cutting power; a disguise. The SecurityCraft trial (D-140, opt-in, not adopted) shows a keypad door, a laser and a siren under Core's rules: an entry by a code that is not yours is a quiet break-in here, and a laser crossed by somebody who does not belong rings the building's alarm ([securitycraft-trial.md](securitycraft-trial.md)).
 
 ## What a response does
 
