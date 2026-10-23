@@ -120,3 +120,15 @@ The owner's first playtest found the Trade page unreadable at 3440x1440 (GUI sca
 * **In a real world, beside other mods' screen furniture** (single frames, 1280x720, from the scripted arrival run, see [world-playability-overhaul.md](../production/world-playability-overhaul.md)): the status stack sits below the status effects and clear of Xaero's minimap at its default corner, above the health, hunger and thirst bars of the survival set.
 
 **Not covered:** nobody has used any of these screens with a mouse; the counter and the settings screen were never seen at an aspect other than 16 by 9 and 21 by 9; Xaero's minimap was seen only at its default place; no pixel baseline exists; hover tooltips are not captured. These local reviews do not correspond to a hosted artifact ID, so they are not recorded in `content/qa/reviewed-runs.json`.
+
+## October 23 review: the first-player journey's frames and a generated world read back
+
+The final journey run (37, 1280x720, GUI scale 2, a brand-new furnished archipelago world) left 32 frames; each was looked at. What they showed, and what was done:
+
+* **Corner notices over a screen's buttons.** Just after a delivery, three notices (delivered, level 2, step done) stood over the civilian counter's prices, stock counts and buy buttons; on the Valewood exchange two notices covered the first rows' buy buttons and cut the exchange's description short; on the terminal they covered the header's chips. Notices now wait while they would cover an open screen's panel and appear when it closes ([hud.md](hud.md#corner-notices-d-135)); where a panel leaves the corner free (a large window) they show as before.
+* **The terminal's footer:** "1 skill point" ran into the pin of "Now in Ironhaven" at 1280x720. The place now gives way: it shortens to the city's name, or is left out, when the left-hand group reaches it.
+* **The registration message** said "Registered with ironhaven as smith" (raw ids); it now names the city and the trade.
+* **What looked right:** the employer's arrow and the next-step card stayed clear of every notice in the world; Find a home led with the free motel rooms and its page arrows sat in the tab row (D-136); the status display named the city, the room and its paid-ahead time on both sides of the bridge; the new ramp at the Valewood end of the road read as a cut through the bank with a path down the middle (plain earth, functional rather than pretty).
+* **A generated world read back, not photographed:** `scripts/world_furniture_audit.py` found furniture stacked as retaining walls under raised furnished buildings (13,286 stacks in 248 chunks of the journey's world, up to 47 blocks of bookshelves), which no frame happened to show ([furnished-cities.md](furnished-cities.md#how-it-is-checked-d-119)).
+
+**Not covered:** the fixes above are tested by GameTests and were made after run 37; a later run's frames show them only where its report says so. No person has looked at these screens; no pixel baseline exists.
