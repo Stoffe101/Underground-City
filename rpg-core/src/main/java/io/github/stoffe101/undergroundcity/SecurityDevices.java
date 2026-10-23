@@ -114,6 +114,7 @@ public final class SecurityDevices {
         if (found.isEmpty()) return;
         CityBuildings.Building b = found.get();
         if (!CityBuildings.INSTANCE.known(b.chunkX(), b.chunkZ()) || BuildingGuard.openToPublic(level, b, null)) return;   // a customer in an open shop, or at a fence's at their hours, is not a burglar
+        if (CityHomes.holdsKey(player, b)) return;   // nor a tenant crossing their own building's lobby, or anybody their home lets in (a housemate is never a burglar for coming home)
         List<BlockPos> cameras = cameras(level, b);
         if (cameras.isEmpty()) return;
         boolean sense = Thievery.has(player, "thief.camera_sense");

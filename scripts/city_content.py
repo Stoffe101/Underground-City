@@ -69,6 +69,39 @@ def alarmed(security: str) -> bool:
     return security in ALARMED_STOCK_CLASSES or ("response" in spec and spec.get("panel", True))
 
 
+# Cameras by tier (D-149): a well-off building watches its entry, a wealthy or exceptional one its two first street doors; nothing below. A camera is a Modern Life CCTV camera, which Core
+# watches with (SecurityDevices: a 12-block cone with a line of sight); shops keep the cameras their plans already have.
+CAMERAS_BY_TIER = {4: 1, 5: 2, 6: 2}
+STOCK_TIERS = {"cottage": 1, "flat_block": 2, "flat_tower": 4, "workshop": 3, "office": 4, "vault": 6, "public": 0}
+
+
+def tier_of(security: str) -> int:
+    return NEW_SECURITY_CLASSES[security]["tier"] if security in NEW_SECURITY_CLASSES else STOCK_TIERS.get(security, 0)
+
+
+def place_cameras(b: citykit.Building) -> None:
+    """The building's cameras by its tier (D-149): inside, above a street door, high on the wall (layer 4 of the ground floor, layer 3 where 4 is taken), looking into the room, so that whoever comes
+    in by that door walks into its field. A door with no free cell above its inner side gets none; a building that already has a camera in its plan keeps it as it is."""
+    wanted = CAMERAS_BY_TIER.get(tier_of(b.security), 0)
+    ground = [part for part, flags in b.parts if flags.get("ground")]
+    if not wanted or not ground:
+        return
+    part = ground[0]
+    if any(isinstance(spec, str) and "cctv_camera" in spec for spec in part.palette.entries.values()):
+        return
+    placed = 0
+    for door in (s for s in b.spots if s.kind == "door"):
+        if placed >= wanted:
+            break
+        out = citykit.DIRS[door.facing]
+        x, z = door.x - out[0], door.z - out[1]
+        for y in (4, 3):
+            if part.get(x, y, z) == " " and part.get(x, y - 1, z) == " ":
+                part.put(x, y, z, citykit.ml("cctv_camera", facing=citykit.OPPOSITE[door.facing]))
+                placed += 1
+                break
+
+
 def place_alarm_panel(b: citykit.Building) -> None:
     """The building's alarm panel (D-128): on a plain inside wall a few steps in from the first street door (the door's own wall when it can), at head height (layer 2 of the ground floor), facing into the room,
     and an ``alarm`` spot that tells Core where it is. A building whose class has no alarm gets none."""
@@ -142,6 +175,7 @@ def package() -> dict[str, bytes]:
             raise ValueError("duplicate building id " + b.id)
         seen.add(b.id)
         place_alarm_panel(b)
+        place_cameras(b)
         for path, doc in b.files(NAMESPACE).items():
             files[f"data/{NAMESPACE}/{path}"] = json_bytes(doc)
         files[f"data/{NAMESPACE}/city_buildings/{b.id}.json"] = json_bytes(b.core_data())

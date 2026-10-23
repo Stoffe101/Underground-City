@@ -187,6 +187,8 @@ public final class BurglarySearch {
         Optional<CityBuildings.Building> found = BuildingGuard.protectedAt(level, pos);
         // a registered home (a let flat, a house a player rents or owns, a vacant unit's showroom) answers to its own guard, so it is never "somebody else's building" here
         if (found.isEmpty() || !found.get().locked() || Thievery.tier(found.get()) <= 0) return Optional.empty();
+        // a tenant of a flat in the building (and whoever their home lets in) is at home in its lobby and stairs, not burgling them
+        if (CityHomes.holdsKey(player, found.get())) return Optional.empty();
         return found;
     }
 
