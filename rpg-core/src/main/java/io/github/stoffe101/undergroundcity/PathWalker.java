@@ -101,8 +101,12 @@ final class PathWalker {
         if (planning) {
             if (planned == null) { if (++planWait > 200) { planning = false; planWait = 0; } return; }
             nodes = planned; next = 0; planning = false; planWait = 0; bestNode = -1; best = Double.MAX_VALUE; sinceProgress = 0;
-            if (nodes.isEmpty()) {
+            // a "route" that ends where the player already stands (the planner found nothing closer from here) is no route either
+            boolean nowhere = !nodes.isEmpty() && flat(nodes.get(nodes.size() - 1), me.position()) < 0.75 && left > within + 0.5;
+            if (nodes.isEmpty() || nowhere) {
                 // no route found: walk straight at the target for a while, as a person would when the arrow points through open ground
+                if (nowhere) Playtest.log(label + ": no route from " + me.blockPosition().toShortString() + " (feet in " + mc.level.getBlockState(me.blockPosition()).getBlock() + ", on "
+                    + mc.level.getBlockState(me.blockPosition().below()).getBlock() + "); walking straight at the target");
                 nodes = List.of(goal);
             }
             if (legs <= 2 || replans > 0 && replans % 4 == 0) {

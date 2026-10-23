@@ -71,21 +71,43 @@ final class JourneyScenario {
     static void build() {
         Playtest.keepScreens = true;
         String skip = System.getProperty("uc.playtest.skip", "");
+        // -PucPtFrom=deliver|travel starts a DEVELOPMENT run part-way (after the real arrival and registration), with the state the skipped steps would have left set by the server and
+        // logged as scripted; it exists to iterate on the later steps and is never the evidence run, which is always the whole journey from a new world
+        String from = System.getProperty("uc.playtest.from", "");
         arrive();
         register();
-        followArrowToEmployer();
-        openOrdersAndAccept();
-        wrongTrade();
-        gatherWood();
-        gatherStone();
-        craftAll();
-        deliverFirst();
-        civilianCounter();
-        rentMotel();
-        learnSkill();
-        if (!skip.contains("reconnect")) reconnect();
+        if (from.isEmpty()) {
+            followArrowToEmployer();
+            openOrdersAndAccept();
+            wrongTrade();
+            gatherWood();
+            gatherStone();
+            craftAll();
+        } else setUpFrom(from);
+        if (!from.equals("travel")) {
+            deliverFirst();
+            civilianCounter();
+            rentMotel();
+            learnSkill();
+            if (!skip.contains("reconnect")) reconnect();
+        }
         if (!skip.contains("travel")) { travelOut(); valewood(); travelBack(); }
         Playtest.queue("journey summary", JourneyScenario::summary);
+    }
+
+    /** The state the skipped first steps leave, set on the server (a development shortcut, logged as scripted; see {@link #build}). */
+    private static void setUpFrom(String from) {
+        Playtest.queue("set up the run from '" + from + "' (development only)", () -> {
+            server(() -> {
+                ServerPlayer p = me();
+                CitizenState.get(p.server).bumpJourney(p.getUUID(), "employer");
+                WorkOrderService.accept(p, WorkOrderLedger.get(p.server), CitizenState.get(p.server).find(p.getUUID()).orElseThrow(), "underground_city:stone_tools");
+                p.getInventory().add(new ItemStack(Items.STONE_PICKAXE, 3));
+                if (from.equals("travel")) QShopEconomy.applyBalance(p, 200.0);
+                return null;
+            });
+            scripted("development run from '" + from + "': the employer met, the stone-tools order accepted and three stone pickaxes given by the server" + (from.equals("travel") ? ", 200 credits set" : ""));
+        });
     }
 
     // ------------------------------------------------------------------------------------------------ small tools
@@ -157,6 +179,25 @@ final class JourneyScenario {
     /** Ends the run when something has failed that every later step depends on (a cascade of follow-on failures tells nothing new). */
     private static void stopIfFailed(String what) {
         Playtest.queue("stop if " + what + " failed", () -> { if (Playtest.failures.length() > 0) { Playtest.log("JOURNEY stopping: " + what + " failed, and the rest depends on it"); summary(); Playtest.finish(); } });
+    }
+
+    /**
+     * Walks to a place to speak to {@code who} from: a free cell beside them with a clear view of their face (behind a desk, beside a colleague, a person picks the gap), or, when there is none,
+     * as close as the path goes.
+     */
+    private static void walkToSpeak(String label, Supplier<net.minecraft.world.entity.npc.Villager> who, int budget) {
+        final PathWalker[] walker = new PathWalker[1];
+        Playtest.queue(label, () -> {
+            var v = who.get();
+            BlockPos spot = v == null ? null : clearSide(v, -1, 1, 5);
+            Playtest.log("JOURNEY " + label + ": " + (spot == null ? "no free spot with a clear view; walking up to them" : "standing at " + spot.toShortString() + " to speak"));
+            walker[0] = spot != null ? new PathWalker(label, () -> Vec3.atBottomCenterOf(spot), 0.45)
+                : new PathWalker(label, () -> { var w = who.get(); return w == null ? mc().player.position() : w.position(); }, 1.6);
+        }, () -> {
+            walker[0].tick();
+            if (walker[0].done() && walker[0].failed()) Playtest.fail(walker[0].summary());
+            return walker[0].done();
+        }, budget);
     }
 
     private static void walk(String label, Supplier<Vec3> target, double within, int budget) {
@@ -241,7 +282,7 @@ final class JourneyScenario {
             if (o != null && o.target() != null) return Vec3.atBottomCenterOf(o.target());
             var e = employer(CAREER);
             return e == null ? null : e.position();
-        }, 2.6, 3000);
+        }, 3.0, 3000);
         Playtest.queue("arrived beside the employer", () -> {
             var e = employer(CAREER);
             double d = e == null ? -1 : e.distanceTo(mc().player);
@@ -249,6 +290,7 @@ final class JourneyScenario {
             if (e == null || d > 4.5) Playtest.fail("the walk did not end beside the employer");
             else pass("3 follow the employer waypoint on foot (pathfinding route, real W key)");
         });
+        walkToSpeak("step up to the employer's desk", () -> employer(CAREER), 600);
         shot("04-at-employer");
         stopIfFailed("the walk to the employer");
     }
@@ -257,23 +299,119 @@ final class JourneyScenario {
         return server(() -> Journey.find(level(), "employer", career));
     }
 
-    /** Right-clicks a citizen with the real mouse until their conversation opens: aim at the head from where the player stands (they may have to step closer). */
+    /**
+     * Right-clicks a citizen with the real mouse until their conversation opens: aim at the head from where the player stands, click only when the crosshair is on them (somebody else standing in
+     * the way is stepped round with A or D, as a person would), and a conversation that opened with somebody else is closed with Escape and tried again.
+     */
     private static void speakTo(String label, Supplier<net.minecraft.world.entity.npc.Villager> who) {
-        final int[] tick = {0}, tries = {0};
+        // one try is TRY ticks with one aim: under software rendering a frame can take several ticks, and the game picks what the crosshair is on when it draws, so a click is made only
+        // once the aim has been held long enough for the pick to have caught up, and only when the crosshair is on the person meant
+        final int TRY = 24;
+        final int[] tick = {0}, tries = {0}, hold = {0}, blocked = {0}, moves = {0};
+        final String[] key = {null};
+        final PathWalker[] walker = {null};
+        Runnable release = () -> { if (key[0] != null) { Playtest.keyUp(key[0]); key[0] = null; } if (walker[0] != null) { walker[0].stop(); walker[0] = null; } };
         Playtest.queue("speak to " + label, Playtest::focusWindow, () -> {
-            if (mc().screen instanceof DialogueScreen) return true;
             var v = who.get();
-            if (v == null) { Playtest.fail(label + " is not in the world"); return true; }
+            if (v == null) { release.run(); Playtest.fail(label + " is not in the world"); return true; }
+            if (mc().screen instanceof DialogueScreen d) {
+                if (d.entityId() == v.getId()) { release.run(); return true; }
+                if (tick[0] % 6 == 0) { Playtest.log("JOURNEY spoke to somebody else in the way of " + label + "; closing that conversation"); Playtest.tap("escape"); }
+                tick[0]++;
+                return false;
+            }
+            if (mc().screen instanceof net.minecraft.client.gui.screens.PauseScreen) { if (tick[0]++ % 6 == 0) Playtest.tap("escape"); return false; }   // an Escape that found no conversation open
+            if (mc().screen != null) return false;
+            if (walker[0] != null) {                                                              // walking round to a clear side
+                walker[0].tick();
+                if (!walker[0].done()) return false;
+                walker[0].stop();
+                walker[0] = null;
+            }
             var client = mc().level.getEntity(v.getId());
-            Vec3 head = (client != null ? client.position() : v.position()).add(0, v.getBbHeight() * 0.85, 0);
-            look(head);
+            Vec3 at = client != null ? client.position() : v.position();
+            int phase = tick[0] % TRY;
+            if (phase == 0) tries[0]++;
+            // aim at the face, then the chest, each at the middle and at either side of the body (somebody standing close beside them hides one side, not both)
+            Vec3 toThem = at.subtract(mc().player.position()).multiply(1, 0, 1);
+            Vec3 across = toThem.lengthSqr() < 1e-6 ? Vec3.ZERO : new Vec3(-toThem.z, 0, toThem.x).normalize().scale(v.getBbWidth() * 0.4);
+            int aimAt = tries[0] % 9;
+            look(at.add(0, v.getBbHeight() * (aimAt < 3 ? 0.85 : aimAt < 6 ? 0.95 : 0.55), 0).add(across.scale(aimAt % 3 == 0 ? 0 : aimAt % 3 == 1 ? 1 : -1)));
             tick[0]++;
-            if (tick[0] % 12 == 3) Playtest.mouseButton(3, true);
-            if (tick[0] % 12 == 5) Playtest.mouseButton(3, false);
-            if (tick[0] % 12 == 0 && ++tries[0] > 10) { Playtest.fail(label + ": no conversation after ten right clicks"); return true; }
+            if (hold[0] > 0 && --hold[0] == 0 && key[0] != null) { Playtest.keyUp(key[0]); key[0] = null; }
+            var aimed = mc().crosshairPickEntity;
+            boolean onThem = aimed != null && aimed.getId() == v.getId();
+            double distance = mc().player.position().distanceTo(at);
+            if (phase == 1 && tries[0] % 3 == 1) {
+                HitResult hit = mc().hitResult;
+                String what = hit instanceof net.minecraft.world.phys.EntityHitResult e ? e.getEntity().getName().getString()
+                    : hit instanceof BlockHitResult b && hit.getType() == HitResult.Type.BLOCK ? mc().level.getBlockState(b.getBlockPos()).getBlock().getDescriptionId() + " at " + b.getBlockPos().toShortString() : "nothing";
+                Playtest.log(String.format(Locale.ROOT, "JOURNEY speaking to %s (try %d): %.1f blocks away, the crosshair is on %s", label, tries[0], distance, what));
+            }
+            if (phase == 12 && onThem && key[0] == null) Playtest.mouseButton(3, true);
+            if (phase == 14) Playtest.mouseButton(3, false);
+            // a block between the eye and them (a desk's top, a sign) is in the way as much as a person
+            boolean blockInWay = aimed == null && mc().hitResult instanceof BlockHitResult bh && mc().hitResult.getType() == HitResult.Type.BLOCK
+                && Vec3.atCenterOf(bh.getBlockPos()).distanceTo(mc().player.getEyePosition()) < distance;
+            if (phase == 20 && key[0] == null && !onThem) {                                        // after the aim was held: was somebody or something in the way, or nobody in reach?
+                if ((aimed != null || blockInWay) && ++blocked[0] >= 9) {                          // in the way whatever the aim: go round, as a person would
+                    BlockPos clear = moves[0] < 3 ? clearSide(v, aimed != null ? aimed.getId() : -1) : null;
+                    String what = aimed != null ? aimed.getName().getString() : mc().level.getBlockState(((BlockHitResult) mc().hitResult).getBlockPos()).getBlock().getName().getString();
+                    if (clear != null) {
+                        moves[0]++;
+                        blocked[0] = 0;
+                        Playtest.log("JOURNEY " + what + " is in the way of " + label + "; walking round to " + clear.toShortString());
+                        walker[0] = new PathWalker("walk round to " + label, () -> Vec3.atBottomCenterOf(clear), 0.45);
+                        return false;
+                    }
+                    key[0] = tries[0] % 2 == 0 ? "a" : "d";                                        // no clear side: a step to one side
+                    blocked[0] = 3;
+                } else if (aimed == null && distance > 2.2) key[0] = "w";                          // out of reach: a step closer
+                if (key[0] != null) { Playtest.keyDown(key[0]); hold[0] = 6; }
+            }
+            if (tries[0] > 36) { release.run(); Playtest.fail(label + ": no conversation after " + tries[0] + " tries (" + String.format(Locale.ROOT, "%.1f", distance) + " blocks away)"); return true; }
             return false;
-        }, 400);
+        }, 2400);
+        Playtest.queue("let go of the keys", release);
         Playtest.wait("the conversation draws", 12);
+    }
+
+    /** A place a person could stand within reach of {@code v}, with nobody else between their eyes and {@code v}'s face; the nearest to the player, or null. */
+    private static BlockPos clearSide(net.minecraft.world.entity.Entity v, int inTheWay) { return clearSide(v, inTheWay, 2, 10); }
+
+    /**
+     * The same, among the cells at least {@code ring} cells from {@code v} (in x or z) and at most {@code reachSquared} away: a cell nobody stands in, from which the eyes see the face past every block
+     * and every other person.
+     */
+    private static BlockPos clearSide(net.minecraft.world.entity.Entity v, int inTheWay, int ring, int reachSquared) {
+        var client = mc().level.getEntity(v.getId());
+        Vec3 face = (client != null ? client.position() : v.position()).add(0, v.getBbHeight() * 0.85, 0);
+        // v is the server's entity; the client's copy of the same person is another object with the same id, and must not count as somebody in their own way
+        List<net.minecraft.world.entity.Entity> others = mc().level.getEntities((net.minecraft.world.entity.Entity) null, new net.minecraft.world.phys.AABB(BlockPos.containing(face)).inflate(5),
+            e -> e instanceof net.minecraft.world.entity.LivingEntity && e != mc().player && e.getId() != v.getId());
+        BlockPos centre = BlockPos.containing(face.x, face.y - v.getBbHeight() * 0.85, face.z);
+        List<BlockPos> stand = server(() -> {
+            List<BlockPos> out = new ArrayList<>();
+            for (int dx = -3; dx <= 3; dx++) for (int dz = -3; dz <= 3; dz++) {
+                if (Math.abs(dx) < ring && Math.abs(dz) < ring || dx * dx + dz * dz > reachSquared) continue;   // within reach, not on top of them
+                for (int dy : new int[]{0, -1, 1}) { BlockPos p = centre.offset(dx, dy, dz); if (PlayerPath.standable(level(), p)) { out.add(p); break; } }
+            }
+            return out;
+        });
+        BlockPos best = null;
+        double bestD = Double.MAX_VALUE;
+        for (BlockPos p : stand) {
+            Vec3 eye = Vec3.atBottomCenterOf(p).add(0, 1.62, 0);
+            boolean clear = true;
+            var cell = new net.minecraft.world.phys.AABB(p).expandTowards(0, 1, 0).deflate(0.1);
+            for (var e : others) if (e.getBoundingBox().inflate(0.05).clip(eye, face).isPresent() || e.getBoundingBox().intersects(cell)) { clear = false; break; }
+            if (!clear) continue;
+            var hit = mc().level.clip(new net.minecraft.world.level.ClipContext(eye, face, net.minecraft.world.level.ClipContext.Block.COLLIDER, net.minecraft.world.level.ClipContext.Fluid.NONE, mc().player));
+            if (hit.getType() == HitResult.Type.BLOCK) continue;
+            double d = p.distSqr(mc().player.blockPosition());
+            if (d < bestD) { bestD = d; best = p; }
+        }
+        return best;
     }
 
     private static void choose(String label, String expect) {
@@ -358,7 +496,7 @@ final class JourneyScenario {
             F.otherEmployer = v == null ? null : v.blockPosition();
             if (v == null) Playtest.log("JOURNEY no farmer employer in the Row");
         });
-        walk("walk to the farmers' employer", () -> { var v = employer("farmer"); return v == null ? mc().player.position() : v.position(); }, 2.6, 1600);
+        walkToSpeak("walk to the farmers' employer", () -> employer("farmer"), 2400);
         speakTo("the farmers' employer", () -> employer("farmer"));
         shot("09-other-trade");
         Playtest.queue("no orders for another trade", () -> {
@@ -439,8 +577,12 @@ final class JourneyScenario {
         stopIfFailed("chopping wood");
     }
 
-    /** A stone block in the old quarry's walls (or, without a quarry, any exposed natural stone nearby) that is not one of the quarry's ore seams. */
-    private static BlockPos quarryStone() {
+    private static boolean stone(BlockState s) {
+        return s.is(Blocks.STONE) || s.is(Blocks.ANDESITE) || s.is(Blocks.DIORITE) || s.is(Blocks.GRANITE) || s.is(Blocks.COBBLESTONE) || s.is(Blocks.TUFF);
+    }
+
+    /** A place to stand in the old quarry (or, without one, round the player) with stone beside it at foot and head height, not one of {@code tried}: the nearest to the player. */
+    private static BlockPos quarrySpot(java.util.Set<Long> tried) {
         return server(() -> {
             ServerLevel level = level();
             BlockPos origin = DistrictBuilder.originOf(level, "old_quarry");
@@ -448,32 +590,89 @@ final class JourneyScenario {
             BlockPos centre = origin != null ? origin.offset(9, -3, 9) : here;
             BlockPos best = null;
             double bestD = Double.MAX_VALUE;
-            for (BlockPos p : BlockPos.betweenClosed(centre.offset(-12, -8, -12), centre.offset(12, 6, 12))) {
-                BlockState s = level.getBlockState(p);
-                if (!(s.is(Blocks.STONE) || s.is(Blocks.COBBLESTONE) || s.is(Blocks.ANDESITE))) continue;
-                if (!level.getBlockState(p.above()).isAir() && !level.getBlockState(p.north()).isAir() && !level.getBlockState(p.south()).isAir()
-                    && !level.getBlockState(p.east()).isAir() && !level.getBlockState(p.west()).isAir()) continue;   // must show a face
-                if (!level.getBlockState(p.below()).isSolidRender(level, p.below())) continue;
-                double d = p.distSqr(here);
-                if (d < bestD) { bestD = d; best = p.immutable(); }
+            for (BlockPos p : BlockPos.betweenClosed(centre.offset(-14, -8, -14), centre.offset(14, 6, 14))) {
+                if (tried.contains(p.asLong()) || !PlayerPath.standable(level, p)) continue;
+                int faces = 0;
+                for (Direction d : Direction.Plane.HORIZONTAL) for (int dy = 0; dy <= 1; dy++) if (stone(level.getBlockState(p.relative(d).above(dy)))) faces++;
+                if (faces < 3) continue;
+                double dist = p.distSqr(here);
+                if (dist < bestD) { bestD = dist; best = p.immutable(); }
             }
             return best;
         });
+    }
+
+    /**
+     * Quarrying as a person does it: walk to a place with stone beside it, mine what is in reach with the held pickaxe (the left button held on a block until it breaks), and move on to the next
+     * place when nothing is left in reach, until {@code goal} cobblestone are carried. The places are looked up in the world (a person would look round); the walking and the mining are real input.
+     */
+    private static final class Quarrying {
+        final int goal;
+        final java.util.Set<Long> tried = new java.util.HashSet<>();
+        PathWalker walker;
+        BlockPos spot, target;
+        boolean down;
+        int spots, broken, onBlock;
+
+        Quarrying(int goal) { this.goal = goal; }
+
+        private void letGo() { if (down) { Playtest.mouseButton(1, false); down = false; } }
+
+        boolean tick() {
+            if (mc().player.getInventory().countItem(Items.COBBLESTONE) >= goal) {
+                letGo();
+                Playtest.log("JOURNEY quarrying: " + goal + " cobblestone after " + broken + " blocks from " + spots + " places");
+                return true;
+            }
+            if (spot == null) {
+                letGo();
+                if (++spots > 14) { Playtest.fail("no more places to quarry after " + broken + " blocks"); return true; }
+                spot = quarrySpot(tried);
+                if (spot == null) { Playtest.fail("no place beside stone in the quarry"); return true; }
+                tried.add(spot.asLong());
+                Playtest.log("JOURNEY quarry place " + spots + ": " + spot.toShortString());
+                final BlockPos at = spot;
+                walker = new PathWalker("walk to a quarry face", () -> Vec3.atBottomCenterOf(at), 0.8);
+                return false;
+            }
+            if (walker != null) {
+                walker.tick();
+                if (!walker.done()) return false;
+                boolean failed = walker.failed();
+                walker.stop();
+                walker = null;
+                if (failed) { Playtest.log("JOURNEY could not reach quarry place " + spot.toShortString()); spot = null; }
+                return false;
+            }
+            if (target != null && mc().level.getBlockState(target).isAir()) { broken++; target = null; letGo(); }
+            if (target != null && ++onBlock > 200) { Playtest.log("JOURNEY gave up on " + target.toShortString()); tried.add(target.asLong()); target = null; letGo(); }
+            if (target == null) {
+                target = reachableStone();
+                onBlock = 0;
+                if (target == null) { spot = null; return false; }
+            }
+            look(Vec3.atCenterOf(target));
+            if (!down && aimedAt(target)) { Playtest.mouseButton(1, true); down = true; }
+            return false;
+        }
+
+        void stop() { letGo(); if (walker != null) walker.stop(); }
     }
 
     private static void gatherStone() {
         Playtest.queue("where the old quarry is", () -> {
             BlockPos q = server(() -> DistrictBuilder.originOf(level(), "old_quarry"));
             Playtest.log("JOURNEY old quarry: " + (q == null ? "not built in this world" : q.toShortString() + String.format(Locale.ROOT, ", %.0f blocks from the player", Math.sqrt(q.distSqr(mc().player.blockPosition())))));
+            F.stone = q == null ? null : q.offset(9, 0, 9);
         });
         hold("the stone pickaxe", Items.STONE_PICKAXE);
-        Playtest.queue("choose a stone face in the quarry", () -> { F.stone = quarryStone(); Playtest.log("JOURNEY first stone: " + (F.stone == null ? "none" : F.stone.toShortString())); });
-        walk("walk to the old quarry", () -> F.stone == null ? mc().player.position() : Vec3.atBottomCenterOf(F.stone), 3.0, 3600);
-        for (int i = 0; i < 20; i++) {
-            mine("mine stone " + (i + 1), JourneyScenario::reachableStone, 200);
-        }
-        Playtest.queue("pick up the stone", () -> { });
+        walk("walk to the old quarry", () -> F.stone == null ? mc().player.position() : Vec3.atBottomCenterOf(F.stone), 12.0, 3600);
+        stopIfFailed("the walk to the quarry");
+        final Quarrying[] q = new Quarrying[1];
+        Playtest.queue("quarry 20 cobblestone", () -> q[0] = new Quarrying(20), () -> q[0].tick(), 9000);
+        Playtest.queue("stop quarrying", () -> { if (q[0] != null) q[0].stop(); });
         Playtest.wait("collect", 30);
+        shot("10-quarry");
         Playtest.queue("cobblestone in the inventory", () -> {
             int c = count(Items.COBBLESTONE);
             Playtest.log("JOURNEY cobblestone carried: " + c);
@@ -489,19 +688,13 @@ final class JourneyScenario {
         BlockPos best = null;
         double bestD = 20;
         for (BlockPos q : BlockPos.betweenClosed(eye.offset(-4, -4, -4), eye.offset(4, 3, 4))) {
-            BlockState s = mc().level.getBlockState(q);
-            if (!(s.is(Blocks.STONE) || s.is(Blocks.ANDESITE) || s.is(Blocks.DIORITE) || s.is(Blocks.GRANITE) || s.is(Blocks.COBBLESTONE))) continue;
+            if (!stone(mc().level.getBlockState(q))) continue;
             if (q.getY() < p.getBlockY() - 1) continue;   // never dig below the feet: no holes to fall into
             double d = Vec3.atCenterOf(q).distanceToSqr(p.getEyePosition());
             if (d > 16) continue;
             var hit = mc().level.clip(new net.minecraft.world.level.ClipContext(p.getEyePosition(), Vec3.atCenterOf(q), net.minecraft.world.level.ClipContext.Block.OUTLINE, net.minecraft.world.level.ClipContext.Fluid.NONE, p));
             if (hit.getType() != HitResult.Type.BLOCK || !hit.getBlockPos().equals(q)) continue;
             if (d < bestD) { bestD = d; best = q.immutable(); }
-        }
-        if (best == null) {
-            // step toward the nearest stone face the server knows of
-            BlockPos next = quarryStone();
-            if (next != null && Vec3.atCenterOf(next).distanceTo(p.position()) > 3) Playtest.log("JOURNEY no stone in reach; nearest face " + next.toShortString());
         }
         return best;
     }
@@ -513,11 +706,15 @@ final class JourneyScenario {
     }
 
     private static Slot inventorySlotWith(AbstractContainerScreen<?> screen, java.util.function.Predicate<ItemStack> what) {
-        for (Slot s : screen.getMenu().slots) if (s.container instanceof net.minecraft.world.entity.player.Inventory && what.test(s.getItem())) return s;
+        for (Slot s : screen.getMenu().slots) if (s.container instanceof net.minecraft.world.entity.player.Inventory && s.getContainerSlot() < 36 && what.test(s.getItem())) return s;
         return null;
     }
 
-    private static Slot emptyInventorySlot(AbstractContainerScreen<?> screen) { return inventorySlotWith(screen, ItemStack::isEmpty); }
+    /** An empty square of the main inventory or the hotbar (never an armour or off-hand square, which refuse most things). */
+    private static Slot emptyInventorySlot(AbstractContainerScreen<?> screen) {
+        for (Slot s : screen.getMenu().slots) if (s.container instanceof net.minecraft.world.entity.player.Inventory && s.getContainerSlot() < 36 && s.getItem().isEmpty()) return s;
+        return null;
+    }
 
     /** One real click on a slot (left or right button), with Shift held when asked. */
     private static void slotClick(String label, Supplier<Slot> slot, int button, boolean shift) {
@@ -547,14 +744,23 @@ final class JourneyScenario {
 
     /** Puts whatever is on the pointer back in an empty inventory slot. */
     private static void putBack(String label) {
-        Playtest.queue("put back " + label, () -> { }, () -> !carried(), 1);
-        slotClick("an empty inventory slot (" + label + ")", () -> carried() ? emptyInventorySlot((AbstractContainerScreen<?>) mc().screen) : null, 1, false);
+        final Slot[] s = new Slot[1];
+        Playtest.queue("point at an empty inventory slot for " + label, () -> {
+            s[0] = carried() && mc().screen instanceof AbstractContainerScreen<?> screen ? emptyInventorySlot(screen) : null;
+            if (s[0] == null) return;                                                  // nothing on the pointer: nothing to put back
+            int[] c = slotCentre((AbstractContainerScreen<?>) mc().screen, s[0]);
+            Playtest.moveGui(c[0], c[1]);
+        });
+        Playtest.wait("settle", 3);
+        Playtest.queue("put back " + label, () -> { if (s[0] != null) { Playtest.mouseButton(1, true); Playtest.mouseButton(1, false); } });
+        Playtest.wait("the server answers", 5);
+        Playtest.queue("nothing left on the pointer after " + label, () -> { if (carried()) Playtest.fail("still carrying " + mc().player.containerMenu.getCarried() + " after putting back " + label); });
     }
 
     private static void craftAll() {
         Playtest.queue("open the inventory with E", () -> { Playtest.focusWindow(); Playtest.tap("e"); });
         until("the inventory screen", () -> mc().screen instanceof InventoryScreen, 100);
-        shot("10-inventory");
+        shot("10b-inventory");
         // logs into planks: the whole stack into the 2x2 grid, then Shift-click the result
         slotClick("the logs", () -> inventorySlotWith((AbstractContainerScreen<?>) mc().screen, st -> st.is(net.minecraft.tags.ItemTags.LOGS)), 1, false);
         slotClick("grid square 1", () -> gridSlot(1), 1, false);
@@ -625,7 +831,7 @@ final class JourneyScenario {
     // ------------------------------------------------------------------------------------------------ 5. delivery and the counter
 
     private static void deliverFirst() {
-        walk("walk back to the employer", () -> { var e = employer(CAREER); return e == null ? null : e.position(); }, 2.6, 4000);
+        walkToSpeak("walk back to the employer", () -> employer(CAREER), 4000);
         speakTo("the employer", () -> employer(CAREER));
         choose("Open my orders", "terminal");
         Playtest.queue("before the delivery", () -> Playtest.log("JOURNEY before delivery: wallet " + wallet() + ", XP " + citizen().careerXp()));
