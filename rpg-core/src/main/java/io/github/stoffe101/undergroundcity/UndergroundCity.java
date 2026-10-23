@@ -153,6 +153,7 @@ public final class UndergroundCity {
         MinecraftForge.EVENT_BUS.register(new CheckpointService());
         MinecraftForge.EVENT_BUS.register(new SecureTerminalService());
         MinecraftForge.EVENT_BUS.register(new AlarmPanels());
+        MinecraftForge.EVENT_BUS.register(new RoadApproaches());
         MinecraftForge.EVENT_BUS.register(new CrewService());
         MinecraftForge.EVENT_BUS.register(new PropertyService());
         MinecraftForge.EVENT_BUS.register(new CrewCommands());

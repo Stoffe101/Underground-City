@@ -43,6 +43,17 @@ public final class RoadCheck {
         report.add("roads", verifier.report());
         report.add("shelters", shelters(event.getServer()));
         report.add("ends", ends(event.getServer()));
+        // D-137: build each end's approach as a player's first visit would, then measure again
+        if (RoadApproaches.enabled(event.getServer().overworld())) {
+            JsonArray built = new JsonArray();
+            for (CorridorPlan plan : CorridorRoadFeature.plans(event.getServer().overworld())) for (CorridorPlan.End end : plan.ends()) {
+                var result = RoadApproaches.build(event.getServer().overworld(), plan, end);
+                built.add(plan.id() + " at " + (int) end.x() + " " + (int) end.z() + ": " + result);
+                LOGGER.info("[UC-ROADS] approach built at {} {} {}: {}", plan.id(), (int) end.x(), (int) end.z(), result);
+            }
+            report.add("approaches", built);
+            report.add("ends_after_approaches", ends(event.getServer()));
+        } else report.addProperty("approaches", "not enabled in this world (it was not started as a new archipelago world)");
         try { Files.writeString(Path.of(OUTPUT), report + "\n", StandardCharsets.UTF_8); }
         catch (IOException error) { throw new IllegalStateException("Cannot write the road check", error); }
         LOGGER.info("[UC-ROADS] road check written to {}", OUTPUT);
@@ -51,10 +62,10 @@ public final class RoadCheck {
     }
     /**
      * Where each road meets its city (a scripted journey found the Valewood end of the Ironhaven road facing a two-block bank of earth): along the centreline, from four blocks out on the deck
-     * to {@link #END_REACH} blocks into the city circle, the height a person would stand at in each column, and the largest step up and down between neighbouring columns. A step up of more
+     * until the city's own built ground (or {@link #END_REACH} blocks into the city circle), the height a person would stand at in each column, and the largest step up and down between neighbouring columns. A step up of more
      * than one block cannot be walked.
      */
-    static final int END_REACH = 48;
+    static final int END_REACH = 72;
 
     private static JsonArray ends(MinecraftServer server) {
         ServerLevel level = server.overworld();
@@ -94,6 +105,9 @@ public final class RoadCheck {
                         maxDown = Math.max(maxDown, -step);
                     }
                     if (stand != null) previous = stand;
+                    // the city's own built ground has been reached: from here on a person follows its streets, and a wall further along the line is walked round, not climbed
+                    if (k > 0 && stand != null && (!RoadApproaches.natural(level.getBlockState(new net.minecraft.core.BlockPos(x, stand - 1, z)))
+                        || RoadApproaches.cityOwned(level, new net.minecraft.core.BlockPos(x, stand - 1, z)))) { entry.addProperty("city_ground_at", k); break; }
                 }
                 entry.addProperty("deck_stand", deck);
                 entry.addProperty("max_step_up", maxUp);

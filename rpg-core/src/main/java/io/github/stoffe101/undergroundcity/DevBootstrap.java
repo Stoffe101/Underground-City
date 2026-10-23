@@ -256,6 +256,7 @@ public final class DevBootstrap {
         if (landing) {
             placeQuarry(level, origin, footprint(width, depth));
             placeValewoodPit(level);
+            RoadApproaches.enable(level);   // D-137: a walkable way from each road's end into its city, built when somebody first comes near it
         }
         // The gate is the middle of the lane's far (south) end; stand a few blocks outside it, facing the lane.
         BlockPos gate = origin.offset(district.min().getX() + width / 2, 0, depth + 2);

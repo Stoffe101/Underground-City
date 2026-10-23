@@ -123,6 +123,27 @@ The two chunks with a tree are one `building4` chunk and one `center11` chunk; t
 
 All three routes are continuous (`continuous: true`), on both the plains-only and the retuned climate (the same numbers; the corridor builder clears its own band). At 4.317 blocks per second the routes are 3.8 to 4.1 minutes on foot. **No person has driven, ridden or boated them**, and boats under the bridges (three free blocks over the water) are not tested.
 
+### Where the roads meet the cities (D-137, October 23)
+
+**Found by a scripted real client, measured, then fixed.** The journey's player walked the Ironhaven–Valewood road and its bridges with the W key and reached the road's end at Valewood's circle facing a two-block bank of earth: a dead end on foot (screenshot `uc-journey-26-valewood-arrival`, run 31). The road check above reads only the open road, so it never saw it. It now also reads each end: the height a person would stand at along the road's line, from four blocks out on the deck until the city's own built ground (or 72 blocks in), and the largest step between neighbouring columns (`ends` in the report; a step up of more than one block cannot be walked).
+
+**The fix (`RoadApproaches`).** Once per end, the first time somebody comes within 96 blocks of it, the road's line is read on for up to 64 blocks into the city: the deck's height at the end and the ground along the centre until the first thing the city built (a street, a wall, a building's lot). A straight ramp is laid from the deck to that height, from the road's last column (where the first measurement found a four-block hole), seven blocks wide with a path down the middle: natural ground (earth, stone, sand, gravel, clay, snow, plants, leaves, logs) above the ramp is cut away and a dip below it is filled with earth. Anything the city built is never touched, nor any column of a building's lot (garden included); a column with something built (or water) in the way is left as it is and counted. It is built only in a world that a new archipelago start enabled, never in an existing world, and each end is remembered in the world's saved data once built.
+
+Measured by the road check in a new world (seed 5908, `world,furnished,scarcity`), along each road's line from four blocks out on the deck until the city's own built ground (a street, a wall, a building's lot) or 72 blocks in; "walkable" means no step up of more than one block. The same world, before and after its ramps were built:
+
+| Road end | Deck (stand) | Before: steps up / down | Ramp built | After: steps up / down | What is there |
+| --- | --- | --- | --- | --- | --- |
+| Ironhaven–Valewood, Ironhaven end | 74 | 3 / 4, **no** | 64 blocks, 73 to 72 | 0 / 1, yes | a four-block drop off the deck into a ditch, then a bank up to the city |
+| Ironhaven–Valewood, Valewood end | 73 | 3 / 2, **no** | 55 blocks, 72 to 78 | 1 / 0, yes | a bank where the city begins, 55 blocks in (the journey's own world had a two-block bank at the end) |
+| Ironhaven–Blackwater, Ironhaven end | 71 | 1 / 1, yes | 64 blocks, level | 1 / 0, yes | level ground |
+| Ironhaven–Blackwater, Blackwater end | 72 | 8 / 5, **no** | 64 blocks, 71 to 72 | 6 / 0, **no** | an eight-block pit 17 blocks in, filled; 65 blocks in, just past the ramp, the line meets an office's raised terrace, six blocks up its retaining wall |
+| Valewood–Blackwater, Valewood end | 69 | 7 / 3, **no** | 48 blocks, 68 to 78 | 1 / 0, yes | a seven-block bank right at the edge |
+| Valewood–Blackwater, Blackwater end | 71 | 2 / 1, **no** | 64 blocks, level | 2 / 0, **no** | a two-block step 68 blocks in, where the city's ground begins |
+
+**1 of 6 ends walkable before, 4 of 6 after.** The two that are not end in open ground inside the city circle; along the road's straight line the next thing is a building's lot (the office terrace) or a two-block step, both more than 64 blocks in, and a person walks round them on open ground. A longer ramp would only lead onto a building's terrace, so it was not made longer. Every ramp's steepest step is one block; 287 to 1,554 blocks were changed per end, and the columns left alone (4 to 9 per end) are the road's own deck at the end column. A building's lot is never changed (the ramp stops at it; `RoadApproaches.cityOwned`).
+
+**Walked by a scripted real client.** Journey runs 36 and 37 walked up the ramp at the Valewood end of the Ironhaven road to a street door with no teleport (run 37: 19 s), and development run 40 walked from Founders Row through Ironhaven to the ramp at the Ironhaven end and onto the road (721 blocks, 433 s, no teleport). The road check measures the line only; no person has walked any of them.
+
 ### Roadside stops (the existing wayside shelters, run on the new corridors)
 
 `WaysideShelters` places a shelter or a well every 300 to 450 blocks of open road, when a player comes near; it had only ever been run on the legacy roads. `RoadCheck` now serves every planned stop of the three corridors as a player's approach would (the same `serve` the level tick runs, in a disposable world, after the chunks around each stop are generated):

@@ -33,6 +33,36 @@ public final class RoadMarkerGameTests {
         helper.succeed();
     }
 
+    /** Where a road meets its cities (D-137): one end at each city circle, pointing on into the city along the road's line; a road that starts in open country has no end there. */
+    @GameTest(template = "empty")
+    public static void aRoadKnowsWhereItMeetsEachCityAndWhichWayIsIn(GameTestHelper helper) {
+        CorridorPlan plan = new CorridorPlan("ironhaven_valewood", new double[]{0, 1000}, new double[]{0, 0}, 7,
+            List.of(new CorridorPlan.City(0, 0, 100), new CorridorPlan.City(1000, 0, 100)));
+        CorridorPlan.End[] ends = plan.ends();
+        check(ends.length == 2, "Two ends on a road between two cities: " + ends.length);
+        check(Math.abs(ends[0].x() - 101) <= 1.5 && ends[0].dirX() < -0.99, "The first end is at Ironhaven's circle and points west into it: " + ends[0]);
+        check(Math.abs(ends[1].x() - 899) <= 1.5 && ends[1].dirX() > 0.99, "The second end is at Valewood's circle and points east into it: " + ends[1]);
+        CorridorPlan oneCity = new CorridorPlan("a_b", new double[]{0, 1000}, new double[]{0, 0}, 7, List.of(new CorridorPlan.City(1000, 0, 100)));
+        check(oneCity.ends().length == 1 && oneCity.ends()[0].dirX() > 0.99, "A road that starts in open country meets one city: " + oneCity.ends().length);
+        helper.succeed();
+    }
+
+    /** The travel step points at the road out (a journey walked 720 blocks from the Row to a road's end with nothing saying where it was). */
+    @GameTest(template = "empty")
+    public static void theTravelStepPointsAtTheRoadOutOfTheCity(GameTestHelper helper) {
+        List<CorridorPlan.City> cities = List.of(new CorridorPlan.City(0, 0, 100), new CorridorPlan.City(1000, 0, 100), new CorridorPlan.City(0, 1000, 100));
+        List<CorridorPlan> roads = List.of(new CorridorPlan("ironhaven_valewood", new double[]{0, 1000}, new double[]{0, 0}, 7, cities.subList(0, 2)),
+            new CorridorPlan("ironhaven_blackwater", new double[]{0, 0}, new double[]{0, 1000}, 7, List.of(cities.get(0), cities.get(2))));
+        Journey.RoadOut home = Journey.roadOut(roads, "ironhaven", "ironhaven", -50, 20);
+        check(home != null && home.to().equals("blackwater") && Math.abs(home.z() - 101) <= 1.5, "In Ironhaven, the nearer road out (to Blackwater, its end at z 101): " + home);
+        Journey.RoadOut east = Journey.roadOut(roads, "ironhaven", "ironhaven", 60, -10);
+        check(east != null && east.to().equals("valewood") && Math.abs(east.x() - 101) <= 1.5, "Nearer the east edge, the road to Valewood: " + east);
+        check(Journey.roadOut(roads, "valewood", "ironhaven", 900, 0) == null, "In a rival city already, the step is a terminal there, not a road");
+        Journey.RoadOut onTheRoad = Journey.roadOut(roads, "", "ironhaven", 500, 10);
+        check(onTheRoad != null && onTheRoad.to().equals("valewood") && Math.abs(onTheRoad.x() - 899) <= 1.5, "On the road, the end ahead where it enters Valewood: " + onTheRoad);
+        helper.succeed();
+    }
+
     @GameTest(template = "empty")
     public static void signsSayWhereTheRoadLeadsAndHowLong(GameTestHelper helper) {
         check(RoadMarkers.minutes(1100) == 4 && RoadMarkers.minutes(40) == 1, "Minutes on foot at 4.3 blocks a second: " + RoadMarkers.minutes(1100));
