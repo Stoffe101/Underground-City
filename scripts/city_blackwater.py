@@ -46,7 +46,7 @@ def desk(part: Part, x: int, z: int, facing: str, y: int = 1) -> None:
     part.put(x, y, z, ml("dark_oak_small_table", type="single"))
     part.put(x, y + 1, z, ml("monitor", facing=facing))
     dx, dz = k.DIRS[facing]
-    part.put(x + dx, y, z + dz, ml("dark_oak_chair", facing=k.OPPOSITE[facing]))
+    part.put(x + dx, y, z + dz, k.seat("dark_oak", k.OPPOSITE[facing]))
 
 
 # ---------------------------------------------------------------------------------------------------- the apartment block
@@ -102,7 +102,7 @@ def office() -> Building:
     for x in range(5, 11):
         g.put(x, 1, 10, ml("dark_oak_kitchen_cabinet", facing="north"))
     g.put(6, 2, 10, ml("dual_monitor", facing="north")); g.put(9, 2, 10, ml("printer", facing="north"))
-    g.put(7, 1, 11, ml("dark_oak_chair", facing="north"))
+    g.put(7, 1, 11, k.seat("dark_oak", "north"))
     k.sofa(g, 4, 1, 4, "east", "south", "light_gray", 3)
     k.sofa(g, 9, 1, 4, "east", "south", "light_gray", 3)
     k.table(g, 6, 1, 5, 3, 1, "dark_oak", "coffee")
@@ -127,7 +127,7 @@ def office() -> Building:
     f1.fill(9, 1, 6, 13, 3, 6, CLEAR)
     f1.fill(9, 1, 3, 9, 3, 6, CLEAR)
     for (x, z, facing) in ((11, 3, "south"), (11, 5, "north"), (10, 4, "east"), (12, 4, "west")):
-        f1.put(x, 1, z, ml("dark_oak_chair", facing=facing))
+        f1.put(x, 1, z, k.seat("dark_oak", facing))
     f1.put(11, 1, 4, ml("dark_oak_round_table", facing="north"))
     # the second floor has a server room in the north-east corner behind a locked glass door, racks of receivers and a screen
     f2.fill(9, 1, 6, 13, 3, 6, CONCRETE)
@@ -185,7 +185,7 @@ def club() -> Building:
             g.put(13, 1, z, ml("dark_oak_wall_shelf", facing="west"))
     g.put(12, 2, 6, ml("coffee_mug", facing="west")); g.put(12, 2, 9, ml("coffee_mug", facing="west"))
     for z in (5, 7, 9, 11):
-        g.put(11, 1, z, ml("dark_oak_chair", facing="east"))
+        g.put(11, 1, z, k.seat("dark_oak", "east"))
     # booths in the south-west: sofas round a table
     k.sofa(g, 3, 1, 12, "east", "north", "red", 3)
     g.put(4, 1, 11, ml("dark_oak_small_table", type="single"))
@@ -210,13 +210,13 @@ def club() -> Building:
     k.table(f1, 5, 1, 5, 2, 1, "dark_oak", "coffee")
     k.counter_run(f1, 12, 1, 3, "south", "west", ["cabinet", "cabinet", "cabinet", "sink"], "dark_oak")
     for z in (3, 4, 5, 6):
-        f1.put(11, 1, z, ml("dark_oak_chair", facing="east"))
+        f1.put(11, 1, z, k.seat("dark_oak", "east"))
     # the back office behind a bookcase wall (x 8..13, z 9..13): a desk and a safe-like barrel stash
     f1.fill(8, 1, 9, 13, 3, 9, BLACK)
     f1.fill(8, 1, 9, 8, 3, 13, BLACK)
     f1.put(10, 1, 9, ml("modern_oak_bookshelf", facing="north")); f1.put(10, 2, 9, ml("modern_oak_bookshelf", facing="north"))
     f1.door(11, 1, 9, "north", "iron_door")
-    f1.put(12, 1, 12, ml("dark_oak_small_table", type="single")); f1.put(12, 2, 12, ml("dual_monitor", facing="west")); f1.put(11, 1, 12, ml("dark_oak_chair", facing="east"))
+    f1.put(12, 1, 12, ml("dark_oak_small_table", type="single")); f1.put(12, 2, 12, ml("dual_monitor", facing="west")); f1.put(11, 1, 12, k.seat("dark_oak", "east"))
     for (x, z) in ((13, 11), (13, 12), (13, 13), (9, 13)):
         f1.put(x, 1, z, "minecraft:barrel[facing=up,open=false]")
     f1.put(9, 1, 11, ml("modern_oak_bookshelf", facing="east"))
@@ -271,7 +271,7 @@ def store() -> Building:
     for z in range(9, 13):
         g.put(11, 1, z, ml("dark_oak_kitchen_cabinet", facing="west"))
     g.put(11, 2, 10, ml("monitor", facing="west")); g.put(11, 2, 12, "minecraft:flower_pot")
-    g.put(12, 1, 8, ml("dark_oak_chair", facing="south"))
+    g.put(12, 1, 8, k.seat("dark_oak", "south"))
     g.put(12, 3, 3, ml("cctv_camera", facing="south"))
     for (x, z) in ((5, 4), (9, 4), (6, 8), (6, 11), (10, 11)):
         g.put(x, 4, z, LAMP)                                                   # lights flush in the ceiling

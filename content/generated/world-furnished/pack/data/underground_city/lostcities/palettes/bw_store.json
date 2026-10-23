@@ -118,7 +118,7 @@
       "char": "s"
     },
     {
-      "block": "modernlife:dark_oak_chair[facing=south]",
+      "block": "modernlife:dark_oak_chair[facing=north]",
       "char": "t"
     },
     {
@@ -206,7 +206,7 @@
       "char": "U"
     },
     {
-      "block": "modernlife:dark_oak_chair[facing=north]",
+      "block": "modernlife:dark_oak_chair[facing=south]",
       "char": "V"
     },
     {

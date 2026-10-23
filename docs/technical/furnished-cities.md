@@ -81,6 +81,17 @@ October 21, in a real client (a software renderer, 1920 by 1080, a disposable wo
 * **Through the window:** the kitchen of a house, a table with chairs, a cooker, in a lit room.
 * More frames (interiors of each building, a night frame, Ironhaven and Blackwater) are listed in the sprint report with what each showed; whatever the report does not name was not looked at.
 
+October 23, after the palette fix (`-PucPhotoTour`, a new furnished world, 1920 by 1080, software rendering; 13 of 14 frames taken, the 14th timed out on its far-away chunks; private, not committed):
+
+* **Blackwater club:** lit now: a glowing chequered dance floor, ceiling panels, a bar with chairs, a red booth by the stair and the alarm panel beside the door. Still moody, and readable. **Flaw, fixed:** the bar's chairs faced away from the counter. The cause was general: Modern Life's chair puts its backrest on the side its `facing` names (read from the jar's chair model: the back is to the south for facing=south), the opposite of its toilets, sinks and shelves, and the kit had assumed the reverse, so **every chair at every table, desk and bar in the thirteen buildings sat with its back to what it was placed for**. `citykit.seat(wood, looks)` now takes the direction the sitter looks and faces the block the other way; all 21 chairs go through it (13 palettes changed, 0 registry problems). Not yet photographed after the fix.
+* **Ironhaven tenement bedroom:** a small brick room with a floor, a rug, a plant, a mirror and a window. **Flaw:** what stands at the bed's place reads as a plain grey block in the middle of the room, not as a bed.
+* **Valewood cottage, from the path:** render and timber, a stone roof, a door with steps and a flagged path, **planted beds** in front (the "trenches" of October 21 are gone).
+* **Valewood house kitchen, through the window:** a table and chairs, a fridge, a counter.
+* **Ironhaven pub:** a long counter with shelves, mugs and a hanging lantern, stools in front; its room to let has a sofa, a table and chairs, a fridge and a window. Reads as a pub and a room above it.
+* **Blackwater corner store:** a counter with a plant and a till, a screen behind; sparse.
+* **Valewood bakery:** cakes on the counter, a sink, an oven and shelves behind it. **Flaw:** a flat-screen television behind a bakery counter.
+* The bakery flat's frame put the camera inside a wall (the photo tool's placement, not the building).
+
 ## October 22: homes to let, alarm panels, people who come and go, and four flaws fixed
 
 * **Units (D-127).** Every building's sidecar now names its units: the tenements' flats (two a floor), a house or cottage as a whole, the Ironhaven workshop's and warehouse's premises. The property ladder's city templates say which kind of building lets which category at which share (`properties/ladder.json` `city_listings`); see [property-economy.md](property-economy.md#homes-in-the-furnished-cities). Nobody of the household lives in a unit that is to let.

@@ -126,11 +126,11 @@
       "char": "r"
     },
     {
-      "block": "modernlife:oak_chair[facing=south]",
+      "block": "modernlife:oak_chair[facing=north]",
       "char": "s"
     },
     {
-      "block": "modernlife:oak_chair[facing=west]",
+      "block": "modernlife:oak_chair[facing=east]",
       "char": "t"
     },
     {

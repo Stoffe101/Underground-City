@@ -128,10 +128,10 @@ def workshop() -> Building:
     u.fill(X0 + 1, 1, 5, X0 + 6, 3, 5, "minecraft:glass_pane")                  # a glazed partition: the office is the north-west corner
     u.put(3, 1, 3, ml("oak_small_table", type="w_end")); u.put(4, 1, 3, ml("oak_small_table", type="e_end"))
     u.put(3, 2, 3, ml("dual_monitor", facing="south")); u.put(4, 2, 3, ml("printer", facing="south"))
-    u.put(3, 1, 4, ml("oak_chair", facing="north"))
+    u.put(3, 1, 4, k.seat("oak", "north"))
     u.put(6, 1, 3, ml("photocopier", facing="south")); u.put(2, 1, 3, ml("modern_oak_bookshelf", facing="east")); u.put(2, 1, 4, ml("modern_oak_bookshelf", facing="east"))
     u.put(9, 1, 3, ml("oak_small_table", type="single")); u.put(9, 2, 3, ml("old_tv", facing="south"))
-    u.put(10, 1, 3, ml("oak_chair", facing="west"))
+    u.put(10, 1, 3, k.seat("oak", "west"))
     for (x, z) in ((4, 4), (10, 4)):
         u.put(x, 3, z, ml("light_bulb", face="ceiling", facing="north", powered=True))
     t = b.new_part("top", top=True)
@@ -186,7 +186,7 @@ def warehouse() -> Building:
     for (x, z) in ((6, 6), (9, 6), (6, 10), (9, 10), (4, 7), (11, 7)):
         g.put(x, 4, z, ml("light_bulb", face="ceiling", facing="north", powered=True))
     # the office in the north-east corner: a glazed box with a desk
-    g.put(13, 1, 2, ml("oak_small_table", type="single")); g.put(13, 2, 2, ml("monitor", facing="west")); g.put(12, 1, 2, ml("oak_chair", facing="east"))
+    g.put(13, 1, 2, ml("oak_small_table", type="single")); g.put(13, 2, 2, ml("monitor", facing="west")); g.put(12, 1, 2, k.seat("oak", "east"))
     g.put(13, 1, 4, ml("modern_oak_bookshelf", facing="west")); g.put(13, 1, 3, ml("printer", facing="west"))
     t = b.new_part("top", top=True)
     parapet_roof(t, X0, Z0, X1, Z1, STONE)
@@ -259,7 +259,7 @@ def pub() -> Building:
         k.bed(u, bx, 1, 3, "north", "brown")
         u.put(stand, 1, 2, ml("oak_night_stand", facing="south"))
         u.put(shelf, 1, 2, ml("modern_oak_bookshelf", facing="south"))
-        u.put(tx, 1, 4, ml("oak_small_table", type="single")); u.put(cx, 1, 5, ml("oak_chair", facing="north"))
+        u.put(tx, 1, 4, ml("oak_small_table", type="single")); u.put(cx, 1, 5, k.seat("oak", "north"))
         u.put(bx + 1, 1, 4, "minecraft:brown_carpet")
         u.put(bx + 1, 3, 4, LANTERN)
     for x in (3, 5, 9, 12):

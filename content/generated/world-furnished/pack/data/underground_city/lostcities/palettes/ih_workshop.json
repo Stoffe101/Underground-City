@@ -154,7 +154,7 @@
       "char": "G"
     },
     {
-      "block": "modernlife:oak_chair[facing=north]",
+      "block": "modernlife:oak_chair[facing=south]",
       "char": "H"
     },
     {
@@ -174,7 +174,7 @@
       "char": "L"
     },
     {
-      "block": "modernlife:oak_chair[facing=west]",
+      "block": "modernlife:oak_chair[facing=east]",
       "char": "M"
     },
     {

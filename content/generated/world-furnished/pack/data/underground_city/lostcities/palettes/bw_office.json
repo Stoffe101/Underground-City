@@ -138,7 +138,7 @@
       "char": "C"
     },
     {
-      "block": "modernlife:dark_oak_chair[facing=north]",
+      "block": "modernlife:dark_oak_chair[facing=south]",
       "char": "D"
     },
     {
@@ -194,7 +194,7 @@
       "char": "Q"
     },
     {
-      "block": "modernlife:dark_oak_chair[facing=south]",
+      "block": "modernlife:dark_oak_chair[facing=north]",
       "char": "R"
     },
     {
@@ -218,11 +218,11 @@
       "char": "X"
     },
     {
-      "block": "modernlife:dark_oak_chair[facing=east]",
+      "block": "modernlife:dark_oak_chair[facing=west]",
       "char": "Y"
     },
     {
-      "block": "modernlife:dark_oak_chair[facing=west]",
+      "block": "modernlife:dark_oak_chair[facing=east]",
       "char": "!"
     },
     {

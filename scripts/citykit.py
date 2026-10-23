@@ -290,8 +290,15 @@ def table(part: Part, x: int, y: int, z: int, w: int, d: int, wood: str = "oak",
             part.put(x + i, y, z + j, ml(f"{wood}_{kind}_table", type=t))
 
 
+def seat(wood: str, looks: str) -> str:
+    """A Modern Life chair whose sitter looks toward ``looks``. Its block puts the backrest on the side its ``facing`` names (the jar's chair model has its back to the south
+    for facing=south), so the block faces the other way: a photograph of the Blackwater club showed every bar chair with its back to the bar."""
+    return ml(f"{wood}_chair", facing=OPPOSITE[looks])
+
+
 def chair(part: Part, x: int, y: int, z: int, facing: str, wood: str = "oak") -> None:
-    part.put(x, y, z, ml(f"{wood}_chair", facing=facing))
+    """A chair whose sitter looks toward ``facing`` (at a table, a desk, a bar)."""
+    part.put(x, y, z, seat(wood, facing))
 
 
 def lamp_ceiling(part: Part, x: int, z: int) -> None:
