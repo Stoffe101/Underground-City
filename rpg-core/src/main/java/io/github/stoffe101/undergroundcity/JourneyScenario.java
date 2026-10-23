@@ -575,14 +575,23 @@ final class JourneyScenario {
     private static void mine(String label, Supplier<BlockPos> block, int budget) {
         final BlockPos[] target = new BlockPos[1];
         final boolean[] down = {false};
+        final int[] unaimed = {0}, nudge = {0};
+        final String[] key = {null};
         Playtest.queue(label, () -> target[0] = block.get(), () -> {
             if (target[0] == null) { Playtest.fail(label + ": nothing to mine"); return true; }
             if (mc().level.getBlockState(target[0]).isAir()) { if (down[0]) { Playtest.mouseButton(1, false); down[0] = false; } return true; }
             look(Vec3.atCenterOf(target[0]));
+            if (key[0] != null && --nudge[0] <= 0) { Playtest.keyUp(key[0]); key[0] = null; }
             if (!down[0] && aimedAt(target[0])) { Playtest.mouseButton(1, true); down[0] = true; }
+            // something stands between the eye and the block (a fence post, a hay bale by a tree): after two seconds, a step closer, then to one side or the other, as a person would
+            if (!down[0] && key[0] == null && ++unaimed[0] % 40 == 0) {
+                key[0] = new String[] {"w", "a", "d"}[(unaimed[0] / 40 - 1) % 3];
+                nudge[0] = 5;
+                Playtest.keyDown(key[0]);
+            }
             return false;
         }, budget);
-        Playtest.queue("let go of the mouse", () -> { if (down[0]) Playtest.mouseButton(1, false); });
+        Playtest.queue("let go of the mouse", () -> { if (down[0]) Playtest.mouseButton(1, false); if (key[0] != null) { Playtest.keyUp(key[0]); key[0] = null; } });
         Playtest.wait("the drop lands", 8);
     }
 

@@ -29,6 +29,8 @@ final class PathWalker {
     private double best = Double.MAX_VALUE;
     private int bestNode = -1;
     private boolean done, failed, keysDown, planning;
+    private Vec3 stuckAt;
+    private int sidestep;
     private String summary = "";
     private volatile List<Vec3> planned;
 
@@ -63,7 +65,9 @@ final class PathWalker {
             List<Vec3> out = new ArrayList<>();
             try {
                 // a route a person can walk: the player's own collision, not a mob's (see PlayerPath)
-                out.addAll(PlayerPath.find(server.overworld(), from, leg, last ? Math.max(0.8, within - 0.5) : 3.0, last ? Math.min(3.0, withinY) : 3.0));
+                // a leg on the way only has to reach its column, at whatever height the ground is there: asking it for the target's height (a quarry's stone 20 blocks down) sent a journey's
+                // walker into a valley whose cells were nearer that height, and down into a pit it could not climb out of
+                out.addAll(PlayerPath.find(server.overworld(), from, leg, last ? Math.max(0.8, within - 0.5) : 3.0, last ? Math.min(3.0, withinY) : 512.0));
             } catch (RuntimeException error) {
                 Playtest.log(label + ": planning failed: " + error);
             }
@@ -73,6 +77,7 @@ final class PathWalker {
 
     private void release() {
         if (jumpHold > 0) { Playtest.keyUp("space"); jumpHold = 0; }
+        if (sidestep > 0) { Playtest.keyUp("a"); Playtest.keyUp("d"); sidestep = 0; }
         if (!keysDown) return;
         Playtest.keyUp("w");
         keysDown = false;
@@ -108,7 +113,8 @@ final class PathWalker {
             if (planned == null) { if (++planWait > 200) { planning = false; planWait = 0; } return; }
             nodes = planned; next = 0; planning = false; planWait = 0; bestNode = -1; best = Double.MAX_VALUE; sinceProgress = 0;
             // a "route" that ends where the player already stands (the planner found nothing closer from here) is no route either
-            boolean nowhere = !nodes.isEmpty() && flat(nodes.get(nodes.size() - 1), me.position()) < 0.75 && left > within + 0.5;
+            // (whenever the walk has not arrived: a margin here once left a walker 2.5 blocks from a tree, on the margin's edge, planning 121 empty legs in 21 seconds)
+            boolean nowhere = !nodes.isEmpty() && flat(nodes.get(nodes.size() - 1), me.position()) < 0.75 && left > within;
             if (nodes.isEmpty() || nowhere) {
                 // no route found: walk straight at the target for a while, as a person would when the arrow points through open ground
                 if (nowhere) Playtest.log(label + ": no route from " + me.blockPosition().toShortString() + " (feet in " + mc.level.getBlockState(me.blockPosition()).getBlock() + ", on "
@@ -150,6 +156,11 @@ final class PathWalker {
         me.setYRot(yaw);
         me.yHeadRot = yaw;
         me.setXRot(6f);
+        if (sidestep > 0) {
+            String key = replans % 2 == 0 ? "a" : "d";
+            if (sidestep == 10) Playtest.keyDown(key);
+            if (--sidestep == 0) Playtest.keyUp(key);
+        }
         if (!keysDown) { Playtest.focusWindow(); Playtest.keyDown("w"); keysDown = true; }
         if (node.y > me.getY() + 0.6 && me.onGround()) jump();
         // progress is moving along the route (a later waypoint, or closer to the current one), not getting closer to the target: a route round a building goes away from it first
@@ -159,9 +170,13 @@ final class PathWalker {
         else if (++sinceProgress > STUCK_TICKS) {
             sinceProgress = 0;
             if (me.horizontalCollision && me.onGround()) jump();
+            // still in the same place after a re-plan: a step to one side once the new route is walked, as a person shoulders past (left, then right, by turns)
+            boolean side = replans > 0 && stuckAt != null && stuckAt.distanceTo(me.position()) < 0.5;
+            stuckAt = me.position();
             if (++replans > MAX_REPLANS) { finish(true, String.format(java.util.Locale.ROOT, "stuck %.1f blocks from the target at %s", left, me.blockPosition().toShortString())); return; }
             release();
             plan();
+            if (side) sidestep = 10;
         }
         if (ticks % 200 == 0) Playtest.log(label + String.format(java.util.Locale.ROOT, ": %.1f blocks to go, at %s", left, me.blockPosition().toShortString()));
     }

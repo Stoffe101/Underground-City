@@ -113,13 +113,21 @@ final class PlayerPath {
         BlockPos start = start(level, from);
         if (start == null) return List.of();
         double tx = to.x, tz = to.z, ty = to.y;
+        double yWeight = withinY > 8 ? 0 : 0.5;   // a leg on the way is drawn to its column, not to a height
+        // somebody standing in the way is walked round where there is room, as a person would (a journey's walker pushed for forty seconds against whoever stood by the employer's desk),
+        // and pushed past where there is not (closing their cells left a walker with no way out of an office whose one corridor the employer stood in): their cells cost more
+        java.util.Set<Long> occupied = new java.util.HashSet<>();
+        for (var entity : level.getEntitiesOfClass(net.minecraft.world.entity.Mob.class, new net.minecraft.world.phys.AABB(start).inflate(24))) {
+            BlockPos at = entity.blockPosition();
+            if (Math.hypot(at.getX() + 0.5 - to.x, at.getZ() + 0.5 - to.z) > 1.5) { occupied.add(at.asLong()); occupied.add(at.above().asLong()); }
+        }
         PriorityQueue<Node> open = new PriorityQueue<>((a, b) -> Double.compare(a.f(), b.f()));
         Map<Long, Double> best = new HashMap<>();
         Map<Long, BlockPos> parent = new HashMap<>();
-        open.add(new Node(start, 0, h(start, tx, ty, tz)));
+        open.add(new Node(start, 0, h(start, tx, ty, tz, yWeight)));
         best.put(start.asLong(), 0.0);
         BlockPos closest = start;
-        double closestH = h(start, tx, ty, tz);
+        double closestH = h(start, tx, ty, tz, yWeight);
         int expanded = 0;
         boolean reached = false;
         while (!open.isEmpty() && expanded++ < MAX_NODES) {
@@ -127,7 +135,7 @@ final class PlayerPath {
             BlockPos at = node.pos();
             if (node.g() > best.getOrDefault(at.asLong(), Double.MAX_VALUE) + 1e-9) continue;
             double flat = Math.hypot(at.getX() + 0.5 - tx, at.getZ() + 0.5 - tz);
-            double hh = h(at, tx, ty, tz);
+            double hh = h(at, tx, ty, tz, yWeight);
             if (hh < closestH) { closestH = hh; closest = at; }
             if (flat <= within && Math.abs(at.getY() - ty) <= withinY) { closest = at; reached = true; break; }
             for (int[] step : STEPS) {
@@ -146,12 +154,12 @@ final class PlayerPath {
                         if (!passable(level, a) || !clear(level, a.above()) || !passable(level, b) || !clear(level, b.above())) continue;
                         if (openable(level.getBlockState(next)) || openable(level.getBlockState(at))) continue;
                     }
-                    double cost = (diagonal ? 1.414 : 1.0) + (dy == 1 ? 0.8 : dy < 0 ? 0.3 * -dy : 0) + (openable(level.getBlockState(next)) ? 1.5 : 0);
+                    double cost = (diagonal ? 1.414 : 1.0) + (dy == 1 ? 0.8 : dy < 0 ? 0.3 * -dy : 0) + (openable(level.getBlockState(next)) ? 1.5 : 0) + (occupied.contains(next.asLong()) ? 6.0 : 0);
                     double g = node.g() + cost;
                     if (g < best.getOrDefault(next.asLong(), Double.MAX_VALUE)) {
                         best.put(next.asLong(), g);
                         parent.put(next.asLong(), at);
-                        open.add(new Node(next, g, g + h(next, tx, ty, tz)));
+                        open.add(new Node(next, g, g + h(next, tx, ty, tz, yWeight)));
                     }
                     break;   // one vertical choice per horizontal step: the first that stands (level, then up, then down)
                 }
@@ -162,7 +170,7 @@ final class PlayerPath {
             double frontierH = Double.MAX_VALUE;
             for (Node node : open) {
                 if (node.g() > best.getOrDefault(node.pos().asLong(), Double.MAX_VALUE) + 1e-9) continue;
-                double hh = h(node.pos(), tx, ty, tz);
+                double hh = h(node.pos(), tx, ty, tz, yWeight);
                 if (hh < frontierH) { frontierH = hh; frontier = node.pos(); }
             }
             if (frontier != null) closest = frontier;
@@ -173,7 +181,7 @@ final class PlayerPath {
         return route;
     }
 
-    private static double h(BlockPos p, double tx, double ty, double tz) {
-        return Math.hypot(p.getX() + 0.5 - tx, p.getZ() + 0.5 - tz) + Math.abs(p.getY() - ty) * 0.5;
+    private static double h(BlockPos p, double tx, double ty, double tz, double yWeight) {
+        return Math.hypot(p.getX() + 0.5 - tx, p.getZ() + 0.5 - tz) + Math.abs(p.getY() - ty) * yWeight;
     }
 }
