@@ -55,11 +55,11 @@ public final class RoadsidePlaces {
     private static final Logger LOGGER = LogUtils.getLogger();
     static final String KEY = "underground_city_roadside_places", ENABLED = "#enabled";
     /** A player this near a candidate spot gets it decided; how often; how many lots are looked at per candidate; how uneven a lot may be; how far a site may slide along the road, in steps of. */
-    static final int ACTIVATE = 144, CHECK_TICKS = 100, TRIES = 10, MAX_RELIEF = 4, SEARCH = 40, SHIFT = 8;
+    static final int ACTIVATE = 144, CHECK_TICKS = 100, TRIES = 10, MAX_RELIEF = 16, SEARCH = 40, SHIFT = 8;
     /** No place within this many blocks of a city circle; this far from a shelter's spot or another place; at most this many candidate spots per place. */
-    static final int EDGE = 110, KEEP = 60, CANDIDATES = 8;
-    /** The most blocks between a lot's standing level and the road's: the driveway then climbs at most one block per block. */
-    static final int MAX_STEP_TO_DECK = 3;
+    static final int EDGE = 110, KEEP = 20, CANDIDATES = 12;
+    /** The most blocks between a lot's standing level and the road's: over a driveway of a dozen blocks that is a gentle slope. */
+    static final int MAX_STEP_TO_DECK = 5;
     /** A place's people are looked for (and put back if lost) when a player is this near. */
     static final int KEEPER_RANGE = 48;
 
@@ -137,7 +137,19 @@ public final class RoadsidePlaces {
      * The spots along {@code plan} where {@code place} may stand, best first: the nearest to its share of the open road on a stretch of land long enough for its lot, at least
      * {@link #EDGE} blocks from either city circle and clear of {@code avoid} (the shelters' spots and the places before it on this road).
      */
-    static List<Double> candidates(CorridorPlan plan, Place place, List<Double> avoid) {
+    static List<Double> candidates(CorridorPlan plan, Place place, List<Double> avoid) { return candidates(plan, place, avoid, (x, z, r) -> false); }
+
+    /** Whether a point is within {@code margin} blocks of a city's region (where the law, the exchange and "In Ironhaven" begin). */
+    @FunctionalInterface interface NearCity { boolean test(double x, double z, double margin); }
+
+    /** The cities of the loaded data, for {@link #candidates}: the civic region's circle, which is wider than the road's city circle. */
+    static NearCity cities() {
+        return (x, z, margin) -> CityRegions.INSTANCE.all().stream().anyMatch(r -> r.dimension().equals("minecraft:overworld")
+            && Math.hypot(x - (r.centerChunkX() * 16 + 8), z - (r.centerChunkZ() * 16 + 8)) < r.radius() + margin);
+    }
+
+    /** As above, never within {@code need} blocks of a city's region (the October 23 road check found half the spots near a road's ends inside one). */
+    static List<Double> candidates(CorridorPlan plan, Place place, List<Double> avoid, NearCity near) {
         double first = RoadMarkers.firstOpen(plan), last = RoadMarkers.lastOpen(plan);
         double target = first + place.at() * (last - first);
         double need = Math.hypot(place.width(), place.depth()) / 2.0 + 12.0;
@@ -146,6 +158,8 @@ public final class RoadsidePlaces {
             double s = target + (i % 2 == 0 ? 1 : -1) * ((i + 1) / 2) * 8.0;
             if (s < first + EDGE || s > last - EDGE) continue;
             if (!land(plan, s - need, s + need)) continue;
+            double[] point = plan.pointAt(s);
+            if (near.test(point[0], point[1], need + 16)) continue;
             if (avoid.stream().anyMatch(a -> Math.abs(a - s) < KEEP + need)) continue;
             if (out.stream().anyMatch(o -> Math.abs(o - s) < 48)) continue;
             out.add(s);
@@ -154,11 +168,13 @@ public final class RoadsidePlaces {
     }
 
     /** The candidates of every place on a road, in catalog order, each place keeping clear of the shelters and of the first choice of the places before it. */
-    static Map<String, List<Double>> plan(CorridorPlan plan, List<Place> places) {
+    static Map<String, List<Double>> plan(CorridorPlan plan, List<Place> places) { return plan(plan, places, cities()); }
+
+    static Map<String, List<Double>> plan(CorridorPlan plan, List<Place> places, NearCity near) {
         List<Double> avoid = new ArrayList<>(WaysideShelters.positions(plan, WaysideShelters.MAX_GAP, WaysideShelters.EDGE));
         Map<String, List<Double>> out = new LinkedHashMap<>();
         for (Place place : places) {
-            List<Double> found = candidates(plan, place, avoid);
+            List<Double> found = candidates(plan, place, avoid, near);
             out.put(place.id(), found);
             if (!found.isEmpty()) avoid.add(found.get(0));
         }
@@ -367,6 +383,8 @@ public final class RoadsidePlaces {
             state.where.put(place.id(), site.origin().asLong());
             state.setDirty();
             try {
+                int levelled = levelLot(level, district, site.origin());
+                if (levelled > 0) LOGGER.info("[UC] roadside place {}: {} columns of its lot levelled to its ground", place.id(), levelled);
                 DistrictBuilder.build(level, district, site.origin());
             } catch (IllegalStateException refused) {
                 LOGGER.info("[UC] roadside place {}: site {} refused ({})", place.id(), site.origin().toShortString(), refused.getMessage());
@@ -395,6 +413,19 @@ public final class RoadsidePlaces {
         NEXT.put(place.id(), index + 1);
         LOGGER.info("[UC] roadside place {}: no lot fits at candidate {} (s {}): {}; trying the next", place.id(), index, Math.round(candidates.get(index)), explain(ground, plan, place, candidates.get(index), deck, new Reasons(level, plans)));
         return new Outcome(place.id(), "candidate " + index + " has no lot", null, "", 0, 0, 0, (System.nanoTime() - started) / 1_000_000L);
+    }
+
+    /**
+     * Levels a lot's natural ground to its standing level before the place is built on it: a hill in the lot is cut away to the sky (a building's own clearing reaches only its
+     * roof), a dip is filled with earth (its foundation reaches only a few blocks down). What people built and water are left as they are. Returns the columns changed.
+     */
+    static int levelLot(ServerLevel level, DistrictCatalog.District district, BlockPos origin) {
+        int changed = 0, ground = origin.getY() - 1;
+        BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos();
+        for (int x = origin.getX() + district.min().getX(); x <= origin.getX() + district.max().getX(); x++)
+            for (int z = origin.getZ() + district.min().getZ(); z <= origin.getZ() + district.max().getZ(); z++)
+                if (RoadApproaches.column(level, x, z, ground, null, p) > 0) changed++;
+        return changed;
     }
 
     /** How wide the band of graded ground round a built lot is. */

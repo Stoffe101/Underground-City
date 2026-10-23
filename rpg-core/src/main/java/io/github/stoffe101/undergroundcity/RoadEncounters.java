@@ -37,6 +37,7 @@ import net.minecraft.world.entity.npc.VillagerType;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import net.minecraft.tags.BlockTags;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.RandomizableContainerBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -89,8 +90,11 @@ public final class RoadEncounters {
     static final double CHANCE = 0.15;
     /** How far up the road an encounter is set, plus up to this much more; how far beyond the road's reach it stands. */
     static final int AHEAD = 56, AHEAD_SPREAD = 16, OFF_ROAD = 4;
-    /** No encounter within this many blocks (along the road) of a city circle, nor this near a shelter, a roadside place or a checkpoint. */
-    static final int CITY_CLEARANCE = 120, CLEAR_OF_FIXED = 80;
+    /**
+     * No encounter within this many blocks (along the road) of a city circle, nor this near a shelter or a checkpoint's edge (a roadside place: thirty more, from its corner). 80 left
+     * the Ironhaven-Valewood road, two thirds bridges, almost no dry verge between its shelters and places (journey run 58: "no fitting spot" 150 blocks out of Ironhaven).
+     */
+    static final int CITY_CLEARANCE = 120, CLEAR_OF_FIXED = 40;
     /** A partner this near shares an encounter; an encounter ends at once when every player is this far, or after its lifetime with nobody near. */
     static final int SHARE_RANGE = 96, FORGET_RANGE = 192, NEAR = 24;
     static final long LIFETIME_TICKS = 20L * 60 * 8, AFTER_RESOLVED_TICKS = 20L * 40;
@@ -339,7 +343,8 @@ public final class RoadEncounters {
     static Active start(ServerLevel level, State state, List<CorridorPlan> plans, CorridorPlan plan, double s, int direction, ServerPlayer player, Encounter forced) {
         double first = RoadMarkers.firstOpen(plan), last = RoadMarkers.lastOpen(plan);
         double at = s + direction * (AHEAD + level.random.nextInt(AHEAD_SPREAD + 1));
-        if (at < first + CITY_CLEARANCE || at > last - CITY_CLEARANCE || plan.bridgeAt(at) || plan.waterAt(at)) return null;
+        if (at < first + CITY_CLEARANCE || at > last - CITY_CLEARANCE) return refuse("too near a city");
+        if (plan.bridgeAt(at) || plan.waterAt(at)) return refuse("on a bridge or over water");
         Traveller traveller = state.traveller(player.getUUID());
         Encounter encounter = forced != null ? forced : pick(CATALOG.all(), plan.id(), traveller.last, level.random);
         if (encounter == null) return null;
@@ -356,6 +361,18 @@ public final class RoadEncounters {
         active.person = encounter.people().isEmpty() ? -1 : level.random.nextInt(encounter.people().size());
         active.destination = cityAhead(plan, direction);
         state.active.put(active.id, active);   // before its person is added: the join guard lets in only people of encounters the world knows
+        // the plot's wild growth is cleared (and put back when the encounter is over, like the props); a prop's own cell keeps what was there as its "was"
+        java.util.Set<BlockPos> propCells = new java.util.HashSet<>();
+        for (Prop prop : encounter.props()) propCells.add(spot.offset(prop));
+        for (int a = -4; a <= 4; a++) for (int o = 0; o <= 4; o++) for (int up = 0; up <= 2; up++) {
+            BlockPos cell = spot.offset(new Prop(a, o, up, "", ""));
+            BlockState here = level.getBlockState(cell);
+            if (propCells.contains(cell) || !overgrown(here)) continue;
+            level.setBlock(cell, Blocks.AIR.defaultBlockState(), 2);
+            CompoundTag record = new CompoundTag();
+            record.putLong("pos", cell.asLong()); record.put("was", NbtUtils.writeBlockState(here)); record.put("put", NbtUtils.writeBlockState(Blocks.AIR.defaultBlockState())); record.putBoolean("loot", false);
+            active.props.add(record);
+        }
         for (Prop prop : encounter.props()) {
             BlockPos at3 = spot.offset(prop);
             BlockState was = level.getBlockState(at3);
@@ -402,6 +419,18 @@ public final class RoadEncounters {
     }
 
     /** Where an encounter stands: its person's spot, and the two cardinal directions its props are laid along and away from the road. */
+    /** Why spots were refused since the last {@link #refusals()} reset: the operator's {@code meet} says so when it finds none. */
+    private static final Map<String, Integer> REFUSED = new java.util.LinkedHashMap<>();
+    private static <T> T refuse(String why) { REFUSED.merge(why, 1, Integer::sum); return null; }
+    static synchronized String refusals() {
+        String said = REFUSED.entrySet().stream().sorted(Map.Entry.<String, Integer>comparingByValue().reversed()).map(e -> e.getValue() + " " + e.getKey()).collect(java.util.stream.Collectors.joining(", "));
+        REFUSED.clear();
+        return said;
+    }
+
+    /** Wild growth an encounter may stand in, cleared while it stands and put back after: leaves, grass, flowers and the like (never a log, which may be somebody's wall). */
+    static boolean overgrown(BlockState state) { return state.is(BlockTags.LEAVES) || state.canBeReplaced() && state.getFluidState().isEmpty() && !state.isAir(); }
+
     record Spot(BlockPos anchor, Direction along, Direction out) {
         BlockPos offset(Prop prop) { return anchor.relative(along, prop.along()).relative(out, prop.out()).above(prop.up()); }
     }
@@ -415,31 +444,35 @@ public final class RoadEncounters {
         int x = (int) Math.floor(point[0] + nx * out), z = (int) Math.floor(point[1] + nz * out);
         Direction along = Math.abs(tx) > Math.abs(tz) ? (tx > 0 ? Direction.EAST : Direction.WEST) : (tz > 0 ? Direction.SOUTH : Direction.NORTH);
         Direction away = Math.abs(nx) > Math.abs(nz) ? (nx > 0 ? Direction.EAST : Direction.WEST) : (nz > 0 ? Direction.SOUTH : Direction.NORTH);
-        if (away.getAxis() == along.getAxis()) return null;
-        for (int dx = -6; dx <= 6; dx++) for (int dz = -6; dz <= 6; dz++) if (level.getChunkSource().getChunkNow((x + dx) >> 4, (z + dz) >> 4) == null) return null;
+        if (away.getAxis() == along.getAxis()) return refuse("the road turns there");
+        for (int dx = -6; dx <= 6; dx++) for (int dz = -6; dz <= 6; dz++) if (level.getChunkSource().getChunkNow((x + dx) >> 4, (z + dz) >> 4) == null) return refuse("not loaded");
         DistrictSites.Ground ground = RoadsidePlaces.ground(level, plans);
         for (int a = -5; a <= 5; a++) for (int o = -1; o <= 5; o++) {
             BlockPos column = new BlockPos(x, 0, z).relative(along, a).relative(away, o);
-            if (ground.reserved(column.getX(), column.getZ()) || ground.wet(column.getX(), column.getZ())) return null;
+            if (ground.reserved(column.getX(), column.getZ())) return refuse("built or reserved ground");
+            if (ground.wet(column.getX(), column.getZ())) return refuse("water");
         }
         BlockPos anchor = DevCommands.surface(level, x, z);
-        if (Math.abs(anchor.getY() - DevCommands.surface(level, x + away.getStepX() * 4, z + away.getStepZ() * 4).getY()) > 2) return null;
-        if (CityRegions.INSTANCE.cityAt(level, anchor).isPresent() || CityBuildings.INSTANCE.at(level, anchor).isPresent()) return null;
+        if (Math.abs(anchor.getY() - DevCommands.surface(level, x + away.getStepX() * 4, z + away.getStepZ() * 4).getY()) > 2) return refuse("too steep");
+        if (CityRegions.INSTANCE.cityAt(level, anchor).isPresent() || CityBuildings.INSTANCE.at(level, anchor).isPresent()) return refuse("in a city");
         for (CheckpointCatalog.Checkpoint post : CheckpointCatalog.INSTANCE.all()) {
             double keep = post.radius() + CLEAR_OF_FIXED;
-            if (post.dimension().equals(level.dimension().location().toString()) && post.distanceSquared(anchor.getX() + .5, anchor.getZ() + .5) < keep * keep) return null;
+            if (post.dimension().equals(level.dimension().location().toString()) && post.distanceSquared(anchor.getX() + .5, anchor.getZ() + .5) < keep * keep) return refuse("near a checkpoint");
         }
         PlacedSites shelters = PlacedSites.get(level, PlacedSites.SHELTERS), places = PlacedSites.get(level, RoadsidePlaces.KEY);
-        for (Long where : shelters.where.values()) if (BlockPos.of(where).distSqr(anchor) < (double) CLEAR_OF_FIXED * CLEAR_OF_FIXED) return null;
-        for (Long where : places.where.values()) if (BlockPos.of(where).distSqr(anchor) < (double) (CLEAR_OF_FIXED + 30) * (CLEAR_OF_FIXED + 30)) return null;
+        for (Long where : shelters.where.values()) if (BlockPos.of(where).distSqr(anchor) < (double) CLEAR_OF_FIXED * CLEAR_OF_FIXED) return refuse("near a shelter");
+        for (Long where : places.where.values()) if (BlockPos.of(where).distSqr(anchor) < (double) (CLEAR_OF_FIXED + 30) * (CLEAR_OF_FIXED + 30)) return refuse("near a roadside place");
         // standable: a sturdy natural floor and two clear blocks over it, and the props' plot clear of anything built
         BlockState floor = level.getBlockState(anchor.below());
-        if (!floor.isFaceSturdy(level, anchor.below(), Direction.UP) || !RoadApproaches.natural(floor) || !level.getBlockState(anchor).getFluidState().isEmpty()) return null;
+        // (the surface passes over leaves but stops on a trunk: a spot on a tree is no spot)
+        if (!floor.isFaceSturdy(level, anchor.below(), Direction.UP) || !RoadApproaches.natural(floor) || RoadApproaches.growth(floor)
+            || !level.getBlockState(anchor).getFluidState().isEmpty()) return refuse("no natural floor");
         Spot spot = new Spot(anchor, along, away);
         for (int a = -4; a <= 4; a++) for (int o = 0; o <= 4; o++) for (int up = 0; up <= 2; up++) {
             BlockPos at = spot.offset(new Prop(a, o, up, "", ""));
             BlockState here = level.getBlockState(at);
-            if (!here.isAir() && !(here.canBeReplaced() && here.getFluidState().isEmpty())) return null;
+            // wild growth is cleared while the encounter stands (journey run 59: the Ironhaven-Valewood verge is forest, and a plot of plain air was found nowhere in 320 blocks)
+            if (!here.isAir() && !overgrown(here)) return refuse("something in the way (a trunk, rock or a build)");
         }
         return spot;
     }
@@ -735,7 +768,15 @@ public final class RoadEncounters {
                 Encounter encounter = CATALOG.find(StringArgumentType.getString(ctx, "encounter"));
                 if (encounter == null) { ctx.getSource().sendFailure(Component.literal("No such encounter.")); return 0; }
                 List<CorridorPlan> plans = CorridorRoadFeature.ready(player.serverLevel());
-                for (CorridorPlan plan : plans) {
+                // the road the player is on: the nearest centreline (the first plan in the list was taken before, whichever road the player stood on)
+                CorridorPlan nearestPlan = null;
+                double best = Double.MAX_VALUE;
+                for (CorridorPlan candidate : plans) {
+                    CorridorPlan.Hit h = candidate.nearest(player.getX(), player.getZ());
+                    if (h != null && h.distance() < best) { best = h.distance(); nearestPlan = candidate; }
+                }
+                refusals();
+                for (CorridorPlan plan : nearestPlan == null ? List.<CorridorPlan>of() : List.of(nearestPlan)) {
                     CorridorPlan.Hit hit = plan.nearest(player.getX(), player.getZ());
                     if (hit == null) continue;
                     double[] here = plan.pointAt(hit.s()), on = plan.pointAt(Math.min(plan.length(), hit.s() + 5));
@@ -745,7 +786,7 @@ public final class RoadEncounters {
                     Active active = null;
                     for (int ahead = 12; ahead <= 220 && active == null; ahead += 8)
                         active = start(player.serverLevel(), state(ctx.getSource().getServer()), plans, plan, hit.s() + direction * (ahead - AHEAD), direction, player, encounter);
-                    if (active == null) { ctx.getSource().sendFailure(Component.literal("No fitting spot up the road; walk on a little and try again.")); return 0; }
+                    if (active == null) { String why = refusals(); ctx.getSource().sendFailure(Component.literal("No fitting spot up the road (" + why + "); walk on a little and try again.")); return 0; }
                     Active found = active;
                     ctx.getSource().sendSuccess(() -> Component.literal(encounter.title() + " is waiting at " + found.anchor.toShortString() + "."), true);
                     return 1;

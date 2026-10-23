@@ -86,7 +86,10 @@ public final class RoadsidePlaceGameTests {
         double first = RoadMarkers.firstOpen(plan), last = RoadMarkers.lastOpen(plan), target = first + 0.5 * (last - first);
         check(Math.abs(target - 700) < 2, "the place's share of the road is at the sea: " + target);
         List<Double> shelters = WaysideShelters.positions(plan, WaysideShelters.MAX_GAP, WaysideShelters.EDGE);
-        var plan2 = RoadsidePlaces.plan(plan, List.of(diner, motel));
+        var plan2 = RoadsidePlaces.plan(plan, List.of(diner, motel), (x, z, margin) -> false);
+        // a city's region near the road keeps every spot within reach of it out
+        var nearCity = RoadsidePlaces.plan(plan, List.of(diner), (x, z, margin) -> x > 300);
+        check(nearCity.get("diner").stream().allMatch(c -> plan.pointAt(c)[0] <= 300), "no spot within a city's region: " + nearCity);
         List<Double> a = plan2.get("diner"), b = plan2.get("motel");
         check(!a.isEmpty() && !b.isEmpty(), "both places have somewhere to stand: " + plan2);
         double need = Math.hypot(30, 26) / 2.0 + 12.0;
@@ -122,8 +125,8 @@ public final class RoadsidePlaceGameTests {
             check(north ? site.facing().equals("south") : site.facing().equals("north"), "a lot's front looks at the road: " + site);
             check(Math.min(Math.abs(site.origin().getZ()), Math.abs(site.origin().getZ() + size[1])) > plan.reach(), "a lot never touches the road: " + site);
         }
-        check(RoadsidePlaces.sites(new Flat(69), plan, diner, 200, s -> 64).isEmpty(), "a lot four blocks above the deck is refused: its driveway would need a step");
-        check(!RoadsidePlaces.sites(new Flat(67), plan, diner, 200, s -> 64).isEmpty(), "a lot two blocks above the deck is fine");
+        check(RoadsidePlaces.sites(new Flat(65 + RoadsidePlaces.MAX_STEP_TO_DECK + 1), plan, diner, 200, s -> 64).isEmpty(), "a lot too far above the deck is refused: its driveway would be a climb");
+        check(!RoadsidePlaces.sites(new Flat(65 + RoadsidePlaces.MAX_STEP_TO_DECK), plan, diner, 200, s -> 64).isEmpty(), "a lot a few blocks above the deck is fine");
         helper.succeed();
     }
 
@@ -154,7 +157,17 @@ public final class RoadsidePlaceGameTests {
             BlockPos origin;
             DistrictCatalog.District built;
             try {
-                for (BlockPos at : BlockPos.betweenClosed(new BlockPos(ox - 104, y, oz - 56), new BlockPos(ox + 104, y, oz + 56))) level.setBlock(at, Blocks.STONE.defaultBlockState(), 2);
+                for (BlockPos at : BlockPos.betweenClosed(new BlockPos(ox - 104, y - 2, oz - 56), new BlockPos(ox + 104, y, oz + 56))) level.setBlock(at, Blocks.STONE.defaultBlockState(), 2);
+                // a tall spike of rock in the lot the north side will choose, taller than the diner's own clearing reaches, and a pit just beyond its far edge
+                // (on both sides, so that neither lot is the level one and the north one, searched first, is chosen)
+                int[] size0 = diner.size("south");
+                BlockPos corner = CheckpointPosts.lotBeside(plan, 100.0, size0[0], size0[1], -1).orElseThrow().origin();
+                BlockPos spike = new BlockPos(corner.getX() + size0[0] / 2, y + 1, corner.getZ() + size0[1] / 2);
+                BlockPos pit = new BlockPos(corner.getX() + size0[0] / 2, y, corner.getZ() - 1);
+                BlockPos southCorner = CheckpointPosts.lotBeside(plan, 100.0, size0[0], size0[1], 1).orElseThrow().origin();
+                for (BlockPos at : List.of(spike, new BlockPos(southCorner.getX() + size0[0] / 2, y + 1, southCorner.getZ() + size0[1] / 2)))
+                    for (int up = 0; up < 12; up++) level.setBlock(at.above(up), Blocks.STONE.defaultBlockState(), 2);
+                level.setBlock(pit, Blocks.AIR.defaultBlockState(), 2); level.setBlock(pit.below(), Blocks.AIR.defaultBlockState(), 2);
                 PlacedSites state = new PlacedSites();
                 java.util.function.DoubleToIntFunction deck = s -> y;
                 check(RoadsidePlaces.serve(level, plans, diner, List.of(100.0), ox + 600.0, oz + 600.0, state, 24, deck) == null, "nothing is decided far from a traveller");
@@ -175,6 +188,11 @@ public final class RoadsidePlaceGameTests {
                 BlockPos onDriveway = new BlockPos(mx, y, front + toward * 2);
                 check(level.getBlockState(onDriveway).is(Blocks.GRAY_CONCRETE), "the driveway is surfaced: " + level.getBlockState(onDriveway) + " at " + onDriveway);
                 check(RoadsidePlaces.serve(level, plans, diner, List.of(100.0), ox + 0.5, oz + 0.5, state, 24, deck) == null && DistrictBuilder.count(level, built.id()) == 1, "it is built once");
+                check(north, "with both lots equally rough, the north one (searched first) is chosen: " + outcome);
+                if (north) {
+                    check(level.getBlockState(spike.above(11)).isAir() && level.getBlockState(spike.above(10)).isAir(), "the rock spike in the lot was cut away to the sky, not left over the roof");
+                    check(!level.getBlockState(pit).isAir(), "the pit beyond the lot's edge was graded in: " + level.getBlockState(pit));
+                }
                 var reloaded = PlacedSites.load(state.save(new net.minecraft.nbt.CompoundTag()));
                 check(reloaded.done.equals(state.done) && reloaded.where.equals(state.where), "the placement survives a save and load");
             } catch (RuntimeException error) {
@@ -206,6 +224,23 @@ public final class RoadsidePlaceGameTests {
                 helper.succeed();
             });
         });
+    }
+
+    /** A bed that Lost Cities wrote without its block entity (it is drawn by that alone) gets one when its chunk is first generated (D-141). */
+    @GameTest(template = "empty")
+    public static void aBedWrittenWithoutItsBlockEntityGetsOne(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        BlockPos foot = helper.absolutePos(new BlockPos(1, 2, 1));
+        var chunk = level.getChunkAt(foot);
+        var section = chunk.getSection(chunk.getSectionIndex(foot.getY()));
+        var bed = Blocks.RED_BED.defaultBlockState();
+        section.setBlockState(foot.getX() & 15, foot.getY() & 15, foot.getZ() & 15, bed);   // as a generator writes it: straight into the section, no block entity
+        check(chunk.getBlockEntity(foot, net.minecraft.world.level.chunk.LevelChunk.EntityCreationType.CHECK) == null, "the bed starts without its block entity");
+        check(MissingBlockEntities.repair(chunk) >= 1, "the repair makes it");
+        check(chunk.getBlockEntity(foot, net.minecraft.world.level.chunk.LevelChunk.EntityCreationType.CHECK) instanceof net.minecraft.world.level.block.entity.BedBlockEntity, "the bed has its block entity");
+        check(MissingBlockEntities.repair(chunk) == 0, "a second pass makes nothing");
+        level.setBlock(foot, Blocks.AIR.defaultBlockState(), 2);
+        helper.succeed();
     }
 
     /** The loot op fills a container from a loot table once, the first time it is opened, as vanilla's chests do; the table is seeded by the spot and the world. */
