@@ -139,8 +139,10 @@ final class PathWalker {
             return;
         }
         Vec3 node = nodes.get(next);
+        // the goal itself is reached only within the walk's own margin: a goal 0.6 blocks off with a margin of 0.45 counted as a reached node, and each leg ended before a step (121 legs, journey run 54)
+        double lastReach = flat(nodes.get(nodes.size() - 1), goal) < 0.5 ? Math.min(NODE_REACHED, within) : NODE_REACHED;
         while (flat(me.position(), node) < NODE_REACHED && next < nodes.size() - 1) node = nodes.get(++next);
-        if (flat(me.position(), node) < NODE_REACHED && next == nodes.size() - 1) { next++; return; }
+        if (flat(me.position(), node) < lastReach && next == nodes.size() - 1) { next++; return; }
         // a closed door on the way: face it and open it with a right click, as a person does
         BlockPos nodeBlock = BlockPos.containing(node);
         for (BlockPos at : new BlockPos[]{nodeBlock, nodeBlock.above()}) {
