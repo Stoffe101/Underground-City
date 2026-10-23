@@ -690,7 +690,7 @@ public final class UndergroundGameTests {
         return net.minecraft.world.level.block.Block.getDrops(state, level, pos, null);
     }
 
-    @GameTest(template = "empty")
+    @GameTest(template = "empty", timeoutTicks = 400)
     public static void onlyAFarmerWhoLearnedRestrictedCultivationCanPlantACutting(GameTestHelper helper) {
         var level = helper.getLevel();
         BlockPos ground = helper.absolutePos(new BlockPos(4, 1, 4));
@@ -700,7 +700,9 @@ public final class UndergroundGameTests {
         level.setBlockAndUpdate(ground.east(), Blocks.GLOWSTONE.defaultBlockState());
         // A crop only survives in light 8 or more and the light engine runs between ticks, so wait for the lamp. A test
         // world under a roof, or at night, would otherwise refuse the plant for a reason that has nothing to do with the skill.
-        helper.runAfterDelay(40, () -> plantingBody(helper, ground));
+        // Waited for until the plant could stand there, not for a fixed 40 ticks: a hosted runner 178 ticks behind refused the trained farmer (October 23).
+        helper.runAfterDelay(20, () -> UndergroundGameTests.waitUntil(helper, () -> UndergroundCity.SABLE_CROP.get().defaultBlockState().canSurvive(level, ground.above()), 0,
+            () -> plantingBody(helper, ground)));
     }
 
     private static void plantingBody(GameTestHelper helper, BlockPos ground) {
@@ -714,7 +716,9 @@ public final class UndergroundGameTests {
         check(level.getBlockState(ground.above()).isAir(), "The plant appeared anyway: " + level.getBlockState(ground.above()) + " above " + level.getBlockState(ground)
             + ", skill held: " + SkillService.has(untrained, RestrictedCuttingItem.SKILL));
         learn(untrained, "farmer.fundamentals", "farmer.greenhouse_management", "farmer.restricted_cultivation");
-        check(cutting.useOn(new net.minecraft.world.item.context.UseOnContext(untrained, InteractionHand.MAIN_HAND, hit)).consumesAction(), "A trained farmer could not plant");
+        InteractionResult planted = cutting.useOn(new net.minecraft.world.item.context.UseOnContext(untrained, InteractionHand.MAIN_HAND, hit));
+        check(planted.consumesAction(), "A trained farmer could not plant (result " + planted + ", light " + level.getMaxLocalRawBrightness(ground.above()) + ", the plant could stand there "
+            + UndergroundCity.SABLE_CROP.get().defaultBlockState().canSurvive(level, ground.above()) + ", above the soil " + level.getBlockState(ground.above()) + ")");
         check(level.getBlockState(ground.above()).is(UndergroundCity.SABLE_CROP.get()), "No Sable Leaf plant was placed");
         helper.succeed();
     }
