@@ -1014,9 +1014,8 @@ final class JourneyScenario {
             boolean inside = server(() -> { var r = CrewService.ledger(mc().getSingleplayerServer()).residence(residenceId()); return r != null && r.insideInterior(level().dimension().location().toString(), me().blockPosition()); });
             if (inside) pass("11a enter the rented room through its door"); else Playtest.fail("the walk did not end inside the room");
         });
-        Playtest.queue("look at the barrel", () -> look(Vec3.atCenterOf(F.motelBarrel)));
-        Playtest.wait("aim", 4);
-        Playtest.queue("open the barrel", () -> { Playtest.mouseButton(3, true); Playtest.mouseButton(3, false); });
+        // a right click once the crosshair is on the barrel (one click four ticks after turning missed it on a software-rendered frame)
+        use("open the barrel", () -> F.motelBarrel, () -> mc().screen instanceof AbstractContainerScreen<?> s && !(s instanceof InventoryScreen), 400);
         until("the barrel's screen", () -> mc().screen instanceof AbstractContainerScreen<?> s && !(s instanceof InventoryScreen), 100);
         shot("21-barrel");
         slotClick("the bread (Shift-click into the barrel)", () -> inventorySlotWith((AbstractContainerScreen<?>) mc().screen, st -> st.is(Items.BREAD)), 1, true);
@@ -1047,13 +1046,13 @@ final class JourneyScenario {
 
     private static void learnSkill() {
         Playtest.queue("place the welcome-pack terminal? no: use the room's terminal", () -> { });
+        final BlockPos[] terminal = new BlockPos[1];
         Playtest.queue("the room's terminal", () -> {
             BlockPos motel = server(() -> DistrictBuilder.originOf(level(), "row_motel"));
-            BlockPos terminal = motel.offset(4 + 5 * (F.motelRoom - 1), 0, 1);
-            look(Vec3.atCenterOf(terminal));
+            terminal[0] = motel.offset(4 + 5 * (F.motelRoom - 1), 0, 1);
         });
-        Playtest.wait("aim", 4);
-        Playtest.queue("right click the room's terminal", () -> { Playtest.mouseButton(3, true); Playtest.mouseButton(3, false); });
+        // a right click once the crosshair is on it, as for the barrel
+        use("right click the room's terminal", () -> terminal[0], () -> mc().screen instanceof TerminalScreen, 400);
         until("the terminal opens", () -> mc().screen instanceof TerminalScreen, 100);
         click("SKILLS", true);
         Playtest.wait("draw", 10);
