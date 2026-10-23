@@ -48,6 +48,9 @@ public final class RoadApproaches {
     static final int FAR = 112;
     private static final int FLAGS = Block.UPDATE_CLIENTS;
     private static final Set<String> WAITING = java.util.concurrent.ConcurrentHashMap.newKeySet();
+    /** Checks (40 ticks apart, so about 30 s) a ready ramp waits for the chunks of its far reach before it is laid with what is in the world. */
+    static final int FAR_CHECKS = 15;
+    private static final java.util.Map<String, Integer> FAR_WAITED = new java.util.concurrent.ConcurrentHashMap<>();
     static final BlockState FILL = Blocks.DIRT.defaultBlockState(), PATH = Blocks.DIRT_PATH.defaultBlockState(), AIR = Blocks.AIR.defaultBlockState();
 
     /** A new archipelago world started by this version carries the approaches; an older one never does. */
@@ -76,17 +79,21 @@ public final class RoadApproaches {
                 if (!ready(level, end)) {
                     // said once per end and session: which chunk it is still waiting for, and where the nearest player is (journey run 58 never laid the Ironhaven ramp)
                     if (WAITING.add(key)) {
-                        ChunkPos missing = chunks(end).stream().filter(c -> level.getChunkSource().getChunkNow(c.x, c.z) == null).findFirst().orElse(null);
+                        ChunkPos missing = rampChunks(end).stream().filter(c -> level.getChunkSource().getChunkNow(c.x, c.z) == null).findFirst().orElse(null);
                         var nearest = level.players().stream().min(java.util.Comparator.comparingDouble(p -> Math.hypot(p.getX() - end.x(), p.getZ() - end.z()))).orElseThrow();
                         LOGGER.info("[UC-ROAD] the approach at {} waits for its chunks: {} of {} not loaded yet (first {}); {} is at {}", key,
-                            chunks(end).stream().filter(c -> level.getChunkSource().getChunkNow(c.x, c.z) == null).count(), chunks(end).size(), missing, nearest.getGameProfile().getName(), nearest.blockPosition().toShortString());
+                            rampChunks(end).stream().filter(c -> level.getChunkSource().getChunkNow(c.x, c.z) == null).count(), rampChunks(end).size(), missing, nearest.getGameProfile().getName(), nearest.blockPosition().toShortString());
                     }
                     continue;
                 }
+                // the longer reach (FAR) is read only from chunks already in the world: it is waited for a little, never made (journey runs 58 and 64 waited for all of it and
+                // laid no ramp while the walker came in from the city; the ramp of the first 64 blocks is what a person needs first)
+                boolean far = farReady(level, end);
+                if (!far && FAR_WAITED.merge(key, 1, Integer::sum) < FAR_CHECKS) continue;
                 try {
-                    Result result = build(level, plan, end);
+                    Result result = build(level, plan, end, false);
                     state.where.put(key, BlockPos.containing(end.x(), result.deckY(), end.z()).asLong());
-                    LOGGER.info("[UC-ROAD] approach into the city from {} at {} {}: {}", key, (int) end.x(), (int) end.z(), result);
+                    LOGGER.info("[UC-ROAD] approach into the city from {} at {} {}: {}{}", key, (int) end.x(), (int) end.z(), result, far ? "" : " (the far reach's chunks were not all in the world: read where they were)");
                 } catch (RuntimeException error) {
                     LOGGER.warn("[UC-ROAD] the approach at {} could not be built: {}", key, error.toString());
                 }
@@ -99,15 +106,19 @@ public final class RoadApproaches {
     /** What a build did: the deck's height at the end, where and at what height the city's built ground began, the blocks changed and the columns left alone. */
     record Result(int deckY, int cityAt, int cityLevel, int changed, int leftAlone, int steepest) {}
 
-    /** Reads the approach of one end and lays its ramp. Visible for the road check, which measures an end before and after. */
-    static Result build(ServerLevel level, CorridorPlan plan, CorridorPlan.End end) {
+    /** Reads the approach of one end and lays its ramp, loading every chunk it reads. Visible for the road check, which measures an end before and after on its own server. */
+    static Result build(ServerLevel level, CorridorPlan plan, CorridorPlan.End end) { return build(level, plan, end, true); }
+
+    /** As above; in play ({@code loadAll} false) the ramp's own chunks are in the world already ({@link #ready}) and the far reach is read only where its chunks are. */
+    static Result build(ServerLevel level, CorridorPlan plan, CorridorPlan.End end, boolean loadAll) {
         int deckY = CorridorPlan.deckBlockY(plan.deckHalfAt(end.s()));
-        for (ChunkPos chunk : chunks(end)) level.getChunk(chunk.x, chunk.z);   // already loaded in play (ready); the road check's own server loads them here
+        for (ChunkPos chunk : loadAll ? chunks(end) : rampChunks(end)) level.getChunk(chunk.x, chunk.z);
         // the ground along the centre, until the first thing the city built
         BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos();
         int cityAt = APPROACH, cityLevel = Integer.MIN_VALUE, last = deckY, lastWithin = deckY;
         for (int k = 1; k <= FAR; k++) {
             int x = (int) Math.floor(end.x() + end.dirX() * k), z = (int) Math.floor(end.z() + end.dirZ() * k);
+            if (!loadAll && k > APPROACH && level.getChunkSource().getChunkNow(x >> 4, z >> 4) == null) break;   // never a read that would make the chunk
             int top = top(level, x, z, deckY, p);
             if (top == Integer.MIN_VALUE) continue;
             last = top;
@@ -115,6 +126,12 @@ public final class RoadApproaches {
             if (!natural(level.getBlockState(p.set(x, top, z))) || cityOwned(level, p)) { cityAt = k; cityLevel = top; break; }
         }
         if (cityLevel == Integer.MIN_VALUE) { cityAt = APPROACH; cityLevel = lastWithin; }
+        // a ramp longer than 64 blocks is laid only where every chunk of its band is in the world; otherwise the 64-block ramp it was before the longer reach
+        if (!loadAll && cityAt > APPROACH) {
+            final int reach = cityAt;
+            boolean loaded = band(end, -4, reach + 1, HALF + 1.5).stream().allMatch(c -> level.getChunkSource().getChunkNow(c.x() >> 4, c.z() >> 4) != null);
+            if (!loaded) { cityAt = APPROACH; cityLevel = lastWithin; }
+        }
         int changed = 0, leftAlone = 0, steepest = 0, previous = deckY;
         for (int k = 0; k < cityAt; k++) {
             int target = deckY + (int) Math.round((cityLevel - deckY) * (double) k / cityAt);
@@ -164,9 +181,23 @@ public final class RoadApproaches {
     }
 
     /** Whether all of them are generated and loaded now (never waits, never generates). */
+    /** Whether the ramp's own chunks (its first {@link #APPROACH} blocks and a little of the deck) are in the world: then it can be laid without making one. */
     static boolean ready(ServerLevel level, CorridorPlan.End end) {
+        for (ChunkPos chunk : rampChunks(end)) if (level.getChunkSource().getChunkNow(chunk.x, chunk.z) == null) return false;
+        return true;
+    }
+
+    /** Whether every chunk up to the far reach is in the world too. */
+    static boolean farReady(ServerLevel level, CorridorPlan.End end) {
         for (ChunkPos chunk : chunks(end)) if (level.getChunkSource().getChunkNow(chunk.x, chunk.z) == null) return false;
         return true;
+    }
+
+    /** The chunks of the ramp itself, from just before the road's end to {@link #APPROACH} blocks in. */
+    static Set<ChunkPos> rampChunks(CorridorPlan.End end) {
+        Set<ChunkPos> out = new LinkedHashSet<>();
+        for (Cell cell : band(end, -4, APPROACH + 1, HALF + 1.5)) out.add(new ChunkPos(cell.x() >> 4, cell.z() >> 4));
+        return out;
     }
 
     /** The highest block that holds a person in the column, searched around the deck's height (Integer.MIN_VALUE when there is none); {@code p} is left on it. */

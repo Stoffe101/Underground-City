@@ -62,6 +62,7 @@ public final class RoadMarkerGameTests {
         }
         // a ramp reads up to FAR (112) blocks in for the city's ground: a diagonal one's band crosses some sixteen chunks
         check(chunks.size() <= 20, "A diagonal ramp's reach touches a bounded number of chunks: " + chunks.size());
+        check(chunks.containsAll(RoadApproaches.rampChunks(far)) && RoadApproaches.rampChunks(far).size() < chunks.size(), "The ramp's own chunks are a part of its reach's");
         check(!RoadApproaches.ready(level, far), "An end a million blocks out is not loaded and not ready");
         check(chunks.stream().allMatch(c -> level.getChunkSource().getChunkNow(c.x, c.z) == null), "Asking whether it is ready loaded nothing");
         BlockPos here = helper.absolutePos(BlockPos.ZERO);
