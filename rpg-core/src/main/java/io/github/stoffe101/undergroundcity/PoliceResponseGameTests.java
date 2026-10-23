@@ -150,13 +150,17 @@ public final class PoliceResponseGameTests {
     public static void aPersonWhoSawTheThiefCallsThePoliceButAnOfficerWhoSawDoesNotNeedTo(GameTestHelper helper) {
         var none = new CityBuildings.Response(0.0, 60, 1, 60);
         try (Scene s = new Scene(helper, "uc_pol_c", none)) {
+            // "in plain sight": the template is one block and GameTest clears only three blocks round it, so the street out to the witness is cleared here (October 23: blocks left
+            // at this grid slot by an earlier batch's test stood between them, and no witness saw anything in 400 tries)
+            for (BlockPos at : BlockPos.betweenClosed(s.door.offset(-1, 0, 1), s.door.offset(8, 2, 2))) s.level.setBlock(at, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(), 2);
             TownspersonEntity seer = UndergroundCity.TOWNSPERSON.get().create(s.level);
             seer.moveTo(s.door.getX() + 6.5, s.door.getY(), s.door.getZ() + 1.5, 0, 0);
             s.level.addFreshEntity(seer);
             long now = LockService.clock(s.level.getServer());
             int tries = 0;
             while (PoliceResponse.dispatches() == 0 && tries < 400) PoliceResponse.noticed(s.thief, opened(s.thief, s.door, now + tries++));
-            check(PoliceResponse.dispatches() == 1 && PoliceResponse.dispatchAt(0).why.equals("witness"), "a person in plain sight never called the police in " + tries + " tries");
+            check(PoliceResponse.dispatches() == 1 && PoliceResponse.dispatchAt(0).why.equals("witness"), "a person in plain sight never called the police in " + tries + " tries (sees the thief "
+                + seer.hasLineOfSight(s.thief) + ")");
             check(PoliceResponse.dispatchAt(0).arriveAt >= now + 150 * 20L, "a neighbour's call arrived faster than the slowest class");
             seer.discard();
         }
