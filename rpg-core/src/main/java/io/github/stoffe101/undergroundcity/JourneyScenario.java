@@ -908,6 +908,26 @@ final class JourneyScenario {
             var v = s.snapshot();
             for (int i = 0; i < v.nearby().size(); i++) Playtest.log("JOURNEY home offer " + i + ": " + v.nearby().get(i).id() + " '" + v.nearby().get(i).title() + "'");
         });
+        // a person looks through the pages until a room they can take shows (the list puts them first since D-136, but a run must not depend on that)
+        final int[] paging = {0};
+        final boolean[] pointed = {false};
+        Playtest.queue("page to a free motel room", () -> { paging[0] = 0; pointed[0] = false; }, () -> {
+            if (!(mc().screen instanceof CrewScreen s)) return true;
+            int phase = paging[0]++ % 14;
+            if (phase == 4 && pointed[0]) { Playtest.pressLeft(); pointed[0] = false; }   // the pointer has settled on the arrow
+            if (phase != 0) return false;
+            var v = s.snapshot();
+            for (int i = 0; i < v.nearby().size(); i++) {
+                UcButton b = s.button("rent_" + i);
+                if (v.nearby().get(i).id().contains("motel_") && b != null && b.visible && b.active) return true;
+            }
+            UcButton next = s.button("find_next");
+            if (next == null || !next.visible || !next.active) return true;   // the last page: the next step reports what is missing
+            Playtest.log("JOURNEY no free motel room on this page; clicking the next page");
+            Playtest.moveGui(next.getX() + next.getWidth() / 2, next.getY() + next.getHeight() / 2);
+            pointed[0] = true;
+            return false;
+        }, 200);
         clickAt("Rent on the first free motel room", () -> {
             if (!(mc().screen instanceof CrewScreen s)) return null;
             var v = s.snapshot();
