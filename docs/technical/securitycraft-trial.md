@@ -1,6 +1,6 @@
 # The SecurityCraft trial (D-140)
 
-Status: **experimental, opt-in, not adopted.** SecurityCraft v1.10.2.1 for Minecraft 1.20.1 is pinned as the dev-pack set `securitycraft` (runtime-only, hash-checked, never committed) and no default launch includes it. Core's adapter (`SecurityCraftTrial`) is GameTest-free by design (SecurityCraft is not on the GameTest classpath); it is exercised by one scripted real-client scenario, `-PucPlaytest=security` (`SecurityScenario`), which passed on October 23 (run 11, below). D-121 (SecurityCraft not adopted as a second authority) still stands; whether to adopt anything from this trial is the owner's decision.
+Status: **experimental, opt-in, not adopted (D-152: decided with a measurement of camera viewing, below).** SecurityCraft v1.10.2.1 for Minecraft 1.20.1 is pinned as the dev-pack set `securitycraft` (runtime-only, hash-checked, never committed) and no default launch includes it. Core's adapter (`SecurityCraftTrial`) is GameTest-free by design (SecurityCraft is not on the GameTest classpath); it is exercised by one scripted real-client scenario, `-PucPlaytest=security` (`SecurityScenario`), which passed on October 23 (run 11, below). D-121 (SecurityCraft not adopted as a second authority) still stands; whether to adopt anything from this trial is the owner's decision.
 
 ## Why a trial, and what was looked at first
 
@@ -28,7 +28,7 @@ Core is the authority throughout. SecurityCraft supplies the physical devices, t
 | A lockpick | Still works on a keypad door: it is a door, and Core's lock handles it as any locked street door. | `BuildingGuard.use` |
 | The laser | Core reads it every tick: SecurityCraft's own signal, or anybody standing in the beam's row of blocks. A keyholder walking their own hall raises nothing; anybody else rings the building's alarm through Core's dispatch (`PoliceResponse.raise`) and sounds SecurityCraft's siren for 30 seconds. One trip per 10 seconds per install. | `SecurityCraftTrial.tick`, `tripped` |
 | The camera | Its Allowlist Module names the keyholders (written by Core, rewritten when a keyholder is added): only they can view it. | `allowlist`, `rewriteAllowlist` |
-| What is kept out | Every SecurityCraft **recipe is removed** while the set is loaded (at server start and after a datapack reload; devices come only from Core). A survival player **cannot place** a SecurityCraft block, **cannot use** a SecurityCraft item other than the camera monitor, the manual and keycards, and **no SecurityCraft creature or projectile** (sentry, its bullets, mines, the I.M.S., security boats) enters the world. | `SecurityCraftTrial.place`, `useItem`, `useOnBlock`, `joined`, `removeRecipes` |
+| What is kept out | Every SecurityCraft **recipe is removed** while the set is loaded (at server start and after a datapack reload; devices come only from Core). A survival player **cannot place** a SecurityCraft block, **cannot use** a SecurityCraft item other than the manual and keycards (the camera monitor was allowed until D-152), and **no SecurityCraft creature or projectile** (sentry, its bullets, mines, the I.M.S., security boats) enters the world. | `SecurityCraftTrial.place`, `useItem`, `useOnBlock`, `joined`, `removeRecipes` |
 | Configuration | `content/integrations/securitycraft/config/defaultconfigs/securitycraft-server.toml` (new worlds): codebreaker off, admin tool off, in-world reinforcing off, frame feeds and their force-loading off, every damage that configuration reaches at zero, a one-second passcode cooldown. | staged by the development launch |
 
 Nothing in the trial punishes anybody offline, destroys belongings, or hurts anybody. It installs nothing by itself: an operator chooses the building.
@@ -66,3 +66,16 @@ The run's frames are private (not committed). Looked at: the keypad screen (Secu
 ## Recommendation
 
 Adopt nothing by default yet. If the owner wants physical security devices, the trial shows that SecurityCraft's keypad door, laser and siren can sit under Core's authority with a small adapter and four guards, provided Core places every device. The alternative remains original Core devices (as the alarm panel of D-128 is), which need no second ownership model at all.
+
+## Camera viewing, measured (D-152, October 23)
+
+`-PucPlaytest=sccamera` (`CameraMeasureScenario`), a new furnished archipelago world with the `securitycraft` set: Core fits the trial's devices to an Ironhaven tenement, the player goes 800 blocks away so the camera's surroundings unload, and the camera is viewed through SecurityCraft's own `SecurityCameraBlock.mountCamera` (what its camera monitor calls on the server). The server's numbers are read once a second without waiting for the server thread. Run 2, on a cloud machine with four cores and software rendering (server view distance 12, so SecurityCraft forces 625 chunks round the camera):
+
+| | Before | While one player viewed the camera | After stopping |
+| --- | --- | --- | --- |
+| The mount call | | **held the server thread for 120,388 ms** (the server advanced 29 ticks in two minutes) | |
+| Chunks the server held | 3,137 | up to 5,532 (+2,395: SecurityCraft's forced square and the viewer's own view moved to the camera) | 3,717 |
+| Chunks generated for the first time | | 959 | |
+| Longest tick in a 20-tick window | 32.7 ms | 43 to 342 ms | 26 to 163 ms |
+
+Run 1 had waited for the mount on the client with a 20-second limit and timed out, which is how the freeze was first seen. A faster machine would be faster, but not by two orders of magnitude, and a server with several players and cameras would multiply it. **Camera viewing is therefore refused in the trial (the camera monitor is no longer usable), and SecurityCraft is not adopted (D-152).** Core's cameras (D-146, D-149) are watched by Core with no remote feed and load nothing.

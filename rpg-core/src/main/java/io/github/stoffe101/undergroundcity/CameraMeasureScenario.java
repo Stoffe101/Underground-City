@@ -30,7 +30,9 @@ final class CameraMeasureScenario {
         volatile String error;
         volatile boolean ready;
         volatile Object camera;
-        volatile long mountMillis;
+        volatile long mountMillis = -1, mountStartTick, worstTickNanos;
+        volatile boolean mountDone;
+        volatile String mountError;
         volatile int viewDistance, baseline, peak, generatedWhileViewing, generatedBefore;
     }
 
@@ -54,14 +56,12 @@ final class CameraMeasureScenario {
         return new double[]{max, count == 0 ? 0 : sum / count};
     }
 
+    /** The server's numbers, read from the client thread without waiting for the server (it may be busy for seconds): racy, but they are counters. */
     private static String state(String when) {
-        return JourneyScenario.server(() -> {
-            MinecraftServer server = server();
-            ServerLevel level = server.overworld();
-            double[] t = ticks(server, 20);
-            return String.format(Locale.ROOT, "CAMERA %s: %d chunks held, %d generated for the first time since the start, the last second's ticks: longest %.1f ms, average %.1f ms",
-                when, level.getChunkSource().getLoadedChunksCount(), GENERATED.get(), t[0], t[1]);
-        });
+        MinecraftServer server = server();
+        double[] t = ticks(server, 20);
+        return String.format(Locale.ROOT, "CAMERA %s: %d chunks held, %d generated for the first time since the start, server tick %d, the last 20 ticks: longest %.1f ms, average %.1f ms",
+            when, server.overworld().getChunkSource().getLoadedChunksCount(), GENERATED.get(), server.getTickCount(), t[0], t[1]);
     }
 
     static void build() {
@@ -105,30 +105,34 @@ final class CameraMeasureScenario {
             Playtest.log(state("before viewing, 800 blocks from the camera"));
         });
 
-        Playtest.queue("view the camera remotely, as SecurityCraft's camera monitor does (SecurityCameraBlock.mountCamera on the server)", () -> {
-            String outcome = JourneyScenario.server(() -> {
-                ServerLevel level = server().overworld();
+        Playtest.queue("view the camera remotely, as SecurityCraft's camera monitor does (SecurityCameraBlock.mountCamera on the server, without waiting for it)", () -> {
+            MinecraftServer server = server();
+            f.viewDistance = server.getPlayerList().getViewDistance();
+            f.mountStartTick = server.getTickCount();
+            server.execute(() -> {
+                ServerLevel level = server.overworld();
                 BlockPos cam = f.install.cameras.get(0);
-                f.viewDistance = server().getPlayerList().getViewDistance();
+                long started = System.nanoTime();
                 try {
                     Object block = level.getBlockState(cam).getBlock();
-                    var mount = block.getClass().getMethod("mountCamera", Level.class, BlockPos.class, Player.class);
-                    long started = System.nanoTime();
-                    mount.invoke(block, level, cam, me());
-                    f.mountMillis = (System.nanoTime() - started) / 1_000_000L;
+                    block.getClass().getMethod("mountCamera", Level.class, BlockPos.class, Player.class).invoke(block, level, cam, me());
                     f.camera = me().getCamera();
-                    return "mounted in " + f.mountMillis + " ms; the player's camera is now " + f.camera.getClass().getSimpleName();
-                } catch (ReflectiveOperationException | RuntimeException error) { return "failed: " + error; }
+                } catch (ReflectiveOperationException | RuntimeException error) { f.mountError = error.toString(); }
+                finally { f.mountMillis = (System.nanoTime() - started) / 1_000_000L; f.mountDone = true; }
             });
-            Playtest.log("CAMERA " + outcome);
-            if (outcome.startsWith("failed")) { Playtest.fail("the camera could not be viewed: " + outcome); Playtest.finish(); }
+        });
+        Playtest.queue("the mount call returns (the server thread is in it until then)", () -> { }, () -> f.mountDone, 20 * 600);
+        Playtest.queue("the mount", () -> {
+            Playtest.log("CAMERA the mount call took " + f.mountMillis + " ms on the server thread" + (f.mountError == null ? "; the player's camera is " + (f.camera == null ? "unchanged" : f.camera.getClass().getSimpleName()) : "; failed: " + f.mountError));
+            if (f.mountError != null) { Playtest.fail("the camera could not be viewed: " + f.mountError); Playtest.finish(); }
         });
         for (int second = 1; second <= 20; second++) {
             final int s = second;
             Playtest.wait("a second of viewing", 20);
             Playtest.queue("viewing, second " + s, () -> {
-                int held = JourneyScenario.server(() -> server().overworld().getChunkSource().getLoadedChunksCount());
-                f.peak = Math.max(f.peak, held);
+                MinecraftServer server = server();
+                f.peak = Math.max(f.peak, server.overworld().getChunkSource().getLoadedChunksCount());
+                for (long nanos : server.tickTimes) f.worstTickNanos = Math.max(f.worstTickNanos, nanos);
                 Playtest.log(state("viewing, second " + s));
             });
             if (second == 5) {
@@ -137,6 +141,7 @@ final class CameraMeasureScenario {
             }
         }
         Playtest.queue("stop viewing (SecurityCamera.stopViewing)", () -> {
+            if (f.camera == null || f.camera == me()) { Playtest.log("CAMERA no camera entity to stop viewing"); return; }
             String outcome = JourneyScenario.server(() -> {
                 try {
                     f.camera.getClass().getMethod("stopViewing", ServerPlayer.class).invoke(f.camera, me());
@@ -153,8 +158,8 @@ final class CameraMeasureScenario {
         }
         Playtest.queue("summary", () -> {
             int expected = (2 * f.viewDistance + 1) * (2 * f.viewDistance + 1);
-            Playtest.log(String.format(Locale.ROOT, "CAMERA summary: view distance %d, so SecurityCraft forces %d chunks round the camera; the server held %d chunks before and at most %d while one player viewed it (+%d); %d chunks were generated for the first time while it was viewed; the mount call took %d ms",
-                f.viewDistance, expected, f.baseline, f.peak, f.peak - f.baseline, f.generatedWhileViewing - f.generatedBefore, f.mountMillis));
+            Playtest.log(String.format(Locale.ROOT, "CAMERA summary: view distance %d, so SecurityCraft forces %d chunks round the camera; the server held %d chunks before and at most %d while one player viewed it (+%d); %d chunks were generated for the first time while it was viewed; the mount call held the server thread %d ms; the longest tick seen while viewing %.0f ms",
+                f.viewDistance, expected, f.baseline, f.peak, f.peak - f.baseline, f.generatedWhileViewing - f.generatedBefore, f.mountMillis, f.worstTickNanos / 1_000_000.0));
         });
     }
 }

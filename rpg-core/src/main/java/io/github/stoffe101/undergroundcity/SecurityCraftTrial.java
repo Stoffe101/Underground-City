@@ -70,10 +70,10 @@ import java.util.UUID;
  * <b>keyholder</b> Core named is an ordinary entry; the same code typed by anybody else is an entry into a building that is not theirs, a quiet break-in that Core's police,
  * witnesses, alarm panels, heat and stash all answer exactly as they answer a picked lock. A lockpick still works on a keypad door (it is a door), through Core's lock. The laser
  * across the hall is SecurityCraft's detection; Core reads it, decides whether whoever crossed it belongs there, and if not rings the building's alarm (Core's dispatch) and
- * the SecurityCraft siren with it. A camera shows its feed only to the keyholders, through SecurityCraft's own allowlist that Core writes.
+ * the SecurityCraft siren with it. A camera is a device Core watches (D-146); its feed cannot be viewed (D-152: viewing one held the server thread for two minutes).
  *
  * <p>What is kept out: every SecurityCraft recipe is removed while the trial runs (devices come only from Core), and a player cannot place a SecurityCraft block, use a
- * SecurityCraft item other than the camera monitor, the manual and keycards, or bring a SecurityCraft entity (sentry, mine, I.M.S., boat) into the world. Lethal devices, offline
+ * SecurityCraft item other than the manual and keycards, or bring a SecurityCraft entity (sentry, mine, I.M.S., boat) into the world. Lethal devices, offline
  * punishment and a second lock or ownership system are not part of the trial.
  */
 @Mod.EventBusSubscriber(modid = UndergroundCity.MOD_ID)
@@ -82,8 +82,9 @@ public final class SecurityCraftTrial {
     static final String MOD = "securitycraft", KEY = "underground_city_securitycraft_trial";
     static final String SYSTEM_NAME = "UC_Security";
     static final UUID SYSTEM_UUID = UUID.nameUUIDFromBytes("underground_city:securitycraft_system".getBytes(java.nio.charset.StandardCharsets.UTF_8));
-    /** SecurityCraft items a player may still use: viewing an allowed camera, reading the manual, a Core-issued keycard. */
-    static final Set<String> USABLE = Set.of("camera_monitor", "sc_manual", "keycard_lv1", "keycard_lv2", "keycard_lv3", "keycard_lv4", "keycard_lv5", "limited_use_keycard", "keycard_holder");
+    /** SecurityCraft items a player may still use: reading the manual, a Core-issued keycard. */
+    // the camera monitor is not among them (D-152): viewing a camera held the server thread for two minutes and loaded 2,395 chunks in the camera measurement (sccamera run 2)
+    static final Set<String> USABLE = Set.of("sc_manual", "keycard_lv1", "keycard_lv2", "keycard_lv3", "keycard_lv4", "keycard_lv5", "limited_use_keycard", "keycard_holder");
     /** How long the siren sounds after a trip, and the least time between two trips of one install. */
     static final int SIREN_TICKS = 600, TRIP_COOLDOWN = 200, CODE_DIGITS = 6;
 
