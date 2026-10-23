@@ -32,7 +32,7 @@ In PowerShell:
 ```
 git clone https://github.com/Stoffe101/Underground-City.git
 cd Underground-City
-git checkout feature/economy-property-progression
+git checkout feature/world-playability-overhaul
 .\gradlew.bat runServer -PucAcceptEula=true
 ```
 
