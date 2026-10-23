@@ -810,7 +810,8 @@ public final class TerminalScreen extends UcScreen {
         String heading = data.counter() ? data.shopTitle().toUpperCase(Locale.ROOT) : data.wayside() ? "WAYSIDE PROVISIONS" : exchange ? capitalize(data.region()).toUpperCase(Locale.ROOT) + " EXCHANGE" : "REGIONAL EXCHANGE";
         UcUi.display(g, font, heading, cx, y, UcUi.LEGAL);
         int subtitleX = cx + UcUi.displayWidth(font, heading) + 8;
-        String subtitle = data.counter() ? "Shared with the city's other shops of its kind; open while the shopkeeper is in"
+        // true at every counter, a city's or a roadside place's (the roadside lines are their place's alone, and the longer line was cut off at 1280 x 720: journey run 65)
+        String subtitle = data.counter() ? "Open while the shopkeeper is in"
             : data.wayside() ? "A few basics, shared with " + capitalize(data.city().isEmpty() ? "the city" : data.city()) + "'s desks" : "Shared stock, refilled during active play";
         UcUi.text(g, font, UcUi.fit(font, subtitle, cx + cw - subtitleX), subtitleX, y, UcUi.DIM);
         UcUi.well(g, cx, cy + 40, cw, ch - 40);
