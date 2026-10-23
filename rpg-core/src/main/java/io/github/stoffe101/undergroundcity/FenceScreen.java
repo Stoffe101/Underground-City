@@ -129,7 +129,9 @@ public final class FenceScreen extends UcScreen {
             ? "Pays " + quote.ratePercent() + "% of what goods are worth; " + quote.sameCityRatePercent() + "% for goods taken in " + TerminalScreenText.capitalize(quote.city()) + ", and that gets noticed."
             : "Not dealing at this hour. Come back after dark.";
         UcUi.wrapped(g, font, terms, x, y, w, quote.about() ? UcUi.SOFT : UcUi.WARN, 2);
-        if (!quote.blurb().isEmpty()) UcUi.wrapped(g, font, quote.blurb(), x, y + 20, w, UcUi.DIM, 1);
+        if (quote.about() && !quote.rows().isEmpty() && quote.total() > quote.budget()) {
+            UcUi.wrapped(g, font, "Short of cash tonight: " + quote.budget() + " of the " + quote.total() + " credits it would take. A sale is cut to what it can pay; the rest waits for its budget to refill.", x, y + 20, w, UcUi.WARN, 1);
+        } else if (!quote.blurb().isEmpty()) UcUi.wrapped(g, font, quote.blurb(), x, y + 20, w, UcUi.DIM, 1);
         int top = listTop();
         if (quote.rows().isEmpty()) {
             UcUi.wrapped(g, font, "You carry nothing this fence buys. They take only goods marked stolen, from your pockets (not from a backpack), and only things worth something.", x, top + 4, w, UcUi.DIM, 3);
@@ -149,7 +151,10 @@ public final class FenceScreen extends UcScreen {
             boolean home = row.fromCity().equals(quote.city());
             UcUi.text(g, font, UcUi.fit(font, "taken in " + TerminalScreenText.capitalize(row.fromCity()) + (home ? ", here" : ""), nameRight - (x + 26)), x + 26, ry + 13, home ? UcUi.UNDERGROUND_TEXT : UcUi.DIM);
             UcUi.textRight(g, font, row.unit() + " each", px + pw - PAD - 64, ry + 3, UcUi.SOFT);
-            UcUi.textRight(g, font, row.total() + " cr", px + pw - PAD - 64, ry + 13, UcUi.AMBER);
+            // what the fence can pay for now, on the row itself: the budget used to be only in the footer, and a short budget looked the same as a full one
+            long payable = Math.min(row.count(), row.unit() <= 0 ? 0 : quote.budget() / row.unit());
+            if (!quote.about() || payable >= row.count()) UcUi.textRight(g, font, row.total() + " cr", px + pw - PAD - 64, ry + 13, UcUi.AMBER);
+            else UcUi.textRight(g, font, payable == 0 ? "not now" : "only " + payable + " now", px + pw - PAD - 64, ry + 13, UcUi.WARN);
         }
         if (quote.rows().size() > rows) UcUi.textRight(g, font, (scroll + 1) + "-" + Math.min(quote.rows().size(), scroll + rows) + " of " + quote.rows().size(), x + w, top - 10, UcUi.DIM);
     }
