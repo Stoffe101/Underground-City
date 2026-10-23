@@ -13,8 +13,8 @@ import net.minecraftforge.fml.common.Mod;
 import org.slf4j.Logger;
 
 /**
- * Beds that Lost Cities draws have no block entity, and a bed is drawn by its block entity alone: the October 23 photographs showed the tenement bedrooms' beds as plain grey blocks
- * (D-141). Lost Cities writes a building's blocks straight into the generating chunk, which does not make the block entities that vanilla's own placement would, and the server
+ * Beds that Lost Cities draws have no block entity, and a bed is drawn by its block entity alone, so they cannot be drawn at all (D-141; read back from a generated world. The
+ * "grey bed" of the first photographs was the bedside alarm clock in front of the camera). Lost Cities writes a building's blocks straight into the generating chunk, which does not make the block entities that vanilla's own placement would, and the server
  * makes a missing one only when something asks for it, after the chunk has gone to the client without it.
  *
  * <p>So when a chunk is first generated, before it is sent to anybody, each bed in it gets the block entity it should have had. A chunk's sections are skipped unless their palette
