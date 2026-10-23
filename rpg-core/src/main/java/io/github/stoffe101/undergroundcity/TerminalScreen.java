@@ -368,7 +368,8 @@ public final class TerminalScreen extends UcScreen {
         if (skills) {
             selectedSkill = Math.max(0, Math.min(selectedSkill, tree().size() - 1));
             TerminalData.SkillRow row = tree().get(selectedSkill);
-            unlock.label(row.state() == 2 ? "Unlocked" : "Unlock: " + row.cost() + (thiefView() ? " Thief" : "") + (row.cost() == 1 ? " point" : " points")).icon(row.state() == 2 ? UcUi.Icon.CHECK : UcUi.Icon.POINT);
+            // the detail line beside it already says "Thief points"; with the word the label overran its button at GUI scale 3
+            unlock.label(row.state() == 2 ? "Unlocked" : "Unlock: " + row.cost() + (row.cost() == 1 ? " point" : " points")).icon(row.state() == 2 ? UcUi.Icon.CHECK : UcUi.Icon.POINT);
             unlock.active = terminalPosition != null && row.state() == 1;
             unlock.tooltip(row.state() == 2 ? "" : row.reason());
             unlock.setX(cx + cw - 8 - 130); unlock.setY(cy + ch - 28); unlock.setWidth(130);

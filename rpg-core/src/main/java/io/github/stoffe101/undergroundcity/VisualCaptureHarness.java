@@ -196,7 +196,8 @@ public final class VisualCaptureHarness {
             rows.add(new TerminalData.SkillRow(node.id(),node.branch(),node.title(),node.description(),node.cost(),node.minLevel(),
                 state,state==2||blocker==null?"":blocker,node.requires(),node.shortTitle(),node.effectSummary()));
         }
-        int xp=ProgressionRules.thiefXpAtLevel(level)+ProgressionRules.THIEF_XP_STEP;
+        // three quarters of the way through the level (a whole step from its start is already level 2 at level 1: "80 / 80 XP, L1" at 1920x1080 GUI 3)
+        int xp=ProgressionRules.thiefXpAtLevel(level)+(ProgressionRules.thiefXpAtLevel(level+1)-ProgressionRules.thiefXpAtLevel(level))*3/4;
         TerminalData base=farmerData();
         return new TerminalData(base.city(),base.career(),base.level(),base.xp(),base.balance(),base.economy(),base.active(),base.foreignVisits(),base.region(),base.jobs(),base.offers(),
             base.skillPoints(),base.skills(),base.contacts(),base.laws(),base.heat(),base.lawSummary(),base.journey(),base.outlet(),
@@ -207,7 +208,7 @@ public final class VisualCaptureHarness {
         return switch(pose) {
             case "casing-novice" -> new Casing.Report("Apartment block","Ironhaven",2,"a deadbolt","A lockpick will do.",true,-1,-1,-1,"",-1,-1,false,0);
             case "casing-locked" -> new Casing.Report("High-value premises","Blackwater",6,"a high-security lock","A high-security lock. Lockpicks are no use on it: it needs a Pro Pick Set.",false,-1,-1,-1,"",-1,-1,false,1);
-            default -> new Casing.Report("Apartment tower","Blackwater",4,"a secured lock with a spool pin","A lockpick will do, with care: it has 1 spool pin.",true,3,2,1,"Empty from about 09:00 (in 3 hours)",2,1,true,2);
+            default -> new Casing.Report("Apartment tower","Blackwater",4,"a secured lock with a spool pin","A lockpick will do, with care: it has 1 spool pin.",true,3,2,1,"About 09:00 (in 3 h)",2,1,true,2);
         };
     }
     /** A level-9 farmer built from the real tree: the foundation, a legal skill, the controlled crop and the logistics skill learned, one point free. */

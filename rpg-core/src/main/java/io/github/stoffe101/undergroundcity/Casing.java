@@ -84,7 +84,8 @@ public final class Casing {
             long at = hourStart + h * 1000L + 700L;   // well into the hour, after everybody's own minute of coming and going
             if (peopleIn(level, building, at) == 0) {
                 int hour = PopulationPlan.hourOf(at);
-                return "Empty from about " + String.format(Locale.ROOT, "%02d:00", hour) + (h == 1 ? " (within the hour)" : " (in " + h + " hours)");
+                // the card's label already says "Empty", and the column is narrow at GUI scale 2 ("Empty from about 09:00 (in 3 ho..." on a 1280x720 capture)
+                return "About " + String.format(Locale.ROOT, "%02d:00", hour) + (h == 1 ? " (soon)" : " (in " + h + " h)");
             }
         }
         return "Somebody is always in";

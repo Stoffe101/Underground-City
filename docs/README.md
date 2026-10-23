@@ -80,6 +80,8 @@ The docs here distinguish **confirmed product direction**, **design proposals**,
 - [Sprint report, October 20 to 21, 2026: world, playability and modpack overhaul after the first human playtest](production/world-playability-overhaul.md)
 - [Sprint report, October 21, 2026: furnished cities, security and police, a hybrid resource economy, residents](production/living-cities-overhaul.md)
 - [Sprint report, October 22 to 23, 2026: gameplay completion, living world and integration pass, with the first-player journey](production/gameplay-completion-pass.md)
+- [Sprint report, October 23, 2026 (second pass): roadside places, road encounters and the SecurityCraft trial](production/living-world-roadside.md)
+- [Sprint report, October 23, 2026 (third pass): the Thief track, burglary, security, the SecurityCraft decision and the crop's real name](production/thief-progression-pass.md)
 
 ## Legal and assets
 
