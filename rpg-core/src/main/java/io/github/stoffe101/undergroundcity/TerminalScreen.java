@@ -140,6 +140,7 @@ public final class TerminalScreen extends UcScreen {
         int ty = y + 8;
         boolean registered = !data.city().equals("UNREGISTERED");
         int x = px + PAD;
+        int leftEnd = x;   // where the left-hand group ends: the place on the right gives way to it (a 1280x720 journey frame showed "1 skill poin" run into "Now in Ironhaven")
         if (registered) {
             UcUi.icon(g, UcUi.careerIcon(data.career()), x, y + 4, UcUi.careerColor(data.career()));
             String level = capitalize(data.career()).toUpperCase(Locale.ROOT) + " L" + data.level();
@@ -148,13 +149,18 @@ public final class TerminalScreen extends UcScreen {
             UcUi.bar(g, bx, ty, 64, 7, ProgressionRules.levelProgress(data.xp()), UcUi.LEGAL);
             String xp = data.xp() + " XP";
             UcUi.text(g, font, xp, bx + 70, ty, UcUi.DIM);
+            leftEnd = bx + 70 + font.width(xp);
             if (data.skillPoints() > 0) {
                 int sx = bx + 70 + font.width(xp) + 10;
+                String points = data.skillPoints() + (data.skillPoints() == 1 ? " skill point" : " skill points");
                 UcUi.icon(g, UcUi.Icon.POINT, sx, y + 4, UcUi.AMBER);
-                UcUi.text(g, font, data.skillPoints() + (data.skillPoints() == 1 ? " skill point" : " skill points"), sx + 18, ty, UcUi.AMBER);
+                UcUi.text(g, font, points, sx + 18, ty, UcUi.AMBER);
+                leftEnd = sx + 18 + font.width(points);
             }
         } else {
-            UcUi.text(g, font, "Register to see orders, skills and trade.", x, ty, UcUi.DIM);
+            String hint = "Register to see orders, skills and trade.";
+            UcUi.text(g, font, hint, x, ty, UcUi.DIM);
+            leftEnd = x + font.width(hint);
         }
         int right = px + pw - PAD;
         String credits = data.economy() ? String.format(Locale.ROOT, "%.0f", data.balance()) : "OFFLINE";
@@ -162,10 +168,14 @@ public final class TerminalScreen extends UcScreen {
         UcUi.displayRight(g, font, credits, right - 0, ty, data.economy() ? UcUi.AMBER : UcUi.UNDERGROUND_TEXT);
         UcUi.icon(g, UcUi.Icon.CREDITS, right - cw2 - 19, y + 4, data.economy() ? UcUi.AMBER : UcUi.UNDERGROUND_TEXT);
         String where = data.counter() ? "At the counter" : data.wayside() ? "Now at a wayside desk" : data.region().isEmpty() ? "Now outside a city" : "Now in " + capitalize(data.region());
-        int wx = right - cw2 - 19 - 14 - font.width(where);
-        if (wx > px + pw / 2) {
-            UcUi.text(g, font, where, wx, ty, UcUi.DIM);
-            UcUi.icon(g, UcUi.Icon.PIN, wx - 17, y + 4, UcUi.DIM);
+        String shortWhere = data.counter() ? "Counter" : data.wayside() ? "Wayside desk" : data.region().isEmpty() ? "Outside" : capitalize(data.region());
+        for (String text : new String[] {where, shortWhere}) {
+            int wx = right - cw2 - 19 - 14 - font.width(text);
+            if (wx - 17 >= leftEnd + 12) {
+                UcUi.text(g, font, text, wx, ty, UcUi.DIM);
+                UcUi.icon(g, UcUi.Icon.PIN, wx - 17, y + 4, UcUi.DIM);
+                break;
+            }
         }
     }
 

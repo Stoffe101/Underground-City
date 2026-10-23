@@ -7,7 +7,8 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 
 /**
  * Moves the game's corner notices out of the status stack's way while the stack is drawn ({@link HudLayout#toastShift}): the whole toast column is shifted before the game draws it and put
- * back afterwards ({@code mixin.ToastComponentMixin}). On a screen (a terminal, the inventory) the stack is not drawn and the toasts stay in their corner, as the game places them.
+ * back afterwards ({@code mixin.ToastComponentMixin}). On a screen the stack is not drawn and the toasts stay in their corner, as the game places them, unless that corner is the
+ * screen's panel ({@link #hidden}).
  */
 @OnlyIn(Dist.CLIENT)
 public final class ToastPlacement {
@@ -15,8 +16,21 @@ public final class ToastPlacement {
 
     private static boolean pushed;
 
-    /** True while no toast may be drawn at all: a timed screen (the lock, the trace) is open, and a notice over a pad costs the round. */
-    public static boolean hidden() { return ClientNotice.timed(Minecraft.getInstance()); }
+    /**
+     * True while no toast may be drawn at all: a timed screen (the lock, the trace) is open, and a notice over a pad costs the round; or a screen is open whose panel the toast column would
+     * cover (a counter, a terminal, a chest on a small window), where a notice hid prices and buy buttons. Our notices wait meanwhile ({@link ClientNotice}); the game's own are in the chat.
+     */
+    public static boolean hidden() { return ClientNotice.held(Minecraft.getInstance()); }
+
+    /** True when the open screen has a panel the toast column would stand over. */
+    static boolean coversPanel(Minecraft mc) {
+        if (mc.screen == null) return false;
+        int w = mc.getWindow().getGuiScaledWidth();
+        if (mc.screen instanceof UcScreen screen) return HudLayout.toastsCoverPanel(w, screen.panelLeft(), screen.panelWidth());
+        if (mc.screen instanceof net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<?> screen)
+            return HudLayout.toastsCoverPanel(w, screen.getGuiLeft(), screen.getXSize());
+        return false;
+    }
 
     /** Called before the game draws its toasts (not when {@link #hidden}). */
     public static void begin(GuiGraphics g) {

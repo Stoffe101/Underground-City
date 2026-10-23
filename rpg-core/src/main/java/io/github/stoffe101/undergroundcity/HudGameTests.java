@@ -220,6 +220,18 @@ public final class HudGameTests {
         helper.succeed();
     }
 
+    /** Corner notices wait while they would cover an open screen's panel (a journey's screenshot: three notices over a counter's buy buttons at 1280x720), and show where it leaves the corner free. */
+    @GameTest(template = "empty")
+    public static void cornerNoticesWaitRatherThanCoverAScreensButtons(GameTestHelper helper) {
+        int counterW = 470, terminalW = 632;
+        check(HudLayout.toastsCoverPanel(640, (640 - counterW) / 2, counterW), "1280x720 GUI 2: the counter's panel reaches under the notices");
+        check(HudLayout.toastsCoverPanel(640, (640 - terminalW) / 2, terminalW), "1280x720 GUI 2: so does the terminal's");
+        check(!HudLayout.toastsCoverPanel(640, (640 - 176) / 2, 176), "1280x720 GUI 2: the inventory leaves the corner free");
+        check(!HudLayout.toastsCoverPanel(1720, (1720 - 760) / 2, 760), "3440x1440 GUI 2: a terminal leaves the corner free");
+        check(!HudLayout.toastsCoverPanel(640, 0, 0), "No panel, nothing covered");
+        helper.succeed();
+    }
+
     private static void check(boolean condition, String reason) {
         if (!condition) throw new AssertionError(reason);
     }

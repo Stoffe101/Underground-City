@@ -22,7 +22,8 @@ public final class RegistrationService {
         CitizenState state = CitizenState.get(player.server);
         if (!state.register(player.getUUID(), cityId, careerId)) return Outcome.ALREADY_REGISTERED;
         int given = StarterKits.INSTANCE.grant(player, careerId);
-        player.sendSystemMessage(Component.literal("Registered with " + cityId + " as " + careerId + ". Welcome pack: " + given + " items, including an Operations Terminal."));
+        player.sendSystemMessage(Component.literal("You are a citizen of " + (cityId.isEmpty() ? "" : Character.toUpperCase(cityId.charAt(0)) + cityId.substring(1)) + ", working as a " + Dialogue.careerTitle(careerId).toLowerCase(Locale.ROOT)
+            + ". Welcome pack: " + given + " items, including an Operations Terminal."));
         return Outcome.REGISTERED;
     }
 

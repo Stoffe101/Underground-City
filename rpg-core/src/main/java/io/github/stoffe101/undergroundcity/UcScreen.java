@@ -37,6 +37,9 @@ public abstract class UcScreen extends Screen {
     protected int bodyW() { return pw - 2 * PAD; }
     /** The right edge of the panel, for review captures that place something beside it. */
     int panelRight() { return px + pw; }
+    /** The panel's left edge and width (corner notices wait while they would cover it: {@link ToastPlacement}). */
+    int panelLeft() { return px; }
+    int panelWidth() { return pw; }
     protected int bodyBottom() { return py + ph - (showFooter() ? FOOTER : 0) - 8; }
     protected int bodyH() { return bodyBottom() - bodyY(); }
 

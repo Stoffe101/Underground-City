@@ -117,6 +117,15 @@ final class HudLayout {
         return new int[] {0, 0};
     }
 
+    /**
+     * True when the toast column, at the top right, would stand over an open screen's panel (x from {@code panelX}, {@code panelW} wide): the journey's screenshots at 1280x720 showed three
+     * notices over a counter's prices and buy buttons and over a terminal's header and an exchange row's buttons, just after a delivery, when a new player wants to buy. A panel centred
+     * on a large window leaves the corner free, and the notices are drawn as usual there.
+     */
+    static boolean toastsCoverPanel(int screenW, int panelX, int panelW) {
+        return panelW > 0 && panelX + panelW > screenW - TOAST_WIDTH;
+    }
+
     private static int stackHeight(Card[] cards, boolean[] shown) {
         int total = 0, count = 0;
         for (int i = 0; i < cards.length; i++) if (shown[i]) { total += cards[i].height(); count++; }
