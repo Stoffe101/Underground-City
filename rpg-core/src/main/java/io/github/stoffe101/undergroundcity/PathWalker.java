@@ -25,7 +25,7 @@ final class PathWalker {
     private final double within;
     private final String label;
     private List<Vec3> nodes = new ArrayList<>();
-    private int next, ticks, sinceProgress, replans, legs, jumps, doors, planWait;
+    private int next, ticks, sinceProgress, replans, legs, jumps, doors, planWait, jumpHold;
     private double best = Double.MAX_VALUE;
     private int bestNode = -1;
     private boolean done, failed, keysDown, planning;
@@ -66,9 +66,18 @@ final class PathWalker {
     }
 
     private void release() {
+        if (jumpHold > 0) { Playtest.keyUp("space"); jumpHold = 0; }
         if (!keysDown) return;
         Playtest.keyUp("w");
         keysDown = false;
+    }
+
+    /** A jump is the Space key held for a few ticks: the game reads whether it is down at a tick, so a press and release in one instant jumps nothing. */
+    private void jump() {
+        if (jumpHold > 0) return;
+        Playtest.keyDown("space");
+        jumpHold = 4;
+        jumps++;
     }
 
     private void finish(boolean fail, String why) {
@@ -84,6 +93,7 @@ final class PathWalker {
         var me = mc.player;
         if (me == null || done) return;
         ticks++;
+        if (jumpHold > 0 && --jumpHold == 0) Playtest.keyUp("space");
         Vec3 goal = target.get();
         if (goal == null) { finish(true, "the target is gone"); return; }
         double left = flat(me.position(), goal);
@@ -131,14 +141,14 @@ final class PathWalker {
         me.yHeadRot = yaw;
         me.setXRot(6f);
         if (!keysDown) { Playtest.focusWindow(); Playtest.keyDown("w"); keysDown = true; }
-        if (node.y > me.getY() + 0.6 && me.onGround() && ticks % 5 == 0) { Playtest.tap("space"); jumps++; }
+        if (node.y > me.getY() + 0.6 && me.onGround()) jump();
         // progress is moving along the route (a later waypoint, or closer to the current one), not getting closer to the target: a route round a building goes away from it first
         double toNode = flat(me.position(), node);
         if (next > bestNode) { bestNode = next; best = toNode; sinceProgress = 0; }
         else if (toNode < best - 0.3) { best = toNode; sinceProgress = 0; }
         else if (++sinceProgress > STUCK_TICKS) {
             sinceProgress = 0;
-            if (me.horizontalCollision && me.onGround()) { Playtest.tap("space"); jumps++; }
+            if (me.horizontalCollision && me.onGround()) jump();
             if (++replans > MAX_REPLANS) { finish(true, String.format(java.util.Locale.ROOT, "stuck %.1f blocks from the target at %s", left, me.blockPosition().toShortString())); return; }
             release();
             plan();

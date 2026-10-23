@@ -20,7 +20,7 @@ final class RoadWalker {
     private boolean forward, sprinting;
     private long startGameTime = -1;
     private int ownTicks;
-    private int waitingForChunks, bridgeTicks, jumps, stuckTicks, nextMilestone = 200, walkingTicks, swimTicks;
+    private int waitingForChunks, bridgeTicks, jumps, stuckTicks, nextMilestone = 200, walkingTicks, swimTicks, jumpHold;
     private double maxDeviation, lastX = Double.NaN, lastZ = Double.NaN, movedWindow;
     private int windowTicks;
     private boolean done, failed;
@@ -44,6 +44,7 @@ final class RoadWalker {
         if (player == null || mc.level == null || done) return;
         if (startGameTime < 0) { startGameTime = 0; Playtest.focusWindow(); }
         ownTicks++;
+        if (jumpHold > 0 && --jumpHold == 0) Playtest.keyUp("space");   // a jump is the key held for a few ticks, not a tap the game never sees
         Vec3 position = player.position();
         CorridorPlan.Hit hit = plan.project(position.x, position.z);
         progress = dir > 0 ? Math.max(progress, hit.s()) : Math.min(progress, hit.s());
@@ -75,7 +76,7 @@ final class RoadWalker {
         if (windowTicks >= 20) {
             if (movedWindow < 0.6) stuckTicks += windowTicks; else stuckTicks = 0;
             movedWindow = 0; windowTicks = 0;
-            if (stuckTicks >= STUCK_JUMP_TICKS) { Playtest.tap("space"); jumps++; }
+            if (stuckTicks >= STUCK_JUMP_TICKS) { Playtest.keyDown("space"); jumpHold = 4; jumps++; }
             if (stuckTicks == STUCK_JUMP_TICKS) diagnose(mc, position);
             if (stuckTicks >= STUCK_FAIL_TICKS) {
                 Playtest.screenshot("uc-walk-stuck");
@@ -114,6 +115,7 @@ final class RoadWalker {
 
     private void finish(boolean fail, String reason) {
         hold(false);
+        if (jumpHold > 0) { Playtest.keyUp("space"); jumpHold = 0; }
         done = true;
         failed = fail;
         long ticks = ownTicks;
