@@ -70,6 +70,29 @@ public final class RoadMarkerGameTests {
         helper.succeed();
     }
 
+    /**
+     * A ramp covers every block column of its band, with no holes: stepping a slanting line by whole blocks skipped columns, and journey run 55's walker fell into the five-block shaft one
+     * left on the centre line of the Ironhaven end (whose line runs about six degrees off the x axis, as here).
+     */
+    @GameTest(template = "empty")
+    public static void aRampHasNoHolesWhereTheRoadMeetsTheCityAtASlant(GameTestHelper helper) {
+        double len = Math.hypot(0.995, 0.0998);
+        for (CorridorPlan.End end : new CorridorPlan.End[]{new CorridorPlan.End(334.2, 53.7, 0, -0.995 / len, -0.0998 / len), new CorridorPlan.End(10.3, -7.9, 0, 0.6, 0.8),
+                new CorridorPlan.End(0.5, 0.5, 0, 1, 0)}) {
+            var cells = RoadApproaches.band(end, 0, 64, 3.5);
+            java.util.Set<Long> at = new java.util.HashSet<>();
+            for (var cell : cells) check(at.add(BlockPos.asLong(cell.x(), 0, cell.z())), "A column is laid once: " + cell);
+            check(Math.abs(cells.size() - 64 * 7) <= 24, "About the band's area (64 by 7), not fewer: " + cells.size() + " for " + end);
+            for (var cell : cells) {
+                if (cell.k() < 1 || cell.k() >= 63 || Math.abs(cell.u()) > 2.5) continue;
+                for (int[] d : new int[][]{{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) {
+                    check(at.contains(BlockPos.asLong(cell.x() + d[0], 0, cell.z() + d[1])), "No hole beside " + cell.x() + ", " + cell.z() + " (" + (cell.x() + d[0]) + ", " + (cell.z() + d[1]) + ") for " + end);
+                }
+            }
+        }
+        helper.succeed();
+    }
+
     /** The travel step points at the road out (a journey walked 720 blocks from the Row to a road's end with nothing saying where it was). */
     @GameTest(template = "empty")
     public static void theTravelStepPointsAtTheRoadOutOfTheCity(GameTestHelper helper) {

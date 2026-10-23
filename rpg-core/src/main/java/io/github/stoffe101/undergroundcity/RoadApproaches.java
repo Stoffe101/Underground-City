@@ -3,7 +3,6 @@ package io.github.stoffe101.undergroundcity;
 import com.mojang.logging.LogUtils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.TicketType;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
@@ -14,6 +13,7 @@ import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import org.slf4j.Logger;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -31,8 +31,9 @@ import java.util.Set;
  *
  * <p>The build never makes the server generate a chunk. Journey runs showed the server thread stalled 4 to 43 seconds (the watchdog stops it at 60) in the same second as each ramp, the
  * Valewood ones worst: the ramp reached up to seventy blocks into a city the walking player's own loading had not generated yet, and asked for those chunks on the spot, so Lost Cities built
- * them on the server thread. Now a player within {@link #NEAR} blocks puts a short-lived ticket on the ramp's chunks ({@link #LOADING}), the world generates them on its workers as it does for
- * any player, and the ramp is laid on the first check after they are all loaded ({@link #ready}).
+ * them on the server thread. Now the ramp is laid on the first check after the players' own loading has generated all of them ({@link #ready}). A ticket that had the world generate
+ * them ahead of the player was tried and dropped: a run with it still stalled 29 seconds as the ramp's dozen city chunks generated, because other code on the server thread (Lost Cities'
+ * own tasks among it) takes a chunk that is scheduled for loading as loaded and then waits for it.
  *
  * <p>Only a world that a new archipelago start enabled ({@link #enable}) gets them; an existing world is never changed. Each end is built at most once and remembered in the world's saved data.
  */
@@ -41,8 +42,6 @@ public final class RoadApproaches {
     static final String KEY = "underground_city_road_approaches", ENABLED = "#enabled";
     static final int APPROACH = 64, NEAR = 160, HALF = 3, CUT_HEIGHT = 30, SEARCH_UP = 24, SEARCH_DOWN = 16;
     private static final int FLAGS = Block.UPDATE_CLIENTS;
-    /** Keeps an approach's chunks loading while somebody is near (renewed every check, gone ten seconds after the last). */
-    static final TicketType<ChunkPos> LOADING = TicketType.create("underground_city_road_approach", Comparator.comparingLong(ChunkPos::toLong), 200);
     private static final BlockState FILL = Blocks.DIRT.defaultBlockState(), PATH = Blocks.DIRT_PATH.defaultBlockState(), AIR = Blocks.AIR.defaultBlockState();
 
     /** A new archipelago world started by this version carries the approaches; an older one never does. */
@@ -68,10 +67,7 @@ public final class RoadApproaches {
                 if (state.done.contains(key)) continue;
                 CorridorPlan.End end = ends[i];
                 if (level.players().stream().noneMatch(p -> Math.hypot(p.getX() - end.x(), p.getZ() - end.z()) < NEAR)) continue;
-                if (!ready(level, end)) {
-                    for (ChunkPos chunk : chunks(end)) level.getChunkSource().addRegionTicket(LOADING, chunk, 0, chunk);
-                    continue;
-                }
+                if (!ready(level, end)) continue;
                 try {
                     Result result = build(level, plan, end);
                     state.where.put(key, BlockPos.containing(end.x(), result.deckY(), end.z()).asLong());
@@ -91,7 +87,6 @@ public final class RoadApproaches {
     /** Reads the approach of one end and lays its ramp. Visible for the road check, which measures an end before and after. */
     static Result build(ServerLevel level, CorridorPlan plan, CorridorPlan.End end) {
         int deckY = CorridorPlan.deckBlockY(plan.deckHalfAt(end.s()));
-        double px = -end.dirZ(), pz = end.dirX();
         for (ChunkPos chunk : chunks(end)) level.getChunk(chunk.x, chunk.z);   // already loaded in play (ready); the road check's own server loads them here
         // the ground along the centre, until the first thing the city built
         BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos();
@@ -105,27 +100,50 @@ public final class RoadApproaches {
         }
         if (cityLevel == Integer.MIN_VALUE) cityLevel = last;
         int changed = 0, leftAlone = 0, steepest = 0, previous = deckY;
-        // from the column at the road's very end (it belongs to neither the deck nor the city: the road check found a four-block hole there) to the city's first built ground
         for (int k = 0; k < cityAt; k++) {
             int target = deckY + (int) Math.round((cityLevel - deckY) * (double) k / cityAt);
             steepest = Math.max(steepest, Math.abs(target - previous));
             previous = target;
-            for (int u = -HALF; u <= HALF; u++) {
-                int x = (int) Math.floor(end.x() + end.dirX() * k + px * u), z = (int) Math.floor(end.z() + end.dirZ() * k + pz * u);
-                int n = column(level, x, z, target, u == 0, p);
-                if (n < 0) leftAlone++; else changed += n;
-            }
+        }
+        // every block column of the ramp, from the column at the road's very end (it belongs to neither the deck nor the city: the road check found a four-block hole there) to the city's
+        // first built ground
+        for (Cell cell : band(end, -0.75, cityAt, HALF + 0.5)) {
+            int target = deckY + (int) Math.round((cityLevel - deckY) * Math.max(0, cell.k()) / cityAt);
+            int n = column(level, cell.x(), cell.z(), target, Math.abs(cell.u()) <= 0.5, p);
+            if (n < 0) leftAlone++; else changed += n;
         }
         return new Result(deckY, cityAt, cityLevel, changed, leftAlone, steepest);
     }
 
-    /** Every chunk a build reads or changes: the columns one block beyond its sides, from just before the road's end to {@link #APPROACH} blocks in. */
-    static Set<ChunkPos> chunks(CorridorPlan.End end) {
+    /** A block column along the road's line: its centre is {@code k} blocks in from the road's end and {@code u} to the side. */
+    record Cell(int x, int z, double k, double u) {}
+
+    /**
+     * Every block column whose centre lies in the band from {@code kFrom} (inclusive) to {@code kTo} blocks in and at most {@code half} to either side, each once, nearest the road first.
+     * Stepping along a slanting line by whole blocks in and across skips columns: a ramp laid that way had a one-block shaft five deep on its centre line, which a scripted walker fell
+     * into and could not climb out of (journey run 55).
+     */
+    static List<Cell> band(CorridorPlan.End end, double kFrom, double kTo, double half) {
         double px = -end.dirZ(), pz = end.dirX();
-        Set<ChunkPos> out = new LinkedHashSet<>();
-        for (int k = -4; k <= APPROACH; k++) for (int u = -HALF - 1; u <= HALF + 1; u++) {
-            out.add(new ChunkPos((int) Math.floor(end.x() + end.dirX() * k + px * u) >> 4, (int) Math.floor(end.z() + end.dirZ() * k + pz * u) >> 4));
+        double minX = Double.MAX_VALUE, maxX = -Double.MAX_VALUE, minZ = Double.MAX_VALUE, maxZ = -Double.MAX_VALUE;
+        for (double k : new double[]{kFrom, kTo}) for (double u : new double[]{-half, half}) {
+            double x = end.x() + end.dirX() * k + px * u, z = end.z() + end.dirZ() * k + pz * u;
+            minX = Math.min(minX, x); maxX = Math.max(maxX, x); minZ = Math.min(minZ, z); maxZ = Math.max(maxZ, z);
         }
+        List<Cell> out = new ArrayList<>();
+        for (int x = (int) Math.floor(minX) - 1; x <= (int) Math.floor(maxX) + 1; x++) for (int z = (int) Math.floor(minZ) - 1; z <= (int) Math.floor(maxZ) + 1; z++) {
+            double dx = x + 0.5 - end.x(), dz = z + 0.5 - end.z();
+            double k = dx * end.dirX() + dz * end.dirZ(), u = dx * px + dz * pz;
+            if (k >= kFrom && k < kTo && Math.abs(u) <= half) out.add(new Cell(x, z, k, u));
+        }
+        out.sort(Comparator.comparingDouble(Cell::k));
+        return out;
+    }
+
+    /** Every chunk a build reads or changes: the columns a block beyond its sides, from just before the road's end to {@link #APPROACH} blocks in. */
+    static Set<ChunkPos> chunks(CorridorPlan.End end) {
+        Set<ChunkPos> out = new LinkedHashSet<>();
+        for (Cell cell : band(end, -4, APPROACH + 1, HALF + 1.5)) out.add(new ChunkPos(cell.x() >> 4, cell.z() >> 4));
         return out;
     }
 
