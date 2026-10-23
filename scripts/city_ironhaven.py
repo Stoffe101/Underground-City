@@ -227,7 +227,7 @@ def pub() -> Building:
         g.put(x, 1, 2, "minecraft:barrel[facing=up,open=false]")
     g.put(5, 2, 4, ml("coffee_mug", facing="south")); g.put(9, 2, 4, ml("coffee_mug", facing="south"))
     for x in (4, 6, 8, 10):
-        g.put(x, 1, 5, ml("stool"))
+        g.put(x, 1, 5, ml("dark_oak_mini_stool", extended=False))
     # four tables of two, and a fire in a brick hearth on the west wall
     for (tx, tz) in ((4, 8), (4, 11), (9, 8), (9, 11)):
         k.table(g, tx, 1, tz, 1, 1, "dark_oak", "small")
