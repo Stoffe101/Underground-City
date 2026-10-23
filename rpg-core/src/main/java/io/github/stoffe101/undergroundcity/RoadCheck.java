@@ -94,7 +94,7 @@ public final class RoadCheck {
      * until the city's own built ground (or {@link #END_REACH} blocks into the city circle), the height a person would stand at in each column, and the largest step up and down between neighbouring columns. A step up of more
      * than one block cannot be walked.
      */
-    static final int END_REACH = 72;
+    static final int END_REACH = 120;
 
     private static JsonArray ends(MinecraftServer server) {
         ServerLevel level = server.overworld();

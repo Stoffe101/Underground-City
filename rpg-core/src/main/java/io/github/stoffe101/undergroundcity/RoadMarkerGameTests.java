@@ -56,11 +56,12 @@ public final class RoadMarkerGameTests {
         var level = helper.getLevel();
         CorridorPlan.End far = new CorridorPlan.End(1_000_003.5, 2_000_001.5, 0, 0.6, 0.8);
         var chunks = RoadApproaches.chunks(far);
-        for (int k = 0; k < RoadApproaches.APPROACH; k++) for (int u = -RoadApproaches.HALF; u <= RoadApproaches.HALF; u++) {
+        for (int k = 0; k <= RoadApproaches.FAR; k++) for (int u = -RoadApproaches.HALF; u <= RoadApproaches.HALF; u++) {
             var column = new net.minecraft.world.level.ChunkPos((int) Math.floor(far.x() + far.dirX() * k - far.dirZ() * u) >> 4, (int) Math.floor(far.z() + far.dirZ() * k + far.dirX() * u) >> 4);
             check(chunks.contains(column), "The ramp's chunks include the one under column " + k + ", " + u + ": " + column);
         }
-        check(chunks.size() <= 12, "A diagonal ramp touches a handful of chunks: " + chunks.size());
+        // a ramp reads up to FAR (112) blocks in for the city's ground: a diagonal one's band crosses some sixteen chunks
+        check(chunks.size() <= 20, "A diagonal ramp's reach touches a bounded number of chunks: " + chunks.size());
         check(!RoadApproaches.ready(level, far), "An end a million blocks out is not loaded and not ready");
         check(chunks.stream().allMatch(c -> level.getChunkSource().getChunkNow(c.x, c.z) == null), "Asking whether it is ready loaded nothing");
         BlockPos here = helper.absolutePos(BlockPos.ZERO);

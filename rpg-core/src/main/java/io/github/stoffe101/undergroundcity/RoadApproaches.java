@@ -41,7 +41,13 @@ public final class RoadApproaches {
     private static final Logger LOGGER = LogUtils.getLogger();
     static final String KEY = "underground_city_road_approaches", ENABLED = "#enabled";
     static final int APPROACH = 64, NEAR = 160, HALF = 3, CUT_HEIGHT = 30, SEARCH_UP = 24, SEARCH_DOWN = 16;
+    /**
+     * How far in a ramp looks for the city's first built ground when it is not within {@link #APPROACH}: at the Ironhaven-Blackwater road's Blackwater end the natural ground ran on at
+     * the deck's height between two raised blocks and the city's streets stood six blocks higher beyond them, so a ramp that stopped at 64 blocks ended under a wall (October 23 road check).
+     */
+    static final int FAR = 112;
     private static final int FLAGS = Block.UPDATE_CLIENTS;
+    private static final Set<String> WAITING = java.util.concurrent.ConcurrentHashMap.newKeySet();
     static final BlockState FILL = Blocks.DIRT.defaultBlockState(), PATH = Blocks.DIRT_PATH.defaultBlockState(), AIR = Blocks.AIR.defaultBlockState();
 
     /** A new archipelago world started by this version carries the approaches; an older one never does. */
@@ -67,7 +73,16 @@ public final class RoadApproaches {
                 if (state.done.contains(key)) continue;
                 CorridorPlan.End end = ends[i];
                 if (level.players().stream().noneMatch(p -> Math.hypot(p.getX() - end.x(), p.getZ() - end.z()) < NEAR)) continue;
-                if (!ready(level, end)) continue;
+                if (!ready(level, end)) {
+                    // said once per end and session: which chunk it is still waiting for, and where the nearest player is (journey run 58 never laid the Ironhaven ramp)
+                    if (WAITING.add(key)) {
+                        ChunkPos missing = chunks(end).stream().filter(c -> level.getChunkSource().getChunkNow(c.x, c.z) == null).findFirst().orElse(null);
+                        var nearest = level.players().stream().min(java.util.Comparator.comparingDouble(p -> Math.hypot(p.getX() - end.x(), p.getZ() - end.z()))).orElseThrow();
+                        LOGGER.info("[UC-ROAD] the approach at {} waits for its chunks: {} of {} not loaded yet (first {}); {} is at {}", key,
+                            chunks(end).stream().filter(c -> level.getChunkSource().getChunkNow(c.x, c.z) == null).count(), chunks(end).size(), missing, nearest.getGameProfile().getName(), nearest.blockPosition().toShortString());
+                    }
+                    continue;
+                }
                 try {
                     Result result = build(level, plan, end);
                     state.where.put(key, BlockPos.containing(end.x(), result.deckY(), end.z()).asLong());
@@ -90,15 +105,16 @@ public final class RoadApproaches {
         for (ChunkPos chunk : chunks(end)) level.getChunk(chunk.x, chunk.z);   // already loaded in play (ready); the road check's own server loads them here
         // the ground along the centre, until the first thing the city built
         BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos();
-        int cityAt = APPROACH, cityLevel = Integer.MIN_VALUE, last = deckY;
-        for (int k = 1; k <= APPROACH; k++) {
+        int cityAt = APPROACH, cityLevel = Integer.MIN_VALUE, last = deckY, lastWithin = deckY;
+        for (int k = 1; k <= FAR; k++) {
             int x = (int) Math.floor(end.x() + end.dirX() * k), z = (int) Math.floor(end.z() + end.dirZ() * k);
             int top = top(level, x, z, deckY, p);
             if (top == Integer.MIN_VALUE) continue;
             last = top;
+            if (k <= APPROACH) lastWithin = top;
             if (!natural(level.getBlockState(p.set(x, top, z))) || cityOwned(level, p)) { cityAt = k; cityLevel = top; break; }
         }
-        if (cityLevel == Integer.MIN_VALUE) cityLevel = last;
+        if (cityLevel == Integer.MIN_VALUE) { cityAt = APPROACH; cityLevel = lastWithin; }
         int changed = 0, leftAlone = 0, steepest = 0, previous = deckY;
         for (int k = 0; k < cityAt; k++) {
             int target = deckY + (int) Math.round((cityLevel - deckY) * (double) k / cityAt);
@@ -140,10 +156,10 @@ public final class RoadApproaches {
         return out;
     }
 
-    /** Every chunk a build reads or changes: the columns a block beyond its sides, from just before the road's end to {@link #APPROACH} blocks in. */
+    /** Every chunk a build reads or changes: the columns a block beyond its sides, from just before the road's end to {@link #FAR} blocks in (where it looks for the city). */
     static Set<ChunkPos> chunks(CorridorPlan.End end) {
         Set<ChunkPos> out = new LinkedHashSet<>();
-        for (Cell cell : band(end, -4, APPROACH + 1, HALF + 1.5)) out.add(new ChunkPos(cell.x() >> 4, cell.z() >> 4));
+        for (Cell cell : band(end, -4, FAR + 1, HALF + 1.5)) out.add(new ChunkPos(cell.x() >> 4, cell.z() >> 4));
         return out;
     }
 
@@ -200,6 +216,11 @@ public final class RoadApproaches {
     static boolean natural(BlockState state) {
         return state.is(BlockTags.DIRT) || state.is(BlockTags.BASE_STONE_OVERWORLD) || state.is(BlockTags.SAND) || state.is(Blocks.GRAVEL) || state.is(Blocks.CLAY)
             || state.is(BlockTags.SNOW) || state.is(BlockTags.LEAVES) || state.is(BlockTags.LOGS) || state.is(Blocks.DIRT_PATH) || state.is(BlockTags.FLOWERS) || state.is(BlockTags.SAPLINGS)
-            || state.is(Blocks.SWEET_BERRY_BUSH) || state.is(Blocks.MOSS_BLOCK) || state.is(Blocks.MOSS_CARPET) || (state.canBeReplaced() && state.getFluidState().isEmpty());
+            || state.is(Blocks.SWEET_BERRY_BUSH) || state.is(Blocks.MOSS_BLOCK) || state.is(Blocks.MOSS_CARPET) || growth(state) || (state.canBeReplaced() && state.getFluidState().isEmpty());
+    }
+
+    /** Trees and the giant mushrooms (the photo tour of October 23 found one left standing in the Old Cannery's levelled lot): natural, but nothing to stand on. */
+    static boolean growth(BlockState state) {
+        return state.is(BlockTags.LEAVES) || state.is(BlockTags.LOGS) || state.is(Blocks.RED_MUSHROOM_BLOCK) || state.is(Blocks.BROWN_MUSHROOM_BLOCK) || state.is(Blocks.MUSHROOM_STEM);
     }
 }
