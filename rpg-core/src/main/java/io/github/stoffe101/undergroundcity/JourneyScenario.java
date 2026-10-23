@@ -12,6 +12,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.block.DoorBlock;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.inventory.Slot;
@@ -198,6 +199,34 @@ final class JourneyScenario {
             if (walker[0].done() && walker[0].failed()) Playtest.fail(walker[0].summary());
             return walker[0].done();
         }, budget);
+    }
+
+    /**
+     * Walks to {@code target}; when the walker gets stuck (a hedge at the end of a road, a sealed block in the way) the rest is a teleport, logged as scripted with the distance left, so the
+     * steps after it can still be played. Used only for getting to where a step starts, never for a step whose point is the walk.
+     */
+    private static void walkOrTeleport(String label, Supplier<Vec3> target, double within, int budget) {
+        final PathWalker[] walker = new PathWalker[1];
+        final int[] ticks = {0};
+        final boolean[] teleported = {false};
+        Playtest.queue(label, () -> { ticks[0] = 0; teleported[0] = false; walker[0] = new PathWalker(label, target, within); }, () -> {
+            walker[0].tick();
+            if (++ticks[0] > budget - 200 && !walker[0].done()) walker[0].stop();
+            return walker[0].done() || ticks[0] > budget - 200;
+        }, budget);
+        Playtest.queue(label + ": walked, or the rest scripted", () -> {
+            Vec3 goal = target.get();
+            if (goal == null) { Playtest.fail(label + ": the target is gone"); return; }
+            if (walker[0].done() && !walker[0].failed()) return;
+            double left = Math.hypot(goal.x - mc().player.getX(), goal.z - mc().player.getZ());
+            scripted(String.format(Locale.ROOT, "%s stopped at %.0f, %.0f (%s); the remaining %.0f blocks were a teleport", label, mc().player.getX(), mc().player.getZ(), walker[0].summary(), left));
+            teleported[0] = true;
+            Playtest.command("gamemode spectator");
+            Playtest.command(String.format(Locale.ROOT, "tp @s %.2f %.2f %.2f", goal.x, goal.y + 0.1, goal.z));
+        });
+        until(label + ": the ground has arrived", () -> !teleported[0] || Scenarios.groundBelowPlayer(), 6000);
+        Playtest.queue(label + ": survival again", () -> { if (teleported[0]) Playtest.command("gamemode survival"); });
+        Playtest.wait("settle", 20);
     }
 
     private static void walk(String label, Supplier<Vec3> target, double within, int budget) {
@@ -1181,21 +1210,38 @@ final class JourneyScenario {
             if (b == null) { Playtest.fail(label + ": no block"); return true; }
             look(Vec3.atCenterOf(b));
             t[0]++;
-            if (t[0] % 10 == 4) Playtest.mouseButton(3, true);
-            if (t[0] % 10 == 6) Playtest.mouseButton(3, false);
+            // click only once the crosshair is on that block: a software-rendered frame lags the aim, and a click on the wrong block places or opens the wrong thing
+            boolean onIt = mc().hitResult instanceof BlockHitResult hit && hit.getType() == HitResult.Type.BLOCK && hit.getBlockPos().equals(b);
+            if (t[0] % 16 == 10 && onIt) Playtest.mouseButton(3, true);
+            if (t[0] % 16 == 12) Playtest.mouseButton(3, false);
             return false;
         }, budget);
         Playtest.wait("settle", 6);
     }
 
     private static void valewood() {
-        walk("walk into the city", () -> {
-            var city = CityRegions.INSTANCE.all().stream().filter(c -> c.id().equals("valewood")).findFirst().orElse(null);
-            return city == null ? null : new Vec3(city.centerX(), mc().player.getY(), city.centerZ());
-        }, 60, 6000);
+        // into the streets: the nearest locked street door to where the road enters the city (its centre is another 240 blocks of sealed blocks away)
+        final DoorWalk.Spot[] door = new DoorWalk.Spot[1];
+        final boolean[] searched = {false};
+        Playtest.queue("find a locked street door near the road's end in Valewood", () -> {
+            var server = mc().getSingleplayerServer();
+            int cx = mc().player.getBlockX() >> 4, cz = mc().player.getBlockZ() >> 4;
+            server.execute(() -> {
+                try {
+                    door[0] = furnishedStreetDoorNear(server.overworld(), "valewood", cx, cz);
+                    if (door[0] == null) door[0] = DoorWalk.findNear(server.overworld(), cx, cz, true, "", b -> b.city().equals("valewood")).orElse(null);
+                } finally { searched[0] = true; }
+            });
+        }, () -> searched[0], 6000);
+        Playtest.queue("the door", () -> {
+            if (door[0] == null) Playtest.fail("no locked street door near the road's end in Valewood");
+            else Playtest.log("JOURNEY locked door " + door[0].door().toShortString() + " of a " + door[0].type() + " (" + door[0].securityClass() + "), "
+                + String.format(Locale.ROOT, "%.0f", Math.hypot(door[0].stand().x - mc().player.getX(), door[0].stand().z - mc().player.getZ())) + " blocks from the road's end");
+        });
+        walkOrTeleport("walk into the city to the door", () -> door[0] == null ? null : door[0].stand(), 1.2, 4000);
         Playtest.queue("in Valewood", () -> Playtest.log("JOURNEY in '" + server(() -> CityRegions.INSTANCE.cityAt(level(), me().blockPosition()).orElse("")) + "' at " + mc().player.blockPosition().toShortString()));
         shot("27-valewood-street");
-        valewoodDoor();
+        valewoodDoor(door);
         // the welcome-pack terminal, placed in the street
         hold("the welcome-pack terminal", UndergroundCity.TERMINAL_ITEM.get());
         final BlockPos[] spot = new BlockPos[1];
@@ -1273,15 +1319,36 @@ final class JourneyScenario {
     }
 
     /** Inaccessible building: walking at a locked city door and right-clicking it with no lockpicks leaves the door shut and the player outside. */
-    private static void valewoodDoor() {
-        final DoorWalk.Spot[] spot = new DoorWalk.Spot[1];
-        final boolean[] searched = {false};
-        Playtest.queue("find a locked street door in Valewood", () -> {
-            var server = mc().getSingleplayerServer();
-            server.execute(() -> { try { spot[0] = DoorWalk.find(server.overworld(), "valewood", true, "", b -> true).orElse(null); } finally { searched[0] = true; } });
-        }, () -> searched[0], 6000);
-        Playtest.queue("the door", () -> { if (spot[0] == null) Playtest.fail("no locked street door near Valewood's centre"); else Playtest.log("JOURNEY locked door " + spot[0].door().toShortString() + " of a " + spot[0].type() + " (" + spot[0].securityClass() + ")"); });
-        walk("walk to the door", () -> spot[0] == null ? null : spot[0].stand(), 1.2, 3000);
+    /**
+     * The street door of the nearest locked furnished building of {@code city} around a chunk, from the building's own plan (its first {@code door} spot and the way it faces out), checked
+     * against the world: a closed lower door half with room to stand two and a half blocks out. Valewood's houses have front gardens and porches, which the generic door search refuses.
+     */
+    private static DoorWalk.Spot furnishedStreetDoorNear(ServerLevel level, String city, int nearChunkX, int nearChunkZ) {
+        for (int radius = 0; radius <= 16; radius++) {
+            for (int dx = -radius; dx <= radius; dx++) for (int dz = -radius; dz <= radius; dz++) {
+                if (Math.max(Math.abs(dx), Math.abs(dz)) != radius) continue;
+                var found = CityBuildings.INSTANCE.ofChunk(level, nearChunkX + dx, nearChunkZ + dz);
+                if (found.isEmpty() || !found.get().city().equals(city) || !found.get().locked()) continue;
+                var b = found.get();
+                BuildingSpots.Plan plan = BuildingSpots.INSTANCE.forType(b.type());
+                if (plan == null) continue;
+                BuildingSpots.Spot door = plan.spots().stream().filter(sp -> sp.kind().equals("door")).findFirst().orElse(null);
+                Direction out = door == null ? null : Direction.byName(door.facing());
+                if (out == null || out.getAxis().isVertical()) continue;
+                BlockPos pos = new BlockPos(b.chunkX() * 16 + door.x(), b.streetY() + door.y(), b.chunkZ() * 16 + door.z());
+                level.getChunk(b.chunkX(), b.chunkZ());
+                var state = level.getBlockState(pos);
+                if (!(state.getBlock() instanceof DoorBlock) || state.getValue(DoorBlock.HALF) != net.minecraft.world.level.block.state.properties.DoubleBlockHalf.LOWER || state.getValue(DoorBlock.OPEN)) continue;
+                Vec3 stand = Vec3.atBottomCenterOf(pos).add(out.getStepX() * 2.5, 0, out.getStepZ() * 2.5);
+                if (!PlayerPath.standable(level, BlockPos.containing(stand))) continue;
+                float yaw = (float) Math.toDegrees(Math.atan2(out.getStepX(), -out.getStepZ()));
+                return new DoorWalk.Spot(pos, state.getValue(DoorBlock.FACING), true, out, stand, yaw, b.type(), b.security().id());
+            }
+        }
+        return null;
+    }
+
+    private static void valewoodDoor(DoorWalk.Spot[] spot) {
         Playtest.queue("no lockpicks carried", () -> { if (count(UndergroundCity.item("lockpick")) > 0) Playtest.fail("the new Smith carries lockpicks"); });
         final int[] t = {0};
         Playtest.queue("hold W into the door and right-click it", () -> { if (spot[0] != null) { Playtest.focusWindow(); Playtest.keyDown("w"); } }, () -> {
@@ -1309,7 +1376,7 @@ final class JourneyScenario {
 
     private static void travelBack() {
         final RoadWalker[] walker = new RoadWalker[1];
-        walk("walk back to the road's Valewood end", () -> {
+        walkOrTeleport("walk back to the road's Valewood end", () -> {
             CorridorPlan plan = roadTo("valewood");
             if (plan == null) return null;
             double[] p = plan.pointAt(F.roadTo);

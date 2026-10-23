@@ -39,11 +39,16 @@ final class DoorWalk {
     /** The same, nearest the centre of the named city. */
     static Optional<Spot> find(ServerLevel level, String city, boolean frontIsStreet, String preferredClass, java.util.function.Predicate<CityBuildings.Building> accept) {
         var region = CityRegions.INSTANCE.all().stream().filter(r -> r.id().equals(city)).findFirst().orElseThrow();
+        return findNear(level, region.centerChunkX(), region.centerChunkZ(), frontIsStreet, preferredClass, accept);
+    }
+
+    /** The same, nearest a chunk (the journey looks near where the road enters a city, not at its far-off centre). */
+    static Optional<Spot> findNear(ServerLevel level, int nearChunkX, int nearChunkZ, boolean frontIsStreet, String preferredClass, java.util.function.Predicate<CityBuildings.Building> accept) {
         Spot fallback = null;
         for (int radius = 1; radius <= 16; radius++) {
             for (int dx = -radius; dx <= radius; dx++) for (int dz = -radius; dz <= radius; dz++) {
                 if (Math.max(Math.abs(dx), Math.abs(dz)) != radius) continue;
-                int cx = region.centerChunkX() + dx, cz = region.centerChunkZ() + dz;
+                int cx = nearChunkX + dx, cz = nearChunkZ + dz;
                 Optional<CityBuildings.Building> building = CityBuildings.INSTANCE.ofChunk(level, cx, cz);
                 if (building.isEmpty() || !building.get().locked() || !accept.test(building.get())) continue;
                 LevelChunk chunk = level.getChunk(cx, cz);
