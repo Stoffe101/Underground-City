@@ -1,0 +1,28 @@
+# Underground City: SecurityCraft trial server settings (D-140). Original configuration written for this project; the keys are SecurityCraft's own (v1.10.2.1).
+# Copied into a NEW world's serverconfig by the development launch (-PucPack=...,securitycraft); an existing world keeps its own file.
+# Core places and owns every device; these settings take away what would compete with Core's authority or hurt anybody.
+codebreaker_chance = -1.0
+allowAdminTool = false
+shouldSpawnFire = false
+smallerMineExplosion = true
+mineExplosionsBreakBlocks = false
+mineExplodesWhenInCreative = false
+maxAlarmRange = 32
+allowBlockClaim = false
+enable_team_ownership = false
+team_ownership_precedence = []
+disable_thanks_message = true
+taser_damage = 0.0
+powered_taser_damage = 0.0
+taser_effects = []
+powered_taser_effects = []
+laser_damage = 0.0
+sentry_bullet_damage = 0
+reinforced_suffocation_damage = -1
+passcode_check_cooldown = 1000
+in_world_un_reinforcing = false
+frame_feed_viewing_enabled = false
+frame_feed_forceloading_limit = 0
+frame_feed_view_distance = 2
+vanilla_tool_block_breaking = true
+allow_breaking_non_owned_blocks = false

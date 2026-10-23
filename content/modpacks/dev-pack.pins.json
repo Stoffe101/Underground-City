@@ -379,6 +379,17 @@
     "lostcities"
    ],
    "notes": "Lost Cities Modern Tweaks 1.1.2 (2026-09-13). MIT. REJECTED for now (D-113): on a fresh archipelago world it made Lost Cities log 'Error generating chunk' (a NullPointerException in ChunkDriver.correct) for 249 of the 507 city chunks probed, against none without it (scripts/run_city_probe.py --sets world,citytweaks). Probable cause, read from the jar and not proven: its global 'hanging_root' stuff draws the palette character ' which only its own styles define, and our three styles do not. It is pinned only so that its exact release is on record; no launch, test or workflow names the set."
+  },
+  {
+   "id": "securitycraft",
+   "slug": "security-craft",
+   "version_id": "PhNy7dJx",
+   "mod_id": "securitycraft",
+   "role": "security devices (keypad doors, lasers, alarms, cameras) under Core's authority: an experimental trial set (D-140)",
+   "sets": [
+    "securitycraft"
+   ],
+   "notes": "SecurityCraft 1.20.1-v1.10.2.1 (2026-06-28, release; upstream's 'recommended' for 1.20.1). MIT (mods.toml and the repository LICENSE; no separate asset licence found). Requires Forge 47.3.30+ and nothing else; required on client and server; no world generation. EXPERIMENTAL TRIAL ONLY (D-140): an opt-in set that no default launch includes. Core owns every device it installs through one system owner, removes the recipes of the violent, offline and authority-duplicating items (sentries, mines, I.M.S., tasers, the codebreaker, universal changers, the inventory scanner, passcode containers and the reinforced building blocks) with a built-in policy pack, refuses their use with event guards, and ships the server config in content/integrations/securitycraft. See docs/technical/securitycraft-trial.md."
   }
  ],
  "external": [

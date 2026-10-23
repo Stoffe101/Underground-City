@@ -16,6 +16,7 @@ final class Scenarios {
             case "doorwalk" -> doorwalk();
             case "burglary" -> BurglaryScenario.build();
             case "alarm" -> AlarmScenario.build();
+            case "security" -> SecurityScenario.build();
             case "journey" -> JourneyScenario.build();
             case "lockjitter" -> lockjitter();
             case "walk" -> walk();
