@@ -234,8 +234,12 @@
       "char": "%"
     },
     {
-      "block": "modernlife:cctv_camera[facing=north]",
+      "block": "modernlife:cctv_camera[facing=east]",
       "char": "&"
+    },
+    {
+      "block": "minecraft:bookshelf",
+      "char": "*"
     }
   ]
 }

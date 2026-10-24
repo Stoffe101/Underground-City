@@ -334,8 +334,40 @@
       "char": "("
     },
     {
-      "block": "modernlife:cctv_camera[facing=east]",
+      "block": "modernlife:cctv_camera[facing=west]",
       "char": ")"
+    },
+    {
+      "block": "minecraft:white_wool",
+      "char": "\u00c0"
+    },
+    {
+      "block": "minecraft:light_gray_wool",
+      "char": "\u00c1"
+    },
+    {
+      "block": "minecraft:cyan_wool",
+      "char": "\u00c2"
+    },
+    {
+      "block": "minecraft:black_wool",
+      "char": "\u00c3"
+    },
+    {
+      "block": "minecraft:blue_wool",
+      "char": "\u00c4"
+    },
+    {
+      "block": "minecraft:gray_wool",
+      "char": "\u00c5"
+    },
+    {
+      "block": "minecraft:red_wool",
+      "char": "\u00c6"
+    },
+    {
+      "block": "minecraft:purple_wool",
+      "char": "\u00c7"
     }
   ]
 }

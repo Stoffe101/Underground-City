@@ -44,5 +44,51 @@ class CityBlockTests(unittest.TestCase):
             self.assertFalse(used & set(citykit.LOST_CITIES_RESERVED), f"{path.name} redraws the city with {sorted(used & set(citykit.LOST_CITIES_RESERVED))}")
 
 
+
+class CameraTests(unittest.TestCase):
+    """Lost Cities writes a part lower x and lower z first and, as each block goes in, has its neighbours check their shape; a wall-hung camera whose wall is written after it finds
+    no wall and turns to air. The first cameras by tier (D-149) hung over south doors looking north and never existed in a generated world (read back from the advanced burglary run's world)."""
+
+    LOSTCITIES = Path(__file__).resolve().parents[1] / "content/generated/world-furnished/pack/data/underground_city/lostcities"
+
+    def cameras(self):
+        import json
+        for palette_path in sorted((self.LOSTCITIES / "palettes").glob("*.json")):
+            entries = {e["char"]: e.get("block", "") for e in json.loads(palette_path.read_text(encoding="utf-8"))["palette"]}
+            for part_path in sorted((self.LOSTCITIES / "parts").glob(palette_path.stem + "_*.json")):
+                part = json.loads(part_path.read_text(encoding="utf-8"))
+                for y, layer in enumerate(part["slices"]):
+                    for z, row in enumerate(layer):
+                        for x, ch in enumerate(row):
+                            if "cctv_camera" in entries.get(ch, ""):
+                                facing = entries[ch].split("facing=")[1].split(",")[0].rstrip("]")
+                                behind = citykit.DIRS[facing]
+                                bx, bz = x - behind[0], z - behind[1]
+                                back = layer[bz][bx] if 0 <= bz < len(layer) and 0 <= bx < len(layer[bz]) else " "
+                                yield part_path.stem, (x, y, z), facing, back
+
+    def test_every_camera_outlives_lost_cities_writing_its_part(self):
+        import city_content
+        found = list(self.cameras())
+        self.assertTrue(found)
+        for part, at, facing, back in found:
+            self.assertTrue(back == " " or facing in city_content.CAMERA_WALL_FIRST, f"{part} {at}: a camera looking {facing} with a wall behind it that Lost Cities writes after it")
+
+    def test_a_camera_on_a_wall_written_after_it_is_refused(self):
+        import city_content
+        palette = citykit.Palette("t")
+        part = citykit.Part("t", palette)
+        part.put(7, 3, 14, "minecraft:stone")
+        self.assertFalse(city_content.camera_survives(part, 7, 3, 13, "north"))   # the club's first camera: its wall to the south, written after it
+        part.put(2, 3, 8, "minecraft:stone")
+        self.assertTrue(city_content.camera_survives(part, 3, 3, 8, "east"))      # its wall to the west, written first
+        self.assertTrue(city_content.camera_survives(part, 7, 3, 10, "west"))     # nothing behind it
+
+    def test_the_well_off_buildings_watch_a_street_door(self):
+        parts = {part for part, _, _, _ in self.cameras()}
+        for building in ("bw_club", "bw_apartments", "bw_office", "ih_warehouse"):
+            self.assertIn(building + "_ground", parts, f"{building} (tier 4 or more) has no camera on its ground floor")
+
+
 if __name__ == "__main__":
     unittest.main()

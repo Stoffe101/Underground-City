@@ -17,6 +17,14 @@
       "z": 14
     },
     {
+      "facing": "north",
+      "kind": "door",
+      "note": "back door",
+      "x": 7,
+      "y": 1,
+      "z": 1
+    },
+    {
       "facing": "west",
       "kind": "counter",
       "note": "bar",

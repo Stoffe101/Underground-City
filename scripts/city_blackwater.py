@@ -174,10 +174,11 @@ def club() -> Building:
     for x in range(4, 12):
         for z in range(4, 10):
             g.put(x, 0, z, LAMP if (x + z) % 2 == 0 else "minecraft:cyan_concrete")
-    # the DJ booth at the north wall: a turntable, two amplifiers, a screen
-    g.put(7, 1, 2, ml("turntable", facing="south", powered=False)); g.put(8, 1, 2, ml("oak_small_table", type="single"))
-    g.put(5, 1, 2, ml("guitar_amplifier", facing="south")); g.put(10, 1, 2, ml("guitar_amplifier", facing="south"))
-    g.put(7, 2, 2, ml("dual_monitor", facing="south"))
+    # the DJ booth a step in from the north wall: a turntable, two amplifiers, a screen. It stood against the wall, right behind the back door, and a person who came in by that door
+    # (an advanced burglary run through a real client) was stopped in the doorway by the turntable; the row behind it is now a way round to the room
+    g.put(7, 1, 3, ml("turntable", facing="south", powered=False)); g.put(8, 1, 3, ml("oak_small_table", type="single"))
+    g.put(5, 1, 3, ml("guitar_amplifier", facing="south")); g.put(10, 1, 3, ml("guitar_amplifier", facing="south"))
+    g.put(7, 2, 3, ml("dual_monitor", facing="south"))
     # the bar along the east wall, bottles on shelves behind it, seats in front of it
     for z in range(4, 12):
         g.put(12, 1, z, ml("dark_oak_kitchen_cabinet", facing="west"))
@@ -194,7 +195,7 @@ def club() -> Building:
     # and lit rods as neon tubes in the corners and either side of the DJ booth
     for (x, z) in ((3, 3), (6, 3), (9, 3), (12, 3), (4, 6), (7, 6), (10, 6), (13, 6), (4, 9), (7, 9), (10, 9), (13, 9), (3, 12), (6, 12), (9, 12), (12, 12)):
         g.put(x, 4, z, "minecraft:pearlescent_froglight[axis=y]" if (x + z) % 2 else "minecraft:verdant_froglight[axis=y]")
-    for (x, z) in ((2, 2), (13, 2), (2, 13), (13, 13), (6, 2), (9, 2)):
+    for (x, z) in ((2, 2), (13, 2), (2, 13), (13, 13), (6, 3), (9, 3)):
         if (x, z) == (2, 13):
             continue                                                            # the foot of the stair
         for y in (1, 2, 3):
@@ -226,7 +227,7 @@ def club() -> Building:
     t.ring(X0, Z0, X1, Z1, 0, 0, BLACK)
     t.put(7, 0, 14, LAMP); t.put(8, 0, 14, LAMP)
     t.put(3, 0, 3, ml("air_conditioner", facing="south")); t.put(12, 0, 12, ml("air_conditioner", facing="north"))
-    b.spots += [Spot("door", 7, 1, Z1, "south", "front door"), Spot("counter", 12, 1, 8, "west", "bar"), Spot("desk", 12, 7, 12, "west", "back office desk"),
+    b.spots += [Spot("door", 7, 1, Z1, "south", "front door"), Spot("door", 7, 1, Z0, "north", "back door"), Spot("counter", 12, 1, 8, "west", "bar"), Spot("desk", 12, 7, 12, "west", "back office desk"),
                 Spot("stash", 13, 7, 12, "west", "back office"), Spot("seat", 3, 1, 12, "north", "booth"),
                 Spot("fence", 12, 7, 12, "west", "after hours the back office buys stolen goods (D-125)")]
     return b

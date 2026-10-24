@@ -280,6 +280,10 @@
     {
       "block": "underground_city:alarm_panel[facing=north,light=off]",
       "char": "?"
+    },
+    {
+      "block": "modernlife:monitor[facing=west]",
+      "char": "@"
     }
   ]
 }

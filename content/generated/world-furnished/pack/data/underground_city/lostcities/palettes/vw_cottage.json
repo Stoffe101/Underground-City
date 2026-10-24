@@ -196,6 +196,14 @@
     {
       "block": "minecraft:stone_brick_stairs[facing=north,half=bottom,shape=straight]",
       "char": "O"
+    },
+    {
+      "block": "minecraft:flowering_azalea_leaves[persistent=true]",
+      "char": "P"
+    },
+    {
+      "block": "minecraft:cornflower",
+      "char": "Q"
     }
   ]
 }

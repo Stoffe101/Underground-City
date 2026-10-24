@@ -162,7 +162,7 @@
       "char": "I"
     },
     {
-      "block": "modernlife:cctv_camera[facing=north]",
+      "block": "modernlife:cctv_camera[facing=east]",
       "char": "J"
     }
   ]

@@ -12,6 +12,7 @@ on Core, so it only exists in a game that has all three. It is opt-in (``-PucExt
 from __future__ import annotations
 
 import json
+import math
 import sys
 from pathlib import Path
 
@@ -79,9 +80,112 @@ def tier_of(security: str) -> int:
     return NEW_SECURITY_CLASSES[security]["tier"] if security in NEW_SECURITY_CLASSES else STOCK_TIERS.get(security, 0)
 
 
+# Where a camera may hang. Lost Cities writes a part's blocks lower x and lower z first, and as each block goes in it asks the blocks beside it to update their shape; a wall-hung block
+# then checks its wall in the world, where a block written after it is not there yet, and turns to air. So a camera whose wall comes later never exists: the first cameras by tier hung
+# over the club's and the warehouse's south doors, looking north at a wall written after them, and the generated worlds had none (found by the advanced burglary scenario through a
+# real client and read back from its world). A camera therefore hangs on a wall to its west (looking east) or to its north (looking south), or on nothing (as the offices' do).
+CAMERA_WALL_FIRST = ("east", "south")
+CAMERA_REACH = 10          # the door's inside within this many blocks (Core's cone is 12 blocks long)
+CAMERA_HALF_ANGLE = 40     # and this far either side of where the camera looks (Core's cone is 50 degrees either side)
+
+
+def wall_at(part: citykit.Part, x: int, y: int, z: int) -> bool:
+    """A plain block of the part a wall-hung thing can be fixed to: no furniture, shelf, glass, door or anything that is not a whole block."""
+    c = part.get(x, y, z)
+    if c == " ":
+        return False
+    spec = part.palette.entries[c]
+    if not isinstance(spec, str) or not spec.startswith("minecraft:") or any(word in spec for word in NOT_A_WALL):
+        return False                                                           # furniture, a shelf, a cake on a counter, a monitor: not a wall
+    return "[" not in spec or spec.split("[", 1)[1].rstrip("]").split("=")[0] == "axis"
+
+
+def camera_survives(part: citykit.Part, x: int, y: int, z: int, facing: str) -> bool:
+    """Whether a wall-hung camera at this cell, looking this way, outlives Lost Cities' writing of the part: nothing behind it, or a wall that is written before it."""
+    back = citykit.DIRS[facing]
+    return part.get(x - back[0], y, z - back[1]) == " " or facing in CAMERA_WALL_FIRST
+
+
+def camera_spot(part: citykit.Part, door: tuple[int, int], out: tuple[int, int]) -> tuple[int, int, int, str] | None:
+    """The best cell high in the room from which a camera sees a person coming in by a street door: the cell and the one below it empty, one of the first four cells inside the
+    door (the way a person walks in) within reach, well inside the cone, and nothing in the part between the lens and a person's head there. It must outlive Lost Cities' writing (``camera_survives``); a camera
+    on a wall is preferred to one hung under the ceiling with nothing behind it (as the offices' are), and a nearer one to a farther."""
+    insides = [(door[0] - out[0] * k, door[1] - out[1] * k) for k in (1, 2, 3, 4)]
+    best = None
+    for facing, (fx, fz) in citykit.DIRS.items():
+        for y in (4, 3):
+            for x in range(1, citykit.SIZE - 1):
+                for z in range(1, citykit.SIZE - 1):
+                    if part.get(x, y, z) != " " or part.get(x, y - 1, z) != " " or not camera_survives(part, x, y, z, facing):
+                        continue
+                    on_wall = wall_at(part, x - fx, y, z - fz)
+                    if not on_wall and (part.get(x - fx, y, z - fz) != " " or not wall_at(part, x, y + 1, z)):
+                        continue                                                   # neither on a wall nor hung under the ceiling
+                    for inside in insides:
+                        vx, vz = inside[0] - x, inside[1] - z
+                        d = math.hypot(vx, vz)
+                        if d < 1.5 or d > CAMERA_REACH or (vx * fx + vz * fz) / d < math.cos(math.radians(CAMERA_HALF_ANGLE)):
+                            continue
+                        steps = int(d * 3) + 1
+                        if any(part.get(round(x + vx * k / steps), round(y + (1.6 - y) * k / steps), round(z + vz * k / steps)) != " " for k in range(1, steps)):
+                            continue
+                        key = (0 if on_wall else 1, round(d), y != 4, facing, x, z)
+                        if best is None or key < best[0]:
+                            best = (key, (x, y, z, facing))
+    return best[1] if best else None
+
+
+# What else Lost Cities' writing order takes (read back from generated worlds, plan against world): a carpet or a garden plant on a floor of its own part (the floor is written after it),
+# and a shelf or a screen on a wall written after it. Small flowers are not lost: Lost Cities places them itself, after the part. After everything is placed, each such block becomes one
+# that needs no support: a carpet becomes its colour of wool in the floor under it, a berry bush a flowering azalea, a fern or grass a cornflower, a wall shelf a bookshelf (still searched
+# as one), a screen a monitor, and any other wall-hung piece is left out.
+FLOOR_PLANTS = {"minecraft:sweet_berry_bush": "minecraft:flowering_azalea_leaves[persistent=true]", "minecraft:fern": "minecraft:cornflower", "minecraft:grass": "minecraft:cornflower",
+                "minecraft:tall_grass": "minecraft:cornflower", "minecraft:large_fern": "minecraft:cornflower", "minecraft:dead_bush": None}
+WALL_HUNG = ("wall_shelf", "cctv_screen", "cctv_camera", "mirror", "light_switch", "wall_socket", "electrical_outlet", "canvas")
+
+
+def wall_hung_survives(part: citykit.Part, x: int, y: int, z: int, spec: str) -> bool:
+    """A wall-hung block (its wall behind it, opposite the way it faces) outlives Lost Cities' writing when that wall is written first, or when there is nothing behind it."""
+    facing = spec.split("facing=", 1)[1].split(",", 1)[0].rstrip("]") if "facing=" in spec else ""
+    if facing not in citykit.DIRS:
+        return True
+    return camera_survives(part, x, y, z, facing)
+
+
+def fit_for_lost_cities(b: citykit.Building) -> list[str]:
+    """Makes every block of the building that Lost Cities would turn to air into one it keeps (see ``FLOOR_PLANTS``); returns what was changed, for the tests."""
+    changed = []
+    for part, _ in b.parts:
+        for y in range(citykit.FLOOR_H):
+            for z in range(part.zsize):
+                for x in range(part.xsize):
+                    c = part.get(x, y, z)
+                    if c == " ":
+                        continue
+                    spec = part.palette.entries[c]
+                    if not isinstance(spec, str):
+                        continue
+                    name = spec.split("[", 1)[0]
+                    on_own_floor = y >= 1 and part.get(x, y - 1, z) != " "
+                    if name.startswith("minecraft:") and name.endswith("_carpet") and on_own_floor:
+                        if wall_at(part, x, y - 1, z):
+                            part.put(x, y - 1, z, name.replace("_carpet", "_wool"))
+                        part.put(x, y, z, None)
+                        changed.append(f"{part.name} {x},{y},{z} {name} -> wool floor")
+                    elif name in FLOOR_PLANTS and on_own_floor:
+                        part.put(x, y, z, FLOOR_PLANTS[name])
+                        changed.append(f"{part.name} {x},{y},{z} {name} -> {FLOOR_PLANTS[name]}")
+                    elif any(word in name for word in WALL_HUNG) and not wall_hung_survives(part, x, y, z, spec):
+                        facing = spec.split("facing=", 1)[1].split(",", 1)[0].rstrip("]")
+                        replacement = "minecraft:bookshelf" if "wall_shelf" in name else citykit.ml("monitor", facing=facing) if "cctv_screen" in name else None
+                        part.put(x, y, z, replacement)
+                        changed.append(f"{part.name} {x},{y},{z} {spec} -> {replacement}")
+    return changed
+
+
 def place_cameras(b: citykit.Building) -> None:
-    """The building's cameras by its tier (D-149): inside, above a street door, high on the wall (layer 4 of the ground floor, layer 3 where 4 is taken), looking into the room, so that whoever comes
-    in by that door walks into its field. A door with no free cell above its inner side gets none; a building that already has a camera in its plan keeps it as it is."""
+    """The building's cameras by its tier (D-149): inside, high in the room near a street door and looking at the way in, so that whoever comes in by that door walks into its field;
+    only where Lost Cities lets one stand (see ``CAMERA_WALL_FIRST``). A door with no such place in reach gets none; a building that already has a camera in its plan keeps it."""
     wanted = CAMERAS_BY_TIER.get(tier_of(b.security), 0)
     ground = [part for part, flags in b.parts if flags.get("ground")]
     if not wanted or not ground:
@@ -93,13 +197,12 @@ def place_cameras(b: citykit.Building) -> None:
     for door in (s for s in b.spots if s.kind == "door"):
         if placed >= wanted:
             break
-        out = citykit.DIRS[door.facing]
-        x, z = door.x - out[0], door.z - out[1]
-        for y in (4, 3):
-            if part.get(x, y, z) == " " and part.get(x, y - 1, z) == " ":
-                part.put(x, y, z, citykit.ml("cctv_camera", facing=citykit.OPPOSITE[door.facing]))
-                placed += 1
-                break
+        spot = camera_spot(part, (door.x, door.z), citykit.DIRS[door.facing])
+        if spot is None:
+            continue
+        x, y, z, facing = spot
+        part.put(x, y, z, citykit.ml("cctv_camera", facing=facing))
+        placed += 1
 
 
 def place_alarm_panel(b: citykit.Building) -> None:
@@ -113,13 +216,7 @@ def place_alarm_panel(b: citykit.Building) -> None:
     part = ground[0]
 
     def solid(x: int, y: int, z: int) -> bool:
-        c = part.get(x, y, z)
-        if c == " ":
-            return False
-        spec = part.palette.entries[c]
-        if not isinstance(spec, str) or not spec.startswith("minecraft:") or any(word in spec for word in NOT_A_WALL):
-            return False                                                       # furniture, a shelf, a cake on a counter, a monitor: not a wall
-        return "[" not in spec or spec.split("[", 1)[1].rstrip("]").split("=")[0] == "axis"
+        return wall_at(part, x, y, z)
 
     for door in (s for s in b.spots if s.kind == "door"):
         out = citykit.DIRS[door.facing]
@@ -176,6 +273,7 @@ def package() -> dict[str, bytes]:
         seen.add(b.id)
         place_alarm_panel(b)
         place_cameras(b)
+        fit_for_lost_cities(b)
         for path, doc in b.files(NAMESPACE).items():
             files[f"data/{NAMESPACE}/{path}"] = json_bytes(doc)
         files[f"data/{NAMESPACE}/city_buildings/{b.id}.json"] = json_bytes(b.core_data())

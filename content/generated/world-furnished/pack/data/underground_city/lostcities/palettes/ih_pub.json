@@ -236,6 +236,10 @@
     {
       "block": "underground_city:alarm_panel[facing=north,light=off]",
       "char": "&"
+    },
+    {
+      "block": "minecraft:brown_wool",
+      "char": "*"
     }
   ]
 }

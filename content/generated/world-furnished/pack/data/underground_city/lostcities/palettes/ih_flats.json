@@ -296,6 +296,30 @@
     {
       "block": "underground_city:alarm_panel[facing=north,light=off]",
       "char": "^"
+    },
+    {
+      "block": "minecraft:red_wool",
+      "char": "_"
+    },
+    {
+      "block": "minecraft:blue_wool",
+      "char": "`"
+    },
+    {
+      "block": "minecraft:green_wool",
+      "char": "{"
+    },
+    {
+      "block": "minecraft:yellow_wool",
+      "char": "|"
+    },
+    {
+      "block": "minecraft:orange_wool",
+      "char": "}"
+    },
+    {
+      "block": "minecraft:purple_wool",
+      "char": "~"
     }
   ]
 }
