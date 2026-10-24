@@ -278,7 +278,7 @@ Things to write down: whether the places look like they belong; whether stopping
 
 ## 6h. Becoming a thief: casing, locks, searching rooms, fences and the Thief page (about 45 minutes, a NEW world only)
 
-**Written for the October 23 third pass (D-142 to D-152).** A script played one new burglar through a real client, from casing a Valewood house to learning the first Thief skill (Thief run 12, `RESULT pass`; the report lists its 22 shortcuts); **no person has done any of it**. The Thief track is every career's: play it as a Farmer, a Smith or anyone.
+**Written for the October 23 to 24 third pass (D-142 to D-156).** Scripts played one new burglar through a real client, from casing a Valewood house to learning the first Thief skill (Thief run 12, `RESULT pass`; the report lists its 22 shortcuts), an advanced burglary of the Blackwater club (heist runs 8 and 10), an officer on the beat catching a thief at a lock (patrol runs 2 and 6) and a depot manifest delivered (freight run 5); **no person has done any of it**. The Thief track is every career's: play it as a Farmer, a Smith or anyone.
 
 Start a new world as in 6f (`-PucWorldLayout=archipelago -PucPack=world,furnished,scarcity`). Lockpicks are crafted (two iron nuggets and a stick make two) or bought in the Old Cannery's den on the Valewood-Blackwater road, which also sells a Pro Pick Set now and then.
 
@@ -294,8 +294,13 @@ Start a new world as in 6f (`-PucWorldLayout=archipelago -PucPack=world,furnishe
 | 8 | In Blackwater's apartment tower, the club or Ironhaven's warehouse, look above the street door inside | a camera. Walk in front of it in a building that is not open: "A camera has you", and the police are called |
 | 9 | Let an officer see you, then run and break their line of sight (round a corner, through a door) and keep going | the officers go to where they last saw you and search round it; out of their sight for 30 seconds and 20 blocks away: "You got away", and Thief XP |
 | 10 | Rent a flat in an Ironhaven tenement (Find a home) and go in and out by its iron street door | the iron door opens for you (and nobody else); the building's camera ignores you |
+| 11 | Stand in a Valewood street for about two minutes and watch | an officer walks a beat near you (a name over their head) and goes again after two to three minutes; Ironhaven sends two, more often; Blackwater one, less often (D-155) |
+| 12 | Start to pick a house's door while that officer can see you (do this on purpose once) | the lock is put away at once (no pick lost), "… is on the beat and saw you at the lock", and the officer comes for you: stand still and you are arrested "for trying to break in"; run and break their line of sight and you can still get away |
+| 13 | Pick a door with an officer near but round a corner | a notice, "Footsteps": an officer on the beat is close and cannot see you yet |
+| 14 | By day, try the Blackwater club's back-office safe while the club is open as a bar | refused: nobody cracks a safe in a building while it is open. At night, with Safecracking and a Pro Pick Set, it opens on the lock screen |
+| 15 | On the Ironhaven-Blackwater road, at the Northgate Freight Depot, go into the office and ask Mara Quint "Any freight going out?" | a sealed manifest for another city with its fee on it; asked again, "Deliver that one first"; a terminal or counter in that city pays it once (D-156) |
 
-Things to write down: whether casing told you what you needed before you broke in; whether the lock felt like skill or luck; whether a house's finds felt worth the risk and the walk to a fence; whether the police felt fair (could you see why they found or lost you?); whether the first Thief point came at a good moment.
+Things to write down: whether casing told you what you needed before you broke in; whether the lock felt like skill or luck; whether a house's finds felt worth the risk and the walk to a fence; whether the police felt fair (could you see why they found or lost you? did you notice the officer on the beat in time?); whether the first Thief point came at a good moment.
 
 ## 7. Logs, screenshots and bug reports
 
