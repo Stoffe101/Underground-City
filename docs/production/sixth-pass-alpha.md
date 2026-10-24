@@ -32,6 +32,17 @@ Branch `feature/world-playability-overhaul`, draft PR [#25](https://github.com/S
 
 ## Not done, and why
 
+* **A person.** Nobody has played any of it; the alpha's last exit criterion is a person's two two-hour sessions.
+* **Two real clients on the new systems.** Only the Crew contract has run with two clients connected, and its deliveries are driven by the server in that journey. Trade premises, the civic project, the raid, the Gunsmith's builds and the general skills have one client at most.
+* **The Gunsmith's kit builds through a real client.** GameTested with real TaCZ (L2); the table's own screen has not been used with a mouse for a kit build.
+* **The Farmer's, Smith's and Gunsmith's workshop stations through a real client**, the Vintner's XP fix rerun, and the back-channel job through a client.
+* **The larger apartment and the premium residence** have no building; no property tax and no market between players.
+* **No tax of any kind** (P4's and the MVP's missing item) and **no per-player loot** (P6's): both need an owner decision first.
+* **Vehicles:** no fuel, repair, insurance, car dealer or harbour.
+* **Population:** interiors, and a dedicated-server measurement with two players.
+* **General skills:** no panel on the terminal (notices and `/uc skills` only); driving, fitness and shooting are still unearned.
+* **Usable buildings:** two thirds of Lost Cities' own buildings are still sealed scenery; no audit of them was done in this pass.
+
 ## Bugs found and fixed in this pass
 
 * The arrival hitch (above), and the alarm panels' blocking read found while measuring it.
@@ -43,3 +54,9 @@ Branch `feature/world-playability-overhaul`, draft PR [#25](https://github.com/S
 * **A tracked order could not be stopped** (raid run 3's pictures): the panel sent the player to the Places book, which stops only places. The terminal's Track chip now reads Stop while that order is tracked, the panel says so, and its details start with a capital.
 
 ## Next
+
+1. **A person plays section 6i of the playtest guide** with a friend on a new alpha world, and files the questionnaire. Nothing in the numbers should be tuned before that.
+2. Owner decisions: a tax (what is taxed, when, on active time only), per-player loot, and whether vehicles stay a priced plan for the alpha.
+3. Two clients on a dedicated server for 30 minutes in one city, with the tick measured (alpha criterion 9), and a two-client burglary with one partner carrying no evidence.
+4. A real client through the Smith's and Gunsmith's stations to a kit-built TaCZ firearm delivered to the armoury.
+5. The two missing property buildings, and a terminal panel for the general skills.
