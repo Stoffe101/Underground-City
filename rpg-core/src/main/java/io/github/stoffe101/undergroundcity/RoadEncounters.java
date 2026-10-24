@@ -236,6 +236,9 @@ public final class RoadEncounters {
         final Map<UUID, Active> active = new LinkedHashMap<>();
         /** Letters paid out, by their encounter id: a letter is worth its fee once, to whoever delivers it. */
         final Set<UUID> delivered = new HashSet<>();
+        /** The Northgate depot's freight (D-156), per player: when the next manifest is due (active ticks) and how many were handed over (the destinations take turns). */
+        final Map<UUID, Long> freightNext = new HashMap<>();
+        final Map<UUID, Integer> freightCount = new HashMap<>();
         int started, settled;
 
         static State load(CompoundTag tag) {
@@ -250,6 +253,13 @@ public final class RoadEncounters {
             for (Tag a : tag.getList("active", Tag.TAG_COMPOUND)) { Active active = Active.load((CompoundTag) a); state.active.put(active.id, active); }
             for (Tag d : tag.getList("delivered", Tag.TAG_INT_ARRAY)) state.delivered.add(NbtUtils.loadUUID(d));
             state.started = tag.getInt("started"); state.settled = tag.getInt("settled");
+            CompoundTag freight = tag.getCompound("freight");
+            for (String key : freight.getAllKeys()) {
+                CompoundTag f = freight.getCompound(key);
+                UUID id = UUID.fromString(key);
+                state.freightNext.put(id, f.getLong("next"));
+                state.freightCount.put(id, f.getInt("count"));
+            }
             return state;
         }
 
@@ -265,6 +275,9 @@ public final class RoadEncounters {
             for (UUID d : delivered) paid.add(NbtUtils.createUUID(d));
             tag.put("delivered", paid);
             tag.putInt("started", started); tag.putInt("settled", settled);
+            CompoundTag freight = new CompoundTag();
+            freightNext.forEach((id, next) -> { CompoundTag f = new CompoundTag(); f.putLong("next", next); f.putInt("count", freightCount.getOrDefault(id, 0)); freight.put(id.toString(), f); });
+            tag.put("freight", freight);
             return tag;
         }
 
@@ -734,16 +747,17 @@ public final class RoadEncounters {
             UUID commit = already ? UUID.randomUUID() : id;   // a stale letter is still taken back, through the same durable path
             ledger.prepareEncounter(player.getUUID(), commit, "letter", fee, after.save(new ListTag()), QShopEconomy.balance(player) + fee, xp, Map.of());
             WorkOrderService.recover(player, ledger);
+            boolean freight = Freight.KIND.equals(letter.getString("kind"));   // a depot manifest (D-156) travels the letter's path, under its own name
             if (!already) {
                 state.delivered.add(id);
                 state.settled++;
                 state.setDirty();
-                CitizenState.get(player.server).bumpJourney(player.getUUID(), "letters");
+                CitizenState.get(player.server).bumpJourney(player.getUUID(), freight ? "freight" : "letters");
                 paid += fee;
-                Notice.send(player, Notice.Kind.DELIVERED, "Letter delivered", "+" + fee + " credits for the letter to " + TerminalScreenText.capitalize(city) + ".");
-                LOGGER.info("[UC] letter {} delivered by {} in {} for {} credits", id, player.getGameProfile().getName(), city, fee);
+                Notice.send(player, Notice.Kind.DELIVERED, freight ? "Freight delivered" : "Letter delivered", "+" + fee + " credits for the " + (freight ? "manifest" : "letter") + " to " + TerminalScreenText.capitalize(city) + ".");
+                LOGGER.info("[UC] {} {} delivered by {} in {} for {} credits", freight ? "freight manifest" : "letter", id, player.getGameProfile().getName(), city, fee);
             } else {
-                player.sendSystemMessage(Component.literal("That letter was already delivered; the clerk keeps it.").withStyle(ChatFormatting.GRAY));
+                player.sendSystemMessage(Component.literal("That " + (freight ? "manifest" : "letter") + " was already delivered; the clerk keeps it.").withStyle(ChatFormatting.GRAY));
             }
         }
         return paid;

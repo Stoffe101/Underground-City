@@ -2036,7 +2036,8 @@
       "lines": [
         "Crates, barrels, rope. If you're hauling, you're buying from me.",
         "The night man's Bram. He doesn't miss much, and he doesn't take tips.",
-        "Ironhaven sends steel south, Blackwater sends boards north. Everything stops here a night."
+        "Ironhaven sends steel south, Blackwater sends boards north. Everything stops here a night.",
+        "Walking to a city anyway? Ask me for a manifest. The depot offices pay on delivery."
       ],
       "shop": "roadside:northgate_dispatch"
     },

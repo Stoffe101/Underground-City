@@ -161,6 +161,7 @@ final class Dialogue {
             }
             case "shopkeeper" -> {
                 out.add(new Choice("shop", "What have you got?", citizen != null, citizen == null ? "Register first" : ""));
+                if (npc.shop().equals(Freight.DEPOT_SHOP)) out.add(new Choice("freight", "Any freight going out?", citizen != null, citizen == null ? "Register first" : ""));
                 out.add(new Choice("rumour", "Anything I should know?", true, ""));
             }
             case "instructor" -> {
@@ -197,6 +198,7 @@ final class Dialogue {
             case "end" -> release(villager);   // the screen was closed on the client: no reply, just let the citizen go
             case "bye" -> { release(villager); TerminalNetwork.closeDialogue(player); }
             case "stock" -> open(player, villager, npc, stockText(player, villager, citizen));
+            case "freight" -> open(player, villager, npc, npc.shop().equals(Freight.DEPOT_SHOP) ? Freight.ask(player, villager) : "I do not send freight.");
             case "shop" -> {
                 release(villager);
                 TerminalNetwork.closeDialogue(player);

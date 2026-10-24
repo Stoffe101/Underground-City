@@ -395,7 +395,8 @@ def northgate_depot() -> Place:
     p.npc(25, 0, 12, "shopkeeper", "Mara Quint", "cartographer", shop="roadside:northgate_dispatch",
           lines=["Crates, barrels, rope. If you're hauling, you're buying from me.",
                  "The night man's Bram. He doesn't miss much, and he doesn't take tips.",
-                 "Ironhaven sends steel south, Blackwater sends boards north. Everything stops here a night."])
+                 "Ironhaven sends steel south, Blackwater sends boards north. Everything stops here a night.",
+                 "Walking to a city anyway? Ask me for a manifest. The depot offices pay on delivery."])
     p.npc(25, 0, 6, "guard", "Bram Okoro", "armorer",
           lines=["Depot's open for business. The office isn't.", "I walk the racks every hour. Every hour."])
     for (x, z) in [(1, 9), (30, 9), (17, 1)]:

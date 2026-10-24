@@ -59,6 +59,10 @@ Since D-148 a place goes up a slice per tick, and the road check now builds it t
 
 Every place on the same lot as the day before but the Old Cannery, which stood a few blocks away (966, 64, 1069). Slices aim at 15 ms; the longest are the steps that are not divided (handing the place its people and the build's record, and the driveway), which one of them was not measured. The worst tick fell from 448 ms to 58 ms.
 
+### Freight from the Northgate depot (D-156)
+
+The depot's dispatcher, Mara Quint, answers "Any freight going out?" with a **sealed manifest** for the depot office of another city: the cities but the depot's own end of the road, the farthest first, then in turn. Any terminal or counter in that city pays it on delivery, **once**, through the courier letter's own path (one ledger commit, one once-only record; a copy pays nothing and is taken back). The fee grows with the way to go as a letter's does (20 to 75 credits), plus 40 career XP. One manifest at a time; the next after ten minutes of active play. The dispatcher says so when asked too early or while one is still carried. Nothing is lost when a manifest is not delivered: it waits in the pack. `Freight`, the depot's book in the road encounters' saved data; GameTest `theDepotHandsOneManifestAtATimeAndItPaysOnceInItsCity`. Through a real client (freight run 5, a new world, the depot at 466, 70, 993): a manifest for Valewood worth 64 credits, refused a second while carrying it, and paid at a terminal in a Valewood street.
+
 ### Salvage
 
 The Kessler yard's scrap heaps (`underground_city:scrap_heap`, a new block with its own sprite) are a resource site of 54 veins bound to the yard's district, refilling after 60 minutes of active play (never offline), never over a block somebody placed. A heap drops 1 to 4 iron nuggets and, three times in ten, copper, redstone, chain or (rarely) a machined part. The economy model counts the yard (one rotation stands): at most 15 iron, 8 copper and 1 machined part an active hour if every heap is stripped, under the regrowing sites' iron (an invariant).

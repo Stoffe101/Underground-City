@@ -226,6 +226,51 @@ public final class RoadEncounterGameTests {
         helper.succeed();
     }
 
+    /** The Northgate depot's freight (D-156): one manifest at a time, the destinations in turn, the next after its time, paid once in its city, and the book kept over a save. */
+    @GameTest(template = "empty")
+    public static void theDepotHandsOneManifestAtATimeAndItPaysOnceInItsCity(GameTestHelper helper) throws Exception {
+        if (!QShopEconomy.available() || !QShopEconomy.configured(helper.getLevel().getServer())) { helper.succeed(); return; }
+        ServerLevel level = helper.getLevel();
+        List<CityRegions.Region> real = CityRegions.INSTANCE.all();
+        BlockPos here = helper.absolutePos(BlockPos.ZERO);
+        String dimension = level.dimension().location().toString();
+        // the depot stands by Blackwater; Ironhaven is 40 chunks east, Valewood 70 chunks south
+        CityRegions.INSTANCE.replaceForTest(List.of(new CityRegions.Region("blackwater", dimension, here.getX() >> 4, here.getZ() >> 4, 48),
+            new CityRegions.Region("ironhaven", dimension, (here.getX() >> 4) + 40, here.getZ() >> 4, 48),
+            new CityRegions.Region("valewood", dimension, here.getX() >> 4, (here.getZ() >> 4) + 70, 48)));
+        Journal journal = journal(helper);
+        try {
+            FakePlayer hauler = player(helper, "uc_enc_freight");
+            QShopEconomy.applyBalance(hauler, 0);
+            RoadEncounters.State book = new RoadEncounters.State();
+            BlockPos depot = here.offset(5 * 16, 0, 0);
+            long now = 1_000;
+            Freight.Issue first = Freight.issue(hauler, depot, now, book);
+            check(first.refusal().isEmpty() && first.city().equals("valewood"), "the first manifest goes to the farthest city but the depot's own: " + first);
+            var tag = first.manifest().getTagElement("uc_letter");
+            check(tag != null && tag.getString("to").equals("valewood") && Freight.KIND.equals(tag.getString("kind")) && tag.getInt("fee") == first.fee() && first.fee() >= 20 && first.fee() <= 75,
+                "a sealed manifest for Valewood with a fee by the way to go: " + tag);
+            hauler.getInventory().add(first.manifest().copy());
+            Freight.record(book, hauler.getUUID(), now);
+            check(!Freight.issue(hauler, depot, now + 10 * Freight.EVERY_SECONDS * 20L, book).refusal().isEmpty(), "a second manifest while the first is still carried");
+            BlockPos valewood = new BlockPos(((here.getX() >> 4) << 4) + 8, here.getY(), (((here.getZ() >> 4) + 70) << 4) + 8);
+            check(RoadEncounters.deliver(hauler, here.offset(2, 0, 2), journal.ledger()) == 0, "Blackwater paid for a manifest to Valewood");
+            check(RoadEncounters.deliver(hauler, valewood, journal.ledger()) == first.fee() && QShopEconomy.balance(hauler) == first.fee(), "Valewood did not pay the manifest's fee");
+            hauler.getInventory().add(first.manifest().copy());
+            check(RoadEncounters.deliver(hauler, valewood, journal.ledger()) == 0 && QShopEconomy.balance(hauler) == first.fee(), "a copy of a delivered manifest paid again");
+            check(Freight.carrying(hauler) == null, "the copy was not taken back");
+            check(Freight.issue(hauler, depot, now + 100, book).refusal().contains("minutes"), "the next manifest came before its time");
+            Freight.Issue second = Freight.issue(hauler, depot, now + Freight.EVERY_SECONDS * 20L, book);
+            check(second.refusal().isEmpty() && second.city().equals("ironhaven"), "the next manifest does not go to the other city in turn: " + second);
+            RoadEncounters.State reloaded = RoadEncounters.State.load(book.save(new net.minecraft.nbt.CompoundTag()));
+            check(reloaded.freightNext.equals(book.freightNext) && reloaded.freightCount.equals(book.freightCount), "the depot's book was lost over a save");
+        } finally {
+            CityRegions.INSTANCE.replaceForTest(real);
+            journal.close();
+        }
+        helper.succeed();
+    }
+
     /** An encounter set up the road beside a synthetic road on a platform in the sky: off the deck, with its person and props; ended, it takes its props back but leaves an opened barrel. */
     @GameTest(template = "empty", batch = "uc_encounter_world", timeoutTicks = 800)
     public static void anEncounterStandsOffTheRoadAndIsTakenBackWhenItEnds(GameTestHelper helper) {
