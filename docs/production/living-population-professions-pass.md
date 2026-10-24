@@ -76,3 +76,5 @@ The crowd scenario (`-PucPlaytest=crowd`) stops at eight streets in a new furnis
 3. The Farmer's, Smith's and Gunsmith's station loops through a real client, and a back-channel job.
 4. The business and property layer: a workshop, cellar or farm you rent or buy, with capacity, storage and running costs.
 5. People who bring work: a resident's broken electronics, a café's produce order.
+6. Find what makes the first Lost Cities lookup in a city take about 600 ms (the log now names the chunk), and whether walking in costs the same as a teleport.
+7. Valewood's hills: people above and below the player's level are out of sight; the line-of-sight preference could favour spots near the player's own height.
