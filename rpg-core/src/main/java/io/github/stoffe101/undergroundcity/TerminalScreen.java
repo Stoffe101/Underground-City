@@ -101,6 +101,15 @@ public final class TerminalScreen extends UcScreen {
         }
         return null;
     }
+    /** Where a skill card is against the scrolled viewport: -1 above it, 1 below it, 0 inside, 2 when the tree has no such card (a scripted player turns the wheel the right way). */
+    int skillBeyond(String id) {
+        for (int i = 0; i < tree().size() && i < nodeX.length; i++) {
+            if (!tree().get(i).id().equals(id)) continue;
+            int y = nodeY[i] - skillScroll + nodeH / 2;
+            return y < treeTop ? -1 : y >= treeBottom ? 1 : 0;
+        }
+        return 2;
+    }
     Carry carry() {
         String job = row() == null ? null : row().id();
         String skill = tree().isEmpty() ? null : tree().get(Math.min(selectedSkill, tree().size() - 1)).id();

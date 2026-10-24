@@ -272,7 +272,8 @@ final class BurglaryScenario {
     /**
      * Solves the lock on the screen in front of the player with the real pointer, pin by pin: the pointer goes to the pin's sweet spot (asked of the server, one tick old) and the button is held until
      * the pin sets. With {@code sloppy} the hand first presses a fifth of the bar away from the sweet spot until the pick is strained to about 45 percent (a noisy pick, which trips an alarm that a clean
-     * one would slip past), then works the lock honestly. A spool pin (D-145) that turns the pick back moves its sweet spot: the hand lets go and aims again, as a person watching the lamp would.
+     * one would slip past), then works the lock honestly. A spool pin (D-145) that turns the pick back moves its sweet spot: the hand lets go and aims again, as a person watching the lamp would; a strain past half
+     * (a stall of the server, the pin moving under a press the hand had not yet seen) lets go until the gauge eases.
      */
     static void solve(String label, boolean sloppy) {
         final int[] state = {sloppy ? -1 : 0}, wait = {0}, pinsBefore = {0}, guard = {0}, geometry = new int[3], retries = {0};
@@ -280,7 +281,11 @@ final class BurglaryScenario {
         final int[] spools = {0};
         Playtest.queue("solve " + label + " on the real screen", () -> { }, () -> {
             var mc = Minecraft.getInstance();
-            if (!(mc.screen instanceof LockpickScreen screen)) { Playtest.mouseButton(1, false); return state[0] > 0 || guard[0] > 0; }
+            if (!(mc.screen instanceof LockpickScreen screen)) {
+                Playtest.mouseButton(1, false);
+                if (state[0] > 0 || guard[0] > 0) Playtest.log("LOCK " + label + ": the screen closed in state " + state[0] + " after " + guard[0] + " ticks, the last strain read " + Math.round(strain[0]) + " percent");
+                return state[0] > 0 || guard[0] > 0;
+            }
             if (++guard[0] > 2400) { Playtest.fail(label + " was not solved in 2400 ticks"); return true; }
             var server = mc.getSingleplayerServer();
             if (state[0] != 3) server.execute(() -> { var active = LockService.activeFor(mc.player.getUUID()); if (active != null) { sweet[0] = active.session.sweetSpot(); strain[0] = active.session.strainPercent(); } });
@@ -309,14 +314,23 @@ final class BurglaryScenario {
                 case 2 -> { if (--wait[0] <= 0) { pinsBefore[0] = screen.debugPinsSet(); Playtest.mouseButton(1, true); wait[0] = 0; state[0] = 3; } }
                 case 3 -> {
                     wait[0]++;
-                    if (screen.debugPinsSet() > pinsBefore[0]) { Playtest.mouseButton(1, false); sweet[0] = -1; state[0] = 1; retries[0] = 0; }
+                    if (screen.debugPinsSet() > pinsBefore[0]) {
+                        Playtest.mouseButton(1, false); sweet[0] = -1; state[0] = 1; retries[0] = 0;
+                        Playtest.log("LOCK " + label + ": pin " + screen.debugPinsSet() + " set after " + wait[0] + " ticks, strain " + Math.round(strain[0]) + " percent");
+                    }
                     else if (live[0] >= 0 && Math.abs(live[0] - aimed[0]) > 0.05) {
                         // the sweet spot moved under the hand without the pin setting: a spool pin turned the pick back
                         Playtest.mouseButton(1, false); sweet[0] = -1; state[0] = 1;
-                        Playtest.log("LOCK " + label + ": a spool pin turned the pick back (" + (++spools[0]) + "); aiming again");
+                        Playtest.log("LOCK " + label + ": a spool pin turned the pick back (" + (++spools[0]) + ") after " + wait[0] + " ticks, strain " + Math.round(strain[0]) + " percent; aiming again");
+                    }
+                    else if (strain[0] >= 55) {
+                        // the gauge is past half: let go until it eases, as a person watching it would
+                        Playtest.mouseButton(1, false); state[0] = 4;
+                        Playtest.log("LOCK " + label + ": the strain read " + Math.round(strain[0]) + " percent after " + wait[0] + " ticks; letting go until it eases");
                     }
                     else if (wait[0] > 90) { Playtest.mouseButton(1, false); sweet[0] = -1; state[0] = 1; if (++retries[0] > 4) { Playtest.fail(label + ": a pin would not set after five tries"); return true; } }
                 }
+                case 4 -> { if (strain[0] <= 15) { sweet[0] = -1; state[0] = 1; } }
                 default -> { }
             }
             return false;

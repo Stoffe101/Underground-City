@@ -129,8 +129,8 @@ final class JourneyScenario {
     private static void scripted(String what) { F.scripted.add(what); Playtest.log("JOURNEY SCRIPTED " + what); }
 
     private static CitizenState.Citizen citizen() { return server(() -> CitizenState.get(mc().getSingleplayerServer()).find(mc().player.getUUID()).orElse(null)); }
-    private static double wallet() { return server(() -> QShopEconomy.balance(me())); }
-    private static int count(Item item) { return server(() -> me().getInventory().countItem(item)); }
+    static double wallet() { return server(() -> QShopEconomy.balance(me())); }
+    static int count(Item item) { return server(() -> me().getInventory().countItem(item)); }
 
     private static void shot(String name) {
         Playtest.queue("screenshot " + name, () -> Playtest.screenshotNextFrame("uc-journey-" + name));
@@ -455,7 +455,7 @@ final class JourneyScenario {
         return best;
     }
 
-    private static void choose(String label, String expect) {
+    static void choose(String label, String expect) {
         clickAt("'" + label + "'", () -> {
             if (!(mc().screen instanceof DialogueScreen s)) return null;
             for (int i = 0; i < 8; i++) {
@@ -472,7 +472,7 @@ final class JourneyScenario {
         Playtest.wait("draw", 10);
     }
 
-    private static int jobIndex(String id) {
+    static int jobIndex(String id) {
         if (!(mc().screen instanceof TerminalScreen t)) return -1;
         var jobs = t.visibleJobs();
         for (int i = 0; i < jobs.size(); i++) if (jobs.get(i).id().equals(id)) return i;
@@ -574,7 +574,7 @@ final class JourneyScenario {
     }
 
     /** Holds the left mouse button on a block until it is gone (as a player mines), aiming at it every tick. */
-    private static void mine(String label, Supplier<BlockPos> block, int budget) {
+    static void mine(String label, Supplier<BlockPos> block, int budget) {
         final BlockPos[] target = new BlockPos[1];
         final boolean[] down = {false};
         final int[] unaimed = {0}, nudge = {0};
@@ -761,23 +761,23 @@ final class JourneyScenario {
 
     // ------------------------------------------------------------------------------------------------ 4. the real crafting screens
 
-    private static int[] slotCentre(AbstractContainerScreen<?> screen, Slot slot) {
+    static int[] slotCentre(AbstractContainerScreen<?> screen, Slot slot) {
         return new int[]{screen.getGuiLeft() + slot.x + 8, screen.getGuiTop() + slot.y + 8};
     }
 
-    private static Slot inventorySlotWith(AbstractContainerScreen<?> screen, java.util.function.Predicate<ItemStack> what) {
+    static Slot inventorySlotWith(AbstractContainerScreen<?> screen, java.util.function.Predicate<ItemStack> what) {
         for (Slot s : screen.getMenu().slots) if (s.container instanceof net.minecraft.world.entity.player.Inventory && s.getContainerSlot() < 36 && what.test(s.getItem())) return s;
         return null;
     }
 
     /** An empty square of the main inventory or the hotbar (never an armour or off-hand square, which refuse most things). */
-    private static Slot emptyInventorySlot(AbstractContainerScreen<?> screen) {
+    static Slot emptyInventorySlot(AbstractContainerScreen<?> screen) {
         for (Slot s : screen.getMenu().slots) if (s.container instanceof net.minecraft.world.entity.player.Inventory && s.getContainerSlot() < 36 && s.getItem().isEmpty()) return s;
         return null;
     }
 
     /** One real click on a slot (left or right button), with Shift held when asked. */
-    private static void slotClick(String label, Supplier<Slot> slot, int button, boolean shift) {
+    static void slotClick(String label, Supplier<Slot> slot, int button, boolean shift) {
         final Slot[] s = new Slot[1];
         Playtest.queue("point at " + label, () -> {
             s[0] = mc().screen instanceof AbstractContainerScreen<?> ? slot.get() : null;
@@ -795,15 +795,15 @@ final class JourneyScenario {
         Playtest.wait("the server answers", 5);
     }
 
-    private static Slot gridSlot(int index) {
+    static Slot gridSlot(int index) {
         // the crafting grids are the menu's first slots: 0 is the result, then 1..4 (2x2) or 1..9 (3x3)
         return ((AbstractContainerScreen<?>) mc().screen).getMenu().slots.get(index);
     }
 
-    private static boolean carried() { return mc().player != null && !mc().player.containerMenu.getCarried().isEmpty(); }
+    static boolean carried() { return mc().player != null && !mc().player.containerMenu.getCarried().isEmpty(); }
 
     /** Puts whatever is on the pointer back in an empty inventory slot. */
-    private static void putBack(String label) {
+    static void putBack(String label) {
         final Slot[] s = new Slot[1];
         Playtest.queue("point at an empty inventory slot for " + label, () -> {
             s[0] = carried() && mc().screen instanceof AbstractContainerScreen<?> screen ? emptyInventorySlot(screen) : null;
@@ -813,7 +813,9 @@ final class JourneyScenario {
         });
         Playtest.wait("settle", 3);
         Playtest.queue("put back " + label, () -> { if (s[0] != null) { Playtest.mouseButton(1, true); Playtest.mouseButton(1, false); } });
-        Playtest.wait("the server answers", 5);
+        // the server answers when it answers: a fixed five ticks was too short for a loaded server (Cannabis run 5, two clients on four cores)
+        final int[] t = {0};
+        Playtest.queue("the server answers", () -> t[0] = 0, () -> !carried() || ++t[0] > 60, 80);
         Playtest.queue("nothing left on the pointer after " + label, () -> { if (carried()) Playtest.fail("still carrying " + mc().player.containerMenu.getCarried() + " after putting back " + label); });
     }
 
@@ -1359,10 +1361,10 @@ final class JourneyScenario {
      * Places the held block on firm ground ahead with a right click: a full, sturdy top two or three blocks away with room above it (a garden plant is not ground), aimed at until the
      * crosshair is on that top (a software-rendered frame lags the aim), retried a quarter turn round each time, at most six times. {@code spot} receives where it should stand.
      */
-    private static void placeAhead(String label, net.minecraft.world.level.block.Block block, BlockPos[] spot) { placeAhead(label, block, spot, pos -> true); }
+    static void placeAhead(String label, net.minecraft.world.level.block.Block block, BlockPos[] spot) { placeAhead(label, block, spot, pos -> true); }
 
     /** The same, only where {@code allowed} says a person may build (a city building's lot, its garden included, is not theirs to build on). */
-    private static void placeAhead(String label, net.minecraft.world.level.block.Block block, BlockPos[] spot, java.util.function.Predicate<BlockPos> allowed) {
+    static void placeAhead(String label, net.minecraft.world.level.block.Block block, BlockPos[] spot, java.util.function.Predicate<BlockPos> allowed) {
         final int[] tick = {0}, tries = {0};
         Playtest.queue("place " + label + " on the ground ahead with a right click", () -> { tick[0] = 0; tries[0] = 0; spot[0] = null; }, () -> {
             var p = mc().player;
@@ -1387,7 +1389,7 @@ final class JourneyScenario {
     }
 
     /** Puts an item on the hotbar the way a person does when it is in the main inventory (E, click it, click the last hotbar square, Escape), then selects it with its number key. */
-    private static void hold(String label, Item item) {
+    static void hold(String label, Item item) {
         final boolean[] needed = {false};
         Playtest.queue("is " + label + " on the hotbar", () -> {
             int slot = server(() -> { var inv = me().getInventory(); for (int i = 0; i < 9; i++) if (inv.items.get(i).is(item)) return i; return -1; });
@@ -1409,7 +1411,7 @@ final class JourneyScenario {
         Playtest.wait("select", 4);
     }
 
-    private static void slotClickIf(boolean[] needed, String label, Supplier<Slot> slot, int button) {
+    static void slotClickIf(boolean[] needed, String label, Supplier<Slot> slot, int button) {
         final Slot[] s = new Slot[1];
         Playtest.queue("point at " + label, () -> {
             if (!needed[0]) return;

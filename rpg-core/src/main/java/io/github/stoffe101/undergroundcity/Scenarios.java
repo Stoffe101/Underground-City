@@ -16,6 +16,10 @@ final class Scenarios {
             case "doorwalk" -> doorwalk();
             case "burglary" -> BurglaryScenario.build();
             case "thief" -> ThiefScenario.build();
+            case "heist" -> HeistScenario.build();
+            case "cannabis" -> CannabisScenario.build();
+            case "patrol" -> PatrolScenario.build();
+            case "freight" -> FreightScenario.build();
             case "sccamera" -> CameraMeasureScenario.build();
             case "alarm" -> AlarmScenario.build();
             case "security" -> SecurityScenario.build();

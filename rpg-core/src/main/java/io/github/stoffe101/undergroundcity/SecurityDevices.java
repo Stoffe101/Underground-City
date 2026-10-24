@@ -180,5 +180,8 @@ public final class SecurityDevices {
         Thievery.bypassed(player, b.key(), "cameras");
     }
 
+    /** When a camera last warned this thief (Camera Sense), or null: a scripted player's check that the warning came. Server thread only, like the map. */
+    static Long warnedAt(java.util.UUID player) { return WARNED.get(player); }
+
     static String status() { return "camera sightings " + sightings + ", calls " + calls + ", looped buildings " + LOOPED.size(); }
 }

@@ -27,6 +27,8 @@ public final class DialogueScreen extends UcScreen {
 
     /** The id of the entity this conversation is with (a scripted playtest checks it spoke to the person it meant to). */
     int entityId() { return entityId; }
+    /** What the person said (for the scripted scenarios). */
+    String text() { return text; }
 
     DialogueScreen(int entityId, String name, String subtitle, String city, String text, List<Choice> choices, boolean qa) {
         super(Component.literal("Underground City | " + name));

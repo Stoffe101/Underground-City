@@ -117,6 +117,33 @@ public final class Playtest {
         var window = mc().getWindow();
         input("move " + (window.getWidth() / 2) + " " + (window.getHeight() / 2));
     }
+    /** What the server said to this player (chat and the line above the hotbar), the last 200 lines; {@link #heardCount} counts every line ever heard, so a mark taken earlier stays valid. */
+    private static final List<String> heard = new java.util.ArrayList<>();
+    private static int heardCount;
+
+    @SubscribeEvent
+    public static void heard(net.minecraftforge.client.event.ClientChatReceivedEvent event) {
+        if (!enabled()) return;
+        String line = event.getMessage().getString();
+        synchronized (heard) {
+            heard.add(line);
+            heardCount++;
+            while (heard.size() > 200) heard.remove(0);
+        }
+        log("heard: " + line);
+    }
+
+    /** How many lines have been heard so far: a mark for {@link #heardSince}. */
+    static int heardCount() { synchronized (heard) { return heardCount; } }
+
+    /** The first line heard since {@code mark} that contains {@code part}, or null: a step checks a refusal or a warning by what the player was really shown. */
+    static String heardSince(int mark, String part) {
+        synchronized (heard) {
+            for (int i = Math.max(0, heard.size() - (heardCount - mark)); i < heard.size(); i++) if (heard.get(i).contains(part)) return heard.get(i);
+        }
+        return null;
+    }
+
     static void command(String text) { Minecraft.getInstance().player.connection.sendCommand(text); }
     static Minecraft mc() { return Minecraft.getInstance(); }
 

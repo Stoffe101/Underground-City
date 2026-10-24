@@ -62,22 +62,28 @@ final class ThiefScenario {
     }
 
     private static final Facts F = new Facts();
+
+    /** The street door of the house {@link #chooseHouse} chose (for the patrol scenario, which starts as this one does). */
+    static DoorWalk.Spot door() { return F.door; }
     /** The Thief skill learned first: the one that reads a place (D-143). */
     private static final String FIRST_SKILL = "thief.casing";
 
-    private static void pass(String step) { F.passed.add(step); Playtest.log("THIEF PASS " + step); }
-    private static void scripted(String what) { F.scripted.add(what); Playtest.log("THIEF SCRIPTED " + what); }
+    /** The scenario the log lines and screenshots belong to: this one's, or the advanced burglary's ({@link HeistScenario}), which shares these helpers (one scenario runs per client). */
+    static String tag = "THIEF";
 
-    private static void shot(String name) {
-        Playtest.queue("screenshot " + name, () -> Playtest.screenshotNextFrame("uc-thief-" + name));
+    static void pass(String step) { F.passed.add(step); Playtest.log(tag + " PASS " + step); }
+    static void scripted(String what) { F.scripted.add(what); Playtest.log(tag + " SCRIPTED " + what); }
+
+    static void shot(String name) {
+        Playtest.queue("screenshot " + name, () -> Playtest.screenshotNextFrame("uc-" + tag.toLowerCase(Locale.ROOT) + "-" + name));
         Playtest.wait("frame", 8);
     }
 
-    private static CitizenState.Citizen citizen() { return server(() -> CitizenState.get(mc().getSingleplayerServer()).find(mc().player.getUUID()).orElse(null)); }
-    private static int thiefXp() { CitizenState.Citizen c = citizen(); return c == null ? 0 : c.thiefXp(); }
+    static CitizenState.Citizen citizen() { return server(() -> CitizenState.get(mc().getSingleplayerServer()).find(mc().player.getUUID()).orElse(null)); }
+    static int thiefXp() { CitizenState.Citizen c = citizen(); return c == null ? 0 : c.thiefXp(); }
 
     /** Stolen units the player carries, and how many of them carry the player's own name as the thief. */
-    private static int[] stolen() {
+    static int[] stolen() {
         return server(() -> {
             int all = 0, mine = 0;
             for (ItemStack stack : me().getInventory().items) {
@@ -103,6 +109,7 @@ final class ThiefScenario {
         stopIfFailed("finding a house");
         prepareAtDoor();
         caseIt("1-casing-new", false);
+        waitForClearStreet("valewood");
         pickTheDoor();
         stopIfFailed("the door");
         search();
@@ -114,15 +121,18 @@ final class ThiefScenario {
 
     // ------------------------------------------------------------------------------------------------ registration
 
-    private static void register() {
+    private static void register() { register(0, "the Farmer card", "1 a new citizen (a Farmer) starts at Thief level 1 with no Thief skill"); }
+
+    /** The first-login registration screen with real clicks: the first city, the career card {@code career}; a new citizen must start with an empty Thief track. */
+    static void register(int career, String careerLabel, String passText) {
         until("the client has the ground under the player", Scenarios::groundBelowPlayer, 2400);
         until("the first-login registration screen opens by itself", () -> mc().screen instanceof RegistrationScreen, 1200);
         Playtest.wait("let the screen render", 20);
         clickAt("the first city card", () -> { Playtest.focusWindow(); return ((RegistrationScreen) mc().screen).cardCentre(0); });
         until("the profession step", () -> mc().screen instanceof RegistrationScreen s && s.step() == 1, 100);
         Playtest.wait("settle", 6);
-        // a Farmer: the Thief track is every career's (D-143), so the burglar here is not the Technician
-        clickAt("the Farmer card", () -> ((RegistrationScreen) mc().screen).cardCentre(0));
+        // not the Technician: the Thief track is every career's (D-143)
+        clickAt(careerLabel, () -> ((RegistrationScreen) mc().screen).cardCentre(career));
         until("the confirm step", () -> mc().screen instanceof RegistrationScreen s && s.step() == 2, 100);
         clickAt("CONFIRM", () -> ((RegistrationScreen) mc().screen).confirmCentre());
         until("the screen closes", () -> !(mc().screen instanceof RegistrationScreen), 300);
@@ -132,22 +142,22 @@ final class ThiefScenario {
             CitizenState.Citizen c = citizen();
             if (c == null) { Playtest.fail("no citizen after the click path"); return; }
             F.xpStart = c.thiefXp();
-            Playtest.log("THIEF citizen " + c.city + "/" + c.career + ", Thief XP " + c.thiefXp() + ", level " + c.thiefLevel() + ", Thief points " + server(() -> SkillService.thiefPointsAvailable(c)));
+            Playtest.log(tag + " citizen " + c.city + "/" + c.career + ", Thief XP " + c.thiefXp() + ", level " + c.thiefLevel() + ", Thief points " + server(() -> SkillService.thiefPointsAvailable(c)));
             if (c.thiefXp() != 0 || !c.skills().stream().noneMatch(s -> s.startsWith("thief."))) Playtest.fail("a new citizen does not start with an empty Thief track");
-            else pass("1 a new citizen (a Farmer) starts at Thief level 1 with no Thief skill");
+            else pass(passText);
         });
         Playtest.wait("settle", 10);
     }
 
     // ------------------------------------------------------------------------------------------------ getting about
 
-    private static Vec3 centre(String city) {
+    static Vec3 centre(String city) {
         return server(() -> CityRegions.INSTANCE.all().stream().filter(r -> r.id().equals(city)).findFirst()
             .map(r -> new Vec3(r.centerChunkX() * 16 + 8, 150, r.centerChunkZ() * 16 + 8)).orElse(null));
     }
 
     /** A teleport in spectator mode to {@code where}, logged as scripted, then a wait until the chunks around it are loaded (the client asks for them; nothing here generates terrain). */
-    private static void travel(String label, Supplier<Vec3> where, int chunkRadius) {
+    static void travel(String label, Supplier<Vec3> where, int chunkRadius) {
         final Vec3[] at = new Vec3[1];
         Playtest.queue(label, () -> {
             at[0] = where.get();
@@ -169,7 +179,7 @@ final class ThiefScenario {
     }
 
     /** Puts the player on the street {@code spot} in survival, facing the door (a scripted step, logged by the caller). */
-    private static void standAt(DoorWalk.Spot spot) {
+    static void standAt(DoorWalk.Spot spot) {
         var server = mc().getSingleplayerServer();
         server.execute(() -> {
             ServerPlayer player = me();
@@ -180,7 +190,7 @@ final class ThiefScenario {
     }
 
     /** Walks to {@code target} with the path walker; when it gets stuck the rest is a teleport, logged as scripted. */
-    private static void walkOrTeleport(String label, Supplier<Vec3> target, double within, int budget) {
+    static void walkOrTeleport(String label, Supplier<Vec3> target, double within, int budget) {
         final PathWalker[] walker = new PathWalker[1];
         final int[] ticks = {0};
         Playtest.queue(label, () -> { ticks[0] = 0; walker[0] = new PathWalker(label, target, within); }, () -> {
@@ -192,23 +202,42 @@ final class ThiefScenario {
             if (walker[0] != null) walker[0].stop();
             Vec3 goal = target.get();
             if (goal == null) { Playtest.fail(label + ": the target is gone"); return; }
-            if (walker[0].done() && !walker[0].failed()) { Playtest.log("THIEF walked: " + label); return; }
+            // the walker's arrival is by the ground plan: a goal a floor up (the club's safe is upstairs, and the walker does not climb stairs) counts only when the height is right too
+            double rise = goal.y - mc().player.getY();
+            if (walker[0].done() && !walker[0].failed() && Math.abs(rise) < 1.0) { Playtest.log(tag + " walked: " + label); return; }
             double left = mc().player.position().distanceTo(goal);
-            scripted(String.format(Locale.ROOT, "%s: the walker stopped %.1f blocks short (%s); the rest was a teleport", label, left, walker[0].summary()));
+            scripted(String.format(Locale.ROOT, "%s: the walker stopped %.1f blocks short%s (%s); the rest was a teleport", label, left, Math.abs(rise) >= 1.0 ? String.format(Locale.ROOT, ", %.0f blocks below or above", Math.abs(rise)) : "", walker[0].summary()));
             var server = mc().getSingleplayerServer();
             server.execute(() -> { me().teleportTo(goal.x, goal.y, goal.z); me().setDeltaMovement(Vec3.ZERO); });
         });
         Playtest.wait("settle", 15);
     }
 
-    private static void stopIfFailed(String what) {
-        Playtest.queue("stop if " + what + " failed", () -> { if (Playtest.failures.length() > 0) { Playtest.log("THIEF stopping: " + what + " failed, and the rest depends on it"); summary(); Playtest.finish(); } });
+    /** A careful thief (D-155): on the street, waits until no officer on the beat of {@code city} can see them before working a lock, and logs it when one could. */
+    static void waitForClearStreet(String city) {
+        final int[] t = {0};
+        Playtest.queue("no officer on the beat in sight", () -> t[0] = 0, () -> {
+            String seen = server(() -> {
+                PolicePatrols.Patrol patrol = PolicePatrols.patrolOf(city);
+                if (patrol == null) return null;
+                for (var id : patrol.officers)
+                    if (me().serverLevel().getEntity(id) instanceof TownspersonEntity o && o.distanceTo(me()) <= PolicePatrols.SIGHT + 8 && o.hasLineOfSight(me())) return o.getName().getString();
+                return null;
+            });
+            if (seen != null && t[0] % 100 == 0) Playtest.log(tag + " " + seen + " is on the beat and in sight; the thief waits");
+            t[0]++;
+            return seen == null;
+        }, 6000);
+    }
+
+    static void stopIfFailed(String what) {
+        Playtest.queue("stop if " + what + " failed", () -> { if (Playtest.failures.length() > 0) { Playtest.log(tag + " stopping: " + what + " failed, and the rest depends on it"); summary(); Playtest.finish(); } });
     }
 
     // ------------------------------------------------------------------------------------------------ the house
 
     /** The searchable furniture of a building, nearest {@code from} first: one block per piece (the lower half of a two-block one). */
-    private static List<BlockPos> furniture(ServerLevel level, CityBuildings.Building b, BlockPos from) {
+    static List<BlockPos> furniture(ServerLevel level, CityBuildings.Building b, BlockPos from) {
         Set<BlockPos> found = new LinkedHashSet<>();
         for (int y = b.minY(); y < b.maxY(); y++) for (int x = 0; x < 16; x++) for (int z = 0; z < 16; z++) {
             BlockPos pos = new BlockPos(b.chunkX() * 16 + x, y, b.chunkZ() * 16 + z);
@@ -228,7 +257,7 @@ final class ThiefScenario {
         return false;
     }
 
-    private static void chooseHouse() {
+    static void chooseHouse() {
         Playtest.queue("choose a Valewood house with nobody in, its alarm not armed, and furniture to search (on the server thread)", () -> {
             var server = mc().getSingleplayerServer();
             int cx = mc().player.getBlockX() >> 4, cz = mc().player.getBlockZ() >> 4;
@@ -283,7 +312,10 @@ final class ThiefScenario {
      * the spot a little over two blocks out where a person stands to use it. Every door of the building is logged with what the guard makes of it (a door under the eaves on both sides would
      * not be locked at all).
      */
-    private static DoorWalk.Spot streetDoor(ServerLevel level, CityBuildings.Building b) {
+    static DoorWalk.Spot streetDoor(ServerLevel level, CityBuildings.Building b) { return streetDoor(level, b, spot -> true); }
+
+    /** The same, among the doors {@code accept} approves (the advanced burglary wants a door with a straight way in). */
+    static DoorWalk.Spot streetDoor(ServerLevel level, CityBuildings.Building b, java.util.function.Predicate<DoorWalk.Spot> accept) {
         DoorWalk.Spot best = null;
         StringBuilder doors = new StringBuilder();
         for (int y = b.streetY(); y <= b.streetY() + 3; y++) for (int x = 0; x < 16; x++) for (int z = 0; z < 16; z++) {
@@ -304,13 +336,14 @@ final class ThiefScenario {
             if (!clear) continue;
             Vec3 stand = Vec3.atBottomCenterOf(pos).add(out.getStepX() * 2.2, 0, out.getStepZ() * 2.2);
             float yaw = (float) Math.toDegrees(Math.atan2(out.getStepX(), -out.getStepZ()));
-            best = new DoorWalk.Spot(pos.immutable(), facing, front, out, stand, yaw, b.type(), b.security().id());
+            DoorWalk.Spot spot = new DoorWalk.Spot(pos.immutable(), facing, front, out, stand, yaw, b.type(), b.security().id());
+            if (accept.test(spot)) best = spot;
         }
-        Playtest.log("THIEF doors of " + b.type() + " at chunk " + b.chunkX() + "," + b.chunkZ() + ":" + doors + (best == null ? "; none usable" : "; using " + best.door().toShortString()));
+        Playtest.log(tag + " doors of " + b.type() + " at chunk " + b.chunkX() + "," + b.chunkZ() + ":" + doors + (best == null ? "; none usable" : "; using " + best.door().toShortString()));
         return best;
     }
 
-    private static void prepareAtDoor() {
+    static void prepareAtDoor() {
         Playtest.queue("on the street in front of the house, with five lockpicks in the last hotbar slot and the slot before it empty", () -> {
             var server = mc().getSingleplayerServer();
             server.execute(() -> {
@@ -421,13 +454,15 @@ final class ThiefScenario {
      * A cell a person can stand in near {@code spot}, inside the house, from which the piece can be seen and reached: floor below, room for the body, within three blocks, and a ray from the
      * eye that meets the piece itself first (not a wall or a counter in between). The nearest such cell.
      */
-    private static BlockPos standBeside(BlockPos spot) {
+    private static BlockPos standBeside(BlockPos spot) { return standBeside(spot, F.house); }
+
+    static BlockPos standBeside(BlockPos spot, CityBuildings.Building building) {
         return server(() -> {
             ServerLevel level = level();
             BlockPos best = null;
             double bestDistance = Double.MAX_VALUE;
             for (BlockPos cell : BlockPos.betweenClosed(spot.offset(-3, -1, -3), spot.offset(3, 0, 3))) {
-                if (!F.house.contains(cell) || cell.equals(spot)) continue;
+                if (!building.contains(cell) || cell.equals(spot)) continue;
                 if (level.getBlockState(cell).blocksMotion() || level.getBlockState(cell.above()).blocksMotion() || !level.getBlockState(cell.below()).blocksMotion()) continue;
                 Vec3 eye = Vec3.atBottomCenterOf(cell).add(0, 1.62, 0), target = Vec3.atCenterOf(spot);
                 double distance = eye.distanceTo(target);
@@ -730,9 +765,9 @@ final class ThiefScenario {
         caseIt("13-casing-with-skill", true);
     }
 
-    private static void summary() {
-        Playtest.log("THIEF summary: " + F.passed.size() + " step(s) passed, " + F.scripted.size() + " scripted shortcut(s)");
-        for (String p : F.passed) Playtest.log("THIEF   passed: " + p);
-        for (String s : F.scripted) Playtest.log("THIEF   scripted: " + s);
+    static void summary() {
+        Playtest.log(tag + " summary: " + F.passed.size() + " step(s) passed, " + F.scripted.size() + " scripted shortcut(s)");
+        for (String p : F.passed) Playtest.log(tag + "   passed: " + p);
+        for (String s : F.scripted) Playtest.log(tag + "   scripted: " + s);
     }
 }
