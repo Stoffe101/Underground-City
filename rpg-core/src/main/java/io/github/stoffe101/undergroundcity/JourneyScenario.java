@@ -1429,7 +1429,8 @@ final class JourneyScenario {
     static void use(String label, Supplier<BlockPos> block, BooleanSupplier done, int budget) {
         final int[] t = {0};
         Playtest.queue(label, Playtest::focusWindow, () -> {
-            if (done.getAsBoolean()) return true;
+            // done between the press and its release: let go, or the held button goes on using whatever is selected next (Cannabis run 7: a seed went into the wrong cell while the hotbar changed)
+            if (done.getAsBoolean()) { if (t[0] % 16 == 10 || t[0] % 16 == 11) Playtest.mouseButton(3, false); return true; }   // pressed at 10, released at 12
             BlockPos b = block.get();
             if (b == null) { Playtest.fail(label + ": no block"); return true; }
             look(Vec3.atCenterOf(b));
