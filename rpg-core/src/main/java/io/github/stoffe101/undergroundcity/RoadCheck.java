@@ -257,6 +257,23 @@ public final class RoadCheck {
         for (int k = attempts.size() - 1; k >= 0; k--) work.addFirst(attempts.get(k));
     }
 
+    /**
+     * A place going up a slice per tick: its lot's chunks kept in the world (a player standing there would keep them; the check has nobody), one look a tick, until it stands, then the place's
+     * record as {@link #attempt} would write it. Gives up after ten minutes of ticks, which a slice of at most 15 ms never needs.
+     */
+    private void waitBuilt(MinecraftServer server, List<CorridorPlan> plans, RoadsidePlaces.Place place, List<Double> spots, int i, PlacedSites state, JsonObject entry, JsonArray tries, JsonArray out, double[] at, int ticks) {
+        ServerLevel level = server.overworld();
+        if (RoadsidePlaces.building(place.id()) != null && ticks < 12_000) {
+            int radius = RoadsidePlaces.SEARCH + 32;
+            for (int cx = ((int) at[0] - radius) >> 4; cx <= ((int) at[0] + radius) >> 4; cx++) for (int cz = ((int) at[1] - radius) >> 4; cz <= ((int) at[1] + radius) >> 4; cz++) level.getChunk(cx, cz);
+            work.addFirst(() -> waitBuilt(server, plans, place, spots, i, state, entry, tries, out, at, ticks + 1));
+            return;
+        }
+        entry.addProperty("ticks_to_build", ticks);
+        // built: the record; given up part-way (its lot was refused as it went up): the next spot, as the unsliced check would
+        attempt(server, plans, place, spots, state.done.contains(place.id()) || i >= spots.size() ? spots.size() + 1 : i + 1, state, entry, tries, out);
+    }
+
     /** One candidate spot of a place, with the chunks around it generated first as a player's own approach would; the next spot is queued at the front if this one did not settle it. */
     private void attempt(MinecraftServer server, List<CorridorPlan> plans, RoadsidePlaces.Place place, List<Double> spots, int i, PlacedSites state, JsonObject entry, JsonArray tries, JsonArray out) {
         ServerLevel level = server.overworld();
@@ -264,8 +281,11 @@ public final class RoadCheck {
         if (i <= spots.size() && !state.done.contains(place.id())) {
             double[] at = plans.stream().filter(p -> p.id().equals(place.road())).findFirst().map(p -> p.pointAt(spots.isEmpty() ? 0 : spots.get(Math.min(i, spots.size() - 1)))).orElse(new double[]{0, 0});
             for (int cx = ((int) at[0] - radius) >> 4; cx <= ((int) at[0] + radius) >> 4; cx++) for (int cz = ((int) at[1] - radius) >> 4; cz <= ((int) at[1] + radius) >> 4; cz++) level.getChunk(cx, cz);
-            RoadsidePlaces.Outcome outcome = RoadsidePlaces.serve(level, plans, place, spots, at[0], at[1], state, RoadsidePlaces.SEARCH + 32);
+            // built as a player's arrival builds it: a slice per tick (D-148), the check waiting until it stands; the log line of the build says how many slices and the longest
+            CorridorPlan road = plans.stream().filter(p -> p.id().equals(place.road())).findFirst().orElse(null);
+            RoadsidePlaces.Outcome outcome = road == null ? null : RoadsidePlaces.serve(level, plans, place, spots, at[0], at[1], state, RoadsidePlaces.SEARCH + 32, RoadsidePlaces.deck(road), true);
             if (outcome != null) tries.add(outcome.toString());
+            if (RoadsidePlaces.building(place.id()) != null) { work.addFirst(() -> waitBuilt(server, plans, place, spots, i, state, entry, tries, out, at, 0)); return; }
             if (i < spots.size() && !state.done.contains(place.id())) { work.addFirst(() -> attempt(server, plans, place, spots, i + 1, state, entry, tries, out)); return; }
         }
         Long where = state.where.get(place.id());

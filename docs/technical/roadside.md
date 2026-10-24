@@ -43,6 +43,21 @@ All six places were built, each on its first candidate lot, as a player's arriva
 
 Each build is one server tick of up to half a second, once per world, the first time somebody comes within 144 blocks. An earlier pass of the same check (before the lot was levelled and the relief limit raised from 14 to 16) built five and gave Kessler Salvage up. Four of the six wayside shelters were built in the same world; two found no level, dry ground within 64 blocks of their spots and were given up, as the shelters' own rules say ([three-city-prototype.md](three-city-prototype.md), the rest stops). The lots and their driveways have not been looked at by a person; the photo tour's shots of them are the only visual check.
 
+### Built a slice per tick (October 24 road check, a new world, the same seed; D-148)
+
+Since D-148 a place goes up a slice per tick, and the road check now builds it that way, waiting for it as a player's arrival would:
+
+| Place | Slices | Work | Longest slice | Ticks to build |
+| --- | --- | --- | --- | --- |
+| Crossroads Diner | 8 | 129 ms | 33 ms | 7 |
+| Harrow Farm | 8 | 159 ms | 36 ms | 7 |
+| Kessler Salvage | 8 | 133 ms | 19 ms | 7 |
+| Northgate Depot | 8 | 146 ms | 26 ms | 7 |
+| Saltmarsh Motel | 9 | 190 ms | 53 ms | 8 |
+| Old Cannery | 7 | 189 ms | 58 ms | 6 |
+
+Every place on the same lot as the day before but the Old Cannery, which stood a few blocks away (966, 64, 1069). Slices aim at 15 ms; the longest are the steps that are not divided (handing the place its people and the build's record, and the driveway), which one of them was not measured. The worst tick fell from 448 ms to 58 ms.
+
 ### Salvage
 
 The Kessler yard's scrap heaps (`underground_city:scrap_heap`, a new block with its own sprite) are a resource site of 54 veins bound to the yard's district, refilling after 60 minutes of active play (never offline), never over a block somebody placed. A heap drops 1 to 4 iron nuggets and, three times in ten, copper, redstone, chain or (rarely) a machined part. The economy model counts the yard (one rotation stands): at most 15 iron, 8 copper and 1 machined part an active hour if every heap is stripped, under the regrowing sites' iron (an invariant).
