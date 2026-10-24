@@ -84,6 +84,7 @@ The docs here distinguish **confirmed product direction**, **design proposals**,
 - [Sprint report, October 22 to 23, 2026: gameplay completion, living world and integration pass, with the first-player journey](production/gameplay-completion-pass.md)
 - [Sprint report, October 23, 2026 (second pass): roadside places, road encounters and the SecurityCraft trial](production/living-world-roadside.md)
 - [Sprint report, October 23 to 24, 2026 (third pass): the Thief track, burglary, security, police on the beat, the SecurityCraft decision and the crop's real name](production/thief-progression-pass.md)
+- [Sprint report, October 24, 2026 (fourth pass): property intelligence, the Technician's trade, staff-only rooms and Cannabis processing](production/professions-business-pass.md)
 
 ## Legal and assets
 
