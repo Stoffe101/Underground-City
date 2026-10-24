@@ -1,6 +1,6 @@
 # Tracked destinations and Xaero's Minimap waypoints (D-161)
 
-**Status (October 24, 2026, fifth pass): in Core and GameTested; scripted real clients went through a Technician's tracked service calls with Xaero's Minimap 26.6.0 and World Map 1.47.0 installed (tech runs with navigation), and once without them. Nobody has played it. No run has had two real clients at once.**
+**Status (October 24, 2026, fifth pass): in Core and GameTested; scripted real clients went through a Technician's tracked service calls with Xaero's Minimap 26.6.0 and World Map 1.47.0 installed (technav run 5), and without them (tech run 7), each passing all 18 steps. Nobody has played it. No run has had two real clients at once.**
 
 ## What it does
 
@@ -43,7 +43,7 @@ A player can **track** one destination at a time. Today that is a Technician's s
 | Personal | By construction (sent to one player); GameTested (`TrackingGameTests`). **No two-client run** |
 | Points at a usable entrance | The panel beside the street door, or the street door of a place |
 | The player's own waypoints are untouched | Real client: counted before and after each step (0 → 0 in the runs; a run with player-made waypoints was not done) |
-| Works without Xaero | Real client: tech runs without the navigation set use the status display's arrow, and nothing failed in the bridge |
+| Works without Xaero | Real client: tech run 7, without the navigation set, passed all 18 steps on the status display's arrow; nothing failed in the bridge |
 | The server needs no client mod | By construction: the server side has no Xaero dependency |
 
 ## Evidence
@@ -51,7 +51,7 @@ A player can **track** one destination at a time. Today that is a Technician's s
 * **GameTests (`TrackingGameTests`, 3):** a destination's save round trip; a service call built, ended and finished for two players at once; personal destinations, and a place that ends when it is no longer in the book.
 * **Real client:**
   * **Technician runs with Xaero:** `-PucPack=world,furnished,scarcity,navigation`, a new archipelago world. Run 5 passed every step, `RESULT pass`, including the minimap, the list and world-map captures, arrival, the repair ending the tracking, a second call, the reopen restore and no duplicate.
-  * **Technician runs without Xaero:** see the pass report.
+  * **Technician run without Xaero:** `-PucPack=world,furnished,scarcity`, a new archipelago world. Run 7 passed all 18 steps, `RESULT pass`, 12 logged shortcuts. At each tracked call the status display's arrow pointed the way. The bridge logged "Xaero's Minimap is not installed; tracked destinations are shown on the status display", and no Xaero class was loaded or failed. Run 6 had stopped on the scenario's own second install job, since fixed.
 * **Captures:** the minimap with the waypoint, Xaero's waypoint list and its world map (`uc-tech-6b-minimap`, `6c-xaero-waypoints`, `6d-xaero-world-map` in the run's screenshots, inspected).
 
 ## Limits

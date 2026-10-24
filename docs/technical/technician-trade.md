@@ -118,7 +118,7 @@ The ids, costs and levels of the Technician's tree are unchanged; the legal node
   * **Tech run 4** passed the same steps up to the install. The scenario had set the bench down between the player and the panel, so its aim never reached the panel; the scenario now places it behind the player.
   * **Tech run 5**, on the final tree of the fourth pass, passed all 11 steps: `RESULT pass`. Its repair found the dead part in one probe.
   * **Fifth pass, with Xaero's Minimap and World Map (`-PucPack=world,furnished,scarcity,navigation`).** The scenario added waypoint steps: the waypoint on the minimap, in Xaero's list and on the world map, gone after each job, and restored once after a reopen. Run 4 stopped at the bench, which the scenario had set down out of the player's sight; the scenario now picks a cell in line of sight. Run 5 passed every step, `RESULT pass` (see [navigation](navigation.md)).
-  * **Fifth pass, without Xaero.** Run 6 stopped with "tracking ended" at the install: the scenario had given the building a second install job, and the tracked one went with the first. It now gives a job only to a building with none. The rerun is in the pass report.
+  * **Fifth pass, without Xaero.** Run 6 stopped with "tracking ended" at the install: the scenario had given the building a second install job, and the tracked one went with the first. It now gives a job only to a building with none. Run 7 passed all 18 steps, `RESULT pass`, 12 logged shortcuts, on the status display's arrow alone.
   * **Scripted shortcuts, each logged:**
     * the clock and the travel to Valewood;
     * standing at the panel;

@@ -20,13 +20,30 @@ Branch `feature/world-playability-overhaul`, draft PR [#25](https://github.com/S
 * **Python:** 334 unit tests pass. `validate_repo.py`, the content generators' `--check`, the art check, the item-source audit (0 findings), the underground balance validator, the burglary audit and the economy model's invariants all hold.
 * **Real clients** (a new furnished archipelago world each run):
   * **Technician with Xaero (technav run 5):** all 18 steps passed, `RESULT pass`, 12 scripted shortcuts. A service call's waypoint appeared on the minimap, in Xaero's waypoint list and on its world map. Arriving did not end it, and the repair did. The install job's waypoint came and went the same way. A second call was tracked, and after a save, quit and reopen it was tracked again, one waypoint, no duplicate. The player's own waypoints were counted before and after each step (0 → 0). The walks to the panels were walked; the shortcuts were the clock, the travel to Valewood, the faults raised at once, the computer and bench set down, the skills and parts, and the patch grid's answer (its turns were real clicks).
-  * **Technician without Xaero:** run 6 stopped at the install, because the scenario had given the building a second install job. The scenario was fixed; run 7 is recorded below.
+  * **Technician without Xaero (tech run 7):** all 18 steps passed, `RESULT pass`, 12 scripted shortcuts. The status display's arrow pointed the way at every tracked call, the bridge logged that Xaero is not installed, and nothing failed. Run 6 had stopped on the scenario's own second install job, since fixed.
   * **Vintner workshop (workshop run 3):** all 8 steps passed, `RESULT pass`, 6 scripted shortcuts. The kit's vat was placed with a right click, a batch started and taken with real clicks after six minutes of play, tier 2 fitted, and three bottles sold over the Ironhaven pub's counter with a real click on Sell (+42 credits, the wine shelf 4 → 7). **The walk back to the pub's front door wandered round the block and was finished by a teleport for its last 22 blocks**; from the door on, it was walked. The run also found that no Vintner XP was paid for a batch the station's own clock had finished: fixed and GameTested, not rerun in a client.
 * **Captures** of the new screens at 1280x720, 1920x1080 at GUI scale 2 and 3, and 3440x1440 at GUI scale 2: the three workshop stations, the pub's counter with Sell, the Vintner, Smith and Technician skill trees, the computer's service board, the back-channel job and its patch grid. 17 of the 40 were looked at: every surface at least once, and every size at least once. Three defects were fixed: the job detail's "Open for" label ran into its value ("Left" now); the back-channel description was cut off after two lines; and a workshop recipe without its inputs said "Missing parts", a word the same screen uses for the parts a tier needs ("Missing inputs" now). The fixes were not captured again.
 
 ## Population, measured
 
-*Filled in from the crowd runs when they finish.*
+The crowd scenario (`-PucPlaytest=crowd`) stops at eight streets in a new furnished archipelago world: commercial and residential streets of all three cities by day, Blackwater's nightlife at 22:00, Ironhaven's industry at 03:00 and Valewood at 23:00. At each it counts the people within 64 blocks, those in the server's line of sight, and those on screen (the client's count, best of four directions), and takes four pictures. The travel between stops and the clock are scripted (teleports). Full tables are in [population](../technical/population.md).
+
+| Stop | Baseline (before this pass): in sight / on screen | After (crowd run 4): in sight / on screen |
+| --- | --- | --- |
+| Ironhaven, commercial, 12:00 | 4.5 / 3.8 | 14.4 / 8.5 |
+| Ironhaven, residential, 15:00 | 1.0 / 0.9 | 4.8 / 4.2 |
+| Valewood, commercial, 11:00 | 3.0 / 1.8 | 5.2 / 3.4 |
+| Valewood, residential, 17:00 | 0.6 / 0.5 | 1.2 / 1.0 |
+| Blackwater, commercial, 13:00 | 1.5 / 1.5 | 10.0 / 8.4 |
+| Blackwater, nightlife, 22:00 | 0.0 / 0.0 | 1.6 / 1.1 |
+| Ironhaven, industrial, 03:00 | 0.2 / 0.2 | 2.0 / 1.0 |
+| Valewood, residential, 23:00 | 2.8 / 1.6 | 0.5 / 0.5 |
+
+* **The first version did not work.** With D-162 as first built, the count within 64 blocks rose from 8–24 to 25–56, but the people in sight stayed where they were (runs 2 and 3), and the pictures showed the same empty streets. In a grid of one-chunk blocks a street shows only a small share of what is within 64 blocks, and people spread evenly over the window were mostly round corners and in yards.
+* **The fix** (this pass): people near a player go where the player has a line of sight to, and new people arrive out of view on those streets (see [population](../technical/population.md)). Run 4: three times as many people in sight on the commercial streets of Ironhaven and Blackwater. Its pictures show four to six people down those streets. It is busier, not a crowd.
+* **Still thin:** Valewood's hills hide people above and below the player, and residential streets in the late afternoon and the night streets show one or two.
+* **Cost:** 22 to 27 ms a tick against 19 to 24 in the baseline (one process with the client under a software renderer, not a dedicated server). A street pass averages 1.8 to 4.4 ms every ten ticks, against 0.25 to 0.6. Run 4's worst pass, 612 ms, was the first after the teleport into a new city: one Lost Cities lookup for a chunk that was not loaded. The service no longer asks about such a chunk, and a pass's lookups share one budget. Crowd run 5 checks this; its result is below if it finished.
+* **Not measured:** two players in one street, a dedicated server, walking into a city instead of a teleport.
 
 ## Not done, and why
 
