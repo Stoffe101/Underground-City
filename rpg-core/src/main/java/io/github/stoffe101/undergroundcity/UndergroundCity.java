@@ -271,6 +271,8 @@ public final class UndergroundCity {
         event.addListener(ShopCounters.INSTANCE);
         event.addListener(RoadsidePlaces.CATALOG);
         event.addListener(RoadEncounters.CATALOG);
+        event.addListener(CrewContracts.CATALOG);
+        event.addListener(CivicProjects.CATALOG);
     }
 
     private void addCreativeTab(BuildCreativeModeTabContentsEvent event) {

@@ -1,0 +1,21 @@
+{
+  "schema_version": 3,
+  "title": "Lanterns for the Valewood market square",
+  "career": "any",
+  "level": 1,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "minecraft:lantern",
+      "count": 4
+    }
+  ],
+  "credits": 60,
+  "xp": 160,
+  "capacity": 2,
+  "refill_ticks": 12000,
+  "legality": "legal",
+  "buyer": "valewood_council",
+  "civic": "underground_city:valewood_market",
+  "trust_gain": 1
+}

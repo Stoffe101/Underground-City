@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "title": "Fit out the Northgate depot canteen",
+  "city": "ironhaven",
+  "summary": "The depot's canteen reopens for the night shift: flour from a Farmer, fittings from a Smith and cider from a Vintner. Each part pays whoever brings it; the bonus is shared equally by everyone who brought a part.",
+  "bonus": 240,
+  "cooldown_ticks": 24000,
+  "parts": [
+    {
+      "id": "flour",
+      "order": "underground_city:crew_canteen_flour",
+      "fill_price": 180
+    },
+    {
+      "id": "fittings",
+      "order": "underground_city:crew_canteen_fittings",
+      "fill_price": 260
+    },
+    {
+      "id": "cider",
+      "order": "underground_city:crew_canteen_cider",
+      "fill_price": 180
+    }
+  ]
+}

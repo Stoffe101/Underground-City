@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "title": "Set up the Valewood harvest fair",
+  "city": "valewood",
+  "summary": "The market square's harvest fair needs produce from a Farmer, wine from a Vintner and lighting from a Technician. Each part pays whoever brings it; the bonus is shared equally by everyone who brought a part.",
+  "bonus": 260,
+  "cooldown_ticks": 24000,
+  "parts": [
+    {
+      "id": "produce",
+      "order": "underground_city:crew_fair_produce",
+      "fill_price": 270
+    },
+    {
+      "id": "wine",
+      "order": "underground_city:crew_fair_wine",
+      "fill_price": 200
+    },
+    {
+      "id": "lighting",
+      "order": "underground_city:crew_fair_lighting",
+      "fill_price": 220
+    }
+  ]
+}

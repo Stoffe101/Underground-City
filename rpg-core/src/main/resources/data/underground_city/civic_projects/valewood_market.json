@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "title": "Reopen the Valewood market",
+  "city": "valewood",
+  "goal": 5,
+  "builds": "market_stalls",
+  "summary": "The market square has stood empty since the stalls were taken down. The council wants frames from a Smith, opening stock from the Farmers and Vintners, lights from a Technician, and lanterns from anybody. Five contributions put the stalls back up.",
+  "flavour_after": "The stalls are back up by the centre. The council did it with whoever brought them the frames and the stock."
+}

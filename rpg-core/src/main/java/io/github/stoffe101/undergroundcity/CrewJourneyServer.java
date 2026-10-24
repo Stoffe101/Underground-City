@@ -502,10 +502,12 @@ public final class CrewJourneyServer {
                 "conservation after the exchange purchases: " + QShopEconomy.balance(farmer) + " + " + QShopEconomy.balance(smith) + " + " + crew.bank + " + " + rentTotal + " + " + SPENT + " + " + exchangeSpent);
             System.out.println("[UC-JOURNEY] exchange purchases after the restart passed: " + survivalFacts);
         }
+        JsonObject contract = SurvivalJourney.ON ? null : crewContract(server, farmer, smith);   // (not with shared finances: a delivery's pay would be swept into the bank)
         server.getPlayerList().saveAll();
         JsonObject marker = new JsonObject();
         marker.addProperty("scenario", "crew");
         marker.addProperty("phase", 2);
+        if (contract != null) marker.add("crew_contract", contract);
         marker.addProperty("connected_clients", 2);
         marker.addProperty("unresolved_transfers_found_in_file_at_start", pendingBeforeStart);
         marker.addProperty("unresolved_after_recovery_at_server_start", pendingAfterStart);
@@ -531,6 +533,52 @@ public final class CrewJourneyServer {
     }
 
     private static long ledgerStartTicks() { return state.get("rent_progress_ticks").getAsLong(); }
+
+    /**
+     * A Crew contract (D-170) with both real clients connected, driven by the server through the terminal's own functions like the economy milestones of phase 1: the farmer brings
+     * the canteen's flour and the smith its fittings, each paid into their own wallet; nobody makes cider, so the founder has a supplier fill it; the bonus is shared by the two who
+     * delivered and reaches both wallets at once because both are online. Scripted (logged): the goods are handed over, and the smith is given the career level the part asks for.
+     */
+    private static JsonObject crewContract(MinecraftServer server, ServerPlayer farmer, ServerPlayer smith) {
+        WorkOrderLedger orders = WorkOrderLedger.get(server);
+        CitizenState citizens = CitizenState.get(server);
+        CrewContracts.Contract canteen = CrewContracts.CATALOG.find("underground_city:depot_canteen");
+        expect(canteen != null && CrewContracts.CATALOG.available(canteen), "the canteen contract is loaded");
+        int needed = WorkOrderCatalog.INSTANCE.find("underground_city:crew_canteen_fittings").level();
+        if (citizens.find(smith.getUUID()).orElseThrow().careerLevel() < needed) {
+            citizens.addCareerXp(smith.getUUID(), (int) (125.0 * Math.pow(needed - 1, 2)));
+            System.out.println("[UC-JOURNEY] SCRIPTED the smith was given career level " + needed + " for the fittings part");
+        }
+        System.out.println("[UC-JOURNEY] SCRIPTED the goods for the parts were handed over: 24 flour to the farmer, 24 fasteners and 6 brackets to the smith");
+        farmer.getInventory().add(new ItemStack(UndergroundCity.item("flour"), 24));
+        smith.getInventory().add(new ItemStack(UndergroundCity.item("fasteners"), 24));
+        smith.getInventory().add(new ItemStack(UndergroundCity.item("steel_bracket"), 6));
+        double farmer0 = QShopEconomy.balance(farmer), smith0 = QShopEconomy.balance(smith);
+        WorkOrderService.accept(farmer, orders, citizens.find(farmer.getUUID()).orElseThrow(), "underground_city:crew_canteen_flour");
+        WorkOrderService.complete(farmer, orders, orders.player(farmer.getUUID()).getUUID("order"));
+        WorkOrderService.accept(smith, orders, citizens.find(smith.getUUID()).orElseThrow(), "underground_city:crew_canteen_fittings");
+        WorkOrderService.complete(smith, orders, orders.player(smith.getUUID()).getUUID("order"));
+        int flour = WorkOrderCatalog.INSTANCE.find("underground_city:crew_canteen_flour").credits(), fittings = WorkOrderCatalog.INSTANCE.find("underground_city:crew_canteen_fittings").credits();
+        expect(QShopEconomy.balance(farmer) == farmer0 + flour && QShopEconomy.balance(smith) == smith0 + fittings, "each part paid its own deliverer");
+        refuses(() -> WorkOrderService.accept(smith, orders, citizens.find(smith.getUUID()).orElseThrow(), "underground_city:crew_canteen_fittings"), "a second fittings part for the same Crew");
+        int price = CrewContracts.fill(farmer, orders, canteen.id(), "cider");
+        CrewLedger.Crew crew = CrewService.need(server).crewOf(farmer.getUUID());
+        expect(orders.crewCompletions(crew.id, canteen.id()) == 1, "the contract is complete");
+        expect(orders.crewBonusOwed(farmer.getUUID()) == 0 && orders.crewBonusOwed(smith.getUUID()) == 0, "both shares were paid at once, both members being online");
+        long share = canteen.bonus() / 2;
+        expect(QShopEconomy.balance(farmer) == farmer0 + flour - price + share && QShopEconomy.balance(smith) == smith0 + fittings + share,
+            "wallets after the contract: " + QShopEconomy.balance(farmer) + " / " + QShopEconomy.balance(smith));
+        JsonObject out = new JsonObject();
+        out.addProperty("contract", canteen.id());
+        out.addProperty("farmer_part_credits", flour);
+        out.addProperty("smith_part_credits", fittings);
+        out.addProperty("supplier_fill_price", price);
+        out.addProperty("bonus_share_each", share);
+        out.addProperty("farmer_wallet_change", QShopEconomy.balance(farmer) - farmer0);
+        out.addProperty("smith_wallet_change", QShopEconomy.balance(smith) - smith0);
+        System.out.println("[UC-JOURNEY] Crew contract passed with two real clients connected: " + out);
+        return out;
+    }
 
     private static void refuses(Runnable action, String what) {
         try {

@@ -44,7 +44,7 @@ public final class TerminalScreen extends UcScreen {
     private final TerminalData data;
     private int selected, jobScroll, selectedSkill, offerScroll;
     private int railW, cx, cy, cw, ch;
-    private UcButton shop, accept, cancel, unlock, legalChip, undergroundChip, register, showMe;
+    private UcButton shop, accept, cancel, supplier, track, unlock, legalChip, undergroundChip, register, showMe;
     private final UcButton[] rail = new UcButton[Page.values().length];
     private final UcButton[] buyOne = new UcButton[MAX_OFFERS], buyLot = new UcButton[MAX_OFFERS];
     // the skill tree, laid out once per snapshot and size: node cards by index
@@ -242,6 +242,10 @@ public final class TerminalScreen extends UcScreen {
             .tooltip("Higher pay for restricted goods. It needs an underground skill, and carrying the goods past a checkpoint is a risk."));
         accept = add(new UcButton(0, 0, 100, 20, "Accept order", b -> send(row().accepted() ? 1 : 0)).kind(UcButton.Kind.PRIMARY));
         cancel = add(new UcButton(0, 0, 70, 20, "Cancel", b -> send(2)).kind(UcButton.Kind.DANGER));
+        track = add(new UcButton(0, 0, 70, 16, "Track", b -> { if (row() != null) NavigationNetwork.track("order", row().id()); }).kind(UcButton.Kind.CHIP).icon(UcUi.Icon.ARROW_RIGHT)
+            .tooltip("Show the way on the status display (and on Xaero's minimap when it is installed): the buyer's city, or where the job is."));
+        supplier = add(new UcButton(0, 0, 90, 20, "Supplier", b -> send(3))
+            .tooltip("Pay a supplier to fill this part of the Crew contract from your wallet. A filled part earns nobody XP or a share of the bonus."));
         register = add(new UcButton(cx, cy + ch - 24, cw, 20, "Register: choose your city and trade", b -> TerminalNetwork.requestRegistrationScreen()).kind(UcButton.Kind.PRIMARY).icon(UcUi.Icon.CITY));
         unlock = add(new UcButton(0, 0, 120, 20, "Unlock", b -> {
             if (terminalPosition != null && selectedSkill < tree().size()) { unlock.active = false; TerminalNetwork.requestSkill(terminalPosition, tree().get(selectedSkill).id()); }
@@ -389,6 +393,8 @@ public final class TerminalScreen extends UcScreen {
         undergroundChip.label("Underground " + count(true)).selected(undergroundView);
         boolean work = contracts && row() != null;
         accept.visible = cancel.visible = work;
+        supplier.visible = false;
+        track.visible = false;
         if (work) {
             TerminalData.Row job = row();
             accept.label(job.accepted() ? "Deliver and collect" : "Accept order");
@@ -400,8 +406,20 @@ public final class TerminalScreen extends UcScreen {
             int dx = detailX(), dy = listY() + detailH() - 26;
             boolean cancellable = job.accepted();
             cancel.visible = cancellable;
-            accept.setX(dx + 8); accept.setY(dy); accept.setWidth(detailW() - 16 - (cancellable ? 76 : 0));
+            // a Crew contract part nobody has brought in (D-170): a supplier can fill it, for the price its line states
+            String crewLine = job.extra().rewards().isEmpty() ? "" : job.extra().rewards().get(0);
+            boolean fillable = !job.accepted() && crewLine.startsWith("Crew:") && crewLine.contains("supplier ");
+            supplier.visible = fillable;
+            supplier.active = terminalPosition != null;
+            if (fillable) supplier.label("Supplier " + crewLine.substring(crewLine.lastIndexOf("supplier ") + 9).trim());
+            int right = (cancellable ? 76 : 0) + (fillable ? 96 : 0);
+            accept.setX(dx + 8); accept.setY(dy); accept.setWidth(detailW() - 16 - right);
             cancel.setX(dx + detailW() - 8 - 70); cancel.setY(dy);
+            supplier.setX(dx + detailW() - 8 - 90 - (cancellable ? 76 : 0)); supplier.setY(dy);
+            // an accepted order with somewhere to go (a buyer's city, a job's target): the way there on the status display and the minimap (D-161, D-173)
+            track.visible = job.accepted() && !job.extra().buyerCity().isEmpty();
+            track.active = true;
+            track.setX(dx + detailW() - 8 - 70); track.setY(dy - 20);
         }
         // guide page
         showMe.visible = current == Page.GUIDE && nextStep() != null && !nextStep().page().isEmpty();
@@ -777,8 +795,15 @@ public final class TerminalScreen extends UcScreen {
         UcUi.icon(g, UcUi.Icon.XP, xx - 2, ty - 4, darkTeal);
         g.drawString(font, "+" + job.xp() + " XP  L" + job.level(), xx + 16, ty, darkTeal, false);
         ty += 14;
-        if (!extra.rewards().isEmpty()) {
-            g.drawString(font, UcUi.fit(font, "Also: " + String.join(", ", extra.rewards()), w - 20), tx, ty, darkTeal, false);
+        java.util.List<String> also = new java.util.ArrayList<>(extra.rewards());
+        if (!also.isEmpty() && also.get(0).startsWith("Crew:")) {
+            // a Crew contract part (D-170): its progress on a line of its own
+            UcUi.icon(g, UcUi.Icon.TRUST, tx - 2, ty - 4, darkTeal);
+            g.drawString(font, UcUi.fit(font, also.remove(0).substring(5).trim(), w - 36), tx + 16, ty, darkTeal, false);
+            ty += 12;
+        }
+        if (!also.isEmpty()) {
+            g.drawString(font, UcUi.fit(font, "Also: " + String.join(", ", also), w - 20), tx, ty, darkTeal, false);
             ty += 12;
         }
         String state;

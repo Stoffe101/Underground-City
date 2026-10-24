@@ -764,6 +764,20 @@
       "owner": "underground_city",
       "group": "shop_counter",
       "description": "The pub's counter (D-164): lines the shop buys say what it pays, and the second button sells the bottles the player carries"
+    },
+    {
+      "id": "contract.crew",
+      "expected_file": "uc-contract-crew.png",
+      "owner": "underground_city",
+      "group": "terminal",
+      "description": "The work orders page with a Crew contract (D-170): the Crew line counts the parts in, the part orders by career, and the Supplier button for a part nobody can make"
+    },
+    {
+      "id": "contract.raid_tracked",
+      "expected_file": "uc-contract-raid-tracked.png",
+      "owner": "underground_city",
+      "group": "terminal",
+      "description": "The bonded store job (D-173) accepted and tracked: the order's Track button and the status display pointing at the store"
     }
   ],
   "unintegrated_future_interfaces": [

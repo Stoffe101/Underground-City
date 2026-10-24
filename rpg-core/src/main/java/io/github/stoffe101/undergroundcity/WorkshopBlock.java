@@ -222,7 +222,8 @@ final class WorkshopBlock extends HorizontalDirectionalBlock implements EntityBl
         if (!r.mod().isEmpty() && !net.minecraftforge.fml.ModList.get().isLoaded(r.mod())) return "Needs " + r.mod() + ", which is not installed.";
         if (e.tier < r.tier()) return "Needs a tier " + r.tier() + " " + st.title() + ".";
         if (!r.skill().isEmpty() && !has(CitizenState.get(player.server).find(player.getUUID()).orElse(null), r.skill())) return "Needs the skill " + skillTitle(r.skill()) + ".";
-        if (batches < 1 || batches > st.tier(e.tier).batch()) return "This tier runs " + st.tier(e.tier).batch() + " at a time.";
+        int most = Premises.batch(st.tier(e.tier), e.getLevel() instanceof ServerLevel sl && Premises.tradeAt(sl, e.getBlockPos(), player.getUUID()) != null);
+        if (batches < 1 || batches > most) return "This " + (most > st.tier(e.tier).batch() ? "tier, in trade premises, runs " : "tier runs ") + most + " at a time.";
         for (var in : r.inputs().entrySet()) if (carried(player, in.getKey()) < in.getValue() * batches) return "Not enough " + name(in.getKey()) + ".";
         return null;
     }
@@ -264,7 +265,7 @@ final class WorkshopBlock extends HorizontalDirectionalBlock implements EntityBl
         e.batches = batches;
         e.grade = Workshops.gradeFor(r, e.tier, skill -> has(c, skill), inputGrade);
         e.since = LockService.clock(level.getServer());
-        e.duration = Workshops.ticksFor(r, st.tier(e.tier));
+        e.duration = Premises.ticks(r, st.tier(e.tier), Premises.tradeAt(level, e.getBlockPos(), player.getUUID()) != null);   // trade premises work a quarter faster (D-169)
         e.inputs.clear();
         e.inputs.addAll(taken);
         e.setChanged();

@@ -1,0 +1,23 @@
+{
+  "schema_version": 3,
+  "title": "Crew contract: lighting for the harvest fair",
+  "career": "technician",
+  "level": 3,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "minecraft:comparator",
+      "count": 2
+    },
+    {
+      "item": "minecraft:repeater",
+      "count": 6
+    }
+  ],
+  "credits": 150,
+  "xp": 300,
+  "capacity": 2,
+  "refill_ticks": 12000,
+  "legality": "legal",
+  "crew_part": "underground_city:harvest_fair/lighting"
+}

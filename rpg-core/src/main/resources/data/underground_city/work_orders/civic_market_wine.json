@@ -1,0 +1,21 @@
+{
+  "schema_version": 3,
+  "title": "Opening stock for the Valewood market: wine",
+  "career": "vintner",
+  "level": 2,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "underground_city:berry_wine",
+      "count": 4
+    }
+  ],
+  "credits": 90,
+  "xp": 220,
+  "capacity": 2,
+  "refill_ticks": 12000,
+  "legality": "legal",
+  "buyer": "valewood_council",
+  "civic": "underground_city:valewood_market",
+  "trust_gain": 1
+}

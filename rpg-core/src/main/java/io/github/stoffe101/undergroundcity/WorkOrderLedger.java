@@ -15,6 +15,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.WeakHashMap;
@@ -25,7 +26,9 @@ import java.util.WeakHashMap;
  * saved. Recovery runs before the player can interact. No second wallet lives here.
  */
 public final class WorkOrderLedger {
-    private static final String PURCHASE = "purchase", SEIZURE = "seizure", SALE = "sale", ENCOUNTER = "encounter", SUPPLY = "supply";
+    private static final String PURCHASE = "purchase", SEIZURE = "seizure", SALE = "sale", ENCOUNTER = "encounter", SUPPLY = "supply", CREW_FILL = "crew_fill", CREW_BONUS = "crew_bonus";
+    /** Who brought a Crew contract part that an NPC supplier filled (D-170). */
+    static final String NPC_FILL = "npc";
     /** How many searches a person's history keeps (the latest ones; who was searched where, what was found and what it cost). */
     static final int SEARCH_HISTORY = 12;
     /** One heat step cools every five minutes of active play. */
@@ -139,6 +142,12 @@ public final class WorkOrderLedger {
      */
     void prepare(UUID player, UUID nonce, ListTag inventoryAfter, double balanceAfter, int xpAfter,
                  Map<String, Integer> trustAfter, Map<String, Integer> heatAfter) {
+        prepare(player, nonce, inventoryAfter, balanceAfter, xpAfter, trustAfter, heatAfter, new CompoundTag());
+    }
+
+    /** As above, with {@code extra} fields written into the same prepared record (a Crew contract part, D-170: its settlement records the part against the Crew). */
+    void prepare(UUID player, UUID nonce, ListTag inventoryAfter, double balanceAfter, int xpAfter,
+                 Map<String, Integer> trustAfter, Map<String, Integer> heatAfter, CompoundTag extra) {
         checkActive(player, nonce);
         if (!Double.isFinite(balanceAfter) || balanceAfter < 0 || xpAfter < 0) throw new IllegalArgumentException("Invalid settlement");
         CompoundTag record = player(player);
@@ -146,6 +155,7 @@ public final class WorkOrderLedger {
         pending.put("inventory", inventoryAfter.copy()); pending.putDouble("balance", balanceAfter);
         pending.putInt("xp", xpAfter);
         putTargets(pending, trustAfter, heatAfter);
+        for (String key : extra.getAllKeys()) pending.put(key, extra.get(key).copy());
         record.put("pending", pending);
         putPlayer(player, record); persist(); // BEFORE touching inventory or Q Shop
     }
@@ -200,6 +210,17 @@ public final class WorkOrderLedger {
             record.putLong("encounter_credits", Math.addExact(record.getLong("encounter_credits"), pending.getLong("credits")));
             applyTargets(record, pending);
             record.remove("pending");
+        } else if (CREW_FILL.equals(pending.getString("kind"))) {
+            // A supplier filled a Crew contract part (D-170): the price left the wallet; the part is recorded, and the contract may be complete
+            record.putInt("crew_fills", Math.addExact(record.getInt("crew_fills"), 1));
+            recordCrewPart(player, record, pending, NPC_FILL);
+            record.remove("pending");
+        } else if (CREW_BONUS.equals(pending.getString("kind"))) {
+            // An owed share of a finished Crew contract reached the wallet
+            long credits = pending.getLong("credits");
+            record.putLong("crew_bonus_owed", Math.max(0, record.getLong("crew_bonus_owed") - credits));
+            record.putLong("crew_bonus_credits", Math.addExact(record.getLong("crew_bonus_credits"), credits));
+            record.remove("pending");
         } else if (SEIZURE.equals(pending.getString("kind"))) {
             // A seizure never touches an accepted order or career XP either; it only cools or heats a city.
             record.putInt("seizures", Math.addExact(record.getInt("seizures"), 1));
@@ -217,8 +238,156 @@ public final class WorkOrderLedger {
             applyTargets(record, pending);
             record.putInt("earned_xp_target", pending.getInt("xp"));
             record.putInt("completed", Math.addExact(record.getInt("completed"), 1));
+            if (pending.hasUUID("crew")) recordCrewPart(player, record, pending, player.toString());
+            if (pending.contains("civic")) recordCivic(player, pending);
             record.remove("pending"); record.remove("order"); record.remove("job");
         }
+        putPlayer(player, record); persist();
+    }
+
+    // ---------------------------------------------------------------- raids (D-173)
+
+    /** The player's raid record: the nonce of the order it belongs to, the store it names and whether its prize was taken (stale once that order is settled or cancelled). */
+    CompoundTag raid(UUID player) { return player(player).getCompound("raid"); }
+
+    void putRaid(UUID player, CompoundTag raid) {
+        checkHealthy();
+        CompoundTag record = player(player);
+        record.put("raid", raid.copy());
+        putPlayer(player, record); persist();
+    }
+
+    // ---------------------------------------------------------------- civic projects (D-171)
+
+    /** The shared record of a civic project: how many contributions are in, by whom, whether it is finished and whether its change is built in the world. */
+    CompoundTag civic(String project) { return root.getCompound("civic").getCompound(project); }
+
+    private void putCivic(String project, CompoundTag value) {
+        CompoundTag all = root.getCompound("civic");
+        all.put(project, value);
+        root.put("civic", all);
+    }
+
+    /** Part of a settlement: counts a contribution, and finishes the project at its goal. Never called alone. */
+    private void recordCivic(UUID player, CompoundTag pending) {
+        String project = pending.getString("civic");
+        int goal = Math.max(1, pending.getInt("civic_goal"));
+        CompoundTag state = civic(project);
+        if (state.getBoolean("finished")) return;   // refused before anything was taken; a replay changes nothing
+        state.putInt("count", state.getInt("count") + 1);
+        CompoundTag by = state.getCompound("by");
+        by.putInt(player.toString(), by.getInt(player.toString()) + 1);
+        state.put("by", by);
+        if (state.getInt("count") >= goal) { state.putBoolean("finished", true); state.putLong("finished_at", clock()); }
+        putCivic(project, state);
+    }
+
+    /** Records that a finished project's change now stands in the world, with where (so it is built once, across restarts). */
+    void markCivicBuilt(String project, CompoundTag where) {
+        checkHealthy();
+        CompoundTag state = civic(project);
+        state.putBoolean("built", true);
+        state.put("where", where.copy());
+        putCivic(project, state);
+        persist();
+    }
+
+    // ---------------------------------------------------------------- Crew contracts (D-170)
+
+    private CompoundTag crewContract(UUID crew, String contract) {
+        return root.getCompound("crew_contracts").getCompound(crew.toString()).getCompound(contract);
+    }
+
+    private void putCrewContract(UUID crew, String contract, CompoundTag value) {
+        CompoundTag all = root.getCompound("crew_contracts");
+        CompoundTag mine = all.getCompound(crew.toString());
+        mine.put(contract, value);
+        all.put(crew.toString(), mine);
+        root.put("crew_contracts", all);
+    }
+
+    /** Who brought this part of the Crew's contract in its open cycle (a player's id, {@link #NPC_FILL}), or null. */
+    String crewPartBy(UUID crew, String contract, String part) {
+        CompoundTag parts = crewContract(crew, contract).getCompound("parts");
+        return parts.contains(part) ? parts.getString(part) : null;
+    }
+
+    /** The active clock at which a contract the Crew finished opens again (0: open). */
+    long crewOpensAt(UUID crew, String contract) { return crewContract(crew, contract).getLong("opens_at"); }
+
+    /** How many times the Crew has finished the contract. */
+    int crewCompletions(UUID crew, String contract) { return crewContract(crew, contract).getInt("cycle"); }
+
+    /** Credits of finished Crew contracts owed to this player and not yet in their wallet. */
+    long crewBonusOwed(UUID player) { return player(player).getLong("crew_bonus_owed"); }
+
+    /**
+     * Part of a settlement: records the part the prepared record names against its Crew, and when that was the last part, owes the bonus in equal shares to the members who
+     * delivered parts (the remainder to whoever completed it, or the first of them) and opens the next cycle after the cooldown. Never called alone.
+     */
+    private void recordCrewPart(UUID player, CompoundTag record, CompoundTag pending, String who) {
+        String[] ref = CrewContracts.split(pending.getString("crew_part"));
+        if (ref == null || !pending.hasUUID("crew")) return;
+        UUID crew = pending.getUUID("crew");
+        CompoundTag state = crewContract(crew, ref[0]);
+        CompoundTag parts = state.getCompound("parts");
+        if (parts.contains(ref[1])) return;   // never twice (the delivery was refused before anything was taken; this keeps a replay harmless too)
+        parts.putString(ref[1], who);
+        state.put("parts", parts);
+        ListTag all = pending.getList("crew_parts", Tag.TAG_STRING);
+        boolean complete = !all.isEmpty();
+        for (int i = 0; i < all.size(); i++) if (!parts.contains(all.getString(i))) complete = false;
+        if (complete) {
+            List<UUID> contributors = new java.util.ArrayList<>();
+            for (int i = 0; i < all.size(); i++) {
+                String by = parts.getString(all.getString(i));
+                if (!by.equals(NPC_FILL)) {
+                    UUID id = UUID.fromString(by);
+                    if (!contributors.contains(id)) contributors.add(id);
+                }
+            }
+            long bonus = Math.max(0, pending.getInt("crew_bonus"));
+            if (!contributors.isEmpty() && bonus > 0) {
+                long share = bonus / contributors.size(), rest = bonus - share * contributors.size();
+                UUID getsRest = contributors.contains(player) ? player : contributors.get(0);
+                for (UUID id : contributors) {
+                    CompoundTag target = id.equals(player) ? record : player(id);
+                    target.putLong("crew_bonus_owed", Math.addExact(target.getLong("crew_bonus_owed"), share + (id.equals(getsRest) ? rest : 0)));
+                    if (!id.equals(player)) putPlayer(id, target);
+                }
+            }
+            state.putInt("cycle", state.getInt("cycle") + 1);
+            state.putLong("opens_at", Math.addExact(clock(), Math.max(0, pending.getLong("crew_cooldown"))));
+            state.put("parts", new CompoundTag());
+            state.putLong("completed_at", clock());
+        }
+        putCrewContract(crew, ref[0], state);
+    }
+
+    /** The prepared record of a supplier filling a Crew contract part: the price leaves the wallet (absolute target); the inventory and XP stay as they are. */
+    void prepareCrewFill(UUID player, ListTag inventoryNow, double balanceAfter, int xpNow, long price, CompoundTag extra) {
+        checkHealthy();
+        CompoundTag record = player(player);
+        if (record.contains("pending")) throw new IllegalStateException("Another settlement is pending; try again");
+        if (!Double.isFinite(balanceAfter) || balanceAfter < 0) throw new IllegalArgumentException("Invalid settlement");
+        CompoundTag pending = new CompoundTag();
+        pending.putString("kind", CREW_FILL);
+        pending.put("inventory", inventoryNow.copy()); pending.putDouble("balance", balanceAfter); pending.putInt("xp", xpNow); pending.putLong("credits", price);
+        for (String key : extra.getAllKeys()) pending.put(key, extra.get(key).copy());
+        record.put("pending", pending);
+        putPlayer(player, record); persist();
+    }
+
+    /** The prepared record of an owed Crew bonus share reaching the wallet (absolute target). */
+    void prepareCrewBonus(UUID player, ListTag inventoryNow, double balanceAfter, int xpNow, long credits) {
+        checkHealthy();
+        CompoundTag record = player(player);
+        if (record.contains("pending")) throw new IllegalStateException("Another settlement is pending; try again");
+        if (credits <= 0 || credits > record.getLong("crew_bonus_owed") || !Double.isFinite(balanceAfter) || balanceAfter < 0) throw new IllegalArgumentException("Invalid bonus settlement");
+        CompoundTag pending = new CompoundTag();
+        pending.putString("kind", CREW_BONUS);
+        pending.put("inventory", inventoryNow.copy()); pending.putDouble("balance", balanceAfter); pending.putInt("xp", xpNow); pending.putLong("credits", credits);
+        record.put("pending", pending);
         putPlayer(player, record); persist();
     }
 

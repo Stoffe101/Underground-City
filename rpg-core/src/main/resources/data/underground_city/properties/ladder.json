@@ -39,7 +39,7 @@
       "id": "comfortable_apartment",
       "tier": 3,
       "title": "Comfortable apartment",
-      "built": false,
+      "built": true,
       "rent_hint": 55,
       "buy_hint": 3000
     },
@@ -55,7 +55,7 @@
       "id": "small_house",
       "tier": 5,
       "title": "Small house",
-      "built": false,
+      "built": true,
       "rent_hint": 85,
       "buy_hint": 5400
     },
@@ -79,7 +79,7 @@
       "id": "commercial_workshop",
       "tier": 8,
       "title": "Commercial workshop",
-      "built": false,
+      "built": true,
       "rent_hint": 135,
       "buy_hint": 10500
     },
@@ -87,7 +87,7 @@
       "id": "warehouse",
       "tier": 9,
       "title": "Warehouse or production facility",
-      "built": false,
+      "built": true,
       "rent_hint": 170,
       "buy_hint": 14000
     },
@@ -507,9 +507,10 @@
         "storage",
         "crafting",
         "furnace",
-        "workshop"
+        "workshop",
+        "trade"
       ],
-      "summary": "A high-bay workshop with benches, an anvil and furnaces, and an office mezzanine: premises for a trade."
+      "summary": "A high-bay workshop with benches, an anvil and furnaces, and an office mezzanine: premises for a trade. Trade premises: one more batch, a quarter faster; bulk orders."
     },
     {
       "building": "underground_city:ih_warehouse",
@@ -529,9 +530,10 @@
       "facilities": [
         "storage",
         "crafting",
-        "workshop"
+        "workshop",
+        "trade"
       ],
-      "summary": "A warehouse with racking and two loading bays: storage and production space on a city scale."
+      "summary": "A warehouse with racking and two loading bays: storage and production space on a city scale. Trade premises: one more batch, a quarter faster; bulk orders."
     },
     {
       "building": "underground_city:ih_pub",

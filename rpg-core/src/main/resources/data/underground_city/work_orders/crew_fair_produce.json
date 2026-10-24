@@ -1,0 +1,19 @@
+{
+  "schema_version": 3,
+  "title": "Crew contract: produce for the harvest fair",
+  "career": "farmer",
+  "level": 3,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "underground_city:produce_crate",
+      "count": 3
+    }
+  ],
+  "credits": 180,
+  "xp": 320,
+  "capacity": 2,
+  "refill_ticks": 12000,
+  "legality": "legal",
+  "crew_part": "underground_city:harvest_fair/produce"
+}

@@ -1,0 +1,25 @@
+{
+  "schema_version": 3,
+  "title": "Lights for the Valewood market stalls",
+  "career": "technician",
+  "level": 2,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "minecraft:comparator",
+      "count": 1
+    },
+    {
+      "item": "minecraft:repeater",
+      "count": 3
+    }
+  ],
+  "credits": 100,
+  "xp": 240,
+  "capacity": 2,
+  "refill_ticks": 12000,
+  "legality": "legal",
+  "buyer": "valewood_council",
+  "civic": "underground_city:valewood_market",
+  "trust_gain": 1
+}

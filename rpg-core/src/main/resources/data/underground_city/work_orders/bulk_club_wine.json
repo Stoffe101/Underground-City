@@ -1,0 +1,20 @@
+{
+  "schema_version": 3,
+  "title": "House wine by the case for the Blackwater clubs",
+  "career": "vintner",
+  "level": 4,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "underground_city:berry_wine",
+      "count": 24
+    }
+  ],
+  "credits": 560,
+  "xp": 620,
+  "capacity": 1,
+  "refill_ticks": 24000,
+  "legality": "legal",
+  "requires_skill": "vintner.fundamentals",
+  "requires_facility": "trade"
+}

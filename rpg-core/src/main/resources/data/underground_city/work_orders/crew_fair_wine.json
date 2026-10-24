@@ -1,0 +1,19 @@
+{
+  "schema_version": 3,
+  "title": "Crew contract: wine for the harvest fair",
+  "career": "vintner",
+  "level": 2,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "underground_city:berry_wine",
+      "count": 6
+    }
+  ],
+  "credits": 130,
+  "xp": 280,
+  "capacity": 2,
+  "refill_ticks": 12000,
+  "legality": "legal",
+  "crew_part": "underground_city:harvest_fair/wine"
+}

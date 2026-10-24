@@ -1,0 +1,25 @@
+{
+  "schema_version": 3,
+  "title": "Market stall frames for the Valewood council",
+  "career": "smith",
+  "level": 3,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "underground_city:steel_bracket",
+      "count": 6
+    },
+    {
+      "item": "underground_city:fasteners",
+      "count": 16
+    }
+  ],
+  "credits": 170,
+  "xp": 260,
+  "capacity": 2,
+  "refill_ticks": 12000,
+  "legality": "legal",
+  "buyer": "valewood_council",
+  "civic": "underground_city:valewood_market",
+  "trust_gain": 1
+}

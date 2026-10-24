@@ -1,0 +1,21 @@
+{
+  "schema_version": 3,
+  "title": "Opening stock for the Valewood market: produce",
+  "career": "farmer",
+  "level": 3,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "underground_city:produce_crate",
+      "count": 2
+    }
+  ],
+  "credits": 110,
+  "xp": 240,
+  "capacity": 2,
+  "refill_ticks": 12000,
+  "legality": "legal",
+  "buyer": "valewood_council",
+  "civic": "underground_city:valewood_market",
+  "trust_gain": 1
+}

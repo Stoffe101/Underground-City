@@ -445,6 +445,8 @@ public final class PopulationService {
      * forty in sight.
      */
     static final int TOWARDS_PLAYER = 7;
+    /** How far above or below the player a street counts as at their height, for a newcomer's spot (a hillside's terraces are out of each other's sight). */
+    static final int LEVEL_BAND = 5;
 
     /** True when {@code player}'s eyes have a clear line to a person standing at {@code feet}, within 48 blocks, whichever way the player faces. */
     static boolean inLine(ServerLevel level, ServerPlayer player, BlockPos feet) {
@@ -569,6 +571,7 @@ public final class PopulationService {
         if (known != null) return known;
         // never for a chunk that is not loaded: Lost Cities then plans it on the spot (measured: one such lookup held a pass for 611 ms after a teleport into a city)
         if (level.getChunkSource().getChunkNow(cx, cz) == null) return null;
+        if (!CityBuildings.INSTANCE.askable(level, cx, cz)) return null;   // Lost Cities is generating and this plan is not recorded: ask in a few seconds (D-167)
         if (!CityBuildings.INSTANCE.known(cx, cz) && lookups <= 0) return null;
         if (!CityBuildings.INSTANCE.known(cx, cz)) lookups--;
         Optional<CityBuildings.Building> b = CityBuildings.INSTANCE.ofChunk(level, cx, cz);
@@ -678,9 +681,14 @@ public final class PopulationService {
         ChunkPos district = player.chunkPosition();
         List<ChunkPos> open = new ArrayList<>();
         for (int dx = -WINDOW; dx <= WINDOW; dx++) for (int dz = -WINDOW; dz <= WINDOW; dz++) if (OPEN.contains(ChunkPos.asLong(district.x + dx, district.z + dz))) open.add(new ChunkPos(district.x + dx, district.z + dz));
+        // on a hillside (Valewood) a street a terrace above or below is out of sight: mostly the open streets at the player's own height
+        int playerY = player.blockPosition().getY();
+        List<ChunkPos> atHeight = new ArrayList<>();
+        for (ChunkPos c : open) { Integer street = STREETS.get(c.toLong()); if (street != null && Math.abs(street - playerY) <= LEVEL_BAND) atHeight.add(c); }
         BlockPos chosen = null;
         for (int attempt = 0; attempt < 4; attempt++) {
-            ChunkPos chunk = !open.isEmpty() && random.nextInt(4) != 0 ? open.get(random.nextInt(open.size())) : new ChunkPos(district.x + random.nextInt(7) - 3, district.z + random.nextInt(7) - 3);
+            ChunkPos chunk = !atHeight.isEmpty() && random.nextInt(4) != 0 ? atHeight.get(random.nextInt(atHeight.size()))
+                : !open.isEmpty() && random.nextInt(4) != 0 ? open.get(random.nextInt(open.size())) : new ChunkPos(district.x + random.nextInt(7) - 3, district.z + random.nextInt(7) - 3);
             Optional<BlockPos> spot = findSpot(level, chunk, random, everyone);
             if (spot.isEmpty() || seen(level, everyone, spot.get())) continue;
             if (chosen == null) chosen = spot.get();
@@ -757,6 +765,7 @@ public final class PopulationService {
         if (streetsSeed != level.getSeed()) { STREETS.clear(); OPEN.clear(); RETRY_AFTER.clear(); AREAS.clear(); DOORS.clear(); streetsSeed = level.getSeed(); }
         Integer known = STREETS.get(chunk.toLong());
         if (known != null) return known;
+        if (!LostCitiesLink.askable(level, chunk.x, chunk.z)) { LostCitiesLink.deferred++; return -1; }   // not cached: asked again once Lost Cities is not generating (D-167)
         long started = System.nanoTime();
         var sample = LostCitiesLink.chunk(level, chunk.x, chunk.z);
         int street = sample.isPresent() && sample.get().city() ? LostCitiesLink.realHeight(level, sample.get().cityLevel()) : -1;
@@ -847,6 +856,7 @@ public final class PopulationService {
         PopulationCatalog.Def def = PopulationCatalog.INSTANCE.city(body.city());
         long h = PopulationPlan.mix(body.person() + spoken * 7919L + PopulationPlan.dayOf(player.level().getDayTime()));
         String line = def != null && !def.flavour().isEmpty() && (h & 3) == 0 ? def.flavour().get((int) ((h >>> 2) % def.flavour().size())) : own.get((int) (Math.floorMod(h >>> 5, own.size())));
+        if ((h & 3) == 1) line = CivicProjects.flavour(player.server, body.city()).orElse(line);   // people talk about what their city finished together (D-171)
         String greeting = returning ? (hour < 12 ? "Morning again, " : hour < 18 ? "Back again, " : "Evening, ") + player.getGameProfile().getName() + ". " : "";
         return greeting + line;
     }
@@ -956,9 +966,9 @@ public final class PopulationService {
             Around a = around(p.serverLevel(), p);
             players.append("; ").append(p.getGameProfile().getName()).append(": ").append(a.within64()).append(" within 64 blocks (").append(a.inSight()).append(" in sight, target ").append(a.target()).append(")");
         }
-        return String.format(Locale.ROOT, "density %s; street people out now %d (peak %d, cap %d total / %d per player); passes %d, mean %.0f us, worst %d us (steps %d us, top-up %d us, %d Lost Cities lookups, %d people out), first %d us; Lost Cities lookups %d (mean %.0f us, worst %d us); spawned %d (%d out of a door), removed %d, went in at a door %d, browsed a shop %d (bought %d off a shelf), chats %d, given up %d, spots missed %d; doors known %d%s",
+        return String.format(Locale.ROOT, "density %s; street people out now %d (peak %d, cap %d total / %d per player); passes %d, mean %.0f us, worst %d us (steps %d us, top-up %d us, %d Lost Cities lookups, %d people out), first %d us; Lost Cities lookups %d (mean %.0f us, worst %d us); spawned %d (%d out of a door), removed %d, went in at a door %d, browsed a shop %d (bought %d off a shelf), chats %d, given up %d, spots missed %d; doors known %d; %s%s",
             preset.name().toLowerCase(Locale.ROOT), ACTIVE.size(), activePeak, preset.world, preset.perPlayer, passes, average, nanosWorst / 1000, worstSteps / 1000, worstTopUp / 1000, worstLookups, worstPeople, nanosFirst / 1000, lcCalls,
-            lcCalls == 0 ? 0.0 : lcNanos / (double) lcCalls / 1000.0, lcWorst / 1000, spawned, spawnedAtDoors, removed, entered, browsed, shelfPurchases, chats, stuckGivenUp, spotMisses, DOORS.size(), players);
+            lcCalls == 0 ? 0.0 : lcNanos / (double) lcCalls / 1000.0, lcWorst / 1000, spawned, spawnedAtDoors, removed, entered, browsed, shelfPurchases, chats, stuckGivenUp, spotMisses, DOORS.size(), LostCitiesLink.recordStatus(), players);
     }
 
     @SubscribeEvent

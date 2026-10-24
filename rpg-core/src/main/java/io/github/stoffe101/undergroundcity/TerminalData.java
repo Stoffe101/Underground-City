@@ -114,6 +114,8 @@ public record TerminalData(String city, String career, int level, int xp, double
         }
         final WorkOrder acceptedOrder = accepted;
         List<WorkOrder> jobs = new ArrayList<>(WorkOrderCatalog.INSTANCE.forCareer(citizen.career));
+        jobs.addAll(WorkOrderCatalog.INSTANCE.forCareer(WorkOrder.ANY_CAREER));   // a civic contribution anybody can make (D-171)
+        jobs.removeIf(job -> !job.terms().requiresCivic().isEmpty() && !CivicProjects.finished(ledger, job.terms().requiresCivic()));   // opens when its project is finished
         jobs.removeIf(job -> job.maxLevel() > 0 && citizen.careerLevel() > job.maxLevel()); // apprentice orders fade out; an accepted one is re-added below
         if (acceptedOrder != null) {
             jobs.removeIf(job -> job.id().equals(acceptedOrder.id())); jobs.add(0, acceptedOrder);
@@ -153,12 +155,14 @@ public record TerminalData(String city, String career, int level, int xp, double
         if (terms == WorkOrder.Terms.DEFAULT) return Extra.NONE;
         SkillNode needed = terms.requiresSkill().isEmpty() ? null : SkillCatalog.INSTANCE.find(terms.requiresSkill());
         BuyerCatalog.Buyer buyer = terms.buyer().isEmpty() ? null : BuyerCatalog.INSTANCE.find(terms.buyer());
-        List<String> rewards = terms.rewards().stream().limit(MAX_REWARDS).map(reward -> reward.count() + " x "
-            + net.minecraftforge.registries.ForgeRegistries.ITEMS.getValue(reward.item()).getDescription().getString()).toList();
+        List<String> rewards = new java.util.ArrayList<>(terms.rewards().stream().limit(MAX_REWARDS).map(reward -> reward.count() + " x "
+            + net.minecraftforge.registries.ForgeRegistries.ITEMS.getValue(reward.item()).getDescription().getString()).toList());
+        String crewLine = CrewContracts.rowLine(player.server, ledger, player.getUUID(), terms.crewPart());   // D-170: how the Crew's contract stands
+        if (crewLine != null) { rewards.add(0, crewLine); while (rewards.size() > MAX_REWARDS) rewards.remove(rewards.size() - 1); }
         return new Extra(job.underground(), needed == null ? terms.requiresSkill() : needed.title(),
             terms.requiresSkill().isEmpty() || SkillService.has(citizen, terms.requiresSkill()),
             buyer == null ? "" : buyer.title(), buyer == null ? "" : buyer.city(), terms.minTrust(),
-            buyer == null ? 0 : ledger.trust(player.getUUID(), buyer.id()), rewards);
+            buyer == null ? 0 : ledger.trust(player.getUUID(), buyer.id()), List.copyOf(rewards));
     }
 
     private static List<SkillRow> skillRows(CitizenState.Citizen citizen) { return rows(citizen, SkillCatalog.INSTANCE.tree(citizen.career)); }

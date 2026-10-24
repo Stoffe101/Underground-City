@@ -343,6 +343,23 @@ public final class VisualCaptureHarness {
                 :"Modest patrols. Hunting arms are licensed; controlled crops and unregistered parts are prohibited.",
             journeyFixture());
     }
+    /** A Crew contract part nobody has brought in, with its Supplier button (D-170); or, {@code raid}, the bonded store job accepted, with Track (D-173). */
+    private static TerminalData crewAndRaid(boolean raid) {
+        List<TerminalData.Row> jobs=raid
+            ?List.of(new TerminalData.Row("underground_city:raid_bonded_store","Lift the seized shipment from the Ironhaven bonded store",1,700,520,1,true,0,
+                    List.of(new TerminalData.Req("underground_city:seized_shipment",1,0)),
+                    new TerminalData.Extra(true,"",true,"Kessler & Daughters","blackwater",0,0,List.of())))
+            :List.of(new TerminalData.Row("underground_city:crew_canteen_flour","Crew contract: flour for the depot canteen",2,120,300,2,false,0,
+                    List.of(new TerminalData.Req("underground_city:flour",24,24)),
+                    new TerminalData.Extra(false,"",true,"","",0,0,List.of("Crew: 1/3 parts in, bonus 240 shared; supplier 180"))),
+                new TerminalData.Row("underground_city:civic_market_lanterns","Lanterns for the Valewood market square",1,60,160,2,false,0,
+                    List.of(new TerminalData.Req("minecraft:lantern",4,1)),
+                    new TerminalData.Extra(false,"",true,"Valewood Market Council","valewood",0,1,List.of())));
+        return new TerminalData("valewood","farmer",9,10125,230,true,raid?UUID.fromString("00000000-0000-0000-0000-000000000003"):null,
+            1,"valewood",jobs,List.of(),farmerData().skillPoints(),farmerData().skills(),List.of(),VALEWOOD_LAW,2,
+            "Modest patrols. Hunting arms are licensed; controlled crops and unregistered parts are prohibited.",journeyFixture());
+    }
+
     private static DialogueScreen dialogueCapture(String pose) {
         var c=(java.util.function.BiFunction<String,String,DialogueScreen.Choice>)(id,label)->new DialogueScreen.Choice(id,label,true,"");
         return switch(pose) {
@@ -426,6 +443,8 @@ public final class VisualCaptureHarness {
         cases.add(new Case("uc-exchange-overflow-scrolled",TerminalScreen.Page.IMPORTS,manyOffers(24,false,2500),0));
         cases.add(new Case("uc-exchange-sold-out",TerminalScreen.Page.IMPORTS,manyOffers(12,true,500),0));
         cases.add(new Case("uc-contract-regional",TerminalScreen.Page.CONTRACTS,regionalContract(true,2,1),0));
+        cases.add(new Case("uc-contract-crew",TerminalScreen.Page.CONTRACTS,crewAndRaid(false),0));
+        cases.add(new Case("uc-contract-raid-tracked",TerminalScreen.Page.CONTRACTS,crewAndRaid(true),0,true,null));
         cases.add(new Case("uc-contract-visit-locked",TerminalScreen.Page.CONTRACTS,regionalContract(false,0,0),0));
         if(!QShopEconomy.available()) throw new IllegalStateException("Visual coverage requires installed Q Shop 1.8.4");
         cases.add(Case.registration("uc-register-city","city"));

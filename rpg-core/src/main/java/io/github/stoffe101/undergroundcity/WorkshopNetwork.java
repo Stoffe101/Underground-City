@@ -67,6 +67,8 @@ public final class WorkshopNetwork {
         Workshops.Tier tier = st.tier(e.tier);
         Workshops.Tier next = e.tier < st.tiers().size() ? st.tier(e.tier + 1) : null;
         CitizenState.Citizen c = CitizenState.get(player.server).find(player.getUUID()).orElse(null);
+        boolean trade = Premises.tradeAt(player.serverLevel(), pos, player.getUUID()) != null;   // D-169: one more batch, a quarter faster
+        if (trade && note.isEmpty()) note = "Trade premises: one more batch at a time, a quarter faster.";
         List<Part> nextParts = new ArrayList<>();
         if (next != null) for (var p : next.parts().entrySet()) nextParts.add(new Part(p.getKey().toString(), p.getValue(), WorkshopBlock.carried(player, p.getKey())));
         List<Row> rows = new ArrayList<>();
@@ -76,13 +78,13 @@ public final class WorkshopNetwork {
             for (var in : r.inputs().entrySet()) parts.add(new Part(in.getKey().toString(), in.getValue(), WorkshopBlock.carried(player, in.getKey())));
             String why = WorkshopBlock.refusal(player, e, st, r, 1);
             boolean gated = e.tier < r.tier() || !r.skill().isEmpty() && !WorkshopBlock.has(c, r.skill());
-            rows.add(new Row(r.id(), r.title(), r.output().toString(), r.count(), (int) (Workshops.ticksFor(r, tier) / 20), r.tier(), !gated, why == null ? "" : why, r.graded(), r.legality().equals("underground"), r.note(), parts));
+            rows.add(new Row(r.id(), r.title(), r.output().toString(), r.count(), (int) (Premises.ticks(r, tier, trade) / 20), r.tier(), !gated, why == null ? "" : why, r.graded(), r.legality().equals("underground"), r.note(), parts));
         }
         Workshops.Recipe running = e.busy() ? st.recipe(e.recipe) : null;
         int readyCount = 0;
         String readyItem = "";
         for (var s : e.ready) { readyCount += s.getCount(); readyItem = net.minecraftforge.registries.ForgeRegistries.ITEMS.getKey(s.getItem()).toString(); }
-        return new View(pos, st.id(), st.title(), st.career(), e.tier, tier.name(), st.tiers().size(), tier.batch(), (int) Math.round(tier.speed() * 100), next == null ? "" : next.name(),
+        return new View(pos, st.id(), st.title(), st.career(), e.tier, tier.name(), st.tiers().size(), Premises.batch(tier, trade), (int) Math.round(tier.speed() * (trade ? Premises.SPEED : 1) * 100), next == null ? "" : next.name(),
             next == null || next.skill().isEmpty() ? "" : WorkshopBlock.skillTitle(next.skill()), next != null && (next.skill().isEmpty() || WorkshopBlock.has(c, next.skill())), nextParts,
             running == null ? "" : running.title() + " x" + e.batches, (int) (e.ticksLeft(now) / 20), (int) (e.duration / 20), e.grade, readyCount, readyItem, note, rows);
     }

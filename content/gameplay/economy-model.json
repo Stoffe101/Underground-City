@@ -66,7 +66,9 @@
     "underground_city:springs": 0.36,
     "underground_city:gear_set": 3.6,
     "underground_city:firearm_parts_kit": 2.3,
-    "underground_city:unmarked_parts_kit": 3.8
+    "underground_city:unmarked_parts_kit": 3.8,
+    "minecraft:lantern": 1.2,
+    "underground_city:seized_shipment": 35
   },
   "wait_minutes": {
     "note": "Latency before the FIRST delivery of an order that needs growing or ageing; later cycles overlap with other work.",

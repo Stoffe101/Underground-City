@@ -104,5 +104,5 @@ public final class PropertyRules {
     public static int depositBack(int deposit, int owedCredits) { return Math.max(0, deposit - Math.max(0, owedCredits)); }
 
     /** The cheapest facilities every unit lists: a unit without a listing (a custom district) has none of the guard's extra rules. */
-    public static final List<String> KNOWN_FACILITIES = List.of("bed", "storage", "crafting", "furnace", "terminal", "workshop", "plumbing");
+    public static final List<String> KNOWN_FACILITIES = List.of("bed", "storage", "crafting", "furnace", "terminal", "workshop", "plumbing", "trade");
 }

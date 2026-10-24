@@ -24,6 +24,8 @@ final class Scenarios {
             case "tech" -> TechScenario.build();
             case "organic" -> OrganicScenario.build();
             case "crowd" -> CrowdScenario.build();
+            case "hitch" -> HitchScenario.build();
+            case "raid" -> RaidScenario.build();
             case "workshop" -> WorkshopScenario.build();
             case "sccamera" -> CameraMeasureScenario.build();
             case "alarm" -> AlarmScenario.build();
