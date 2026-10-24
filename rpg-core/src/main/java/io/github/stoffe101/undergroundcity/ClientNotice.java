@@ -24,7 +24,11 @@ public final class ClientNotice {
     /** More than this many held notices is a flood, not news: the oldest are dropped. */
     private static final int MAX_HELD = 6;
 
+    /** The last notice's title (for the scenarios). */
+    static volatile String lastTitle = "";
+
     static void show(Notice.Kind kind, String title, String body) {
+        lastTitle = title;
         UcToast toast = new UcToast(kind, title, body);
         if (held(Minecraft.getInstance())) {
             HELD.add(toast);
@@ -35,7 +39,7 @@ public final class ClientNotice {
     }
 
     /** True while the screen is one where every pixel and every moment counts. */
-    static boolean timed(Minecraft mc) { return mc.screen instanceof ChallengeScreen || mc.screen instanceof LockpickScreen; }
+    static boolean timed(Minecraft mc) { return mc.screen instanceof ChallengeScreen || mc.screen instanceof LockpickScreen || mc.screen instanceof TraceScreen || mc.screen instanceof PatchScreen; }
 
     /** True while a notice must wait: a timed screen, or a screen whose panel the notices would cover (prices and buy buttons on a counter at 1280x720). */
     static boolean held(Minecraft mc) { return timed(mc) || ToastPlacement.coversPanel(mc); }

@@ -76,6 +76,16 @@ public final class UndergroundCity {
             .sound(net.minecraft.world.level.block.SoundType.METAL)));
     public static final RegistryObject<Item> SCRAP_HEAP_ITEM = ITEMS.register("scrap_heap",
         () -> new BlockItem(SCRAP_HEAP.get(), new Item.Properties()));
+    // the Technician's blocks (D-158): a building's utility panel (placed by Core), the personal computer and the electronics bench
+    public static final RegistryObject<Block> UTILITY_PANEL = BLOCKS.register("utility_panel",
+        () -> new TechBlocks.UtilityPanel(BlockBehaviour.Properties.of().mapColor(net.minecraft.world.level.material.MapColor.METAL).strength(5.0f, 1200.0f).requiresCorrectToolForDrops().sound(net.minecraft.world.level.block.SoundType.METAL)));
+    public static final RegistryObject<Item> UTILITY_PANEL_ITEM = ITEMS.register("utility_panel", () -> new BlockItem(UTILITY_PANEL.get(), new Item.Properties()));
+    public static final RegistryObject<Block> PERSONAL_COMPUTER = BLOCKS.register("personal_computer",
+        () -> new TechBlocks.Computer(BlockBehaviour.Properties.of().mapColor(net.minecraft.world.level.material.MapColor.SAND).strength(1.5f).noOcclusion().sound(net.minecraft.world.level.block.SoundType.METAL)));
+    public static final RegistryObject<Item> PERSONAL_COMPUTER_ITEM = ITEMS.register("personal_computer", () -> new BlockItem(PERSONAL_COMPUTER.get(), new Item.Properties()));
+    public static final RegistryObject<Block> ELECTRONICS_BENCH = BLOCKS.register("electronics_bench",
+        () -> new TechBlocks.Bench(BlockBehaviour.Properties.of().mapColor(net.minecraft.world.level.material.MapColor.WOOD).strength(2.0f).sound(net.minecraft.world.level.block.SoundType.WOOD)));
+    public static final RegistryObject<Item> ELECTRONICS_BENCH_ITEM = ITEMS.register("electronics_bench", () -> new BlockItem(ELECTRONICS_BENCH.get(), new Item.Properties()));
     /** A courier's sealed letter from a roadside encounter (D-139): pays its fee once, at any terminal or counter in the city it is addressed to. */
     public static final RegistryObject<Item> SEALED_ENVELOPE = ITEMS.register("sealed_envelope", () -> new EnvelopeItem(new Item.Properties().stacksTo(1)));
 
@@ -143,6 +153,7 @@ public final class UndergroundCity {
         LockNetwork.register();
         BurglaryNetwork.register();
         PlacesNetwork.register();
+        TechNetwork.register();
         FenceNetwork.register();
         MinecraftForge.EVENT_BUS.register(this);
         MinecraftForge.EVENT_BUS.register(new RenamedIds());
@@ -170,6 +181,8 @@ public final class UndergroundCity {
         MinecraftForge.EVENT_BUS.register(new PoliceResponse());
         MinecraftForge.EVENT_BUS.register(new PolicePatrols());
         MinecraftForge.EVENT_BUS.register(new PropertyIntel());
+        MinecraftForge.EVENT_BUS.register(new TechService());
+        MinecraftForge.EVENT_BUS.register(new TechWork());
         MinecraftForge.EVENT_BUS.register(new ResourceSites());
         MinecraftForge.EVENT_BUS.register(new HouseholdService());
         MinecraftForge.EVENT_BUS.register(new HudService());
@@ -211,6 +224,7 @@ public final class UndergroundCity {
         event.addListener(PropertyPolicies.INSTANCE);
         event.addListener(ExceptionalLoot.INSTANCE);
         event.addListener(SkillCatalog.INSTANCE);
+        event.addListener(TechDesigns.INSTANCE);
         event.addListener(SkillCatalog.Specializations.INSTANCE);
         event.addListener(PropertyCatalog.INSTANCE);
         event.addListener(ContrabandCatalog.INSTANCE);
@@ -233,10 +247,13 @@ public final class UndergroundCity {
         if (event.getTabKey() == CreativeModeTabs.FUNCTIONAL_BLOCKS) {
             event.accept(TERMINAL_ITEM);
             event.accept(PUBLIC_LEDGER_ITEM);
+            event.accept(PERSONAL_COMPUTER_ITEM);
+            event.accept(ELECTRONICS_BENCH_ITEM);
         }
         if (event.getTabKey() == CreativeModeTabs.OP_BLOCKS && event.hasPermissions()) {
             event.accept(PROPERTY_CACHE_ITEM);
             event.accept(SECURE_TERMINAL_ITEM);
+            event.accept(UTILITY_PANEL_ITEM);
         }
         if (event.getTabKey() == CreativeModeTabs.INGREDIENTS) {
             CORE_ITEMS.forEach((id, item) -> { if (!CORE_ITEM_KINDS.get(id).equals("tool")) event.accept(item); });

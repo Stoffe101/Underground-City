@@ -124,7 +124,7 @@ public final class SecurityDevices {
             if (camera.distSqr(player.blockPosition()) > (RANGE + 4) * (RANGE + 4) || !level.isLoaded(camera)) continue;
             net.minecraft.core.Direction facing = facing(level.getBlockState(camera));
             if (sense && level.getServer().getTickCount() % 20 == 3) showField(level, player, camera, facing);
-            if (looped(level, b) || AlarmPanels.jammed(level, b) || !sees(level, camera, facing, eye)) continue;
+            if (looped(level, b) || AlarmPanels.jammed(level, b) || TechService.securityDown(level, b) || !sees(level, camera, facing, eye)) continue;
             sightings++;
             if (sense) {
                 // Camera Sense: a second's warning before the camera holds the thief; stepping out of its field in that second is clean

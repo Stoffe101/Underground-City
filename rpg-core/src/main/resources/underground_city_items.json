@@ -260,6 +260,21 @@
       "id": "bearer_bonds",
       "kind": "rare",
       "stack": 16
+    },
+    {
+      "id": "e_scrap",
+      "kind": "product",
+      "stack": 64
+    },
+    {
+      "id": "repair_kit",
+      "kind": "durable",
+      "stack": 1
+    },
+    {
+      "id": "diagnostic_scanner",
+      "kind": "durable",
+      "stack": 1
     }
   ]
 }

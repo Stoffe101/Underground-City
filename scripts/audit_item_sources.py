@@ -115,9 +115,18 @@ def earliest_levels(orders: dict[str, dict], recipes: dict[str, dict], kits: dic
         for name in set(entry['name'] for pool in json.loads(path.read_text()).get('pools', []) for entry in iter_entries(pool.get('entries', [])) if 'name' in entry):
             if name.startswith('underground_city:'):
                 offer(name, 1)
+    # an Electronics Bench design (D-158) is a recipe gated by a Technician skill: its output is had at the skill's level once its parts are
+    skill_level = {node['id']: node.get('min_level', 1) for tree in load_dir('skill_trees').values() for node in tree.get('nodes', [])}
+    designs = [d for file in load_dir('tech_designs').values() for d in file.get('designs', [])]
     changed = True
     while changed:
         changed = False
+        for design in designs:
+            need = skill_level.get(design.get('skill') or '', 1)
+            for item in design['inputs']:
+                need = max(need, 1 if item.startswith('minecraft:') else level.get(item, INF))
+            if need < INF and offer(design['output'], need):
+                changed = True
         for recipe in recipes.values():
             out = result_of(recipe)
             if out is None:

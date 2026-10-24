@@ -208,6 +208,12 @@ public final class BuildingGuard {
             return;
         }
         if (!(lowerState.getBlock() instanceof DoorBlock) || !exterior(level, lower, lowerState)) return;
+        // a Technician's tool at a street door that stands in for the building's utility panel (D-158) is work on its systems, not an attempt on its lock
+        if (event.getHand() == InteractionHand.MAIN_HAND && outsideSide(level, lower, lowerState, player.position()) && TechWork.useDoor(player, level, found.get())) {
+            event.setCanceled(true);
+            event.setCancellationResult(InteractionResult.SUCCESS);
+            return;
+        }
         // casing (D-144): crouched with an empty hand at a street door, from the street, a thief reads the place instead of trying it
         if (Casing.wants(player) && outsideSide(level, lower, lowerState, player.position()) && !CityHomes.holdsKey(player, found.get())) {
             event.setCanceled(true);
@@ -252,6 +258,8 @@ public final class BuildingGuard {
         var security = building.security();
         String profile = security.lockProfile();
         String label = security.label().isEmpty() ? "Door" : Character.toUpperCase(security.label().charAt(0)) + security.label().substring(1);
+        // a shop whose till is down keeps its door shut in its hours (D-158): say why, rather than only that it is locked
+        if (TechService.shopDown(level, building) && !LockService.isPick(player.getMainHandItem())) { tell(player, "Closed: the till and card network are down. A Technician has been called."); return; }
         String refusal = LockService.begin(player, level, new LockService.Target(LockService.Kind.DOOR, lower, profile, building.city(), security.id(), label, 1));
         if (refusal != null) tell(player, refusal);
     }

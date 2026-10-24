@@ -198,6 +198,8 @@ public final class PoliceResponse {
 
     /** True when this building's alarm is armed: a hash of the building and the world against the class's chance, the same answer every time. */
     static boolean armed(ServerLevel level, CityBuildings.Building building, CityBuildings.Response response) {
+        if (TechService.securityDown(level, building)) return false;   // a fault has its alarm off until a Technician comes (D-158)
+        if (TechService.monitored(level, building)) return true;       // a monitored alarm a Technician fitted is always armed
         return BuildingStash.roll(level, building, ALARM_SALT) < response.alarmChance();
     }
 

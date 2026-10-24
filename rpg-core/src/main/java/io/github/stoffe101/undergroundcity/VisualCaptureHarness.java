@@ -203,6 +203,29 @@ public final class VisualCaptureHarness {
             base.skillPoints(),base.skills(),base.contacts(),base.laws(),base.heat(),base.lawSummary(),base.journey(),base.outlet(),
             new TerminalData.Thief(level,xp,ProgressionRules.thiefXpAtLevel(level+1),free,List.copyOf(rows)));
     }
+    /** The Technician's screens as the server would fill them (D-158): a service board, the bench's designs, a repair half worked, an install grid. */
+    private static net.minecraft.client.gui.screens.Screen techCapture(String pose) {
+        java.util.UUID id=new java.util.UUID(1,2);
+        List<TechWork.Call> calls=List.of(
+            new TechWork.Call(id,"repair_security","valewood","3 Willow Way","house",3,66,170,net.minecraft.core.BlockPos.ZERO,4,""),
+            new TechWork.Call(id,"repair_shop","valewood","12 Market Row","shop",2,54,140,net.minecraft.core.BlockPos.ZERO,11,""),
+            new TechWork.Call(id,"install","valewood","19 Hayward Street","townhouse",5,135,285,net.minecraft.core.BlockPos.ZERO,62,"Needs Installer"),
+            new TechWork.Call(id,"upgrade","valewood","14 Meadow Close","office",4,148,300,net.minecraft.core.BlockPos.ZERO,80,"Needs Systems Integrator"));
+        List<TechNetwork.DesignRow> designs=List.of(
+            new TechNetwork.DesignRow("circuit_boards","Circuit boards","underground_city:control_circuits",2,List.of(new TechNetwork.Part("underground_city:e_scrap",3,5),new TechNetwork.Part("minecraft:copper_ingot",1,8),new TechNetwork.Part("minecraft:redstone",1,16)),"Bench Electronics",true,"Two boards from scrap: cheaper than the exchange's, and a repair of a well-off building needs one."),
+            new TechNetwork.DesignRow("repair_kit","Technician's toolkit","underground_city:repair_kit",1,List.of(new TechNetwork.Part("minecraft:iron_ingot",2,0),new TechNetwork.Part("minecraft:copper_ingot",2,8),new TechNetwork.Part("underground_city:control_circuits",1,2)),"",true,"Opens a utility panel to repair a fault. Forty repairs."),
+            new TechNetwork.DesignRow("personal_computer","Personal computer","underground_city:personal_computer",1,List.of(new TechNetwork.Part("minecraft:iron_ingot",3,0),new TechNetwork.Part("minecraft:glass_pane",2,0),new TechNetwork.Part("underground_city:control_circuits",2,2),new TechNetwork.Part("minecraft:redstone",1,16)),"",true,"A desktop for a home or a workshop: the service board and these designs."),
+            new TechNetwork.DesignRow("diagnostic_scanner","Diagnostic scanner","underground_city:diagnostic_scanner",1,List.of(new TechNetwork.Part("underground_city:control_circuits",2,2),new TechNetwork.Part("minecraft:copper_ingot",2,8)),"Municipal Repairs",false,"Carried during a repair, it shows which half of the circuit has the fault."),
+            new TechNetwork.DesignRow("security_array","Security array","underground_city:security_array",1,List.of(new TechNetwork.Part("underground_city:control_circuits",2,2),new TechNetwork.Part("minecraft:iron_ingot",2,0)),"Automation Installer",false,"Fitted at a utility panel for an install job: the building's alarm is armed and watched."));
+        return switch(pose) {
+            case "tech-computer" -> { ComputerScreen screen=new ComputerScreen(calls,designs,true,4); yield screen; }
+            case "tech-designs" -> { ComputerScreen screen=new ComputerScreen(calls,designs,true,4); screen.showDesigns(3); yield screen; }
+            case "tech-bench" -> { BenchScreen screen=new BenchScreen(designs,""); screen.select("circuit_boards"); yield screen; }
+            case "tech-trace" -> new TraceScreen(new TechNetwork.TraceView(4,3,true,new int[]{5,4,5,5,0,1,3,3,5,1},new int[]{1,-1,0,-1,-1,-1,-1,-1,-1,-1},false,false,3,0,3,94,2));
+            default -> { TechPuzzles.Patch p=TechPuzzles.Patch.generate(7,1); yield new PatchScreen(new TechNetwork.PatchView("install",p.w,p.h,p.source,p.outputs,p.tiles,151)); }
+        };
+    }
+
     /** A casing card as the server would send it, for a beginner and for a thief who knows what to look for. */
     private static Casing.Report casingFixture(String pose) {
         return switch(pose) {
@@ -313,6 +336,12 @@ public final class VisualCaptureHarness {
         cases.add(Case.challenge("uc-casing-novice","casing-novice"));
         cases.add(Case.challenge("uc-casing-expert","casing-expert"));
         cases.add(Case.challenge("uc-casing-locked","casing-locked"));
+        // the Technician's screens (D-158)
+        cases.add(Case.challenge("uc-tech-computer","tech-computer"));
+        cases.add(Case.challenge("uc-tech-designs","tech-designs"));
+        cases.add(Case.challenge("uc-tech-bench","tech-bench"));
+        cases.add(Case.challenge("uc-tech-trace","tech-trace"));
+        cases.add(Case.challenge("uc-tech-patch","tech-patch"));
         cases.add(new Case("uc-skills-vintner",TerminalScreen.Page.SKILLS,careerSkills("vintner",11,java.util.Set.of("vintner.fundamentals","vintner.cellar_craft","vintner.still_craft")),0,false,"vintner.bootleg_trade"));
         cases.add(new Case("uc-skills-smith",TerminalScreen.Page.SKILLS,careerSkills("smith",11,java.util.Set.of("smith.fundamentals","smith.structural_works","smith.armoury_contracts","smith.unlisted_fabrication")),0,false,"smith.contraband_armoury"));
         cases.add(new Case("uc-skills-gunsmith",TerminalScreen.Page.SKILLS,careerSkills("gunsmith",11,java.util.Set.of("gunsmith.fundamentals","gunsmith.licensed_repairs","gunsmith.dealer_licence")),0,false,"gunsmith.unregistered_builds"));
@@ -429,6 +458,8 @@ public final class VisualCaptureHarness {
             if(capture.challenge.equals("alarm-show")) screen.poseShowing(3,true); else screen.poseInput(3,0.6);
         } else if(capture.challenge!=null && capture.challenge.startsWith("casing-")) {
             mc.setScreen(new CasingScreen(casingFixture(capture.challenge)));
+        } else if(capture.challenge!=null && capture.challenge.startsWith("tech-")) {
+            mc.setScreen(techCapture(capture.challenge));
         } else if(capture.challenge!=null && capture.challenge.startsWith("fence-")) {
             mc.setScreen(FenceScreen.forCapture(fenceQuote(capture.challenge),0));
         } else if(capture.challenge!=null) {

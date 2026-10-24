@@ -83,7 +83,10 @@
     {"id": "cash_box", "name": "Cash Box", "icon": "box", "city": "ironhaven", "kind": "rare", "note": "A locked tin of a shop's takings. Credits come only through Q Shop, so a fence pays for the box (D-144)."},
     {"id": "power_drill", "name": "Power Drill", "icon": "kit", "city": "ironhaven", "kind": "rare", "note": "A cordless drill from a workshop bench. Only a fence buys it (D-144)."},
     {"id": "small_painting", "name": "Small Painting", "icon": "box", "city": "blackwater", "kind": "rare", "note": "A small oil painting from a wealthy home. Only a fence buys it, and not cheaply (D-144)."},
-    {"id": "bearer_bonds", "name": "Bearer Bonds", "icon": "box", "city": "blackwater", "kind": "rare", "note": "Paper worth a fortune to the right buyer, found only in exceptional places (D-144)."}
+    {"id": "bearer_bonds", "name": "Bearer Bonds", "icon": "box", "city": "blackwater", "kind": "rare", "note": "Paper worth a fortune to the right buyer, found only in exceptional places (D-144)."},
+    {"id": "e_scrap", "name": "Electronic Scrap", "icon": "circuit", "city": "blackwater", "kind": "product", "note": "Salvaged boards, wire and chips (D-158): stripped from scrap heaps, sold by the salvage yard, found in offices. Three make two circuit boards at an Electronics Bench."},
+    {"id": "repair_kit", "name": "Technician's Toolkit", "icon": "circuit", "city": "blackwater", "kind": "durable", "count": 1, "note": "A Technician's toolkit (D-158): screwdrivers, a soldering iron and test leads. Opens a utility panel to repair a fault; wears with use. Made at an Electronics Bench; a new Technician starts with one."},
+    {"id": "diagnostic_scanner", "name": "Diagnostic Scanner", "icon": "circuit", "city": "blackwater", "kind": "durable", "count": 1, "note": "Carried during a repair (D-158), it shows at once which half of the circuit has the fault. Made at an Electronics Bench with Municipal Repairs."}
   ],
   "order_defaults": {"capacity": 2, "refill_ticks": 12000}
 }

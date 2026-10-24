@@ -668,6 +668,41 @@
       "description": "Casing card at a door the thief cannot try: a high-security lock without a Pro Pick Set"
     },
     {
+      "id": "technician.computer",
+      "expected_file": "uc-tech-computer.png",
+      "owner": "underground_city",
+      "group": "technician",
+      "description": "Personal computer (D-158), the Service app: the city's service calls and jobs, the pay, how long open, whether this player may take it, Track"
+    },
+    {
+      "id": "technician.designs",
+      "expected_file": "uc-tech-designs.png",
+      "owner": "underground_city",
+      "group": "technician",
+      "description": "Personal computer, the Designs app: what an Electronics Bench makes, the parts carried against the parts needed, designs that need a skill"
+    },
+    {
+      "id": "technician.bench",
+      "expected_file": "uc-tech-bench.png",
+      "owner": "underground_city",
+      "group": "technician",
+      "description": "Electronics Bench (D-158): designs ready, missing parts or needing a skill; the selected design's parts and Assemble"
+    },
+    {
+      "id": "technician.trace",
+      "expected_file": "uc-tech-trace.png",
+      "owner": "underground_city",
+      "group": "technician",
+      "description": "A repair at a utility panel (D-158): the circuit in two branches, two test points read, the scanner's outlined stretch, Probe and Replace"
+    },
+    {
+      "id": "technician.patch",
+      "expected_file": "uc-tech-patch.png",
+      "owner": "underground_city",
+      "group": "technician",
+      "description": "An install at a utility panel (D-158): the patch grid of cable tiles, the feed, three devices to feed"
+    },
+    {
       "id": "lockpick.spool",
       "expected_file": "uc-lock-spool.png",
       "owner": "underground_city",

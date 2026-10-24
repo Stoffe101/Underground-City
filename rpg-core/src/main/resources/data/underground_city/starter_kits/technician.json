@@ -2,6 +2,9 @@
   "schema_version": 1,
   "career": "technician",
   "items": [
+    {"item": "underground_city:repair_kit", "count": 1},
+    {"item": "underground_city:personal_computer", "count": 1},
+    {"item": "underground_city:control_circuits", "count": 2},
     {"item": "minecraft:redstone", "count": 16},
     {"item": "minecraft:copper_ingot", "count": 8},
     {"item": "minecraft:bread", "count": 4},

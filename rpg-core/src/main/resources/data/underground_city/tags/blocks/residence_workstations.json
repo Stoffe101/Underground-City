@@ -17,6 +17,8 @@
     "minecraft:brewing_stand",
     "minecraft:enchanting_table",
     "minecraft:composter",
+    "underground_city:personal_computer",
+    "underground_city:electronics_bench",
     { "id": "tacz:gun_smith_table", "required": false },
     { "id": "tacz:workbench_a", "required": false },
     { "id": "tacz:workbench_b", "required": false },

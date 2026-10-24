@@ -248,6 +248,12 @@ def build(data: dict, contracts: dict) -> dict[Path, bytes]:
         "block.underground_city.scrap_heap": "Scrap Heap",
         "item.underground_city.scrap_heap": "Scrap Heap",
         "item.underground_city.sealed_envelope": "Sealed Envelope",
+        "block.underground_city.utility_panel": "Utility Panel",
+        "item.underground_city.utility_panel": "Utility Panel",
+        "block.underground_city.personal_computer": "Personal Computer",
+        "item.underground_city.personal_computer": "Personal Computer",
+        "block.underground_city.electronics_bench": "Electronics Bench",
+        "item.underground_city.electronics_bench": "Electronics Bench",
     }
 
     def emit_item(entry, kind, stack):
@@ -389,6 +395,13 @@ def build(data: dict, contracts: dict) -> dict[Path, bytes]:
     # a salvage yard's scrap heap (D-138) and a courier's sealed letter (D-139): registered in Java, drawn by tools/art
     files[Path(f"rpg-core/src/main/resources/assets/{NAMESPACE}/models/item/scrap_heap.json")] = jdump(
         {"parent": f"{NAMESPACE}:block/scrap_heap"}).encode()
+    # the Technician's blocks (D-158): a building's utility panel, the personal computer and the electronics bench, drawn by tools/art; the computer and the bench drop themselves
+    files[Path(f"rpg-core/src/main/resources/assets/{NAMESPACE}/models/item/utility_panel.json")] = jdump({"parent": f"{NAMESPACE}:block/utility_panel_ok"}).encode()
+    files[Path(f"rpg-core/src/main/resources/assets/{NAMESPACE}/models/item/personal_computer.json")] = jdump({"parent": f"{NAMESPACE}:block/personal_computer"}).encode()
+    files[Path(f"rpg-core/src/main/resources/assets/{NAMESPACE}/models/item/electronics_bench.json")] = jdump({"parent": f"{NAMESPACE}:block/electronics_bench"}).encode()
+    for dropped in ("personal_computer", "electronics_bench"):
+        files[Path(f"rpg-core/src/main/resources/data/{NAMESPACE}/loot_tables/blocks/{dropped}.json")] = jdump({"type": "minecraft:block", "pools": [{"rolls": 1,
+            "entries": [{"type": "minecraft:item", "name": f"{NAMESPACE}:{dropped}"}], "conditions": [{"condition": "minecraft:survives_explosion"}]}]}).encode()
     files[Path(f"rpg-core/src/main/resources/assets/{NAMESPACE}/models/item/sealed_envelope.json")] = jdump(
         {"parent": "minecraft:item/generated", "textures": {"layer0": f"{NAMESPACE}:item/sealed_envelope"}}).encode()
     blueprint = json.loads((ROOT / "content/region-blueprints/cities.json").read_text(encoding="utf-8"))

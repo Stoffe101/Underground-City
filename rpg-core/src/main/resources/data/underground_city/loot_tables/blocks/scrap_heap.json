@@ -29,7 +29,7 @@
       "entries": [
         {
           "type": "minecraft:empty",
-          "weight": 70
+          "weight": 56
         },
         {
           "type": "minecraft:item",
@@ -54,6 +54,20 @@
           "type": "minecraft:item",
           "name": "minecraft:chain",
           "weight": 4
+        },
+        {
+          "type": "minecraft:item",
+          "name": "underground_city:e_scrap",
+          "weight": 14,
+          "functions": [
+            {
+              "function": "minecraft:set_count",
+              "count": {
+                "min": 1,
+                "max": 2
+              }
+            }
+          ]
         },
         {
           "type": "minecraft:item",

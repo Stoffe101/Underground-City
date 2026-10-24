@@ -500,6 +500,52 @@ def control_circuits():
 
 
 @item
+def e_scrap():
+    """A handful of electronic scrap: a broken board with a snapped corner, a loose chip, a coil of copper wire and a capacitor."""
+    s = Sprite()
+    s.polygon([(2, 5), (10, 3), (12, 9), (4, 12)], PCB[2])
+    s.line(2, 5, 10, 3, PCB[3]); s.line(4, 12, 12, 9, PCB[0])
+    s.line(5, 6, 9, 5, PCB[4]); s.line(6, 9, 10, 8, PCB[4])
+    s.rect(6, 6, 7, 7, INK); s.put(6, 6, GUNMETAL[3])
+    s.put(11, 4, PCB[1]); s.put(12, 5, PCB[1])   # the snapped corner
+    for (x, y) in ((11, 11), (12, 12), (13, 11), (12, 10)):
+        s.put(x, y, COPPER[3])
+    s.put(12, 11, COPPER[1])
+    s.rect(2, 12, 3, 14, BLUE[2]); s.put(2, 12, BLUE[4]); s.line(3, 11, 3, 10, STEEL[3])
+    s.rect(13, 3, 14, 4, INK); s.put(13, 3, GUNMETAL[2])
+    return finish(s)
+
+
+@item
+def repair_kit():
+    """A Technician's toolkit: an orange tool case standing open, a screwdriver and a soldering iron in its lid, a coil of test lead."""
+    s = Sprite()
+    bevel_rect(s, 2, 8, 13, 14, AMBER)
+    s.line(2, 10, 13, 10, AMBER[1])
+    s.rect(6, 7, 9, 7, PLASTIC_BLACK[2]); s.line(6, 6, 9, 6, PLASTIC_BLACK[3])
+    s.put(4, 9, STEEL[3]); s.put(11, 9, STEEL[3])
+    # a screwdriver and a soldering iron standing out of the case
+    s.line(4, 2, 5, 7, STEEL[3]); s.line(4, 2, 4, 3, STEEL[4]); s.rect(5, 6, 6, 7, RED[2])
+    s.line(10, 1, 9, 7, STEEL[2]); s.put(10, 1, AMBER[4]); s.rect(8, 5, 9, 7, BLUE[2])
+    s.line(12, 12, 14, 12, RED[3]); s.line(14, 12, 15, 10, RED[3]); s.put(15, 9, STEEL[4])
+    return finish(s)
+
+
+@item
+def diagnostic_scanner():
+    """A handheld diagnostic scanner: a yellow rubber body, a small screen with a waveform, two probe leads."""
+    s = Sprite()
+    bevel_rect(s, 4, 2, 11, 14, AMBER)
+    s.rect(5, 3, 10, 7, INK)
+    for (x, y) in ((5, 6), (6, 5), (7, 4), (8, 6), (9, 5), (10, 4)):
+        s.put(x, y, LEAF_LIME[3])
+    s.rect(6, 9, 9, 10, PLASTIC_BLACK[2]); s.put(7, 9, PLASTIC_BLACK[3])
+    s.put(6, 12, RED[3]); s.put(9, 12, PLASTIC_BLACK[3])
+    s.line(6, 14, 3, 15, RED[2]); s.line(9, 14, 13, 15, PLASTIC_BLACK[2])
+    return finish(s)
+
+
+@item
 def bypass_kit():
     """A black hard case with two latches, a cyan status light and a probe cable."""
     s = Sprite()

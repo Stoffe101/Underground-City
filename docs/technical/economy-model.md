@@ -260,9 +260,9 @@ Everything between the markers is written by `--update-doc` and checked by a uni
 
 ### Salvage yards (D-138): heaps that refill in active time, and the mean items an active hour if every heap is stripped (one rotation of each yard stands in a world)
 
-| yard               | heaps | minutes | heaps/h | items/h                                                                          |
-|--------------------|-------|---------|---------|----------------------------------------------------------------------------------|
-| rs_kessler_salvage | 54    | 60      | 54      | chain 2.2, copper_ingot 8.1, iron_nugget 135.0, redstone 7.3, machined_parts 1.1 |
+| yard               | heaps | minutes | heaps/h | items/h                                                                                        |
+|--------------------|-------|---------|---------|------------------------------------------------------------------------------------------------|
+| rs_kessler_salvage | 54    | 60      | 54      | chain 2.2, copper_ingot 8.1, iron_nugget 135.0, redstone 7.3, e_scrap 11.3, machined_parts 1.1 |
 
 ### Fences (D-125): rate, best rate with every payout skill, opening budget, the most they pay an hour after it, against the best legal hour at level 5
 

@@ -57,6 +57,7 @@ The docs here distinguish **confirmed product direction**, **design proposals**,
 - [Alarms, witnesses, police and stolen goods; SecurityCraft evaluated (D-121, D-122)](technical/police-response.md)
 - [The Thief track and the burglary loop: tiers, casing, searchable rooms, locks and tools, cameras, police who look, fences' doors (D-143 to D-150)](technical/thief-and-burglary.md)
 - [Property intelligence: the neighbourhood grade, the card under the crosshair, casing in layers, the risk now, the Places book (D-157)](technical/property-intelligence.md)
+- [The Technician's trade: utility panels, service calls, the repair and patch puzzles, the Electronics Bench and the computer (D-158)](technical/technician-trade.md)
 - [The hybrid resource economy: no natural ore, shelves, a regenerating quarry, the reachability audit (D-120, D-123)](technical/hybrid-economy.md)
 - [The people who live and work in the furnished buildings (D-124)](technical/households.md)
 - [AI-assisted development, docs and PR workflow](technical/agent-workflow.md)
