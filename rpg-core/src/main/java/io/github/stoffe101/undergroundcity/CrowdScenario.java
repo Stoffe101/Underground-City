@@ -30,7 +30,7 @@ import static io.github.stoffe101.undergroundcity.ThiefScenario.shot;
 final class CrowdScenario {
     private CrowdScenario() {}
 
-    record Sample(String stop, String clock, int within64, int inSightServer, int onScreen, int within256, int indoors, double mspt, int fps, double passMeanUs, long passWorstUs) {}
+    record Sample(String stop, String clock, int within64, int inSightServer, int onScreen, int within256, int indoors, int street, int streetInSight, double mspt, int fps, double passMeanUs, long passWorstUs) {}
 
     private static final List<Sample> SAMPLES = new ArrayList<>();
     private static Vec3 stand, walkTo;
@@ -65,6 +65,7 @@ final class CrowdScenario {
         });
         until("the ground at the stop", () -> stand == null || Scenarios.groundBelowPlayer(), 2400);
         Playtest.wait("the street fills (20 s)", 400);
+        census(label);
         for (int i = 0; i < 6; i++) {
             sample(label);
             Playtest.wait("ten seconds", 200);
@@ -79,6 +80,12 @@ final class CrowdScenario {
         sample(label + " (after the walk)");
         Playtest.wait("ten seconds", 200);
         sample(label + " (after the walk)");
+        census(label + " (after the walk)");
+    }
+
+    /** Where the people round the player are and what they are doing (PopulationService.census). */
+    private static void census(String label) {
+        Playtest.queue("census: " + label, () -> { if (stand != null) Playtest.log("CROWD census " + label + ": " + server(() -> PopulationService.census(level(), me()))); });
     }
 
     /**
@@ -111,22 +118,26 @@ final class CrowdScenario {
             int[] srv = server(() -> {
                 var me = me();
                 var all = level().getEntitiesOfClass(TownspersonEntity.class, me.getBoundingBox().inflate(64), t -> t.isAlive() && !t.police() && t.distanceTo(me) <= 64);
-                int sight = 0, indoors = 0;
+                int sight = 0, indoors = 0, street = 0, streetSight = 0;
                 for (TownspersonEntity t : all) {
-                    if (me.hasLineOfSight(t)) sight++;
+                    boolean seen = me.hasLineOfSight(t);
+                    if (seen) sight++;
                     PopulationService.Walker w = PopulationService.walkerOf(t);
-                    if (w != null && (w.phase == PopulationService.Phase.BROWSE || w.phase == PopulationService.Phase.ENTER)) indoors++;
+                    if (w == null) continue;   // a household's resident or a shopkeeper (HouseholdService), not a street person
+                    street++;
+                    if (seen) streetSight++;
+                    if (w.phase == PopulationService.Phase.BROWSE || w.phase == PopulationService.Phase.ENTER) indoors++;
                 }
                 int wide = level().getEntitiesOfClass(TownspersonEntity.class, me.getBoundingBox().inflate(256), TownspersonEntity::isAlive).size();
-                return new int[] {all.size(), sight, wide, indoors};
+                return new int[] {all.size(), sight, wide, indoors, street, streetSight};
             });
             double mspt = mc.getSingleplayerServer().getAverageTickTime();
             long passes = PopulationService.passes;
-            Sample s = new Sample(label, label.substring(label.lastIndexOf(" at ") + 4).replace(" (after the walk)", ""), srv[0], srv[1], best, srv[2], srv[3], mspt, mc.getFps(),
+            Sample s = new Sample(label, label.substring(label.lastIndexOf(" at ") + 4).replace(" (after the walk)", ""), srv[0], srv[1], best, srv[2], srv[3], srv[4], srv[5], mspt, mc.getFps(),
                 passes == 0 ? 0 : PopulationService.nanosTotal / 1000.0 / passes, PopulationService.nanosWorst / 1000);
             SAMPLES.add(s);
-            Playtest.log(String.format(Locale.ROOT, "CROWD %s: %d within 64 blocks (%d of them inside a shop), %d in the server's sight, %d on screen (best of four directions), %d within 256; server %.1f ms a tick, %d fps; street pass mean %.0f us, worst %d us",
-                label, s.within64(), s.indoors(), s.inSightServer(), s.onScreen(), s.within256(), s.mspt(), s.fps(), s.passMeanUs(), s.passWorstUs()));
+            Playtest.log(String.format(Locale.ROOT, "CROWD %s: %d within 64 blocks (%d of them street people, %d of those in sight; %d inside a shop), %d in the server's sight, %d on screen (best of four directions), %d within 256; server %.1f ms a tick, %d fps; street pass mean %.0f us, worst %d us",
+                label, s.within64(), s.street(), s.streetInSight(), s.indoors(), s.inSightServer(), s.onScreen(), s.within256(), s.mspt(), s.fps(), s.passMeanUs(), s.passWorstUs()));
         });
     }
 
@@ -188,9 +199,9 @@ final class CrowdScenario {
     }
 
     private static void summary() {
-        Playtest.log("CROWD summary (stop | within 64 | inside a shop | server sight | on screen | within 256 | ms a tick | fps | pass mean us | pass worst us):");
+        Playtest.log("CROWD summary (stop | within 64 | street people | street in sight | inside a shop | server sight | on screen | within 256 | ms a tick | fps | pass mean us | pass worst us):");
         for (Sample s : SAMPLES)
-            Playtest.log(String.format(Locale.ROOT, "CROWD | %s | %d | %d | %d | %d | %d | %.1f | %d | %.0f | %d", s.stop(), s.within64(), s.indoors(), s.inSightServer(), s.onScreen(), s.within256(), s.mspt(), s.fps(), s.passMeanUs(), s.passWorstUs()));
+            Playtest.log(String.format(Locale.ROOT, "CROWD | %s | %d | %d | %d | %d | %d | %d | %d | %.1f | %d | %.0f | %d", s.stop(), s.within64(), s.street(), s.streetInSight(), s.indoors(), s.inSightServer(), s.onScreen(), s.within256(), s.mspt(), s.fps(), s.passMeanUs(), s.passWorstUs()));
         Playtest.log("CROWD status: " + server(() -> PopulationService.status(level().getServer())));
         Playtest.log("CROWD households: " + HouseholdService.status());
         ThiefScenario.summary();

@@ -117,6 +117,7 @@ public final class PopulationService {
         ROSTERS.clear(); ACTIVE.clear(); MET.clear(); STREETS.clear(); OPEN.clear(); RETRY_AFTER.clear(); AREAS.clear(); DOORS.clear();
         passes = nanosTotal = nanosWorst = spawned = spawnedAtDoors = removed = entered = browsed = chats = spotMisses = activePeak = stuckGivenUp = 0;
         nanosFirst = lcCalls = lcNanos = lcWorst = shelfPurchases = 0;
+        stepNanos = topUpNanos = worstSteps = worstTopUp = worstLookups = worstPeople = 0;
     }
 
     // ------------------------------------------------------------------------------------------------ the pass
@@ -126,15 +127,23 @@ public final class PopulationService {
         if (event.phase != TickEvent.Phase.END || event.getServer().getTickCount() % CYCLE != 3) return;
         ServerLevel level = event.getServer().overworld();
         if (level.players().isEmpty() && ACTIVE.isEmpty()) return;
-        long start = System.nanoTime();
+        long start = System.nanoTime(), calls = lcCalls;
+        stepNanos = topUpNanos = 0;
+        inPass = true;
         try { pass(level); }
         catch (RuntimeException error) { LOGGER.warn("[UC-POPULATION] a pass failed and was skipped: {}", error.toString()); }
+        finally { inPass = false; }
         long took = System.nanoTime() - start;
         if (passes == 0) nanosFirst = took;
+        if (took > nanosWorst) { worstSteps = stepNanos; worstTopUp = topUpNanos; worstLookups = lcCalls - calls; worstPeople = ACTIVE.size(); }
         passes++; nanosTotal += took; nanosWorst = Math.max(nanosWorst, took);
     }
 
     private static int lookups, scans;
+    /** True while a pass runs: its Lost Cities lookups come out of {@link #LOOKUPS_PER_PASS}. */
+    private static boolean inPass;
+    /** Where the time of a pass went (the people's steps, the top-up round players), and of the worst pass so far, with its Lost Cities lookups and how many people were out. */
+    static long stepNanos, topUpNanos, worstSteps, worstTopUp, worstLookups, worstPeople;
 
     static void pass(ServerLevel level) {
         if (!LostCitiesLink.ready()) return;
@@ -145,6 +154,7 @@ public final class PopulationService {
         long now = level.getGameTime();
         int hour = PopulationPlan.hourOf(level.getDayTime());
         long day = PopulationPlan.dayOf(level.getDayTime());
+        long stepsFrom = System.nanoTime();
         for (Iterator<Map.Entry<UUID, Walker>> it = ACTIVE.entrySet().iterator(); it.hasNext(); ) {
             var entry = it.next();
             if (!(level.getEntity(entry.getKey()) instanceof TownspersonEntity body) || !body.isAlive()) { it.remove(); continue; }
@@ -155,10 +165,13 @@ public final class PopulationService {
                 body.discard(); it.remove(); removed++;
             }
         }
+        stepNanos = System.nanoTime() - stepsFrom;
         if (players.isEmpty()) return;
         // a different few players each pass, so a crowded server does not pay for everybody at once
+        long topUpFrom = System.nanoTime();
         int first = (int) (now / CYCLE % players.size());
         for (int i = 0; i < Math.min(PLAYERS_PER_PASS, players.size()); i++) topUp(level, players.get((first + i) % players.size()), players, now, hour, day);
+        topUpNanos = System.nanoTime() - topUpFrom;
         activePeak = Math.max(activePeak, ACTIVE.size());
     }
 
@@ -384,6 +397,12 @@ public final class PopulationService {
         if (wanted != null) {
             List<Candidate> doors = doorsNear(level, body.blockPosition(), 10, 44, wanted);
             if (kind.equals("shop")) doors.removeIf(c -> !BuildingGuard.openToPublic(level, c.building(), null) && level.random.nextInt(3) != 0);
+            ServerPlayer near = nearest(players, body.blockPosition(), 64);
+            if (near != null && doors.size() > 1 && level.random.nextInt(10) < TOWARDS_PLAYER) {
+                List<Candidate> inView = new ArrayList<>();
+                for (Candidate c : doors) if (inLine(level, near, c.door().lower().relative(c.door().out()))) inView.add(c);
+                if (!inView.isEmpty()) doors = inView;
+            }
             if (!doors.isEmpty()) {
                 Candidate c = doors.get(level.random.nextInt(doors.size()));
                 w.errand = kind; w.door = c.door(); w.building = c.building().key(); w.phase = Phase.WALK; w.goal = c.door().lower().relative(c.door().out());
@@ -395,25 +414,47 @@ public final class PopulationService {
         // strolls ended in yards and courts behind the buildings, and a street with forty people within 64 blocks showed two to six of them)
         BlockPos here = body.blockPosition();
         ServerPlayer watcher = nearest(players, here, 64);
-        List<ChunkPos> chunks = watcher != null && level.random.nextInt(10) < STROLL_TOWARDS_PLAYER ? strollChunks(watcher.chunkPosition(), here) : List.of();
+        boolean towards = watcher != null && level.random.nextInt(10) < TOWARDS_PLAYER;
+        List<ChunkPos> chunks = towards ? strollChunks(watcher.chunkPosition(), here) : List.of();
         if (chunks.isEmpty()) chunks = strollChunks(new ChunkPos(here), here);
-        for (int attempt = 0; attempt < 6 && !chunks.isEmpty(); attempt++) {
+        BlockPos fallback = null;
+        for (int attempt = 0; attempt < (towards ? 8 : 6) && !chunks.isEmpty(); attempt++) {
             ChunkPos chunk = chunks.get(level.random.nextInt(chunks.size()));
             Optional<BlockPos> spot = streetSpot(level, chunk, level.random);
+            if (towards && spot.isPresent() && !inLine(level, watcher, spot.get())) {   // somewhere the player could see them; else the first spot found, if nothing better
+                if (fallback == null) fallback = spot.get();
+                continue;
+            }
             if (spot.isPresent()) {
                 w.errand = "stroll"; w.door = null; w.phase = Phase.WALK; w.goal = spot.get();
                 body.errand(w.goal, 0.5);
                 return true;
             }
         }
+        if (fallback != null) {
+            w.errand = "stroll"; w.door = null; w.phase = Phase.WALK; w.goal = fallback;
+            body.errand(w.goal, 0.5);
+            return true;
+        }
         return rest(body, w, now, 100 + level.random.nextInt(200));
     }
 
-    /** Out of ten strolls by somebody within 64 blocks of a player, how many end in the streets round that player. */
-    static final int STROLL_TOWARDS_PLAYER = 6;
+    /**
+     * Out of ten errands by somebody within 64 blocks of a player, how many go somewhere that player has a line of sight to (a stroll's end, or the outside of a door): people walk where
+     * somebody is to see them. Measured before this: in a grid of one-chunk blocks a street shows a player only a small share of the people round them, and an even spread left two to nine of
+     * forty in sight.
+     */
+    static final int TOWARDS_PLAYER = 7;
+
+    /** True when {@code player}'s eyes have a clear line to a person standing at {@code feet}, within 48 blocks, whichever way the player faces. */
+    static boolean inLine(ServerLevel level, ServerPlayer player, BlockPos feet) {
+        Vec3 eye = player.getEyePosition(), head = Vec3.atBottomCenterOf(feet).add(0, 1.6, 0);
+        if (eye.distanceToSqr(head) > 48 * 48) return false;
+        return level.clip(new ClipContext(eye, head, ClipContext.Block.VISUAL, ClipContext.Fluid.NONE, player)).getType() == HitResult.Type.MISS;
+    }
 
     /**
-     * Where a stroll from {@code here} may end: the known street chunks within two of {@code centre} (not the walker's own) whose middle is within a path's reach, the open streets (no building) if
+     * Where a stroll from {@code here} may end (round a player when {@link #TOWARDS_PLAYER} says so): the known street chunks within two of {@code centre} (not the walker's own) whose middle is within a path's reach, the open streets (no building) if
      * there are any, else any street chunk. Only chunks Lost Cities has already answered are used.
      */
     static List<ChunkPos> strollChunks(ChunkPos centre, BlockPos here) {
@@ -610,6 +651,9 @@ public final class PopulationService {
         if (!guard && random.nextInt(10) < 6) {
             List<Candidate> doors = doorsNear(level, player.blockPosition(), 12, 52, EnumSetHolder.ANY);
             doors.removeIf(c -> tooClose(everyone, c.door().lower(), 8) || seenClose(level, everyone, c.door().lower(), 18));
+            List<Candidate> inView = new ArrayList<>();
+            for (Candidate c : doors) if (inLine(level, player, c.door().lower().relative(c.door().out()))) inView.add(c);
+            if (!inView.isEmpty() && random.nextInt(10) < TOWARDS_PLAYER) doors = inView;   // a door on a street the player has a line to (behind them, or too far off to see who comes out)
             if (!doors.isEmpty()) {
                 Candidate c = doors.get(random.nextInt(doors.size()));
                 BlockPos inside = c.door().lower().relative(c.door().out().getOpposite()), outside = c.door().lower().relative(c.door().out());
@@ -632,16 +676,22 @@ public final class PopulationService {
         ChunkPos district = player.chunkPosition();
         List<ChunkPos> open = new ArrayList<>();
         for (int dx = -WINDOW; dx <= WINDOW; dx++) for (int dz = -WINDOW; dz <= WINDOW; dz++) if (OPEN.contains(ChunkPos.asLong(district.x + dx, district.z + dz))) open.add(new ChunkPos(district.x + dx, district.z + dz));
-        for (int attempt = 0; attempt < 3; attempt++) {
+        BlockPos chosen = null;
+        for (int attempt = 0; attempt < 4; attempt++) {
             ChunkPos chunk = !open.isEmpty() && random.nextInt(4) != 0 ? open.get(random.nextInt(open.size())) : new ChunkPos(district.x + random.nextInt(7) - 3, district.z + random.nextInt(7) - 3);
             Optional<BlockPos> spot = findSpot(level, chunk, random, everyone);
             if (spot.isEmpty() || seen(level, everyone, spot.get())) continue;
-            TownspersonEntity body = create(level, who, spot.get(), Direction.from2DDataValue(random.nextInt(4)));
+            if (chosen == null) chosen = spot.get();
+            if (inLine(level, player, spot.get()) && !seenClose(level, everyone, spot.get(), 64)) { chosen = spot.get(); break; }   // out of every player's view, but on a street this one has a line to: they walk into sight
+        }
+        if (chosen != null) {
+            BlockPos at = chosen;
+            TownspersonEntity body = create(level, who, at, Direction.from2DDataValue(random.nextInt(4)));
             if (body == null) return false;
             Walker w = new Walker(who.id(), who.city(), who.role());
             w.lastMoved = now; w.lastPos = body.position();
             ACTIVE.put(body.getUUID(), w);
-            if (guard) { w.phase = Phase.POST; body.restrictTo(spot.get(), 3); }
+            if (guard) { w.phase = Phase.POST; body.restrictTo(at, 3); }
             else newErrand(level, body, w, everyone, now, hour);
             spawned++;
             return true;
@@ -721,6 +771,7 @@ public final class PopulationService {
      */
     static Optional<BlockPos> findSpot(ServerLevel level, ChunkPos chunk, RandomSource random, List<ServerPlayer> players) {
         if (level.getChunkSource().getChunkNow(chunk.x, chunk.z) == null) return Optional.empty();
+        if (inPass && !STREETS.containsKey(chunk.toLong()) && lookups-- <= 0) return Optional.empty();   // in a pass, a chunk not yet answered costs a Lost Cities lookup from the pass's budget, like the areas
         int street = streetOf(level, chunk);
         if (street < 0) return Optional.empty();
         BlockPos.MutableBlockPos feet = new BlockPos.MutableBlockPos();
@@ -859,6 +910,34 @@ public final class PopulationService {
         return new Around(within, inSight, target);
     }
 
+    /**
+     * Where the people within 64 blocks of a player are and what they are doing, for the crowd runs: street people of this service by phase and errand, and the bodies of other services
+     * (households, shopkeepers) apart; whether each stands on an open street, a building's plot or a chunk not yet answered; height against the player; distance; and how many have not moved
+     * for five seconds.
+     */
+    static String census(ServerLevel level, ServerPlayer player) {
+        Map<String, Integer> phases = new java.util.TreeMap<>(), errands = new java.util.TreeMap<>();
+        int others = 0, open = 0, plot = 0, unknown = 0, below = 0, even = 0, above = 0, near16 = 0, near32 = 0, far = 0, still = 0, openInSight = 0, plotInSight = 0;
+        long now = level.getGameTime();
+        for (TownspersonEntity body : level.getEntitiesOfClass(TownspersonEntity.class, player.getBoundingBox().inflate(64), b -> b.isAlive() && !b.police() && b.distanceTo(player) <= 64)) {
+            Walker w = ACTIVE.get(body.getUUID());
+            if (w == null) { others++; continue; }
+            phases.merge(w.phase.name().toLowerCase(Locale.ROOT), 1, Integer::sum);
+            errands.merge(w.errand.isEmpty() ? "none" : w.errand, 1, Integer::sum);
+            long chunk = ChunkPos.asLong(body.getBlockX() >> 4, body.getBlockZ() >> 4);
+            boolean sight = player.hasLineOfSight(body);
+            if (OPEN.contains(chunk)) { open++; if (sight) openInSight++; } else if (STREETS.containsKey(chunk)) { plot++; if (sight) plotInSight++; } else unknown++;
+            double dy = body.getY() - player.getY();
+            if (dy < -2) below++; else if (dy > 2) above++; else even++;
+            double d = body.distanceTo(player);
+            if (d < 16) near16++; else if (d < 32) near32++; else far++;
+            if (now - w.lastMoved > 100) still++;
+        }
+        return String.format(Locale.ROOT, "street people %d (phases %s; errands %s; on an open street %d, %d of them in sight; on a building's plot %d, %d in sight; chunk unknown %d; "
+            + "below the player %d, level %d, above %d; within 16 blocks %d, 16 to 32 %d, 32 to 64 %d; not moved for 5 s %d); other bodies (households, shopkeepers) %d",
+            open + plot + unknown, phases, errands, open, openInSight, plot, plotInSight, unknown, below, even, above, near16, near32, far, still, others);
+    }
+
     static String status(MinecraftServer server) {
         double average = passes == 0 ? 0 : nanosTotal / (double) passes / 1000.0;
         PopulationDensity.Preset preset = activePreset();
@@ -867,8 +946,8 @@ public final class PopulationService {
             Around a = around(p.serverLevel(), p);
             players.append("; ").append(p.getGameProfile().getName()).append(": ").append(a.within64()).append(" within 64 blocks (").append(a.inSight()).append(" in sight, target ").append(a.target()).append(")");
         }
-        return String.format(Locale.ROOT, "density %s; street people out now %d (peak %d, cap %d total / %d per player); passes %d, mean %.0f us, worst %d us, first %d us; Lost Cities lookups %d (mean %.0f us, worst %d us); spawned %d (%d out of a door), removed %d, went in at a door %d, browsed a shop %d (bought %d off a shelf), chats %d, given up %d, spots missed %d; doors known %d%s",
-            preset.name().toLowerCase(Locale.ROOT), ACTIVE.size(), activePeak, preset.world, preset.perPlayer, passes, average, nanosWorst / 1000, nanosFirst / 1000, lcCalls,
+        return String.format(Locale.ROOT, "density %s; street people out now %d (peak %d, cap %d total / %d per player); passes %d, mean %.0f us, worst %d us (steps %d us, top-up %d us, %d Lost Cities lookups, %d people out), first %d us; Lost Cities lookups %d (mean %.0f us, worst %d us); spawned %d (%d out of a door), removed %d, went in at a door %d, browsed a shop %d (bought %d off a shelf), chats %d, given up %d, spots missed %d; doors known %d%s",
+            preset.name().toLowerCase(Locale.ROOT), ACTIVE.size(), activePeak, preset.world, preset.perPlayer, passes, average, nanosWorst / 1000, worstSteps / 1000, worstTopUp / 1000, worstLookups, worstPeople, nanosFirst / 1000, lcCalls,
             lcCalls == 0 ? 0.0 : lcNanos / (double) lcCalls / 1000.0, lcWorst / 1000, spawned, spawnedAtDoors, removed, entered, browsed, shelfPurchases, chats, stuckGivenUp, spotMisses, DOORS.size(), players);
     }
 
