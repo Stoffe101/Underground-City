@@ -49,6 +49,12 @@ peaks-and-valleys "ridge" value (how high, inside the middle bands) and temperat
    `ridges_folded` and the overworld noise settings through the game's vanilla pack and serves copies whose references point at `underground_city:regional/*`. About 110 KB of Mojang's data is therefore
    **not** in this repository, and the result follows whatever the game's own functions are. The noise settings are `underground_city:regional`; the world type is `underground_city:archipelago`
    (World Type list at world creation, and `level-type=underground_city:archipelago` for a server). An existing world never reads any of it.
+4. **`IslandField` is equal by value** (October 24), as Minecraft's own density functions, which are records, are. A noise chunk wraps each distinct function once, keyed by equality, and the
+   rebuilt functions refer to an island channel from many places (offset, factor, jaggedness, depth, sloped cheese and their splines). Compared by identity, every reference kept its own copy of
+   everything above it: a road check in a new world filled its 3 GB heap and stopped. A heap histogram showed 2.3 million `IslandField` copies (about 900 a noise chunk), 2.4 million noise
+   caches and 15.7 million map entries, held by the 2,502 noise chunks of chunks partly generated at the edge of what was loaded. Any server generating this world carried the same weight
+   for every such chunk. `RegionalWorldgenGameTests.aNoiseChunkKeepsOneCopyOfEachIslandChannel` maps the real regional router the way a noise chunk does and counts the copies. The road
+   check's earlier out-of-memory stop at its last end (below) was very likely the same cause, though it was put down to the check's own path search at the time.
 
 A first version of the pack listed directories by string prefix, so `worldgen/noise` also matched `worldgen/noise_settings`, the game tried to parse the noise settings as noise parameters and **no world
 loaded at all, legacy ones included**. It was found by the first survey server and fixed (a directory is `path + "/"`); the regression test is `RegionalWorldgenGameTests`.

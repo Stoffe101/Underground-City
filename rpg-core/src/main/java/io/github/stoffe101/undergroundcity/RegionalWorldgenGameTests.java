@@ -90,6 +90,25 @@ public final class RegionalWorldgenGameTests {
         helper.succeed();
     }
 
+    /**
+     * A noise chunk keeps one copy of each island channel. Minecraft wraps a chunk's density functions once each, keyed by equality ({@code NoiseChunk.wrap}); the island field compared by
+     * identity, so each of the many references to a channel kept its own copy of the terrain above it, and a road check's 2,502 noise chunks held 2.3 million copies and filled a 3 GB heap.
+     */
+    @GameTest(template = "empty", batch = "uc_regional")
+    public static void aNoiseChunkKeepsOneCopyOfEachIslandChannel(GameTestHelper helper) {
+        var settings = helper.getLevel().getServer().registryAccess().registryOrThrow(Registries.NOISE_SETTINGS).get(WorldLayout.REGIONAL_SETTINGS);
+        check(settings != null, "the regional noise settings did not load");
+        java.util.Map<net.minecraft.world.level.levelgen.DensityFunction, net.minecraft.world.level.levelgen.DensityFunction> wrapped = new java.util.HashMap<>();
+        net.minecraft.world.level.levelgen.DensityFunction.Visitor wrap = f -> wrapped.computeIfAbsent(f, k -> k);   // what a noise chunk does with each function it builds
+        var router = settings.noiseRouter();
+        for (var f : new net.minecraft.world.level.levelgen.DensityFunction[] {router.finalDensity(), router.initialDensityWithoutJaggedness(), router.continents(), router.erosion(), router.ridges(),
+                router.temperature(), router.vegetation(), router.depth(), router.barrierNoise(), router.fluidLevelFloodednessNoise(), router.fluidLevelSpreadNoise(), router.lavaNoise()}) f.mapAll(wrap);
+        long islands = wrapped.keySet().stream().filter(k -> k instanceof IslandField).count();
+        check(islands > 0, "the regional terrain has no island field");
+        check(islands <= 16, "a noise chunk keeps " + islands + " copies of the island channels (each reference its own copy)");
+        helper.succeed();
+    }
+
     @GameTest(template = "empty", batch = "uc_regional")
     public static void theIslandsAreLandAndTheStraitsAreSea(GameTestHelper helper) {
         var plan = plan();

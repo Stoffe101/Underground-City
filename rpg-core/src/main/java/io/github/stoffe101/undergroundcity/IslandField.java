@@ -60,12 +60,25 @@ public final class IslandField implements DensityFunction {
     private final Channel channel;
     private final IslandPlan plan;
     private final DensityFunction input;
+    private final int hash;
 
     public IslandField(Channel channel, IslandPlan plan, DensityFunction input) {
         this.channel = channel;
         this.plan = plan;
         this.input = input;
+        this.hash = java.util.Objects.hash(channel, plan, input);
     }
+
+    /**
+     * Equal by value, as Minecraft's own density functions (records) are. A noise chunk wraps each distinct function once, keyed by equality, and the terrain functions refer to an island
+     * channel from many places (offset, factor, jaggedness, depth, sloped cheese and their splines): compared by identity, every reference kept its own copy of everything above it. A road check
+     * in a new archipelago world filled a 3 GB heap with 2.3 million copies held by 2,502 noise chunks (October 24).
+     */
+    @Override public boolean equals(Object o) {
+        return this == o || o instanceof IslandField f && hash == f.hash && channel == f.channel && (plan == f.plan || plan.equals(f.plan)) && java.util.Objects.equals(input, f.input);
+    }
+
+    @Override public int hashCode() { return hash; }
 
     @Override public double compute(FunctionContext context) {
         double base = input == null ? 0.0 : input.compute(context);
