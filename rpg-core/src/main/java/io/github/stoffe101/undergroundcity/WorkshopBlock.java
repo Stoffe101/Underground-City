@@ -113,6 +113,9 @@ final class WorkshopBlock extends HorizontalDirectionalBlock implements EntityBl
         int batches, grade;
         long since, duration;
         final List<ItemStack> ready = new ArrayList<>();
+        /** The recipe and batches of what is ready to take, kept when the station's own clock finishes a batch, so its career XP is paid when it is taken. */
+        String readyRecipe = "";
+        int readyBatches;
         /** What went in (given back if the station is broken before the batch is done). */
         final List<ItemStack> inputs = new ArrayList<>();
 
@@ -162,6 +165,7 @@ final class WorkshopBlock extends HorizontalDirectionalBlock implements EntityBl
 
         void finish() {
             ready.addAll(made());
+            if (!recipe.isEmpty()) { readyRecipe = recipe; readyBatches += batches; }
             recipe = ""; batches = 0; grade = 0; since = 0; duration = 0;
             inputs.clear();
             setChanged();
@@ -181,6 +185,8 @@ final class WorkshopBlock extends HorizontalDirectionalBlock implements EntityBl
             for (ItemStack s : inputs) in.add(s.save(new CompoundTag()));
             tag.put("ready", r);
             tag.put("inputs", in);
+            tag.putString("ready_recipe", readyRecipe);
+            tag.putInt("ready_batches", readyBatches);
         }
 
         @Override
@@ -193,6 +199,8 @@ final class WorkshopBlock extends HorizontalDirectionalBlock implements EntityBl
             since = tag.getLong("since");
             duration = Math.max(0, tag.getLong("duration"));
             ready.clear(); inputs.clear();
+            readyRecipe = tag.getString("ready_recipe");
+            readyBatches = Math.max(0, Math.min(64, tag.getInt("ready_batches")));
             for (Tag t : tag.getList("ready", Tag.TAG_COMPOUND)) { ItemStack s = ItemStack.of((CompoundTag) t); if (!s.isEmpty()) ready.add(s); }
             for (Tag t : tag.getList("inputs", Tag.TAG_COMPOUND)) { ItemStack s = ItemStack.of((CompoundTag) t); if (!s.isEmpty()) inputs.add(s); }
         }
@@ -278,13 +286,16 @@ final class WorkshopBlock extends HorizontalDirectionalBlock implements EntityBl
     static String collect(ServerPlayer player, ServerLevel level, Entity e) {
         long now = LockService.clock(level.getServer());
         Workshops.Station st = e.station();
-        String recipeBefore = e.recipe;
-        int batchesBefore = e.batches;
         if (e.busy() && e.done(now)) e.finish();
+        // what is being taken: the recipe that made it, whether the player's collect or the station's own clock finished the batch (workshop run 3 paid no XP when the clock had)
+        String recipeBefore = e.readyRecipe;
+        int batchesBefore = e.readyBatches;
         if (e.ready.isEmpty()) return e.busy() ? "Still at work: " + minutes(e.ticksLeft(now)) + " left." : "Nothing to take.";
         int items = 0;
         for (ItemStack s : e.ready) { items += s.getCount(); ItemStack copy = s.copy(); if (!player.getInventory().add(copy)) player.drop(copy, false); }
         e.ready.clear();
+        e.readyRecipe = "";
+        e.readyBatches = 0;
         e.setChanged();
         e.check(level, level.getBlockState(e.getBlockPos()));
         // career XP for the work of the player's own trade (a batch is paid its recipe's XP once, when its goods are taken)

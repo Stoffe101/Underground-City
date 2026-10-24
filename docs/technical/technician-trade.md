@@ -95,13 +95,15 @@ The ids, costs and levels of the Technician's tree are unchanged; the legal node
 
 ## Evidence
 
-* **GameTests (`TechGameTests`, 6):**
+* **GameTests (`TechGameTests`, 7):**
   * A trace has exactly one dead part, and the readings, loads and scanner agree with it (60 seeds × 6 tiers).
   * A patch grid starts unsolved, its own answer solves it, and four turns bring a tile back (40 seeds × 3 sizes).
-  * A repair refuses a Farmer, costs a try for a wrong part, pays the fee and XP once, clears the fault and puts the alarm back; a second settle pays nothing.
+  * A repair refuses a Farmer, costs a try for a wrong part, pays the fee and XP once, clears the fault and puts the cameras back; a second settle pays nothing.
+  * Two Technicians on one call: only the first is paid.
   * The tier, circuit-board and skill gates for repairs, installs and upgrades.
-  * A monitored alarm is armed and runs out; a shop with its systems down is not open.
+  * Since D-165: a monitored alarm is always armed, even while the building's cameras are down; a shop whose till is down still sells but cannot pay a supplier.
   * The bench refuses a design without its skill or its parts, and takes the parts and gives two boards with them.
+* **GameTest (`WorkshopGameTests.aQuietenedLineDoesNotCallAndBackChannelWorkIsHidden`, D-166):** a quietened line does not call the police and comes back when its time runs out; a back-channel job is hidden from a Technician without Bypass Tooling and shown to one with it.
 * **Real client (`-PucPlaytest=tech`, a new furnished archipelago world each run).**
   * **Tech run 3** passed all 11 of its steps:
     1. A new Technician registered through the registration screen, with a toolkit, a computer and two boards.
@@ -114,7 +116,9 @@ The ids, costs and levels of the Technician's tree are unchanged; the legal node
     8. After a save, quit and reopen, the panels, the repair count and the monitored alarm were as they were.
   * The run's one failure was the scenario's own: the security array was not in the hotbar.
   * **Tech run 4** passed the same steps up to the install. The scenario had set the bench down between the player and the panel, so its aim never reached the panel; the scenario now places it behind the player.
-  * **Tech run 5**, on the final tree, passed all 11 steps: `RESULT pass`. Its repair found the dead part in one probe.
+  * **Tech run 5**, on the final tree of the fourth pass, passed all 11 steps: `RESULT pass`. Its repair found the dead part in one probe.
+  * **Fifth pass, with Xaero's Minimap and World Map (`-PucPack=world,furnished,scarcity,navigation`).** The scenario added waypoint steps: the waypoint on the minimap, in Xaero's list and on the world map, gone after each job, and restored once after a reopen. Run 4 stopped at the bench, which the scenario had set down out of the player's sight; the scenario now picks a cell in line of sight. Run 5 passed every step, `RESULT pass` (see [navigation](navigation.md)).
+  * **Fifth pass, without Xaero.** Run 6 stopped with "tracking ended" at the install: the scenario had given the building a second install job, and the tracked one went with the first. It now gives a job only to a building with none. The rerun is in the pass report.
   * **Scripted shortcuts, each logged:**
     * the clock and the travel to Valewood;
     * standing at the panel;
@@ -130,4 +134,5 @@ The ids, costs and levels of the Technician's tree are unchanged; the legal node
 * The fault rate, the pay and the timers are first numbers, not balanced against play.
 * An Electronics Bench and a computer are crafted or come with the kit; no shop sells them.
 * A panel is placed only where the wall beside the street door is a plain solid block, so some buildings use their door instead.
-* The underground side is not built: nothing in this pass lets a player get into a building's systems uninvited.
+* The underground side is one abstract job (D-166): back-channel work on the patch grid. It is GameTested only; no real client has done one, and its pay, quiet time and risk are first numbers.
+* Fault rates after D-165 were not measured in a long run; they rest on the constants and the GameTests.

@@ -102,6 +102,19 @@ New, and tested by scripts, Forge GameTests, the Python suite, the economy model
 
 The underground side of the Technician was not built, and the Vintner, Smith, Gunsmith and business parts of the brief were not started. See [docs/production/professions-business-pass.md](docs/production/professions-business-pass.md).
 
+## October 24 fifth pass: living population, workshops of the trades, shop supply and Xaero waypoints (scripted, not yet human-tested)
+
+New, and tested by scripts, Forge GameTests, the Python suite, the economy model and scripted real clients (**no person has played any of it**):
+
+* **Tracked destinations on Xaero's Minimap (D-161).** A tracked service call or place is one personal waypoint on Xaero's minimap, waypoint list and world map when Xaero is installed, gone when the work is done and restored once after a restart. The player's own waypoints are never touched, and the status display's arrow works for everybody (one scripted client with Xaero passed every step; no two-client run).
+* **Populated cities (D-162).** The street population follows each area's hour and each city's lean, within a density setting (QUIET, NORMAL, BUSY). People come out of doors, go in at doors, browse open shops, talk in pairs and wear 200 original skins. Measured before and after through real clients (crowd runs, see the pass report).
+* **Workshops of the trades (D-163).** Seven Core stations give the Farmer, Vintner, Smith and Gunsmith physical production on the active clock, with three tiers fitted from real parts and graded goods that pay more. Fifteen new goods and twelve contracts tie the trades together.
+* **Shops buy from suppliers (D-164).** Six shops buy the matching workshop goods over the counter onto the shelf they sell from, and the city's customers empty it again.
+* **The Technician (D-165, D-166).** A fault no longer shuts a shop or switches off an alarm, and faults come less often. An abstract back-channel job at a building's panel loops its cameras and quiets its alarm line for a while, at the risk of witnesses and officers (GameTested only).
+* **Burglary fixes.** Redstone no longer holds a staff door open, a business's back-room barrels hold its stock, and a loot-value audit by tier was added.
+
+One scripted Vintner made berry wine at a vat, fitted its second tier and sold three bottles over the Ironhaven pub's counter (workshop run 3, `RESULT pass`, 6 logged shortcuts). The Gunsmith's bench makes parts kits, not TaCZ firearms, and the business, hiring and property parts of the brief were not built. See [docs/production/living-population-professions-pass.md](docs/production/living-population-professions-pass.md).
+
 ## Ownership and license
 
 **Copyright © 2026 Stoffe101. All rights reserved.** See [LICENSE](LICENSE). The license governs **original Underground City material only**. Minecraft, third-party mods, map downloads, artworks, and their trademarks remain subject to their respective owners' terms. Public repository visibility does **not** mean the project is open source. This project is intended for private play, not for sale or public modpack publication.

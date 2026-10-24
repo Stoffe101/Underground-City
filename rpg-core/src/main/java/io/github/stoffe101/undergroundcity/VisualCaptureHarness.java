@@ -101,7 +101,7 @@ public final class VisualCaptureHarness {
             }
             case "workshop-still" -> {
                 var rows=List.of(
-                    new WorkshopNetwork.Row("grain_spirit","Grain spirit (licensed)","underground_city:grain_spirit",2,600,1,false,"Needs the skill Distiller's Licence.",true,false,"Six wheat and two sugar, ten minutes of play, two bottles. Only a licensed distiller runs it; carrying it is legal with the licence.",List.of(new WorkshopNetwork.Part("minecraft:wheat",6,12),sugar,new WorkshopNetwork.Part("minecraft:glass_bottle",2,6))),
+                    new WorkshopNetwork.Row("grain_spirit","Grain spirit (licensed)","underground_city:grain_spirit",2,600,1,false,"Needs the skill Distiller's Licence.",true,false,"Six wheat and two sugar make two bottles. Only a licensed distiller runs it; carrying it is legal with the licence.",List.of(new WorkshopNetwork.Part("minecraft:wheat",6,12),sugar,new WorkshopNetwork.Part("minecraft:glass_bottle",2,6))),
                     new WorkshopNetwork.Row("moonshine","Moonshine","underground_city:moonshine",2,420,1,true,"",true,true,"Sugar and apples run hot and fast. Restricted goods at every checkpoint; the back bars pay for a good jug.",List.of(new WorkshopNetwork.Part("minecraft:sugar",4,4),new WorkshopNetwork.Part("minecraft:apple",2,5),new WorkshopNetwork.Part("minecraft:glass_bottle",2,6))));
                 var screen=new WorkshopScreen(new WorkshopNetwork.View(at,"pot_still","Pot Still","vintner",1,"Pot and Worm",3,1,100,"Riveted Pot","",true,
                     List.of(new WorkshopNetwork.Part("underground_city:fasteners",12,4),new WorkshopNetwork.Part("underground_city:steel_bracket",2,0)),"",0,0,0,0,"","",rows));
@@ -110,8 +110,8 @@ public final class VisualCaptureHarness {
             }
             default -> {
                 var rows=List.of(
-                    new WorkshopNetwork.Row("berry_wine","Berry wine","underground_city:berry_wine",3,266,1,true,"",true,false,"Eight punnets of berries and two sugar, six minutes of play, three bottles. Cellar Craft and a cooled vat lift the grade.",List.of(berries,sugar,bottles)),
-                    new WorkshopNetwork.Row("apple_cider","Apple cider","underground_city:apple_cider",3,222,1,true,"",true,false,"Six apples and a sugar, five minutes of play, three bottles.",List.of(new WorkshopNetwork.Part("minecraft:apple",6,2),new WorkshopNetwork.Part("minecraft:sugar",1,4),bottles)),
+                    new WorkshopNetwork.Row("berry_wine","Berry wine","underground_city:berry_wine",3,266,1,true,"",true,false,"Eight punnets of berries and two sugar make three bottles. Cellar Craft and a cooled vat lift the grade.",List.of(berries,sugar,bottles)),
+                    new WorkshopNetwork.Row("apple_cider","Apple cider","underground_city:apple_cider",3,222,1,true,"",true,false,"Six apples and a sugar make three bottles.",List.of(new WorkshopNetwork.Part("minecraft:apple",6,2),new WorkshopNetwork.Part("minecraft:sugar",1,4),bottles)),
                     new WorkshopNetwork.Row("glow_wine","Glow-berry wine","underground_city:berry_wine",4,311,2,true,"",true,false,"Cave glow berries make a lighter wine that never comes out below Fine.",List.of(new WorkshopNetwork.Part("minecraft:glow_berries",8,0),sugar,bottles)));
                 yield new WorkshopScreen(new WorkshopNetwork.View(at,"fermentation_vat","Fermentation Vat","vintner",2,"Iron Hoops and Tap",3,2,135,"Cooling Jacket","Cellar Fit-Out",false,
                     List.of(new WorkshopNetwork.Part("underground_city:gear_set",1,0),new WorkshopNetwork.Part("underground_city:barrel_hoops",4,4),new WorkshopNetwork.Part("minecraft:copper_ingot",4,2)),

@@ -79,9 +79,14 @@ public final class WorkshopGameTests {
         check(count(vintner, Items.SWEET_BERRIES) == 8 && count(vintner, Items.SUGAR) == 2 && count(vintner, Items.GLASS_BOTTLE) == 3, "the batch did not take exactly its inputs");
         check(WorkshopBlock.start(vintner, helper.getLevel(), e, "berry_wine", 1).contains("still at work"), "a busy vat took a second batch");
         check(WorkshopBlock.collect(vintner, helper.getLevel(), e).startsWith("Still at work"), "goods were taken before their time");
-        // the batch is done once its time has passed on the active clock
+        // the batch is done once its time has passed on the active clock; the station's own clock finishes it before the player comes back (workshop run 3 paid no XP then)
         e.since -= e.duration;
+        int xpBefore = CitizenState.get(vintner.server).find(vintner.getUUID()).orElseThrow().careerXp();
+        e.check(helper.getLevel(), helper.getLevel().getBlockState(pos));
+        check(!e.busy() && !e.ready.isEmpty(), "the station's clock did not finish the batch");
         String took = WorkshopBlock.collect(vintner, helper.getLevel(), e);
+        int xpGain = CitizenState.get(vintner.server).find(vintner.getUUID()).orElseThrow().careerXp() - xpBefore;
+        check(xpGain == e.station().recipe("berry_wine").xp(), "taking a batch the clock had finished paid " + xpGain + " XP, not the recipe's");
         net.minecraft.world.item.Item wine = UndergroundCity.item("berry_wine");
         check(took.startsWith("Took 3"), "the finished batch did not hand over three bottles: " + took);
         check(count(vintner, wine) == 3, "the player does not hold the wine");

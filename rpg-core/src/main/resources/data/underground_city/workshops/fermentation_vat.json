@@ -57,7 +57,7 @@
           "vintner.cellar_craft": 1
         }
       },
-      "note": "Eight punnets of berries and two sugar, six minutes of play, three bottles. Cellar Craft and a cooled vat lift the grade."
+      "note": "Eight punnets of berries and two sugar make three bottles. Cellar Craft and a cooled vat lift the grade."
     },
     {
       "id": "apple_cider",
@@ -77,7 +77,7 @@
           "vintner.cellar_craft": 1
         }
       },
-      "note": "Six apples and a sugar, five minutes of play, three bottles."
+      "note": "Six apples and a sugar make three bottles."
     },
     {
       "id": "glow_wine",
