@@ -14,14 +14,16 @@ import java.util.UUID;
 /**
  * The bonded store job (D-173), the game's first raid on a secured facility. A broker in Blackwater wants a shipment that Ironhaven's customs seized back; it sits in the back room of
  * the city's bonded store, a real warehouse of the furnished city, behind that building's own locks, cameras and alarm, with the police beat outside. The job is an ordinary underground
- * work order carrying {@code raid}: taking it names the store (the warehouse nearest Ironhaven's centre) and gives the player somewhere to track. Preparation is the player's own:
- * casing the store, a Technician's back channel to loop its cameras and quiet its alarm line, picks or a crowbar. Only the person who took the job finds the shipment, once, in a search
+ * work order carrying {@code raid}: taking it names the store (the warehouse nearest Ironhaven's centre that nobody rents) and gives the player somewhere to track. Preparation is the
+ * player's own: casing the store, a Technician's back channel to loop its cameras and quiet its alarm line, and a Pro Pick Set for its high-security door (Professional Tools, Thief level 8,
+ * which the order asks for). Only the person who took the job finds the shipment, once, in a search
  * inside that building; the store's watchman reports the loss, which heats Ironhaven for that person. The shipment is marked stolen, so a checkpoint on the way to Blackwater may seize
  * it, and the police can arrest. Delivering it settles through the work-order journal like every order. Nothing here touches a home or anybody's progression, and no violence is needed.
  */
 public final class Raids {
     static final String BONDED_STORE = "bonded_store";
-    static final int MIN_THIEF_LEVEL = 3;
+    /** The store's street door is a high-security lock: only a Pro Pick Set in the hands of a thief with Professional Tools (Thief level 8) opens it, so Kessler hires nobody less. */
+    static final int MIN_THIEF_LEVEL = 8;
     static final String SHIPMENT = "seized_shipment";
     /** How much heat the store's watchman's report puts on the thief in Ironhaven. */
     static final int REPORT_HEAT = 2;
@@ -35,7 +37,7 @@ public final class Raids {
         if (terms.raid().isEmpty()) return null;
         if (!terms.raid().equals(BONDED_STORE)) return "This job is no longer offered.";
         CitizenState.Citizen citizen = CitizenState.get(player.server).find(player.getUUID()).orElse(null);
-        if (citizen == null || citizen.thiefLevel() < MIN_THIEF_LEVEL) return "Kessler only hires a thief who has done this before (Thief level " + MIN_THIEF_LEVEL + ").";
+        if (citizen == null || citizen.thiefLevel() < MIN_THIEF_LEVEL) return "Kessler only hires a thief who can open a high-security lock (Thief level " + MIN_THIEF_LEVEL + " and Professional Tools).";
         return null;
     }
 
@@ -73,7 +75,7 @@ public final class Raids {
         if (store.isPresent()) {
             BlockPos d = store.get().door();
             player.sendSystemMessage(Component.literal("The bonded store is the " + Thievery.tierWord(store.get().tier()).toLowerCase(java.util.Locale.ROOT) + " warehouse at " + d.getX() + ", " + d.getZ()
-                + " in Ironhaven. The shipment is in its back room. Its yard trades at night until three: go after that, and case it first; a Technician can loop its cameras. Then carry it to Kessler in Blackwater."));
+                + " in Ironhaven. The shipment is in its back room. Its yard trades at night until three: go after that, and case it first. Its door takes a Pro Pick Set; a Technician can loop its cameras. Then carry it to Kessler in Blackwater."));
             Notice.send(player, Notice.Kind.ORDER, "The bonded store", "Track it on the order. Case it, get in, find the shipment, carry it to Blackwater.");
         } else {
             player.sendSystemMessage(Component.literal("Kessler's man could not point out the bonded store from here: go to Ironhaven and ask the terminal again (it needs the furnished city)."));

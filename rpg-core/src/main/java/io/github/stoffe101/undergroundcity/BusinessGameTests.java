@@ -334,8 +334,11 @@ public final class BusinessGameTests {
                 ServerPlayer thief = citizen(helper, "uc_raid_thief", "farmer", 2), other = citizen(helper, "uc_raid_other", "smith", 2);
                 WorkOrder job = WorkOrderCatalog.INSTANCE.find("underground_city:raid_bonded_store");
                 check(job != null && job.underground() && job.terms().raid().equals(Raids.BONDED_STORE), "the job loaded");
-                refused(() -> WorkOrderService.accept(thief, o.ledger, of(thief), job.id()), "Thief level", "a thief below level 3");
+                refused(() -> WorkOrderService.accept(thief, o.ledger, of(thief), job.id()), "", "a thief without Professional Tools");
+                check(Raids.refusal(thief, job.terms()) != null && Raids.refusal(thief, job.terms()).contains("Thief level " + Raids.MIN_THIEF_LEVEL), "Kessler names the Thief level he hires at");
                 CitizenState.get(thief.server).addThiefXp(thief.getUUID(), ProgressionRules.thiefXpAtLevel(Raids.MIN_THIEF_LEVEL));
+                for (String id : List.of("thief.casing", "thief.steady_hands", "thief.feel_for_pins", "thief.pro_tools")) CitizenState.get(thief.server).unlockSkill(thief.getUUID(), id);
+                check("thief.pro_tools".equals(job.terms().requiresSkill()), "the job asks for Professional Tools, which opens the store's high-security door");
                 WorkOrderService.accept(thief, o.ledger, of(thief), job.id());
                 var raid = Raids.open(thief, o.ledger).orElseThrow();
                 check(raid.getLong("key") == store.key() && !raid.getBoolean("taken"), "taking the job named the store: " + raid);

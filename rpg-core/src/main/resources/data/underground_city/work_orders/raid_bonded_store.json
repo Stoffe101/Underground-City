@@ -15,6 +15,7 @@
   "capacity": 1,
   "refill_ticks": 36000,
   "legality": "underground",
+  "requires_skill": "thief.pro_tools",
   "buyer": "kessler",
   "trust_gain": 1,
   "raid": "bonded_store"

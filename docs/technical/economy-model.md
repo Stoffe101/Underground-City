@@ -60,7 +60,7 @@ Everything between the markers is written by `--update-doc` and checked by a uni
 | career     | L  | order                    | path | credits | cash | net | min  | net/h | xp  | demand | skill                   | mod                 |
 |------------|----|--------------------------|------|---------|------|-----|------|-------|-----|--------|-------------------------|---------------------|
 | any        | 1  | civic_market_lanterns    | le   | 60      | 0    | 60  | 12.3 | 293   | 160 | 6/h    |                         |                     |
-| any        | 1  | raid_bonded_store        | un   | 700     | 0    | 700 | 48.5 | 866   | 520 | 2/h    |                         |                     |
+| any        | 1  | raid_bonded_store        | un   | 700     | 0    | 700 | 48.5 | 866   | 520 | 2/h    | pro_tools               |                     |
 | farmer     | 1  | harvest                  | le   | 30      | 0    | 30  | 6.3  | 286   | 125 | 12/h   |                         |                     |
 | farmer     | 2  | bakery_flour             | le   | 80      | 48   | 32  | 10.3 | 186   | 220 | 12/h   | fundamentals            |                     |
 | farmer     | 2  | bread                    | le   | 38      | 0    | 38  | 9.5  | 240   | 180 | 12/h   |                         |                     |
