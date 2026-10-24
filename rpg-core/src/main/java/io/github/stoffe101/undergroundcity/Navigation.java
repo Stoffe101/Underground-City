@@ -185,13 +185,13 @@ public final class Navigation {
         if (!order.id().equals(ref)) return Optional.empty();
         Optional<CompoundTag> raid = Raids.open(player, orders);
         if (raid.isPresent() && raid.get().contains("door") && !raid.get().getBoolean("taken"))
-            return Optional.of(new Destination("order", ref, "The bonded store, Ironhaven", "the seized shipment is in its back room", overworld, BlockPos.of(raid.get().getLong("door")), "ironhaven", now));
+            return Optional.of(new Destination("order", ref, "The bonded store, Ironhaven", "The seized shipment is in its back room", overworld, BlockPos.of(raid.get().getLong("door")), "ironhaven", now));
         BuyerCatalog.Buyer buyer = order.terms().buyer().isEmpty() ? null : BuyerCatalog.INSTANCE.find(order.terms().buyer());
         if (buyer == null) return Optional.empty();
         var region = CityRegions.INSTANCE.all().stream().filter(r -> r.id().equals(buyer.city())).findFirst().orElse(null);
         if (region == null) return Optional.empty();
         BlockPos centre = new BlockPos(region.centerChunkX() * 16 + 8, server.overworld().getSeaLevel(), region.centerChunkZ() * 16 + 8);
-        return Optional.of(new Destination("order", ref, "Deliver to " + buyer.title(), "a terminal anywhere inside " + TerminalScreenText.capitalize(buyer.city()) + " takes it", overworld, centre, buyer.city(), now));
+        return Optional.of(new Destination("order", ref, "Deliver to " + buyer.title(), "A terminal anywhere inside " + TerminalScreenText.capitalize(buyer.city()) + " takes it", overworld, centre, buyer.city(), now));
     }
 
     /** Builds the player's tracked destination of {@code kind} again (its target moved, as when the bonded store's shipment is taken), or stops it when there is none any more. */

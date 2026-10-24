@@ -242,7 +242,10 @@ public final class TerminalScreen extends UcScreen {
             .tooltip("Higher pay for restricted goods. It needs an underground skill, and carrying the goods past a checkpoint is a risk."));
         accept = add(new UcButton(0, 0, 100, 20, "Accept order", b -> send(row().accepted() ? 1 : 0)).kind(UcButton.Kind.PRIMARY));
         cancel = add(new UcButton(0, 0, 70, 20, "Cancel", b -> send(2)).kind(UcButton.Kind.DANGER));
-        track = add(new UcButton(0, 0, 70, 16, "Track", b -> { if (row() != null) NavigationNetwork.track("order", row().id()); }).kind(UcButton.Kind.CHIP).icon(UcUi.Icon.ARROW_RIGHT)
+        track = add(new UcButton(0, 0, 70, 16, "Track", b -> {
+            if (row() == null) return;
+            if (ClientNavigation.tracking("order", row().id())) NavigationNetwork.stop(); else NavigationNetwork.track("order", row().id());   // the chip stops what it started
+        }).kind(UcButton.Kind.CHIP).icon(UcUi.Icon.ARROW_RIGHT)
             .tooltip("Show the way on the status display (and on Xaero's minimap when it is installed): the buyer's city, or where the job is."));
         supplier = add(new UcButton(0, 0, 90, 20, "Supplier", b -> send(3))
             .tooltip("Pay a supplier to fill this part of the Crew contract from your wallet. A filled part earns nobody XP or a share of the bonus."));
@@ -419,6 +422,7 @@ public final class TerminalScreen extends UcScreen {
             // an accepted order with somewhere to go (a buyer's city, a job's target): the way there on the status display and the minimap (D-161, D-173)
             track.visible = job.accepted() && !job.extra().buyerCity().isEmpty();
             track.active = true;
+            track.label(ClientNavigation.tracking("order", job.id()) ? "Stop" : "Track");
             track.setX(dx + detailW() - 8 - 70); track.setY(dy - 20);
         }
         // guide page
@@ -822,10 +826,12 @@ public final class TerminalScreen extends UcScreen {
         else if (data.foreignVisits() < job.foreignVisits()) { state = "Locked: " + visitText(job); stateColor = darkRed; stateIcon = UcUi.Icon.LOCK; }
         else if (job.available() == 0) { state = "Employer demand is spent; it refills during active play"; stateColor = darkAmber; stateIcon = UcUi.Icon.CLOCK; }
         else { state = "Employer demand: " + job.available() + (job.available() == 1 ? " order" : " orders") + " left"; stateColor = darkTeal; stateIcon = UcUi.Icon.INFO; }
-        int stateY = y + h - 26 - 6 - UcUi.wrappedHeight(font, state, w - 36, 3);
+        // the Track chip sits at the right of this line's last row: the line wraps short of it (raid capture: "produce them" ran under the chip)
+        int stateW = w - 36 - (track.visible ? 76 : 0);
+        int stateY = y + h - 26 - 6 - UcUi.wrappedHeight(font, state, stateW, 3);
         if (stateY < ty) stateY = ty;
         UcUi.icon(g, stateIcon, tx - 2, stateY - 4, stateColor);
-        UcUi.wrapped(g, font, state, tx + 16, stateY, w - 36, stateColor, 3);
+        UcUi.wrapped(g, font, state, tx + 16, stateY, stateW, stateColor, 3);
     }
 
     // ---- SKILLS

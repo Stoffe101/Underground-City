@@ -32,8 +32,12 @@ public final class ClientNavigation {
         Navigation.Destination d = current;
         Minecraft mc = Minecraft.getInstance();
         if (d == null || mc.level == null || !mc.level.dimension().location().toString().equals(d.dimension())) return journey;
-        String heading = switch (d.kind()) { case "tech" -> "Service call"; case "place" -> "Tracking a place"; case "supply" -> "Delivery"; default -> "Tracking"; };
-        String stop = d.kind().equals("tech") ? "Stop or change it on your computer." : "Stop or change it in the Places book (J).";
+        String heading = switch (d.kind()) { case "tech" -> "Service call"; case "place" -> "Tracking a place"; case "supply" -> "Delivery"; case "order" -> "Tracking an order"; default -> "Tracking"; };
+        String stop = switch (d.kind()) {
+            case "tech" -> "Stop or change it on your computer.";
+            case "order" -> "Stop it on the order at a terminal.";
+            default -> "Stop or change it in the Places book (J).";
+        };
         return new Journey.Objective(heading, d.title() + ". " + d.detail() + ". " + stop, "", d.pos(), d.title());
     }
 
