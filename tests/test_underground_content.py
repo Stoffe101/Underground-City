@@ -428,3 +428,18 @@ class DistrictTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class CatalogueLimitTests(unittest.TestCase):
+    def test_every_work_order_fits_the_catalogue_with_every_mod_installed(self):
+        # WorkOrderCatalog refuses to load more than MAX_ORDERS; with every optional mod installed every file loads (the full-pack journey failed at 69 of 64)
+        import re
+        source = (ROOT / "rpg-core/src/main/java/io/github/stoffe101/undergroundcity/WorkOrderCatalog.java").read_text(encoding="utf-8")
+        cap = int(re.search(r"MAX_ORDERS = (\d+);", source).group(1))
+        self.assertLessEqual(len(list((DATA / "work_orders").glob("*.json"))), cap)
+
+    def test_every_supplier_line_fits_the_regional_catalogue(self):
+        import re
+        source = (ROOT / "rpg-core/src/main/java/io/github/stoffe101/undergroundcity/RegionalCatalog.java").read_text(encoding="utf-8")
+        cap = int(re.search(r"MAX_LINES = (\d+);", source).group(1))
+        self.assertLessEqual(len(list((DATA / "regional_stock").rglob("*.json"))), cap)
