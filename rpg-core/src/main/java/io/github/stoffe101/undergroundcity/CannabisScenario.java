@@ -663,7 +663,7 @@ final class CannabisScenario {
         use("hoe the dirt", () -> L.dirt, () -> mc().level.getBlockState(L.dirt).is(Blocks.FARMLAND), 900);
         Playtest.queue("select the Cannabis Seeds (8)", () -> { Playtest.focusWindow(); Playtest.tap("8"); });
         Playtest.wait("select", 3);
-        use("plant a seed in the street", () -> L.dirt, () -> mc().level.getBlockState(L.dirt.above()).getBlock() instanceof RestrictedCropBlock, 900);
+        use("plant a seed in the street (on the farmland's top)", () -> L.dirt, () -> mc().level.getBlockState(L.dirt.above()).getBlock() instanceof RestrictedCropBlock, 900, true);
         shot("13-street-plant");
         Playtest.queue("planted in public view", () -> {
             boolean planted = server(() -> level().getBlockState(L.dirt.above()).getBlock() instanceof RestrictedCropBlock);

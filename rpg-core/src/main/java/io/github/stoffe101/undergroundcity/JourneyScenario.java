@@ -1426,17 +1426,23 @@ final class JourneyScenario {
     }
 
     /** Right-clicks a block with the real mouse until {@code done}. */
-    static void use(String label, Supplier<BlockPos> block, BooleanSupplier done, int budget) {
+    static void use(String label, Supplier<BlockPos> block, BooleanSupplier done, int budget) { use(label, block, done, budget, false); }
+
+    /**
+     * The same; with {@code top} the click is on the block's top face (a seed into farmland that stands level with the player's feet: aimed at its middle, the click lands on its side and
+     * the seed tries the cell beside it, Cannabis runs 9 and the law run).
+     */
+    static void use(String label, Supplier<BlockPos> block, BooleanSupplier done, int budget, boolean top) {
         final int[] t = {0};
         Playtest.queue(label, Playtest::focusWindow, () -> {
             // done between the press and its release: let go, or the held button goes on using whatever is selected next (Cannabis run 7: a seed went into the wrong cell while the hotbar changed)
             if (done.getAsBoolean()) { if (t[0] % 16 == 10 || t[0] % 16 == 11) Playtest.mouseButton(3, false); return true; }   // pressed at 10, released at 12
             BlockPos b = block.get();
             if (b == null) { Playtest.fail(label + ": no block"); return true; }
-            look(Vec3.atCenterOf(b));
+            look(top ? Vec3.atCenterOf(b).add(0, 0.42, 0) : Vec3.atCenterOf(b));
             t[0]++;
             // click only once the crosshair is on that block: a software-rendered frame lags the aim, and a click on the wrong block places or opens the wrong thing
-            boolean onIt = mc().hitResult instanceof BlockHitResult hit && hit.getType() == HitResult.Type.BLOCK && hit.getBlockPos().equals(b);
+            boolean onIt = mc().hitResult instanceof BlockHitResult hit && hit.getType() == HitResult.Type.BLOCK && hit.getBlockPos().equals(b) && (!top || hit.getDirection() == Direction.UP);
             // a street person between the player and the block takes the click (Cannabis runs 7 and 8, civic run 1): wait for them to walk on, and say so once a while
             if (t[0] % 100 == 99 && mc().hitResult instanceof net.minecraft.world.phys.EntityHitResult e) Playtest.log("SCENARIO " + label + ": " + e.getEntity().getName().getString() + " is in the way");
             if (t[0] % 16 == 10 && onIt) Playtest.mouseButton(3, true);
