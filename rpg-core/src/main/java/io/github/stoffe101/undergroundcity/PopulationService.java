@@ -457,8 +457,6 @@ public final class PopulationService {
      * forty in sight.
      */
     static final int TOWARDS_PLAYER = 7;
-    /** How far above or below the player a street counts as at their height, for a newcomer's spot (a hillside's terraces are out of each other's sight). */
-    static final int LEVEL_BAND = 5;
 
     /** True when {@code player}'s eyes have a clear line to a person standing at {@code feet}, within 48 blocks, whichever way the player faces. */
     static boolean inLine(ServerLevel level, ServerPlayer player, BlockPos feet) {
@@ -693,14 +691,9 @@ public final class PopulationService {
         ChunkPos district = player.chunkPosition();
         List<ChunkPos> open = new ArrayList<>();
         for (int dx = -WINDOW; dx <= WINDOW; dx++) for (int dz = -WINDOW; dz <= WINDOW; dz++) if (OPEN.contains(ChunkPos.asLong(district.x + dx, district.z + dz))) open.add(new ChunkPos(district.x + dx, district.z + dz));
-        // on a hillside (Valewood) a street a terrace above or below is out of sight: mostly the open streets at the player's own height
-        int playerY = player.blockPosition().getY();
-        List<ChunkPos> atHeight = new ArrayList<>();
-        for (ChunkPos c : open) { Integer street = STREETS.get(c.toLong()); if (street != null && Math.abs(street - playerY) <= LEVEL_BAND) atHeight.add(c); }
         BlockPos chosen = null;
         for (int attempt = 0; attempt < 4; attempt++) {
-            ChunkPos chunk = !atHeight.isEmpty() && random.nextInt(4) != 0 ? atHeight.get(random.nextInt(atHeight.size()))
-                : !open.isEmpty() && random.nextInt(4) != 0 ? open.get(random.nextInt(open.size())) : new ChunkPos(district.x + random.nextInt(7) - 3, district.z + random.nextInt(7) - 3);
+            ChunkPos chunk = !open.isEmpty() && random.nextInt(4) != 0 ? open.get(random.nextInt(open.size())) : new ChunkPos(district.x + random.nextInt(7) - 3, district.z + random.nextInt(7) - 3);
             Optional<BlockPos> spot = findSpot(level, chunk, random, everyone);
             if (spot.isEmpty() || seen(level, everyone, spot.get())) continue;
             if (chosen == null) chosen = spot.get();
