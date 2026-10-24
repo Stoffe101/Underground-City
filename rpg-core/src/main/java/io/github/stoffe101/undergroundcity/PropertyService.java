@@ -412,7 +412,7 @@ public final class PropertyService {
             for (UUID id : ledger.residentsOf(r)) {
                 ServerPlayer player = lookup.apply(server, id);
                 if (player != null && online.contains(id)) {
-                    Notice.send(player, Notice.Kind.INFO, "Rent soon", r.title + ": " + r.charge + " credits due in " + minutes + " min of play. Pay in advance or switch on automatic payment (press K).");
+                    Notice.send(player, Notice.Kind.INFO, "Rent soon", r.title + ": " + r.charge + " credits due in " + minutes + " min of play. Press K to pay ahead.");
                 }
             }
         }

@@ -178,7 +178,7 @@ public final class CrewService {
         Crew crew = ledger.crewOf(actor.getUUID());
         ledger.kick(actor.getUUID(), actor.getGameProfile().getName(), target);
         ServerPlayer gone = actor.server.getPlayerList().getPlayer(target);
-        if (gone != null) Notice.send(gone, Notice.Kind.WARN, "Removed from the Crew", "You were removed from " + (crew == null ? "your Crew" : crew.name) + ". Your own wallet, career and homes are untouched.");
+        if (gone != null) Notice.send(gone, Notice.Kind.WARN, "Removed from the Crew", "Removed from " + (crew == null ? "your Crew" : crew.name) + ". Your wallet, career and homes are untouched.");
         if (crew != null) broadcast(actor.server, crew, actor.getUUID(), Notice.Kind.INFO, "Crew member removed", "A member was removed from " + crew.name + ".");
     }
 

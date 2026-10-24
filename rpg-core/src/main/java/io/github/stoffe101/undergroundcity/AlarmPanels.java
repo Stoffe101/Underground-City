@@ -119,7 +119,8 @@ public final class AlarmPanels {
             entries++;
         }
         show(level, b);
-        Notice.send(thief, Notice.Kind.WARN, "Alarm panel", "The panel by the door is counting down: " + ENTRY_SECONDS + " seconds to work it before it calls the police.");
+        // three lines at most: the longer wording was cut off (heist run 10)
+        Notice.send(thief, Notice.Kind.WARN, "Alarm panel", "Work the panel by the door within " + ENTRY_SECONDS + " seconds, or it calls the police.");
         thief.sendSystemMessage(Component.literal("A panel beside the door starts to beep. The alarm is armed: " + ENTRY_SECONDS + " seconds until it calls the police.").withStyle(ChatFormatting.GOLD));
         return true;
     }
