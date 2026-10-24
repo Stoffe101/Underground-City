@@ -39,7 +39,7 @@ public final class Raids {
         return null;
     }
 
-    /** The bonded store of this world: the warehouse nearest Ironhaven's centre whose plan can be read now, or empty (a world without the furnished cities has none). */
+    /** The bonded store of this world: the warehouse nearest Ironhaven's centre that is not let to anybody and whose plan can be read now, or empty (a world without the furnished cities has none). */
     static Optional<Target> store(ServerLevel level) {
         var region = CityRegions.INSTANCE.all().stream().filter(r -> r.id().equals("ironhaven")).findFirst().orElse(null);
         if (region == null) return Optional.empty();
@@ -50,6 +50,8 @@ public final class Raids {
             if (distance >= bestDistance || !CityBuildings.INSTANCE.askable(level, cx, cz)) continue;
             Optional<CityBuildings.Building> b = CityBuildings.INSTANCE.ofChunk(level, cx, cz);
             if (b.isEmpty() || !b.get().type().contains("warehouse") || !b.get().city().equals("ironhaven")) continue;
+            // a warehouse let as trade premises (D-169) is a tenant's, not customs': the guard leaves it to them, so nobody could case or break into it (raid run 1 drew one)
+            if (CityHomes.anyLet(level.getSeed(), b.get())) continue;
             BuildingSpots.Plan plan = BuildingSpots.INSTANCE.forType(b.get().type());
             BuildingSpots.Spot door = null;
             if (plan != null) for (BuildingSpots.Spot spot : plan.spots()) if (spot.kind().equals("door")) { door = spot; break; }

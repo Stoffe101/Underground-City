@@ -66,6 +66,14 @@ public final class CityHomes {
         return template.isPresent() && roll(seed, b.key(), index) * 100.0 < template.get().sharePercent();
     }
 
+    /** True when any unit of this building is to let in this world: part of it is somebody's home or premises, which the guard leaves to its tenant (D-127, D-169). */
+    static boolean anyLet(long seed, CityBuildings.Building b) {
+        BuildingSpots.Plan plan = BuildingSpots.INSTANCE.forType(b.type());
+        if (plan == null) return false;
+        for (int i = 0; i < plan.units().size(); i++) if (toLet(seed, b, i)) return true;
+        return false;
+    }
+
     /** The unit of this building that contains a point of the building's own coordinates (x, z 0 to 15, y above the street), or -1. */
     static int unitAt(BuildingSpots.Plan plan, int x, int y, int z) {
         for (int i = 0; i < plan.units().size(); i++) if (plan.units().get(i).contains(x, y, z)) return i;

@@ -572,6 +572,14 @@ public final class BuildingSecurityGameTests {
             stranger.moveTo(house.doorLower.getX() + 0.5, house.doorLower.getY(), house.doorLower.getZ() - 1.5);   // in the street
             knock(stranger, house.doorLower, Direction.NORTH);
             check(!house.level.getBlockState(house.doorLower).getValue(DoorBlock.OPEN), "an iron street door opened to a stranger with no key and no picks");
+            // crouched with an empty hand, the stranger cases it from the street (raid run 1: a warehouse's iron street door gave no casing card)
+            long before = PropertyIntel.casings;
+            stranger.setShiftKeyDown(true);
+            stranger.setPose(net.minecraft.world.entity.Pose.CROUCHING);
+            knock(stranger, house.doorLower, Direction.NORTH);
+            stranger.setShiftKeyDown(false);
+            check(PropertyIntel.casings == before + 1, "a crouched click with an empty hand on an iron street door did not case the building (casings " + before + " -> " + PropertyIntel.casings + ")");
+            check(!house.level.getBlockState(house.doorLower).getValue(DoorBlock.OPEN), "casing opened the iron door");
             helper.succeed();
         }
     }
