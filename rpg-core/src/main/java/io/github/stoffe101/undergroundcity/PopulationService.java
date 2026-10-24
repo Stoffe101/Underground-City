@@ -114,7 +114,7 @@ public final class PopulationService {
     }
 
     static void clearCaches() {
-        ROSTERS.clear(); ACTIVE.clear(); MET.clear(); STREETS.clear(); RETRY_AFTER.clear(); AREAS.clear(); DOORS.clear();
+        ROSTERS.clear(); ACTIVE.clear(); MET.clear(); STREETS.clear(); OPEN.clear(); RETRY_AFTER.clear(); AREAS.clear(); DOORS.clear();
         passes = nanosTotal = nanosWorst = spawned = spawnedAtDoors = removed = entered = browsed = chats = spotMisses = activePeak = stuckGivenUp = 0;
         nanosFirst = lcCalls = lcNanos = lcWorst = shelfPurchases = 0;
     }
@@ -391,12 +391,14 @@ public final class PopulationService {
                 return true;
             }
         }
-        // a stroll: somewhere along the street a little way off
+        // a stroll: somewhere along an open street a little way off; near a player, mostly along the streets round that player, where somebody is to see them (measured: before this,
+        // strolls ended in yards and courts behind the buildings, and a street with forty people within 64 blocks showed two to six of them)
         BlockPos here = body.blockPosition();
-        for (int attempt = 0; attempt < 6; attempt++) {
-            int dx = level.random.nextInt(5) - 2, dz = level.random.nextInt(5) - 2;
-            if (dx == 0 && dz == 0) continue;
-            ChunkPos chunk = new ChunkPos((here.getX() >> 4) + dx, (here.getZ() >> 4) + dz);
+        ServerPlayer watcher = nearest(players, here, 64);
+        List<ChunkPos> chunks = watcher != null && level.random.nextInt(10) < STROLL_TOWARDS_PLAYER ? strollChunks(watcher.chunkPosition(), here) : List.of();
+        if (chunks.isEmpty()) chunks = strollChunks(new ChunkPos(here), here);
+        for (int attempt = 0; attempt < 6 && !chunks.isEmpty(); attempt++) {
+            ChunkPos chunk = chunks.get(level.random.nextInt(chunks.size()));
             Optional<BlockPos> spot = streetSpot(level, chunk, level.random);
             if (spot.isPresent()) {
                 w.errand = "stroll"; w.door = null; w.phase = Phase.WALK; w.goal = spot.get();
@@ -405,6 +407,41 @@ public final class PopulationService {
             }
         }
         return rest(body, w, now, 100 + level.random.nextInt(200));
+    }
+
+    /** Out of ten strolls by somebody within 64 blocks of a player, how many end in the streets round that player. */
+    static final int STROLL_TOWARDS_PLAYER = 6;
+
+    /**
+     * Where a stroll from {@code here} may end: the known street chunks within two of {@code centre} (not the walker's own) whose middle is within a path's reach, the open streets (no building) if
+     * there are any, else any street chunk. Only chunks Lost Cities has already answered are used.
+     */
+    static List<ChunkPos> strollChunks(ChunkPos centre, BlockPos here) {
+        List<ChunkPos> open = new ArrayList<>(), any = new ArrayList<>();
+        int hx = here.getX() >> 4, hz = here.getZ() >> 4;
+        for (int dx = -2; dx <= 2; dx++) for (int dz = -2; dz <= 2; dz++) {
+            ChunkPos c = new ChunkPos(centre.x + dx, centre.z + dz);
+            if (c.x == hx && c.z == hz) continue;
+            double ddx = c.getMiddleBlockX() - here.getX(), ddz = c.getMiddleBlockZ() - here.getZ();
+            if (ddx * ddx + ddz * ddz > STROLL_REACH * STROLL_REACH) continue;
+            Integer street = STREETS.get(c.toLong());
+            if (street == null || street < 0) continue;
+            (OPEN.contains(c.toLong()) ? open : any).add(c);
+        }
+        return open.isEmpty() ? any : open;
+    }
+
+    /** How far off a stroll may end (inside a walker's path range of 48). */
+    static final int STROLL_REACH = 40;
+
+    private static ServerPlayer nearest(List<ServerPlayer> players, BlockPos pos, double within) {
+        ServerPlayer best = null;
+        double bestSq = within * within;
+        for (ServerPlayer p : players) {
+            double d = p.distanceToSqr(Vec3.atCenterOf(pos));
+            if (d <= bestSq) { best = p; bestSq = d; }
+        }
+        return best;
     }
 
     private static Walker idleNear(ServerLevel level, TownspersonEntity body, Walker me, double r) {
@@ -591,10 +628,12 @@ public final class PopulationService {
                 }
             }
         }
-        // or on the street where nobody can see the spot
+        // or on the street where nobody can see the spot: mostly an open street of the window (a street or a square, not a building's yard), so a new person walks into view along it
         ChunkPos district = player.chunkPosition();
+        List<ChunkPos> open = new ArrayList<>();
+        for (int dx = -WINDOW; dx <= WINDOW; dx++) for (int dz = -WINDOW; dz <= WINDOW; dz++) if (OPEN.contains(ChunkPos.asLong(district.x + dx, district.z + dz))) open.add(new ChunkPos(district.x + dx, district.z + dz));
         for (int attempt = 0; attempt < 3; attempt++) {
-            ChunkPos chunk = new ChunkPos(district.x + random.nextInt(7) - 3, district.z + random.nextInt(7) - 3);
+            ChunkPos chunk = !open.isEmpty() && random.nextInt(4) != 0 ? open.get(random.nextInt(open.size())) : new ChunkPos(district.x + random.nextInt(7) - 3, district.z + random.nextInt(7) - 3);
             Optional<BlockPos> spot = findSpot(level, chunk, random, everyone);
             if (spot.isEmpty() || seen(level, everyone, spot.get())) continue;
             TownspersonEntity body = create(level, who, spot.get(), Direction.from2DDataValue(random.nextInt(4)));
@@ -648,6 +687,8 @@ public final class PopulationService {
     // ------------------------------------------------------------------------------------------------ where to stand
 
     private static final Map<Long, Integer> STREETS = new HashMap<>();
+    /** The city chunks Lost Cities planned with no building: streets, squares and parks, where people are seen. Filled with {@link #STREETS}, from the same answer. */
+    private static final java.util.Set<Long> OPEN = new java.util.HashSet<>();
     private static long streetsSeed;
     /** A person whose spot search failed is not tried again for this many ticks; the next candidate is tried instead. */
     static final long RETRY_TICKS = 300;
@@ -658,16 +699,18 @@ public final class PopulationService {
      * costs tens of milliseconds, so asking again every second was nearly the whole cost of a pass (measured: 98 percent of it in a real street, 50 lookups of 37 ms in 74 passes).
      */
     static int streetOf(ServerLevel level, ChunkPos chunk) {
-        if (streetsSeed != level.getSeed()) { STREETS.clear(); RETRY_AFTER.clear(); AREAS.clear(); DOORS.clear(); streetsSeed = level.getSeed(); }
+        if (streetsSeed != level.getSeed()) { STREETS.clear(); OPEN.clear(); RETRY_AFTER.clear(); AREAS.clear(); DOORS.clear(); streetsSeed = level.getSeed(); }
         Integer known = STREETS.get(chunk.toLong());
         if (known != null) return known;
         long started = System.nanoTime();
         var sample = LostCitiesLink.chunk(level, chunk.x, chunk.z);
         int street = sample.isPresent() && sample.get().city() ? LostCitiesLink.realHeight(level, sample.get().cityLevel()) : -1;
+        boolean open = street >= 0 && (sample.get().building() == null || sample.get().building().isEmpty()) && sample.get().buildingId().isEmpty();
         long took = System.nanoTime() - started;
         lcCalls++; lcNanos += took; lcWorst = Math.max(lcWorst, took);
-        if (STREETS.size() >= 4096) STREETS.clear();
+        if (STREETS.size() >= 4096) { STREETS.clear(); OPEN.clear(); }
         STREETS.put(chunk.toLong(), street);
+        if (open) OPEN.add(chunk.toLong());
         return street;
     }
 
@@ -836,6 +879,12 @@ public final class PopulationService {
                 context.getSource().sendSuccess(() -> Component.literal("[UC] " + status(context.getSource().getServer())), false);
                 return Command.SINGLE_SUCCESS;
             })));
+    }
+
+    /** Test seam: records a chunk's street level, and whether it is open street, as if Lost Cities had answered. */
+    static void streetForTest(ChunkPos chunk, int street, boolean open) {
+        STREETS.put(chunk.toLong(), street);
+        if (open) OPEN.add(chunk.toLong()); else OPEN.remove(chunk.toLong());
     }
 
     /** Test seam: how many bodies the service thinks are out. */

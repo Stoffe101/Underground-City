@@ -79,18 +79,36 @@ Technician --optical components-----> Gunsmith's test fixture
 
 ## Evidence
 
-* **GameTests (`WorkshopGameTests`, 7):**
+* **GameTests (`WorkshopGameTests`, 8):**
   * Every station loads with three tiers, real parts and real items, for four trades.
-  * A batch takes exactly its inputs, refuses a second batch while busy, hands over three bottles once its time has passed, and grades as its tier and skills say (ageing keeps and lifts the grade).
+  * A batch takes exactly its inputs, refuses a second batch while busy, hands over three bottles once its time has passed, and grades as its tier and skills say (ageing keeps and lifts the grade). It pays the recipe's career XP even when the station's own clock finished the batch before the player took it (a bug the real-client run found: the XP was lost).
   * A tier is refused without parts, fitted from them (the parts used, the block showing tier 2), refused at tier 3 without the skill, and kept by the dropped station.
   * A skill gates its recipe without taking the inputs, and the still's recipes are marked legal and underground.
   * A contract pays for the grade in proportion and takes no named or stolen goods.
   * A shop buys a supplier's goods once per sale onto its shelf, never above the shelf, and its customers draw the shelf down to empty and no further. No line buys back for more than it sells.
-  * A quietened alarm line (D-166) does not call.
+  * An empty back-room barrel of a business fills with its stock once, and a full one is left alone.
+  * A quietened alarm line (D-166) does not call, and back-channel work is hidden from a Technician without Bypass Tooling.
 * **The audits:**
   * `scripts/audit_item_sources.py` counts a workshop recipe as a source at the level of its skill, its inputs and its tier's parts. It finds no dead end among the 69 work orders.
   * The economy model (`scripts/economy_model.py`) knows each workshop good's hands-on minutes and waiting time, and all its invariants hold (`docs/technical/economy-model.md`).
-* **Real client:** see `docs/production/living-population-professions-pass.md` (workshop runs).
+* **Real client (`-PucPlaytest=workshop`, a new furnished archipelago world).** Workshop run 3 passed all 8 steps, `RESULT pass`:
+  1. A new citizen registered as a Vintner through the registration screen.
+  2. The starter kit held a Fermentation Vat, berries, sugar and bottles.
+  3. The vat was placed with a real right click on open ground near the Ironhaven pub that no building owns.
+  4. Its screen listed berry wine as ready and glow-berry wine as needing a better tier and Cellar Craft.
+  5. Start (a real click) took the inputs and set six minutes of play running.
+  6. After six minutes of play, Take (a real click) handed over three bottles.
+  7. Fit tier 2 (a real click) used the hoops and fasteners; the vat then ran two batches at once and showed its iron hoops.
+  8. At the pub's front door the player opened it with a right click, walked across the public floor to the barkeeper, spoke to her, chose "What do you sell?" and sold the three bottles with a real click on Sell: +42 credits, the wine shelf 4 → 7. On the way across the floor the shop said "Staff only. Back out front, please." once: the walk brushed the zone behind the bar.
+  * **6 scripted shortcuts, each logged:**
+    * the clock set to 13:00;
+    * the travel to Ironhaven (a teleport);
+    * the player put on the street outside the pub;
+    * the walk to the open ground for the vat, which stopped 2.5 blocks short;
+    * the four hoops and four fasteners for tier 2 (normally a Smith's, or a few from the builders' yard);
+    * **the walk back to the pub's front door, which wandered round the block and was finished by a teleport for the last 22 blocks.**
+  * Runs 1 and 2 stopped earlier: the vat was placed on a building's protected plot, and the walk to the counter looped behind the bar. Both were scenario or placement fixes.
+  * The run paid no Vintner XP for the batch the clock had finished; that bug is fixed and GameTested, but no real client has rerun it.
 
 ## Limits
 

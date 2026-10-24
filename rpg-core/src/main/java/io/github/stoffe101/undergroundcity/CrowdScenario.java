@@ -30,7 +30,7 @@ import static io.github.stoffe101.undergroundcity.ThiefScenario.shot;
 final class CrowdScenario {
     private CrowdScenario() {}
 
-    record Sample(String stop, String clock, int within64, int inSightServer, int onScreen, int within256, double mspt, int fps, double passMeanUs, long passWorstUs) {}
+    record Sample(String stop, String clock, int within64, int inSightServer, int onScreen, int within256, int indoors, double mspt, int fps, double passMeanUs, long passWorstUs) {}
 
     private static final List<Sample> SAMPLES = new ArrayList<>();
     private static Vec3 stand, walkTo;
@@ -111,18 +111,22 @@ final class CrowdScenario {
             int[] srv = server(() -> {
                 var me = me();
                 var all = level().getEntitiesOfClass(TownspersonEntity.class, me.getBoundingBox().inflate(64), t -> t.isAlive() && !t.police() && t.distanceTo(me) <= 64);
-                int sight = 0;
-                for (TownspersonEntity t : all) if (me.hasLineOfSight(t)) sight++;
+                int sight = 0, indoors = 0;
+                for (TownspersonEntity t : all) {
+                    if (me.hasLineOfSight(t)) sight++;
+                    PopulationService.Walker w = PopulationService.walkerOf(t);
+                    if (w != null && (w.phase == PopulationService.Phase.BROWSE || w.phase == PopulationService.Phase.ENTER)) indoors++;
+                }
                 int wide = level().getEntitiesOfClass(TownspersonEntity.class, me.getBoundingBox().inflate(256), TownspersonEntity::isAlive).size();
-                return new int[] {all.size(), sight, wide};
+                return new int[] {all.size(), sight, wide, indoors};
             });
             double mspt = mc.getSingleplayerServer().getAverageTickTime();
             long passes = PopulationService.passes;
-            Sample s = new Sample(label, label.substring(label.lastIndexOf(" at ") + 4).replace(" (after the walk)", ""), srv[0], srv[1], best, srv[2], mspt, mc.getFps(),
+            Sample s = new Sample(label, label.substring(label.lastIndexOf(" at ") + 4).replace(" (after the walk)", ""), srv[0], srv[1], best, srv[2], srv[3], mspt, mc.getFps(),
                 passes == 0 ? 0 : PopulationService.nanosTotal / 1000.0 / passes, PopulationService.nanosWorst / 1000);
             SAMPLES.add(s);
-            Playtest.log(String.format(Locale.ROOT, "CROWD %s: %d within 64 blocks, %d in the server's sight, %d on screen (best of four directions), %d within 256; server %.1f ms a tick, %d fps; street pass mean %.0f us, worst %d us",
-                label, s.within64(), s.inSightServer(), s.onScreen(), s.within256(), s.mspt(), s.fps(), s.passMeanUs(), s.passWorstUs()));
+            Playtest.log(String.format(Locale.ROOT, "CROWD %s: %d within 64 blocks (%d of them inside a shop), %d in the server's sight, %d on screen (best of four directions), %d within 256; server %.1f ms a tick, %d fps; street pass mean %.0f us, worst %d us",
+                label, s.within64(), s.indoors(), s.inSightServer(), s.onScreen(), s.within256(), s.mspt(), s.fps(), s.passMeanUs(), s.passWorstUs()));
         });
     }
 
@@ -184,9 +188,9 @@ final class CrowdScenario {
     }
 
     private static void summary() {
-        Playtest.log("CROWD summary (stop | within 64 | server sight | on screen | within 256 | ms a tick | fps | pass mean us | pass worst us):");
+        Playtest.log("CROWD summary (stop | within 64 | inside a shop | server sight | on screen | within 256 | ms a tick | fps | pass mean us | pass worst us):");
         for (Sample s : SAMPLES)
-            Playtest.log(String.format(Locale.ROOT, "CROWD | %s | %d | %d | %d | %d | %.1f | %d | %.0f | %d", s.stop(), s.within64(), s.inSightServer(), s.onScreen(), s.within256(), s.mspt(), s.fps(), s.passMeanUs(), s.passWorstUs()));
+            Playtest.log(String.format(Locale.ROOT, "CROWD | %s | %d | %d | %d | %d | %d | %.1f | %d | %.0f | %d", s.stop(), s.within64(), s.indoors(), s.inSightServer(), s.onScreen(), s.within256(), s.mspt(), s.fps(), s.passMeanUs(), s.passWorstUs()));
         Playtest.log("CROWD status: " + server(() -> PopulationService.status(level().getServer())));
         Playtest.log("CROWD households: " + HouseholdService.status());
         ThiefScenario.summary();

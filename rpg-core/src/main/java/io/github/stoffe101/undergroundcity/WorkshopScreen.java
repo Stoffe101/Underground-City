@@ -122,7 +122,7 @@ public final class WorkshopScreen extends UcScreen {
             if (sel) g.fill(x, y, x + 2, y + ROW - 2, r.underground() ? UcUi.UNDERGROUND : UcUi.LEGAL);
             g.renderItem(new ItemStack(item(r.output())), x + 3, y + 2);
             UcUi.text(g, font, UcUi.fit(font, r.title(), w - 26), x + 23, y + 2, r.allowed() ? UcUi.TEXT : UcUi.DIM);
-            String state = !r.allowed() ? (view.tier() < r.tier() ? "Needs tier " + r.tier() : "Needs a skill") : ready(r) ? "Ready" : "Missing parts";
+            String state = !r.allowed() ? (view.tier() < r.tier() ? "Needs tier " + r.tier() : "Needs a skill") : ready(r) ? "Ready" : "Missing inputs";
             UcUi.text(g, font, UcUi.fit(font, state, w - 26), x + 23, y + 11, !r.allowed() ? UcUi.FAINT : ready(r) ? UcUi.OK : UcUi.AMBER);
         }
         if (selected >= view.rows().size()) return;

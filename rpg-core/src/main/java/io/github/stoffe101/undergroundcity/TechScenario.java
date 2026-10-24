@@ -38,7 +38,7 @@ import static io.github.stoffe101.undergroundcity.ThiefScenario.shot;
  * the world map); the player walks to the panel with the movement keys; arriving keeps the marker, finishing the job removes it, tracking the install job replaces it, and a call still open when
  * the world is saved and reopened is tracked again, once. Without Xaero the same steps pass on the status display alone.
  *
- * <p>Scripted rather than played, each logged as SCRIPTED: the clock, the travel to Valewood, the service calls (the service raises one every 5 to 10 minutes), placing the computers and the
+ * <p>Scripted rather than played, each logged as SCRIPTED: the clock, the travel to Valewood, the service calls (the service raises one every 8 to 15 minutes), placing the computers and the
  * bench (a home holds them), two iron ingots, the skills and XP of an Installer, a Municipal Security Array, the install job, and the patch grid's answer (read from the server; a person works it
  * out by eye; every turn was a real click). The walk to the panel is a teleport only for whatever the walker cannot reach, and says so.
  */
@@ -148,7 +148,7 @@ final class TechScenario {
 
     private static void serviceCall() {
         Playtest.queue("a service call at the panel (scripted)", () -> {
-            scripted("a fault was raised at once at " + F.panel.address() + " (the service raises one in a city somebody is in every 5 to 10 minutes)");
+            scripted("a fault was raised at once at " + F.panel.address() + " (the service raises one in a city somebody is in every 8 to 15 minutes)");
             ClientNotice.lastTitle = "";
             server(() -> TechService.open(level().getServer(), level(), F.panel, LockService.clock(level().getServer())));
         });

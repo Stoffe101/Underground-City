@@ -179,6 +179,30 @@ public final class PopulationGameTests {
         helper.succeed();
     }
 
+    /** D-162 follow-up: a stroll ends on an open street (not a building's yard), within a walker's reach and not where it started; with no open street near, any street chunk. */
+    @GameTest(template = "empty", batch = "uc_population")
+    public static void aStrollEndsOnAnOpenStreetWithinReach(GameTestHelper helper) {
+        PopulationService.clearCaches();
+        net.minecraft.world.level.ChunkPos centre = new net.minecraft.world.level.ChunkPos(100, 100);
+        BlockPos here = new BlockPos(centre.getMiddleBlockX(), 64, centre.getMiddleBlockZ());
+        for (int dx = -2; dx <= 2; dx++) for (int dz = -2; dz <= 2; dz++)
+            PopulationService.streetForTest(new net.minecraft.world.level.ChunkPos(centre.x + dx, centre.z + dz), 64, dx == 1 && dz == 0 || dx == -2 && dz == -2 || dx == 0 && dz == 0);
+        List<net.minecraft.world.level.ChunkPos> chosen = PopulationService.strollChunks(centre, here);
+        check(chosen.size() == 1 && chosen.get(0).equals(new net.minecraft.world.level.ChunkPos(centre.x + 1, centre.z)),
+            "a stroll did not keep to the one open street within reach (its own chunk and the far corner excluded): " + chosen);
+        PopulationService.streetForTest(new net.minecraft.world.level.ChunkPos(centre.x + 1, centre.z), 64, false);
+        PopulationService.streetForTest(new net.minecraft.world.level.ChunkPos(centre.x - 2, centre.z - 2), 64, false);
+        PopulationService.streetForTest(centre, 64, false);
+        List<net.minecraft.world.level.ChunkPos> any = PopulationService.strollChunks(centre, here);
+        check(!any.isEmpty() && !any.contains(centre), "with no open street a stroll found nowhere, or its own chunk: " + any);
+        for (var c : any) {
+            double dx = c.getMiddleBlockX() - here.getX(), dz = c.getMiddleBlockZ() - here.getZ();
+            check(dx * dx + dz * dz <= PopulationService.STROLL_REACH * PopulationService.STROLL_REACH, "a stroll ends beyond a walker's reach: " + c);
+        }
+        PopulationService.clearCaches();
+        helper.succeed();
+    }
+
     /** D-162: how busy a street is, by area, hour and city, and who is about to fill it. */
     @GameTest(template = "empty")
     public static void streetsAreBusyWhereAndWhenPeopleWouldBe(GameTestHelper helper) {

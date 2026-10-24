@@ -122,7 +122,7 @@ The ids, costs and levels of the Technician's tree are unchanged; the legal node
   * **Scripted shortcuts, each logged:**
     * the clock and the travel to Valewood;
     * standing at the panel;
-    * the service call raised at once (the service raises one every 5 to 10 minutes);
+    * the service call raised at once (the service raises one every 8 to 15 minutes since D-165, 5 to 10 before);
     * the computer and the bench set down (a home holds them), and two iron ingots;
     * Bench Electronics and Municipal Repairs for a tier III panel;
     * the Installer's level and skills, a security array and the install job;
