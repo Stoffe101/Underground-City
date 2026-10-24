@@ -335,10 +335,11 @@ def shop(bid: str, look: Look) -> Building:
 # ---------------------------------------------------------------------------------------------------- the bakery
 
 def bakery(bid: str, look: Look) -> Building:
-    """A bakery: ovens and flour on the back wall, a counter with cakes and a till, a table in the window; a flat to let above, with its own door off the stair landing."""
+    """A bakery: ovens and flour on the back wall, a counter with cakes and a till, a table in the window, a stock room behind a staff door; a flat to let above, with its own door off the
+    stair landing."""
     p = Palette(bid)
     b = Building(bid, p, use="shop", city=CITY, min_floors=2, max_floors=2, filler="minecraft:stone_bricks", security="storefront",
-                 notes="A bakery: ovens, a counter and a table in the window below, a flat to let above.")
+                 notes="A bakery: ovens, a counter and a table in the window below, a stock room behind a staff door, a flat to let above.")
     X0, Z0, X1, Z1 = 2, 3, 13, 12
     g = b.new_part("ground", ground=True)
     g.floor(0, 0, 15, 15, "minecraft:stone_bricks")
@@ -356,10 +357,16 @@ def bakery(bid: str, look: Look) -> Building:
     g.window(X1, 2, 6, GLASS, 2); g.window(X1, 2, 9, GLASS, 2)
     # the bakehouse along the back wall: two ovens (a smoker and a furnace), sacks of flour, a sink
     g.put(5, 1, Z0 + 1, "minecraft:smoker[facing=south,lit=true]"); g.put(6, 1, Z0 + 1, "minecraft:furnace[facing=south,lit=true]")
-    g.put(9, 1, Z0 + 1, ml("kitchen_sink", facing="south")); g.put(10, 1, Z0 + 1, ml("oak_kitchen_cabinet", facing="south"))
-    for (x, z) in ((11, 4), (12, 4), (12, 5)):
+    g.put(9, 1, Z0 + 1, ml("kitchen_sink", facing="south"))
+    # the stock room in the north-east corner (x 11..12, z 4..6): flour and stock in barrels, behind a wall and a staff door (D-159) at its south-east corner, where the counter does not see it
+    g.fill(10, 1, 4, 10, 3, 6, look.wall)
+    g.fill(11, 1, 7, 11, 3, 7, look.wall)
+    g.put(12, 3, 7, look.wall)
+    g.door(12, 1, 7, "south", look.door)
+    for (x, z) in ((12, 4), (12, 5)):
         g.put(x, 1, z, "minecraft:barrel[facing=up,open=false]")
     g.put(12, 2, 4, "minecraft:hay_block[axis=y]")
+    g.put(11, 1, 4, ml("oak_small_table", type="single")); g.put(11, 2, 4, ml("monitor", facing="south"))   # the day's takings at the back (a shop's desk screen is searched as its till)
     for x in (5, 9):
         g.put(x, 2, Z0 + 1, ml("oak_wall_shelf", facing="south"))
     # the counter (z 7) with cakes on it and the till; the baker stands behind it at z 6
@@ -369,7 +376,7 @@ def bakery(bid: str, look: Look) -> Building:
     # a table and two chairs in the east window
     k.table(g, 11, 1, 10, 1, 1, "oak", "small"); k.chair(g, 11, 1, 9, "south"); k.chair(g, 12, 1, 10, "west")
     g.put(4, 1, 10, "minecraft:flower_pot"); g.put(5, 1, 11, "minecraft:potted_azalea_bush")
-    for (x, z) in ((6, 9), (10, 5)):
+    for (x, z) in ((6, 9), (8, 5), (11, 5)):
         k.lamp_ceiling(g, x, z)
     # the stair to the flat in the west of the floor, then a landing and the flat's own door
     u = b.new_part("floor", floor=1)

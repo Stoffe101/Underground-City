@@ -5,7 +5,7 @@
     "min": 2
   },
   "id": "vw_bakery",
-  "notes": "A bakery: ovens, a counter and a table in the window below, a flat to let above.",
+  "notes": "A bakery: ovens, a counter and a table in the window below, a stock room behind a staff door, a flat to let above.",
   "schema_version": 1,
   "spots": [
     {

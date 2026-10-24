@@ -480,7 +480,7 @@ final class ThiefScenario {
      * Right-clicks a piece of furniture until its search starts: the view turns to the block (its middle, then above and below it, as a person tries another angle when something is in the way),
      * one click when the crosshair is on it, and a log line of what the crosshair is on when it is not.
      */
-    private static void searchClick(String label, Supplier<BlockPos> block, int budget) {
+    static void searchClick(String label, Supplier<BlockPos> block, int budget) {
         final int[] t = {0};
         Playtest.queue(label, () -> { t[0] = 0; Playtest.focusWindow(); }, () -> {
             if (ClientBurglary.searching()) return true;

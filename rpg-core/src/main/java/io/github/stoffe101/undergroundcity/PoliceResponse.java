@@ -114,7 +114,8 @@ public final class PoliceResponse {
         CityBuildings.Building building = found.get();
         CityBuildings.Response response = building.security() == null ? null : building.security().response();
         boolean lockAlarm = event.alarm();
-        boolean wired = response != null && event.outcome() == BuildingBreachEvent.Outcome.OPENED && armed(level, building, response);
+        // a building open to the public has its alarm off while its people are in (D-159): a staff door picked by day is for its witnesses to notice
+        boolean wired = response != null && event.outcome() == BuildingBreachEvent.Outcome.OPENED && !BuildingGuard.openToPublic(level, building, null) && armed(level, building, response);
         // entering quietly: a clean pick does not trip an alarm that can be slipped past, and tells the thief something was there to slip past
         // a Ghost (D-143) slips all but a certain alarm
         boolean slipped = wired && event.quiet() && response.alarmChance() < (Thievery.has(player, "thief.ghost") ? 1.0 : QUIET_BYPASS_MAX_CHANCE);

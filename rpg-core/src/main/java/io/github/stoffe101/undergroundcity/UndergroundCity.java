@@ -183,6 +183,7 @@ public final class UndergroundCity {
         MinecraftForge.EVENT_BUS.register(new PropertyIntel());
         MinecraftForge.EVENT_BUS.register(new TechService());
         MinecraftForge.EVENT_BUS.register(new TechWork());
+        MinecraftForge.EVENT_BUS.register(new StaffZones());
         MinecraftForge.EVENT_BUS.register(new ResourceSites());
         MinecraftForge.EVENT_BUS.register(new HouseholdService());
         MinecraftForge.EVENT_BUS.register(new HudService());

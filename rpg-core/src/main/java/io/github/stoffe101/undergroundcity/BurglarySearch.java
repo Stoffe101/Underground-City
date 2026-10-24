@@ -59,8 +59,6 @@ import java.util.UUID;
  * is a witnessed break-in for the police. Thief XP comes from what is found, once per refill of a spot.
  */
 public final class BurglarySearch {
-    /** What a thief is told who tries to search furniture or crack a safe in a building while it is open to the public (D-147). */
-    static final String WHILE_OPEN = "Not while the place is open. Come back when it has closed.";
     private static final Logger LOGGER = LogUtils.getLogger();
     public static final Loader LOADER = new Loader();
 
@@ -231,8 +229,8 @@ public final class BurglarySearch {
         if (WorkOrderLedger.get(level.getServer()).faulted()) return "Searching is unavailable until the server is restarted.";
         long now = LockService.clock(level.getServer());
         if (!container && !records(level.getServer()).ready(pos.asLong(), now, LOADER.refillTicks())) return "Somebody has been through this already. Nothing left worth taking.";
-        // a building open to the public (a shop in its hours, a fence's at theirs) has somebody watching the room: its furniture is searched only once it has closed (D-147)
-        if (BuildingGuard.openToPublic(level, building, null)) return WHILE_OPEN;
+        // a building open to the public (a shop in its hours, a fence's at theirs) has somebody watching its public floor; its staff-only rooms are searched at the household's risk (D-159)
+        if (BuildingGuard.openToPublic(level, building, null) && StaffZones.onPublicFloor(level, building, pos)) return StaffZones.ON_THE_FLOOR;
         Kind effective = kind;
         if (!container && !kind.tillUses().isEmpty() && kind.tillUses().contains(use(building)) && LOADER.kinds().containsKey("till")) effective = LOADER.kinds().get("till");
         int ticks = Math.max(10, Thievery.has(player, "thief.quick_hands") ? effective.ticks() / 2 : effective.ticks());

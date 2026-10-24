@@ -22,6 +22,7 @@ final class Scenarios {
             case "freight" -> FreightScenario.build();
             case "places" -> PlacesScenario.build();
             case "tech" -> TechScenario.build();
+            case "organic" -> OrganicScenario.build();
             case "sccamera" -> CameraMeasureScenario.build();
             case "alarm" -> AlarmScenario.build();
             case "security" -> SecurityScenario.build();

@@ -201,6 +201,20 @@ public final class BuildingGuard {
         Optional<CityBuildings.Building> found = protectedAt(level, lower);
         if (found.isEmpty() || !found.get().locked()) return;
         BlockState lowerState = lower.equals(event.getPos()) ? state : level.getBlockState(lower);
+        // a staff door of an open building (D-159): shut to the public side and locked like its street door, so a lockpick opens it; from behind it opens by hand
+        if (lowerState.getBlock() instanceof DoorBlock && !CityHomes.holdsKey(player, found.get()) && StaffZones.staffDoorNow(level, found.get(), lower)
+                && StaffZones.onPublicSide(level, found.get(), lower, player.position())) {
+            long now = LockService.clock(level.getServer());
+            if (PropertyLocks.get(level.getServer()).breached(lower, now) || lowerState.getValue(DoorBlock.OPEN)) { byHand(event, player, level, lower, lowerState); return; }
+            event.setCanceled(true);
+            event.setCancellationResult(InteractionResult.SUCCESS);
+            if (event.getHand() != InteractionHand.MAIN_HAND) return;
+            if (!LockService.isPick(player.getMainHandItem())) { tell(player, "Staff only. The door is locked."); return; }
+            var security = found.get().security();
+            String refusal = LockService.begin(player, level, new LockService.Target(LockService.Kind.DOOR, lower, security.lockProfile(), found.get().city(), security.id(), "Staff door", 1));
+            if (refusal != null) tell(player, refusal);
+            return;
+        }
         // an open shop's street door is a shop door (D-146), and a fence's door at the fence's hours lets in whoever brings stolen goods (D-147); crouching with an empty hand still cases it
         if (openToPublic(level, found.get(), player) && !(Casing.wants(player) && lowerState.getBlock() instanceof DoorBlock && outsideSide(level, lower, lowerState, player.position()))) {
             PropertyLocks.get(level.getServer()).exitOpen(lower, LockService.clock(level.getServer()) + EXIT_TICKS);

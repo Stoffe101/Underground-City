@@ -1,4 +1,4 @@
-# The Thief track and the burglary loop (D-143 to D-147, D-149 to D-151)
+# The Thief track and the burglary loop (D-143 to D-147, D-149 to D-151, D-159)
 
 Status: **implemented; GameTested (`ThiefGameTests`, 16 cases, and the police, building and roadside suites); one scripted real-client scenario of a new burglar (`-PucPlaytest=thief`, see [Evidence](#evidence)); nobody has played any of it.** It extends [building protection](building-protection.md) and [police response](police-response.md), which describe the locks, stashes, alarms and police it builds on.
 
@@ -47,9 +47,25 @@ Core watches camera blocks in a building (Modern Life's CCTV camera, ours, or Se
 
 Officers chase a thief only while one of them can see them (32 blocks, line of sight); otherwise they go to the last place the thief was seen (the door, until somebody has) and search round it. Out of sight for 30 seconds (15 with Clean Getaway) and more than 20 blocks from the nearest officer, the thief has got away, which pays Thief XP; an arrest needs line of sight.
 
-## Doors (D-147, D-150, D-151)
+## Doors and staff-only rooms (D-147, D-150, D-151, D-159)
 
-* A **shop** is open while its shopkeeper is in: its street door opens for customers and its cameras do not report them. A **fence's** building opens its street door at the fence's hours (21:00 to 03:00, and only on nights the fence is in) to anybody carrying stolen goods. **Nobody searches** a building while it is open, **nor cracks a safe in it** (by day the club is a bar anybody may walk into, and its back office's wall safe would otherwise make its high-security door pointless).
+* A **shop** is open while its shopkeeper is in: its street door opens for customers. A **fence's** building opens its street door at the fence's hours (21:00 to 03:00, and only on nights the fence is in) to anybody carrying stolen goods.
+* **While a building is open (D-159),** its **public floor** is what a customer reaches from the street doors, on the floor they open onto, without passing another door. Core reads it from the building's own walls and doors (`StaffZones`: a bounded flood over one floor of one chunk, cached for a minute). Its alarm is off while its people are in.
+  * **Out on the floor:** nothing is searched and no safe is cracked ("Not out on the floor while it is open: somebody is watching"). Its cameras do not report a customer.
+  * **Everything else is staff only:** a back room behind a door, the floors above and below. There, furniture, containers and safes may be searched and cracked while the place is open, under the usual witnesses (anybody of the household who sees it calls the police), and the cameras watch as at night.
+  * **A staff door** is an inside door between the public floor and a back room. It is shut and locked to the public side like the building's street door, so a lockpick opens it on the lock screen, and it opens by hand from behind.
+  * **A person in a staff-only area** whom somebody of the household can see is told "Staff only" and has five seconds to get out of their sight before the police are called.
+  * The rule before D-159 was that nobody searched an open building at all. It made the back of a shop unreachable by day for no reason a player could see.
+  * The club's back office is upstairs, so it is a staff-only area, reached past the bar staff. Valewood's bakery has a **stock room** behind a staff door, out of the counter's sight, with flour barrels and the day's takings (a desk screen, searched as the till; new worlds only).
+  * **Evidence:** a GameTest reads the zones of a small shop built for it (floor, back room, staff door, the pavement under an awning, a doorway). **Organic run 5** (`-PucPlaytest=organic`) passed all seven steps through a real client, with no spatial shortcut once the thief stood on the street:
+    1. In by day at an open bakery's front door, on foot.
+    2. Refused at the counter ("Not out on the floor").
+    3. The stock room's door locked ("Staff only").
+    4. That door picked on the lock screen.
+    5. The barrel and the till searched (one stolen unit, marked with the thief).
+    6. Told "Staff only" once by the household, and out of sight in time.
+    7. Out to the street on foot.
+  * **Defects found on the way:** organic run 3 found that a person in a doorway or on the pavement under an awning counted as "in the back" (fixed: the ground outside the street doors is read too). The roof test now uses the block heightmap, because the sky light lags behind a change and passes through glass.
 * A **street door** is one with a side that leads outside: the cell beside it open to the sky, or open floor leading within three blocks to a cell that is (a front step under the eaves, a porch). Before D-150 only the first counted, and a Valewood house's front door, its step under the eaves and its hall roofed, was an "inside door" that was never locked.
 * A house **to let** (D-127) is a vacant listing: its door belongs to the home's own guard, and it is neither cased nor searched.
 * An **iron** street door (the club, the office, the warehouse, the workshop, the Ironhaven flats) opens by no hand; where the guard lets a person through one, Core opens or shuts it as a click would a wooden door (D-151). Before, a tenant of an Ironhaven flat could not get in, and a thief was shut in the club once its door closed.

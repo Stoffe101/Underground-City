@@ -59,11 +59,11 @@ public final class PropertyCacheBlock extends BaseEntityBlock {
             return InteractionResult.CONSUME;
         }
         if (entry.kind() == PropertyCacheBlockEntity.Entry.Kind.PICK) {
-            // nobody cracks a safe in a building while it is open (D-147, as nobody searches its furniture): by day anybody may walk into the club by its public door, and the back office's safe
-            // would make its high-security door and the Pro Pick Set pointless (found writing the advanced burglary scenario)
+            // nobody cracks a safe out on the public floor of a building while it is open (D-147); one in a staff-only room is reached past a staff door, as locked as the street door (D-159),
+            // so by day the club's back-office safe still asks for the Pro Pick Set (found writing the advanced burglary scenario)
             var building = CityBuildings.INSTANCE.at(serverLevel, pos);
-            if (building.isPresent() && BuildingGuard.openToPublic(serverLevel, building.get(), null)) {
-                serverPlayer.sendSystemMessage(Component.literal(BurglarySearch.WHILE_OPEN));
+            if (building.isPresent() && BuildingGuard.openToPublic(serverLevel, building.get(), null) && StaffZones.onPublicFloor(serverLevel, building.get(), pos)) {
+                serverPlayer.sendSystemMessage(Component.literal(StaffZones.ON_THE_FLOOR));
                 return InteractionResult.CONSUME;
             }
             var city = CityRegions.INSTANCE.nearest(serverLevel, pos).orElse("");
