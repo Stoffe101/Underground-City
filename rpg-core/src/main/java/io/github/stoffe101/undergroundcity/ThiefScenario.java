@@ -65,6 +65,14 @@ final class ThiefScenario {
 
     /** The street door of the house {@link #chooseHouse} chose (for the patrol scenario, which starts as this one does). */
     static DoorWalk.Spot door() { return F.door; }
+
+    /** Points the shared steps (prepare at the door, case, pick, search) at another building: the raid's bonded store ({@link RaidScenario}). */
+    static void useBuilding(DoorWalk.Spot door, CityBuildings.Building building, List<BlockPos> furniture) {
+        F.door = door;
+        F.house = building;
+        F.spots.clear();
+        F.spots.addAll(furniture);
+    }
     /** The Thief skill learned first: the one that reads a place (D-143). */
     private static final String FIRST_SKILL = "thief.casing";
 
@@ -367,7 +375,7 @@ final class ThiefScenario {
     }
 
     /** Crouches with an empty hand and right-clicks the house's door until the casing card opens; photographs it and logs what it says. */
-    private static void caseIt(String name, boolean expectSkill) {
+    static void caseIt(String name, boolean expectSkill) {
         final int[] t = {0};
         Playtest.queue("an empty hand (slot 8) and crouch", () -> { Playtest.focusWindow(); Playtest.tap("8"); Playtest.keyDown("shift"); });
         Playtest.wait("crouched", 10);
@@ -408,7 +416,7 @@ final class ThiefScenario {
         closeScreen("close the card");
     }
 
-    private static void pickTheDoor() {
+    static void pickTheDoor() {
         final int[] t = {0};
         Playtest.queue("the lockpicks in hand (slot 9); walk at the door and right-click until the lock screen opens", () -> {
             t[0] = 0;
@@ -500,7 +508,7 @@ final class ThiefScenario {
         }, budget);
     }
 
-    private static void search() {
+    static void search() {
         final int[] index = {0};
         Playtest.queue("into the house", () -> F.xpSearched = F.xpEntered);
         // every piece of the house, as a burglar strips it (nine in a Valewood house), nearest the door first

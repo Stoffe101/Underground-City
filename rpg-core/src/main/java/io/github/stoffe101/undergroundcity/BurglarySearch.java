@@ -307,6 +307,7 @@ public final class BurglarySearch {
                 if (!player.getInventory().add(stack.copy())) player.drop(stack.copy(), false);
             }
         }
+        Raids.searched(player, level, building);   // the bonded store job's prize, for its holder only (D-173)
         finds += got.size();
         int xp = 0;
         for (ItemStack stack : got) xp += Math.max(1, FenceCatalog.INSTANCE.worth(BuiltInRegistries.ITEM.getKey(stack.getItem()).toString()) * stack.getCount() / 8);

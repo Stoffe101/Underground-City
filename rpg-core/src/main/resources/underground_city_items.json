@@ -187,6 +187,21 @@
       "stack": 16
     },
     {
+      "id": "cash_tin",
+      "kind": "rare",
+      "stack": 16
+    },
+    {
+      "id": "seized_shipment",
+      "kind": "rare",
+      "stack": 16
+    },
+    {
+      "id": "silver_cutlery",
+      "kind": "rare",
+      "stack": 16
+    },
+    {
       "id": "jewellery_box",
       "kind": "rare",
       "stack": 16

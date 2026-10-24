@@ -38,6 +38,7 @@ INF = 10 ** 6
 CODE_SOURCES = {
     'underground_city:data_ledger': ('SecureTerminalService.java', 'UndergroundCity.item("data_ledger")', 'a successful Technician trace pays one (D-054)'),
     'underground_city:dried_cannabis': ('DryingRack.java', 'UndergroundCity.item("dried_cannabis")', 'two Cannabis Flower dry into one on a Drying Rack, a crafted block (D-160)'),
+    'underground_city:seized_shipment': ('Raids.java', 'new ItemStack(UndergroundCity.item(SHIPMENT))', 'the holder of the bonded store job finds it once in a search of that store (D-173)'),
 }
 
 

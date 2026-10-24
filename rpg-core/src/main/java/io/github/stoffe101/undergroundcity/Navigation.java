@@ -166,8 +166,40 @@ public final class Navigation {
                 if (e == null) return Optional.empty();
                 return Optional.of(new Destination(kind, ref, e.label() + " · " + e.address(), Thievery.tierWord(e.tier()) + " · its street door", overworld, e.door(), e.city(), now));
             }
+            case "order" -> { return orderDestination(player, ref, WorkOrderLedger.get(server)); }
             default -> { return Optional.empty(); }
         }
+    }
+
+    /**
+     * The destination of the player's accepted order {@code ref} (D-173): during the bonded store job, the store's door until the shipment is taken; else, for an order with a buyer, the
+     * buyer's city, whose terminals take the delivery (a terminal anywhere inside it will do). Empty for an order with nowhere in particular to go.
+     */
+    static Optional<Destination> orderDestination(ServerPlayer player, String ref, WorkOrderLedger orders) {
+        MinecraftServer server = player.server;
+        long now = LockService.clock(server);
+        String overworld = server.overworld().dimension().location().toString();
+        CompoundTag record = orders.player(player.getUUID());
+        if (!record.hasUUID("order")) return Optional.empty();
+        WorkOrder order = WorkOrder.load(record.getCompound("job"));
+        if (!order.id().equals(ref)) return Optional.empty();
+        Optional<CompoundTag> raid = Raids.open(player, orders);
+        if (raid.isPresent() && raid.get().contains("door") && !raid.get().getBoolean("taken"))
+            return Optional.of(new Destination("order", ref, "The bonded store, Ironhaven", "the seized shipment is in its back room", overworld, BlockPos.of(raid.get().getLong("door")), "ironhaven", now));
+        BuyerCatalog.Buyer buyer = order.terms().buyer().isEmpty() ? null : BuyerCatalog.INSTANCE.find(order.terms().buyer());
+        if (buyer == null) return Optional.empty();
+        var region = CityRegions.INSTANCE.all().stream().filter(r -> r.id().equals(buyer.city())).findFirst().orElse(null);
+        if (region == null) return Optional.empty();
+        BlockPos centre = new BlockPos(region.centerChunkX() * 16 + 8, server.overworld().getSeaLevel(), region.centerChunkZ() * 16 + 8);
+        return Optional.of(new Destination("order", ref, "Deliver to " + buyer.title(), "a terminal anywhere inside " + TerminalScreenText.capitalize(buyer.city()) + " takes it", overworld, centre, buyer.city(), now));
+    }
+
+    /** Builds the player's tracked destination of {@code kind} again (its target moved, as when the bonded store's shipment is taken), or stops it when there is none any more. */
+    static void retrack(ServerPlayer player, String kind) {
+        Destination current = store(player.server).byPlayer.get(player.getUUID());
+        if (current == null || !current.kind().equals(kind)) return;
+        Optional<Destination> next = build(player, kind, current.ref());
+        if (next.isPresent()) track(player, next.get()); else clear(player, "That order has nothing more to find.");
     }
 
     /** Why a destination has ended, or null while its record still stands. */
@@ -184,6 +216,12 @@ public final class Navigation {
             case "place" -> {
                 try { return PropertyIntel.book(server).get(player, Long.parseLong(d.ref())) == null ? "That place is no longer in your book." : null; }
                 catch (NumberFormatException e) { return "That place is gone."; }
+            }
+            case "order" -> {
+                CompoundTag record = WorkOrderLedger.get(server).player(player);
+                if (!record.hasUUID("order")) return "That order is done.";
+                try { return WorkOrder.load(record.getCompound("job")).id().equals(d.ref()) ? null : "That order is done."; }
+                catch (IllegalArgumentException e) { return "That order is gone."; }
             }
             default -> { return "That destination is gone."; }
         }

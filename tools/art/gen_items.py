@@ -836,6 +836,43 @@ def cash_box():
 
 
 @item
+def cash_tin():
+    """A round savings tin painted blue, a brass band round its middle and a coin slot in the lid: somebody's spare money, kept in a drawer."""
+    s = Sprite()
+    bevel_rect(s, 3, 6, 12, 13, BLUE)
+    s.line(3, 9, 12, 9, BRASS[3]); s.line(3, 10, 12, 10, BRASS[2])
+    s.line(3, 5, 12, 5, BLUE[3]); s.line(4, 4, 11, 4, BLUE[4])
+    s.line(6, 4, 9, 4, INK)
+    s.put(10, 7, WHITE[4]); s.put(4, 12, BLUE[1])
+    return finish(s)
+
+
+@item
+def silver_cutlery():
+    """A silver fork and spoon laid across each other, the kind kept for best."""
+    s = Sprite()
+    disc(s, 5, 5, 2.2, STEEL)
+    s.line(6, 7, 12, 13, STEEL[3]); s.line(7, 7, 13, 13, STEEL[2])
+    for x in (9, 11, 13):
+        s.line(x, 2, x, 5, STEEL[4])
+    s.line(9, 5, 13, 5, STEEL[3])
+    s.line(11, 6, 4, 13, STEEL[3]); s.line(12, 6, 5, 13, STEEL[2])
+    s.put(4, 4, WHITE[4])
+    return finish(s)
+
+
+@item
+def seized_shipment():
+    """A small wooden crate under yellow customs tape, a stencilled consignment number on its side."""
+    s = Sprite()
+    bevel_rect(s, 2, 4, 13, 13, BURLAP)
+    s.line(2, 8, 13, 8, SOIL[2]); s.line(7, 4, 7, 13, SOIL[2])
+    s.line(2, 6, 13, 11, AMBER[3]); s.line(2, 7, 13, 12, AMBER[2])
+    s.rect(9, 9, 11, 10, INK)
+    return finish(s)
+
+
+@item
 def power_drill():
     """A cordless drill: a yellow body, a black grip and battery, a steel bit."""
     s = Sprite()

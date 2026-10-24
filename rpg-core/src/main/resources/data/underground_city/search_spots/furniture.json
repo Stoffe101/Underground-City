@@ -11,6 +11,7 @@
         {"item": "minecraft:paper", "count": [1, 3], "weight": 10, "max_tier": 3},
         {"item": "minecraft:candle", "weight": 6, "max_tier": 2},
         {"item": "minecraft:gold_nugget", "count": [1, 3], "weight": 10},
+        {"item": "underground_city:cash_tin", "count": [1, 2], "weight": 24},
         {"item": "underground_city:wristwatch", "weight": 9, "min_tier": 2},
         {"item": "underground_city:smartphone", "weight": 8, "min_tier": 2},
         {"item": "underground_city:pocket_watch", "weight": 5, "min_tier": 2},
@@ -33,6 +34,7 @@
         {"item": "minecraft:cooked_beef", "count": [1, 2], "weight": 6},
         {"item": "minecraft:honey_bottle", "weight": 4},
         {"item": "minecraft:glass_bottle", "count": [1, 2], "weight": 6, "max_tier": 3},
+        {"item": "underground_city:silver_cutlery", "weight": 14},
         {"item": "underground_city:vintage_wine", "weight": 5, "min_tier": 3},
         {"item": "underground_city:cash_box", "weight": 1, "min_tier": 3, "uses": ["house"]}
       ]
@@ -58,6 +60,7 @@
       "loot": [
         {"item": "minecraft:candle", "weight": 6},
         {"item": "minecraft:flower_pot", "weight": 4, "max_tier": 3},
+        {"item": "underground_city:cash_tin", "weight": 16},
         {"item": "minecraft:compass", "weight": 3, "min_tier": 2},
         {"item": "underground_city:digital_camera", "weight": 6, "min_tier": 3},
         {"item": "underground_city:rare_vinyl", "weight": 4, "min_tier": 3},

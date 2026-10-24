@@ -49,13 +49,17 @@
     "underground_city:steel_bracket": 12,
     "underground_city:barrel_hoops": 8,
     "underground_city:springs": 6,
-    "underground_city:gear_set": 45
+    "underground_city:gear_set": 45,
+    "underground_city:cash_tin": 30,
+    "underground_city:silver_cutlery": 24,
+    "underground_city:seized_shipment": 180
   },
   "fence_only": [
     "minecraft:music_disc_13",
     "minecraft:music_disc_cat",
     "underground_city:bearer_bonds",
     "underground_city:cash_box",
+    "underground_city:cash_tin",
     "underground_city:designer_handbag",
     "underground_city:digital_camera",
     "underground_city:gold_ring",
@@ -65,6 +69,7 @@
     "underground_city:pocket_watch",
     "underground_city:power_drill",
     "underground_city:rare_vinyl",
+    "underground_city:silver_cutlery",
     "underground_city:small_painting",
     "underground_city:smartphone",
     "underground_city:tablet",
