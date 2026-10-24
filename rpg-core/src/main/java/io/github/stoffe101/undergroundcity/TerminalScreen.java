@@ -803,7 +803,10 @@ public final class TerminalScreen extends UcScreen {
         if (!also.isEmpty() && also.get(0).startsWith("Crew:")) {
             // a Crew contract part (D-170): its progress on a line of its own
             UcUi.icon(g, UcUi.Icon.TRUST, tx - 2, ty - 4, darkTeal);
-            g.drawString(font, UcUi.fit(font, also.remove(0).substring(5).trim(), w - 36), tx + 16, ty, darkTeal, false);
+            String crew = also.remove(0).substring(5).trim();
+            int price = crew.lastIndexOf("; supplier ");
+            if (price >= 0) crew = crew.substring(0, price);   // the Supplier button shows the price (1280x720 cut it off the end of this line)
+            g.drawString(font, UcUi.fit(font, crew, w - 36), tx + 16, ty, darkTeal, false);
             ty += 12;
         }
         if (!also.isEmpty()) {

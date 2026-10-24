@@ -182,8 +182,9 @@ public final class CrewContracts {
         int done = 0;
         for (Part p : contract.parts()) if (orders.crewPartBy(crew.id, contract.id(), p.id()) != null) done++;
         String by = orders.crewPartBy(crew.id, contract.id(), part.id());
-        // short enough for the order card's narrowest column (1280x720 cut "supplier 180" off); the Supplier button carries the price
-        String line = ROW_PREFIX + " " + done + "/" + contract.parts().size() + (by != null ? " in, this part too; bonus " : " parts in, bonus ") + contract.bonus() + " shared";
+        // the card draws the line without its "; supplier N", which the Supplier button shows (1280x720 cut it off); the button reads the price from here
+        String line = ROW_PREFIX + " " + done + "/" + contract.parts().size() + " parts in, bonus " + contract.bonus() + " shared; "
+            + (by != null ? "this part is in" : "supplier " + part.fillPrice());
         return line.length() <= 80 ? line : line.substring(0, 80);
     }
 
