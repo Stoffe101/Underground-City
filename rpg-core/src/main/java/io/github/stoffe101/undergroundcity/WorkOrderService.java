@@ -98,7 +98,7 @@ public final class WorkOrderService {
             throw new IllegalStateException("A bulk order: it needs trade premises you work in (a commercial workshop or a warehouse, rented or bought on the Home page).");
         }
         if (terms.minTrust() > 0) {
-            int trust = ledger.trust(player.getUUID(), terms.buyer());
+            int trust = GeneralSkills.effectiveTrust(citizen, ledger, player.getUUID(), terms.buyer());   // a legal buyer counts one step more for Social 3 (D-174)
             BuyerCatalog.Buyer buyer = BuyerCatalog.INSTANCE.find(terms.buyer());
             if (trust < terms.minTrust()) {
                 throw new IllegalStateException((buyer == null ? terms.buyer() : buyer.title()) + " does not trust you with this yet (" + trust + "/" + terms.minTrust() + "). Finish smaller contracts for them first.");
@@ -182,6 +182,7 @@ public final class WorkOrderService {
         int xpTarget = ProgressionRules.totalXp(citizen.careerXp(), order.xp());
         final int levelBefore = citizen.careerLevel();
         java.util.Map<String, Integer> trustAfter = java.util.Map.of(), heatAfter = java.util.Map.of();
+        final int trustBefore = buyer == null ? 0 : ledger.trust(player.getUUID(), buyer.id());
         boolean witnessed = false;
         if (buyer != null) {
             if (terms.trustGain() > 0) trustAfter = java.util.Map.of(buyer.id(), Math.min(BuyerCatalog.MAX_TRUST, ledger.trust(player.getUUID(), buyer.id()) + terms.trustGain()));
@@ -220,6 +221,7 @@ public final class WorkOrderService {
         if (witnessed) Notice.send(player, Notice.Kind.HEAT, "Seen at the hand-off", "The " + TerminalScreenText.capitalize(buyer.city()) + " guard will search you more closely for a while.");
         if (buyer != null && terms.trustGain() > 0) player.sendSystemMessage(Component.literal(buyer.title() + " trusts you a little more (" + ledger.trust(player.getUUID(), buyer.id()) + "/" + BuyerCatalog.MAX_TRUST + ")."));
         if (witnessed) player.sendSystemMessage(Component.literal("Someone noticed the hand-off. The " + TerminalScreenText.capitalize(buyer.city()) + " guard will search you more closely for a while."));
+        GeneralSkills.delivered(player, order, credits, buyer != null && ledger.trust(player.getUUID(), buyer.id()) > trustBefore);   // Trading and Social (D-174), after the settlement
     }
 
     /** The credits for a delivery whose {@code units} weighed {@code gradeWeight} in all: Standard goods pay the order's credits, Fine and Reserve goods pay more in proportion (D-163). */

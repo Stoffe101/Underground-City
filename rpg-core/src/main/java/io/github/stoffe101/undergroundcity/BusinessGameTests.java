@@ -273,6 +273,53 @@ public final class BusinessGameTests {
         }
         helper.succeed();
     }
+    // ------------------------------------------------------------------------------------------------ general skills earned in play (D-174)
+
+    @GameTest(template = "empty", timeoutTicks = 200)
+    public static void tradingAndSocialRiseFromPlayAndChangePricesAndTrustOnlyWithinTheirLimits(GameTestHelper helper) throws Exception {
+        if (!QShopEconomy.available()) { helper.succeed(); return; }
+        try (Orders o = new Orders(helper, "valewood")) {
+            // the rules: Trading lowers exchange prices in three steps, Social counts one more step of a legal buyer's trust, never an underground one's, never past the maximum
+            check(GeneralSkills.tradingDiscount(2) == 0 && GeneralSkills.tradingDiscount(3) == 0.02 && GeneralSkills.tradingDiscount(6) == 0.04 && GeneralSkills.tradingDiscount(30) == 0.05, "the Trading steps");
+            check(GeneralSkills.effectiveTrust(0, 3, false) == 1 && GeneralSkills.effectiveTrust(0, 2, false) == 0 && GeneralSkills.effectiveTrust(0, 9, true) == 0
+                && GeneralSkills.effectiveTrust(BuyerCatalog.MAX_TRUST, 9, false) == BuyerCatalog.MAX_TRUST, "the Social rule");
+            // a legal delivery pays Trading XP by its credits, capped; a civic contribution pays Social XP, and so does the trust it earned
+            ServerPlayer gunsmith = citizen(helper, "uc_gen_gun", "gunsmith", 3);
+            gunsmith.getInventory().add(new ItemStack(net.minecraft.world.item.Items.LANTERN, 4));
+            double before = QShopEconomy.balance(gunsmith);
+            deliver(gunsmith, o, "underground_city:civic_market_lanterns");
+            int paid = (int) Math.round(QShopEconomy.balance(gunsmith) - before);
+            CitizenState.Citizen g = of(gunsmith);
+            check(g.generalXp.getOrDefault(GeneralSkills.TRADING, 0) == Math.min(GeneralSkills.ORDER_TRADING_CAP, paid / GeneralSkills.TRADING_DIVISOR),
+                "a legal sale of " + paid + " credits paid " + g.generalXp.get(GeneralSkills.TRADING) + " Trading XP");
+            check(g.generalXp.getOrDefault(GeneralSkills.SOCIAL, 0) == GeneralSkills.CIVIC_SOCIAL_XP + GeneralSkills.TRUST_SOCIAL_XP,
+                "a civic contribution that raised the council's trust paid " + g.generalXp.get(GeneralSkills.SOCIAL) + " Social XP");
+            // the same delivery cannot be settled twice, so nothing is counted twice
+            UUID gone = UUID.randomUUID();
+            refused(() -> WorkOrderService.complete(gunsmith, o.ledger, gone, o.pos), "", "a delivery with no open order");
+            check(of(gunsmith).generalXp.getOrDefault(GeneralSkills.SOCIAL, 0) == GeneralSkills.CIVIC_SOCIAL_XP + GeneralSkills.TRUST_SOCIAL_XP, "a refused delivery added no Social XP");
+            // Trading level 3 makes the exchange 2% cheaper, and career skills and Trading together never pass 10%
+            RegionalStock parts = RegionalCatalog.INSTANCE.find("underground_city:machined_parts");
+            check(parts != null, "the exchange line loaded");
+            int list = RegionalMarket.unitPrice(parts, of(gunsmith));
+            CitizenState.get(gunsmith.server).addGeneralXp(gunsmith.getUUID(), GeneralSkills.TRADING, ProgressionRules.xpAtLevel(3));
+            int traded = RegionalMarket.unitPrice(parts, of(gunsmith));
+            check(traded == (int) Math.max(1, Math.round(parts.unitPrice() * (1.0 - SkillService.exchangeDiscount(of(gunsmith)) - 0.02))) && traded <= list, "Trading 3 takes 2% off: " + list + " -> " + traded);
+            check(GeneralSkills.exchangeDiscount(of(gunsmith)) <= SkillNode.MAX_TOTAL_DISCOUNT, "never past the shared cap");
+            // Social level 3 opens the council's trusted stall order one step of trust sooner; it does nothing for an underground buyer
+            ServerPlayer farmer = citizen(helper, "uc_gen_farmer", "farmer", 10);
+            CitizenState.get(farmer.server).unlockSkill(farmer.getUUID(), "farmer.fundamentals");
+            CivicProjects.Project market = CivicProjects.CATALOG.find("underground_city:valewood_market");
+            o.ledger.finishCivicForTest(market.id());   // the market is finished, so the council's stall order is offered
+            refused(() -> WorkOrderService.accept(farmer, o.ledger, of(farmer), "underground_city:council_stall_produce"), "trust", "the council's trusted order without trust or Social");
+            CitizenState.get(farmer.server).addGeneralXp(farmer.getUUID(), GeneralSkills.SOCIAL, ProgressionRules.xpAtLevel(GeneralSkills.SOCIAL_TRUST_LEVEL));
+            WorkOrderService.accept(farmer, o.ledger, of(farmer), "underground_city:council_stall_produce");
+            check(o.ledger.player(farmer.getUUID()).hasUUID("order") && o.ledger.trust(farmer.getUUID(), "valewood_council") == 0, "Social 3 opened it, and the recorded trust is unchanged");
+            check(GeneralSkills.effectiveTrust(of(farmer), o.ledger, farmer.getUUID(), "marrow") == 0, "an underground buyer counts only what is recorded");
+        }
+        helper.succeed();
+    }
+
     // ------------------------------------------------------------------------------------------------ the bonded store job (D-173)
 
     @GameTest(template = "empty", timeoutTicks = 300)

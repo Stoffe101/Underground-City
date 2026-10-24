@@ -380,7 +380,9 @@ public final class UndergroundCity {
                 + ". Spend points at an Operations Terminal (Skills tab)."), false);
             StringBuilder result = new StringBuilder("General skills: ");
             for (String skill : new TreeSet<>(ProgressionRules.GENERAL_SKILLS)) {
-                result.append(skill).append(" L").append(profile.get().generalLevel(skill)).append("  ");
+                result.append(skill).append(" L").append(profile.get().generalLevel(skill));
+                if (skill.equals(GeneralSkills.TRADING) || skill.equals(GeneralSkills.SOCIAL)) result.append(" (").append(GeneralSkills.gives(skill, profile.get().generalLevel(skill))).append(")");
+                result.append("  ");
             }
             ctx.getSource().sendSuccess(() -> Component.literal(result.toString()), false);
             return 1;

@@ -11,6 +11,17 @@ Independent from profession trees. General skills reward normal behavior and off
 | Social influence | Quests, aid, dialogue, diplomacy | Additional dialogue and trusted contracts | No repeat dialogue grinding |
 | Technical literacy (candidate) | Legit repairs and security work | More terminal types and diagnostic hints | Bound to mission objectives |
 
+## What is implemented (October 24, 2026; D-174)
+
+| Skill | Earned in play from | What it changes | Evidence |
+| --- | --- | --- | --- |
+| Thievery (the Thief track, D-143) | entering buildings by tier, searches, safes, escapes, fence sales | its own 16-skill tree on the terminal's Thief page | L3 (thief run 12) |
+| Trading | legal deliveries (credits / 8, at most 50 XP each) and goods sold to a shop (at most 30) | regional exchange prices 2% lower from level 3, 4% from 6, 5% from 10, inside the 10% cap shared with career skills | L2 |
+| Social | civic contributions (40), Crew contract parts (30), a legal buyer's trust growing (25) | from level 3 a legal buyer counts one more step of trust when offering trusted work (today only the Valewood council's stall orders) | L2 |
+| Driving, fitness, shooting | nothing yet (an operator command only) | nothing | none |
+
+General XP uses the career curve (level 2 at 125 XP, 3 at 500, 5 at 2,000). The terminal has no general-skills panel yet; level-ups arrive as notices and `/uc skills` lists each skill with what it gives.
+
 ## System rules
 
 - Distinguish general XP from career XP and city reputation in storage, UI, and rewards.

@@ -162,7 +162,7 @@ public record TerminalData(String city, String career, int level, int xp, double
         return new Extra(job.underground(), needed == null ? terms.requiresSkill() : needed.title(),
             terms.requiresSkill().isEmpty() || SkillService.has(citizen, terms.requiresSkill()),
             buyer == null ? "" : buyer.title(), buyer == null ? "" : buyer.city(), terms.minTrust(),
-            buyer == null ? 0 : ledger.trust(player.getUUID(), buyer.id()), List.copyOf(rewards));
+            buyer == null ? 0 : GeneralSkills.effectiveTrust(citizen, ledger, player.getUUID(), buyer.id()), List.copyOf(rewards));
     }
 
     private static List<SkillRow> skillRows(CitizenState.Citizen citizen) { return rows(citizen, SkillCatalog.INSTANCE.tree(citizen.career)); }

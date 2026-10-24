@@ -282,6 +282,14 @@ public final class WorkOrderLedger {
         putCivic(project, state);
     }
 
+    /** GameTests only: marks a project finished without its contributions. */
+    void finishCivicForTest(String project) {
+        CompoundTag state = civic(project);
+        state.putBoolean("finished", true);
+        putCivic(project, state);
+        persist();
+    }
+
     /** Records that a finished project's change now stands in the world, with where (so it is built once, across restarts). */
     void markCivicBuilt(String project, CompoundTag where) {
         checkHealthy();

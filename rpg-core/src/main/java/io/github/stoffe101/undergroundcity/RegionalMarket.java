@@ -85,9 +85,9 @@ public final class RegionalMarket {
         return text.toString();
     }
 
-    /** The list price less the citizen's exchange discount from utility skills (at most 10%), never below 1 credit. */
+    /** The list price less the citizen's exchange discount from utility skills and Trading (at most 10% together), never below 1 credit. */
     static int unitPrice(RegionalStock stock, CitizenState.Citizen citizen) {
-        double discount = citizen == null ? 0 : SkillService.exchangeDiscount(citizen);
+        double discount = citizen == null ? 0 : GeneralSkills.exchangeDiscount(citizen);   // career skills and Trading (D-174), at most 10% together
         return (int) Math.max(1, Math.round(stock.unitPrice() * (1.0 - discount)));
     }
 

@@ -90,5 +90,6 @@ public final class ShopSupply {
         player.sendSystemMessage(Component.literal("Sold " + what + " to " + exchange.seller() + " for " + credits + " credits" + bonus + (ownTrade ? ", +" + terms.xp() * quantity + " career XP." : ".")));
         Notice.send(player, Notice.Kind.DELIVERED, "Sold to the shop", what + ": +" + credits + " credits");
         if (citizen.careerLevel() > levelBefore) Notice.send(player, Notice.Kind.SKILL, "Level " + citizen.careerLevel(), TerminalScreenText.capitalize(citizen.career) + " level up. A skill point is waiting.");
+        GeneralSkills.suppliedShop(player, credits);   // Trading (D-174), after the settlement
     }
 }
