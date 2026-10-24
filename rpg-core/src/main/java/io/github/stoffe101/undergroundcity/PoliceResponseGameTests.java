@@ -380,8 +380,13 @@ public final class PoliceResponseGameTests {
             s.thief.getInventory().setItem(2, new ItemStack(Items.GOLD_INGOT, 3));   // honest gold, same item: the control
             var officer = s.officers().get(0);
             officer.moveTo(s.thief.getX() + 1.0, s.thief.getY(), s.thief.getZ(), 0, 0);
+            // still at a lock when the officer arrives: the arrest puts it away (patrol run 3 left the lock screen open over an arrest)
+            s.thief.getInventory().setItem(8, new ItemStack(UndergroundCity.item("lockpick"), 2));
+            String refusal = LockService.begin(s.thief, s.level, new LockService.Target(LockService.Kind.DOOR, s.door, "deadbolt", "valewood", "test_alarmed", "Test door", 1));
+            check(refusal == null && LockService.busy(s.thief.getUUID()), "the lock did not start: " + refusal);
             PoliceResponse.pass(s.level.getServer());
             check(PoliceResponse.dispatches() == 0 && PoliceResponse.arrests == 1, "the officer beside the thief did not arrest them: " + PoliceResponse.status());
+            check(!LockService.busy(s.thief.getUUID()), "the thief was still at the lock after the arrest");
             check(s.thief.getInventory().countItem(Items.GOLD_INGOT) == 3, "the honest gold was taken with the stolen gold (or the stolen gold was not taken): " + s.thief.getInventory().countItem(Items.GOLD_INGOT));
             check(s.thief.getInventory().countItem(Items.BREAD) == 7, "honest goods were taken in an arrest");
             check(ledger.heat(s.thief.getUUID(), "valewood") == Math.min(WorkOrderLedger.MAX_HEAT, heatBefore + PoliceResponse.ARREST_HEAT), "an arrest did not raise the city's heat by exactly " + PoliceResponse.ARREST_HEAT);

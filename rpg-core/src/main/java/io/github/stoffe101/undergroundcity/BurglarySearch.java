@@ -275,6 +275,11 @@ public final class BurglarySearch {
     @SubscribeEvent
     public void loggedOut(PlayerEvent.PlayerLoggedOutEvent event) { ACTIVE.remove(event.getEntity().getUUID()); }
 
+    /** Stops the player's search with nothing found (an arrest, D-155). */
+    static void stop(ServerPlayer player) {
+        if (ACTIVE.remove(player.getUUID()) != null) BurglaryNetwork.searchEnd(player, false);
+    }
+
     /** The end of a search: the finds (or the container), the marks, the XP, and whether anybody in the room saw it. Visible for the tests. */
     static List<ItemStack> finish(ServerPlayer player, ServerLevel level, Active a) {
         Optional<CityBuildings.Building> found = foreignBuilding(player, level, a.pos());

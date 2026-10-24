@@ -410,6 +410,10 @@ public final class PoliceResponse {
         WorkOrderLedger ledger = WorkOrderLedger.get(server);
         if (citizen == null || law == null || ledger.faulted() || ledger.player(player.getUUID()).contains("pending")) return false;   // try again next second
         String who = officer.getName().getString();
+        // an arrested thief's hands are empty: a lock or a search still going is put away (patrol runs 3 and 4: the hand clicked again after an officer on the beat had put the first
+        // lock away, and the arrest left the new one open)
+        LockService.interrupt(player, "You are under arrest.");
+        BurglarySearch.stop(player);
         String charge = d.why.startsWith("patrol: at") || d.why.startsWith("patrol: going") ? "trying to break in" : "breaking and entering";
         player.sendSystemMessage(Component.literal(who + ": Police. You are under arrest for " + charge + ".").withStyle(ChatFormatting.GOLD));
         CheckpointService.Result result = CheckpointService.arrest(player, citizen, "police:" + d.securityClass + ":" + d.door.toShortString(), d.city, law, ledger, law.fine(CityLaws.PROHIBITED), ARREST_HEAT);
