@@ -59,7 +59,7 @@ The [expansion plan](expansion-plan.md) is still a proposal (D-088). Since Octob
 | WP1 | Crew contracts | **built** (D-170): two contracts, parts by career, parts pay their deliverers, bonus in equal shares owed and paid once, a supplier fills a missing part | L2; a step of the L4 Crew journey (server-driven, two clients connected) |
 | WP2 | Skill growth | partly: real effects (D-098), skill gates (D-158, D-163), the Thief track (D-143); no second general skill earned in play, no perk table, nothing past level 30 | L3 (thief run 12) |
 | WP3 | Property | largely built: rent on active time, grace and lapse, upgrades, Crew bills; 8 of 10 categories have a building; trade premises (D-169); the larger apartment and premium residence have none; no property tax | L4 (rent in the Crew journey) |
-| WP4 | Illegal production | partly: Cannabis with drying, moonshine, unmarked kits and unmarked TaCZ builds (D-168); no hidden facility kind | L3 (Cannabis run 6) |
+| WP4 | Illegal production | partly: Cannabis with drying, moonshine, unmarked kits and unmarked TaCZ builds (D-168); no hidden facility kind | L3 (Cannabis runs 6 and 9, law run 2) |
 | WP5 | Advanced manufacturing | partly: seven Core stations, the Electronics Bench, kit-to-firearm builds at the Gun Smith Table | L3 (workshop run 3, tech run 5), L2 (TaCZ builds) |
 | WP6 | Contextual loot | partly: furniture by room and tier, salvage, quarry and pit; beginner loot rebalanced (D-172); no per-player rolls | L3 (thief run 12) |
 | WP7 | Burglary | largely built; free-form, no mission kind | L3 (heist run 8, organic run 5) |
@@ -83,7 +83,7 @@ The next milestone is not a feature count. It is met when **the owner and one fr
 | --- | --- | --- | --- |
 | 1 | A new player registers, chooses a city and a career, and in the first 30 minutes earns credits through legal work, buys something useful, and gains XP visibly, without a free skill or resource | L3, then L5 | L3: journey run 66 (28 steps with real input, 3 logged shortcuts, the road walked both ways); L5 none |
 | 2 | Each of the five careers has a solo loop from its starter kit to a level-10 contract with no dead end | L1 item-source audit + L3 per career | L1 holds; L3 for Farmer, Vintner, Technician; Smith and Gunsmith L2 |
-| 3 | Each career has an underground option on the same character | L2 + L3 for at least two | L3 Cannabis (Farmer), back channel L2, unmarked builds L2 |
+| 3 | Each career has an underground option on the same character | L2 + L3 for at least two | L3 for the Farmer (Cannabis grown, dried and policed, sixth pass) and any career's raid; back channel and unmarked builds L2 |
 | 4 | A home: rent a first place, upgrade it, move up at least two rungs, with no offline charge | L2 + L4 | L4 for the Row's lease and rent; 8 of 10 rungs physical |
 | 5 | A business: premises that make the work better, never idle income | L2 + L3 | L2 (D-169) |
 | 6 | Two players cooperate on something neither does alone and the credit is fair | L4, then L5 | L4 server-driven Crew contract step (sixth pass); L5 none |
