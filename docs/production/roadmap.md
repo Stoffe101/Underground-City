@@ -46,8 +46,8 @@ Every claim names one level. Levels are never added together: forty GameTests ar
 | P4 Economy loop | partly met: earn, spend, produce, deliver and reconcile after a restart; **no tax** (rent on active time stands in) | L4 (Crew and combined journeys), L3 (Cannabis run 6, workshop run 3) | yes | no |
 | P5 Career depth | five careers with a legal loop each; the Gunsmith now builds real TaCZ firearms (D-168) | L3 for the Farmer, Vintner and Technician; L2 for the Gunsmith and Smith | first vanilla orders only | no |
 | P6 City life and loot | substantial but opt-in; contextual loot by room and tier; **per-player loot absent** (Lootr reviewed, not adopted) | L3 (crowd runs, thief run 12, journey run 65, workshop run 3) | civilian counter only | no |
-| P7 Conflict | burglary, witnesses, alarms, police beat, arrest and fines, one raid (D-173, L2); no factions or jail | L3 (burglary, alarm, thief, heist, patrol and organic runs) | none | no |
-| P8 Expansion | three cities, roads, roadside places, freight on foot, trade premises (D-169), one civic project (D-171, L2); no vehicle economy | L3 (freight run 5, the October 16 drives) | none | no |
+| P7 Conflict | burglary, witnesses, alarms, police beat, arrest and fines, one raid (D-173, L3); no factions or jail | L3 (burglary, alarm, thief, heist, patrol and organic runs) | none | no |
+| P8 Expansion | three cities, roads, roadside places, freight on foot, trade premises (D-169), one civic project (D-171, L3); no vehicle economy | L3 (freight run 5, the October 16 drives) | none | no |
 | P9 Campaign and polish | not started (no story acts); save migrations piecemeal; UI captured at four viewports | L2 (migration GameTests), L3 (captures) | none | no |
 
 ### Work packages WP1 to WP12
@@ -63,7 +63,7 @@ The [expansion plan](expansion-plan.md) is still a proposal (D-088). Since Octob
 | WP5 | Advanced manufacturing | partly: seven Core stations, the Electronics Bench, kit-to-firearm builds at the Gun Smith Table | L3 (workshop run 3, tech run 5), L2 (TaCZ builds) |
 | WP6 | Contextual loot | partly: furniture by room and tier, salvage, quarry and pit; beginner loot rebalanced (D-172); no per-player rolls | L3 (thief run 12) |
 | WP7 | Burglary | largely built; free-form, no mission kind | L3 (heist run 8, organic run 5) |
-| WP8 | Law and raids | response, arrest, patrols; **one raid** (the bonded store, D-173) | L3 (patrol runs); the raid L2 |
+| WP8 | Law and raids | response, arrest, patrols; **one raid** (the bonded store, D-173) | L3 (patrol runs, raid run 3) |
 | WP9 | Survival | partly: goods on sale; no fuel, no medical item | L4 (combined journey, server-driven) |
 | WP10 | Populated districts | partly: routines by clock, density by area and hour, people within sight; no off-screen simulation | L3 (crowd runs 4, 5) |
 | WP11 | Transport | barely: bicycle and motorboat lines, freight on foot, orders tracked on the status display and Xaero | L3 (October 16 drives, freight run 5) |
@@ -81,17 +81,17 @@ The next milestone is not a feature count. It is met when **the owner and one fr
 
 | # | Criterion | Evidence needed | Where it stands (October 24) |
 | --- | --- | --- | --- |
-| 1 | A new player registers, chooses a city and a career, and in the first 30 minutes earns credits through legal work, buys something useful, and gains XP visibly, without a free skill or resource | L3, then L5 | L3: the integrated journey (sixth pass, see the report); L5 none |
+| 1 | A new player registers, chooses a city and a career, and in the first 30 minutes earns credits through legal work, buys something useful, and gains XP visibly, without a free skill or resource | L3, then L5 | L3: journey run 66 (28 steps with real input, 3 logged shortcuts, the road walked both ways); L5 none |
 | 2 | Each of the five careers has a solo loop from its starter kit to a level-10 contract with no dead end | L1 item-source audit + L3 per career | L1 holds; L3 for Farmer, Vintner, Technician; Smith and Gunsmith L2 |
 | 3 | Each career has an underground option on the same character | L2 + L3 for at least two | L3 Cannabis (Farmer), back channel L2, unmarked builds L2 |
 | 4 | A home: rent a first place, upgrade it, move up at least two rungs, with no offline charge | L2 + L4 | L4 for the Row's lease and rent; 8 of 10 rungs physical |
 | 5 | A business: premises that make the work better, never idle income | L2 + L3 | L2 (D-169) |
 | 6 | Two players cooperate on something neither does alone and the credit is fair | L4, then L5 | L4 server-driven Crew contract step (sixth pass); L5 none |
-| 7 | Crime has preparation, risk and consequence: a burglary, a fence, a witness, an arrest, one raid | L3 | L3 for burglary, fence, arrest; raid L2 (the client run is in the sixth-pass report) |
-| 8 | The world changes because of the players: one civic project with a persistent consequence | L2 + L3 | L2 (D-171) |
+| 7 | Crime has preparation, risk and consequence: a burglary, a fence, a witness, an arrest, one raid | L3 | L3 for burglary, fence, arrest and the raid (raid run 3) |
+| 8 | The world changes because of the players: one civic project with a persistent consequence | L2 + L3 | L3 (civic run 3: the stalls built and photographed); the restart is L2 |
 | 9 | Performance: no Core-caused tick over 250 ms walking or arriving in a city; 30 minutes of two players on a dedicated server with p99 under 100 ms | L3 (hitch scenario) + a dedicated-server measurement | hitch fixed at its cause (D-167, L3); no dedicated-server measurement |
 | 10 | Save safety: an abrupt kill and a restart lose nothing and pay nothing twice | L2 + L4 | L4 (combined journey); every new journal kind GameTested |
-| 11 | Every screen a player meets is legible at 1280x720, 1080p GUI 2 and 3, and 3440x1440 GUI 2 | L3 captures, inspected | captured each pass; new screens in the sixth-pass report |
+| 11 | Every screen a player meets is legible at 1280x720, 1080p GUI 2 and 3, and 3440x1440 GUI 2 | L3 captures, inspected | captured each pass; the sixth pass's two new cards at all four, looked at, three defects fixed |
 | 12 | **A person plays two sessions of at least two hours** following the playtest guide, files the questionnaire, and wants to play a third | L5 | **not done** |
 
 Out of scope for the alpha: story acts, factions and warfare, a vehicle economy (fuel, repair, insurance), property tax, a market between players, per-player loot, the larger apartment and premium residence buildings.
@@ -224,7 +224,7 @@ Read against commit `78e672c` (the fifth pass) by a separate read of the code, d
 * **Two clients:** none. "A partner beside an officer with marked goods is not arrested" is a GameTest.
 * **Missing:**
   * factions: no code at all;
-  * raids (D-033): one, the bonded store job (D-173, sixth pass; L2, a client run in the sixth-pass report);
+  * raids (D-033): one, the bonded store job (D-173, sixth pass; raid run 3 through a real client);
   * jail or holding: none (officers never enter buildings and cannot be hurt, `PoliceResponse.java` line 40);
   * gate guards at the bridge ends, posts placed at world creation, boat customs;
   * "encounter balance": not measured.
@@ -238,7 +238,7 @@ Read against commit `78e672c` (the fifth pass) by a separate read of the code, d
 * **Exists:** three cities with their own styles and furnished buildings (opt-in); city homes on the Row's terms (D-127); roadside places with a motel and a farmhouse to let (D-138); freight from the Northgate depot (`Freight`, D-156); bicycle and motorboat dealer lines (D-101); vehicle crates searched at checkpoints (D-077).
 * **Evidence:** L3. Freight run 5 (paid 64 credits in Valewood; travel by teleport). October 16: a Quad drove 200 blocks and a Motorboat sailed about 130 blocks (creative mode, so the car burned no fuel).
 * **Missing:**
-  * civics: one public project, the Valewood market (D-171, sixth pass, L2); no tax, treasury, city leaders, elections or diplomacy;
+  * civics: one public project, the Valewood market (D-171, sixth pass; civic run 3 through a real client); no tax, treasury, city leaders, elections or diplomacy;
   * business growth: trade premises (D-169, sixth pass: a better workshop and bulk orders for whoever works there, at the home's own active-time cost); no hiring or business revenue;
   * transport: no fuel economy, repair, insurance, car dealer, boat post, customs, harbour or port, boat taxi, or contract that needs a vehicle;
   * performance with players on a dedicated server.
@@ -318,7 +318,7 @@ Read against commit `78e672c` (the fifth pass) by a separate read of the code, d
 #### WP8 Law enforcement and raids
 
 * **Plan:** witness reports into heat, a bounded response, arrests with a fine and no loss of honest gear, one raid per high-tier contract.
-* **Now:** all of it, with one raid from the sixth pass (the bonded store job, D-173: L2, a client run in the sixth-pass report). Witnessed and alarmed break-ins bring officers (D-122); an arrest takes stolen or forbidden goods and a fine up to the wallet, keeps honest goods, and raises heat; officers walk a beat and chase only what they see (D-146, D-155). Police cannot be fought (they cannot be hurt).
+* **Now:** all of it, with one raid from the sixth pass (the bonded store job, D-173: raid run 3 through a real client). Witnessed and alarmed break-ins bring officers (D-122); an arrest takes stolen or forbidden goods and a fine up to the wallet, keeps honest goods, and raises heat; officers walk a beat and chase only what they see (D-146, D-155). Police cannot be fought (they cannot be hurt).
 * **Stale in the plan:** line 101: "*Not built:* patrols, response to a witnessed crime, arrest flow, raids" (only raids remain).
 * **Remaining:** the plan's own two-client proof (one player with evidence, one without, beside one officer) at L4; more raids than the one bonded store; a measured tick cost with a response active on a dedicated server.
 
