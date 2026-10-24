@@ -1,0 +1,29 @@
+{
+  "schema_version": 3,
+  "title": "Registered sidearms for the city armoury",
+  "career": "gunsmith",
+  "level": 4,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "tacz:modern_kinetic_gun",
+      "count": 2,
+      "gun_ids": [
+        "tacz:glock_17",
+        "tacz:cz75",
+        "tacz:m9a4",
+        "tacz:p320",
+        "tacz:m1911"
+      ],
+      "label": "Registered pistol",
+      "provenance": "registered"
+    }
+  ],
+  "credits": 400,
+  "xp": 560,
+  "capacity": 2,
+  "refill_ticks": 18000,
+  "legality": "legal",
+  "requires_skill": "gunsmith.licensed_repairs",
+  "requires_mod": "tacz"
+}

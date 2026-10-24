@@ -122,15 +122,26 @@ final class OptionalModProbes {
      * checks and consumes the materials and hands over the result). {@code kind} is "gun" or "ammo". Returns null on success, else the reason.
      */
     static String craftAtTaczTable(net.minecraft.server.level.ServerPlayer player, String kind, String resultId) {
+        String key = kind.equals("gun") ? "GunId" : "AmmoId";
+        // a gun the Gunsmith builds from a parts kit (D-168) is built by Core's kit recipe: the licensed one when there is one, else the unmarked one; TaCZ's own otherwise
+        ResourceLocation recipeId = null;
+        int best = -1;
+        for (net.minecraft.world.item.crafting.Recipe<?> recipe : player.level().getRecipeManager().getRecipes()) {
+            if (!String.valueOf(recipe.getType()).equals("tacz:gun_smith_table_crafting")) continue;
+            CompoundTag tag = recipe.getResultItem(player.level().registryAccess()).getTag();
+            if (tag == null || !tag.getString(key).equals(resultId)) continue;
+            boolean core = recipe.getId().getNamespace().equals(UndergroundCity.MOD_ID);
+            int rank = core ? (recipe.getId().getPath().endsWith("_unmarked") ? 1 : 2) : 0;
+            if (rank > best) { best = rank; recipeId = recipe.getId(); }
+        }
+        if (recipeId == null) return "TaCZ has no table recipe for " + kind + " " + resultId;
+        return craftRecipeAtTaczTable(player, kind, recipeId);
+    }
+
+    /** Crafts one named Gun Smith Table recipe ({@code kind} picks the table: "gun" or "ammo") the way the server handles a client's request. Returns null on success, else the reason. */
+    static String craftRecipeAtTaczTable(net.minecraft.server.level.ServerPlayer player, String kind, ResourceLocation recipeId) {
         try {
-            String key = kind.equals("gun") ? "GunId" : "AmmoId";
-            ResourceLocation recipeId = null;
-            for (net.minecraft.world.item.crafting.Recipe<?> recipe : player.level().getRecipeManager().getRecipes()) {
-                if (!String.valueOf(recipe.getType()).equals("tacz:gun_smith_table_crafting")) continue;
-                CompoundTag tag = recipe.getResultItem(player.level().registryAccess()).getTag();
-                if (tag != null && tag.getString(key).equals(resultId)) { recipeId = recipe.getId(); break; }
-            }
-            if (recipeId == null) return "TaCZ has no table recipe for " + kind + " " + resultId;
+            if (player.level().getRecipeManager().byKey(recipeId).isEmpty()) return "No table recipe " + recipeId;
             // only this craft's drops: every test player stands at the world's spawn, and a hosted firearms run once picked up another test's leftovers there, which failed a
             // check that a refused craft takes nothing from the inventory
             net.minecraft.world.phys.AABB feet = player.getBoundingBox().inflate(2.0);

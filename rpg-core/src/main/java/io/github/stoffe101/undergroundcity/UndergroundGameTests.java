@@ -208,7 +208,8 @@ public final class UndergroundGameTests {
                     check(buyer != null && buyer.underground() == order.underground(), order.id() + ": buyer missing or of the wrong legality");
                 }
                 if (order.underground()) check(!terms.buyer().isEmpty() && !terms.requiresSkill().isEmpty(), order.id() + ": underground work needs a buyer and a skill");
-                else check(terms.minTrust() == 0 && terms.trustGain() == 0, order.id() + ": legal work carries no trust");
+                // legal work carries trust only as a city's civic standing: contributions to a civic project and the council's orders it opens (D-171)
+                else check(terms.minTrust() == 0 && terms.trustGain() == 0 || !terms.civic().isEmpty() || !terms.requiresCivic().isEmpty(), order.id() + ": legal work carries no trust outside a civic project");
                 if (!terms.requiresSkill().isEmpty()) { if (order.underground()) underground = true; else legal = true; }
                 else if (!order.underground()) legal = true;
             }
@@ -1042,6 +1043,100 @@ public final class UndergroundGameTests {
         helper.succeed();
     }
 
+    // ------------------------------------------------------------------------------------------ the Gunsmith builds real guns from kits (D-168)
+
+    private static ItemStack firstGun(FakePlayer player, String gunId) {
+        return player.getInventory().items.stream().filter(stack -> String.valueOf(ForgeRegistries.ITEMS.getKey(stack.getItem())).equals("tacz:modern_kinetic_gun")
+            && stack.getTag() != null && stack.getTag().getString("GunId").equals(gunId)).findFirst().orElse(ItemStack.EMPTY);
+    }
+
+    @GameTest(template = "empty", timeoutTicks = 200)
+    public static void aPartsKitBuildsARegisteredPistolWithASerialAndTheTableRefusesTaczsIronRecipeForIt(GameTestHelper helper) throws Exception {
+        if (!ModList.get().isLoaded("tacz")) { helper.succeed(); return; }
+        Fixture fixture = fixture(helper, "valewood");
+        Boolean wasOpen = OptionalModProbes.setGunTableOpen(true);   // the blueprint gate is tested on its own; this is the kit rule
+        try {
+            check(GunsmithBuilds.kitGuns(helper.getLevel().getServer()).containsAll(List.of("tacz:glock_17", "tacz:m1911", "tacz:m870", "tacz:ak47", "tacz:uzi")), "The kit recipes loaded: " + GunsmithBuilds.kitGuns(helper.getLevel().getServer()));
+            FakePlayer player = player(helper, "valewood", "gunsmith", 4);
+            // TaCZ's own recipe (sixteen iron ingots) is refused for a gun that is built from a kit here, and takes nothing
+            player.getInventory().add(new ItemStack(Items.IRON_INGOT, 16));
+            String refused = OptionalModProbes.craftRecipeAtTaczTable(player, "gun", ResourceLocation.parse("tacz:gun/glock_17"));
+            check(firstGun(player, "tacz:glock_17").isEmpty() && player.getInventory().countItem(Items.IRON_INGOT) == 16, "TaCZ's iron recipe is refused for the Glock 17 and takes nothing (" + refused + ")");
+            // the kit recipe builds it: one kit and four ingots, a serial from Valewood's register, the maker's name, and the Gunsmith's XP
+            player.getInventory().clearContent();
+            player.getInventory().add(new ItemStack(core("firearm_parts_kit"), 2));
+            player.getInventory().add(new ItemStack(Items.IRON_INGOT, 8));
+            int xp = citizen(player).careerXp();
+            String built = OptionalModProbes.craftRecipeAtTaczTable(player, "gun", id("tacz/glock_17"));
+            ItemStack gun = firstGun(player, "tacz:glock_17");
+            check(built == null && !gun.isEmpty(), "The kit recipe builds the Glock 17: " + built + "; " + OptionalModProbes.describeInventory(player));
+            CompoundTag tag = gun.getTag();
+            check(GunsmithBuilds.REGISTERED.equals(tag.getString(GunsmithBuilds.PROVENANCE)) && tag.getString(GunsmithBuilds.SERIAL).matches("VW-\\d{5}") && tag.getString(GunsmithBuilds.MAKER).equals(player.getGameProfile().getName()),
+                "A registered build carries Valewood's serial and its maker: " + tag);
+            check(player.getInventory().countItem(core("firearm_parts_kit")) == 1 && player.getInventory().countItem(Items.IRON_INGOT) == 4, "One kit and four ingots were used");
+            check(citizen(player).careerXp() == xp + GunsmithBuilds.XP_REGISTERED, "The build paid the Gunsmith's XP: " + xp + " -> " + citizen(player).careerXp());
+            check("firearms_licensed".equals(ContrabandCatalog.INSTANCE.classify(gun)), "A registered pistol is a licensed firearm at a checkpoint: " + ContrabandCatalog.INSTANCE.classify(gun));
+            // a second build takes the next number
+            String first = tag.getString(GunsmithBuilds.SERIAL);
+            player.getInventory().removeItem(gun);
+            check(OptionalModProbes.craftRecipeAtTaczTable(player, "gun", id("tacz/glock_17")) == null, "A second build");
+            String second = firstGun(player, "tacz:glock_17").getTag().getString(GunsmithBuilds.SERIAL);
+            check(!second.equals(first) && Integer.parseInt(second.substring(3)) == Integer.parseInt(first.substring(3)) + 1, "Serials are issued once each, in order: " + first + ", " + second);
+            // creative mode keeps TaCZ's own recipe
+            player.getInventory().clearContent();
+            player.setGameMode(net.minecraft.world.level.GameType.CREATIVE);
+            player.getInventory().add(new ItemStack(Items.IRON_INGOT, 16));
+            check(GunsmithBuilds.allowsCraft(ResourceLocation.parse("tacz:gun/glock_17"), player), "Creative mode is not held to the kit rule");
+            player.setGameMode(net.minecraft.world.level.GameType.SURVIVAL);
+        } finally {
+            if (wasOpen != null) OptionalModProbes.setGunTableOpen(wasOpen);
+            fixture.close();
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty", timeoutTicks = 200)
+    public static void anUnmarkedBuildHasNoSerialIsRestrictedAndOnlyKitBuildsFillTheContractsThatAskForThem(GameTestHelper helper) throws Exception {
+        if (!ModList.get().isLoaded("tacz")) { helper.succeed(); return; }
+        Fixture fixture = fixture(helper, "blackwater");
+        Boolean wasOpen = OptionalModProbes.setGunTableOpen(true);
+        try {
+            FakePlayer player = player(helper, "blackwater", "gunsmith", 8);
+            player.getInventory().add(new ItemStack(core("unmarked_parts_kit"), 1));
+            player.getInventory().add(new ItemStack(core("firearm_parts_kit"), 1));
+            player.getInventory().add(new ItemStack(Items.IRON_INGOT, 8));
+            int xp = citizen(player).careerXp();
+            check(OptionalModProbes.craftRecipeAtTaczTable(player, "gun", id("tacz/glock_17_unmarked")) == null, "The unmarked kit builds a pistol");
+            ItemStack unmarked = firstGun(player, "tacz:glock_17");
+            check(GunsmithBuilds.UNMARKED.equals(GunsmithBuilds.provenance(unmarked)) && !unmarked.getTag().contains(GunsmithBuilds.SERIAL) && !unmarked.getTag().contains(GunsmithBuilds.MAKER),
+                "An unmarked build has no serial and no maker: " + unmarked.getTag());
+            check(citizen(player).careerXp() == xp + GunsmithBuilds.XP_UNMARKED, "The unmarked build paid its XP");
+            check("firearms_restricted".equals(ContrabandCatalog.INSTANCE.classify(unmarked)), "An unmarked build of a civilian model is restricted at a checkpoint: " + ContrabandCatalog.INSTANCE.classify(unmarked));
+            player.getInventory().removeItem(unmarked);
+            check(OptionalModProbes.craftRecipeAtTaczTable(player, "gun", id("tacz/glock_17")) == null, "The licensed kit builds a registered pistol");
+            ItemStack registered = firstGun(player, "tacz:glock_17");
+            check(registered.getTag().getString(GunsmithBuilds.SERIAL).startsWith("BW-"), "Blackwater's register: " + registered.getTag());
+            // a plain factory gun (TaCZ's own, a looted one) has no provenance
+            ItemStack plain = new ItemStack(ForgeRegistries.ITEMS.getValue(ResourceLocation.parse("tacz:modern_kinetic_gun")));
+            plain.getOrCreateTag().putString("GunId", "tacz:glock_17");
+            check("firearms_licensed".equals(ContrabandCatalog.INSTANCE.classify(plain)), "A plain Glock is still licensed");
+            // the contracts: the armoury takes only registered builds, Dray only unmarked ones; the older sidearm order takes any factory pistol
+            WorkOrder armoury = WorkOrderCatalog.INSTANCE.find("underground_city:registered_sidearms"), dray = WorkOrderCatalog.INSTANCE.find("underground_city:dray_clean_pistols"), coop = WorkOrderCatalog.INSTANCE.find("underground_city:licensed_sidearm");
+            check(armoury != null && dray != null && coop != null && !armoury.underground() && dray.underground(), "The contracts loaded with the right legality");
+            WorkOrder.Requirement a = armoury.requirements().get(0), d = dray.requirements().get(0), c = coop.requirements().get(0);
+            check(WorkOrder.matchesFactoryGun(a, registered) && !WorkOrder.matchesFactoryGun(a, unmarked) && !WorkOrder.matchesFactoryGun(a, plain), "The armoury takes a registered build only");
+            check(WorkOrder.matchesFactoryGun(d, unmarked) && !WorkOrder.matchesFactoryGun(d, registered) && !WorkOrder.matchesFactoryGun(d, plain), "Dray takes an unmarked build only");
+            check(WorkOrder.matchesFactoryGun(c, registered) && WorkOrder.matchesFactoryGun(c, plain), "The co-op's order takes any factory pistol, a registered build too");
+            // the requirement's provenance survives a save of the order (an accepted order is kept with its snapshot)
+            WorkOrder again = WorkOrder.load(armoury.save());
+            check(GunsmithBuilds.REGISTERED.equals(again.requirements().get(0).provenance()), "Provenance survives the order's snapshot");
+        } finally {
+            if (wasOpen != null) OptionalModProbes.setGunTableOpen(wasOpen);
+            fixture.close();
+        }
+        helper.succeed();
+    }
+
     @GameTest(template = "empty")
     public static void theRangeScoresByDistanceFromTheCentreOfTheFaceAndTheLedgerNeverListsUndergroundWork(GameTestHelper helper) throws Exception {
         BlockPos block = new BlockPos(10, 70, 10);
@@ -1512,12 +1607,14 @@ public final class UndergroundGameTests {
                 && stack.getTag() != null && stack.getTag().getString("GunId").equals("tacz:ak47")).findFirst().orElse(ItemStack.EMPTY);
             check(!rifleBlueprint.isEmpty(), "The rifle run paid the AK-47 blueprint with the payment: " + OptionalModProbes.describeInventory(player));
 
-            // 3. The table: materials in hand (iron, lapis, logs: what mining and trade supply), no blueprint used yet => refused and nothing taken; then the blueprint => built.
-            player.getInventory().add(new ItemStack(Items.IRON_INGOT, 38));
-            player.getInventory().add(new ItemStack(Items.LAPIS_LAZULI, 6));
-            player.getInventory().add(new ItemStack(Items.OAK_LOG, 10));
+            // 3. The table: two unmarked parts kits from the Gunsmith's Bench (D-168: the rifle is built from them, not from raw iron) and iron, lapis and logs, no blueprint used yet
+            // => refused and nothing taken; then the blueprint => built.
+            player.getInventory().add(new ItemStack(core("unmarked_parts_kit"), 2));
+            player.getInventory().add(new ItemStack(Items.IRON_INGOT, 12));
+            player.getInventory().add(new ItemStack(Items.LAPIS_LAZULI, 2));
+            player.getInventory().add(new ItemStack(Items.OAK_LOG, 4));
             String refused = OptionalModProbes.craftAtTaczTable(player, "gun", "tacz:ak47");
-            check(OptionalModProbes.countTagged(player, "tacz:modern_kinetic_gun", "GunId", "tacz:ak47") == 0 && player.getInventory().countItem(Items.IRON_INGOT) == 38,
+            check(OptionalModProbes.countTagged(player, "tacz:modern_kinetic_gun", "GunId", "tacz:ak47") == 0 && player.getInventory().countItem(Items.IRON_INGOT) == 12,
                 "The blueprint-gated table refuses the rifle before the blueprint is used and takes nothing (" + refused + ")");
             player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, rifleBlueprint.copy());
             rifleBlueprint.getItem().use(helper.getLevel(), player, net.minecraft.world.InteractionHand.MAIN_HAND);
@@ -1525,7 +1622,8 @@ public final class UndergroundGameTests {
             check(OptionalModProbes.unlockedGuns(player).contains("tacz:ak47"), "Using the blueprint unlocks the AK-47: " + OptionalModProbes.unlockedGuns(player));
             String crafted = OptionalModProbes.craftAtTaczTable(player, "gun", "tacz:ak47");
             check(crafted == null && OptionalModProbes.countTagged(player, "tacz:modern_kinetic_gun", "GunId", "tacz:ak47") == 1, "With the blueprint the table builds the rifle: " + crafted);
-            check(player.getInventory().countItem(Items.IRON_INGOT) == 0 && player.getInventory().countItem(Items.LAPIS_LAZULI) == 0 && player.getInventory().countItem(Items.OAK_LOG) == 0, "The recipe consumed its materials");
+            check(player.getInventory().countItem(Items.IRON_INGOT) == 0 && player.getInventory().countItem(Items.LAPIS_LAZULI) == 0 && player.getInventory().countItem(Items.OAK_LOG) == 0
+                && player.getInventory().countItem(core("unmarked_parts_kit")) == 0, "The recipe consumed its kits and materials");
 
             // 4. The buyer: the level-11 contract takes the crafted rifle and pays.
             double beforeSale = QShopEconomy.balance(player);
@@ -1533,7 +1631,8 @@ public final class UndergroundGameTests {
             WorkOrderService.complete(player, fixture.ledger, fixture.ledger.player(player.getUUID()).getUUID("order"), fixture.pos);
             check(QShopEconomy.balance(player) == beforeSale + brokerage.credits() && OptionalModProbes.countTagged(player, "tacz:modern_kinetic_gun", "GunId", "tacz:ak47") == 0, "The buyer took the rifle and paid " + brokerage.credits());
             check(fixture.ledger.trust(player.getUUID(), "dray") == 3, "A third delivery, trust 3");
-            check(citizen(player).careerXp() - xpBefore == first.xp() + second.xp() + brokerage.xp(), "The three contracts gave exactly their XP: " + (citizen(player).careerXp() - xpBefore));
+            // the unmarked build pays its own XP once at the table (D-168), the three contracts theirs
+            check(citizen(player).careerXp() - xpBefore == first.xp() + second.xp() + brokerage.xp() + GunsmithBuilds.XP_UNMARKED, "The three contracts and the build gave exactly their XP: " + (citizen(player).careerXp() - xpBefore));
             // the loop closes: the credits it earned buy the next batch of parts
             check(QShopEconomy.balance(player) == 400 - spent + first.credits() + second.credits() + brokerage.credits(), "Every credit is accounted for");
         } finally {

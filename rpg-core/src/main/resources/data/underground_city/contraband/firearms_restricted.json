@@ -5,6 +5,14 @@
   "entries": [
     {
       "item": "tacz:modern_kinetic_gun",
+      "nbt_key": "UcProvenance",
+      "values": [
+        "unmarked"
+      ],
+      "overrides": true
+    },
+    {
+      "item": "tacz:modern_kinetic_gun",
       "nbt_key": "GunId",
       "catch_all": true
     },
