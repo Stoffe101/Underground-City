@@ -739,6 +739,9 @@ public final class PopulationService {
     // ------------------------------------------------------------------------------------------------ where to stand
 
     private static final Map<Long, Integer> STREETS = new HashMap<>();
+    /** A Lost Cities lookup slower than this is logged (at most {@code 20} a session). */
+    static final long SLOW_LOOKUP_NANOS = 50_000_000L;
+    private static int slowLookupsLogged;
     /** The city chunks Lost Cities planned with no building: streets, squares and parks, where people are seen. Filled with {@link #STREETS}, from the same answer. */
     private static final java.util.Set<Long> OPEN = new java.util.HashSet<>();
     private static long streetsSeed;
@@ -760,6 +763,11 @@ public final class PopulationService {
         boolean open = street >= 0 && (sample.get().building() == null || sample.get().building().isEmpty()) && sample.get().buildingId().isEmpty();
         long took = System.nanoTime() - started;
         lcCalls++; lcNanos += took; lcWorst = Math.max(lcWorst, took);
+        if (took > SLOW_LOOKUP_NANOS && slowLookupsLogged < 20) {   // a few lines a session, for finding what makes one lookup slow (measured: up to 611 ms, on the first pass after arriving in a city)
+            slowLookupsLogged++;
+            LOGGER.warn("[UC-POPULATION] a Lost Cities lookup took {} ms: chunk {}, {}, loaded {}, street {}, building '{}', lookup {} this session",
+                took / 1_000_000, chunk.x, chunk.z, level.getChunkSource().getChunkNow(chunk.x, chunk.z) != null, street, sample.map(LostCitiesLink.ChunkSample::building).orElse("?"), lcCalls);
+        }
         if (STREETS.size() >= 4096) { STREETS.clear(); OPEN.clear(); }
         STREETS.put(chunk.toLong(), street);
         if (open) OPEN.add(chunk.toLong());
