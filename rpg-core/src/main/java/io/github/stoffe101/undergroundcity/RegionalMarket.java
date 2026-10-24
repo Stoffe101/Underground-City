@@ -29,7 +29,7 @@ public final class RegionalMarket {
         Exchanges.Exchange exchange = Exchanges.at(player.level(), pos)
             .orElseThrow(() -> new IllegalStateException("No exchange here. Use a terminal inside Ironhaven, Valewood or Blackwater, or at the provisions desk of a wayside shelter."));
         String city = exchange.city();
-        if (!exchange.wayside()) ledger.noteVisit(player.getUUID(), city);   // only a terminal inside the city counts as a visit
+        if (!exchange.wayside() && !exchange.roadside()) ledger.noteVisit(player.getUUID(), city);   // only a terminal inside the city counts as a visit (a roadside shop is on the road)
         RegionalStock stock = RegionalCatalog.INSTANCE.find(commodity);
         if (stock == null || !stock.city().equals(city) || !stock.soldAt(exchange.outlet())) {
             throw new IllegalStateException("This exchange does not stock that item");
@@ -72,7 +72,7 @@ public final class RegionalMarket {
         WorkOrderService.recover(player, ledger);
         CitizenState.get(player.server).markJourney(player.getUUID(), "bought");
         player.sendSystemMessage(Component.literal("Bought " + quantity + " x " + stock.registryItem().getDescription().getString()
-            + " from " + (exchange.counter() ? exchange.title() + " in " + TerminalScreenText.capitalize(city) : "the " + city + (exchange.wayside() ? " wayside desk" : " exchange")) + " for " + cost + " credits"
+            + " from " + exchange.seller() + " for " + cost + " credits"
             + (share.credits() > 0 ? " (" + share.credits() + " from the Crew bank, " + personal + " from your wallet)." : ".")));
     }
 

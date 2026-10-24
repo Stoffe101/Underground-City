@@ -54,6 +54,11 @@ import java.util.function.DoubleToIntFunction;
 public final class RoadsidePlaces {
     private static final Logger LOGGER = LogUtils.getLogger();
     static final String KEY = "underground_city_roadside_places", ENABLED = "#enabled";
+    /** The building key of a roadside place's shop counters ({@code shop_counters/roadside/}): {@code roadside:<shop>}. */
+    static final String SHOP_PREFIX = "roadside:";
+
+    /** True when a district is one of the roadside places' (any rotation). */
+    static boolean isPlaceDistrict(String district) { return CATALOG.all().stream().anyMatch(place -> place.variants().containsValue(district)); }
     /** A player this near a candidate spot gets it decided; how often; how many lots are looked at per candidate; how uneven a lot may be; how far a site may slide along the road, in steps of. */
     static final int ACTIVATE = 144, CHECK_TICKS = 100, TRIES = 10, MAX_RELIEF = 16, SEARCH = 40, SHIFT = 8;
     /** No place within this many blocks of a city circle; this far from a shelter's spot or another place; at most this many candidate spots per place. */

@@ -41,7 +41,7 @@ final class Dialogue {
     static void open(ServerPlayer player, Villager villager, DistrictCatalog.Npc npc, String text, boolean holdCitizen) {
         var citizen = CitizenState.get(player.server).find(player.getUUID()).orElse(null);
         if (holdCitizen) hold(player, villager);
-        TerminalNetwork.sendDialogue(player, villager.getId(), npc.name(), subtitle(npc), homeCity(player, villager, citizen), text, choices(npc, citizen));
+        TerminalNetwork.sendDialogue(player, villager.getId(), npc.name(), subtitle(npc), chipCity(player.level(), villager, citizen == null ? "" : citizen.city), text, choices(npc, citizen));
     }
 
     /**
@@ -107,6 +107,15 @@ final class Dialogue {
             case "farmer" -> "Farmer"; case "vintner" -> "Vintner"; case "smith" -> "Smith and engineer"; case "gunsmith" -> "Gunsmith and arms dealer"; case "technician" -> "Hacker and technician";
             default -> career == null ? "" : career;
         };
+    }
+
+    /**
+     * The city on the card's chip: the city the person stands in. A person of a roadside place or a wayside stop is of no city: before, their card showed the player's own home city, so one diner's
+     * cook was "Blackwater" to one player and "Valewood" to the next. Elsewhere outside the cities (Founders Row) it is the player's own city, as the vendor's prices there are.
+     */
+    static String chipCity(net.minecraft.world.level.Level level, Villager villager, String playerCity) {
+        String region = CityRegions.INSTANCE.cityAt(level, villager.blockPosition()).orElse("");
+        return !region.isEmpty() ? region : CityNpcs.onTheRoad(villager) ? "" : playerCity;
     }
 
     private static String homeCity(ServerPlayer player, Villager villager, CitizenState.Citizen citizen) {

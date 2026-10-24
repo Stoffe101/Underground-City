@@ -157,6 +157,9 @@ public final class RoadsidePlaceGameTests {
             BlockPos origin;
             DistrictCatalog.District built;
             try {
+                // the whole box cleared first: another test's leftovers in it (planks, stairs: a place is never built over them) made the south lot the only one (run 97, once five more
+                // tests had moved the grid)
+                for (BlockPos at : BlockPos.betweenClosed(lo, hi)) level.setBlock(at, Blocks.AIR.defaultBlockState(), 2);
                 for (BlockPos at : BlockPos.betweenClosed(new BlockPos(ox - 104, y - 2, oz - 56), new BlockPos(ox + 104, y, oz + 56))) level.setBlock(at, Blocks.STONE.defaultBlockState(), 2);
                 // a tall spike of rock in the lot the north side will choose, taller than the diner's own clearing reaches, and a pit just beyond its far edge
                 // (on both sides, so that neither lot is the level one and the north one, searched first, is chosen)
@@ -221,6 +224,12 @@ public final class RoadsidePlaceGameTests {
                         if (!npc.role().equals("shopkeeper")) continue;
                         keepers++;
                         check(ShopCounters.INSTANCE.forBuilding(npc.shop()).isPresent(), npc.name() + " keeps a real counter: " + npc.shop());
+                        // on the road, in no city: the card shows no city (it showed the player's own), and a purchase names the shop alone (it said "in Valewood" and "in Ironhaven" for one diner)
+                        String chip = Dialogue.chipCity(level, person, "blackwater");
+                        check(CityNpcs.onTheRoad(person) && chip.isEmpty(), npc.name() + "'s card shows a city: " + chip);
+                        ShopCounters.Shop shop = ShopCounters.INSTANCE.forBuilding(npc.shop()).orElseThrow();
+                        Exchanges.Exchange sold = Exchanges.of(shop);
+                        check(sold.roadside() && sold.seller().equals(shop.title()), "a purchase at " + shop.title() + " names " + sold.seller());
                         check(person.hasRestriction() && person.getRestrictRadius() == CityNpcs.SHOPKEEPER_TETHER, npc.name() + " stays at the counter");
                         check(person.blockPosition().getY() >= origin.getY() - 1 && person.blockPosition().getY() <= origin.getY() + 3, npc.name() + " stands in the diner: " + person.position());
                     }

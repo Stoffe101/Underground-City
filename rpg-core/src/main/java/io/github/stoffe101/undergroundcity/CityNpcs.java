@@ -91,6 +91,13 @@ public final class CityNpcs {
 
     static boolean isCityNpc(Villager villager) { return villager.getPersistentData().contains(TAG, Tag.TAG_COMPOUND); }
 
+    /** True for a person of a roadside place or a wayside stop: they live on the road, in no city. */
+    static boolean onTheRoad(Villager villager) {
+        if (!isCityNpc(villager)) return false;
+        String district = villager.getPersistentData().getCompound(TAG).getString("district");
+        return WaysideShelters.KINDS.contains(district) || RoadsidePlaces.isPlaceDistrict(district);
+    }
+
     static Optional<DistrictCatalog.Npc> definition(Villager villager) {
         if (!isCityNpc(villager)) return Optional.empty();
         CompoundTag tag = villager.getPersistentData().getCompound(TAG);

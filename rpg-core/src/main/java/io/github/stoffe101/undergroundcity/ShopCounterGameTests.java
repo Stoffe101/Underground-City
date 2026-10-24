@@ -58,6 +58,9 @@ public final class ShopCounterGameTests {
             ShopCounters.openForTest(counter, general, keeper.getUUID(), helper.getLevel().getServer().getTickCount() + ShopCounters.OPEN_TICKS);
             var exchange = Exchanges.at(helper.getLevel(), counter).orElseThrow();
             check(exchange.counter() && exchange.city().equals("valewood") && exchange.outlet().equals("shop:general") && exchange.title().equals(general.title()), "the counter is not the general store's outlet: " + exchange);
+            check(!exchange.roadside() && exchange.seller().equals(general.title() + " in Valewood"), "a purchase at a city's shop names " + exchange.seller());
+            check(new Exchanges.Exchange("valewood", RegionalStock.CITY).seller().equals("the Valewood exchange") && new Exchanges.Exchange("valewood", RegionalStock.WAYSIDE).seller().equals("the Valewood wayside desk"),
+                "an exchange and a desk are named by their city, capitalised");
             check(exchange.shopOnly(), "a counter must be only a shop");
             FakePlayer buyer = FakePlayerFactory.get(helper.getLevel(), new GameProfile(UUID.randomUUID(), "uc_shop_buyer"));
             buyer.getInventory().clearContent();
