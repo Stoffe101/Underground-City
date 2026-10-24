@@ -66,6 +66,20 @@ public final class ThiefGameTests {
     }
 
     @GameTest(template = "empty")
+    public static void aLockRunsByTheClockWhenTheServerCatchesUp(GameTestHelper helper) {
+        LockService.Active active = new LockService.Active(java.util.UUID.randomUUID(), null, null);
+        long start = 5_000_000_000L, ms = 1_000_000L;
+        check(LockService.due(active, start), "a new lock did not tick");
+        int ran = 0;
+        for (int i = 1; i <= 45; i++) if (LockService.due(active, start + i * ms)) ran++;   // a catch-up: 45 server ticks in 45 milliseconds
+        check(ran == 1, "a catch-up of 45 ticks in 45 ms ran the lock " + ran + " times, not once");
+        int steady = 0;
+        for (int i = 1; i <= 20; i++) if (LockService.due(active, start + 45 * ms + i * 50 * ms)) steady++;   // a healthy server, a tick in 50 ms
+        check(steady == 20, "a healthy server's ticks were skipped: " + steady + " of 20 ran");
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty")
     public static void thiefSkillsSpendThiefPointsAndNeverCareerPoints(GameTestHelper helper) {
         FakePlayer player = player(helper, "uc_thief_points", "smith");
         CitizenState state = CitizenState.get(player.server);

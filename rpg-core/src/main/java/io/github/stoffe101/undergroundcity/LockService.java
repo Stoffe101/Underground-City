@@ -55,8 +55,9 @@ public final class LockService {
         final LockpickSession session;
         final boolean proSet;
         double position = 0.5;
-        boolean pressing, raked;
+        boolean pressing, raked, ticked;
         int lastFeel = -1, lastPins = -1, lastStrain = -1, quiet;
+        long lastTickNanos;
         Active(UUID player, Target target, LockpickSession session) { this(player, target, session, false); }
         Active(UUID player, Target target, LockpickSession session, boolean proSet) { this.player = player; this.target = target; this.session = session; this.proSet = proSet; }
     }
@@ -195,6 +196,14 @@ public final class LockService {
         active.pressing = pressing;
     }
 
+    /** Puts the lock away with nothing lost, as letting go does, and tells the client why (an officer on the beat saw the thief at it, D-155). */
+    static void interrupt(ServerPlayer player, String note) {
+        Active active = ACTIVE.remove(player.getUUID());
+        if (active == null) return;
+        active.session.abort();
+        LockNetwork.close(player, note);
+    }
+
     public static void abort(ServerPlayer player) {
         Active active = ACTIVE.get(player.getUUID());
         if (active != null) active.session.abort();
@@ -214,7 +223,21 @@ public final class LockService {
         if (active != null) active.session.abort();
     }
 
+    /**
+     * The least time by the clock between two ticks of one lock. A server that stalled catches up by running its ticks back to back: 45 of them in a moment, after a 2.3-second stall in the advanced
+     * burglary run, under a press the thief had no time to see the end of (the pin set, the next pin's spot elsewhere) and that strained the pick to snapping. A lock under the hand runs by the clock instead.
+     */
+    static final long MIN_TICK_NANOS = 40_000_000L;
+
+    /** True when this lock last ticked long enough ago by the clock to tick now ({@code now} from {@link System#nanoTime}); records the tick. */
+    static boolean due(Active active, long now) {
+        if (active.ticked && now - active.lastTickNanos < MIN_TICK_NANOS) return false;
+        active.ticked = true; active.lastTickNanos = now;
+        return true;
+    }
+
     private static void tickSessions(MinecraftServer server) {
+        long now = System.nanoTime();
         for (Iterator<Active> it = ACTIVE.values().iterator(); it.hasNext(); ) {
             Active active = it.next();
             ServerPlayer player = server.getPlayerList().getPlayer(active.player);
@@ -224,6 +247,7 @@ public final class LockService {
                 if (player != null) LockNetwork.close(player, "You stepped away from the lock.");
                 continue;
             }
+            if (!due(active, now)) continue;
             tickOne(server, player, active);
             if (!active.session.active()) it.remove();
         }
