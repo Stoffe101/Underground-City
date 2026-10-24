@@ -149,7 +149,15 @@ final class CivicScenario {
 
     /** One contribution with real clicks: open the terminal, find the order on the Work page, accept it, deliver it. */
     private static void contribute(String id, String label, String picture) {
-        use("open the terminal (" + label + ")", () -> F.placed, () -> mc().screen instanceof TerminalScreen, 200);
+        // a passer-by can stand between the player and the terminal (civic run 1, after ten minutes in the street): wait for them to move on, and say what is in the way if they do not
+        use("open the terminal (" + label + ")", () -> F.placed, () -> mc().screen instanceof TerminalScreen, 900);
+        Playtest.queue("what is in front of the terminal", () -> {
+            if (mc().screen instanceof TerminalScreen) return;
+            var hit = mc().hitResult;
+            String what = hit == null ? "nothing" : hit instanceof net.minecraft.world.phys.EntityHitResult e ? "the entity " + e.getEntity().getName().getString()
+                : hit instanceof net.minecraft.world.phys.BlockHitResult b ? mc().level.getBlockState(b.getBlockPos()).getBlock().getName().getString() + " at " + b.getBlockPos().toShortString() : hit.getType().toString();
+            Playtest.log("CIVIC the terminal did not open: the player at " + mc().player.blockPosition().toShortString() + ", the terminal at " + F.placed.toShortString() + ", the crosshair on " + what);
+        });
         click("Work", true);
         Playtest.wait("draw", 12);
         final int[] t = {0};
