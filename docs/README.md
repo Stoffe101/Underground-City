@@ -89,6 +89,7 @@ The docs here distinguish **confirmed product direction**, **design proposals**,
 - [Sprint report, October 23 to 24, 2026 (third pass): the Thief track, burglary, security, police on the beat, the SecurityCraft decision and the crop's real name](production/thief-progression-pass.md)
 - [Sprint report, October 24, 2026 (fourth pass): property intelligence, the Technician's trade, staff-only rooms and Cannabis processing](production/professions-business-pass.md)
 - [Sprint report, October 24, 2026 (fifth pass): living population, workshops of the trades, shop supply, Xaero waypoints and the Technician's rebalance and back channel](production/living-population-professions-pass.md)
+- [Sprint report, October 24, 2026 (sixth pass): toward the First Fully Playable Sandbox Alpha](production/sixth-pass-alpha.md)
 
 ## Legal and assets
 

@@ -28,6 +28,7 @@ Branch `feature/world-playability-overhaul`, draft PR [#25](https://github.com/S
 | Hosted: the Crew journey, two real clients and a server killed without a stop sequence | L4 | passed on `b521ffc`, with the new Crew contract step (server-driven) |
 | Hosted: the combined journey (generated Lost Cities world, every pack set, two real clients, a server killed), the plain journey and the every-set journey | L4 | passed on `b521ffc` |
 | Hitch runs 1 to 4 (`-PucPlaytest=hitch`, one real client, a new furnished archipelago world each) | L3 | run 4, with every fix: no tick over 250 ms after the world was made; worst 235 ms on the teleport into Ironhaven (1,150 ms in run 1) and 137 ms walking the road (307 ms); details in [lost-cities-stalls.md](../technical/lost-cities-stalls.md#the-city-arrival-hitch-core-waiting-on-lost-cities-plan-lock-october-24-d-167) |
+| Raid runs 1 to 3 (`-PucPlaytest=raid`, one real client) | L3 | run 3 `RESULT pass`, 8 steps, 19 logged shortcuts: a level-8 thief with Professional Tools takes Kessler's job and tracks it; the status display points at the store; casing reads tier 5 and a high-security lock; the Pro Pick Set picks it pin by pin on the real lock screen (125 Thief XP); nine pieces of furniture searched with the real right click (15 stolen units, every one marked with the thief); the seized shipment turns up once, marked stolen, Ironhaven's heat +3; the tracked order moves to Blackwater; Kessler pays 700. Runs 1 and 2 found two bugs (below) |
 
 ## Not done, and why
 
@@ -36,5 +37,9 @@ Branch `feature/world-playability-overhaul`, draft PR [#25](https://github.com/S
 * The arrival hitch (above), and the alarm panels' blocking read found while measuring it.
 * The registration card's harbour.
 * The rifle-chain GameTest counted only the contracts' XP after the build at the table began paying its own (found by the firearms-pack run 1).
+* **The raid could pick a warehouse nobody could enter** (raid run 1): 15% of Ironhaven's furnished warehouses are let as trade premises (D-169), and a let unit is its tenant's, so the guard left its door alone and no casing card or lock ever opened. The store is now the nearest warehouse with nothing to let.
+* **The raid asked for less than its door needs** (raid run 2): the store's high-security lock opens only to a Pro Pick Set with Professional Tools (Thief level 8), but the job hired from Thief level 3 and its text offered a crowbar, which the game does not have. The job now asks for Professional Tools and says what the door takes.
+* **The bonded store is The Yard by night** (found reading the code before raid run 1): every furnished Ironhaven warehouse keeps a fence who trades until 03:00, when the building counts as open and its public floor cannot be searched. The job says to go after three.
+* **A tracked order could not be stopped** (raid run 3's pictures): the panel sent the player to the Places book, which stops only places. The terminal's Track chip now reads Stop while that order is tracked, the panel says so, and its details start with a capital.
 
 ## Next
