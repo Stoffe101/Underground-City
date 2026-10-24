@@ -1437,6 +1437,8 @@ final class JourneyScenario {
             t[0]++;
             // click only once the crosshair is on that block: a software-rendered frame lags the aim, and a click on the wrong block places or opens the wrong thing
             boolean onIt = mc().hitResult instanceof BlockHitResult hit && hit.getType() == HitResult.Type.BLOCK && hit.getBlockPos().equals(b);
+            // a street person between the player and the block takes the click (Cannabis runs 7 and 8, civic run 1): wait for them to walk on, and say so once a while
+            if (t[0] % 100 == 99 && mc().hitResult instanceof net.minecraft.world.phys.EntityHitResult e) Playtest.log("SCENARIO " + label + ": " + e.getEntity().getName().getString() + " is in the way");
             if (t[0] % 16 == 10 && onIt) Playtest.mouseButton(3, true);
             if (t[0] % 16 == 12) Playtest.mouseButton(3, false);
             return false;

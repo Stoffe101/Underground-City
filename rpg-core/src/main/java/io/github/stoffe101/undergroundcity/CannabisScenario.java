@@ -386,12 +386,12 @@ final class CannabisScenario {
         hold("the wooden hoe", Items.WOODEN_HOE);
         for (int k = 0; k < PLANTS; k++) {
             final int i = k;
-            use("hoe the soil " + (k + 1), () -> F.plot.get(i), () -> mc().level.getBlockState(F.plot.get(i)).is(Blocks.FARMLAND), 300);
+            use("hoe the soil " + (k + 1), () -> F.plot.get(i), () -> mc().level.getBlockState(F.plot.get(i)).is(Blocks.FARMLAND), 900);
         }
         hold("the Cannabis Seeds", core("cannabis_seeds"));
         for (int k = 0; k < PLANTS; k++) {
             final int i = k;
-            use("plant a seed in the farmland " + (k + 1), () -> F.plot.get(i), () -> mc().level.getBlockState(F.plot.get(i).above()).getBlock() instanceof RestrictedCropBlock, 300);
+            use("plant a seed in the farmland " + (k + 1), () -> F.plot.get(i), () -> mc().level.getBlockState(F.plot.get(i).above()).getBlock() instanceof RestrictedCropBlock, 900);
         }
         shot("6-planted");
         Playtest.queue("planted", () -> {
@@ -575,7 +575,7 @@ final class CannabisScenario {
         hold("the Cannabis Flower", core("cannabis_flower"));
         Playtest.queue("how much flower", () -> L.hung = count(core("cannabis_flower")));
         use("hang the flower on the rack with a right click", () -> L.rack,
-            () -> mc().level.getBlockState(L.rack).getValue(DryingRack.LOAD) == DryingRack.Load.DRYING, 300);
+            () -> mc().level.getBlockState(L.rack).getValue(DryingRack.LOAD) == DryingRack.Load.DRYING, 900);
         shot("11-drying");
         Playtest.queue("hung", () -> {
             int left = count(core("cannabis_flower"));
@@ -587,7 +587,7 @@ final class CannabisScenario {
         Playtest.wait("six minutes of play while it dries (the player stands in the street)", (int) DryingRack.DRY_TICKS + 200);
         Playtest.queue("an empty hand", () -> { Playtest.focusWindow(); Playtest.tap("9"); server(() -> { var inv = me().getInventory(); ItemStack held = inv.getItem(8); if (!held.isEmpty()) { inv.setItem(8, ItemStack.EMPTY); inv.add(held); } return null; }); });
         use("take the dried cannabis down with a right click", () -> L.rack,
-            () -> count(core("dried_cannabis")) > L.driedBefore, 300);
+            () -> count(core("dried_cannabis")) > L.driedBefore, 900);
         shot("12-dried");
         Playtest.queue("dried", () -> {
             int dried = count(core("dried_cannabis")) - L.driedBefore;
@@ -627,9 +627,9 @@ final class CannabisScenario {
         Playtest.queue("the dirt is down", () -> { L.dirt = spot[0]; if (spot[0] == null || !mc().level.getBlockState(spot[0]).is(Blocks.DIRT)) Playtest.fail("the dirt could not be put down in the street"); });
         stopIfFailed("putting the dirt down");
         hold("the wooden hoe", Items.WOODEN_HOE);
-        use("hoe the dirt", () -> L.dirt, () -> mc().level.getBlockState(L.dirt).is(Blocks.FARMLAND), 300);
+        use("hoe the dirt", () -> L.dirt, () -> mc().level.getBlockState(L.dirt).is(Blocks.FARMLAND), 900);
         hold("the Cannabis Seeds", core("cannabis_seeds"));
-        use("plant a seed in the street", () -> L.dirt, () -> mc().level.getBlockState(L.dirt.above()).getBlock() instanceof RestrictedCropBlock, 300);
+        use("plant a seed in the street", () -> L.dirt, () -> mc().level.getBlockState(L.dirt.above()).getBlock() instanceof RestrictedCropBlock, 900);
         shot("13-street-plant");
         Playtest.queue("planted in public view", () -> {
             boolean planted = server(() -> level().getBlockState(L.dirt.above()).getBlock() instanceof RestrictedCropBlock);
