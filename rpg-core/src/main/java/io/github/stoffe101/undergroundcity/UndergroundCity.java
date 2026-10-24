@@ -167,6 +167,7 @@ public final class UndergroundCity {
         MinecraftForge.EVENT_BUS.register(new BurglaryHarness());
         MinecraftForge.EVENT_BUS.register(new PopulationService());
         MinecraftForge.EVENT_BUS.register(new PoliceResponse());
+        MinecraftForge.EVENT_BUS.register(new PolicePatrols());
         MinecraftForge.EVENT_BUS.register(new ResourceSites());
         MinecraftForge.EVENT_BUS.register(new HouseholdService());
         MinecraftForge.EVENT_BUS.register(new HudService());

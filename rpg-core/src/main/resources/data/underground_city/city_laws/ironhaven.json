@@ -21,5 +21,10 @@
     "max": 0.9
   },
   "witness_chance": 0.35,
-  "summary": "Strict: the guard searches often and nearly everything sensitive needs a licence. Spirits are not sold, licensed or not."
+  "summary": "Strict: the guard searches often and nearly everything sensitive needs a licence. Spirits are not sold, licensed or not.",
+  "patrol": {
+    "officers": 2,
+    "every_seconds": 180,
+    "beat_seconds": 150
+  }
 }

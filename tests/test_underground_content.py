@@ -168,6 +168,12 @@ class LawTests(unittest.TestCase):
         self.assertEqual(laws["blackwater"]["categories"]["restricted_cultivar"], "permit")
         self.assertEqual(laws["valewood"]["categories"]["restricted_cultivar"], "prohibited")
         self.assertLess(laws["blackwater"]["witness_chance"], laws["ironhaven"]["witness_chance"])
+        # police on the beat (D-155): the strict city walks more often and with more officers than the lax one
+        for city, law in laws.items():
+            patrol = law["patrol"]
+            self.assertTrue(0 <= patrol["officers"] <= 3 and 60 <= patrol["every_seconds"] <= 1800 and 30 <= patrol["beat_seconds"] <= 600, city)
+        self.assertLess(laws["ironhaven"]["patrol"]["every_seconds"], laws["blackwater"]["patrol"]["every_seconds"])
+        self.assertGreater(laws["ironhaven"]["patrol"]["officers"], laws["blackwater"]["patrol"]["officers"])
 
     def test_contraband_core_items_exist(self):
         items = {i["id"] for i in json.loads((ROOT / "rpg-core/src/main/resources/underground_city_items.json").read_text())["items"]}

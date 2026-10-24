@@ -504,4 +504,130 @@ public final class PoliceResponseGameTests {
         level.removeBlock(at, false);
         helper.succeed();
     }
+    // ------------------------------------------------------------------------------------------------ police on the beat (D-155)
+
+    /** A patrol of one officer standing at {@code at}, its beat {@code at} and a spot six blocks on, in Valewood (the scene's city), with {@code online} the people on the server. */
+    private static PolicePatrols.Patrol patrol(Scene s, BlockPos at, List<ServerPlayer> online) {
+        PolicePatrols.resetForTest();
+        PolicePatrols.cityAt = (level, pos) -> Optional.of("valewood");
+        PolicePatrols.online = server -> online;
+        List<BlockPos> beat = List.of(at, at.offset(0, 0, 6));
+        java.util.concurrent.atomic.AtomicInteger n = new java.util.concurrent.atomic.AtomicInteger();
+        PolicePatrols.spots = (level, chunk, random, players) -> Optional.of(beat.get(n.getAndIncrement() % beat.size()));
+        PolicePatrols.Patrol patrol = PolicePatrols.start(s.level, "valewood", new CityLaws.Patrol(1, 120, 120), online, LockService.clock(s.level.getServer()));
+        check(patrol != null && patrol.officers.size() == 1, "no officer was put on the beat");
+        PolicePatrols.putForTest(patrol);
+        return patrol;
+    }
+
+    private static void picking(Scene s, ServerPlayer who) {
+        who.getInventory().add(new ItemStack(UndergroundCity.item("lockpick"), 5));
+        String refusal = LockService.begin(who, s.level, new LockService.Target(LockService.Kind.DOOR, s.door, "deadbolt", "valewood", "test_alarmed", "Test door", 1));
+        check(refusal == null && LockService.busy(who.getUUID()), "the lock did not start: " + refusal);
+    }
+
+    @GameTest(template = "empty")
+    public static void anOfficerOnTheBeatWhoSeesALockPickedComesAtOnceForThatThiefAlone(GameTestHelper helper) {
+        try (Scene s = new Scene(helper, "uc_pat_see", new CityBuildings.Response(0.0, 60, 1, 60), true)) {
+            ServerPlayer partner = player(helper, "uc_pat_mate", "smith");
+            partner.setPos(s.thief.getX() + 1.0, s.thief.getY(), s.thief.getZ());
+            try {
+                PolicePatrols.Patrol patrol = patrol(s, s.door.offset(10, 0, 1), List.of(s.thief, partner));
+                UUID officer = patrol.officers.get(0);
+                picking(s, s.thief);
+                PolicePatrols.pass(s.level.getServer());
+                check(PoliceResponse.dispatches() == 1, "an officer on the beat watched a lock being picked ten blocks away and raised " + PoliceResponse.dispatches() + " responses");
+                PoliceResponse.Dispatch d = PoliceResponse.dispatchAt(0);
+                check(d.burglar.equals(s.thief.getUUID()), "the response is not for the person at the lock");
+                check(d.arrived && d.officers.contains(officer) && d.lastSeen != null && d.why.startsWith("patrol"), "the officer who saw it is not already on the response: " + d.why + ", arrived " + d.arrived);
+                check(!LockService.busy(s.thief.getUUID()), "the lock screen was left over the street while an officer came");
+                check(patrol.officers.isEmpty(), "the officer is still walking the beat as well");
+                PoliceResponse.pass(s.level.getServer());
+                check(PoliceResponse.arrests == 0 && PoliceResponse.dispatches() == 1, "the partner, or nobody, was arrested at once");
+            } finally {
+                LockService.interrupt(s.thief, "");
+                PolicePatrols.resetForTest();
+            }
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty")
+    public static void aWallHidesAThiefFromThePatrolWhoIsToldOfFootstepsOnce(GameTestHelper helper) {
+        try (Scene s = new Scene(helper, "uc_pat_wall", new CityBuildings.Response(0.0, 60, 1, 60), true)) {
+            var stone = net.minecraft.world.level.block.Blocks.STONE.defaultBlockState();
+            for (int dz = -6; dz <= 8; dz++) for (int dy = 0; dy <= 3; dy++) s.level.setBlock(s.door.offset(5, dy, dz), stone, 2);
+            try {
+                PolicePatrols.Patrol patrol = patrol(s, s.door.offset(10, 0, 1), List.of(s.thief));
+                picking(s, s.thief);
+                PolicePatrols.pass(s.level.getServer());
+                PolicePatrols.pass(s.level.getServer());
+                check(PoliceResponse.dispatches() == 0 && LockService.busy(s.thief.getUUID()), "an officer saw through a stone wall");
+                check(PolicePatrols.warnings == 1 && patrol.warned.contains(s.thief.getUUID()), "the thief at the lock was told of the footsteps " + PolicePatrols.warnings + " times, not once");
+                // the wall comes down: now the officer sees them
+                for (int dz = -6; dz <= 8; dz++) for (int dy = 0; dy <= 3; dy++) s.level.removeBlock(s.door.offset(5, dy, dz), false);
+                PolicePatrols.pass(s.level.getServer());
+                check(PoliceResponse.dispatches() == 1, "with the wall gone the officer still saw nothing");
+            } finally {
+                LockService.interrupt(s.thief, "");
+                PolicePatrols.resetForTest();
+            }
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty")
+    public static void anOfficerOnTheBeatWhoSeesTheDoorGiveWayIsTheResponse(GameTestHelper helper) {
+        try (Scene s = new Scene(helper, "uc_pat_door", new CityBuildings.Response(0.0, 60, 1, 60), true)) {
+            try {
+                PolicePatrols.Patrol patrol = patrol(s, s.door.offset(8, 0, 3), List.of(s.thief));
+                UUID officer = patrol.officers.get(0);
+                PoliceResponse.noticed(s.thief, opened(s.thief, s.door, LockService.clock(s.level.getServer())));
+                check(PoliceResponse.dispatches() == 1, "a break-in in front of an officer on the beat raised nothing");
+                PoliceResponse.Dispatch d = PoliceResponse.dispatchAt(0);
+                check(d.arrived && d.officers.contains(officer) && d.why.equals("patrol: breaking in"), "the response did not start with the officer who saw it: " + d.why);
+                check(patrol.officers.isEmpty() && PoliceResponse.byPatrol == 1, "the officer stayed on the beat");
+            } finally {
+                PolicePatrols.resetForTest();
+            }
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty")
+    public static void patrolsComeAtTheCitysPaceOneAtATimeAndGoWhenNobodyIsThere(GameTestHelper helper) {
+        try (Scene s = new Scene(helper, "uc_pat_pace", new CityBuildings.Response(0.0, 60, 1, 60), true)) {
+            List<ServerPlayer> online = new java.util.ArrayList<>(List.of(s.thief));
+            try {
+                PolicePatrols.resetForTest();
+                PolicePatrols.cityAt = (level, pos) -> Optional.of("valewood");
+                PolicePatrols.online = server -> online;
+                List<BlockPos> beat = List.of(s.door.offset(8, 0, 3), s.door.offset(8, 0, 9), s.door.offset(-8, 0, 3));
+                java.util.concurrent.atomic.AtomicInteger n = new java.util.concurrent.atomic.AtomicInteger();
+                PolicePatrols.spots = (level, chunk, random, players) -> Optional.of(beat.get(n.getAndIncrement() % beat.size()));
+                CityLaws.Patrol pace = CityLaws.INSTANCE.find("valewood").patrol();
+                check(pace != null && pace.officers() == 1, "Valewood's law has no patrol");
+                long now = LockService.clock(s.level.getServer());
+                PolicePatrols.pass(s.level.getServer());
+                check(PolicePatrols.patrolOf("valewood") == null && PolicePatrols.dueOf("valewood") == now + pace.everySeconds() * 10L,
+                    "the first patrol after somebody arrived was not put half the city's pace off: " + PolicePatrols.dueOf("valewood"));
+                PolicePatrols.dueForTest("valewood", now);
+                PolicePatrols.pass(s.level.getServer());
+                PolicePatrols.Patrol first = PolicePatrols.patrolOf("valewood");
+                check(first != null && first.officers.size() == pace.officers() && first.beat.size() >= 2, "no patrol came when it was due");
+                TownspersonEntity officer = (TownspersonEntity) s.level.getEntity(first.officers.get(0));
+                check(officer != null && officer.police() && !officer.shouldBeSaved() && first.beat.contains(officer.errandPlace()), "the officer on the beat is not an unsaved officer walking it");
+                PolicePatrols.dueForTest("valewood", now);
+                PolicePatrols.pass(s.level.getServer());
+                check(PolicePatrols.patrolOf("valewood") == first && s.officers().size() == pace.officers(), "a second patrol of the same city came out: " + s.officers().size() + " officers");
+                online.clear();
+                PolicePatrols.pass(s.level.getServer());
+                check(PolicePatrols.patrolOf("valewood") == null && officer.errandPlace() == null, "the patrol stayed with nobody in the city");
+                check(PolicePatrols.dueOf("valewood") == null, "a city nobody is in kept its next patrol");
+            } finally {
+                PolicePatrols.resetForTest();
+            }
+        }
+        helper.succeed();
+    }
 }

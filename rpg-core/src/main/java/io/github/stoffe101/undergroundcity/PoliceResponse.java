@@ -93,7 +93,7 @@ public final class PoliceResponse {
 
     private static final List<Dispatch> DISPATCHES = new ArrayList<>();
     // measurements for /uc_police status
-    static long raised, byAlarm, byWitness, arrivals, arrests, escapes, noSpot, seizedStacks;
+    static long raised, byAlarm, byWitness, byPatrol, arrivals, arrests, escapes, noSpot, seizedStacks;
 
     // ------------------------------------------------------------------------------------------------ noticing a break-in
 
@@ -126,6 +126,14 @@ public final class PoliceResponse {
             armed = false;
             Notice.send(player, Notice.Kind.INFO, "Quiet entry", "The alarm panel by the door is jammed. Nothing rings.");
         } else if (armed && !lockAlarm && AlarmPanels.startEntry(player, level, building, event.door())) armed = false;
+        // an officer on the beat who sees it happen is there already (D-155): the response starts with them, for this thief alone
+        TownspersonEntity onBeat = PolicePatrols.seer(level, player);
+        if (onBeat != null) {
+            if (armed) raise(player, level, building, event.door(), true, lockAlarm, false);
+            PolicePatrols.release(onBeat);
+            seenByPatrol(player, level, building, event.door(), onBeat, "breaking in");
+            return;
+        }
         boolean seen = witnessed(level, player, event);
         if (!armed && !seen) return;
         raise(player, level, building, event.door(), armed, lockAlarm, seen);
@@ -158,6 +166,34 @@ public final class PoliceResponse {
             "The police are on their way. Get out of sight before they arrive.");
         player.sendSystemMessage(Component.literal(armed ? (lockAlarm ? "The pick snapped and the alarm is ringing." : "An alarm sounds inside the building.") : resident ? "Somebody is at home, and has seen you." : "A passer-by sees you at the door and hurries off.")
             .withStyle(ChatFormatting.RED));
+    }
+
+    /**
+     * An officer on the beat saw this thief {@code doing} something to a city building (D-155: at its lock, going through it, breaking in): the response starts at once, with that officer there and
+     * the thief in sight, and joins a response already raised for the same thief and building.
+     */
+    static void seenByPatrol(ServerPlayer player, ServerLevel level, CityBuildings.Building building, BlockPos door, TownspersonEntity officer, String doing) {
+        long now = LockService.clock(level.getServer());
+        Dispatch dispatch = null;
+        for (Dispatch existing : DISPATCHES) {
+            if (existing.burglar.equals(player.getUUID()) && existing.buildingKey == building.key() && existing.dimension == level.dimension()) { dispatch = existing; break; }
+        }
+        if (dispatch == null) {
+            if (DISPATCHES.size() >= MAX_DISPATCHES) { LOGGER.warn("Police response not raised: {} dispatches are already out", DISPATCHES.size()); return; }
+            CityBuildings.Response response = building.security() == null ? null : building.security().response();
+            dispatch = new Dispatch(player, level, door, building.city(), building.security() == null ? "" : building.security().id(), building.key(), "patrol: " + doing, now, response != null ? response : NEIGHBOUR);
+            DISPATCHES.add(dispatch);
+            raised++;
+        }
+        byPatrol++;
+        if (!dispatch.arrived) { dispatch.arrived = true; arrivals++; dispatch.windowEnds = now + dispatch.windowSeconds * 20L; }
+        dispatch.officers.add(officer.getUUID());
+        dispatch.lastSeen = player.blockPosition();
+        dispatch.lastSeenAt = now;
+        officer.errand(player.blockPosition(), 1.25);
+        officer.leaveIn(dispatch.windowSeconds * 20L + 400L);
+        Notice.send(player, Notice.Kind.HEAT, "The police saw you", "An officer on the beat is coming for you. Run, or hide.");
+        player.sendSystemMessage(Component.literal(officer.getName().getString() + " is on the beat and saw you " + doing + ".").withStyle(ChatFormatting.RED));
     }
 
     /** True when this building's alarm is armed: a hash of the building and the world against the class's chance, the same answer every time. */
@@ -234,7 +270,8 @@ public final class PoliceResponse {
             return false;
         }
         List<TownspersonEntity> officers = officers(level, d);
-        if (officers.isEmpty() || now >= d.windowEnds) { escaped(player, d); Notice.send(player, Notice.Kind.INFO, "The police have gone", "They looked for you and found nobody. Your heat in " + PopulationService.capitalise(d.city) + " stays up for a while."); dismiss(server, d); return true; }
+        // (the notice's longer wording was cut off at three lines in the advanced burglary run)
+        if (officers.isEmpty() || now >= d.windowEnds) { escaped(player, d); Notice.send(player, Notice.Kind.INFO, "The police have gone", "They found nobody. Your heat in " + PopulationService.capitalise(d.city) + " stays up a while."); dismiss(server, d); return true; }
         boolean sameLevel = player.level() == level;
         double nearest = Double.MAX_VALUE;
         TownspersonEntity closest = null;
@@ -316,21 +353,26 @@ public final class PoliceResponse {
         }
         if (candidates.isEmpty()) return false;
         BlockPos first = reachableSpot(level, player, d, candidates);
-        List<PopulationPlan.Person> guards = new ArrayList<>();
-        for (PopulationPlan.Person person : PopulationService.roster(level, d.city)) if (person.role().equals("guard")) guards.add(person);
         for (int i = 0; i < d.officersWanted; i++) {
             BlockPos at = i == 0 ? first : spots.find(level, new ChunkPos(first), random, thief).orElse(first);
             TownspersonEntity officer = UndergroundCity.TOWNSPERSON.get().create(level);
             if (officer == null) continue;
             officer.moveTo(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, random.nextFloat() * 360f, 0f);
-            PopulationPlan.Person who = guards.isEmpty() ? null : guards.get(Math.floorMod((int) (PopulationPlan.mix(d.buildingKey + i) >>> 8), guards.size()));
-            int skin = PopulationPlan.outfitsOf("guard", d.city)[0] + PopulationPlan.OUTFITS * random.nextInt(PopulationPlan.SKINS / PopulationPlan.OUTFITS);
-            officer.becomeOfficer(d.city, who == null ? "Officer" : who.name(), skin);
+            dress(level, officer, d.city, PopulationPlan.mix(d.buildingKey + i), random);
             officer.errand(d.door, 1.0);
             officer.leaveIn(d.windowSeconds * 20L + 400L);
             if (level.addFreshEntity(officer)) d.officers.add(officer.getUUID());
         }
         return !d.officers.isEmpty();
+    }
+
+    /** Makes {@code officer} one of the city's police: a name from the city's guards on its roster (chosen by {@code salt}) and a guard's outfit. */
+    static void dress(ServerLevel level, TownspersonEntity officer, String city, long salt, RandomSource random) {
+        List<PopulationPlan.Person> guards = new ArrayList<>();
+        for (PopulationPlan.Person person : PopulationService.roster(level, city)) if (person.role().equals("guard")) guards.add(person);
+        PopulationPlan.Person who = guards.isEmpty() ? null : guards.get(Math.floorMod((int) (salt >>> 8), guards.size()));
+        int skin = PopulationPlan.outfitsOf("guard", city)[0] + PopulationPlan.OUTFITS * random.nextInt(PopulationPlan.SKINS / PopulationPlan.OUTFITS);
+        officer.becomeOfficer(city, who == null ? "Officer" : who.name(), skin);
     }
 
     /**
@@ -368,7 +410,8 @@ public final class PoliceResponse {
         WorkOrderLedger ledger = WorkOrderLedger.get(server);
         if (citizen == null || law == null || ledger.faulted() || ledger.player(player.getUUID()).contains("pending")) return false;   // try again next second
         String who = officer.getName().getString();
-        player.sendSystemMessage(Component.literal(who + ": Police. You are under arrest for breaking and entering.").withStyle(ChatFormatting.GOLD));
+        String charge = d.why.startsWith("patrol: at") || d.why.startsWith("patrol: going") ? "trying to break in" : "breaking and entering";
+        player.sendSystemMessage(Component.literal(who + ": Police. You are under arrest for " + charge + ".").withStyle(ChatFormatting.GOLD));
         CheckpointService.Result result = CheckpointService.arrest(player, citizen, "police:" + d.securityClass + ":" + d.door.toShortString(), d.city, law, ledger, law.fine(CityLaws.PROHIBITED), ARREST_HEAT);
         arrests++; seizedStacks += result.stacksSeized();
         String city = PopulationService.capitalise(d.city);
@@ -404,7 +447,7 @@ public final class PoliceResponse {
     // ------------------------------------------------------------------------------------------------ status and seams
 
     static String status() {
-        return String.format(Locale.ROOT, "dispatches out %d; raised %d (alarm %d, witness %d); officers arrived %d; arrests %d (%d stacks seized); escapes %d; no street found %d", DISPATCHES.size(), raised, byAlarm, byWitness, arrivals, arrests, seizedStacks, escapes, noSpot);
+        return String.format(Locale.ROOT, "dispatches out %d; raised %d (alarm %d, witness %d, patrol %d); officers arrived %d; arrests %d (%d stacks seized); escapes %d; no street found %d", DISPATCHES.size(), raised, byAlarm, byWitness, byPatrol, arrivals, arrests, seizedStacks, escapes, noSpot);
     }
 
     @SubscribeEvent
@@ -417,7 +460,7 @@ public final class PoliceResponse {
     }
 
     /** Test seam: forget everything. */
-    static void resetForTest() { DISPATCHES.clear(); spots = PopulationService::findSpot; raised = byAlarm = byWitness = arrivals = arrests = escapes = noSpot = seizedStacks = 0; }
+    static void resetForTest() { DISPATCHES.clear(); spots = PopulationService::findSpot; raised = byAlarm = byWitness = byPatrol = arrivals = arrests = escapes = noSpot = seizedStacks = 0; }
     static int dispatches() { return DISPATCHES.size(); }
     static Dispatch dispatchAt(int index) { return DISPATCHES.get(index); }
 }
