@@ -198,7 +198,10 @@ public final class PropertyCacheBlockEntity extends RandomizableContainerBlockEn
     }
 
     // ------------------------------------------------------------------ container
-    @Override protected Component getDefaultName() { return Component.translatable("container.underground_city.property_cache"); }
+    /** The screen's title names the safe it is (the club's wall safe opened as a "Household Safe" in the advanced burglary run). */
+    @Override protected Component getDefaultName() {
+        return Component.translatable(switch (lock) { case "wall_safe" -> "container.underground_city.wall_safe"; case "vault_safe" -> "container.underground_city.vault_safe"; default -> "container.underground_city.property_cache"; });
+    }
     @Override protected AbstractContainerMenu createMenu(int id, Inventory inventory) {
         ChestMenu menu = new ChestMenu(net.minecraft.world.inventory.MenuType.GENERIC_9x1, id, inventory, this, 1);
         // A safe is somebody else's store, not the burglar's: things can be taken out, never put in (D-125). Otherwise a player could put their own goods into a forced safe and have them marked

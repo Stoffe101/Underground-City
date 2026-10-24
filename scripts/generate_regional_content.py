@@ -237,6 +237,8 @@ def build(data: dict, contracts: dict) -> dict[Path, bytes]:
         "block.underground_city.property_cache": "Household Safe",
         "item.underground_city.property_cache": "Household Safe",
         "container.underground_city.property_cache": "Household Safe",
+        "container.underground_city.wall_safe": "Wall Safe",
+        "container.underground_city.vault_safe": "Vault Safe",
         "block.underground_city.secure_data_terminal": "Secured Data Terminal",
         "item.underground_city.secure_data_terminal": "Secured Data Terminal",
         "block.underground_city.alarm_panel": "Alarm Panel",

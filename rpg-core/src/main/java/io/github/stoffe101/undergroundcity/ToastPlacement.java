@@ -14,7 +14,7 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 public final class ToastPlacement {
     private ToastPlacement() {}
 
-    private static boolean pushed;
+    private static boolean pushed, clipped;
 
     /**
      * True while no toast may be drawn at all: a timed screen (the lock, the trace) is open, and a notice over a pad costs the round; or a screen is open whose panel the toast column would
@@ -41,12 +41,17 @@ public final class ToastPlacement {
         g.pose().pushPose();
         g.pose().translate(shift[0], shift[1], 0);
         pushed = true;
+        // moved beside the stack, a toast still slides in from the window's edge, across the stack (caught at 1280x720 in the advanced burglary run): it is cut at the stack's left edge, so
+        // it comes out from behind the stack instead
+        clipped = shift[0] < 0;
+        if (clipped) g.enableScissor(0, 0, stack[0], g.guiHeight());
     }
 
     /** Called after it has drawn them (on every way out of its method). */
     public static void end(GuiGraphics g) {
         if (!pushed) return;
         pushed = false;
+        if (clipped) { clipped = false; g.disableScissor(); }
         g.pose().popPose();
     }
 }

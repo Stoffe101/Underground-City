@@ -7,6 +7,8 @@
   "block.underground_city.scrap_heap": "Scrap Heap",
   "block.underground_city.secure_data_terminal": "Secured Data Terminal",
   "container.underground_city.property_cache": "Household Safe",
+  "container.underground_city.vault_safe": "Vault Safe",
+  "container.underground_city.wall_safe": "Wall Safe",
   "generator.underground_city.archipelago": "Underground City: Archipelago",
   "item.underground_city.agri_sensor_repair": "Agricultural Sensor Repair Pack",
   "item.underground_city.agro_catalyst": "Agricultural Catalyst",
