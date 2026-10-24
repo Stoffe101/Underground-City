@@ -23,8 +23,8 @@ Branch `feature/world-playability-overhaul`, draft PR [#25](https://github.com/S
 | Python suite | L1 | 334 of 334 pass |
 | Repository validation, item-source audit, burglary audit | L1 | pass; the audit counts the seized shipment as a code source (the raid's search) |
 | Economic model (`scripts/economy_model.py --check`) | L1 | every invariant holds with the new orders, the raid (35 hands-on minutes) and the bulk orders |
-| GameTests, default set | L2 | 407 of 407 required pass (run 122, before D-174) |
-| GameTests with TaCZ (firearms set) | L2 | 407 of 407 required pass (pack run 2), including the two kit-build tests |
+| GameTests, default set | L2 | 408 of 408 required pass on the pushed code (run 127) |
+| GameTests with TaCZ (firearms set) | L2 | 408 of 408 required pass on the pushed code (pack run 3), including the two kit-build tests |
 | Hosted: the Crew journey, two real clients and a server killed without a stop sequence | L4 | passed on `b521ffc`, with the new Crew contract step (server-driven) |
 | Hosted: the combined journey (generated Lost Cities world, every pack set, two real clients, a server killed), the plain journey and the every-set journey | L4 | passed on `b521ffc` |
 | Hitch runs 1 to 4 (`-PucPlaytest=hitch`, one real client, a new furnished archipelago world each) | L3 | run 4, with every fix: no tick over 250 ms after the world was made; worst 235 ms on the teleport into Ironhaven (1,150 ms in run 1) and 137 ms walking the road (307 ms); details in [lost-cities-stalls.md](../technical/lost-cities-stalls.md#the-city-arrival-hitch-core-waiting-on-lost-cities-plan-lock-october-24-d-167) |
