@@ -16,10 +16,10 @@ import static io.github.stoffe101.undergroundcity.ThiefScenario.shot;
 
 /**
  * The bonded store job (D-173) through a real client ({@code -PucPlaytest=raid}, a new furnished archipelago world): a thief of level 3 takes Kessler's job, tracks it, cases the Ironhaven
- * bonded store at night, picks its lock on the real lock screen, searches inside with the real right click until the seized shipment turns up (marked stolen with the thief's name, Ironhaven's
+ * bonded store before dawn, picks its lock on the real lock screen, searches inside with the real right click until the seized shipment turns up (marked stolen with the thief's name, Ironhaven's
  * heat raised by the watchman's report), and carries it to Blackwater, where it is delivered for the job's pay.
  *
- * <p>Scripted, each logged: the Thief XP of a seasoned thief, the clock (02:00, stopped), taking and tracking the job through the server's own functions (the terminal's buttons are exercised
+ * <p>Scripted, each logged: the Thief XP of a seasoned thief, the clock (04:00, stopped), taking and tracking the job through the server's own functions (the terminal's buttons are exercised
  * by the journey runs), the travel between cities (teleports), any walk the walker could not finish, the lockpicks in the hotbar, the walks between rooms, and the delivery through the
  * server's own function at a point inside Blackwater.
  */
@@ -45,10 +45,10 @@ final class RaidScenario {
             server(() -> Thievery.award(me(), target - have, "A thief with a few jobs behind them.", false));
             scripted("the Thief XP of a level-" + Raids.MIN_THIEF_LEVEL + " thief was given (" + target + " XP): the climb is the thief scenario's");
         });
-        Playtest.queue("02:00 with the daylight cycle stopped", () -> {
+        Playtest.queue("04:00 with the daylight cycle stopped", () -> {
             Playtest.command("gamerule doDaylightCycle false");
-            Playtest.command("time set 20000");
-            scripted("the time was set to 02:00 and the daylight cycle stopped: the store is shut and its people gone");
+            Playtest.command("time set 22000");
+            scripted("the time was set to 04:00 and the daylight cycle stopped: the store is shut, its yard's night trade (until 03:00) gone home");
         });
         ThiefScenario.travel("to the middle of Ironhaven", () -> ThiefScenario.centre("ironhaven"), 6);
         Playtest.queue("take Kessler's job (scripted: the server's own accept) and track it", () -> {

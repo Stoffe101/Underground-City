@@ -71,7 +71,7 @@ public final class Raids {
         if (store.isPresent()) {
             BlockPos d = store.get().door();
             player.sendSystemMessage(Component.literal("The bonded store is the " + Thievery.tierWord(store.get().tier()).toLowerCase(java.util.Locale.ROOT) + " warehouse at " + d.getX() + ", " + d.getZ()
-                + " in Ironhaven. The shipment is in its back room. Case it first; a Technician can loop its cameras. Then carry it to Kessler in Blackwater."));
+                + " in Ironhaven. The shipment is in its back room. Its yard trades at night until three: go after that, and case it first; a Technician can loop its cameras. Then carry it to Kessler in Blackwater."));
             Notice.send(player, Notice.Kind.ORDER, "The bonded store", "Track it on the order. Case it, get in, find the shipment, carry it to Blackwater.");
         } else {
             player.sendSystemMessage(Component.literal("Kessler's man could not point out the bonded store from here: go to Ironhaven and ask the terminal again (it needs the furnished city)."));
