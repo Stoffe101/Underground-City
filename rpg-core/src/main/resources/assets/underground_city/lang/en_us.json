@@ -73,5 +73,7 @@
   "key.underground_city.crew": "Open the Crew screen",
   "key.underground_city.hud": "Show or hide the status display",
   "key.underground_city.hud_settings": "Open the status display settings",
+  "key.underground_city.inspect": "Case the door you look at",
+  "key.underground_city.places": "Places you know",
   "key.underground_city.tracker": "Show or hide the active order"
 }

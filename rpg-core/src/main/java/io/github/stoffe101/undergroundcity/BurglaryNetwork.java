@@ -19,7 +19,7 @@ import java.util.Optional;
  * client sends nothing on it: a casing and a search both start from an ordinary right click, which the server judges.
  */
 public final class BurglaryNetwork {
-    private static final String VERSION = "1";
+    private static final String VERSION = "2";
     private static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
         ResourceLocation.fromNamespaceAndPath(UndergroundCity.MOD_ID, "burglary"), () -> VERSION, VERSION::equals, VERSION::equals);
 
@@ -48,11 +48,14 @@ public final class BurglaryNetwork {
         b.writeUtf(r.title(), 48); b.writeUtf(r.city(), 24); b.writeVarInt(r.tier()); b.writeUtf(r.lock(), 64); b.writeUtf(r.lockNote(), 160); b.writeBoolean(r.canTry());
         b.writeVarInt(r.alarm() + 1); b.writeVarInt(r.cameras() + 1); b.writeVarInt(r.inside() + 1); b.writeUtf(r.empty(), 64); b.writeVarInt(r.safe() + 1); b.writeVarInt(r.recent() + 1);
         b.writeBoolean(r.beenIn()); b.writeVarInt(r.skill());
+        b.writeUtf(r.category(), 24); b.writeUtf(r.address(), 48); b.writeUtf(r.risk(), 24); b.writeVarInt(r.riskPercent() + 1); b.writeUtf(r.reasons(), 320);
+        b.writeVarInt(r.policeSeconds() + 1); b.writeVarInt(r.patrolMinutes() + 1); b.writeVarInt(r.searchable() + 1); b.writeBoolean(r.playerHomes());
     }
 
     private static Casing.Report read(FriendlyByteBuf b) {
         return new Casing.Report(b.readUtf(48), b.readUtf(24), Math.max(0, Math.min(6, b.readVarInt())), b.readUtf(64), b.readUtf(160), b.readBoolean(),
-            b.readVarInt() - 1, b.readVarInt() - 1, b.readVarInt() - 1, b.readUtf(64), b.readVarInt() - 1, b.readVarInt() - 1, b.readBoolean(), b.readVarInt());
+            b.readVarInt() - 1, b.readVarInt() - 1, b.readVarInt() - 1, b.readUtf(64), b.readVarInt() - 1, b.readVarInt() - 1, b.readBoolean(), b.readVarInt(),
+            b.readUtf(24), b.readUtf(48), b.readUtf(24), b.readVarInt() - 1, b.readUtf(320), b.readVarInt() - 1, b.readVarInt() - 1, b.readVarInt() - 1, b.readBoolean());
     }
 
     private static boolean reachable(ServerPlayer player) { return player != null && !(player instanceof FakePlayer) && player.connection != null; }

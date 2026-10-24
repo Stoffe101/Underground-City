@@ -200,6 +200,14 @@
     {
       "block": "minecraft:bricks",
       "char": "P"
+    },
+    {
+      "block": "underground_city:alarm_panel[facing=north,light=off]",
+      "char": "Q"
+    },
+    {
+      "block": "modernlife:cctv_camera[facing=south]",
+      "char": "R"
     }
   ]
 }

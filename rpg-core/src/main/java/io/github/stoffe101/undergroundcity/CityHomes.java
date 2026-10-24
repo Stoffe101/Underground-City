@@ -93,10 +93,15 @@ public final class CityHomes {
         return names.get((int) Math.floorMod(h >>> 9, (long) names.size()));
     }
 
+    /** The building's street address ("12 Mill Lane"), the same in every run: every city building has one, whether or not anything in it is to let (D-157 lists places by it). */
+    static String address(long seed, CityBuildings.Building b) {
+        long h = PopulationPlan.mix(seed ^ b.key() * 31);
+        return (1 + Math.floorMod(h >>> 3, 98L)) + " " + street(b.city(), h);
+    }
+
     /** "12 Mill Lane" for a house, "Flat 3, 12 Mill Lane" for a flat: the same address for the same building in every run. */
     static String title(long seed, CityBuildings.Building b, BuildingSpots.Plan plan, BuildingSpots.Unit u) {
-        long h = PopulationPlan.mix(seed ^ b.key() * 31);
-        String address = (1 + Math.floorMod(h >>> 3, 98L)) + " " + street(b.city(), h);
+        String address = address(seed, b);
         String title = plan.units().size() > 1 ? u.title() + ", " + address : address;
         return title.length() > 40 ? title.substring(0, 40) : title;
     }
@@ -148,6 +153,16 @@ public final class CityHomes {
     }
 
     // ------------------------------------------------------------------------------------------------ keys
+
+    /** How many units of this building a player or a Crew holds: their homes, which no burglary of the building reaches (D-157 says so at the door). */
+    static int heldUnits(net.minecraft.server.MinecraftServer server, CityBuildings.Building b) {
+        CrewLedger ledger = CrewService.ledger(server);
+        if (ledger == null || ledger.faulted()) return 0;
+        String prefix = buildingPrefix(b);
+        int n = 0;
+        for (CrewLedger.Residence r : ledger.allResidences()) if (r.id.startsWith(prefix) && r.owned()) n++;
+        return n;
+    }
 
     /** True when the player lives in (holds the door rights of) a unit of this building that somebody holds: they have a key to its street doors. */
     static boolean holdsKey(ServerPlayer player, CityBuildings.Building b) {

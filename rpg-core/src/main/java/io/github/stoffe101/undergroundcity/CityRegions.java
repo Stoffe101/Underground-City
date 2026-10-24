@@ -97,6 +97,9 @@ public final class CityRegions extends SimpleJsonResourceReloadListener {
 
     List<Region> all() { return regions; }
 
+    /** The region of a city id, if loaded. */
+    public Optional<Region> region(String id) { return regions.stream().filter(region -> region.id.equals(id)).findFirst(); }
+
     /** Test seam: replaces the loaded circles without a datapack reload. */
     void replaceForTest(List<Region> replacement) { regions = List.copyOf(replacement); }
 }

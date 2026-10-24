@@ -142,6 +142,7 @@ public final class UndergroundCity {
         CrewNetwork.register();
         LockNetwork.register();
         BurglaryNetwork.register();
+        PlacesNetwork.register();
         FenceNetwork.register();
         MinecraftForge.EVENT_BUS.register(this);
         MinecraftForge.EVENT_BUS.register(new RenamedIds());
@@ -168,6 +169,7 @@ public final class UndergroundCity {
         MinecraftForge.EVENT_BUS.register(new PopulationService());
         MinecraftForge.EVENT_BUS.register(new PoliceResponse());
         MinecraftForge.EVENT_BUS.register(new PolicePatrols());
+        MinecraftForge.EVENT_BUS.register(new PropertyIntel());
         MinecraftForge.EVENT_BUS.register(new ResourceSites());
         MinecraftForge.EVENT_BUS.register(new HouseholdService());
         MinecraftForge.EVENT_BUS.register(new HudService());

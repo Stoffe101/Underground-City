@@ -94,7 +94,23 @@ public final class CityBuildings extends SimpleJsonResourceReloadListener {
         public boolean locked() { return security != null && security.lockedExterior(); }
     }
 
+    /**
+     * A class's category (residential, commercial, industrial, office, special, public) and how far its tier may move by neighbourhood (D-157): a building near its city's centre tends to be
+     * better off than its class, one at the edge worse, and a hash of the building decides the rest, so the same street has a range of targets. {@code min == max} keeps the class's tier.
+     */
+    public record Grade(String category, int min, int max) {
+        public Grade {
+            if (min < 0 || max > 6 || min > max) throw new IllegalArgumentException("a grade must be 0 <= min <= max <= 6");
+        }
+    }
+
+    /** What a graded building of a category is locked with, holds and answers with at a tier (D-157): the security follows the tier, so a tier is what a thief meets at the door. */
+    public record TierSecurity(String lockProfile, String stashPolicy, double stashChance, Response response) {}
+
     private volatile Map<String, SecurityClass> classes = Map.of();
+    private volatile Map<String, Grade> grades = Map.of();
+    private volatile Map<String, Map<Integer, TierSecurity>> tierSecurity = Map.of();
+    private volatile Map<String, Double> cityBias = Map.of();
     private volatile List<Rule> rules = List.of();
     private volatile BiFunction<Integer, Integer, Optional<Building>> override;
     private final Map<Long, Optional<Building>> cache = Collections.synchronizedMap(new LinkedHashMap<>(256, 0.75f, true) {
@@ -106,6 +122,9 @@ public final class CityBuildings extends SimpleJsonResourceReloadListener {
     @Override
     protected void apply(Map<ResourceLocation, JsonElement> data, ResourceManager resources, ProfilerFiller profiler) {
         Map<String, SecurityClass> nextClasses = new TreeMap<>();
+        Map<String, Grade> nextGrades = new TreeMap<>();
+        Map<String, Map<Integer, TierSecurity>> nextTiers = new TreeMap<>();
+        Map<String, Double> nextBias = new TreeMap<>();
         List<Rule> nextRules = new ArrayList<>();
         // files in name order and rules by descending priority, ties in file order: the answer must not depend on a hash map's order (D-117: a furnished building's own rule outranks the generic fallback)
         data.entrySet().stream().sorted(Map.Entry.comparingByKey()).forEach(entryOf -> {
@@ -120,6 +139,26 @@ public final class CityBuildings extends SimpleJsonResourceReloadListener {
                 nextClasses.put(entry.getKey(), new SecurityClass(entry.getKey(), lock, locked, c.has("stash_policy") ? c.get("stash_policy").getAsString() : "",
                     c.has("stash_chance") ? c.get("stash_chance").getAsDouble() : 0, c.has("label") ? c.get("label").getAsString() : entry.getKey(), response(c),
                     c.has("tier") ? c.get("tier").getAsInt() : locked ? defaultTier(lock) : 0, c.has("safe_profile") ? c.get("safe_profile").getAsString() : ""));
+                SecurityClass made = nextClasses.get(entry.getKey());
+                String category = c.has("category") ? c.get("category").getAsString() : made.tier() <= 0 ? "public" : "residential";
+                int min = made.tier(), max = made.tier();
+                if (c.has("grade")) { var range = c.getAsJsonArray("grade"); min = range.get(0).getAsInt(); max = range.get(1).getAsInt(); }
+                if (made.tier() > 0 && (made.tier() < min || made.tier() > max)) throw new IllegalArgumentException("The grade of " + entry.getKey() + " must contain its tier");
+                nextGrades.put(entry.getKey(), new Grade(category, min, max));
+            }
+            if (json.has("city_grade_bias")) for (var bias : json.getAsJsonObject("city_grade_bias").entrySet()) {
+                double value = bias.getValue().getAsDouble();
+                if (value < -1.0 || value > 1.0) throw new IllegalArgumentException("A city's grade bias must be between -1 and 1: " + bias.getKey());
+                nextBias.put(bias.getKey(), value);
+            }
+            if (json.has("tier_security")) for (var byCategory : json.getAsJsonObject("tier_security").entrySet()) {
+                Map<Integer, TierSecurity> tiers = nextTiers.computeIfAbsent(byCategory.getKey(), k -> new TreeMap<>());
+                for (var byTier : byCategory.getValue().getAsJsonObject().entrySet()) {
+                    JsonObject t = byTier.getValue().getAsJsonObject();
+                    int tier = Integer.parseInt(byTier.getKey());
+                    if (tier < 1 || tier > 6) throw new IllegalArgumentException("tier_security tiers are 1 to 6: " + byCategory.getKey() + " " + tier);
+                    tiers.put(tier, new TierSecurity(t.get("lock_profile").getAsString(), t.get("stash_policy").getAsString(), t.get("stash_chance").getAsDouble(), response(t)));
+                }
             }
             if (json.has("rules")) for (var entry : json.getAsJsonArray("rules")) {
                 JsonObject r = entry.getAsJsonObject();
@@ -129,7 +168,16 @@ public final class CityBuildings extends SimpleJsonResourceReloadListener {
         });
         for (Rule rule : nextRules) if (!nextClasses.containsKey(rule.securityClass())) throw new IllegalArgumentException("A building rule names the unknown class " + rule.securityClass());
         for (SecurityClass c : nextClasses.values()) if (c.stashChance() < 0 || c.stashChance() > 1) throw new IllegalArgumentException("Stash chance of " + c.id() + " must be between 0 and 1");
+        for (var g : nextGrades.entrySet()) {
+            if (g.getValue().min() == g.getValue().max()) continue;
+            for (int t = g.getValue().min(); t <= g.getValue().max(); t++)
+                if (t != nextClasses.get(g.getKey()).tier() && !nextTiers.getOrDefault(g.getValue().category(), Map.of()).containsKey(t))
+                    throw new IllegalArgumentException("The grade of " + g.getKey() + " reaches tier " + t + ", which " + g.getValue().category() + " has no security for");
+        }
         classes = Map.copyOf(nextClasses);
+        grades = Map.copyOf(nextGrades);
+        tierSecurity = Map.copyOf(nextTiers);
+        cityBias = Map.copyOf(nextBias);
         rules = List.copyOf(ordered(nextRules));
         cache.clear();
         LOGGER.info("Loaded {} building security classes and {} rules", classes.size(), rules.size());
@@ -149,6 +197,44 @@ public final class CityBuildings extends SimpleJsonResourceReloadListener {
     }
 
     public SecurityClass securityClass(String id) { return classes.get(id); }
+
+    /** The category of a class (residential, commercial, industrial, office, special, public). */
+    public String category(String classId) {
+        Grade grade = classId == null ? null : grades.get(classId);
+        return grade == null ? "residential" : grade.category();
+    }
+
+    /** The grade of a class, if it has one. */
+    public Optional<Grade> grade(String classId) { return Optional.ofNullable(classId == null ? null : grades.get(classId)); }
+
+    /**
+     * How far a building's tier moves from its class's (D-157), from where it stands ({@code r}: 0 at its city's centre, 1 at the edge) and a hash of it in [0, 1): near the centre it is often
+     * one better, at the edge often one worse, two either way only at the extremes. Pure, so a test can pin the distribution.
+     */
+    static int gradeOffset(double r, double noise) { return gradeOffset(r, noise, 0); }
+
+    /** The same with a city's lean ({@code city_grade_bias}): Blackwater's docks and back streets are poorer than its towers, Valewood's middle better off than its lanes. */
+    static int gradeOffset(double r, double noise, double bias) {
+        double score = (0.5 - Math.min(1.2, Math.max(0, r))) * 2.0 + (noise - 0.5) * 1.6 + bias;
+        return score >= 1.45 ? 2 : score >= 0.7 ? 1 : score <= -1.45 ? -2 : score <= -0.7 ? -1 : 0;
+    }
+
+    /** The class a building actually has once its neighbourhood is counted: the same class, or one with the tier, lock, stash and response of its graded tier. */
+    SecurityClass graded(SecurityClass base, String city, int cx, int cz, long seed) {
+        if (base == null || base.tier() <= 0) return base;
+        Grade grade = grades.get(base.id());
+        if (grade == null || grade.min() == grade.max()) return base;
+        CityRegions.Region region = CityRegions.INSTANCE.region(city).orElse(null);
+        if (region == null) return base;
+        double r = Math.hypot(cx - region.centerChunkX(), cz - region.centerChunkZ()) * 16.0 / Math.max(16, region.cityRadius());
+        long h = PopulationPlan.mix(seed ^ (cx * 0x9E3779B97F4A7C15L) ^ (cz * 0xC2B2AE3D27D4EB4FL) ^ 0x6A09E667L);
+        double noise = (h >>> 11) / (double) (1L << 53);
+        int tier = Math.max(grade.min(), Math.min(grade.max(), base.tier() + gradeOffset(r, noise, cityBias.getOrDefault(city, 0.0))));
+        if (tier == base.tier()) return base;
+        TierSecurity t = tierSecurity.getOrDefault(grade.category(), Map.of()).get(tier);
+        if (t == null) return base;
+        return new SecurityClass(base.id(), t.lockProfile(), base.lockedExterior(), t.stashPolicy(), t.stashChance(), base.label(), t.response(), tier, "");
+    }
     public Map<String, SecurityClass> classes() { return classes; }
 
     /** The class a building of this type and height in this city belongs to: the first rule that fits, else none (an unclassed building is protected but has no lock and no stash). */
@@ -195,7 +281,8 @@ public final class CityBuildings extends SimpleJsonResourceReloadListener {
         if (type.isEmpty() && s.buildingId().isEmpty()) return Optional.empty();   // a street, a park or open ground: nothing stands here to protect
         int street = LostCitiesLink.realHeight(level, s.cityLevel());
         if (street < 0) street = GROUND_FALLBACK + s.cityLevel() * FLOOR;
-        return Optional.of(new Building(region.get(), cx, cz, type, s.buildingId(), s.floors(), s.cellars(), street, classify(region.get(), type, s.floors())));
+        SecurityClass security = graded(classify(region.get(), type, s.floors()), region.get(), cx, cz, level.getSeed());
+        return Optional.of(new Building(region.get(), cx, cz, type, s.buildingId(), s.floors(), s.cellars(), street, security));
     }
 
     /** Test seam: answer every building question from a function (null to stop). */
@@ -203,4 +290,9 @@ public final class CityBuildings extends SimpleJsonResourceReloadListener {
 
     /** Test seam. */
     void replaceForTest(Map<String, SecurityClass> nextClasses, List<Rule> nextRules) { classes = Map.copyOf(nextClasses); rules = List.copyOf(nextRules); cache.clear(); }
+
+    /** Test seam: the grades and the tier table as loaded (to restore after {@link #replaceGradesForTest}). */
+    Map<String, Grade> gradesForTest() { return grades; }
+    Map<String, Map<Integer, TierSecurity>> tierSecurityForTest() { return tierSecurity; }
+    void replaceGradesForTest(Map<String, Grade> nextGrades, Map<String, Map<Integer, TierSecurity>> nextTiers) { grades = Map.copyOf(nextGrades); tierSecurity = Map.copyOf(nextTiers); cache.clear(); }
 }

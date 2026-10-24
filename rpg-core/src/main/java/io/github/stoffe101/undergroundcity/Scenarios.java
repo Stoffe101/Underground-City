@@ -20,6 +20,7 @@ final class Scenarios {
             case "cannabis" -> CannabisScenario.build();
             case "patrol" -> PatrolScenario.build();
             case "freight" -> FreightScenario.build();
+            case "places" -> PlacesScenario.build();
             case "sccamera" -> CameraMeasureScenario.build();
             case "alarm" -> AlarmScenario.build();
             case "security" -> SecurityScenario.build();

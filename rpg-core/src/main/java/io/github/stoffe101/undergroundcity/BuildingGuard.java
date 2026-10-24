@@ -212,7 +212,7 @@ public final class BuildingGuard {
         if (Casing.wants(player) && outsideSide(level, lower, lowerState, player.position()) && !CityHomes.holdsKey(player, found.get())) {
             event.setCanceled(true);
             event.setCancellationResult(InteractionResult.SUCCESS);
-            if (event.getHand() == InteractionHand.MAIN_HAND) BurglaryNetwork.casing(player, Casing.read(player, level, found.get(), lower));
+            if (event.getHand() == InteractionHand.MAIN_HAND) Casing.caseDoor(player, level, found.get(), lower);
             return;
         }
         long now = LockService.clock(level.getServer());

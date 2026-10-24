@@ -335,6 +335,8 @@ def build(data: dict, contracts: dict) -> dict[Path, bytes]:
              "entries": [{"type": "minecraft:item", "name": f"{NAMESPACE}:cannabis_seeds"}]}]}).encode()
     lang["block.underground_city.cannabis_plant"] = "Cannabis Plant"
     lang["key.underground_city.tracker"] = "Show or hide the active order"
+    lang["key.underground_city.inspect"] = "Case the door you look at"
+    lang["key.underground_city.places"] = "Places you know"
     lang["key.underground_city.hud"] = "Show or hide the status display"
     lang["key.underground_city.hud_settings"] = "Open the status display settings"
     lang["generator.underground_city.archipelago"] = "Underground City: Archipelago"   # the world type list at world creation (D-104)

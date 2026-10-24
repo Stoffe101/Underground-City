@@ -77,7 +77,7 @@ public final class ClientHud {
         // every letter, which showed through the cards at 1280x720, GUI scale 3 (patrol runs 1, 2 and 6)
         g.pose().pushPose();
         g.pose().translate(0, 0, 200);
-        HudLayout.Plan plan = render(g, mc, width, height, state, ClientOrderTracker.current(), ClientOrderTracker.objective(), mc.level == null ? 0 : mc.level.getDayTime(), HudConfig.Settings.fromConfig());
+        HudLayout.Plan plan = render(g, mc, width, height, state, ClientOrderTracker.current(), ClientPlaces.objectiveOr(ClientOrderTracker.objective()), mc.level == null ? 0 : mc.level.getDayTime(), HudConfig.Settings.fromConfig());
         g.pose().popPose();
         if (plan == null || !plan.any()) return;
         int top = Integer.MAX_VALUE, left = 0;

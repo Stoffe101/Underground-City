@@ -1,6 +1,7 @@
 {
   "classes": {
     "club": {
+      "category": "commercial",
       "label": "club",
       "lock_profile": "high_security",
       "locked_exterior": true,
@@ -15,6 +16,11 @@
       "tier": 5
     },
     "house": {
+      "category": "residential",
+      "grade": [
+        2,
+        5
+      ],
       "label": "house",
       "lock_profile": "deadbolt",
       "locked_exterior": true,
@@ -29,6 +35,11 @@
       "tier": 3
     },
     "storefront": {
+      "category": "commercial",
+      "grade": [
+        1,
+        4
+      ],
       "label": "shop",
       "lock_profile": "commercial",
       "locked_exterior": true,
@@ -42,7 +53,31 @@
       "stash_policy": "underground_city:office",
       "tier": 3
     },
+    "townhouse": {
+      "category": "residential",
+      "grade": [
+        3,
+        5
+      ],
+      "label": "townhouse",
+      "lock_profile": "secured",
+      "locked_exterior": true,
+      "response": {
+        "alarm_chance": 0.55,
+        "dispatch_seconds": 100,
+        "officers": 1,
+        "window_seconds": 120
+      },
+      "stash_chance": 0.7,
+      "stash_policy": "underground_city:apartment_affluent",
+      "tier": 4
+    },
     "warehouse": {
+      "category": "industrial",
+      "grade": [
+        3,
+        5
+      ],
       "label": "warehouse",
       "lock_profile": "secured",
       "locked_exterior": true,
@@ -59,7 +94,7 @@
   },
   "rules": [
     {
-      "class": "house",
+      "class": "townhouse",
       "priority": 10,
       "type_prefix": "underground_city:vw_house_a"
     },

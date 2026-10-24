@@ -236,6 +236,16 @@ public final class PolicePatrols {
         return null;
     }
 
+    /** How many officers on the beat are within {@code range} of a position (a casing's risk counts them, D-157). */
+    static int officersNear(ServerLevel level, BlockPos pos, double range) {
+        int n = 0;
+        for (Patrol patrol : OUT.values()) {
+            if (patrol.dimension != level.dimension()) continue;
+            for (TownspersonEntity officer : officers(level, patrol)) if (officer.blockPosition().distSqr(pos) <= range * range) n++;
+        }
+        return n;
+    }
+
     /** Takes an officer off the beat (they are on a response now). */
     static void release(TownspersonEntity officer) {
         for (Patrol patrol : OUT.values()) patrol.remove(officer.getUUID());

@@ -44,16 +44,20 @@ def citystyles(buildings: list[citykit.Building]) -> dict[str, dict]:
 
 
 # classes the furnished buildings need beyond the stock ones (cottage, flat_block, flat_tower, workshop, office, vault, public)
-# Each class has a tier (D-144): 1 shabby, 2 modest, 3 comfortable, 4 well-off, 5 wealthy, 6 exceptional. "panel": False keeps a class's alarm without an alarm panel in its plan, so moving a
+# Each class has a tier (D-144): 1 shabby, 2 modest, 3 comfortable, 4 well-off, 5 wealthy, 6 exceptional, a category and (D-157) a grade range its buildings move in by neighbourhood
+# (Core's classes.json holds the security of each graded tier; the cameras and panels a plan carries follow the class's own tier). "panel": False keeps a class's alarm without an alarm panel in its plan, so moving a
 # building to such a class changes what Core does with it and never how its chunks generate.
 NEW_SECURITY_CLASSES = {
-    "storefront": {"label": "shop", "tier": 3, "lock_profile": "commercial", "locked_exterior": True, "stash_policy": "underground_city:office", "stash_chance": 0.5,
+    "storefront": {"label": "shop", "category": "commercial", "grade": [1, 4], "tier": 3, "lock_profile": "commercial", "locked_exterior": True, "stash_policy": "underground_city:office", "stash_chance": 0.5,
                    "response": {"alarm_chance": 0.5, "dispatch_seconds": 90, "officers": 1, "window_seconds": 120}},
-    "warehouse": {"label": "warehouse", "tier": 4, "lock_profile": "secured", "locked_exterior": True, "stash_policy": "underground_city:industrial", "stash_chance": 0.7,
+    "warehouse": {"label": "warehouse", "category": "industrial", "grade": [3, 5], "tier": 4, "lock_profile": "secured", "locked_exterior": True, "stash_policy": "underground_city:industrial", "stash_chance": 0.7,
                   "response": {"alarm_chance": 0.6, "dispatch_seconds": 100, "officers": 1, "window_seconds": 120}},
-    "club": {"label": "club", "tier": 5, "lock_profile": "high_security", "locked_exterior": True, "stash_policy": "underground_city:illegal_cache", "stash_chance": 0.6,
+    "club": {"label": "club", "category": "commercial", "tier": 5, "lock_profile": "high_security", "locked_exterior": True, "stash_policy": "underground_city:illegal_cache", "stash_chance": 0.6,
              "response": {"alarm_chance": 0.8, "dispatch_seconds": 60, "officers": 2, "window_seconds": 150}},
-    "house": {"label": "house", "tier": 3, "lock_profile": "deadbolt", "locked_exterior": True, "stash_policy": "underground_city:apartment_affluent", "stash_chance": 0.6, "panel": False,
+    # a white-brick townhouse is the better-off house of Valewood's middle: tier 4 with a camera and a panel, so the city has wealthy targets too (D-157: the survey of a new world found none)
+    "townhouse": {"label": "townhouse", "category": "residential", "grade": [3, 5], "tier": 4, "lock_profile": "secured", "locked_exterior": True, "stash_policy": "underground_city:apartment_affluent",
+                  "stash_chance": 0.7, "response": {"alarm_chance": 0.55, "dispatch_seconds": 100, "officers": 1, "window_seconds": 120}},
+    "house": {"label": "house", "category": "residential", "grade": [2, 5], "tier": 3, "lock_profile": "deadbolt", "locked_exterior": True, "stash_policy": "underground_city:apartment_affluent", "stash_chance": 0.6, "panel": False,
               "response": {"alarm_chance": 0.4, "dispatch_seconds": 110, "officers": 1, "window_seconds": 120}},
 }
 STOCK_SECURITY_CLASSES = {"cottage", "flat_block", "flat_tower", "workshop", "office", "vault", "public"}

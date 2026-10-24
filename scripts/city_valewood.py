@@ -137,9 +137,9 @@ def stair_run(lower: Part, upper: Part, x: int, z_bottom: int, material: str = "
 
 # ---------------------------------------------------------------------------------------------------- the detached house
 
-def house(bid: str, look: Look) -> Building:
+def house(bid: str, look: Look, security: str = "house") -> Building:
     p = Palette(bid)
-    b = Building(bid, p, use="house", city=CITY, min_floors=2, max_floors=2, filler="minecraft:stone_bricks", security="house",
+    b = Building(bid, p, use="house", city=CITY, min_floors=2, max_floors=2, filler="minecraft:stone_bricks", security=security,
                  notes="A detached two-storey house: living room and kitchen below, two bedrooms and a bathroom above, a garden all round.")
     X0, Z0, X1, Z1 = 3, 4, 12, 11    # the footprint, walls included
     g = b.new_part("ground", ground=True)
@@ -406,7 +406,7 @@ def bakery(bid: str, look: Look) -> Building:
 
 
 def buildings() -> list[Building]:
-    house_a = house("vw_house_a", WHITE_BRICK)
+    house_a = house("vw_house_a", WHITE_BRICK, "townhouse")   # the better-off house of the middle (D-157)
     house_b = k.mirror_building(house("vw_house_b_src", TIMBER), "vw_house_b")
     return [house_a, house_b, cottage("vw_cottage", STONE_COTTAGE), shop("vw_shop", WHITE_BRICK), bakery("vw_bakery", TIMBER)]
 

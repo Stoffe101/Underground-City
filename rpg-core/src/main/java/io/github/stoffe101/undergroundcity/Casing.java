@@ -8,17 +8,29 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * Casing a building (D-144): before committing, a thief crouches at a street door with an empty hand and reads the place. What anybody can tell from the street is how well off it looks (its tier)
- * and what holds the door, and whether they could open it with what they carry. A thief with <b>Casing</b> also reads whether the alarm is armed, how many cameras watch the inside and how many
- * people are in now; with <b>Know Their Routines</b>, when it will next be empty, whether there is a safe, and whether it was broken into lately (the household is watchful).
+ * Casing a building (D-144, layered by D-157): before committing, a thief reads the place from its street door (crouched with an empty hand, or the Inspect key while looking at the door).
  *
- * <p>Everything is computed on the server from what the game already knows (the building's class, the household's clock, the alarm's hash, the devices in its rooms); the client is sent words and
- * numbers to show, never anything it could use beyond what the report says.
+ * <p>What anybody can tell from the street: what the place is and its address, how well off it is (its tier), what holds the door and whether they could open it with what they carry. Then, in
+ * layers by Thief skill: with <b>Casing</b> whether the alarm is armed, how many cameras watch the inside, how many people are in now, and the risk of a break-in <i>now</i> in a word; with
+ * <b>Know Their Routines</b> when it will next be empty, whether there is a safe, whether it was broken into lately, and every reason behind the risk; an <b>expert</b> (Routines, Camera Sense
+ * and Thief level {@link #EXPERT_LEVEL}) reads the risk as a number, how long the police would take, how often officers walk the city and how much in it is worth searching.
+ *
+ * <p>Everything is computed on the server from what the game already knows (the building's class and grade, the household's clock, the alarm's hash, the devices in its rooms, the people in the
+ * street); the client is sent words and numbers to show, never anything it could use beyond what the report says. A casing is remembered in the thief's book ({@link PropertyIntel.Book}).
  */
 public final class Casing {
     /** What the card shows. Numbers are -1 when the thief cannot tell. {@code alarm}: 0 none, 1 fitted but not armed, 2 armed, 3 armed with a panel by the door. {@code safe}: 0 none, 1 household, 2 wall, 3 vault. */
     public record Report(String title, String city, int tier, String lock, String lockNote, boolean canTry, int alarm, int cameras, int inside, String empty, int safe, int recent,
-                         boolean beenIn, int skill) {}
+                         boolean beenIn, int skill, String category, String address, String risk, int riskPercent, String reasons, int policeSeconds, int patrolMinutes, int searchable,
+                         boolean playerHomes) {
+        /** The report before D-157's layers (tests and older call sites). */
+        public Report(String title, String city, int tier, String lock, String lockNote, boolean canTry, int alarm, int cameras, int inside, String empty, int safe, int recent, boolean beenIn, int skill) {
+            this(title, city, tier, lock, lockNote, canTry, alarm, cameras, inside, empty, safe, recent, beenIn, skill, "", "", "", -1, "", -1, -1, -1, false);
+        }
+    }
+
+    /** The Thief level from which a thief with Know Their Routines and Camera Sense reads a place as an expert. */
+    static final int EXPERT_LEVEL = 10;
 
     /** How long after a break-in a household stays watchful, in active ticks (three hours). */
     static final long WATCHFUL_TICKS = 3 * 72_000L;
@@ -32,7 +44,8 @@ public final class Casing {
     static Report read(ServerPlayer player, ServerLevel level, CityBuildings.Building building, BlockPos door) {
         CityBuildings.SecurityClass security = building.security();
         int tier = Thievery.tier(building);
-        boolean casing = Thievery.has(player, "thief.casing"), routines = Thievery.has(player, "thief.routines");
+        boolean casing = Thievery.has(player, "thief.casing"), routines = casing && Thievery.has(player, "thief.routines");
+        boolean expert = routines && Thievery.has(player, "thief.camera_sense") && thiefLevel(player) >= EXPERT_LEVEL;
         boolean keypad = SecurityCraftTrial.isKeypadDoor(level.getBlockState(door));
         LockpickSession.Profile profile = LockProfiles.INSTANCE.find(security.lockProfile());
         String lock = keypad ? "a keypad" : "a " + LockService.describe(profile);
@@ -59,7 +72,61 @@ public final class Casing {
         }
         boolean beenIn = Thievery.records(level.getServer()).seen(player.getUUID(), "entered", building.key());
         String title = capitalise(security.label().isEmpty() ? "building" : security.label());
-        return new Report(title, capitalise(building.city()), tier, lock, note, canTry, alarm, cameras, inside, empty, safe, recent, beenIn, routines ? 2 : casing ? 1 : 0);
+        String category = PropertyIntel.categoryWord(CityBuildings.INSTANCE.category(security.id()));
+        String address = CityHomes.address(level.getSeed(), building);
+        String risk = "", reasons = "";
+        int riskPercent = -1, police = -1, patrol = -1, searchable = -1;
+        if (casing) {
+            HouseholdService.Mem mem = HouseholdService.memory(level).byBuilding.get(building.key());
+            boolean watchful = mem != null && LockService.clock(level.getServer()) - mem.tick() < WATCHFUL_TICKS;
+            PropertyIntel.Risk estimate = PropertyIntel.risk(player, level, building, door, Math.max(0, inside), Math.max(0, cameras), watchful);
+            risk = estimate.word();
+            List<String> shown = routines ? estimate.reasons() : estimate.reasons().subList(0, Math.min(1, estimate.reasons().size()));
+            reasons = String.join("; ", shown);
+            if (reasons.length() > 300) reasons = reasons.substring(0, 300);
+            if (expert) {
+                riskPercent = (int) Math.round(estimate.chance() * 100);
+                CityBuildings.Response response = security.response();
+                police = response != null ? response.dispatchSeconds() : PoliceResponse.NEIGHBOUR.dispatchSeconds();
+                CityLaws.Law law = CityLaws.INSTANCE.find(building.city());
+                patrol = law == null || law.patrol() == null ? -1 : Math.max(1, Math.round(law.patrol().everySeconds() / 60f));
+                searchable = PropertyIntel.searchable(level, building);
+            }
+        }
+        return new Report(title, capitalise(building.city()), tier, lock, note, canTry, alarm, cameras, inside, empty, safe, recent, beenIn, expert ? 3 : routines ? 2 : casing ? 1 : 0,
+            category, address, risk, riskPercent, reasons, police, patrol, searchable, CityHomes.heldUnits(level.getServer(), building) > 0);
+    }
+
+    static int thiefLevel(ServerPlayer player) {
+        return CitizenState.get(player.server).find(player.getUUID()).map(CitizenState.Citizen::thiefLevel).orElse(1);
+    }
+
+    /** A casing from the street, by a click or the Inspect key: reads the place, remembers it in the thief's book and sends the card. */
+    static void caseDoor(ServerPlayer player, ServerLevel level, CityBuildings.Building building, BlockPos door) {
+        Report report = read(player, level, building, door);
+        PropertyIntel.casings++;
+        PropertyIntel.book(level.getServer()).cased(player.getUUID(), building, door, report.address(), CityBuildings.INSTANCE.category(building.security().id()),
+            building.security().label(), LockService.clock(level.getServer()), report.skill(), report.recent() == 1, report.lock(), report.alarm(), report.cameras(), report.risk());
+        BurglaryNetwork.casing(player, report);
+    }
+
+    /**
+     * The Inspect key (D-157): the same casing as a crouched click with an empty hand, for the door the player looks at, from its street side and within reach. Returns why it cannot be cased,
+     * or null when the card was sent.
+     */
+    static String inspect(ServerPlayer player, ServerLevel level, BlockPos pos) {
+        var state = level.getBlockState(pos);
+        if (!(state.getBlock() instanceof net.minecraft.world.level.block.DoorBlock)) return "Look at a building's street door to case it.";
+        BlockPos lower = BuildingGuard.lowerOf(pos, state);
+        var lowerState = level.getBlockState(lower);
+        if (player.position().distanceTo(net.minecraft.world.phys.Vec3.atCenterOf(lower)) > 5.5) return "Come closer to the door to case it.";
+        var found = BuildingGuard.protectedAt(level, lower);
+        if (found.isEmpty() || !found.get().locked() || Thievery.tier(found.get()) <= 0) return "Nothing to case here.";
+        if (!BuildingGuard.exterior(level, lower, lowerState)) return "Case a building from its street door.";
+        if (!BuildingGuard.outsideSide(level, lower, lowerState, player.position())) return "Case a place from the street side of its door.";
+        if (CityHomes.holdsKey(player, found.get())) return "You live here.";
+        caseDoor(player, level, found.get(), lower);
+        return null;
     }
 
     /** How many of the building's household are in at this world time (0 for a building with nobody of its own). */
@@ -104,6 +171,9 @@ public final class Casing {
         if (!r.empty().isEmpty()) out.add(r.empty());
         if (r.safe() >= 0) out.add("Safe: " + switch (r.safe()) { case 0 -> "none"; case 1 -> "a household safe"; case 2 -> "a wall safe"; default -> "a vault safe"; });
         if (r.recent() == 1) out.add("Broken into lately: they are watchful");
+        if (!r.risk().isEmpty()) out.add("Risk now: " + r.risk() + (r.riskPercent() >= 0 ? " (about " + r.riskPercent() + "%)" : "") + (r.reasons().isEmpty() ? "" : ": " + r.reasons()));
+        if (r.policeSeconds() >= 0) out.add("Police would take about " + r.policeSeconds() + " s");
+        if (r.searchable() >= 0) out.add("Worth searching: " + r.searchable() + " places");
         return out;
     }
 }
