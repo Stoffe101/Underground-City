@@ -84,6 +84,7 @@ public final class TechGameTests {
 
     @GameTest(template = "empty")
     public static void aRepairPaysTheFirstTechnicianOnceAndPutsTheBuildingRight(GameTestHelper helper) {
+        if (!QShopEconomy.available()) { helper.succeed(); return; }   // the jobs that run the GameTests without Q Shop (the onboarding and world smoke jobs) have no wallet to pay into
         BlockPos door = helper.absolutePos(new BlockPos(1, 2, 1));
         CityBuildings.Building b = building(door, 2, "flat_block", new CityBuildings.Response(1.0, 60, 1, 60));
         TechService.Systems s = TechService.systems(helper.getLevel().getServer());
@@ -127,6 +128,7 @@ public final class TechGameTests {
     /** Two players on one service call (the co-op case): both may start it, the first to find the dead part is paid, the other's repair ends with nothing paid and nothing used. */
     @GameTest(template = "empty")
     public static void twoTechniciansOnOneCallOnlyTheFirstIsPaid(GameTestHelper helper) {
+        if (!QShopEconomy.available()) { helper.succeed(); return; }   // the jobs that run the GameTests without Q Shop (the onboarding and world smoke jobs) have no wallet to pay into
         BlockPos door = helper.absolutePos(new BlockPos(1, 2, 1));
         CityBuildings.Building b = building(door, 3, "flat_block", new CityBuildings.Response(1.0, 60, 1, 60));
         TechService.Systems s = TechService.systems(helper.getLevel().getServer());
