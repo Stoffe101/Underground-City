@@ -107,6 +107,30 @@ final class CannabisScenario {
         Playtest.queue("summary", ThiefScenario::summary);
     }
 
+    /** {@code -PucPlaytest=cannabislaw}: only the law on growing in public view, for a Farmer whose skills are given (logged), so the beat can be waited for without the whole growing run. */
+    static void buildLaw() {
+        ThiefScenario.tag = "CANNABIS";
+        Playtest.keepScreens = true;
+        ThiefScenario.register(0, "the Farmer card", "1 a new citizen registers as a Farmer (the crop is the Farmer's restricted good)");
+        Playtest.queue("a level-10 Farmer with the crop's skills and two seeds (scripted)", () -> {
+            server(() -> {
+                CitizenState state = CitizenState.get(me().server);
+                state.addCareerXp(me().getUUID(), ProgressionRules.xpAtLevel(LEVEL));
+                for (String id : SKILLS) state.unlockSkill(me().getUUID(), id);
+                me().getInventory().add(new ItemStack(core("cannabis_seeds"), 2));
+                return null;
+            });
+            scripted("the career XP of a level-10 Farmer, the crop's four skills and two Cannabis Seeds were given (the growing run learns them on the terminal and crafts the seeds)");
+        });
+        Playtest.queue("noon with the daylight cycle stopped", () -> {
+            Playtest.command("gamerule doDaylightCycle false");
+            Playtest.command("time set 6000");
+            scripted("the time was set to noon and the daylight cycle stopped");
+        });
+        publicGrowing();
+        Playtest.queue("summary", ThiefScenario::summary);
+    }
+
     // ------------------------------------------------------------------------------------------------ the Farmer
 
     private static void seasoned() {
@@ -626,9 +650,19 @@ final class CannabisScenario {
         placeAhead("the dirt", Blocks.DIRT, spot, pos -> server(() -> BuildingGuard.protectedAt(level(), pos).isEmpty() && BuildingGuard.protectedAt(level(), pos.below()).isEmpty() && level().canSeeSky(pos.above())));
         Playtest.queue("the dirt is down", () -> { L.dirt = spot[0]; if (spot[0] == null || !mc().level.getBlockState(spot[0]).is(Blocks.DIRT)) Playtest.fail("the dirt could not be put down in the street"); });
         stopIfFailed("putting the dirt down");
+        // fresh farmland with no water near turns back to dirt on a random tick (Cannabis run 9 lost it while the seeds were being moved): the seeds wait on the hotbar, and go in right after the hoe
+        Playtest.queue("the Cannabis Seeds on hotbar slot 8 (scripted arrangement)", () -> {
+            server(() -> {
+                var inv = me().getInventory();
+                for (int i = 0; i < inv.items.size(); i++) if (i != 7 && inv.items.get(i).is(core("cannabis_seeds"))) { ItemStack seeds = inv.items.get(i); inv.items.set(i, inv.items.get(7)); inv.items.set(7, seeds); break; }
+                return null;
+            });
+            scripted("the Cannabis Seeds were put on hotbar slot 8 before hoeing (an arrangement a person makes in the inventory)");
+        });
         hold("the wooden hoe", Items.WOODEN_HOE);
         use("hoe the dirt", () -> L.dirt, () -> mc().level.getBlockState(L.dirt).is(Blocks.FARMLAND), 900);
-        hold("the Cannabis Seeds", core("cannabis_seeds"));
+        Playtest.queue("select the Cannabis Seeds (8)", () -> { Playtest.focusWindow(); Playtest.tap("8"); });
+        Playtest.wait("select", 3);
         use("plant a seed in the street", () -> L.dirt, () -> mc().level.getBlockState(L.dirt.above()).getBlock() instanceof RestrictedCropBlock, 900);
         shot("13-street-plant");
         Playtest.queue("planted in public view", () -> {

@@ -18,6 +18,7 @@ final class Scenarios {
             case "thief" -> ThiefScenario.build();
             case "heist" -> HeistScenario.build();
             case "cannabis" -> CannabisScenario.build();
+            case "cannabislaw" -> CannabisScenario.buildLaw();
             case "patrol" -> PatrolScenario.build();
             case "freight" -> FreightScenario.build();
             case "places" -> PlacesScenario.build();
