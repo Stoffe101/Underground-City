@@ -47,10 +47,13 @@ import static io.github.stoffe101.undergroundcity.ThiefScenario.stopIfFailed;
  * Scenario D of the brief, "Cannabis progression", through a real client ({@code -PucPlaytest=cannabis}, a new furnished archipelago world): a Farmer learns the controlled crop's skills and its
  * licence on the terminal's Skills page, accepts the licensed supply order for the Blackwater dispensary, buys the catalyst and rare seed stock on the Valewood exchange, crafts Cultivation Nutrient
  * and Cannabis Seeds in the inventory's grid, hoes a plot, plants and feeds three plants, harvests them, checks that every item and the order are called Cannabis (D-142), and delivers the flower at a
- * terminal in Blackwater for the order's pay.
+ * terminal in Blackwater for the order's pay. Then (sixth pass) the processing step and the law: the harvest's spare flower is hung on a Drying Rack placed in the Blackwater street and taken
+ * down dried after six minutes of play (D-160), and a plant grown in an Ironhaven street, where the crop is prohibited, waits for the officer on the beat to see it and pull it up.
  *
  * <p>Scripted rather than played, each logged as SCRIPTED: the career XP of a level-10 Farmer (the climb is the journey's), the travel (teleports), the time of day, the bone meal and glass bottles
- * (vanilla goods a farm has), the random tick speed while the plants grow (minutes of waiting, not play), and any walk the path walker could not finish. Every click, key and screen is the real one.
+ * (vanilla goods a farm has), the random tick speed while the plants grow (minutes of waiting, not play), and any walk the path walker could not finish; in the sixth-pass steps the Drying Rack
+ * (its recipe needs a crafting table), flower and a seed only when the harvest left too few, a block of dirt to plant in on the paved street, and a raised random tick speed while waiting for the
+ * officer (it decides how often the plant looks, not whether an officer comes or sees it). Every click, key and screen is the real one.
  */
 final class CannabisScenario {
     private CannabisScenario() {}
@@ -68,6 +71,12 @@ final class CannabisScenario {
     }
 
     private static final Facts F = new Facts();
+    /** The sixth-pass steps' facts: the rack, the flower hung, the dried cannabis taken down, the street plant and Ironhaven's heat round it. */
+    private static final class Later {
+        volatile BlockPos rack, dirt;
+        volatile int hung, driedBefore, heatBefore;
+    }
+    private static final Later L = new Later();
 
     private static Item core(String id) { return UndergroundCity.item(id); }
 
@@ -93,6 +102,8 @@ final class CannabisScenario {
         harvest();
         names();
         deliver();
+        dry();
+        publicGrowing();
         Playtest.queue("summary", ThiefScenario::summary);
     }
 
@@ -542,5 +553,106 @@ final class CannabisScenario {
             else pass(String.format(Locale.ROOT, "10 deliver six Cannabis Flower at a terminal in Blackwater: %.0f credits and %d career XP", w - F.walletBeforeDelivery, xp - F.xpBeforeDelivery));
         });
         closeScreen("close the terminal");
+    }
+
+    // ------------------------------------------------------------------------------------------------ processing (D-160)
+
+    /** The spare flower is hung on a Drying Rack in the Blackwater street and taken down dried after six minutes of active play. */
+    private static void dry() {
+        Playtest.queue("a Drying Rack, and flower to hang (scripted only where the harvest left too little)", () -> {
+            int spare = count(core("cannabis_flower"));
+            server(() -> { me().getInventory().add(new ItemStack(UndergroundCity.DRYING_RACK_ITEM.get())); return null; });
+            String extra = "";
+            if (spare < 2) { int give = 2 - spare; server(() -> { me().getInventory().add(new ItemStack(core("cannabis_flower"), give)); return null; }); extra = " and " + give + " Cannabis Flower (the harvest left " + spare + " after the order)"; }
+            scripted("a Drying Rack was put in the inventory (seven sticks and a string at a crafting table)" + extra);
+            L.driedBefore = count(core("dried_cannabis"));
+        });
+        hold("the Drying Rack", UndergroundCity.DRYING_RACK_ITEM.get());
+        final BlockPos[] spot = new BlockPos[1];
+        placeAhead("the Drying Rack", UndergroundCity.DRYING_RACK.get(), spot, pos -> server(() -> BuildingGuard.protectedAt(level(), pos).isEmpty() && BuildingGuard.protectedAt(level(), pos.below()).isEmpty()));
+        Playtest.queue("the rack stands", () -> { L.rack = spot[0]; if (spot[0] == null || !mc().level.getBlockState(spot[0]).is(UndergroundCity.DRYING_RACK.get())) Playtest.fail("the Drying Rack could not be placed in the street"); });
+        stopIfFailed("placing the Drying Rack");
+        hold("the Cannabis Flower", core("cannabis_flower"));
+        Playtest.queue("how much flower", () -> L.hung = count(core("cannabis_flower")));
+        use("hang the flower on the rack with a right click", () -> L.rack,
+            () -> mc().level.getBlockState(L.rack).getValue(DryingRack.LOAD) == DryingRack.Load.DRYING, 300);
+        shot("11-drying");
+        Playtest.queue("hung", () -> {
+            int left = count(core("cannabis_flower"));
+            L.hung -= left;
+            Playtest.log("CANNABIS hung " + L.hung + " Cannabis Flower on the rack at " + L.rack.toShortString());
+            if (L.hung < 2) Playtest.fail("the rack took " + L.hung + " flower");
+        });
+        stopIfFailed("hanging the flower");
+        Playtest.wait("six minutes of play while it dries (the player stands in the street)", (int) DryingRack.DRY_TICKS + 200);
+        Playtest.queue("an empty hand", () -> { Playtest.focusWindow(); Playtest.tap("9"); server(() -> { var inv = me().getInventory(); ItemStack held = inv.getItem(8); if (!held.isEmpty()) { inv.setItem(8, ItemStack.EMPTY); inv.add(held); } return null; }); });
+        use("take the dried cannabis down with a right click", () -> L.rack,
+            () -> count(core("dried_cannabis")) > L.driedBefore, 300);
+        shot("12-dried");
+        Playtest.queue("dried", () -> {
+            int dried = count(core("dried_cannabis")) - L.driedBefore;
+            Playtest.log("CANNABIS took down " + dried + " Dried Cannabis from " + L.hung + " flower");
+            if (dried != DryingRack.driedFrom(L.hung)) Playtest.fail("the rack gave " + dried + " Dried Cannabis for " + L.hung + " flower, not " + DryingRack.driedFrom(L.hung));
+            else pass("11 hang " + L.hung + " Cannabis Flower on a Drying Rack in the street and, after six minutes of play, take down " + dried + " Dried Cannabis");
+        });
+    }
+
+    // ------------------------------------------------------------------------------------------------ growing in public view (D-160)
+
+    /** A plant grown in an Ironhaven street, where the crop is prohibited: the officer on the beat who sees it pulls it up, and the grower gains heat. */
+    private static void publicGrowing() {
+        ThiefScenario.travel("to the middle of Ironhaven", () -> ThiefScenario.centre("ironhaven"), 4);
+        final BlockPos[] street = new BlockPos[1];
+        Playtest.queue("survival, and open street ground nearby that nobody owns", () -> {
+            Playtest.command("gamemode survival");
+            street[0] = server(() -> openGround(me().blockPosition(), 40, false));
+            if (street[0] == null) Playtest.fail("no open street ground near the middle of Ironhaven");
+        });
+        stopIfFailed("open ground in Ironhaven");
+        Playtest.queue("down to the street (scripted)", () -> {
+            scripted("the player was put on open street ground in Ironhaven at " + street[0].toShortString());
+            server(() -> { me().teleportTo(street[0].getX() + 0.5, street[0].getY(), street[0].getZ() + 0.5); me().setDeltaMovement(Vec3.ZERO); return null; });
+        }, () -> mc().player.blockPosition().distManhattan(street[0]) <= 1, 400);
+        until("the ground has arrived", Scenarios::groundBelowPlayer, 2400);
+        Playtest.wait("settle", 20);
+        Playtest.queue("a block of dirt to plant in, and a seed if none is left (scripted)", () -> {
+            boolean seed = count(core("cannabis_seeds")) < 1;
+            server(() -> { me().getInventory().add(new ItemStack(Items.DIRT)); if (seed) me().getInventory().add(new ItemStack(core("cannabis_seeds"))); return null; });
+            scripted("a block of dirt was put in the inventory (the street is paved)" + (seed ? " and one Cannabis Seed (the harvest left none)" : ""));
+            L.heatBefore = server(() -> WorkOrderLedger.get(me().server).heat(me().getUUID(), "ironhaven"));
+        });
+        hold("the dirt", Items.DIRT);
+        final BlockPos[] spot = new BlockPos[1];
+        placeAhead("the dirt", Blocks.DIRT, spot, pos -> server(() -> BuildingGuard.protectedAt(level(), pos).isEmpty() && BuildingGuard.protectedAt(level(), pos.below()).isEmpty() && level().canSeeSky(pos.above())));
+        Playtest.queue("the dirt is down", () -> { L.dirt = spot[0]; if (spot[0] == null || !mc().level.getBlockState(spot[0]).is(Blocks.DIRT)) Playtest.fail("the dirt could not be put down in the street"); });
+        stopIfFailed("putting the dirt down");
+        hold("the wooden hoe", Items.WOODEN_HOE);
+        use("hoe the dirt", () -> L.dirt, () -> mc().level.getBlockState(L.dirt).is(Blocks.FARMLAND), 300);
+        hold("the Cannabis Seeds", core("cannabis_seeds"));
+        use("plant a seed in the street", () -> L.dirt, () -> mc().level.getBlockState(L.dirt.above()).getBlock() instanceof RestrictedCropBlock, 300);
+        shot("13-street-plant");
+        Playtest.queue("planted in public view", () -> {
+            boolean planted = server(() -> level().getBlockState(L.dirt.above()).getBlock() instanceof RestrictedCropBlock);
+            var view = server(() -> CannabisLaw.inPublicView(level(), L.dirt.above()));
+            Playtest.log("CANNABIS street plant at " + L.dirt.above().toShortString() + ": planted " + planted + ", in public view " + view.orElse("no"));
+            if (!planted || view.isEmpty()) Playtest.fail("the plant is not standing in public view in Ironhaven");
+        });
+        stopIfFailed("planting in the street");
+        Playtest.queue("the random tick speed while waiting for the beat (scripted)", () -> {
+            Playtest.command("gamerule randomTickSpeed 30");
+            scripted("the random tick speed was raised to 30 while waiting for an officer: a plant looks round on its random ticks; the officer's coming and seeing are the beat's own");
+        });
+        Playtest.queue("wait in the street for an officer on the beat to see the plant (up to fifteen minutes)", () -> { }, () -> !(mc().level.getBlockState(L.dirt.above()).getBlock() instanceof RestrictedCropBlock), 18000);
+        Playtest.queue("the random tick speed back to 3", () -> Playtest.command("gamerule randomTickSpeed 3"));
+        shot("14-pulled-up");
+        Playtest.queue("pulled up", () -> {
+            boolean gone = server(() -> !(level().getBlockState(L.dirt.above()).getBlock() instanceof RestrictedCropBlock));
+            int heat = server(() -> WorkOrderLedger.get(me().server).heat(me().getUUID(), "ironhaven"));
+            long seized = server(() -> CannabisLaw.plantings(me().server).seized);
+            Playtest.log("CANNABIS street plant gone " + gone + "; seized by the law " + seized + "; Ironhaven heat " + L.heatBefore + " -> " + heat);
+            if (!gone) Playtest.fail("no officer pulled the plant up in fifteen minutes");
+            else if (seized < 1 || heat <= L.heatBefore) Playtest.fail("the plant went, but not by the law (seized " + seized + ", heat " + L.heatBefore + " -> " + heat + ")");
+            else pass("12 a plant grown in an Ironhaven street is seen by the officer on the beat and pulled up; Ironhaven's heat rises by " + (heat - L.heatBefore));
+        });
     }
 }
