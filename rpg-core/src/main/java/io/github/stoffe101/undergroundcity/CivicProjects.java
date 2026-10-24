@@ -129,6 +129,9 @@ public final class CivicProjects {
         return where.contains("anchor") ? Optional.of(NbtUtils.readBlockPos(where.getCompound("anchor"))) : Optional.empty();
     }
 
+    /** Finished projects whose stalls found no spot yet (logged once each). */
+    private static final java.util.Set<String> WAITING = new java.util.HashSet<>();
+
     @SubscribeEvent
     public static void tick(TickEvent.ServerTickEvent event) {
         if (event.phase != TickEvent.Phase.END || event.getServer().getTickCount() % 200 != 0) return;
@@ -148,7 +151,11 @@ public final class CivicProjects {
         var region = CityRegions.INSTANCE.all().stream().filter(r -> r.id().equals(p.city())).findFirst().orElse(null);
         if (region == null) return false;
         BlockPos at = spot(level, region.centerChunkX(), region.centerChunkZ());
-        if (at == null) return false;
+        if (at == null) {
+            if (!WAITING.contains(p.id())) { WAITING.add(p.id()); LOGGER.info("[UC] civic project {} is finished; its stalls wait for an open street near {}'s centre to be loaded", p.id(), p.city()); }
+            return false;
+        }
+        WAITING.remove(p.id());
         ListTag placed = new ListTag();
         stall(level, at, false, placed);
         stall(level, at.east(4), true, placed);
@@ -176,9 +183,10 @@ public final class CivicProjects {
             if (!CityBuildings.INSTANCE.askable(level, cx, cz) || CityBuildings.INSTANCE.ofChunk(level, cx, cz).isPresent()) continue;
             int street = PopulationService.streetOf(level, new ChunkPos(cx, cz));
             if (street < 0) continue;
+            // the walkable surface is at the street height Lost Cities gives or up to two above it, as the street people's spots are (civic run 2: nothing was ever free at the bare height)
             found:
-            for (int x = 2; x <= 7; x++) for (int z = 4; z <= 10; z++) {
-                BlockPos origin = new BlockPos(cx * 16 + x, street, cz * 16 + z);
+            for (int y = street; y <= street + 2; y++) for (int x = 2; x <= 7; x++) for (int z = 4; z <= 10; z++) {
+                BlockPos origin = new BlockPos(cx * 16 + x, y, cz * 16 + z);
                 if (free(level, origin, homes, dimension)) { best = origin; bestDistance = distance; break found; }
             }
         }
