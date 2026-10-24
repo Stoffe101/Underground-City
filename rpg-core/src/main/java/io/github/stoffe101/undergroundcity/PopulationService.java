@@ -312,24 +312,36 @@ public final class PopulationService {
                 body.getLookControl().setLookAt(Vec3.atCenterOf(w.door.lower()));
                 return rest(body, w, now, 80 + level.random.nextInt(160));
             }
-            case "home", "work", "venue" -> { return enter(level, body, w, players, now) || rest(body, w, now, 60 + level.random.nextInt(100)); }
+            case "venue", "work" -> {
+                // after dark a bar's crowd is half outside it, and a night shift takes its break at the works' door: two in three stand at the door a while, with whoever else is there,
+                // then go on (measured in crowd run 4: at 22:00 Blackwater's bars had 18 people within 64 blocks and 1.6 in sight, because every visitor stepped straight inside)
+                boolean night = hour >= 20 || hour < 5;
+                if (night && level.random.nextInt(3) != 0) return chatOrStand(level, body, w, now, 400, 900);
+                return enter(level, body, w, players, now) || rest(body, w, now, 60 + level.random.nextInt(100));
+            }
+            case "home" -> { return enter(level, body, w, players, now) || rest(body, w, now, 60 + level.random.nextInt(100)); }
             case "deliver" -> {
                 body.getLookControl().setLookAt(Vec3.atCenterOf(w.door.lower()));
                 return rest(body, w, now, 50 + level.random.nextInt(60));
             }
             default -> {
                 // a stroll ends: talk to somebody standing near, or stand a while
-                Walker other = idleNear(level, body, w, 5);
-                if (other != null && level.getEntity(uuidOf(other)) instanceof TownspersonEntity partner) {
-                    long until = now + 160 + level.random.nextInt(340);
-                    w.phase = Phase.CHAT; w.until = until; w.partner = partner.getUUID(); body.errand(null, 0); body.hold(true);
-                    other.phase = Phase.CHAT; other.until = until; other.partner = body.getUUID(); partner.errand(null, 0); partner.hold(true);
-                    chats++;
-                    return true;
-                }
-                return rest(body, w, now, 100 + level.random.nextInt(300));
+                return chatOrStand(level, body, w, now, 160, 100);
             }
         }
+    }
+
+    /** Talks to somebody standing near (for at least {@code chat} ticks), or stands a while (at least {@code stand} ticks). */
+    private static boolean chatOrStand(ServerLevel level, TownspersonEntity body, Walker w, long now, int chat, int stand) {
+        Walker other = idleNear(level, body, w, 5);
+        if (other != null && level.getEntity(uuidOf(other)) instanceof TownspersonEntity partner) {
+            long until = now + chat + level.random.nextInt(chat * 2 + 20);
+            w.phase = Phase.CHAT; w.until = until; w.partner = partner.getUUID(); body.errand(null, 0); body.hold(true);
+            other.phase = Phase.CHAT; other.until = until; other.partner = body.getUUID(); partner.errand(null, 0); partner.hold(true);
+            chats++;
+            return true;
+        }
+        return rest(body, w, now, stand + level.random.nextInt(stand * 3));
     }
 
     /** Goes in at the errand's door: the door opens a moment (never with a player close enough to follow) and the body steps through and is gone. */
