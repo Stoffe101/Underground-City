@@ -115,6 +115,19 @@ New, and tested by scripts, Forge GameTests, the Python suite, the economy model
 
 One scripted Vintner made berry wine at a vat, fitted its second tier and sold three bottles over the Ironhaven pub's counter (workshop run 3, `RESULT pass`, 6 logged shortcuts). The Gunsmith's bench makes parts kits, not TaCZ firearms, and the business, hiring and property parts of the brief were not built. See [docs/production/living-population-professions-pass.md](docs/production/living-population-professions-pass.md).
 
+## October 24 sixth pass: toward the First Fully Playable Sandbox Alpha (scripted, not yet human-tested)
+
+New, and tested by scripts, Forge GameTests, the Python suite, the economy model and scripted real clients (**no person has played any of it**). The roadmap now defines the **First Fully Playable Sandbox Alpha** with twelve exit criteria and reconciles every phase and work package with what exists ([roadmap](docs/production/roadmap.md#milestone-first-fully-playable-sandbox-alpha)); the alpha is not proven until a person plays it.
+
+* **The arrival hitch is fixed at its cause (D-167).** The server waited on Lost Cities' plan lock while its generation workers built new chunks; Core now records each chunk's plan as it is generated. Measured through a real client walking and teleporting into each city: no tick over 250 ms after the fix (1,150 ms before).
+* **The Gunsmith builds real TaCZ firearms (D-168)** from parts kits at TaCZ's Gun Smith Table, registered with a serial or unmarked and restricted.
+* **Trade premises (D-169):** Ironhaven's commercial workshop and warehouse make work faster and open bulk orders, on the home's active-time rent; 8 of 10 property categories now have a building.
+* **Crew contracts (D-170):** parts by career, each paid to whoever delivers it, and a bonus split equally among those who did, once (run with two real clients connected, server-driven).
+* **A civic project (D-171):** the Valewood market is reopened by contributions and two stalls are built once in the world (one scripted real client, civic run 3).
+* **The bonded store job (D-173),** the first raid, tracked on the status display and Xaero (one scripted real client, raid run 3); **beginner burglary pays something (D-172)**; **Trading and Social are earned in play (D-174)**; after dark people stand outside the bars.
+
+See [docs/production/sixth-pass-alpha.md](docs/production/sixth-pass-alpha.md).
+
 ## Ownership and license
 
 **Copyright © 2026 Stoffe101. All rights reserved.** See [LICENSE](LICENSE). The license governs **original Underground City material only**. Minecraft, third-party mods, map downloads, artworks, and their trademarks remain subject to their respective owners' terms. Public repository visibility does **not** mean the project is open source. This project is intended for private play, not for sale or public modpack publication.
