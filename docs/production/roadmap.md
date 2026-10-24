@@ -42,7 +42,7 @@ Every claim names one level. Levels are never added together: forty GameTests ar
 | P0 Foundations | partly met: documents drift; this reconciliation fixes the named stale lines | L1 (`validate_repo.py`, the asset register, hash-pinned runtime downloads, the private-content check) | n/a | n/a |
 | P1 Runtime baseline | met in the cloud on Linux; not on Windows or with a real launcher account | L4 (`journey` and its pack variants; `run_prod_boot_check.py`) | yes | no |
 | P2 City sandbox | partly met: roads walkable end to end (6 of 6 road ends), arrival hitch removed at its cause (D-167); no dedicated-server measurement with two players | L3 (journey runs 57 and 65 walked Ironhaven to Valewood both ways; hitch runs 1 to 4) | legacy world only | legacy world once |
-| P3 Identity and skills | met for registration and persistence; partly for skills (one general skill earned in play, the Thief track) | L4 (reconnect, restart), L3 (thief run 12) | yes | no |
+| P3 Identity and skills | met for registration and persistence; partly for skills (three general skills earned in play: the Thief track, Trading and Social, D-174; no panel) | L4 (reconnect, restart), L3 (thief run 12; Trading and Social XP seen in workshop run 4 and civic run 3), L2 (their effects) | yes | no |
 | P4 Economy loop | partly met: earn, spend, produce, deliver and reconcile after a restart; **no tax** (rent on active time stands in) | L4 (Crew and combined journeys), L3 (Cannabis run 6, workshop run 3) | yes | no |
 | P5 Career depth | five careers with a legal loop each; the Gunsmith now builds real TaCZ firearms (D-168) | L3 for the Farmer, Vintner and Technician; L2 for the Gunsmith and Smith | first vanilla orders only | no |
 | P6 City life and loot | substantial but opt-in; contextual loot by room and tier; **per-player loot absent** (Lootr reviewed, not adopted) | L3 (crowd runs, thief run 12, journey run 65, workshop run 3) | civilian counter only | no |
@@ -57,7 +57,7 @@ The [expansion plan](expansion-plan.md) is still a proposal (D-088). Since Octob
 | WP | Plan | State on October 24 | Highest evidence |
 | --- | --- | --- | --- |
 | WP1 | Crew contracts | **built** (D-170): two contracts, parts by career, parts pay their deliverers, bonus in equal shares owed and paid once, a supplier fills a missing part | L2; a step of the L4 Crew journey (server-driven, two clients connected) |
-| WP2 | Skill growth | partly: real effects (D-098), skill gates (D-158, D-163), the Thief track (D-143); no second general skill earned in play, no perk table, nothing past level 30 | L3 (thief run 12) |
+| WP2 | Skill growth | partly: real effects (D-098), skill gates (D-158, D-163), the Thief track (D-143), Trading and Social earned in play with capped effects (D-174); no perk table, no general-skills panel, nothing past level 30 | L3 (thief run 12; Trading and Social XP in workshop run 4 and civic run 3), L2 (their effects) |
 | WP3 | Property | largely built: rent on active time, grace and lapse, upgrades, Crew bills; 8 of 10 categories have a building; trade premises (D-169); the larger apartment and premium residence have none; no property tax | L4 (rent in the Crew journey) |
 | WP4 | Illegal production | partly: Cannabis with drying, moonshine, unmarked kits and unmarked TaCZ builds (D-168); no hidden facility kind | L3 (Cannabis runs 6 and 9, law run 2) |
 | WP5 | Advanced manufacturing | partly: seven Core stations, the Electronics Bench, kit-to-firearm builds at the Gun Smith Table | L3 (workshop run 3, tech run 5), L2 (TaCZ builds) |
@@ -174,9 +174,9 @@ Read against commit `78e672c` (the fifth pass) by a separate read of the code, d
 * **Exists:** `RegistrationScreen` and `RegistrationService` (D-058); `CitizenState`; the guided journey (`Journey.STEPS`, nine steps; D-076); five career trees in `skill_trees/` (12 to 14 skills, 25 to 29 points each) with capped effects (D-098); the Thief track in `specialization_trees/thief.json` (16 skills, level 25; D-143); identity by account UUID (D-090).
 * **Evidence:** L4 for registration and persistence (economy journey: reconnect without a second registration, restart); L3 for the Thief track (thief run 12) and for save, quit and reopen (journey step 13, through the client's own calls rather than the pause menu); L2 for name versus account (`crewMembershipMoneyHomesAndPayoutsBelongToTheAccountNotTheName`).
 * **Missing:** a real second account; respawn through a client (not verified); a UUID migration (deliberately absent, D-090).
-* **General skills (gap):** `ProgressionRules.GENERAL_SKILLS` stores driving, fitness, shooting, trading, social and thievery. Only thievery is earned in play (`Thievery.java`). The other five are raised only by the operator command `/uc_dev general_xp`. No screen shows them.
+* **General skills:** `ProgressionRules.GENERAL_SKILLS` stores driving, fitness, shooting, trading, social and thievery. Thievery (`Thievery.java`), Trading and Social (`GeneralSkills.java`, D-174) are earned in play: Trading lowers exchange prices inside the shared 10% cap, Social lets legal buyers offer trusted work one step sooner. Driving, fitness and shooting are raised only by the operator command `/uc_dev general_xp`. No screen shows them (notices and `/uc skills` only).
 * **Also missing:** nothing past level 30, no respec rule (still open in `general-skills.md`).
-* **Next step:** decide which general skill comes second (D-004) and which system consumes it; then one GameTest per effect cap.
+* **Next step:** a panel for the general skills on the terminal; a consumer for driving once a vehicle economy exists (D-004).
 
 #### P4 Economy loop
 
@@ -264,11 +264,11 @@ Read against commit `78e672c` (the fifth pass) by a separate read of the code, d
 #### WP2 Skill growth
 
 * **Plan:** general skills (driving, negotiating, lockpicking, first aid, survival) as a second tree; effects only where a system consumes them; one Crew perk table.
-* **Now:** four capped percentage effects consumed by real systems (D-098); skill gates for workshop recipes and tiers (D-163) and the Technician's jobs (D-158); the Thief track as the first general skill with its own level, points and tree (D-143). Storage for five more general skills exists, but nothing awards them (see P3). No Crew perk table exists. No tier past level 30.
+* **Now:** four capped percentage effects consumed by real systems (D-098); skill gates for workshop recipes and tiers (D-163) and the Technician's jobs (D-158); the Thief track as the first general skill with its own level, points and tree (D-143); Trading and Social earned in play with one capped effect each (D-174). Driving, fitness and shooting are stored but nothing awards them (see P3). No Crew perk table exists. No tier past level 30.
 * **Stale in the plan:**
   * line 50: "effects are limited to a capped inspection modifier, exchange discount and licences" (D-098 added four effects; D-158 and D-163 added gates);
   * line 50: "General skills have a design ([general-skills.md]), **no implementation**" (the Thief track is implemented; six general skills are stored).
-* **Remaining:** a level-30 player can choose a second specialism or a mastery tier and see one new capability per tier in play. A second general skill rises from a real activity (for example trading from sales, driving from deliveries) and visibly changes one system, capped, with a stacking test.
+* **Remaining:** a level-30 player can choose a second specialism or a mastery tier and see one new capability per tier in play. A second general skill rising from a real activity and changing one system, capped, with a stacking test, now exists (Trading and Social, D-174); a screen that shows them does not.
 
 #### WP3 Property: rent, upkeep, upgrades
 

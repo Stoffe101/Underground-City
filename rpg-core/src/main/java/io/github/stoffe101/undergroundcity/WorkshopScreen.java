@@ -33,6 +33,15 @@ public final class WorkshopScreen extends UcScreen {
     void update(WorkshopNetwork.View next) { view = next; if (selected >= view.rows().size()) selected = 0; batches = Math.min(batches, view.batch()); labels(); }
     /** Scenario hook. */
     void select(String id) { for (int i = 0; i < view.rows().size(); i++) if (view.rows().get(i).id().equals(id)) selected = i; labels(); }
+    /** The middle of a recipe's row in the list, where a click selects it, or null when it is scrolled out of view (for a scenario's real click). */
+    int[] rowCentre(String id) {
+        for (int i = 0; i < view.rows().size(); i++) if (view.rows().get(i).id().equals(id)) {
+            int y = listY + 2 + (i - scroll) * ROW + ROW / 2;
+            return i < scroll || y > listY + listH - ROW / 2 ? null : new int[]{listX + listW / 2, y};
+        }
+        return null;
+    }
+    String selectedId() { return selected < view.rows().size() ? view.rows().get(selected).id() : ""; }
 
     @Override protected int accent() { return UcUi.LEGAL; }
     @Override protected String titleText() { return view.title() + ", tier " + view.tier() + " of " + view.maxTier(); }   // the display font has no middle dot (workshop run 2)
