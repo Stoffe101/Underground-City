@@ -73,7 +73,12 @@ public final class ClientHud {
         Minecraft mc = Minecraft.getInstance();
         drawn = null;
         if (!visible || mc.screen != null || mc.options.hideGui || mc.player == null) return;
+        // 200 deep: the chat draws a line 50 deep and its letters 50 deeper, the font's letters 0.03 over their shadow, so a stack drawn after it at 0 (and at 100) lost the depth test to
+        // every letter, which showed through the cards at 1280x720, GUI scale 3 (patrol runs 1, 2 and 6)
+        g.pose().pushPose();
+        g.pose().translate(0, 0, 200);
         HudLayout.Plan plan = render(g, mc, width, height, state, ClientOrderTracker.current(), ClientOrderTracker.objective(), mc.level == null ? 0 : mc.level.getDayTime(), HudConfig.Settings.fromConfig());
+        g.pose().popPose();
         if (plan == null || !plan.any()) return;
         int top = Integer.MAX_VALUE, left = 0;
         for (int i = 0; i < plan.shown().length; i++) if (plan.shown()[i]) { top = Math.min(top, plan.y()[i]); left = plan.x()[i]; }
