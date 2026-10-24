@@ -44,6 +44,9 @@ The first run of the model on the October 19 data found (all fixed in this pass,
 * **Apprentice orders never retired.** Level-1 orders paid the same at level 25 as at level 1, so a veteran could earn a living from wheat. Twelve entry orders now carry a ceiling (`max_level`, implemented in Java: they are offered up to it and not above; an order accepted earlier stays deliverable). **Vintner had no early order at all** (its first order needed Vinery); `cellar_bottles` and `sweet_must` give it a Core-only start.
 * **Two courier errands out-earned crafting.** `dray_parts_run` and `dray_rifle_run` carry exchange goods unchanged to a buyer. With the new contract-rate skills they would have reached 1.71 times the exchange price and 280 credits an hour against a ceiling of 250: they now pay **205** and **310**.
 * **The cannabis chain was the weakest "production" hour of the Farmer** (239 credits per hands-on hour at level 10, below an apprentice's wheat). The contract margins are bounded by the generator (legal 1.3 to 2.1 times the cost of the goods, underground 1.9 to 2.2), so only a small rise was available: `licensed_cultivar_supply` 200 → **225**, `quiet_bales` 220 → **237**, `reserve_load` 440 → **474**. The rest has to come from the **grafting skill** (about 30% more flower for the same nutrient), which lowers the cost of a flower instead of raising the price: see [skill-trees.md](../design/skill-trees.md).
+* **Drying (D-160) is the crop's second lever.**
+  * A Drying Rack turns two flower into one Dried Cannabis in six minutes of active play. The model prices a dried unit at 44 credits: two flower at 18 and 8 for the rack's time and the loss. It counts 5.4 hands-on minutes and a 30-minute wait before the first delivery.
+  * The two orders for it, `dried_for_marrow` (380 for 4) and `licensed_dried_supply` (360 for 4), sit inside the margin rules and pay **421 and 379 credits per hands-on hour**, against 304 to 346 for the flower orders. That is still under the Farmer's other legal work, and a played session has to say whether the wait is worth it.
 * **A skill that pays more must not break a margin.** The model's checks now use the *highest* payment an order can ever make *at the levels where it is offered*: an apprentice order is offered up to level 5 or 6 and the first contract-rate skill is level 8, so bread can never exceed the shop price; and a 12% skill on a level-8 order would be caught by the same check (a unit test mutates the tree to prove it).
 
 ## The generated tables
@@ -66,7 +69,9 @@ Everything between the markers is written by `--update-doc` and checked by a uni
 | farmer     | 5  | heirloom_seeds           | le   | 150     | 112  | 38  | 4.5  | 507   | 330 | 6/h    | cultivar_broker         |                     |
 | farmer     | 8  | estate_pantry            | le   | 260     | 0    | 260 | 31.9 | 489   | 420 | 6/h    | estate_wholesale        |                     |
 | farmer     | 9  | quiet_bales              | un   | 237     | 108  | 129 | 23.1 | 335   | 380 | 4/h    | underground_trade       |                     |
+| farmer     | 10 | dried_for_marrow         | un   | 380     | 176  | 204 | 29.1 | 421   | 420 | 4/h    | underground_trade       |                     |
 | farmer     | 10 | licensed_cultivar_supply | le   | 225     | 108  | 117 | 23.1 | 304   | 400 | 6/h    | controlled_crop_licence |                     |
+| farmer     | 11 | licensed_dried_supply    | le   | 360     | 176  | 184 | 29.1 | 379   | 440 | 6/h    | controlled_crop_licence |                     |
 | farmer     | 12 | reserve_load             | un   | 474     | 216  | 258 | 44.7 | 346   | 600 | 3/h    | grey_market_contacts    |                     |
 | gunsmith   | 1  | arrows                   | le   | 32      | 0    | 32  | 8.5  | 225   | 125 | 12/h   |                         |                     |
 | gunsmith   | 2  | crossbow                 | le   | 60      | 0    | 60  | 5.0  | 720   | 180 | 12/h   |                         |                     |
@@ -154,7 +159,7 @@ Everything between the markers is written by `--update-doc` and checked by a uni
 
 | career     | entry orders | entry net/h | other legal orders | other net/h | entry as a share of other |
 |------------|--------------|-------------|--------------------|-------------|---------------------------|
-| farmer     | 3            | 310         | 7                  | 473         | 65%                       |
+| farmer     | 3            | 310         | 8                  | 461         | 67%                       |
 | vintner    | 2            | 323         | 6                  | 512         | 63%                       |
 | smith      | 3            | 577         | 5                  | 750         | 77%                       |
 | gunsmith   | 3            | 449         | 5                  | 679         | 66%                       |

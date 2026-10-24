@@ -149,6 +149,44 @@
       "origin": "valewood"
     },
     {
+      "id": "dried_for_marrow",
+      "title": "Dried cannabis for Marrow",
+      "career": "farmer",
+      "level": 10,
+      "legality": "underground",
+      "requires_skill": "farmer.underground_trade",
+      "buyer": "marrow",
+      "trust_gain": 1,
+      "capacity": 2,
+      "refill_ticks": 18000,
+      "credits": 380,
+      "xp": 420,
+      "requirements": [
+        {
+          "item": "underground_city:dried_cannabis",
+          "count": 4
+        }
+      ],
+      "origin": "valewood"
+    },
+    {
+      "id": "licensed_dried_supply",
+      "title": "Licensed dried cannabis",
+      "career": "farmer",
+      "level": 11,
+      "legality": "legal",
+      "requires_skill": "farmer.controlled_crop_licence",
+      "buyer": "blackwater_dispensary",
+      "credits": 360,
+      "xp": 440,
+      "requirements": [
+        {
+          "item": "underground_city:dried_cannabis",
+          "count": 4
+        }
+      ]
+    },
+    {
       "id": "tavern_table_wine",
       "title": "Table wine for the tavern",
       "career": "vintner",
@@ -649,6 +687,7 @@
     },
     "harvest_units": {
       "underground_city:cannabis_flower": 18,
+      "underground_city:dried_cannabis": 44,
       "underground_city:data_ledger": 130
     },
     "rewards": {

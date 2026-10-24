@@ -1,0 +1,21 @@
+{
+  "schema_version": 3,
+  "title": "Dried cannabis for Marrow",
+  "career": "farmer",
+  "level": 10,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "underground_city:dried_cannabis",
+      "count": 4
+    }
+  ],
+  "credits": 380,
+  "xp": 420,
+  "capacity": 2,
+  "refill_ticks": 18000,
+  "legality": "underground",
+  "requires_skill": "farmer.underground_trade",
+  "buyer": "marrow",
+  "trust_gain": 1
+}

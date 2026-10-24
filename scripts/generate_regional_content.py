@@ -254,6 +254,8 @@ def build(data: dict, contracts: dict) -> dict[Path, bytes]:
         "item.underground_city.personal_computer": "Personal Computer",
         "block.underground_city.electronics_bench": "Electronics Bench",
         "item.underground_city.electronics_bench": "Electronics Bench",
+        "block.underground_city.drying_rack": "Drying Rack",
+        "item.underground_city.drying_rack": "Drying Rack",
     }
 
     def emit_item(entry, kind, stack):
@@ -399,7 +401,8 @@ def build(data: dict, contracts: dict) -> dict[Path, bytes]:
     files[Path(f"rpg-core/src/main/resources/assets/{NAMESPACE}/models/item/utility_panel.json")] = jdump({"parent": f"{NAMESPACE}:block/utility_panel_ok"}).encode()
     files[Path(f"rpg-core/src/main/resources/assets/{NAMESPACE}/models/item/personal_computer.json")] = jdump({"parent": f"{NAMESPACE}:block/personal_computer"}).encode()
     files[Path(f"rpg-core/src/main/resources/assets/{NAMESPACE}/models/item/electronics_bench.json")] = jdump({"parent": f"{NAMESPACE}:block/electronics_bench"}).encode()
-    for dropped in ("personal_computer", "electronics_bench"):
+    files[Path(f"rpg-core/src/main/resources/assets/{NAMESPACE}/models/item/drying_rack.json")] = jdump({"parent": f"{NAMESPACE}:block/drying_rack_drying"}).encode()
+    for dropped in ("personal_computer", "electronics_bench", "drying_rack"):
         files[Path(f"rpg-core/src/main/resources/data/{NAMESPACE}/loot_tables/blocks/{dropped}.json")] = jdump({"type": "minecraft:block", "pools": [{"rolls": 1,
             "entries": [{"type": "minecraft:item", "name": f"{NAMESPACE}:{dropped}"}], "conditions": [{"condition": "minecraft:survives_explosion"}]}]}).encode()
     files[Path(f"rpg-core/src/main/resources/assets/{NAMESPACE}/models/item/sealed_envelope.json")] = jdump(

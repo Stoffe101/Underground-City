@@ -385,6 +385,53 @@ def bench_side():
     return s
 
 
+# ------------------------------------------------------------------------------------------------ Drying rack (D-160)
+RACK_LOADS = ('empty', 'drying', 'dry')
+
+
+@tex
+def rack_wood():
+    s = Sprite()
+    s.rect(0, 0, 15, 15, WOOD[2])
+    for y in (2, 7, 12):
+        s.line(0, y, 15, y, WOOD[1])
+    for (x, y) in ((3, 4), (10, 9), (6, 14), (13, 1)):
+        s.put(x, y, WOOD[3])
+    return s
+
+
+def _rack_hang(bud) -> Sprite:
+    """The hanging face: three lines of twine from the bar with bundles of buds on them (none for an empty rack); transparent between."""
+    s = Sprite()
+    for x in (3, 8, 13):
+        s.line(x, 0, x, 3, BURLAP[2])
+        if bud is None:
+            s.line(x, 3, x, 6, BURLAP[1])
+            continue
+        for (dx, dy, rad) in ((0, 6, 2.2), (-1, 9, 1.8), (1, 9, 1.8), (0, 12, 1.9)):
+            for yy in range(16):
+                for xx in range(16):
+                    if (xx - (x + dx)) ** 2 + (yy - dy) ** 2 <= rad * rad:
+                        s.put(xx, yy, bud[2] if (xx + yy) % 3 else bud[3])
+        s.put(x, 5, bud[1]); s.put(x - 1, 13, bud[1]); s.put(x + 1, 8, AMBER[1] if bud is not LEAF_LIME else AMBER[2])
+    return s
+
+
+@tex
+def rack_hang_empty():
+    return _rack_hang(None)
+
+
+@tex
+def rack_hang_drying():
+    return _rack_hang(LEAF_LIME)
+
+
+@tex
+def rack_hang_dry():
+    return _rack_hang(ramp('#6b6a3f'))
+
+
 # ------------------------------------------------------------------------------------------------------------ models
 def box(f, t, faces, rotation=None, shade=True):
     el = {'from': f, 'to': t, 'faces': faces}
@@ -475,6 +522,17 @@ def computer_model():
             ], 'display': gui_display((28, 215, 0), 0.7, (0, -2, 0))}
 
 
+def rack_model(load):
+    return {'parent': 'minecraft:block/block', 'render_type': 'minecraft:cutout',
+            'textures': {'wood': 'underground_city:block/rack_wood', 'hang': f'underground_city:block/rack_hang_{load}', 'particle': 'underground_city:block/rack_wood'},
+            'elements': [
+                box([1, 0, 7], [2.5, 15, 9], {d: {'texture': '#wood'} for d in ('north', 'south', 'east', 'west', 'up')}),
+                box([13.5, 0, 7], [15, 15, 9], {d: {'texture': '#wood'} for d in ('north', 'south', 'east', 'west', 'up')}),
+                box([2.5, 13.5, 7.25], [13.5, 15, 8.75], all_faces('wood')),
+                box([2.5, 2, 8], [13.5, 13.5, 8], {'north': {'texture': '#hang', 'uv': [2.5, 2.5, 13.5, 14]}, 'south': {'texture': '#hang', 'uv': [2.5, 2.5, 13.5, 14]}}, shade=False),
+            ], 'display': gui_display((24, 200, 0), 0.62, (0, -1, 0))}
+
+
 def write_models():
     os.makedirs(MODELS, exist_ok=True)
     for name, model in (('operations_terminal', terminal_model()), ('secure_data_terminal', secure_model()), ('property_cache', safe_model()), ('public_ledger', ledger_model()), ('personal_computer', computer_model())):
@@ -494,6 +552,9 @@ def write_models():
         with open(os.path.join(MODELS, f'utility_panel_{light}.json'), 'w') as fh:
             json.dump({'parent': 'minecraft:block/orientable', 'textures': {'top': 'underground_city:block/utility_panel_side', 'front': f'underground_city:block/utility_panel_{light}',
                                                                             'side': 'underground_city:block/utility_panel_side'}}, fh, indent=1)
+    for load in RACK_LOADS:
+        with open(os.path.join(MODELS, f'drying_rack_{load}.json'), 'w') as fh:
+            json.dump(rack_model(load), fh, indent=1)
     for light in PANEL_LIGHTS:
         model = panel_model(light)
         model['parent'] = 'minecraft:block/block'
@@ -514,6 +575,9 @@ def write_states():
     with open(os.path.join(sd, 'utility_panel.json'), 'w') as fh:
         json.dump({'variants': {f'facing={d},state={light}': ({'model': f'underground_city:block/utility_panel_{light}'} | ({'y': y} if y else {}))
                                 for d, y in (('north', 0), ('east', 90), ('south', 180), ('west', 270)) for light in UTILITY_LIGHTS}}, fh, indent=1)
+    with open(os.path.join(sd, 'drying_rack.json'), 'w') as fh:
+        json.dump({'variants': {f'facing={d},load={load}': ({'model': f'underground_city:block/drying_rack_{load}'} | ({'y': y} if y else {}))
+                                for d, y in (('north', 0), ('east', 90), ('south', 180), ('west', 270)) for load in RACK_LOADS}}, fh, indent=1)
     with open(os.path.join(sd, 'alarm_panel.json'), 'w') as fh:
         json.dump(panel_states(), fh, indent=1)
     with open(os.path.join(sd, 'scrap_heap.json'), 'w') as fh:

@@ -53,10 +53,17 @@ public final class RestrictedCropBlock extends CropBlock {
 
     @Override
     public void randomTick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
+        if (CannabisLaw.look(level, pos)) return;   // grown in public view and seen by an officer on the beat (D-160)
         if (!state.getValue(NOURISHED) || level.getRawBrightness(pos, 0) < LIGHT_NEEDED) return;
         if (random.nextInt(GROWTH_ODDS) != 0) return;
         int age = getAge(state);
         if (age < getMaxAge()) level.setBlock(pos, state.setValue(AGE, age + 1).setValue(NOURISHED, false), 2);
+    }
+
+    @Override
+    public void onRemove(BlockState state, Level level, BlockPos pos, BlockState next, boolean moved) {
+        if (!next.is(this) && level instanceof ServerLevel server) CannabisLaw.forget(server, pos);
+        super.onRemove(state, level, pos, next, moved);
     }
 
     /** The loot table pays 2 or 3 flower; a grafting skill adds this share of the average harvest on top, as whole flower plus a chance of one more. */

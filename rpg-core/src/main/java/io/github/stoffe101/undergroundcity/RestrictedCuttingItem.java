@@ -1,6 +1,8 @@
 package io.github.stoffe101.undergroundcity;
 
+import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.BlockItem;
@@ -25,6 +27,11 @@ public final class RestrictedCuttingItem extends ItemNameBlockItem {
             player.sendSystemMessage(Component.literal("You have not learned Restricted Cultivation (a Farmer skill), so you cannot raise this seed."));
             return InteractionResult.FAIL;
         }
-        return super.place(context);
+        BlockPos at = context.getClickedPos().immutable();
+        InteractionResult result = super.place(context);
+        // who planted it, for the public-cultivation rule (D-160), which also says at once when the spot is in public view
+        if (result.consumesAction() && context.getPlayer() instanceof ServerPlayer player && player.level() instanceof ServerLevel level && level.getBlockState(at).getBlock() instanceof RestrictedCropBlock)
+            CannabisLaw.planted(level, at, player);
+        return result;
     }
 }

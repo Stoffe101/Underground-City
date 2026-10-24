@@ -86,6 +86,10 @@ public final class UndergroundCity {
     public static final RegistryObject<Block> ELECTRONICS_BENCH = BLOCKS.register("electronics_bench",
         () -> new TechBlocks.Bench(BlockBehaviour.Properties.of().mapColor(net.minecraft.world.level.material.MapColor.WOOD).strength(2.0f).sound(net.minecraft.world.level.block.SoundType.WOOD)));
     public static final RegistryObject<Item> ELECTRONICS_BENCH_ITEM = ITEMS.register("electronics_bench", () -> new BlockItem(ELECTRONICS_BENCH.get(), new Item.Properties()));
+    // the Farmer's drying rack (D-160): two Cannabis Flower dry into one Dried Cannabis in six minutes of play
+    public static final RegistryObject<Block> DRYING_RACK = BLOCKS.register("drying_rack",
+        () -> new DryingRack.Rack(BlockBehaviour.Properties.of().mapColor(net.minecraft.world.level.material.MapColor.WOOD).strength(1.0f).noOcclusion().sound(net.minecraft.world.level.block.SoundType.WOOD)));
+    public static final RegistryObject<Item> DRYING_RACK_ITEM = ITEMS.register("drying_rack", () -> new BlockItem(DRYING_RACK.get(), new Item.Properties()));
     /** A courier's sealed letter from a roadside encounter (D-139): pays its fee once, at any terminal or counter in the city it is addressed to. */
     public static final RegistryObject<Item> SEALED_ENVELOPE = ITEMS.register("sealed_envelope", () -> new EnvelopeItem(new Item.Properties().stacksTo(1)));
 
@@ -100,6 +104,10 @@ public final class UndergroundCity {
     public static final RegistryObject<net.minecraft.world.level.block.entity.BlockEntityType<PropertyCacheBlockEntity>> PROPERTY_CACHE_ENTITY =
         BLOCK_ENTITIES.register("property_cache", () -> net.minecraft.world.level.block.entity.BlockEntityType.Builder
             .of(PropertyCacheBlockEntity::new, PROPERTY_CACHE.get()).build(null));
+
+    public static final RegistryObject<net.minecraft.world.level.block.entity.BlockEntityType<DryingRack.Entity>> DRYING_RACK_ENTITY =
+        BLOCK_ENTITIES.register("drying_rack", () -> net.minecraft.world.level.block.entity.BlockEntityType.Builder
+            .of(DryingRack.Entity::new, DRYING_RACK.get()).build(null));
 
     public static final RegistryObject<net.minecraft.world.level.block.entity.BlockEntityType<SecureTerminalBlockEntity>> SECURE_TERMINAL_ENTITY =
         BLOCK_ENTITIES.register("secure_data_terminal", () -> net.minecraft.world.level.block.entity.BlockEntityType.Builder
@@ -250,6 +258,7 @@ public final class UndergroundCity {
             event.accept(PUBLIC_LEDGER_ITEM);
             event.accept(PERSONAL_COMPUTER_ITEM);
             event.accept(ELECTRONICS_BENCH_ITEM);
+            event.accept(DRYING_RACK_ITEM);
         }
         if (event.getTabKey() == CreativeModeTabs.OP_BLOCKS && event.hasPermissions()) {
             event.accept(PROPERTY_CACHE_ITEM);

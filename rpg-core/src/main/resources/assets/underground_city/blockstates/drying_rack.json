@@ -1,0 +1,49 @@
+{
+ "variants": {
+  "facing=north,load=empty": {
+   "model": "underground_city:block/drying_rack_empty"
+  },
+  "facing=north,load=drying": {
+   "model": "underground_city:block/drying_rack_drying"
+  },
+  "facing=north,load=dry": {
+   "model": "underground_city:block/drying_rack_dry"
+  },
+  "facing=east,load=empty": {
+   "model": "underground_city:block/drying_rack_empty",
+   "y": 90
+  },
+  "facing=east,load=drying": {
+   "model": "underground_city:block/drying_rack_drying",
+   "y": 90
+  },
+  "facing=east,load=dry": {
+   "model": "underground_city:block/drying_rack_dry",
+   "y": 90
+  },
+  "facing=south,load=empty": {
+   "model": "underground_city:block/drying_rack_empty",
+   "y": 180
+  },
+  "facing=south,load=drying": {
+   "model": "underground_city:block/drying_rack_drying",
+   "y": 180
+  },
+  "facing=south,load=dry": {
+   "model": "underground_city:block/drying_rack_dry",
+   "y": 180
+  },
+  "facing=west,load=empty": {
+   "model": "underground_city:block/drying_rack_empty",
+   "y": 270
+  },
+  "facing=west,load=drying": {
+   "model": "underground_city:block/drying_rack_drying",
+   "y": 270
+  },
+  "facing=west,load=dry": {
+   "model": "underground_city:block/drying_rack_dry",
+   "y": 270
+  }
+ }
+}

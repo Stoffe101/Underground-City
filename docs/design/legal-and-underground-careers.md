@@ -146,6 +146,19 @@ higher and only after the plant has been nourished with a Cultivation Nutrient (
 yields Cannabis Flower (2-3) or seeds. Bone meal does not work. Planting Cannabis Seeds needs the Restricted
 Cultivation skill (`RestrictedCuttingItem`); Cannabis Flower is the contraband item that the law categories classify.
 
+**Processing and the law on growing (D-160).**
+
+* **The Drying Rack** is crafted from sticks and string; anybody may place one.
+  * Hanging Cannabis Flower on it (up to 16, in pairs) dries it over six minutes of active play into half as much **Dried Cannabis**. The clock is the work-order ledger's, which does not run while nobody is online.
+  * Dried Cannabis is controlled goods like the flower.
+  * It sells through two new orders: **Dried cannabis for Marrow** (underground, 4 for 380 credits) and **Licensed dried cannabis** (Blackwater's dispensary, 4 for 360).
+  * In the economy model those orders pay 421 and 379 credits per hands-on hour, against 304 to 346 for the flower orders. Processing is how the crop catches up with the Farmer's other work without raising the flower's price over the margin rules.
+* **Growing in public view.** A plant in the open (sky above it), inside the limits of Ironhaven or Valewood (where the crop is prohibited), and not on anybody's registered home or garden, is pulled up by an officer on the beat who can see it.
+  * Nothing drops, and its grower is told and gains 2 heat in that city.
+  * Who planted a plant is recorded at planting, and planting in public view says so at once.
+  * A plant is seized only while its grower is online, and one planted before the rule is never seized.
+  * Under a roof (a greenhouse's glass counts), at home, outside the cities and in Blackwater the rule does not apply (`CannabisLaw`).
+
 ## Spirits and the Vintner (D-067)
 
 Wine is ordinary trade. **Spirits** are the Vintner's restricted good, handled exactly like the Farmer's controlled crop: one
@@ -183,6 +196,7 @@ anti-cheat. Pads are numbered and use distinct colours, keys 1-4 work, and ESC c
 | City law, contraband classification, checkpoint search, heat, no-reroll | implemented; GameTests. A zone can have a **post with a guard** (`/uc_checkpoints place`, D-062) who voices the search; the die is unchanged. A rider's vehicle hold (a Motorboat, a chest boat or cart, or the crate parts of an Immersive Vehicles vehicle, D-077) is searched with them and a parked vehicle is not |
 | Exceptional loot and TaCZ gun NBT preservation | implemented; TaCZ cases run only in the `-PucPack=firearms` job |
 | cannabis crop | implemented; GameTests |
+| drying rack, Dried Cannabis and its two orders; growing in public view (D-160) | implemented; GameTests (the rack's drying, yield and what a broken rack gives back; a seizure, no seizure while the grower is away, the record forgotten on harvest); the economy model's invariants hold; **not run through a real client** |
 | Technician trace (server and client screen) | implemented; GameTests for the server rules; the client screen is captured by the visual harness; a scripted-player scenario (`trace`) drives the real screen with the real keyboard (see the sprint report for its result) |
 | Skills, contract and market pages in the terminal | implemented; real-client captures are reviewed in `content/qa/reviewed-runs.json` |
 | Balance | arithmetic validator only; **no playtest** |

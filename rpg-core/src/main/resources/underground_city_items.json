@@ -142,6 +142,11 @@
       "stack": 64
     },
     {
+      "id": "dried_cannabis",
+      "kind": "product",
+      "stack": 64
+    },
+    {
       "id": "unstamped_plate",
       "kind": "product",
       "stack": 64

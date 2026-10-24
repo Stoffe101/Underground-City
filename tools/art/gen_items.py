@@ -187,6 +187,21 @@ def cannabis_flower():
 
 
 @item
+def dried_cannabis():
+    """A dried cannabis bud (D-160): smaller and darker than a fresh one, olive and dusty, its pistils gone rust-brown, hung by a loop of twine from its stem."""
+    s = Sprite()
+    s.line(8, 1, 8, 4, BURLAP[2]); s.put(7, 1, BURLAP[3]); s.put(9, 1, BURLAP[3]); s.put(8, 0, BURLAP[1])          # the twine loop
+    s.line(8, 4, 8, 6, OLIVE[1])                                                                                   # the stem
+    for (cx, cy, rad) in ((8, 8, 2.6), (6, 10, 2.2), (10, 10, 2.2), (8, 12, 2.4), (7, 14, 1.4), (9, 14, 1.4)):
+        disc(s, cx, cy, rad, OLIVE)
+    for (x, y) in ((5, 9), (11, 9), (6, 12), (10, 12), (8, 7), (8, 14)):
+        s.put(x, y, AMBER[1])
+    for (x, y) in ((7, 9), (9, 11), (8, 13), (6, 11)):
+        s.put(x, y, PAPER[3])
+    return finish(s, outline=OLIVE[0])
+
+
+@item
 def rare_seeds():
     """A tied burlap sack with a few seeds spilled in front of it."""
     s = Sprite()

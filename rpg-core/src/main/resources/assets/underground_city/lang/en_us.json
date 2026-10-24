@@ -1,6 +1,7 @@
 {
   "block.underground_city.alarm_panel": "Alarm Panel",
   "block.underground_city.cannabis_plant": "Cannabis Plant",
+  "block.underground_city.drying_rack": "Drying Rack",
   "block.underground_city.electronics_bench": "Electronics Bench",
   "block.underground_city.operations_terminal": "Operations Terminal",
   "block.underground_city.personal_computer": "Personal Computer",
@@ -32,6 +33,8 @@
   "item.underground_city.designer_handbag": "Designer Handbag",
   "item.underground_city.diagnostic_scanner": "Diagnostic Scanner",
   "item.underground_city.digital_camera": "Digital Camera",
+  "item.underground_city.dried_cannabis": "Dried Cannabis",
+  "item.underground_city.drying_rack": "Drying Rack",
   "item.underground_city.e_scrap": "Electronic Scrap",
   "item.underground_city.electronics_bench": "Electronics Bench",
   "item.underground_city.encrypted_design": "Encrypted Design Disc",

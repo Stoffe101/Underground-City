@@ -1,0 +1,174 @@
+{
+ "parent": "minecraft:block/block",
+ "render_type": "minecraft:cutout",
+ "textures": {
+  "wood": "underground_city:block/rack_wood",
+  "hang": "underground_city:block/rack_hang_empty",
+  "particle": "underground_city:block/rack_wood"
+ },
+ "elements": [
+  {
+   "from": [
+    1,
+    0,
+    7
+   ],
+   "to": [
+    2.5,
+    15,
+    9
+   ],
+   "faces": {
+    "north": {
+     "texture": "#wood"
+    },
+    "south": {
+     "texture": "#wood"
+    },
+    "east": {
+     "texture": "#wood"
+    },
+    "west": {
+     "texture": "#wood"
+    },
+    "up": {
+     "texture": "#wood"
+    }
+   }
+  },
+  {
+   "from": [
+    13.5,
+    0,
+    7
+   ],
+   "to": [
+    15,
+    15,
+    9
+   ],
+   "faces": {
+    "north": {
+     "texture": "#wood"
+    },
+    "south": {
+     "texture": "#wood"
+    },
+    "east": {
+     "texture": "#wood"
+    },
+    "west": {
+     "texture": "#wood"
+    },
+    "up": {
+     "texture": "#wood"
+    }
+   }
+  },
+  {
+   "from": [
+    2.5,
+    13.5,
+    7.25
+   ],
+   "to": [
+    13.5,
+    15,
+    8.75
+   ],
+   "faces": {
+    "north": {
+     "texture": "#wood"
+    },
+    "south": {
+     "texture": "#wood"
+    },
+    "east": {
+     "texture": "#wood"
+    },
+    "west": {
+     "texture": "#wood"
+    },
+    "up": {
+     "texture": "#wood"
+    },
+    "down": {
+     "texture": "#wood"
+    }
+   }
+  },
+  {
+   "from": [
+    2.5,
+    2,
+    8
+   ],
+   "to": [
+    13.5,
+    13.5,
+    8
+   ],
+   "faces": {
+    "north": {
+     "texture": "#hang",
+     "uv": [
+      2.5,
+      2.5,
+      13.5,
+      14
+     ]
+    },
+    "south": {
+     "texture": "#hang",
+     "uv": [
+      2.5,
+      2.5,
+      13.5,
+      14
+     ]
+    }
+   },
+   "shade": false
+  }
+ ],
+ "display": {
+  "gui": {
+   "rotation": [
+    24,
+    200,
+    0
+   ],
+   "translation": [
+    0,
+    -1,
+    0
+   ],
+   "scale": [
+    0.62,
+    0.62,
+    0.62
+   ]
+  },
+  "ground": {
+   "scale": [
+    0.5,
+    0.5,
+    0.5
+   ]
+  },
+  "fixed": {
+   "scale": [
+    0.7,
+    0.7,
+    0.7
+   ]
+  },
+  "thirdperson_righthand": {
+   "scale": [
+    0.4,
+    0.4,
+    0.4
+   ]
+  }
+ }
+}

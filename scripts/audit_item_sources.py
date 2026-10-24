@@ -37,6 +37,7 @@ INF = 10 ** 6
 # that the named code still exists, so this list cannot rot silently.
 CODE_SOURCES = {
     'underground_city:data_ledger': ('SecureTerminalService.java', 'UndergroundCity.item("data_ledger")', 'a successful Technician trace pays one (D-054)'),
+    'underground_city:dried_cannabis': ('DryingRack.java', 'UndergroundCity.item("dried_cannabis")', 'two Cannabis Flower dry into one on a Drying Rack, a crafted block (D-160)'),
 }
 
 
