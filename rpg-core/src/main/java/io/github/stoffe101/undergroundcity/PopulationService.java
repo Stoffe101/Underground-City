@@ -567,6 +567,8 @@ public final class PopulationService {
         long key = ChunkPos.asLong(cx, cz);
         Optional<PopulationDensity.Area> known = AREAS.get(key);
         if (known != null) return known;
+        // never for a chunk that is not loaded: Lost Cities then plans it on the spot (measured: one such lookup held a pass for 611 ms after a teleport into a city)
+        if (level.getChunkSource().getChunkNow(cx, cz) == null) return null;
         if (!CityBuildings.INSTANCE.known(cx, cz) && lookups <= 0) return null;
         if (!CityBuildings.INSTANCE.known(cx, cz)) lookups--;
         Optional<CityBuildings.Building> b = CityBuildings.INSTANCE.ofChunk(level, cx, cz);
