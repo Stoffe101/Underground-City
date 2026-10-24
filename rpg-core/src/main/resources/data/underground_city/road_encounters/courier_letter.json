@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "id": "courier_letter",
+  "title": "Courier with a letter",
+  "kind": "legit",
+  "roads": [],
+  "weight": 4,
+  "note": "D-139. A delivery along the route: the letter pays its fee once, at any terminal or shopkeeper's counter in the city ahead.",
+  "notice": "A courier is waving travellers down.",
+  "people": [
+    {
+      "name": "Pip Arkwright",
+      "profession": "cartographer"
+    },
+    {
+      "name": "Nell Okafor",
+      "profession": "cartographer"
+    },
+    {
+      "name": "Jory Teague",
+      "profession": "cartographer"
+    }
+  ],
+  "openings": [
+    "Chain snapped, and this has to reach {city} today. The fee's paid already; it goes to whoever brings it in. Will you take it?",
+    "You're going to {city}? Then you can do me a kindness and earn the delivery fee. One letter, sealed, any terminal there will take it."
+  ],
+  "props": [
+    {
+      "at": [
+        1,
+        1,
+        0
+      ],
+      "block": "minecraft:brown_wool"
+    },
+    {
+      "at": [
+        1,
+        1,
+        1
+      ],
+      "block": "minecraft:lantern"
+    },
+    {
+      "at": [
+        -1,
+        1,
+        0
+      ],
+      "block": "minecraft:iron_bars"
+    },
+    {
+      "at": [
+        0,
+        1,
+        0
+      ],
+      "block": "minecraft:iron_bars"
+    },
+    {
+      "at": [
+        -2,
+        1,
+        0
+      ],
+      "block": "minecraft:black_carpet"
+    }
+  ],
+  "choices": [
+    {
+      "id": "carry",
+      "label": "I'll take it to {city}",
+      "gives": {
+        "letter": true
+      },
+      "xp": 0,
+      "reply": "Bless you. Any terminal or shop counter in {city} will take it and pay the fee. Don't open it."
+    },
+    {
+      "id": "why",
+      "label": "Why not take it yourself?",
+      "reply": "My chain snapped and the depot shuts at dusk. The fee is the same whoever carries it.",
+      "resolves": false
+    }
+  ]
+}

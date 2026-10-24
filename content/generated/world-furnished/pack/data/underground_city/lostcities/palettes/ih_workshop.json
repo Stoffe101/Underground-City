@@ -1,0 +1,197 @@
+{
+  "palette": [
+    {
+      "blocks": [
+        {
+          "block": "minecraft:cracked_stone_bricks",
+          "random": 180
+        },
+        {
+          "block": "minecraft:gray_concrete",
+          "random": 1000
+        }
+      ],
+      "char": "0"
+    },
+    {
+      "block": "minecraft:iron_bars",
+      "char": "1"
+    },
+    {
+      "block": "modernlife:street_light[facing=south,part=bottom]",
+      "char": "2"
+    },
+    {
+      "block": "modernlife:street_light[facing=south,part=mid]",
+      "char": "3"
+    },
+    {
+      "block": "modernlife:street_light[facing=south,part=top]",
+      "char": "4"
+    },
+    {
+      "block": "minecraft:smooth_stone",
+      "char": "5"
+    },
+    {
+      "block": "minecraft:gray_concrete",
+      "char": "6"
+    },
+    {
+      "block": "minecraft:stone_bricks",
+      "char": "7"
+    },
+    {
+      "block": "minecraft:iron_door[facing=south,half=lower,hinge=left,open=false]",
+      "char": "8"
+    },
+    {
+      "block": "minecraft:iron_door[facing=south,half=upper,hinge=left,open=false]",
+      "char": "a"
+    },
+    {
+      "block": "minecraft:iron_door[facing=north,half=lower,hinge=left,open=false]",
+      "char": "c"
+    },
+    {
+      "block": "minecraft:iron_door[facing=north,half=upper,hinge=left,open=false]",
+      "char": "d"
+    },
+    {
+      "block": "minecraft:iron_door[facing=south,half=lower,hinge=right,open=false]",
+      "char": "e"
+    },
+    {
+      "block": "minecraft:iron_door[facing=south,half=upper,hinge=right,open=false]",
+      "char": "f"
+    },
+    {
+      "block": "minecraft:iron_door[facing=north,half=lower,hinge=right,open=false]",
+      "char": "g"
+    },
+    {
+      "block": "minecraft:iron_door[facing=north,half=upper,hinge=right,open=false]",
+      "char": "h"
+    },
+    {
+      "block": "minecraft:crafting_table",
+      "char": "i"
+    },
+    {
+      "block": "minecraft:smithing_table",
+      "char": "j"
+    },
+    {
+      "block": "minecraft:anvil[facing=east]",
+      "char": "k"
+    },
+    {
+      "block": "minecraft:grindstone[face=floor,facing=east]",
+      "char": "l"
+    },
+    {
+      "block": "minecraft:stonecutter[facing=east]",
+      "char": "m"
+    },
+    {
+      "block": "minecraft:blast_furnace[facing=west,lit=false]",
+      "char": "n"
+    },
+    {
+      "block": "minecraft:furnace[facing=west,lit=false]",
+      "char": "o"
+    },
+    {
+      "block": "minecraft:cauldron",
+      "char": "p"
+    },
+    {
+      "block": "minecraft:smooth_stone_slab[type=top]",
+      "char": "q"
+    },
+    {
+      "block": "minecraft:barrel[facing=up,open=false]",
+      "char": "r"
+    },
+    {
+      "block": "minecraft:chest[facing=north,type=single,waterlogged=false]",
+      "char": "s"
+    },
+    {
+      "block": "modernlife:metal_duct[axis=y]",
+      "char": "t"
+    },
+    {
+      "block": "modernlife:light_bulb[face=ceiling,facing=north,powered=true]",
+      "char": "u"
+    },
+    {
+      "block": "minecraft:spruce_planks",
+      "char": "z"
+    },
+    {
+      "block": "minecraft:oak_stairs[facing=north,half=bottom,shape=straight]",
+      "char": "A"
+    },
+    {
+      "block": "minecraft:glass_pane",
+      "char": "C"
+    },
+    {
+      "block": "modernlife:oak_small_table[type=w_end]",
+      "char": "D"
+    },
+    {
+      "block": "modernlife:oak_small_table[type=e_end]",
+      "char": "E"
+    },
+    {
+      "block": "modernlife:dual_monitor[facing=south]",
+      "char": "F"
+    },
+    {
+      "block": "modernlife:printer[facing=south]",
+      "char": "G"
+    },
+    {
+      "block": "modernlife:oak_chair[facing=south]",
+      "char": "H"
+    },
+    {
+      "block": "modernlife:photocopier[facing=south]",
+      "char": "I"
+    },
+    {
+      "block": "modernlife:modern_oak_bookshelf[facing=east]",
+      "char": "J"
+    },
+    {
+      "block": "modernlife:oak_small_table[type=single]",
+      "char": "K"
+    },
+    {
+      "block": "modernlife:old_tv[facing=south]",
+      "char": "L"
+    },
+    {
+      "block": "modernlife:oak_chair[facing=east]",
+      "char": "M"
+    },
+    {
+      "block": "minecraft:glass",
+      "char": "N"
+    },
+    {
+      "block": "minecraft:polished_blackstone_bricks",
+      "char": "O"
+    },
+    {
+      "block": "minecraft:campfire[facing=north,lit=false,signal_fire=false,waterlogged=false]",
+      "char": "P"
+    },
+    {
+      "block": "underground_city:alarm_panel[facing=north,light=off]",
+      "char": "Q"
+    }
+  ]
+}

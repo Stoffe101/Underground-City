@@ -76,6 +76,10 @@ public final class SimulationWorld {
     private static final Set<MobSpawnType> DELIBERATE = EnumSet.of(MobSpawnType.COMMAND, MobSpawnType.SPAWN_EGG, MobSpawnType.DISPENSER);
 
     private static final ForgeConfigSpec.EnumValue<Profile> HOSTILE_MOBS;
+    private static final ForgeConfigSpec.EnumValue<PopulationDensity.Preset> POPULATION_DENSITY;
+
+    /** The street population's density setting (normal until the server config is loaded). */
+    static PopulationDensity.Preset populationDensity() { return SPEC.isLoaded() ? POPULATION_DENSITY.get() : PopulationDensity.Preset.NORMAL; }
     public static final ForgeConfigSpec SPEC;
 
     static {
@@ -87,6 +91,12 @@ public final class SimulationWorld {
                 "  a mob with the tag uc_permitted_hostile, or of a type in the data tag underground_city:permitted_hostiles, is allowed.",
                 "CLASSIC: ordinary hostile spawning as in the base game. Changing this takes effect at once; hostile creatures that already exist are removed when you change to SIMULATION.")
             .defineEnum("hostileMobs", Profile.SIMULATION);
+        builder.pop();
+        builder.comment("The people in the city streets (D-162).").push("population");
+        POPULATION_DENSITY = builder.comment(
+                "How many people walk the streets round each player: QUIET (about half, 24 a player, 64 in the world), NORMAL (a busy street holds forty or more; 48 a player, 120 in the world)",
+                "or BUSY (72 a player, 180 in the world). Lower it on a weak server; the cost is measured in docs/technical/population.md.")
+            .defineEnum("density", PopulationDensity.Preset.NORMAL);
         builder.pop();
         SPEC = builder.build();
     }

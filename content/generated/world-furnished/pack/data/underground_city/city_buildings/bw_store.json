@@ -1,0 +1,91 @@
+{
+  "city": "blackwater",
+  "floors": {
+    "max": 2,
+    "min": 2
+  },
+  "id": "bw_store",
+  "notes": "A corner store: aisles, chilled cabinets and a till below, a flat to let above.",
+  "schema_version": 1,
+  "spots": [
+    {
+      "facing": "south",
+      "kind": "door",
+      "note": "the shop door",
+      "x": 7,
+      "y": 1,
+      "z": 14
+    },
+    {
+      "facing": "west",
+      "kind": "counter",
+      "note": "the till",
+      "x": 12,
+      "y": 1,
+      "z": 11
+    },
+    {
+      "facing": "north",
+      "kind": "shelf",
+      "note": "the aisles",
+      "x": 6,
+      "y": 1,
+      "z": 7
+    },
+    {
+      "facing": "north",
+      "kind": "bed",
+      "note": "flat bed",
+      "x": 11,
+      "y": 7,
+      "z": 4
+    },
+    {
+      "facing": "east",
+      "kind": "stove",
+      "note": "flat kitchen",
+      "x": 12,
+      "y": 7,
+      "z": 10
+    },
+    {
+      "facing": "south",
+      "kind": "seat",
+      "note": "flat table",
+      "x": 9,
+      "y": 7,
+      "z": 8
+    },
+    {
+      "facing": "west",
+      "kind": "stash",
+      "note": "under the till",
+      "x": 12,
+      "y": 1,
+      "z": 13
+    },
+    {
+      "facing": "north",
+      "kind": "alarm",
+      "note": "alarm panel by the the shop door",
+      "x": 2,
+      "y": 2,
+      "z": 13
+    }
+  ],
+  "units": [
+    {
+      "box": [
+        5,
+        7,
+        2,
+        13,
+        9,
+        13
+      ],
+      "id": "flat",
+      "title": "Flat"
+    }
+  ],
+  "use": "shop"
+}

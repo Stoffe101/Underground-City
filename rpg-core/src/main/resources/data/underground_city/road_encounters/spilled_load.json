@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "id": "spilled_load",
+  "title": "Spilled load",
+  "kind": "environmental",
+  "roads": [],
+  "weight": 3,
+  "note": "D-139. Something the road left behind: a few barrels shed from a lorry, free to whoever stops. An unopened barrel is taken back when the encounter ends; an opened one stays.",
+  "notice": "A lorry has shed part of its load at the verge.",
+  "props": [
+    {
+      "at": [
+        -2,
+        1,
+        0
+      ],
+      "block": "minecraft:barrel",
+      "loot": "underground_city:roadside/spilled_load"
+    },
+    {
+      "at": [
+        0,
+        2,
+        0
+      ],
+      "block": "minecraft:barrel",
+      "loot": "underground_city:roadside/spilled_load"
+    },
+    {
+      "at": [
+        2,
+        1,
+        0
+      ],
+      "block": "minecraft:barrel",
+      "loot": "underground_city:roadside/spilled_load"
+    },
+    {
+      "at": [
+        -1,
+        1,
+        0
+      ],
+      "block": "minecraft:spruce_slab"
+    },
+    {
+      "at": [
+        1,
+        2,
+        0
+      ],
+      "block": "minecraft:spruce_slab"
+    },
+    {
+      "at": [
+        1,
+        3,
+        0
+      ],
+      "block": "minecraft:hay_block"
+    },
+    {
+      "at": [
+        3,
+        2,
+        0
+      ],
+      "block": "minecraft:spruce_trapdoor"
+    }
+  ]
+}

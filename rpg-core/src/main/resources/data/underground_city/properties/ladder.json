@@ -71,7 +71,7 @@
       "id": "farmhouse",
       "tier": 7,
       "title": "Farmhouse",
-      "built": false,
+      "built": true,
       "rent_hint": 115,
       "buy_hint": 8500
     },
@@ -257,6 +257,348 @@
         "workshop"
       ],
       "summary": "Two beds, ten containers and the workshop corner: smithing table, anvil, grindstone and brewing stand."
+    },
+    {
+      "id": "rs_saltmarsh_motel:room_1",
+      "title": "Saltmarsh Motel Room 1",
+      "category": "motel_room",
+      "area": "Saltmarsh Motel (Valewood-Blackwater road)",
+      "tenures": [
+        "rent"
+      ],
+      "rent": 10,
+      "deposit": 0,
+      "buy_price": 0,
+      "upkeep": 0,
+      "max_containers": 2,
+      "private_claims": 1,
+      "facilities": [
+        "bed",
+        "storage",
+        "terminal"
+      ],
+      "summary": "A roadside room halfway between Valewood and Blackwater: a bed, a barrel and the home terminal. The road's only roof that locks."
+    },
+    {
+      "id": "rs_saltmarsh_motel:room_2",
+      "title": "Saltmarsh Motel Room 2",
+      "category": "motel_room",
+      "area": "Saltmarsh Motel (Valewood-Blackwater road)",
+      "tenures": [
+        "rent"
+      ],
+      "rent": 10,
+      "deposit": 0,
+      "buy_price": 0,
+      "upkeep": 0,
+      "max_containers": 2,
+      "private_claims": 1,
+      "facilities": [
+        "bed",
+        "storage",
+        "terminal"
+      ],
+      "summary": "A roadside room halfway between Valewood and Blackwater: a bed, a barrel and the home terminal. The road's only roof that locks."
+    },
+    {
+      "id": "rs_saltmarsh_motel:room_3",
+      "title": "Saltmarsh Motel Room 3",
+      "category": "motel_room",
+      "area": "Saltmarsh Motel (Valewood-Blackwater road)",
+      "tenures": [
+        "rent"
+      ],
+      "rent": 10,
+      "deposit": 0,
+      "buy_price": 0,
+      "upkeep": 0,
+      "max_containers": 2,
+      "private_claims": 1,
+      "facilities": [
+        "bed",
+        "storage",
+        "terminal"
+      ],
+      "summary": "A roadside room halfway between Valewood and Blackwater: a bed, a barrel and the home terminal. The road's only roof that locks."
+    },
+    {
+      "id": "rs_saltmarsh_motel:room_4",
+      "title": "Saltmarsh Motel Room 4",
+      "category": "motel_room",
+      "area": "Saltmarsh Motel (Valewood-Blackwater road)",
+      "tenures": [
+        "rent"
+      ],
+      "rent": 10,
+      "deposit": 0,
+      "buy_price": 0,
+      "upkeep": 0,
+      "max_containers": 2,
+      "private_claims": 1,
+      "facilities": [
+        "bed",
+        "storage",
+        "terminal"
+      ],
+      "summary": "A roadside room halfway between Valewood and Blackwater: a bed, a barrel and the home terminal. The road's only roof that locks."
+    },
+    {
+      "id": "rs_harrow_farm:farmhouse",
+      "title": "Harrow Farmhouse",
+      "category": "farmhouse",
+      "area": "Harrow Farm (Ironhaven-Valewood road)",
+      "tenures": [
+        "rent",
+        "buy"
+      ],
+      "rent": 115,
+      "deposit": 230,
+      "buy_price": 8500,
+      "upkeep": 20,
+      "max_containers": 12,
+      "private_claims": 3,
+      "facilities": [
+        "bed",
+        "storage",
+        "crafting",
+        "furnace",
+        "workshop"
+      ],
+      "summary": "A two-storey farmhouse beside its fields on the Ironhaven-Valewood road: a kitchen with a hearth, two bedrooms, room for a workshop, and the farm stand at the gate."
+    }
+  ],
+  "city_listings_note": "Homes and premises in the furnished cities (D-127): a share of each kind of building is let or sold, the rest are lived and worked in by the city's people. A unit's geometry comes from the building's own sidecar (city_buildings/<id>.json, units); its terms come from the template here for that building, at the city's price factor. Which buildings of a kind are to let is a fixed hash of the world seed and the building, so every player sees the same street. scripts/economy_model.py checks these templates as it checks the listings above.",
+  "city_listings": [
+    {
+      "building": "underground_city:ih_flats",
+      "share_percent": 34,
+      "category": "small_apartment",
+      "area": "Ironhaven",
+      "tenures": [
+        "rent",
+        "buy"
+      ],
+      "rent": 40,
+      "deposit": 80,
+      "buy_price": 2000,
+      "upkeep": 8,
+      "max_containers": 6,
+      "private_claims": 2,
+      "facilities": [
+        "bed",
+        "storage",
+        "crafting",
+        "plumbing"
+      ],
+      "summary": "A furnished flat in a brick tenement: a bedroom, a kitchen and living room, a key to the street door."
+    },
+    {
+      "building": "underground_city:bw_apartments",
+      "share_percent": 25,
+      "category": "comfortable_apartment",
+      "area": "Blackwater",
+      "tenures": [
+        "rent",
+        "buy"
+      ],
+      "rent": 55,
+      "deposit": 110,
+      "buy_price": 3000,
+      "upkeep": 11,
+      "max_containers": 8,
+      "private_claims": 2,
+      "facilities": [
+        "bed",
+        "storage",
+        "crafting",
+        "furnace",
+        "plumbing"
+      ],
+      "summary": "A modern furnished flat in a concrete block with a lift-sized stair and a roof terrace."
+    },
+    {
+      "building": "underground_city:vw_cottage",
+      "share_percent": 40,
+      "category": "small_house",
+      "area": "Valewood",
+      "tenures": [
+        "rent",
+        "buy"
+      ],
+      "rent": 85,
+      "deposit": 170,
+      "buy_price": 5400,
+      "upkeep": 17,
+      "max_containers": 10,
+      "private_claims": 3,
+      "facilities": [
+        "bed",
+        "storage",
+        "crafting",
+        "furnace",
+        "plumbing"
+      ],
+      "summary": "A furnished one-storey cottage on a big lot with a kitchen garden in front."
+    },
+    {
+      "building": "underground_city:vw_house_a",
+      "share_percent": 30,
+      "category": "small_house",
+      "area": "Valewood",
+      "tenures": [
+        "rent",
+        "buy"
+      ],
+      "rent": 85,
+      "deposit": 170,
+      "buy_price": 5400,
+      "upkeep": 17,
+      "max_containers": 12,
+      "private_claims": 3,
+      "facilities": [
+        "bed",
+        "storage",
+        "crafting",
+        "furnace",
+        "plumbing"
+      ],
+      "summary": "A furnished two-storey family house: living room and kitchen below, two bedrooms and a bathroom above."
+    },
+    {
+      "building": "underground_city:vw_house_b",
+      "share_percent": 30,
+      "category": "small_house",
+      "area": "Valewood",
+      "tenures": [
+        "rent",
+        "buy"
+      ],
+      "rent": 85,
+      "deposit": 170,
+      "buy_price": 5400,
+      "upkeep": 17,
+      "max_containers": 12,
+      "private_claims": 3,
+      "facilities": [
+        "bed",
+        "storage",
+        "crafting",
+        "furnace",
+        "plumbing"
+      ],
+      "summary": "A furnished two-storey family house in timber: living room and kitchen below, two bedrooms and a bathroom above."
+    },
+    {
+      "building": "underground_city:ih_workshop",
+      "share_percent": 20,
+      "category": "commercial_workshop",
+      "area": "Ironhaven",
+      "tenures": [
+        "rent",
+        "buy"
+      ],
+      "rent": 135,
+      "deposit": 270,
+      "buy_price": 10500,
+      "upkeep": 27,
+      "max_containers": 16,
+      "private_claims": 4,
+      "facilities": [
+        "storage",
+        "crafting",
+        "furnace",
+        "workshop"
+      ],
+      "summary": "A high-bay workshop with benches, an anvil and furnaces, and an office mezzanine: premises for a trade."
+    },
+    {
+      "building": "underground_city:ih_warehouse",
+      "share_percent": 15,
+      "category": "warehouse",
+      "area": "Ironhaven",
+      "tenures": [
+        "rent",
+        "buy"
+      ],
+      "rent": 170,
+      "deposit": 340,
+      "buy_price": 14000,
+      "upkeep": 34,
+      "max_containers": 24,
+      "private_claims": 4,
+      "facilities": [
+        "storage",
+        "crafting",
+        "workshop"
+      ],
+      "summary": "A warehouse with racking and two loading bays: storage and production space on a city scale."
+    },
+    {
+      "building": "underground_city:ih_pub",
+      "share_percent": 50,
+      "category": "motel_room",
+      "area": "Ironhaven",
+      "tenures": [
+        "rent"
+      ],
+      "rent": 10,
+      "deposit": 20,
+      "buy_price": 0,
+      "upkeep": 0,
+      "max_containers": 2,
+      "private_claims": 1,
+      "facilities": [
+        "bed",
+        "storage"
+      ],
+      "summary": "A room over the pub: a bed, a wardrobe, a table, and the noise of the bar until late."
+    },
+    {
+      "building": "underground_city:vw_bakery",
+      "share_percent": 35,
+      "category": "small_apartment",
+      "area": "Valewood",
+      "tenures": [
+        "rent",
+        "buy"
+      ],
+      "rent": 40,
+      "deposit": 80,
+      "buy_price": 2000,
+      "upkeep": 8,
+      "max_containers": 6,
+      "private_claims": 2,
+      "facilities": [
+        "bed",
+        "storage",
+        "crafting",
+        "plumbing"
+      ],
+      "summary": "A flat over the bakery: a bedroom, a kitchen and sitting room, warm floors in the morning."
+    },
+    {
+      "building": "underground_city:bw_store",
+      "share_percent": 30,
+      "category": "comfortable_apartment",
+      "area": "Blackwater",
+      "tenures": [
+        "rent",
+        "buy"
+      ],
+      "rent": 55,
+      "deposit": 110,
+      "buy_price": 3000,
+      "upkeep": 11,
+      "max_containers": 8,
+      "private_claims": 2,
+      "facilities": [
+        "bed",
+        "storage",
+        "crafting",
+        "furnace",
+        "plumbing"
+      ],
+      "summary": "A modern flat over a corner store, up its own stair: a bedroom and an open kitchen and living room."
     }
   ],
   "upgrades": [

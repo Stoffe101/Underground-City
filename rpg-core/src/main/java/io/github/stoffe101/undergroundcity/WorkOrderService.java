@@ -26,8 +26,9 @@ public final class WorkOrderService {
 
     static void guarded(ServerPlayer player, BlockPos pos, Operation operation) {
         if (!TerminalNetwork.requestSlot(player)) return;
-        if (!TerminalNetwork.authorizedForStarterShop(player, pos)) {
-            player.sendSystemMessage(Component.literal("Register and use a nearby placed Operations Terminal."));
+        if (!TerminalNetwork.authorizedForExchange(player, pos)) {
+            player.sendSystemMessage(Component.literal(ShopCounters.INSTANCE.all().isEmpty() ? "Register and use a nearby placed Operations Terminal."
+                : "Register and use a nearby placed Operations Terminal, or a shop counter while its shopkeeper is there."));
             return;
         }
         try {
@@ -51,8 +52,10 @@ public final class WorkOrderService {
 
     public static void action(ServerPlayer player, BlockPos pos, int action, String id, UUID nonce) {
         guarded(player, pos, (ledger, citizen) -> {
-            if (Exchanges.at(player.level(), pos).map(Exchanges.Exchange::wayside).orElse(false)) {
-                throw new IllegalStateException("Orders are posted in the cities. This desk only sells supplies."); // a wayside desk is a shop, not an office
+            var exchange = Exchanges.at(player.level(), pos);
+            if (exchange.map(Exchanges.Exchange::shopOnly).orElse(false)) {
+                // a wayside desk and a shop counter are shops, not offices
+                throw new IllegalStateException(exchange.get().counter() ? "This is a shop counter. Orders are taken at an Operations Terminal." : "Orders are posted in the cities. This desk only sells supplies.");
             }
             switch (action) {
                 case 0 -> accept(player, ledger, citizen, id);
@@ -140,12 +143,15 @@ public final class WorkOrderService {
         Inventory after = new Inventory(player);
         after.load(player.getInventory().save(new ListTag()));
         java.util.List<String> missing = new java.util.ArrayList<>();
+        double gradeWeight = 0;   // the price weight of every unit taken (Standard 1.0, Fine 1.25, Reserve 1.6; D-163)
+        int units = 0;
         for (WorkOrder.Requirement requirement : order.requirements()) {
             int needed = requirement.count();
             for (int slot = 0; slot < after.items.size() && needed > 0; slot++) {
                 ItemStack stack = after.items.get(slot);
                 if (order.matches(requirement, stack)) {
                     int take = Math.min(needed, stack.getCount());
+                    gradeWeight += take * Workshops.GRADE_PRICE[Workshops.grade(stack)]; units += take;
                     stack.shrink(take); needed -= take;
                 }
             }
@@ -158,7 +164,8 @@ public final class WorkOrderService {
             after.add(stack);
             if (!stack.isEmpty()) throw new IllegalStateException("Not enough inventory space for the reward items. Free some slots and deliver again.");
         }
-        final int credits = SkillService.payout(citizen, order);   // the order's snapshot plus the career's contract-rate skills, fixed here and journaled below
+        final int skilled = SkillService.payout(citizen, order);   // the order's snapshot plus the career's contract-rate skills
+        final int credits = gradedPayout(skilled, gradeWeight, units);   // and the grade of what was delivered, fixed here and journaled below
         double target = QShopEconomy.balance(player) + credits;
         if (target > 1_000_000_000) throw new IllegalStateException("Wallet limit reached");
         int xpTarget = ProgressionRules.totalXp(citizen.careerXp(), order.xp());
@@ -179,8 +186,9 @@ public final class WorkOrderService {
         recover(player, ledger);
         CrewService.sweepIncome(player, credits, nonce); // fully shared finances only; never changes the settlement above
         CitizenState.get(player.server).bumpJourney(player.getUUID(), "deliveries");
+        String extra = (skilled > order.credits() ? " + " + (skilled - order.credits()) + " for your skills" : "") + (credits > skilled ? " + " + (credits - skilled) + " for the grade" : "");
         player.sendSystemMessage(Component.literal("Delivered " + order.title() + ": +" + credits
-            + " credits" + (credits > order.credits() ? " (" + order.credits() + " + " + (credits - order.credits()) + " for your skills)" : "") + ", +" + order.xp() + " career XP. Level " + citizen.careerLevel() + "."));
+            + " credits" + (extra.isEmpty() ? "" : " (" + order.credits() + extra + ")") + ", +" + order.xp() + " career XP. Level " + citizen.careerLevel() + "."));
         Notice.send(player, Notice.Kind.DELIVERED, "Delivered", order.title() + ": +" + credits + " credits, +" + order.xp() + " XP");
         if (citizen.careerLevel() > levelBefore) Notice.send(player, Notice.Kind.SKILL, "Level " + citizen.careerLevel(), TerminalScreenText.capitalize(citizen.career) + " level up. A skill point is waiting.");
         if (!terms.rewards().isEmpty()) {
@@ -191,6 +199,12 @@ public final class WorkOrderService {
         if (witnessed) Notice.send(player, Notice.Kind.HEAT, "Seen at the hand-off", "The " + TerminalScreenText.capitalize(buyer.city()) + " guard will search you more closely for a while.");
         if (buyer != null && terms.trustGain() > 0) player.sendSystemMessage(Component.literal(buyer.title() + " trusts you a little more (" + ledger.trust(player.getUUID(), buyer.id()) + "/" + BuyerCatalog.MAX_TRUST + ")."));
         if (witnessed) player.sendSystemMessage(Component.literal("Someone noticed the hand-off. The " + TerminalScreenText.capitalize(buyer.city()) + " guard will search you more closely for a while."));
+    }
+
+    /** The credits for a delivery whose {@code units} weighed {@code gradeWeight} in all: Standard goods pay the order's credits, Fine and Reserve goods pay more in proportion (D-163). */
+    static int gradedPayout(int credits, double gradeWeight, int units) {
+        if (units <= 0 || gradeWeight <= units) return credits;
+        return (int) Math.round(credits * Math.min(Workshops.GRADE_PRICE[2], gradeWeight / units));
     }
 
     /** Prepared absolute targets are replayed BEFORE any post-login interaction. */

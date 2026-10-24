@@ -21,5 +21,10 @@
     "max": 0.9
   },
   "witness_chance": 0.25,
-  "summary": "Modest patrols. Hunting arms are licensed; controlled crops and unregistered parts are prohibited. Spirits need a distiller's licence."
+  "summary": "Modest patrols. Hunting arms are licensed; controlled crops and unregistered parts are prohibited. Spirits need a distiller's licence.",
+  "patrol": {
+    "officers": 1,
+    "every_seconds": 240,
+    "beat_seconds": 150
+  }
 }

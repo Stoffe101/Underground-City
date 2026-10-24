@@ -24,7 +24,7 @@ import java.util.function.Supplier;
  * This is NOT a remote city supplier, contraband order, or raid service.
  */
 public final class TerminalNetwork {
-    private static final String VERSION = "9";
+    private static final String VERSION = "13";
     private static final String STARTER_SHOP_ID = "uc_starter_supply";
     private static final double MAX_TERMINAL_DISTANCE_SQUARED = 64.0;
     private static final java.util.Map<ServerPlayer, Integer> REQUEST_TIMES = new java.util.WeakHashMap<>();
@@ -43,6 +43,7 @@ public final class TerminalNetwork {
         registerDialogue();
         registerLedger();
         registerNotice();
+        registerHud();
         CHANNEL.registerMessage(0, OpenTerminal.class,
             (packet, buffer) -> { buffer.writeBlockPos(packet.pos); packet.data.write(buffer); },
             buffer -> new OpenTerminal(buffer.readBlockPos(), TerminalData.read(buffer)),
@@ -77,6 +78,19 @@ public final class TerminalNetwork {
                 });
                 context.setPacketHandled(true);
             }, Optional.of(NetworkDirection.PLAY_TO_SERVER));
+        CHANNEL.registerMessage(19, RegionalSell.class,
+            (packet, buffer) -> {
+                buffer.writeBlockPos(packet.pos); buffer.writeUtf(packet.line, 128);
+                buffer.writeVarInt(packet.quantity); buffer.writeUUID(packet.nonce);
+            }, buffer -> new RegionalSell(buffer.readBlockPos(), buffer.readUtf(128), buffer.readVarInt(), buffer.readUUID()),
+            (packet, supplier) -> {
+                NetworkEvent.Context context = supplier.get();
+                context.enqueueWork(() -> {
+                    ServerPlayer player = context.getSender();
+                    if (player != null) ShopSupply.sell(player, packet.pos, packet.line, packet.quantity, packet.nonce);
+                });
+                context.setPacketHandled(true);
+            }, Optional.of(NetworkDirection.PLAY_TO_SERVER));
         CHANNEL.registerMessage(4, SkillAction.class,
             (packet, buffer) -> { buffer.writeBlockPos(packet.pos); buffer.writeUtf(packet.skill, 64); },
             buffer -> new SkillAction(buffer.readBlockPos(), buffer.readUtf(64)),
@@ -101,6 +115,27 @@ public final class TerminalNetwork {
                 }
                 context.setPacketHandled(true);
             }, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+    }
+
+    private static void registerHud() {
+        CHANNEL.registerMessage(18, HudPacket.class,
+            (packet, buffer) -> packet.state.write(buffer),
+            buffer -> new HudPacket(HudState.read(buffer)),
+            (packet, supplier) -> {
+                NetworkEvent.Context context = supplier.get();
+                if (context.getDirection().getReceptionSide().isClient()) {
+                    context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> ClientHud.update(packet.state)));
+                }
+                context.setPacketHandled(true);
+            }, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+    }
+
+    /** The on-screen status of one player (see {@link HudService}). */
+    static void sendHud(ServerPlayer player, HudState state) { CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new HudPacket(state)); }
+
+    public static final class HudPacket {
+        final HudState state;
+        HudPacket(HudState state) { this.state = state; }
     }
 
     static void sendNotice(ServerPlayer player, Notice.Kind kind, String title, String body) {
@@ -323,13 +358,13 @@ public final class TerminalNetwork {
 
     private static void registerChallenge() {
         CHANNEL.registerMessage(5, OpenChallenge.class,
-            (packet, buffer) -> { buffer.writeBlockPos(packet.pos); buffer.writeByteArray(packet.sequence); },
-            buffer -> new OpenChallenge(buffer.readBlockPos(), buffer.readByteArray(16)),
+            (packet, buffer) -> { buffer.writeBlockPos(packet.pos); buffer.writeByteArray(packet.sequence); buffer.writeVarInt(packet.kind); buffer.writeVarInt(packet.perSymbol); buffer.writeVarInt(packet.inputTicks); },
+            buffer -> new OpenChallenge(buffer.readBlockPos(), buffer.readByteArray(16), buffer.readVarInt(), buffer.readVarInt(), buffer.readVarInt()),
             (packet, supplier) -> {
                 NetworkEvent.Context context = supplier.get();
                 if (context.getDirection().getReceptionSide().isClient()) {
                     context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT,
-                        () -> () -> ClientChallenge.open(packet.pos, packet.sequence)));
+                        () -> () -> ClientChallenge.open(packet.pos, packet.sequence, packet.kind, packet.perSymbol, packet.inputTicks)));
                 }
                 context.setPacketHandled(true);
             }, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
@@ -340,7 +375,9 @@ public final class TerminalNetwork {
                 NetworkEvent.Context context = supplier.get();
                 context.enqueueWork(() -> {
                     ServerPlayer player = context.getSender();
-                    if (player != null) SecureTerminalService.answer(player, packet.pos, packet.answer, player.server.getTickCount());
+                    // the answer belongs to an alarm panel being bypassed (D-128) or to a secured terminal's trace
+                    if (player != null && AlarmPanels.hasSession(player.getUUID())) AlarmPanels.answer(player, packet.pos, packet.answer, player.server.getTickCount());
+                    else if (player != null) SecureTerminalService.answer(player, packet.pos, packet.answer, player.server.getTickCount());
                 });
                 context.setPacketHandled(true);
             }, Optional.of(NetworkDirection.PLAY_TO_SERVER));
@@ -370,7 +407,12 @@ public final class TerminalNetwork {
 
     /** Server to client: the hidden sequence to flash. The client only displays it; the server checks the answer. */
     public static void openChallenge(ServerPlayer player, BlockPos pos, byte[] sequence) {
-        CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new OpenChallenge(pos.immutable(), sequence.clone()));
+        openChallenge(player, pos, sequence, 0, SecureTerminalService.SHOW_TICKS_PER_SYMBOL, SecureTerminalService.INPUT_TICKS);
+    }
+
+    /** {@code kind} 0 for a secured terminal, 1 for an alarm panel (D-128); the client runs the signal at {@code perSymbol} ticks a symbol and gives {@code inputTicks} to answer. */
+    public static void openChallenge(ServerPlayer player, BlockPos pos, byte[] sequence, int kind, int perSymbol, int inputTicks) {
+        CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new OpenChallenge(pos.immutable(), sequence.clone(), kind, perSymbol, inputTicks));
     }
 
     /** Client to server: the single answer for the open challenge. */
@@ -401,10 +443,17 @@ public final class TerminalNetwork {
 
     /** Called after physical right-click, not by a remote client action. */
     public static void open(ServerPlayer player, BlockPos pos) {
+        // D-139: a courier's letter addressed to this city is handed over at any terminal or counter in it, before the screen shows the balance
+        try { RoadEncounters.deliver(player, pos); } catch (RuntimeException error) { com.mojang.logging.LogUtils.getLogger().error("Letter delivery failed for {}", player.getGameProfile().getName(), error); }
         CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new OpenTerminal(pos.immutable(), TerminalData.snapshot(player, pos)));
     }
 
     /** Client click on a regional offer; quantity is validated and the price is server-owned. */
+    /** Sells goods to the shop at the counter {@code pos} (D-164). */
+    public static void requestShopSell(BlockPos pos, String line, int quantity) {
+        CHANNEL.sendToServer(new RegionalSell(pos.immutable(), line, quantity, UUID.randomUUID()));
+    }
+
     public static void requestRegionalBuy(BlockPos pos, String commodity, int quantity) {
         CHANNEL.sendToServer(new RegionalBuy(pos.immutable(), commodity, quantity, UUID.randomUUID()));
     }
@@ -429,6 +478,11 @@ public final class TerminalNetwork {
     /** Caller must be a click on the real PC screen, never a free-typed shop ID. */
     public static void requestStarterShop(BlockPos pos) {
         CHANNEL.sendToServer(new OpenStarterShop(pos.immutable()));
+    }
+
+    /** A terminal action at {@code pos}: a placed Operations Terminal (as for the starter shop), or an open shopkeeper's counter (D-126), which only sells. */
+    static boolean authorizedForExchange(ServerPlayer player, BlockPos pos) {
+        return authorizedForStarterShop(player, pos) || ShopCounters.authorized(player, pos);
     }
 
     static boolean authorizedForStarterShop(ServerPlayer player, BlockPos pos) {
@@ -460,7 +514,6 @@ public final class TerminalNetwork {
         // Fixed server-authored ID, never arbitrary strings from a client packet.
         // QShop owns currency, inventory checks, shop stock and actual trades.
         // Only common civilian items are configured in this starter shop.
-        CitizenState.get(player.server).markJourney(player.getUUID(), "bought");
         player.server.getCommands().performPrefixedCommand(
             player.createCommandSourceStack(), "qshop open " + STARTER_SHOP_ID);
     }
@@ -488,11 +541,12 @@ public final class TerminalNetwork {
 
     private record WorkAction(BlockPos pos, int action, String id, UUID nonce) {}
     private record RegionalBuy(BlockPos pos, String commodity, int quantity, UUID nonce) {}
+    private record RegionalSell(BlockPos pos, String line, int quantity, UUID nonce) {}
     private record SkillAction(BlockPos pos, String skill) {}
     private record OpenRegistration(java.util.Map<String, java.util.List<String>> kits) {}
     private record AskRegistration() {}
     private record RegisterChoice(String city, String career) {}
     private record RegistrationResult(boolean ok, String message) {}
-    private record OpenChallenge(BlockPos pos, byte[] sequence) {}
+    private record OpenChallenge(BlockPos pos, byte[] sequence, int kind, int perSymbol, int inputTicks) {}
     private record ChallengeAnswer(BlockPos pos, byte[] answer) {}
 }

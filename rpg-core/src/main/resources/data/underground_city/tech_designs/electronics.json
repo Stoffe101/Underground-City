@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "note": "What an Electronics Bench puts together (D-158). A design names its parts, what it makes and the Technician skill it needs (none for the toolkit and the computer, so anybody can start). Every part has a reliable source: electronic scrap and circuit boards on the Blackwater exchange, scrap from Kessler Salvage's heaps and office furniture, iron and copper from the quarries and shelves, glass from sand.",
+  "designs": [
+    {
+      "id": "circuit_boards",
+      "title": "Circuit boards",
+      "output": "underground_city:control_circuits",
+      "count": 2,
+      "inputs": {
+        "underground_city:e_scrap": 3,
+        "minecraft:copper_ingot": 1,
+        "minecraft:redstone": 1
+      },
+      "skill": "technician.fundamentals",
+      "note": "Two boards from scrap: cheaper than the exchange's, and a repair of a well-off building needs one."
+    },
+    {
+      "id": "repair_kit",
+      "title": "Technician's toolkit",
+      "output": "underground_city:repair_kit",
+      "count": 1,
+      "inputs": {
+        "minecraft:iron_ingot": 2,
+        "minecraft:copper_ingot": 2,
+        "underground_city:control_circuits": 1
+      },
+      "skill": "",
+      "note": "Opens a utility panel to repair a fault. Forty repairs."
+    },
+    {
+      "id": "personal_computer",
+      "title": "Personal computer",
+      "output": "underground_city:personal_computer",
+      "count": 1,
+      "inputs": {
+        "minecraft:iron_ingot": 3,
+        "minecraft:glass_pane": 2,
+        "underground_city:control_circuits": 2,
+        "minecraft:redstone": 1
+      },
+      "skill": "",
+      "note": "A desktop for a home or a workshop: the service board and these designs."
+    },
+    {
+      "id": "diagnostic_scanner",
+      "title": "Diagnostic scanner",
+      "output": "underground_city:diagnostic_scanner",
+      "count": 1,
+      "inputs": {
+        "underground_city:control_circuits": 2,
+        "minecraft:copper_ingot": 2,
+        "minecraft:glass_pane": 1,
+        "minecraft:redstone": 2
+      },
+      "skill": "technician.municipal_repairs",
+      "note": "Carried during a repair, it shows which half of the circuit has the fault."
+    },
+    {
+      "id": "security_array",
+      "title": "Security array",
+      "output": "underground_city:security_array",
+      "count": 1,
+      "inputs": {
+        "underground_city:control_circuits": 2,
+        "minecraft:iron_ingot": 2,
+        "minecraft:glass_pane": 1,
+        "minecraft:redstone": 2
+      },
+      "skill": "technician.automation_install",
+      "note": "Fitted at a utility panel for an install job: the building's alarm is armed and watched."
+    }
+  ]
+}

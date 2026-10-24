@@ -1,0 +1,16 @@
+modLoader="lowcodefml"
+loaderVersion="[47,)"
+license="All Rights Reserved"
+
+[[mods]]
+modId="underground_city_scarcity"
+version="0.1.0"
+displayName="Underground City: Scarce Natural Ore"
+description="A new world has no natural ore: materials come from suppliers, salvage and one regenerating resource site."
+
+[[dependencies.underground_city_scarcity]]
+modId="underground_city"
+mandatory=true
+versionRange="[0.1.0,)"
+ordering="NONE"
+side="BOTH"

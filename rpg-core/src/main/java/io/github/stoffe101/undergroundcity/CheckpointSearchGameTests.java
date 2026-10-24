@@ -79,7 +79,7 @@ public final class CheckpointSearchGameTests {
     public static void armourSlotsAreSearchedLikePockets(GameTestHelper helper) throws Exception {
         try (Fix f = new Fix(helper)) {
             ServerPlayer p = player(helper, "uc_ca", "farmer");
-            p.setItemSlot(EquipmentSlot.HEAD, new ItemStack(core("sable_leaf_bale"), 4));        // worn, not in the 36 slots the search used to read
+            p.setItemSlot(EquipmentSlot.HEAD, new ItemStack(core("cannabis_flower"), 4));        // worn, not in the 36 slots the search used to read
             p.setItemSlot(EquipmentSlot.LEGS, new ItemStack(Items.IRON_LEGGINGS));                // a control: what is worn legitimately is left alone
             var result = f.search(p);
             check(result.outcome() == CheckpointService.Outcome.SEIZED && result.stacksSeized() == 1, "contraband in an armour slot was not found: " + result);
@@ -92,8 +92,8 @@ public final class CheckpointSearchGameTests {
     public static void aShulkerBoxIsSearchedAndOnlyTheContrabandInItIsTaken(GameTestHelper helper) throws Exception {
         try (Fix f = new Fix(helper)) {
             ServerPlayer p = player(helper, "uc_cb", "farmer");
-            p.getInventory().setItem(0, shulkerWith(new ItemStack(core("sable_leaf_bale"), 6), new ItemStack(Items.WHEAT, 16)));
-            p.getInventory().setItem(1, shulkerWith(new ItemStack(core("sable_cutting"), 2)));    // a box with nothing but contraband
+            p.getInventory().setItem(0, shulkerWith(new ItemStack(core("cannabis_flower"), 6), new ItemStack(Items.WHEAT, 16)));
+            p.getInventory().setItem(1, shulkerWith(new ItemStack(core("cannabis_seeds"), 2)));    // a box with nothing but contraband
             p.getInventory().setItem(2, shulkerWith(new ItemStack(Items.BREAD, 3)));               // a control: a legal box is not touched
             var result = f.search(p);
             check(result.outcome() == CheckpointService.Outcome.SEIZED && result.stacksSeized() == 2, "the contraband in two shulker boxes was not found: " + result);
@@ -122,7 +122,7 @@ public final class CheckpointSearchGameTests {
             ServerPlayer p = player(helper, "uc_cc", "farmer");
             ItemStack bundle = new ItemStack(Items.BUNDLE);
             ListTag items = new ListTag();
-            items.add(new ItemStack(core("sable_leaf_bale"), 2).save(new CompoundTag()));
+            items.add(new ItemStack(core("cannabis_flower"), 2).save(new CompoundTag()));
             items.add(new ItemStack(Items.WHEAT, 5).save(new CompoundTag()));
             bundle.getOrCreateTag().put("Items", items);
             p.getInventory().setItem(0, bundle);
@@ -140,13 +140,13 @@ public final class CheckpointSearchGameTests {
             ServerPlayer p = player(helper, "uc_cd", "farmer"), mate = player(helper, "uc_ce", "smith");
             BlockPos pos = helper.absolutePos(new BlockPos(1, 2, 1));
             helper.getLevel().setBlockAndUpdate(pos, Blocks.CHEST.defaultBlockState());
-            ((ChestBlockEntity) helper.getLevel().getBlockEntity(pos)).setItem(0, new ItemStack(core("sable_leaf_bale"), 9));   // a chest within reach
-            mate.getInventory().setItem(0, new ItemStack(core("sable_leaf_bale"), 5));                                          // a Crew-mate's pocket
+            ((ChestBlockEntity) helper.getLevel().getBlockEntity(pos)).setItem(0, new ItemStack(core("cannabis_flower"), 9));   // a chest within reach
+            mate.getInventory().setItem(0, new ItemStack(core("cannabis_flower"), 5));                                          // a Crew-mate's pocket
             p.moveTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 1.5);
             mate.moveTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 2.5);
             var result = f.search(p);
             check(result.outcome() == CheckpointService.Outcome.CLEARED, "a search read storage the traveller was not carrying: " + result);
-            check(((ChestBlockEntity) helper.getLevel().getBlockEntity(pos)).getItem(0).getCount() == 9 && mate.getInventory().countItem(core("sable_leaf_bale")) == 5, "somebody else's goods were taken");
+            check(((ChestBlockEntity) helper.getLevel().getBlockEntity(pos)).getItem(0).getCount() == 9 && mate.getInventory().countItem(core("cannabis_flower")) == 5, "somebody else's goods were taken");
             helper.getLevel().setBlockAndUpdate(pos, Blocks.AIR.defaultBlockState());
         }
         helper.succeed();
@@ -157,8 +157,8 @@ public final class CheckpointSearchGameTests {
         try (Fix f = new Fix(helper)) {
             ServerPlayer p = player(helper, "uc_cf", "farmer");
             f.search(p);                                                        // clean
-            p.setItemSlot(EquipmentSlot.HEAD, new ItemStack(core("sable_leaf_bale"), 2));
-            p.getInventory().setItem(3, new ItemStack(core("sable_cutting"), 1));
+            p.setItemSlot(EquipmentSlot.HEAD, new ItemStack(core("cannabis_flower"), 2));
+            p.getInventory().setItem(3, new ItemStack(core("cannabis_seeds"), 1));
             CheckpointService.inspect(p, citizen(p), GATE, CityLaws.INSTANCE.find("valewood"), f.ledger, null, new CheckpointService.Why(0.37, 3));
             ListTag history = f.ledger.searches(p.getUUID());
             check(history.size() == 2, "two searches, two records: " + history);
@@ -194,17 +194,17 @@ public final class CheckpointSearchGameTests {
             ServerPlayer p = player(helper, "uc_pa", "farmer");
             ItemStack worn = pack("backpack"), pocketed = pack("copper_backpack");
             IItemHandlerModifiable wornInv = BackpackSupport.inventory(worn), pocketInv = BackpackSupport.inventory(pocketed);
-            check(BackpackSupport.insertAll(wornInv, new ItemStack(core("sable_leaf_bale"), 6)) && BackpackSupport.insertAll(wornInv, new ItemStack(Items.WHEAT, 20))
+            check(BackpackSupport.insertAll(wornInv, new ItemStack(core("cannabis_flower"), 6)) && BackpackSupport.insertAll(wornInv, new ItemStack(Items.WHEAT, 20))
                 && BackpackSupport.insertAll(wornInv, new ItemStack(Items.IRON_INGOT, 7)), "setup: the worn pack");
-            check(BackpackSupport.insertAll(pocketInv, new ItemStack(core("sable_cutting"), 2)) && BackpackSupport.insertAll(pocketInv, new ItemStack(Items.BREAD, 4)), "setup: the pocketed pack");
+            check(BackpackSupport.insertAll(pocketInv, new ItemStack(core("cannabis_seeds"), 2)) && BackpackSupport.insertAll(pocketInv, new ItemStack(Items.BREAD, 4)), "setup: the pocketed pack");
             BackpackSupport.wear(p, worn);
             p.getInventory().setItem(5, pocketed);
             var result = f.search(p);
             check(result.outcome() == CheckpointService.Outcome.SEIZED && result.stacksSeized() == 2, "contraband hidden in worn and pocketed backpacks was not found: " + result);
             ItemStack wornNow = worn(p), pocketedNow = p.getInventory().getItem(5);
-            check(inPack(wornNow, core("sable_leaf_bale")) == 0 && inPack(pocketedNow, core("sable_cutting")) == 0, "the contraband is still in a pack");
+            check(inPack(wornNow, core("cannabis_flower")) == 0 && inPack(pocketedNow, core("cannabis_seeds")) == 0, "the contraband is still in a pack");
             check(inPack(wornNow, Items.WHEAT) == 20 && inPack(wornNow, Items.IRON_INGOT) == 7 && inPack(pocketedNow, Items.BREAD) == 4, "legal goods in the packs were taken");
-            check(count(p, core("sable_leaf_bale")) == 0 && count(p, core("sable_cutting")) == 0, "contraband appeared somewhere else (duplicated)");
+            check(count(p, core("cannabis_flower")) == 0 && count(p, core("cannabis_seeds")) == 0, "contraband appeared somewhere else (duplicated)");
             check(f.ledger.heat(p.getUUID(), "valewood") == 2 && f.ledger.player(p.getUUID()).getInt("seizures") == 1 && !f.ledger.player(p.getUUID()).contains("pending"), "one seizure, settled");
             check(f.ledger.searches(p.getUUID()).getCompound(0).getList("where", Tag.TAG_STRING).size() == 1
                 && f.ledger.searches(p.getUUID()).getCompound(0).getList("where", Tag.TAG_STRING).getString(0).startsWith("your backpack"), "the record names the backpack: " + f.ledger.searches(p.getUUID()));
@@ -220,7 +220,7 @@ public final class CheckpointSearchGameTests {
             ServerPlayer p = player(helper, "uc_pb", "farmer");
             ItemStack worn = pack("iron_backpack");
             IItemHandlerModifiable inv = BackpackSupport.inventory(worn);
-            ItemStack box = shulkerWith(new ItemStack(core("sable_leaf_bale"), 3), new ItemStack(Items.WHEAT, 8));
+            ItemStack box = shulkerWith(new ItemStack(core("cannabis_flower"), 3), new ItemStack(Items.WHEAT, 8));
             boolean accepted = BackpackSupport.insertAll(inv, box.copy());
             System.out.println("[UC-SEARCH-AUDIT] a shulker box can be put into a Sophisticated Backpack with the running configuration: " + accepted);
             if (!accepted) { helper.succeed(); return; }   // the pack does not accept boxes: nothing to hide in (the nested path is then covered only by the shulker-in-pockets test)
@@ -242,18 +242,18 @@ public final class CheckpointSearchGameTests {
             ServerPlayer p = player(helper, "uc_pc", "farmer");
             ItemStack worn = pack("backpack");
             IItemHandlerModifiable inv = BackpackSupport.inventory(worn);
-            BackpackSupport.insertAll(inv, new ItemStack(core("sable_leaf_bale"), 6));
+            BackpackSupport.insertAll(inv, new ItemStack(core("cannabis_flower"), 6));
             BackpackSupport.insertAll(inv, new ItemStack(Items.WHEAT, 20));
             BackpackSupport.wear(p, worn);
-            p.getInventory().setItem(0, new ItemStack(core("sable_cutting"), 2));
+            p.getInventory().setItem(0, new ItemStack(core("cannabis_seeds"), 2));
             CheckpointService.crashAfterPrepare = true;
             try { f.search(p); throw new AssertionError("the simulated crash did not happen"); } catch (CrewService.SimulatedCrash died) { /* the process died with the decision on disk and nothing applied */ }
             CheckpointService.crashAfterPrepare = false;
             check(f.ledger.player(p.getUUID()).contains("pending"), "the decision was not journaled before the crash");
-            check(inPack(worn(p), core("sable_leaf_bale")) == 6, "setup: nothing was applied before the crash");
+            check(inPack(worn(p), core("cannabis_flower")) == 6, "setup: nothing was applied before the crash");
             // login recovery, twice: the second replay finds the slot already changed
             WorkOrderService.recover(p, f.ledger);
-            check(inPack(worn(p), core("sable_leaf_bale")) == 0 && inPack(worn(p), Items.WHEAT) == 20 && p.getInventory().countItem(core("sable_cutting")) == 0, "recovery did not complete the seizure exactly");
+            check(inPack(worn(p), core("cannabis_flower")) == 0 && inPack(worn(p), Items.WHEAT) == 20 && p.getInventory().countItem(core("cannabis_seeds")) == 0, "recovery did not complete the seizure exactly");
             check(f.ledger.player(p.getUUID()).getInt("seizures") == 1 && f.ledger.heat(p.getUUID(), "valewood") == 2, "recovery settled the seizure not exactly once");
             WorkOrderService.recover(p, f.ledger);
             check(inPack(worn(p), Items.WHEAT) == 20 && f.ledger.player(p.getUUID()).getInt("seizures") == 1, "a second recovery changed something");
@@ -268,14 +268,14 @@ public final class CheckpointSearchGameTests {
         try (Fix f = new Fix(helper)) {
             ServerPlayer p = player(helper, "uc_pd", "farmer"), mate = player(helper, "uc_pe", "smith");
             ItemStack matesPack = pack("backpack");
-            BackpackSupport.insertAll(BackpackSupport.inventory(matesPack), new ItemStack(core("sable_leaf_bale"), 6));
+            BackpackSupport.insertAll(BackpackSupport.inventory(matesPack), new ItemStack(core("cannabis_flower"), 6));
             BackpackSupport.wear(mate, matesPack);
             ItemStack mine = pack("backpack");
             BackpackSupport.insertAll(BackpackSupport.inventory(mine), new ItemStack(Items.WHEAT, 6));
             BackpackSupport.wear(p, mine);
             var result = f.search(p);
             check(result.outcome() == CheckpointService.Outcome.CLEARED, "a Crew-mate's pack made the traveller a suspect: " + result);
-            check(inPack(worn(mate), core("sable_leaf_bale")) == 6, "somebody else's backpack was emptied");
+            check(inPack(worn(mate), core("cannabis_flower")) == 6, "somebody else's backpack was emptied");
         }
         helper.succeed();
     }

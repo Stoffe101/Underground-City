@@ -12,7 +12,7 @@
     "buyer_trip_round_trip_minutes": 12
   },
   "hands_on_minutes_each": {
-    "note": "Hands-on minutes to obtain ONE of the item from the world with starter tools, including crafting it. Waiting (crops, smelting) is parallel and listed separately in wait_minutes.",
+    "note": "Hands-on minutes to obtain ONE of the item from the world with starter tools, including crafting it. Waiting (crops, smelting) is parallel and listed separately in wait_minutes. Workshop goods (D-163) count their inputs at these rates plus a little handling at the station; the station's own time is waiting.",
     "minecraft:wheat": 0.3,
     "minecraft:carrot": 0.3,
     "minecraft:potato": 0.3,
@@ -43,13 +43,30 @@
     "minecraft:bone_meal": 0.6,
     "minecraft:glass_bottle": 0.35,
     "minecraft:wheat_seeds": 0.1,
-    "underground_city:sable_leaf_bale": 2.6,
+    "underground_city:cannabis_flower": 2.6,
+    "underground_city:dried_cannabis": 5.4,
     "underground_city:data_ledger": 6.0,
     "vinery:red_wine": 2.2,
     "vinery:noir_wine": 2.6,
     "vinery:cherry_wine": 2.4,
     "kaleidoscope_tavern:vodka": 1.5,
-    "minecraft:sugar": 0.25
+    "minecraft:sugar": 0.25,
+    "minecraft:lever": 0.12,
+    "underground_city:flour": 0.55,
+    "underground_city:produce_crate": 3.9,
+    "underground_city:fruit_crate": 3.9,
+    "underground_city:berry_wine": 1.25,
+    "underground_city:apple_cider": 1.45,
+    "underground_city:aged_wine": 2.1,
+    "underground_city:grain_spirit": 1.7,
+    "underground_city:moonshine": 1.45,
+    "underground_city:fasteners": 0.1,
+    "underground_city:steel_bracket": 0.65,
+    "underground_city:barrel_hoops": 0.5,
+    "underground_city:springs": 0.36,
+    "underground_city:gear_set": 3.6,
+    "underground_city:firearm_parts_kit": 2.3,
+    "underground_city:unmarked_parts_kit": 3.8
   },
   "wait_minutes": {
     "note": "Latency before the FIRST delivery of an order that needs growing or ageing; later cycles overlap with other work.",
@@ -57,12 +74,28 @@
     "minecraft:carrot": 25,
     "minecraft:potato": 25,
     "minecraft:pumpkin_pie": 30,
-    "underground_city:sable_leaf_bale": 24,
+    "underground_city:cannabis_flower": 24,
+    "underground_city:dried_cannabis": 30,
     "vinery:red_wine": 20,
     "vinery:noir_wine": 22,
     "vinery:cherry_wine": 22,
     "kaleidoscope_tavern:vodka": 12,
-    "minecraft:sugar": 15
+    "minecraft:sugar": 15,
+    "underground_city:flour": 25,
+    "underground_city:produce_crate": 25,
+    "underground_city:fruit_crate": 25,
+    "underground_city:berry_wine": 15,
+    "underground_city:apple_cider": 10,
+    "underground_city:aged_wine": 21,
+    "underground_city:grain_spirit": 30,
+    "underground_city:moonshine": 22,
+    "underground_city:fasteners": 1,
+    "underground_city:steel_bracket": 1,
+    "underground_city:barrel_hoops": 1,
+    "underground_city:springs": 1,
+    "underground_city:gear_set": 2,
+    "underground_city:firearm_parts_kit": 4,
+    "underground_city:unmarked_parts_kit": 7
   },
   "gun_minutes": {
     "iron_value_credits": 7.7,
@@ -123,7 +156,8 @@
       0.7,
       1.0,
       1.4
-    ]
+    ],
+    "fence_hourly_ceiling_vs_best_legal_max": 1.5
   },
   "efficiency": {
     "hands_on_share_of_active_time": 0.5,
@@ -143,5 +177,62 @@
     "max_margin": 1.7,
     "note": "Errands that carry exchange goods to a buyer unchanged. They pay a courier's margin (not a crafter's) and are bounded by the shelf: the exchange restocks a few units an hour for everyone, so the profit per hour is capped no matter how fast the player walks. The underground errands also carry the seizure risk of contraband (D-052). The cap compares the errand's net credits per hour (the smaller of what the shelf and the employer allow, times its margin) with the best crafting careers' 400-480: a courier is never the best hour.",
     "max_net_per_hour": 250
+  },
+  "scarcity": {
+    "note": "A new world made with the scarcity package (D-120) has no ore to mine: every unit of iron, copper, coal or redstone in what an order asks for comes off a city's finite shelf (bought) or, for the base metals, out of the regrowing quarry (D-123). ore_content is the ore-derived content of the vanilla goods the work orders ask for, from the base-game recipes; the mining time the default model counts for those units is taken out and replaced by the shelf price (and an exchange run) or by quarry_minutes_each. Provisional, like every hands-on minute.",
+    "ore_content": {
+      "minecraft:iron_ingot": {
+        "minecraft:iron_ingot": 1
+      },
+      "minecraft:copper_ingot": {
+        "minecraft:copper_ingot": 1
+      },
+      "minecraft:redstone": {
+        "minecraft:redstone": 1
+      },
+      "minecraft:iron_pickaxe": {
+        "minecraft:iron_ingot": 3
+      },
+      "minecraft:bucket": {
+        "minecraft:iron_ingot": 3
+      },
+      "minecraft:hopper": {
+        "minecraft:iron_ingot": 5
+      },
+      "minecraft:iron_chestplate": {
+        "minecraft:iron_ingot": 8
+      },
+      "minecraft:iron_helmet": {
+        "minecraft:iron_ingot": 5
+      },
+      "minecraft:crossbow": {
+        "minecraft:iron_ingot": 2
+      },
+      "minecraft:piston": {
+        "minecraft:iron_ingot": 1,
+        "minecraft:redstone": 1
+      },
+      "minecraft:redstone_torch": {
+        "minecraft:redstone": 1
+      },
+      "minecraft:repeater": {
+        "minecraft:redstone": 3
+      },
+      "minecraft:comparator": {
+        "minecraft:redstone": 3
+      },
+      "minecraft:observer": {
+        "minecraft:redstone": 2
+      },
+      "minecraft:target": {
+        "minecraft:redstone": 4
+      }
+    },
+    "quarry_minutes_each": {
+      "minecraft:iron_ingot": 0.7,
+      "minecraft:copper_ingot": 0.6,
+      "minecraft:coal": 0.4
+    },
+    "ore_world_share_min_at_level_5": 0.5
   }
 }

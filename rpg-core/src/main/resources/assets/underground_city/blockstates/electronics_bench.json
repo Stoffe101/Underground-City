@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "underground_city:block/electronics_bench"
+  },
+  "facing=east": {
+   "model": "underground_city:block/electronics_bench",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "underground_city:block/electronics_bench",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "underground_city:block/electronics_bench",
+   "y": 270
+  }
+ }
+}

@@ -53,16 +53,16 @@ final class Gallery {
             Playtest.command(String.format("setblock %d %d %d minecraft:water", ox - 1, oy - 1, oz));
             for (int stage = 0; stage < 4; stage++) {
                 Playtest.command(String.format("setblock %d %d %d minecraft:farmland[moisture=7]", ox + stage, oy - 1, oz));
-                Playtest.command(String.format("setblock %d %d %d underground_city:sable_leaf_crop[age=%d,nourished=false]", ox + stage, oy, oz, stage));
+                Playtest.command(String.format("setblock %d %d %d underground_city:cannabis_plant[age=%d,nourished=false]", ox + stage, oy, oz, stage));
             }
             // a fed plant (with its nutrient stake) and a small field of mature plants
             Playtest.command(String.format("setblock %d %d %d minecraft:farmland[moisture=7]", ox + 5, oy - 1, oz));
-            Playtest.command(String.format("setblock %d %d %d underground_city:sable_leaf_crop[age=2,nourished=true]", ox + 5, oy, oz));
+            Playtest.command(String.format("setblock %d %d %d underground_city:cannabis_plant[age=2,nourished=true]", ox + 5, oy, oz));
             Playtest.command(String.format("setblock %d %d %d minecraft:water", ox + 11, oy - 1, oz + 4));
             for (int x = 8; x <= 14; x++) for (int z = 2; z <= 6; z++) {
                 if (x == 11 && z == 4) continue;
                 Playtest.command(String.format("setblock %d %d %d minecraft:farmland[moisture=7]", ox + x, oy - 1, oz + z));
-                Playtest.command(String.format("setblock %d %d %d underground_city:sable_leaf_crop[age=%d,nourished=false]", ox + x, oy, oz + z, (x + z) % 4 == 0 ? 2 : 3));
+                Playtest.command(String.format("setblock %d %d %d underground_city:cannabis_plant[age=%d,nourished=false]", ox + x, oy, oz + z, (x + z) % 4 == 0 ? 2 : 3));
             }
         });
         Playtest.wait("let the meshes build", 160);

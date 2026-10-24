@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "city": "blackwater",
+  "item": "minecraft:redstone",
+  "unit_price": 6,
+  "initial": 20,
+  "capacity": 32,
+  "units_per_interval": 4,
+  "interval_ticks": 24000,
+  "max_order": 16,
+  "outlets": [
+    "city"
+  ]
+}

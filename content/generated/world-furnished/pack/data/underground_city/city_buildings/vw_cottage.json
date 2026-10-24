@@ -1,0 +1,58 @@
+{
+  "city": "valewood",
+  "floors": {
+    "max": 1,
+    "min": 1
+  },
+  "id": "vw_cottage",
+  "notes": "A small one-storey cottage with a kitchen garden: one living room with a kitchen, a bedroom, a washroom.",
+  "schema_version": 1,
+  "spots": [
+    {
+      "facing": "south",
+      "kind": "door",
+      "note": "front door",
+      "x": 7,
+      "y": 1,
+      "z": 9
+    },
+    {
+      "facing": "south",
+      "kind": "bed",
+      "note": "bedroom",
+      "x": 9,
+      "y": 1,
+      "z": 4
+    },
+    {
+      "facing": "south",
+      "kind": "stove",
+      "x": 7,
+      "y": 1,
+      "z": 4
+    },
+    {
+      "facing": "east",
+      "kind": "seat",
+      "note": "table",
+      "x": 6,
+      "y": 1,
+      "z": 6
+    }
+  ],
+  "units": [
+    {
+      "box": [
+        5,
+        1,
+        4,
+        10,
+        4,
+        8
+      ],
+      "id": "house",
+      "title": "Cottage"
+    }
+  ],
+  "use": "house"
+}

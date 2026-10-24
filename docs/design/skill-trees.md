@@ -19,7 +19,7 @@
 | --- | --- | --- | --- |
 | `legal_payout_percent` | `WorkOrderService.complete` through `SkillService.payout`: the credits a **legal** contract pays, fixed at delivery and written into the prepared record (so a crash replays the same amount) | 6 / 12 | whole credits, bonus **rounded down** |
 | `underground_payout_percent` | the same, for an **underground** contract | 6 / 12 | the same |
-| `yield_percent` | `RestrictedCropBlock.playerDestroy`: extra Sable Leaf bales when a **player** harvests a **mature** plant (the average harvest is 2.5; 30% adds 0.75 bales on average, as whole bales plus a chance of one more). Pistons, water and creative mode earn nothing extra | 30 / 40 | `extraBales` is a pure function pinned by a test |
+| `yield_percent` | `RestrictedCropBlock.playerDestroy`: extra cannabis flower when a **player** harvests a **mature** plant (the average harvest is 2.5 flower; 30% adds 0.75 on average, as whole flower plus a chance of one more). Pistons, water and creative mode earn nothing extra | 30 / 40 | `extraFlower` is a pure function pinned by a test |
 | `upgrade_discount_percent` | `PropertyService.upgrade`: the **acting** member's price of a home upgrade, from their wallet or the Crew bank; the Home page shows the price they pay | 15 / 20 | discount rounded down (the price rounds up) |
 | `exchange_discount` | `RegionalMarket.unitPrice` (unchanged) | 0.05 / 0.10 | unchanged |
 | `inspection_modifier` | `CheckpointService` and the witness roll (unchanged) | 0.25 / 0.35 | unchanged |
@@ -48,10 +48,10 @@ Nothing here is a flat 5% menu discount any more: the utility branch holds the e
 | Estate Wholesale | legal | 2 | 8 | Cultivar Broker | +4% legal contracts; opens estate_pantry |
 | Farm Cooperative | legal | 2 | 11 | Estate Wholesale | +4% legal contracts |
 | Field Logistics | utility | 1 | 4 | Field Fundamentals | 5% off exchange goods |
-| Selective Grafting | crossover | 2 | 9 | Greenhouse Management, Restricted Cultivation | +30% Sable Leaf bales |
+| Selective Grafting | crossover | 2 | 9 | Greenhouse Management, Restricted Cultivation | +30% cannabis flower |
 | Controlled-Crop Licence | crossover | 2 | 10 | Restricted Cultivation, Greenhouse Management | licence: restricted_cultivar; opens licensed_cultivar_supply |
 | Two Sets of Books | crossover | 2 | 13 | Estate Wholesale, Underground Trade | +3% underground contracts; -5 points of search chance |
-| Restricted Cultivation | underground | 3 | 6 | Field Fundamentals | **needed to plant a Sable Leaf cutting** (`RestrictedCuttingItem`) |
+| Restricted Cultivation | underground | 3 | 6 | Field Fundamentals | **needed to plant Cannabis Seeds** (`RestrictedCuttingItem`) |
 | Concealed Stores | underground | 2 | 8 | Restricted Cultivation | -12 points of search chance |
 | Underground Trade | underground | 3 | 9 | Restricted Cultivation | opens quiet_bales |
 | Grey Market Contacts | underground | 3 | 12 | Underground Trade | opens reserve_load |

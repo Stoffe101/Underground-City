@@ -1,0 +1,23 @@
+modLoader="lowcodefml"
+loaderVersion="[47,)"
+license="All Rights Reserved"
+
+[[mods]]
+modId="underground_city_archipelago"
+version="0.1.0"
+displayName="Underground City: Archipelago World"
+description="The three islands of the archipelago layout: city placement, regions, checkpoints, roads and loot."
+
+[[dependencies.underground_city_archipelago]]
+modId="lostcities"
+mandatory=true
+versionRange="[1.20-7.5.5]"
+ordering="AFTER"
+side="BOTH"
+
+[[dependencies.underground_city_archipelago]]
+modId="underground_city"
+mandatory=true
+versionRange="[0.1.0,)"
+ordering="AFTER"
+side="BOTH"

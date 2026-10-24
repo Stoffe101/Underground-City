@@ -1,0 +1,25 @@
+{
+  "public": true,
+  "lostcity": {
+    "description": "Underground City disposable three-city survey",
+    "worldStyle": "underground_city:three_city",
+    "generateSpawners": false,
+    "generateLoot": false,
+    "ruinChance": 0.0,
+    "rubbleLayer": false,
+    "highwayGenerationMode": "INTERCITY_NETWORK_V1",
+    "avoidFoliage": true,
+    "vineChance": 0.0
+  },
+  "cities": {
+    "cityChance": 0.0,
+    "cityMinRadius": 100,
+    "cityMaxRadius": 330,
+    "cityMinHeight": -64,
+    "cityMaxHeight": 320
+  },
+  "explosions": {
+    "explosionChance": 0.0,
+    "miniExplosionChance": 0.0
+  }
+}

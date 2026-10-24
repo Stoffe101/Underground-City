@@ -1,0 +1,11 @@
+{
+  "dimension": "minecraft:overworld",
+  "jurisdiction": "valewood",
+  "radius": 48,
+  "risk": "inspection",
+  "route": "ironhaven_valewood",
+  "schema_version": 1,
+  "title": "Valewood gate on the Ironhaven road",
+  "x": 1301,
+  "z": 189
+}

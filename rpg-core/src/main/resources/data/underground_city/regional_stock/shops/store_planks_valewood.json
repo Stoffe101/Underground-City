@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "city": "valewood",
+  "item": "minecraft:oak_planks",
+  "unit_price": 1,
+  "initial": 48,
+  "capacity": 64,
+  "units_per_interval": 16,
+  "interval_ticks": 24000,
+  "max_order": 32,
+  "outlets": [
+    "shop:general"
+  ]
+}

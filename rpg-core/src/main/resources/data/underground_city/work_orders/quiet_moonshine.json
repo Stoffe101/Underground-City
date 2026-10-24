@@ -1,0 +1,21 @@
+{
+  "schema_version": 3,
+  "title": "Moonshine for the back bar",
+  "career": "vintner",
+  "level": 7,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "underground_city:moonshine",
+      "count": 6
+    }
+  ],
+  "credits": 200,
+  "xp": 340,
+  "capacity": 2,
+  "refill_ticks": 18000,
+  "legality": "underground",
+  "requires_skill": "vintner.still_craft",
+  "buyer": "ironhaven_backbar",
+  "trust_gain": 1
+}

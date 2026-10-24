@@ -1,0 +1,19 @@
+{
+  "schema_version": 3,
+  "title": "Flour for the Valewood bakery",
+  "career": "farmer",
+  "level": 2,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "underground_city:flour",
+      "count": 16
+    }
+  ],
+  "credits": 80,
+  "xp": 220,
+  "capacity": 3,
+  "refill_ticks": 6000,
+  "legality": "legal",
+  "requires_skill": "farmer.fundamentals"
+}

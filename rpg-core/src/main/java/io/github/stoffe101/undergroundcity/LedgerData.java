@@ -12,7 +12,7 @@ public record LedgerData(String city, String region, String career, int level, L
     /** One posting. {@code demand} is the share of the order still open (0 when sold out), {@code capacity} what a full board holds. */
     public record Posting(String career, String title, int level, int credits, int xp, int demand, int capacity, boolean visits) {}
 
-    static final int MAX_POSTINGS = 40;
+    static final int MAX_POSTINGS = 80;   // the screen scrolls; 40 cut the last careers off once the workshops added their contracts (D-163)
 
     static LedgerData snapshot(ServerPlayer player, BlockPos pos) {
         CitizenState.Citizen citizen = CitizenState.get(player.server).find(player.getUUID()).orElse(null);

@@ -1,0 +1,111 @@
+{
+  "city": "ironhaven",
+  "floors": {
+    "max": 2,
+    "min": 2
+  },
+  "id": "ih_pub",
+  "notes": "A pub: the bar, tables and a fire below; two rooms to let and the landlord's flat above.",
+  "schema_version": 1,
+  "spots": [
+    {
+      "facing": "south",
+      "kind": "door",
+      "note": "front door",
+      "x": 7,
+      "y": 1,
+      "z": 14
+    },
+    {
+      "facing": "south",
+      "kind": "counter",
+      "note": "the bar",
+      "x": 7,
+      "y": 1,
+      "z": 3
+    },
+    {
+      "facing": "east",
+      "kind": "seat",
+      "note": "a table by the fire",
+      "x": 3,
+      "y": 1,
+      "z": 8
+    },
+    {
+      "facing": "east",
+      "kind": "seat",
+      "note": "a table by the window",
+      "x": 8,
+      "y": 1,
+      "z": 11
+    },
+    {
+      "facing": "west",
+      "kind": "bed",
+      "note": "the landlord's bed",
+      "x": 4,
+      "y": 7,
+      "z": 12
+    },
+    {
+      "facing": "north",
+      "kind": "stove",
+      "note": "the landlord's kitchen",
+      "x": 9,
+      "y": 7,
+      "z": 12
+    },
+    {
+      "facing": "east",
+      "kind": "seat",
+      "note": "the landlord's table",
+      "x": 7,
+      "y": 7,
+      "z": 10
+    },
+    {
+      "facing": "west",
+      "kind": "stash",
+      "note": "the takings",
+      "x": 11,
+      "y": 7,
+      "z": 12
+    },
+    {
+      "facing": "north",
+      "kind": "alarm",
+      "note": "alarm panel by the front door",
+      "x": 6,
+      "y": 2,
+      "z": 13
+    }
+  ],
+  "units": [
+    {
+      "box": [
+        2,
+        7,
+        2,
+        6,
+        9,
+        5
+      ],
+      "id": "room_1",
+      "title": "Room 1"
+    },
+    {
+      "box": [
+        8,
+        7,
+        2,
+        13,
+        9,
+        5
+      ],
+      "id": "room_2",
+      "title": "Room 2"
+    }
+  ],
+  "use": "pub"
+}

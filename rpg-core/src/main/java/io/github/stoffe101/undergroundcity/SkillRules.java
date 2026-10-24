@@ -30,10 +30,21 @@ public final class SkillRules {
         return spent;
     }
 
+    /** Thief points: one per Thief level above the first (D-143), never the career's points. */
+    public static int thiefPointsEarned(int thiefLevel) {
+        if (thiefLevel < 1) throw new IllegalArgumentException("Thief level starts at 1");
+        return Math.min(thiefLevel, ProgressionRules.THIEF_MAX_LEVEL) - 1;
+    }
+
     /** Human-readable reason this node cannot be unlocked now, or null when it can. */
     public static String blocker(SkillNode node, Map<String, SkillNode> byId, int careerLevel, Set<String> unlocked, int pointsAvailable) {
+        return blocker(node, byId, careerLevel, unlocked, pointsAvailable, node.thief() ? "Thief level" : "Career level", node.thief() ? "Thief point" : "skill point");
+    }
+
+    /** The same, with the words for the level and the point of the tree the node is in. */
+    static String blocker(SkillNode node, Map<String, SkillNode> byId, int level, Set<String> unlocked, int pointsAvailable, String levelNoun, String pointNoun) {
         if (unlocked.contains(node.id())) return "Already unlocked";
-        if (careerLevel < node.minLevel()) return "Career level " + node.minLevel() + " required";
+        if (level < node.minLevel()) return levelNoun + " " + node.minLevel() + " required";
         for (String required : node.requires()) {
             if (!unlocked.contains(required)) {
                 SkillNode prerequisite = byId.get(required);
@@ -41,9 +52,45 @@ public final class SkillRules {
             }
         }
         if (pointsAvailable < node.cost()) {
-            return "Needs " + node.cost() + " skill point" + (node.cost() == 1 ? "" : "s") + " (" + pointsAvailable + " available)";
+            return "Needs " + node.cost() + " " + pointNoun + (node.cost() == 1 ? "" : "s") + " (" + pointsAvailable + " available)";
         }
         return null;
+    }
+
+    /**
+     * Structural validation of the Thief tree (D-143). It follows the career rules where they apply (ids, a root, acyclic prerequisites that never ask for a later level, titles,
+     * costs) and adds its own: only the Thief columns, no career effects (a payout, a yield or a licence belongs to a career, and the whole tree is open to every career), every skill
+     * says in one line what it does, and the whole tree is affordable at the top Thief level, so no order of choices locks anything out.
+     */
+    public static void validateThiefTree(List<SkillNode> nodes) {
+        if (nodes.isEmpty() || nodes.size() > SkillNode.MAX_NODES_PER_TREE) throw new IllegalArgumentException("thief: 1-" + SkillNode.MAX_NODES_PER_TREE + " nodes expected");
+        Map<String, SkillNode> byId = new HashMap<>();
+        int total = 0;
+        boolean root = false;
+        for (SkillNode node : nodes) {
+            if (byId.put(node.id(), node) != null) throw new IllegalArgumentException("Duplicate skill " + node.id());
+            if (!node.id().matches("thief\\.[a-z][a-z_]{2,39}") || !node.thief()) throw new IllegalArgumentException("Skill id must be thief.<name>: " + node.id());
+            if (!SkillNode.THIEF_BRANCHES.contains(node.branch())) throw new IllegalArgumentException(node.id() + ": unknown Thief branch " + node.branch());
+            if (node.title().isBlank() || node.title().length() > 40 || node.description().isBlank() || node.description().length() > 170) {
+                throw new IllegalArgumentException(node.id() + ": title (<=40) and description (<=170) required");
+            }
+            if (node.effectText().isBlank() || node.effectText().length() > SkillNode.MAX_EFFECT_TEXT) throw new IllegalArgumentException(node.id() + ": an effect line of at most " + SkillNode.MAX_EFFECT_TEXT + " characters is required");
+            if (node.cost() < 1 || node.cost() > 4 || node.minLevel() < 1 || node.minLevel() > ProgressionRules.THIEF_MAX_LEVEL) throw new IllegalArgumentException(node.id() + ": invalid cost or level");
+            if (node.inspectionModifier() != 0 || node.exchangeDiscount() != 0 || !node.licences().isEmpty() || node.legalPayoutPercent() != 0 || node.undergroundPayoutPercent() != 0
+                || node.yieldPercent() != 0 || node.upgradeDiscountPercent() != 0) throw new IllegalArgumentException(node.id() + ": a Thief skill carries no career effect");
+            total += node.cost();
+            root |= node.requires().isEmpty();
+        }
+        if (!root) throw new IllegalArgumentException("thief: no root skill");
+        if (total > thiefPointsEarned(ProgressionRules.THIEF_MAX_LEVEL)) throw new IllegalArgumentException("thief: the whole tree must be affordable at the top Thief level, costs total " + total);
+        for (SkillNode node : nodes) {
+            for (String required : node.requires()) {
+                SkillNode parent = byId.get(required);
+                if (parent == null) throw new IllegalArgumentException(node.id() + ": unknown prerequisite " + required);
+                if (parent.minLevel() > node.minLevel()) throw new IllegalArgumentException(node.id() + ": level requirement lower than its prerequisite");
+            }
+            if (reaches(node, node.id(), byId, new HashSet<>())) throw new IllegalArgumentException(node.id() + ": prerequisite cycle");
+        }
     }
 
     /** Depth of a node from the roots of its tree (roots are 0). Used for layout only. */

@@ -49,6 +49,8 @@ public final class PropertyRules {
         public boolean canRent() { return tenures.contains(Tenure.RENT) && rent > 0; }
         public boolean canBuy() { return tenures.contains(Tenure.OWN) && buyPrice > 0; }
         public boolean has(String facility) { return facilities.contains(facility); }
+        /** The same terms under another listing id (a unit of a furnished city building takes its building's template, D-127). */
+        public Terms withId(String newId) { return new Terms(newId, title, category, tier, area, tenures, rent, deposit, buyPrice, upkeep, maxContainers, privateClaims, facilities, summary); }
     }
 
     /** A purchasable improvement of a home that is OWNED. Each one is a capability the guard enforces, not a counter. */

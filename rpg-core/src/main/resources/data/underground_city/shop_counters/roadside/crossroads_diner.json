@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "outlet": "shop:roadside_diner",
+  "building": "roadside:crossroads_diner",
+  "spot": "counter",
+  "city": "valewood",
+  "title": "Crossroads Diner"
+}

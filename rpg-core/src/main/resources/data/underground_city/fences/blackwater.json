@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "city": "blackwater",
+  "title": "The Back Room",
+  "blurb": "The club's back office, after closing. Electronics and valuables.",
+  "rate_percent": 50,
+  "same_city_rate_percent": 32,
+  "same_city_heat": 1,
+  "budget": 600,
+  "refill_credits": 70,
+  "refill_minutes": 10,
+  "from_hour": 21,
+  "to_hour": 3,
+  "specialties": [
+    "underground_city:smartphone",
+    "underground_city:tablet",
+    "underground_city:digital_camera",
+    "underground_city:old_laptop",
+    "underground_city:jewellery_box",
+    "underground_city:pearl_necklace",
+    "underground_city:gold_ring",
+    "underground_city:wristwatch",
+    "underground_city:designer_handbag",
+    "underground_city:rare_vinyl",
+    "underground_city:small_painting",
+    "underground_city:bearer_bonds"
+  ]
+}

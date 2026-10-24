@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "outlet": "shop:farmstand",
+  "building": "roadside:harrow_farmstand",
+  "spot": "counter",
+  "city": "valewood",
+  "title": "Harrow Farm Stand"
+}

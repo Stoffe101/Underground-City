@@ -188,19 +188,28 @@ LOOT = {
 }
 
 
-def render(data: dict) -> dict[str, bytes]:
+LAYOUTS = {
+    "legacy": {"mod": "underground_city_world", "name": "Underground City: World Prototype",
+               "description": "Original three-city world placement and prototype loot."},
+    "archipelago": {"mod": "underground_city_archipelago", "name": "Underground City: Archipelago World",
+                    "description": "The three islands of the archipelago layout: city placement, regions, checkpoints, roads and loot."},
+}
+
+
+def render(data: dict, layout: str = "legacy") -> dict[str, bytes]:
     validate(data)
+    mod = LAYOUTS[layout]["mod"]
     files = {}
     files["META-INF/mods.toml"] = (
         'modLoader="lowcodefml"\nloaderVersion="[47,)"\n'
         'license="All Rights Reserved"\n\n[[mods]]\n'
-        'modId="underground_city_world"\nversion="0.1.0"\n'
-        'displayName="Underground City: World Prototype"\n'
-        'description="Original three-city world placement and prototype loot."\n'
-        '\n[[dependencies.underground_city_world]]\n'
+        f'modId="{mod}"\nversion="0.1.0"\n'
+        f'displayName="{LAYOUTS[layout]["name"]}"\n'
+        f'description="{LAYOUTS[layout]["description"]}"\n'
+        f'\n[[dependencies.{mod}]]\n'
         'modId="lostcities"\nmandatory=true\n'
         'versionRange="[1.20-7.5.5]"\nordering="AFTER"\nside="BOTH"\n'
-        '\n[[dependencies.underground_city_world]]\n'
+        f'\n[[dependencies.{mod}]]\n'
         'modId="underground_city"\nmandatory=true\n'
         'versionRange="[0.1.0,)"\nordering="AFTER"\nside="BOTH"\n'
     ).encode()
@@ -240,13 +249,15 @@ def render(data: dict) -> dict[str, bytes]:
             loot_table(entries))
     # Ship design metadata so future import/bridge/loot tools can consume it,
     # but do NOT imply Lost Cities automatically places roads or restocks chests.
-    planning = load_intercity(ROOT)
+    planning = load_intercity(ROOT, layout)
     planning["cities"] = data
     issues = validate_intercity(planning)
     if issues:
         raise ValueError("Intercity world plan invalid: " + "; ".join(issues))
     for name, document in road_feature(data, planning["routes"]).items():
         files[name] = json_bytes(document)
+    if layout == "archipelago":
+        files.update(archipelago_files(data, planning["routes"]))
     for tag, file_id in (
         ("routes", "corridors"),
         ("supply", "intercity-supply"),
@@ -273,8 +284,37 @@ def render(data: dict) -> dict[str, bytes]:
     return files
 
 
-def package(data: dict, dest: Path) -> Path:
-    files = render(data)
+CHECKPOINT_RADIUS = 48
+CIVIC_MARGIN = 60  # a city's civic region (law, exchange, "In Ironhaven") reaches to within this many blocks of its island's shore
+
+
+def archipelago_files(data: dict, corridors: dict) -> dict[str, bytes]:
+    """What only the archipelago layout carries: where each civic region and checkpoint is (overriding Core's legacy-layout coordinates by id, so a
+    legacy launch is untouched) and the marker that says which layout this world package is. Coordinates come from the blueprints, never from Java."""
+    namespace = "data/underground_city/"
+    islands = json.loads((ROOT / "content/region-blueprints/archipelago/islands.json").read_text(encoding="utf-8"))
+    files: dict[str, bytes] = {}
+    for city in data["cities"]:
+        shore = islands["cities"][city["id"]]["shore_radius"]
+        files[f"{namespace}regions/{city['id']}.json"] = json_bytes({
+            "schema_version": 1, "id": city["id"], "dimension": data["dimension"], "center_chunk": city["center_chunk"],
+            "radius_blocks": shore - CIVIC_MARGIN, "city_radius_blocks": city["radius_blocks"]})
+    for route in corridors["routes"]:
+        for gate in route["checkpoints"]:
+            other = route["to"] if gate["faction"] == route["from"] else route["from"]
+            files[f"{namespace}checkpoints/{gate['id']}.json"] = json_bytes({
+                "schema_version": 1, "title": f"{gate['faction'].capitalize()} gate on the {other.capitalize()} road",
+                "jurisdiction": gate["faction"], "dimension": data["dimension"], "x": gate["position"][0], "z": gate["position"][1],
+                "radius": CHECKPOINT_RADIUS, "risk": gate["risk"], "route": route["id"]})
+    files[f"{namespace}layouts/archipelago.json"] = json_bytes({
+        "schema_version": 1, "layout": "archipelago", "arrival": islands["arrival"],
+        "cities": {c["id"]: {"center_chunk": c["center_chunk"], "radius_blocks": c["radius_blocks"],
+                             "shore_radius": islands["cities"][c["id"]]["shore_radius"]} for c in data["cities"]}})
+    return files
+
+
+def package(data: dict, dest: Path, layout: str = "legacy") -> Path:
+    files = render(data, layout)
     dest.parent.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(dest, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as z:
         for name, content in sorted(files.items()):

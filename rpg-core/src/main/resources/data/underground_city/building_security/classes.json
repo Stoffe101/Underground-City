@@ -1,0 +1,348 @@
+{
+  "schema_version": 1,
+  "note": "Building classes (D-105, D-122), their tiers (D-144: 1 shabby, 2 modest, 3 comfortable, 4 well-off, 5 wealthy, 6 exceptional, 0 not a target) and categories, and the neighbourhood grade (D-157): a class with a 'grade' range moves within it by where the building stands (near its city's centre often better, at the edge often worse, a hash of the building decides the rest), and a graded tier takes its lock, stash and alarm from 'tier_security' for the class's category, so the tier a thief reads is the security they meet. The tier sets the safe (a household safe to 3, a wall safe at 4 and 5, a vault safe at 6) and how good a search is. 'city_grade_bias' leans a whole city's grade (-1 to 1): measured in a new world, Blackwater's buildings stand near its centre and its towers and offices left almost no easy targets (3 of 299), so it leans poorer; Valewood leans a little better off.",
+  "classes": {
+    "cottage": {
+      "label": "cottage",
+      "tier": 1,
+      "lock_profile": "latch",
+      "locked_exterior": true,
+      "stash_policy": "underground_city:apartment_common",
+      "stash_chance": 0.55,
+      "category": "residential",
+      "grade": [
+        1,
+        2
+      ]
+    },
+    "flat_block": {
+      "label": "apartment block",
+      "tier": 2,
+      "lock_profile": "deadbolt",
+      "locked_exterior": true,
+      "stash_policy": "underground_city:apartment_common",
+      "stash_chance": 0.7,
+      "response": {
+        "alarm_chance": 0.25,
+        "dispatch_seconds": 120,
+        "officers": 1,
+        "window_seconds": 120
+      },
+      "category": "residential",
+      "grade": [
+        1,
+        3
+      ]
+    },
+    "flat_tower": {
+      "label": "apartment tower",
+      "tier": 4,
+      "lock_profile": "secured",
+      "locked_exterior": true,
+      "stash_policy": "underground_city:apartment_affluent",
+      "stash_chance": 0.7,
+      "response": {
+        "alarm_chance": 0.6,
+        "dispatch_seconds": 90,
+        "officers": 2,
+        "window_seconds": 150
+      },
+      "category": "residential",
+      "grade": [
+        2,
+        5
+      ]
+    },
+    "workshop": {
+      "label": "workshop",
+      "tier": 3,
+      "lock_profile": "commercial",
+      "locked_exterior": true,
+      "stash_policy": "underground_city:industrial",
+      "stash_chance": 0.6,
+      "response": {
+        "alarm_chance": 0.35,
+        "dispatch_seconds": 100,
+        "officers": 1,
+        "window_seconds": 120
+      },
+      "category": "industrial",
+      "grade": [
+        2,
+        4
+      ]
+    },
+    "office": {
+      "label": "office",
+      "tier": 4,
+      "lock_profile": "secured",
+      "locked_exterior": true,
+      "stash_policy": "underground_city:office",
+      "stash_chance": 0.6,
+      "response": {
+        "alarm_chance": 0.7,
+        "dispatch_seconds": 75,
+        "officers": 2,
+        "window_seconds": 150
+      },
+      "category": "office",
+      "grade": [
+        3,
+        5
+      ]
+    },
+    "vault": {
+      "label": "high-value premises",
+      "tier": 6,
+      "lock_profile": "high_security",
+      "locked_exterior": true,
+      "stash_policy": "underground_city:illegal_cache",
+      "stash_chance": 1.0,
+      "response": {
+        "alarm_chance": 1.0,
+        "dispatch_seconds": 45,
+        "officers": 3,
+        "window_seconds": 180
+      },
+      "category": "special"
+    },
+    "public": {
+      "label": "public building",
+      "tier": 0,
+      "locked_exterior": false,
+      "category": "public"
+    }
+  },
+  "rules": [
+    {
+      "type_prefix": "center",
+      "class": "vault"
+    },
+    {
+      "type_prefix": "shopping",
+      "class": "public"
+    },
+    {
+      "type_prefix": "town",
+      "class": "cottage"
+    },
+    {
+      "city": "ironhaven",
+      "floors_max": 3,
+      "class": "workshop"
+    },
+    {
+      "city": "ironhaven",
+      "floors_min": 4,
+      "class": "flat_block"
+    },
+    {
+      "city": "valewood",
+      "floors_max": 2,
+      "class": "cottage"
+    },
+    {
+      "city": "valewood",
+      "floors_min": 3,
+      "class": "flat_block"
+    },
+    {
+      "city": "blackwater",
+      "floors_max": 2,
+      "class": "workshop"
+    },
+    {
+      "city": "blackwater",
+      "floors_min": 3,
+      "floors_max": 4,
+      "class": "office"
+    },
+    {
+      "city": "blackwater",
+      "floors_min": 5,
+      "class": "flat_tower"
+    },
+    {
+      "class": "flat_block"
+    }
+  ],
+  "tier_security": {
+    "residential": {
+      "1": {
+        "lock_profile": "latch",
+        "stash_policy": "underground_city:apartment_common",
+        "stash_chance": 0.5
+      },
+      "2": {
+        "lock_profile": "deadbolt",
+        "stash_policy": "underground_city:apartment_common",
+        "stash_chance": 0.7,
+        "response": {
+          "alarm_chance": 0.25,
+          "dispatch_seconds": 120,
+          "officers": 1,
+          "window_seconds": 120
+        }
+      },
+      "3": {
+        "lock_profile": "deadbolt",
+        "stash_policy": "underground_city:apartment_affluent",
+        "stash_chance": 0.6,
+        "response": {
+          "alarm_chance": 0.4,
+          "dispatch_seconds": 110,
+          "officers": 1,
+          "window_seconds": 120
+        }
+      },
+      "4": {
+        "lock_profile": "secured",
+        "stash_policy": "underground_city:apartment_affluent",
+        "stash_chance": 0.7,
+        "response": {
+          "alarm_chance": 0.6,
+          "dispatch_seconds": 90,
+          "officers": 2,
+          "window_seconds": 150
+        }
+      },
+      "5": {
+        "lock_profile": "high_security",
+        "stash_policy": "underground_city:apartment_affluent",
+        "stash_chance": 0.8,
+        "response": {
+          "alarm_chance": 0.8,
+          "dispatch_seconds": 70,
+          "officers": 2,
+          "window_seconds": 150
+        }
+      }
+    },
+    "commercial": {
+      "2": {
+        "lock_profile": "deadbolt",
+        "stash_policy": "underground_city:office",
+        "stash_chance": 0.4,
+        "response": {
+          "alarm_chance": 0.3,
+          "dispatch_seconds": 110,
+          "officers": 1,
+          "window_seconds": 120
+        }
+      },
+      "3": {
+        "lock_profile": "commercial",
+        "stash_policy": "underground_city:office",
+        "stash_chance": 0.5,
+        "response": {
+          "alarm_chance": 0.5,
+          "dispatch_seconds": 90,
+          "officers": 1,
+          "window_seconds": 120
+        }
+      },
+      "4": {
+        "lock_profile": "secured",
+        "stash_policy": "underground_city:office",
+        "stash_chance": 0.6,
+        "response": {
+          "alarm_chance": 0.65,
+          "dispatch_seconds": 80,
+          "officers": 2,
+          "window_seconds": 150
+        }
+      },
+      "1": {
+        "lock_profile": "latch",
+        "stash_policy": "underground_city:office",
+        "stash_chance": 0.3
+      }
+    },
+    "industrial": {
+      "2": {
+        "lock_profile": "deadbolt",
+        "stash_policy": "underground_city:industrial",
+        "stash_chance": 0.5,
+        "response": {
+          "alarm_chance": 0.25,
+          "dispatch_seconds": 120,
+          "officers": 1,
+          "window_seconds": 120
+        }
+      },
+      "3": {
+        "lock_profile": "commercial",
+        "stash_policy": "underground_city:industrial",
+        "stash_chance": 0.6,
+        "response": {
+          "alarm_chance": 0.35,
+          "dispatch_seconds": 100,
+          "officers": 1,
+          "window_seconds": 120
+        }
+      },
+      "4": {
+        "lock_profile": "secured",
+        "stash_policy": "underground_city:industrial",
+        "stash_chance": 0.7,
+        "response": {
+          "alarm_chance": 0.6,
+          "dispatch_seconds": 100,
+          "officers": 1,
+          "window_seconds": 120
+        }
+      },
+      "5": {
+        "lock_profile": "high_security",
+        "stash_policy": "underground_city:industrial",
+        "stash_chance": 0.8,
+        "response": {
+          "alarm_chance": 0.75,
+          "dispatch_seconds": 75,
+          "officers": 2,
+          "window_seconds": 150
+        }
+      }
+    },
+    "office": {
+      "3": {
+        "lock_profile": "commercial",
+        "stash_policy": "underground_city:office",
+        "stash_chance": 0.5,
+        "response": {
+          "alarm_chance": 0.5,
+          "dispatch_seconds": 90,
+          "officers": 1,
+          "window_seconds": 120
+        }
+      },
+      "4": {
+        "lock_profile": "secured",
+        "stash_policy": "underground_city:office",
+        "stash_chance": 0.6,
+        "response": {
+          "alarm_chance": 0.7,
+          "dispatch_seconds": 75,
+          "officers": 2,
+          "window_seconds": 150
+        }
+      },
+      "5": {
+        "lock_profile": "high_security",
+        "stash_policy": "underground_city:office",
+        "stash_chance": 0.75,
+        "response": {
+          "alarm_chance": 0.85,
+          "dispatch_seconds": 60,
+          "officers": 2,
+          "window_seconds": 150
+        }
+      }
+    }
+  },
+  "city_grade_bias": {
+    "blackwater": -0.6,
+    "ironhaven": 0.0,
+    "valewood": 0.25
+  }
+}

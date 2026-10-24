@@ -1,0 +1,94 @@
+{
+ "variants": {
+  "facing=north,tier=1,working=false": {
+   "model": "underground_city:block/grading_table_1"
+  },
+  "facing=north,tier=1,working=true": {
+   "model": "underground_city:block/grading_table_1"
+  },
+  "facing=north,tier=2,working=false": {
+   "model": "underground_city:block/grading_table_2"
+  },
+  "facing=north,tier=2,working=true": {
+   "model": "underground_city:block/grading_table_2"
+  },
+  "facing=north,tier=3,working=false": {
+   "model": "underground_city:block/grading_table_3"
+  },
+  "facing=north,tier=3,working=true": {
+   "model": "underground_city:block/grading_table_3"
+  },
+  "facing=east,tier=1,working=false": {
+   "model": "underground_city:block/grading_table_1",
+   "y": 90
+  },
+  "facing=east,tier=1,working=true": {
+   "model": "underground_city:block/grading_table_1",
+   "y": 90
+  },
+  "facing=east,tier=2,working=false": {
+   "model": "underground_city:block/grading_table_2",
+   "y": 90
+  },
+  "facing=east,tier=2,working=true": {
+   "model": "underground_city:block/grading_table_2",
+   "y": 90
+  },
+  "facing=east,tier=3,working=false": {
+   "model": "underground_city:block/grading_table_3",
+   "y": 90
+  },
+  "facing=east,tier=3,working=true": {
+   "model": "underground_city:block/grading_table_3",
+   "y": 90
+  },
+  "facing=south,tier=1,working=false": {
+   "model": "underground_city:block/grading_table_1",
+   "y": 180
+  },
+  "facing=south,tier=1,working=true": {
+   "model": "underground_city:block/grading_table_1",
+   "y": 180
+  },
+  "facing=south,tier=2,working=false": {
+   "model": "underground_city:block/grading_table_2",
+   "y": 180
+  },
+  "facing=south,tier=2,working=true": {
+   "model": "underground_city:block/grading_table_2",
+   "y": 180
+  },
+  "facing=south,tier=3,working=false": {
+   "model": "underground_city:block/grading_table_3",
+   "y": 180
+  },
+  "facing=south,tier=3,working=true": {
+   "model": "underground_city:block/grading_table_3",
+   "y": 180
+  },
+  "facing=west,tier=1,working=false": {
+   "model": "underground_city:block/grading_table_1",
+   "y": 270
+  },
+  "facing=west,tier=1,working=true": {
+   "model": "underground_city:block/grading_table_1",
+   "y": 270
+  },
+  "facing=west,tier=2,working=false": {
+   "model": "underground_city:block/grading_table_2",
+   "y": 270
+  },
+  "facing=west,tier=2,working=true": {
+   "model": "underground_city:block/grading_table_2",
+   "y": 270
+  },
+  "facing=west,tier=3,working=false": {
+   "model": "underground_city:block/grading_table_3",
+   "y": 270
+  },
+  "facing=west,tier=3,working=true": {
+   "model": "underground_city:block/grading_table_3",
+   "y": 270
+  }
+ }
+}

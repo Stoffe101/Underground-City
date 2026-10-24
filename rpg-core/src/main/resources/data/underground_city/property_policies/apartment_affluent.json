@@ -5,5 +5,6 @@
   "interval_ticks": 84000,
   "items_per_interval": 1,
   "lockpicks": 3,
+  "lock_profile": "commercial",
   "loot_table": "underground_city:property/apartment_affluent"
 }

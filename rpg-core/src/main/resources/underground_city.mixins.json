@@ -7,7 +7,11 @@
     "GunSmithTableMenuMixin",
     "InventoryInteractionHelperMixin",
     "FeedingUpgradeWrapperMixin",
-    "GroundPathNavigationMixin"
+    "GroundPathNavigationMixin",
+    "ChunkGeneratorStructuresMixin"
+  ],
+  "client": [
+    "ToastComponentMixin"
   ],
   "injectors": {
     "defaultRequire": 0

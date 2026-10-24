@@ -346,8 +346,9 @@ public final class SimulationGameTests {
      * A place for a test arena that no other test uses (the tests are packed closely and the template is a single block): far east of the test area, high above any terrain, at least 24
      * blocks from the world's spawn point as the natural spawner insists, with its chunks held loaded. {@code slot} separates the arenas of tests that run at the same time.
      */
-    private static BlockPos arena(ServerLevel level, int slot) {
-        BlockPos pos = new BlockPos(3000 + slot * 160, 290, 3000);
+    private static BlockPos arena(ServerLevel level, int slot) { return arena(level, new BlockPos(3000 + slot * 160, 290, 3000)); }
+
+    private static BlockPos arena(ServerLevel level, BlockPos pos) {
         net.minecraft.world.level.ChunkPos centre = new net.minecraft.world.level.ChunkPos(pos);
         for (int dx = -3; dx <= 8; dx++) for (int dz = -2; dz <= 9; dz++) {
             net.minecraft.world.level.ChunkPos chunk = new net.minecraft.world.level.ChunkPos(centre.x + dx, centre.z + dz);
@@ -357,8 +358,27 @@ public final class SimulationGameTests {
         return pos;
     }
 
-    private static void releaseArena(ServerLevel level, int slot) {
-        net.minecraft.world.level.ChunkPos centre = new net.minecraft.world.level.ChunkPos(new BlockPos(3000 + slot * 160, 290, 3000));
+    /**
+     * An arena for slot 0 whose biome has monsters to spawn, where the base game's spawner would put them: the world's seed is not fixed on a hosted runner, and a biome with none (a mushroom
+     * island) left the CLASSIC control with nothing in one job of eight. Found by asking the biome source, which generates nothing; the rooms' corners are checked too.
+     */
+    private static BlockPos monsterArena(ServerLevel level) {
+        for (int i = 0; i < 40; i++) {
+            BlockPos spot = new BlockPos(3000, 290, 3000 + i * 160);
+            boolean monsters = true;
+            for (BlockPos at : new BlockPos[]{spot, spot.offset(8, 0, 8), spot.offset(14, 0, 0), spot.offset(22, 0, 8)}) {
+                var holder = level.getBiome(at);
+                monsters &= !holder.value().getMobSettings().getMobs(MobCategory.MONSTER).isEmpty() && !holder.unwrapKey().map(k -> k.location().getPath().contains("mushroom")).orElse(false);
+            }
+            if (monsters) return arena(level, spot);
+        }
+        return arena(level, 0);
+    }
+
+    private static void releaseArena(ServerLevel level, int slot) { releaseArena(level, new BlockPos(3000 + slot * 160, 290, 3000)); }
+
+    private static void releaseArena(ServerLevel level, BlockPos pos) {
+        net.minecraft.world.level.ChunkPos centre = new net.minecraft.world.level.ChunkPos(pos);
         for (int dx = -3; dx <= 8; dx++) for (int dz = -2; dz <= 9; dz++) {
             net.minecraft.world.level.ChunkPos chunk = new net.minecraft.world.level.ChunkPos(centre.x + dx, centre.z + dz);
             level.getChunkSource().removeRegionTicket(net.minecraft.server.level.TicketType.FORCED, chunk, 2, chunk);
@@ -371,7 +391,7 @@ public final class SimulationGameTests {
         if (level.getDifficulty() == Difficulty.PEACEFUL) level.getServer().setDifficulty(Difficulty.NORMAL, true);
         long time = level.getDayTime();
         level.setDayTime(18000);   // midnight
-        BlockPos origin = arena(level, 0);
+        BlockPos origin = monsterArena(level);
         BlockPos cave = darkRoom(level, origin, 9, false), hall = darkRoom(level, origin.offset(14, 0, 0), 9, true);
         ServerPlayer far = distantPlayer(level, origin);
         later(helper, 60, () -> {
@@ -389,7 +409,7 @@ public final class SimulationGameTests {
             } finally {
                 level.setDayTime(time);
                 level.removePlayerImmediately(far, Entity.RemovalReason.DISCARDED);
-                releaseArena(level, 0);
+                releaseArena(level, origin);
             }
         });
     }
@@ -426,15 +446,25 @@ public final class SimulationGameTests {
         });
     }
 
-    /** Open-air spots (found by asking the world's biome source, which generates nothing) whose biome has livestock, at least 100 blocks apart. */
+    /** True where the base game's spawner can put livestock on grass: a temperate biome with creatures, and not one whose only creatures need another floor (mooshrooms need mycelium). */
+    private static boolean livestockBiome(ServerLevel level, BlockPos at) {
+        var holder = level.getBiome(at);
+        var biome = holder.value();
+        boolean livestock = !biome.getMobSettings().getMobs(MobCategory.CREATURE).isEmpty() && biome.getBaseTemperature() > 0.15f && biome.getBaseTemperature() < 1.5f;
+        String name = holder.unwrapKey().map(k -> k.location().getPath()).orElse("");
+        return livestock && !name.contains("ocean") && !name.contains("river") && !name.contains("beach") && !name.contains("desert") && !name.contains("badlands") && !name.contains("mushroom");
+    }
+
+    /**
+     * Open-air spots (found by asking the world's biome source, which generates nothing) whose biome has livestock, at least 100 blocks apart. The meadow the test builds is 20 blocks wide and
+     * its middle is where the spawner is asked, so the biome is checked there and at the far corner too (the world's seed is not fixed on a hosted runner, and a spot on the edge of an ocean
+     * or a mushroom island failed the test on a seed that had one near these coordinates).
+     */
     private static List<BlockPos> livestockSpots(ServerLevel level, int wanted) {
         List<BlockPos> found = new ArrayList<>();
         for (int i = 0; i < 400 && found.size() < wanted; i++) {
             BlockPos spot = new BlockPos(5000 + (i % 20) * 160, 290, 5000 + (i / 20) * 160);
-            var biome = level.getBiome(spot).value();
-            boolean livestock = !biome.getMobSettings().getMobs(MobCategory.CREATURE).isEmpty() && biome.getBaseTemperature() > 0.15f && biome.getBaseTemperature() < 1.5f;
-            String name = level.getBiome(spot).unwrapKey().map(k -> k.location().getPath()).orElse("");
-            if (livestock && !name.contains("ocean") && !name.contains("river") && !name.contains("beach") && !name.contains("desert") && !name.contains("badlands")) found.add(spot);
+            if (livestockBiome(level, spot) && livestockBiome(level, spot.offset(10, 1, 10)) && livestockBiome(level, spot.offset(19, 1, 19)) && livestockBiome(level, spot.offset(0, 1, 19))) found.add(spot);
         }
         return found;
     }

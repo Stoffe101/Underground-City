@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "city": "blackwater",
+  "item": "underground_city:grain_spirit",
+  "unit_price": 26,
+  "initial": 2,
+  "capacity": 8,
+  "units_per_interval": 1,
+  "interval_ticks": 108000,
+  "max_order": 4,
+  "outlets": [
+    "shop:bar"
+  ],
+  "supply": {
+    "pays": 17,
+    "xp": 7,
+    "career": "vintner"
+  }
+}

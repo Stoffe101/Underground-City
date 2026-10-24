@@ -1,0 +1,23 @@
+{
+  "schema_version": 3,
+  "title": "Fasteners and brackets for the builders' yard",
+  "career": "smith",
+  "level": 2,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "underground_city:fasteners",
+      "count": 32
+    },
+    {
+      "item": "underground_city:steel_bracket",
+      "count": 6
+    }
+  ],
+  "credits": 140,
+  "xp": 240,
+  "capacity": 3,
+  "refill_ticks": 6000,
+  "legality": "legal",
+  "requires_skill": "smith.fundamentals"
+}

@@ -1,0 +1,104 @@
+{
+  "schema_version": 1,
+  "id": "grading_table",
+  "career": "farmer",
+  "title": "Grading Table",
+  "note": "Sorts a harvest into crates a buyer pays by grade. A better table and a trained eye pack better crates.",
+  "tiers": [
+    {
+      "tier": 1,
+      "name": "Plain Table",
+      "batch": 1,
+      "speed": 1.0
+    },
+    {
+      "tier": 2,
+      "name": "Sorting Rails",
+      "batch": 2,
+      "speed": 1.35,
+      "upgrade": {
+        "parts": {
+          "underground_city:steel_bracket": 2,
+          "underground_city:fasteners": 8
+        }
+      }
+    },
+    {
+      "tier": 3,
+      "name": "Scales and Grader",
+      "batch": 4,
+      "speed": 1.75,
+      "upgrade": {
+        "parts": {
+          "underground_city:gear_set": 1,
+          "underground_city:steel_bracket": 2,
+          "underground_city:fasteners": 8
+        },
+        "skill": "farmer.field_logistics"
+      }
+    }
+  ],
+  "recipes": [
+    {
+      "id": "produce_crate",
+      "title": "Produce crate",
+      "inputs": {
+        "minecraft:carrot": 6,
+        "minecraft:potato": 6
+      },
+      "output": "underground_city:produce_crate",
+      "count": 1,
+      "seconds": 60,
+      "xp": 25,
+      "grading": {
+        "tier3": 1,
+        "skills": {
+          "farmer.greenhouse_management": 1,
+          "farmer.estate_wholesale": 1
+        }
+      },
+      "note": "Six carrots and six potatoes, washed, sorted and packed. Tier 3 and the greenhouse and estate skills each lift the grade."
+    },
+    {
+      "id": "fruit_crate",
+      "title": "Fruit crate",
+      "inputs": {
+        "minecraft:apple": 6,
+        "minecraft:sweet_berries": 6
+      },
+      "output": "underground_city:fruit_crate",
+      "count": 1,
+      "seconds": 60,
+      "xp": 25,
+      "grading": {
+        "tier3": 1,
+        "skills": {
+          "farmer.greenhouse_management": 1,
+          "farmer.estate_wholesale": 1
+        }
+      },
+      "note": "Six apples and six punnets of berries. Graded like a produce crate."
+    },
+    {
+      "id": "beet_crate",
+      "title": "Root crate (beetroot)",
+      "inputs": {
+        "minecraft:beetroot": 8,
+        "minecraft:carrot": 4
+      },
+      "output": "underground_city:produce_crate",
+      "count": 1,
+      "seconds": 60,
+      "xp": 25,
+      "tier": 2,
+      "grading": {
+        "tier3": 1,
+        "skills": {
+          "farmer.greenhouse_management": 1,
+          "farmer.estate_wholesale": 1
+        }
+      },
+      "note": "A tier 2 table packs beetroot with the carrots, so a field of beets has a buyer too."
+    }
+  ]
+}

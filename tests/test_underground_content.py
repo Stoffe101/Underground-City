@@ -110,7 +110,7 @@ class SkillTreeTests(unittest.TestCase):
                     self.assertLessEqual(n["effects"].get(key, 0), per_node[key], f"{n['id']} {key}")
             unknown = {k for n in tree["nodes"] for k in n["effects"]} - {"licences", "inspection_modifier", "exchange_discount", *ceilings}
             self.assertFalse(unknown, f"{career}: effects nothing consumes: {unknown}")
-        # the yield effect has exactly one consumer, the Sable Leaf plant, so only the Farmer's tree may carry it
+        # the yield effect has exactly one consumer, the cannabis plant, so only the Farmer's tree may carry it
         for career, tree in self.trees.items():
             if career != "farmer":
                 self.assertFalse(any(n["effects"].get("yield_percent") for n in tree["nodes"]), career)
@@ -120,6 +120,11 @@ class SkillTreeTests(unittest.TestCase):
         # another skill builds on it; a skill nothing builds on must carry an effect, open a work order, or be one of the two skills Core code checks directly.
         orders = load("work_orders")
         gated = {o.get("requires_skill") for o in orders.values() if o.get("requires_skill")}
+        # a workshop recipe, a station tier or a recipe's grade that a skill opens or lifts (D-163) is work the skill does
+        for station in load("workshops").values():
+            gated |= {t.get("upgrade", {}).get("skill") for t in station["tiers"] if t.get("upgrade", {}).get("skill")}
+            for r in station["recipes"]:
+                gated |= ({r["skill"]} if r.get("skill") else set()) | set(r.get("grading", {}).get("skills", {}))
         checked_in_code = {"farmer.restricted_cultivation", "technician.bypass_tooling"}   # RestrictedCuttingItem, SecureTerminalService
         percent = ("legal_payout_percent", "underground_payout_percent", "yield_percent", "upgrade_discount_percent", "inspection_modifier", "exchange_discount", "licences")
         for career, tree in self.trees.items():
@@ -129,10 +134,11 @@ class SkillTreeTests(unittest.TestCase):
                     continue
                 effective = any(node["effects"].get(k) for k in percent) or node["id"] in gated or node["id"] in checked_in_code
                 self.assertTrue(effective, f"{node['id']} is a dead leaf: nothing needs it and it does nothing")
-        # and the stepping stones are exactly the foundations plus the Vintner's still
+        # and the stepping stones are exactly the Gunsmith's and the Technician's foundations (D-163 gave the Farmer's, the Smith's and the Vintner's foundations and the Vintner's
+        # still work of their own: a contract or a workshop recipe each)
         stones = sorted(n["id"] for tree in self.trees.values() for n in tree["nodes"]
                         if not any(n["effects"].get(k) for k in percent) and n["id"] not in gated and n["id"] not in checked_in_code)
-        self.assertEqual(stones, sorted([f"{c}.fundamentals" for c in CAREERS] + ["vintner.still_craft"]))
+        self.assertEqual(stones, ["gunsmith.fundamentals", "technician.fundamentals"])
 
     def test_the_utility_branch_is_more_than_a_discount(self):
         for career, tree in self.trees.items():
@@ -168,6 +174,12 @@ class LawTests(unittest.TestCase):
         self.assertEqual(laws["blackwater"]["categories"]["restricted_cultivar"], "permit")
         self.assertEqual(laws["valewood"]["categories"]["restricted_cultivar"], "prohibited")
         self.assertLess(laws["blackwater"]["witness_chance"], laws["ironhaven"]["witness_chance"])
+        # police on the beat (D-155): the strict city walks more often and with more officers than the lax one
+        for city, law in laws.items():
+            patrol = law["patrol"]
+            self.assertTrue(0 <= patrol["officers"] <= 3 and 60 <= patrol["every_seconds"] <= 1800 and 30 <= patrol["beat_seconds"] <= 600, city)
+        self.assertLess(laws["ironhaven"]["patrol"]["every_seconds"], laws["blackwater"]["patrol"]["every_seconds"])
+        self.assertGreater(laws["ironhaven"]["patrol"]["officers"], laws["blackwater"]["patrol"]["officers"])
 
     def test_contraband_core_items_exist(self):
         items = {i["id"] for i in json.loads((ROOT / "rpg-core/src/main/resources/underground_city_items.json").read_text())["items"]}
@@ -305,6 +317,21 @@ class GuiCoverageTests(unittest.TestCase):
         self.assertIsNotNone(loop, "the Crew poses loop was not found in the capture harness")
         names |= {"uc-crew-" + pose for pose in re.findall(r'"([a-z-]+)"', loop.group(1))}
         names.discard("uc-crew-")
+        # the lockpicking screen's poses are generated the same way
+        locks = re.search(r'for\(String pose:new String\[\]\{([^}]*)\}\)\s*cases\.add\(Case\.lock\(', source)
+        self.assertIsNotNone(locks, "the lock poses loop was not found in the capture harness")
+        names |= {"uc-lock-" + pose for pose in re.findall(r'"([a-z-]+)"', locks.group(1))}
+        names.discard("uc-lock-")
+        # and the civilian counter's
+        civilian = re.search(r'for\(String pose:new String\[\]\{([^}]*)\}\)\s*cases\.add\(Case\.civilian\(', source)
+        self.assertIsNotNone(civilian, "the civilian counter poses loop was not found in the capture harness")
+        names |= {"uc-civilian-shop-" + pose for pose in re.findall(r'"([a-z-]+)"', civilian.group(1))}
+        names.discard("uc-civilian-shop-")
+        # and the status display settings'
+        hud = re.search(r'for\(String pose:new String\[\]\{([^}]*)\}\)\s*cases\.add\(Case\.hud\(', source)
+        self.assertIsNotNone(hud, "the status display poses loop was not found in the capture harness")
+        names |= {"uc-hud-" + pose for pose in re.findall(r'"([a-z-]+)"', hud.group(1))}
+        names.discard("uc-hud-")
         manifest = json.loads((ROOT / "content/qa/gui-coverage.json").read_text(encoding="utf-8"))
         expected = {s["expected_file"][:-4] for s in manifest["integrated_surfaces"]}
         self.assertEqual(names, expected)
@@ -346,8 +373,8 @@ class DistrictTests(unittest.TestCase):
                     safes += 1
                     self.assertTrue((DATA / "property_policies" / f"{op['policy']}.json").exists(), op["policy"])
                 if op["op"] in ("fill", "block", "sign"):
-                    # Vanilla blocks only, except an operation that names its mod: it applies only where that mod is installed.
-                    namespace = op.get("requires_mod", "minecraft")
+                    # Vanilla blocks (or Core's own, always present: a salvage yard's scrap heap), except an operation that names its mod: it applies only where that mod is installed.
+                    namespace = op.get("requires_mod", "(?:minecraft|underground_city)")
                     self.assertRegex(op["block"], rf"^{namespace}:[a-z_]+(\[[a-z_=0-9,]+\])?$")
                 terminals += op["op"] == "terminal"; clerks += op["op"] == "clerk"; secure += op["op"] == "secure_terminal"
                 if op["op"] == "npc":
@@ -377,7 +404,14 @@ class DistrictTests(unittest.TestCase):
             # Citizens: bounded, named, with a role Core knows, short lines, and each employer bound to a real terminal of the lot.
             self.assertLessEqual(len(citizens), 20)
             terminal_spots = [op["at"] for op in district["ops"] if op["op"] == "terminal"]
-            self.assertEqual({npc["role"] for npc in citizens} - {"registrar", "employer", "resident", "guard", "vendor", "instructor", "warden"}, set())
+            self.assertEqual({npc["role"] for npc in citizens} - {"registrar", "employer", "resident", "guard", "vendor", "instructor", "warden", "shopkeeper"}, set())
+            for npc in citizens:
+                # a district's shopkeeper (D-138) keeps a counter that exists
+                if npc["role"] == "shopkeeper":
+                    self.assertRegex(npc["shop"], r"^[a-z0-9_]+:[a-z0-9_/]+$")
+                    key = npc["shop"].split(":", 1)[1]
+                    self.assertTrue((DATA / "shop_counters" / "roadside" / f"{key}.json").exists() or any(
+                        json.loads(p.read_text(encoding="utf-8")).get("building") == npc["shop"] for p in (DATA / "shop_counters").rglob("*.json")), npc["shop"])
             self.assertEqual(len({npc["name"] for npc in citizens}), len(citizens), "citizen names must be unique")
             for npc in citizens:
                 self.assertTrue(0 < len(npc["name"]) <= 40, npc["name"])
@@ -394,3 +428,18 @@ class DistrictTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class CatalogueLimitTests(unittest.TestCase):
+    def test_every_work_order_fits_the_catalogue_with_every_mod_installed(self):
+        # WorkOrderCatalog refuses to load more than MAX_ORDERS; with every optional mod installed every file loads (the full-pack journey failed at 69 of 64)
+        import re
+        source = (ROOT / "rpg-core/src/main/java/io/github/stoffe101/undergroundcity/WorkOrderCatalog.java").read_text(encoding="utf-8")
+        cap = int(re.search(r"MAX_ORDERS = (\d+);", source).group(1))
+        self.assertLessEqual(len(list((DATA / "work_orders").glob("*.json"))), cap)
+
+    def test_every_supplier_line_fits_the_regional_catalogue(self):
+        import re
+        source = (ROOT / "rpg-core/src/main/java/io/github/stoffe101/undergroundcity/RegionalCatalog.java").read_text(encoding="utf-8")
+        cap = int(re.search(r"MAX_LINES = (\d+);", source).group(1))
+        self.assertLessEqual(len(list((DATA / "regional_stock").rglob("*.json"))), cap)

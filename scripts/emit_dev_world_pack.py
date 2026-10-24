@@ -24,12 +24,28 @@ from pathlib import Path
 from build_world_prototype import DEFAULT, ROOT, render
 from install_world_prototype import config_files
 
-OUT = ROOT / "content/generated/world-prototype"
+LAYOUTS = {
+    "legacy": (DEFAULT, ROOT / "content/generated/world-prototype"),
+    "archipelago": (ROOT / "content/region-blueprints/archipelago/cities.json", ROOT / "content/generated/world-archipelago"),
+    # the furnished cities (D-117): original Lost Cities buildings written as code (scripts/city_*.py), packaged as their own low-code mod; there is no blueprint
+    "furnished": (None, ROOT / "content/generated/world-furnished"),
+    # a new world with no natural ore (D-120): one biome modifier in its own low-code mod, opt-in like the furnished cities
+    "scarcity": (None, ROOT / "content/generated/world-scarcity"),
+}
 
 
-def expected(data: dict) -> dict[str, bytes]:
-    files = {f"pack/{name}": content for name, content in render(data).items()}
-    files.update({f"game-config/{name}": text.encode("utf-8") for name, text in config_files(data).items()})
+OUT = LAYOUTS["legacy"][1]   # the legacy package's folder, as before the archipelago existed (tests and tools import it)
+
+
+def expected(data: dict, layout: str = "legacy") -> dict[str, bytes]:
+    if layout == "furnished":
+        import city_content
+        return {f"pack/{name}": content for name, content in city_content.package().items()}
+    if layout == "scarcity":
+        import scarcity_content
+        return {f"pack/{name}": content for name, content in scarcity_content.package().items()}
+    files = {f"pack/{name}": content for name, content in render(data, layout).items()}
+    files.update({f"game-config/{name}": text.encode("utf-8") for name, text in config_files(data, layout).items()})
     return files
 
 
@@ -40,17 +56,19 @@ def current(folder: Path) -> dict[str, bytes]:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--check", action="store_true")
-    parser.add_argument("--blueprint", type=Path, default=DEFAULT)
+    parser.add_argument("--layout", choices=sorted(LAYOUTS), default="legacy", help="which world layout's package to write or check")
+    parser.add_argument("--blueprint", type=Path)
     args = parser.parse_args()
-    data = json.loads(args.blueprint.read_text(encoding="utf-8"))
-    want = expected(data)
+    blueprint, OUT = LAYOUTS[args.layout]
+    data = json.loads((args.blueprint or blueprint).read_text(encoding="utf-8")) if (args.blueprint or blueprint) else {}
+    want = expected(data, args.layout)
     if args.check:
         have = current(OUT) if OUT.exists() else {}
         missing = sorted(set(want) - set(have))
         extra = sorted(set(have) - set(want))
         changed = sorted(name for name in set(want) & set(have) if want[name] != have[name])
         if missing or extra or changed:
-            print("content/generated/world-prototype is out of date; run python scripts/emit_dev_world_pack.py", file=sys.stderr)
+            print(f"{OUT.relative_to(ROOT)} is out of date; run python scripts/emit_dev_world_pack.py --layout {args.layout}", file=sys.stderr)
             for label, names in (("missing", missing), ("unexpected", extra), ("changed", changed)):
                 for name in names[:10]:
                     print(f"  {label}: {name}", file=sys.stderr)

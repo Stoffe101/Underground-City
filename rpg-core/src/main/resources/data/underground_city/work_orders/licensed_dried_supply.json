@@ -1,0 +1,20 @@
+{
+  "schema_version": 3,
+  "title": "Licensed dried cannabis",
+  "career": "farmer",
+  "level": 11,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "underground_city:dried_cannabis",
+      "count": 4
+    }
+  ],
+  "credits": 360,
+  "xp": 440,
+  "capacity": 2,
+  "refill_ticks": 12000,
+  "legality": "legal",
+  "requires_skill": "farmer.controlled_crop_licence",
+  "buyer": "blackwater_dispensary"
+}

@@ -27,7 +27,7 @@ public final class CityLaws extends SimpleJsonResourceReloadListener {
 
     public record Law(String city, Map<String, String> categories, int permitFine, int prohibitedFine,
                       double lowChance, double inspectionChance, double highChance, double heatStep, double maxChance,
-                      double witnessChance, String summary) {
+                      double witnessChance, String summary, Patrol patrol) {
         public String status(String category) { return categories.getOrDefault(category, LEGAL); }
 
         public double baseChance(String risk) {
@@ -40,6 +40,12 @@ public final class CityLaws extends SimpleJsonResourceReloadListener {
 
         public int fine(String status) { return status.equals(PROHIBITED) ? prohibitedFine : status.equals(PERMIT) ? permitFine : 0; }
     }
+
+    /**
+     * The police on the beat (D-155): how many officers walk a beat while somebody is in the city, how many seconds pass between two beats, and how long a beat lasts. Optional: a city without one
+     * has no patrol.
+     */
+    public record Patrol(int officers, int everySeconds, int beatSeconds) {}
 
     private volatile Map<String, Law> laws = Map.of();
     private CityLaws() { super(new Gson(), "city_laws"); }
@@ -64,7 +70,7 @@ public final class CityLaws extends SimpleJsonResourceReloadListener {
             Law law = new Law(city, Map.copyOf(categories), fines.get(PERMIT).getAsInt(), fines.get(PROHIBITED).getAsInt(),
                 inspection.get("low").getAsDouble(), inspection.get("inspection").getAsDouble(), inspection.get("high").getAsDouble(),
                 inspection.get("heat_step").getAsDouble(), inspection.get("max").getAsDouble(),
-                json.get("witness_chance").getAsDouble(), json.get("summary").getAsString());
+                json.get("witness_chance").getAsDouble(), json.get("summary").getAsString(), patrol(json));
             validate(law);
             next.put(city, law);
         }
@@ -73,11 +79,19 @@ public final class CityLaws extends SimpleJsonResourceReloadListener {
         LOGGER.info("Loaded {} Underground City city laws", laws.size());
     }
 
+    private static Patrol patrol(JsonObject json) {
+        if (!json.has("patrol")) return null;
+        JsonObject patrol = json.getAsJsonObject("patrol");
+        return new Patrol(patrol.get("officers").getAsInt(), patrol.get("every_seconds").getAsInt(), patrol.get("beat_seconds").getAsInt());
+    }
+
     static void validate(Law law) {
         boolean ok = law.permitFine >= 0 && law.permitFine <= 500 && law.prohibitedFine >= law.permitFine && law.prohibitedFine <= 500
             && law.lowChance >= 0 && law.lowChance <= law.inspectionChance && law.inspectionChance <= law.highChance && law.highChance <= law.maxChance
             && law.maxChance <= 0.95 && law.heatStep >= 0 && law.heatStep <= 0.15 && law.witnessChance >= 0 && law.witnessChance <= 0.8
-            && !law.summary.isBlank() && law.summary.length() <= 200;
+            && !law.summary.isBlank() && law.summary.length() <= 200
+            && (law.patrol == null || (law.patrol.officers() >= 0 && law.patrol.officers() <= 3 && law.patrol.everySeconds() >= 60 && law.patrol.everySeconds() <= 1800
+                && law.patrol.beatSeconds() >= 30 && law.patrol.beatSeconds() <= 600));
         if (!ok) throw new IllegalArgumentException("Invalid city law for " + law.city);
     }
 

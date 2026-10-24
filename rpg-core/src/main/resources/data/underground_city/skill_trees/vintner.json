@@ -17,7 +17,7 @@
       "id": "vintner.cellar_craft",
       "branch": "legal",
       "title": "Cellar Craft",
-      "description": "Press, ferment and bottle table wine: unlocks the tavern wine contract.",
+      "description": "Tavern contracts, glow-berry wine and the cask; the vat makes a grade up.",
       "cost": 2,
       "min_level": 3,
       "requires": [
@@ -29,7 +29,7 @@
       "id": "vintner.estate_vintages",
       "branch": "legal",
       "title": "Estate Vintages",
-      "description": "Aged and blended wines: unlocks the estate cellar contract.",
+      "description": "Estate contracts and cask-aged Vinery red; casks age a grade up.",
       "cost": 2,
       "min_level": 6,
       "requires": [
@@ -44,7 +44,7 @@
       "branch": "legal",
       "title": "Cellar Master's Label",
       "short_title": "Master's Label",
-      "description": "Your own label on the shelf.",
+      "description": "Your own label on the shelf: licensed grain spirit a grade up.",
       "cost": 2,
       "min_level": 11,
       "requires": [
@@ -72,7 +72,7 @@
       "id": "vintner.cellar_fitout",
       "branch": "utility",
       "title": "Cellar Fit-Out",
-      "description": "You fit racks, a drain and a cold room yourself.",
+      "description": "Racks, drain and cold room: the top tier of the vat, cask and still.",
       "cost": 2,
       "min_level": 7,
       "requires": [
@@ -88,7 +88,7 @@
       "branch": "crossover",
       "title": "Distiller's Licence",
       "short_title": "Distiller Licence",
-      "description": "A distiller's licence: spirits are legal where a city issues permits.",
+      "description": "Spirits are legal where permitted, and the Pot Still runs grain spirit.",
       "cost": 2,
       "min_level": 10,
       "requires": [
@@ -106,7 +106,7 @@
       "branch": "underground",
       "title": "Home Distilling",
       "short_title": "Home Distilling",
-      "description": "Brew strong spirit off the books, the craft a licensed distiller learns.",
+      "description": "Strong spirit off the books: moonshine at the Pot Still.",
       "cost": 3,
       "min_level": 6,
       "requires": [
@@ -157,7 +157,7 @@
       "id": "vintner.quiet_cellar",
       "branch": "underground",
       "title": "Quiet Cellar",
-      "description": "A cellar nobody asks about, and buyers who pay for it.",
+      "description": "A cellar nobody asks about, and moonshine a grade up.",
       "cost": 2,
       "min_level": 13,
       "requires": [

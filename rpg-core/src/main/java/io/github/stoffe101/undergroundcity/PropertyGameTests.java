@@ -102,6 +102,10 @@ public final class PropertyGameTests {
 
         Residence home(String id, int slot) {
             BlockPos at = base.offset(slot * 20, 0, 0);
+            // the test world is shared and other tests' blocks outlive them: a home starts with no container of anybody else's in it
+            for (BlockPos p : BlockPos.betweenClosed(at, at.offset(4, 3, 4))) {
+                if (level.getBlockEntity(p) instanceof net.minecraft.world.Container container) { container.clearContent(); level.setBlock(p, Blocks.AIR.defaultBlockState(), 2); }
+            }
             return l.registerResidence(id, "Home " + id, "flat", OVERWORLD, "test", at, at.offset(4, 3, 4), 50, -1);
         }
 

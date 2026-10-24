@@ -27,6 +27,9 @@ public record RegionalStock(String id, String city, ResourceLocation item, int u
 
     public boolean soldAt(String outlet) { return outlets.contains(outlet); }
 
+    /** A shopkeeper's counter in a furnished building (D-126): {@code shop:<kind>}. */
+    public static boolean isShop(String outlet) { return outlet != null && outlet.matches("shop:[a-z_]{2,24}"); }
+
     /**
      * Reads one line, or returns null when the line belongs to a mod that is not installed ({@code requires_mod}): an optional set's goods are simply
      * not for sale when the set is not in the pack, instead of invalid data aborting the whole reload.
@@ -54,7 +57,7 @@ public record RegionalStock(String id, String city, ResourceLocation item, int u
             || stock.unitsPerInterval < 1 || stock.unitsPerInterval > 64
             || stock.intervalTicks < 1200 || stock.intervalTicks > 720_000
             || stock.maxOrder < 1 || stock.maxOrder > 64
-            || stock.outlets.isEmpty() || !Set.of(CITY, WAYSIDE).containsAll(stock.outlets)
+            || stock.outlets.isEmpty() || !stock.outlets.stream().allMatch(o -> o.equals(CITY) || o.equals(WAYSIDE) || isShop(o))
             || !ForgeRegistries.ITEMS.containsKey(stock.item)
             || ForgeRegistries.ITEMS.getValue(stock.item) == Items.AIR) {
             throw new IllegalArgumentException("Invalid regional stock " + stock.id);

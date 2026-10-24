@@ -4,12 +4,15 @@
   "items": [
     {"item": "minecraft:wooden_hoe", "count": 1},
     {"item": "minecraft:bread", "count": 4},
+    {"item": "underground_city:fermentation_vat", "count": 1},
+    {"item": "minecraft:sweet_berries", "count": 16},
+    {"item": "minecraft:sugar", "count": 4},
+    {"item": "minecraft:glass_bottle", "count": 6},
     {"item": "thirstwastaken2:waterskin", "count": 1, "requires_mod": "thirstwastaken2"},
     {"item": "vinery:red_grape_seeds", "count": 4, "requires_mod": "vinery"},
     {"item": "vinery:white_grape_seeds", "count": 4, "requires_mod": "vinery"},
     {"item": "vinery:wine_bottle", "count": 6, "requires_mod": "vinery"},
     {"item": "vinery:grapevine_pot", "count": 1, "requires_mod": "vinery"},
-    {"item": "vinery:fermentation_barrel", "count": 1, "requires_mod": "vinery"},
-    {"item": "vinery:basket", "count": 1, "requires_mod": "vinery"}
+    {"item": "vinery:fermentation_barrel", "count": 1, "requires_mod": "vinery"}
   ]
 }

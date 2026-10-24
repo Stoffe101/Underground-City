@@ -6,7 +6,7 @@
   "foreign_visits": 0,
   "requirements": [
     {
-      "item": "underground_city:sable_leaf_bale",
+      "item": "underground_city:cannabis_flower",
       "count": 12
     }
   ],
@@ -21,7 +21,7 @@
   "trust_gain": 1,
   "rewards": [
     {
-      "item": "underground_city:sable_cutting",
+      "item": "underground_city:cannabis_seeds",
       "count": 2
     }
   ]

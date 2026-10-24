@@ -11,7 +11,6 @@ import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.LevelSettings;
 import net.minecraft.world.level.WorldDataConfiguration;
 import net.minecraft.world.level.levelgen.WorldOptions;
-import net.minecraft.world.level.levelgen.presets.WorldPresets;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -97,6 +96,8 @@ public final class Playtest {
     static void keyUp(String key) { input("up " + key); }
     static void tap(String key) { input("tap " + key); }
     static void mouseButton(int button, boolean down) { input("button " + button + " " + (down ? 1 : 0)); }
+    /** A press and release in one go, read by the game in one input poll (two separate events can be ticks apart under software rendering, and a held use repeats). */
+    static void click(int button) { input("click " + button); }
     /** Parks the pointer over the middle of the game window so the (window-manager-less) X keyboard focus is the game. */
     /** A real left click at a GUI-space position (what a player would do with the mouse). */
     static void clickGui(int guiX, int guiY) {
@@ -116,6 +117,33 @@ public final class Playtest {
         var window = mc().getWindow();
         input("move " + (window.getWidth() / 2) + " " + (window.getHeight() / 2));
     }
+    /** What the server said to this player (chat and the line above the hotbar), the last 200 lines; {@link #heardCount} counts every line ever heard, so a mark taken earlier stays valid. */
+    private static final List<String> heard = new java.util.ArrayList<>();
+    private static int heardCount;
+
+    @SubscribeEvent
+    public static void heard(net.minecraftforge.client.event.ClientChatReceivedEvent event) {
+        if (!enabled()) return;
+        String line = event.getMessage().getString();
+        synchronized (heard) {
+            heard.add(line);
+            heardCount++;
+            while (heard.size() > 200) heard.remove(0);
+        }
+        log("heard: " + line);
+    }
+
+    /** How many lines have been heard so far: a mark for {@link #heardSince}. */
+    static int heardCount() { synchronized (heard) { return heardCount; } }
+
+    /** The first line heard since {@code mark} that contains {@code part}, or null: a step checks a refusal or a warning by what the player was really shown. */
+    static String heardSince(int mark, String part) {
+        synchronized (heard) {
+            for (int i = Math.max(0, heard.size() - (heardCount - mark)); i < heard.size(); i++) if (heard.get(i).contains(part)) return heard.get(i);
+        }
+        return null;
+    }
+
     static void command(String text) { Minecraft.getInstance().player.connection.sendCommand(text); }
     static Minecraft mc() { return Minecraft.getInstance(); }
 
@@ -158,9 +186,10 @@ public final class Playtest {
             if (mc.getLevelSource().levelExists(name)) {
                 mc.createWorldOpenFlows().loadLevel(mc.screen, name);
             } else {
-                LevelSettings settings = new LevelSettings(name, GameType.CREATIVE, false, Difficulty.NORMAL, true, new GameRules(), WorldDataConfiguration.DEFAULT);
-                mc.createWorldOpenFlows().createFreshLevel(name, settings, new WorldOptions(5908L, true, false),
-                    registries -> registries.registryOrThrow(Registries.WORLD_PRESET).getHolderOrThrow(WorldPresets.NORMAL).value().createWorldDimensions());
+                // the first-player journey starts as a new player does, in survival; the other scenarios start in creative and switch when they need to
+                GameType mode = "journey".equals(SCENARIO) || Boolean.getBoolean("uc.playtest.survival") ? GameType.SURVIVAL : GameType.CREATIVE;
+                LevelSettings settings = new LevelSettings(name, mode, false, Difficulty.NORMAL, true, new GameRules(), WorldDataConfiguration.DEFAULT);
+                mc.createWorldOpenFlows().createFreshLevel(name, settings, new WorldOptions(5908L, true, false), DevWorldLauncher::dimensions);
             }
             log("opening world " + name + " for scenario " + SCENARIO);
         } catch (RuntimeException error) {
@@ -176,6 +205,13 @@ public final class Playtest {
         DevWorldLauncher.acceptExperimentalWarning(mc);
         if (System.nanoTime() - started > LIMIT_NANOS) { fail("timed out in step " + (current == null ? "(none)" : current.name())); finish(); return; }
         if (mc.player == null || mc.level == null || mc.getSingleplayerServer() == null) return;
+        // no scenario expects the player to die; a dead player loads no chunks, so every later step would only wait out its budget (journey run 53 drowned and waited ten minutes)
+        if (mc.player.isDeadOrDying()) {
+            var cause = mc.player.getLastDamageSource();
+            fail("the player died" + (cause == null ? "" : " (" + cause.getMsgId() + ")") + " at " + mc.player.blockPosition().toShortString() + " in step " + (current == null ? "(none)" : current.name()));
+            finish();
+            return;
+        }
         if (!scenarioBuilt) {
             scenarioBuilt = true;
             wait("let the world settle", 100);

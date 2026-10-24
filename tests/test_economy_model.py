@@ -170,6 +170,53 @@ class TheGuardsCanFail(unittest.TestCase):
         self.assertTrue(any("career spread" in p for p in em.invariants(model)))
 
 
+class AScarcityWorldAndTheFences(unittest.TestCase):
+    """The scarcity scenario (D-120) and the fences (D-125): the shipped data holds, and each guard can fail."""
+
+    def test_the_shelf_world_takes_the_mining_out_and_charges_the_shelf(self):
+        ore, shelf = em.Model(), em.ScarcityModel("shelf")
+        hopper = next(o for o in ore.orders if any(r["item"] == "minecraft:hopper" for r in o.requirements))
+        twin = next(o for o in shelf.orders if o.id == hopper.id)
+        self.assertGreater(twin.cash, hopper.cash, "hoppers need iron, which a scarcity world sells")
+        self.assertLess(twin.hands, hopper.hands, "bought iron needs no mining")
+        self.assertIn("shelf:minecraft:iron_ingot", twin.goods_units)
+
+    def test_the_quarry_world_draws_iron_from_the_quarry_and_redstone_from_the_shelf(self):
+        quarry = em.ScarcityModel("quarry")
+        self.assertGreater(quarry.supply_pool()["quarry:minecraft:iron_ingot"], 0)
+        piston = next((o for o in quarry.orders if any(r["item"] == "minecraft:piston" for r in o.requirements)), None)
+        if piston:
+            self.assertIn("quarry:minecraft:iron_ingot", piston.goods_units)
+            self.assertIn("shelf:minecraft:redstone", piston.goods_units)
+
+    def test_a_scarcity_world_without_profitable_first_work_fails(self):
+        original = em.ScarcityModel
+
+        class NoSwitches(original):
+            def _load_orders(self):
+                return [o for o in super()._load_orders() if o.id != "switches"]
+
+        em.ScarcityModel = NoSwitches
+        try:
+            problems = em.invariants(em.Model())
+        finally:
+            em.ScarcityModel = original
+        self.assertTrue(any("scarcity: technician" in p for p in problems), problems)
+
+    def test_a_fence_that_pays_more_than_an_honest_price_fails(self):
+        model = em.Model()
+        found, values = em.fences(model)
+        model.fence_override = (found, dict(values, **{"minecraft:iron_ingot": 30}))
+        self.assertTrue(any("launder" in p and "iron_ingot" in p for p in em.invariants(model)))
+
+    def test_a_fence_that_out_earns_legal_work_fails(self):
+        model = em.Model()
+        found, values = em.fences(model)
+        rich = [dict(f, refill_credits=f["refill_credits"] * 40) for f in found]
+        model.fence_override = (rich, values)
+        self.assertTrue(any("of the best legal hour" in p for p in em.invariants(model)))
+
+
 class TheDocumentIsCurrent(unittest.TestCase):
     def test_the_generated_block_of_the_economy_model_document_matches_the_data(self):
         path = ROOT / "docs/technical/economy-model.md"

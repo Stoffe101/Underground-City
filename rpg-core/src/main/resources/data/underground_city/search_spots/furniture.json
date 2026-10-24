@@ -1,0 +1,155 @@
+{
+  "schema_version": 1,
+  "note": "Furniture a burglar can search inside a city building (D-144). Each kind matches blocks by exact id or by namespace and suffix, takes a few seconds, and draws from its own loot by the building's tier (1 shabby to 6 exceptional): entries outside their tier range are never drawn, and the chance of finding nothing falls as the tier rises. `uses` limits an entry to buildings of those uses (the furnished plans' use: house, flats, shop, pub, office, club, workshop, warehouse). A spot is searched once and refills after `refill_hours` of active play. Vanilla chests and barrels are not listed: they are real containers, opened after the same search and their contents marked stolen. `stock` matches no block: it is what a business keeps in the barrels and chests of its back rooms, drawn three times into such a container that is empty, off the public floor of a shop, pub, club, workshop or warehouse, the first time it is searched (D-164).",
+  "refill_hours": 4,
+  "kinds": {
+    "bedside": {
+      "title": "night stand", "seconds": 3,
+      "match": [{"namespace": "modernlife", "suffix": "night_stand"}],
+      "empty_weight": 30,
+      "loot": [
+        {"item": "minecraft:paper", "count": [1, 3], "weight": 10, "max_tier": 3},
+        {"item": "minecraft:candle", "weight": 6, "max_tier": 2},
+        {"item": "minecraft:gold_nugget", "count": [1, 3], "weight": 10},
+        {"item": "underground_city:wristwatch", "weight": 9, "min_tier": 2},
+        {"item": "underground_city:smartphone", "weight": 8, "min_tier": 2},
+        {"item": "underground_city:pocket_watch", "weight": 5, "min_tier": 2},
+        {"item": "underground_city:gold_ring", "weight": 7, "min_tier": 3},
+        {"item": "underground_city:tablet", "weight": 5, "min_tier": 3},
+        {"item": "underground_city:jewellery_box", "weight": 4, "min_tier": 3},
+        {"item": "minecraft:clock", "weight": 2, "min_tier": 3},
+        {"item": "underground_city:pearl_necklace", "weight": 5, "min_tier": 4},
+        {"item": "underground_city:designer_handbag", "weight": 4, "min_tier": 4},
+        {"item": "minecraft:emerald", "count": [1, 2], "weight": 3, "min_tier": 5}
+      ]
+    },
+    "kitchen": {
+      "title": "kitchen cupboard", "seconds": 2.5,
+      "match": [{"namespace": "modernlife", "suffix": "kitchen_cabinet"}, {"namespace": "modernlife", "suffix": "kitchen_drawer_cabinet"}, {"id": "modernlife:refrigerator"}, {"id": "modernlife:microwave"}],
+      "empty_weight": 25,
+      "loot": [
+        {"item": "minecraft:bread", "count": [1, 3], "weight": 14},
+        {"item": "minecraft:apple", "count": [1, 3], "weight": 10},
+        {"item": "minecraft:cooked_beef", "count": [1, 2], "weight": 6},
+        {"item": "minecraft:honey_bottle", "weight": 4},
+        {"item": "minecraft:glass_bottle", "count": [1, 2], "weight": 6, "max_tier": 3},
+        {"item": "underground_city:vintage_wine", "weight": 5, "min_tier": 3},
+        {"item": "underground_city:cash_box", "weight": 1, "min_tier": 3, "uses": ["house"]}
+      ]
+    },
+    "books": {
+      "title": "bookshelf", "seconds": 3,
+      "match": [{"namespace": "modernlife", "suffix": "bookshelf"}, {"id": "minecraft:bookshelf"}],
+      "empty_weight": 35,
+      "loot": [
+        {"item": "minecraft:book", "count": [1, 2], "weight": 14},
+        {"item": "minecraft:paper", "count": [1, 4], "weight": 10},
+        {"item": "minecraft:writable_book", "weight": 3},
+        {"item": "underground_city:rare_vinyl", "weight": 3, "min_tier": 3, "uses": ["house", "flats", "club"]},
+        {"item": "underground_city:small_painting", "weight": 3, "min_tier": 5},
+        {"item": "underground_city:encrypted_design", "weight": 2, "min_tier": 5, "uses": ["office"]},
+        {"item": "underground_city:bearer_bonds", "weight": 2, "min_tier": 6}
+      ]
+    },
+    "shelf": {
+      "title": "shelf", "seconds": 2,
+      "match": [{"namespace": "modernlife", "suffix": "wall_shelf"}],
+      "empty_weight": 30,
+      "loot": [
+        {"item": "minecraft:candle", "weight": 6},
+        {"item": "minecraft:flower_pot", "weight": 4, "max_tier": 3},
+        {"item": "minecraft:compass", "weight": 3, "min_tier": 2},
+        {"item": "underground_city:digital_camera", "weight": 6, "min_tier": 3},
+        {"item": "underground_city:rare_vinyl", "weight": 4, "min_tier": 3},
+        {"item": "underground_city:small_painting", "weight": 2, "min_tier": 5}
+      ]
+    },
+    "office": {
+      "title": "desk equipment", "seconds": 3.5,
+      "match": [{"id": "modernlife:printer"}, {"id": "modernlife:monitor"}, {"id": "modernlife:dual_monitor"}, {"id": "modernlife:photocopier"}],
+      "till_uses": ["shop", "pub"],
+      "empty_weight": 30,
+      "loot": [
+        {"item": "minecraft:paper", "count": [2, 6], "weight": 12},
+        {"item": "minecraft:redstone", "count": [1, 3], "weight": 6},
+        {"item": "underground_city:e_scrap", "count": [1, 3], "weight": 8},
+        {"item": "underground_city:smartphone", "weight": 6, "min_tier": 2},
+        {"item": "underground_city:control_circuits", "weight": 6, "min_tier": 3},
+        {"item": "underground_city:old_laptop", "weight": 5, "min_tier": 3},
+        {"item": "underground_city:tablet", "weight": 5, "min_tier": 3},
+        {"item": "underground_city:optical_components", "weight": 3, "min_tier": 4},
+        {"item": "underground_city:encrypted_design", "weight": 2, "min_tier": 5},
+        {"item": "underground_city:bearer_bonds", "weight": 2, "min_tier": 6}
+      ]
+    },
+    "till": {
+      "title": "till", "seconds": 4,
+      "match": [],
+      "empty_weight": 20,
+      "loot": [
+        {"item": "minecraft:paper", "count": [1, 3], "weight": 8},
+        {"item": "minecraft:gold_nugget", "count": [2, 5], "weight": 10},
+        {"item": "underground_city:cash_box", "weight": 10, "min_tier": 2}
+      ]
+    },
+    "music": {
+      "title": "record deck", "seconds": 2.5,
+      "match": [{"id": "modernlife:turntable"}, {"id": "modernlife:guitar_amplifier"}],
+      "empty_weight": 30,
+      "loot": [
+        {"item": "underground_city:rare_vinyl", "weight": 10},
+        {"item": "minecraft:music_disc_13", "weight": 2, "min_tier": 3},
+        {"item": "minecraft:music_disc_cat", "weight": 2, "min_tier": 3}
+      ]
+    },
+    "workshop": {
+      "title": "workbench", "seconds": 3.5,
+      "match": [{"id": "minecraft:smithing_table"}, {"id": "minecraft:anvil"}, {"id": "minecraft:chipped_anvil"}, {"id": "minecraft:damaged_anvil"}, {"id": "minecraft:grindstone"}],
+      "empty_weight": 25,
+      "loot": [
+        {"item": "minecraft:iron_nugget", "count": [2, 6], "weight": 12},
+        {"item": "minecraft:chain", "count": [1, 3], "weight": 6},
+        {"item": "minecraft:copper_ingot", "count": [1, 2], "weight": 6},
+        {"item": "underground_city:power_drill", "weight": 8, "min_tier": 2},
+        {"item": "underground_city:machined_parts", "count": [1, 2], "weight": 6, "min_tier": 2},
+        {"item": "underground_city:control_circuits", "weight": 3, "min_tier": 3},
+        {"item": "underground_city:refined_alloy", "weight": 3, "min_tier": 4},
+        {"item": "tacz:ammo", "nbt": "{AmmoId:\"tacz:9mm\"}", "count": [12, 24], "weight": 3, "min_tier": 4, "requires_mod": "tacz"}
+      ]
+    },
+    "stock": {
+      "title": "stock", "seconds": 3,
+      "match": [],
+      "empty_weight": 4,
+      "loot": [
+        {"item": "underground_city:flour", "count": [2, 6], "weight": 12, "uses": ["shop"]},
+        {"item": "minecraft:wheat", "count": [3, 8], "weight": 8, "uses": ["shop"]},
+        {"item": "minecraft:sugar", "count": [2, 6], "weight": 8, "uses": ["shop", "pub", "club"]},
+        {"item": "minecraft:bread", "count": [2, 5], "weight": 10, "uses": ["shop", "pub"]},
+        {"item": "underground_city:produce_crate", "weight": 4, "uses": ["shop"]},
+        {"item": "underground_city:fruit_crate", "weight": 3, "uses": ["shop"]},
+        {"item": "underground_city:berry_wine", "count": [1, 3], "weight": 8, "uses": ["pub", "club"]},
+        {"item": "underground_city:apple_cider", "count": [1, 3], "weight": 6, "uses": ["pub"]},
+        {"item": "minecraft:glass_bottle", "count": [2, 6], "weight": 6, "uses": ["pub", "club"]},
+        {"item": "underground_city:grain_spirit", "count": [1, 2], "weight": 4, "min_tier": 3, "uses": ["club", "pub"]},
+        {"item": "underground_city:aged_wine", "weight": 2, "min_tier": 4, "uses": ["club", "pub"]},
+        {"item": "underground_city:fasteners", "count": [4, 12], "weight": 8, "uses": ["workshop", "warehouse"]},
+        {"item": "underground_city:steel_bracket", "count": [1, 3], "weight": 6, "uses": ["workshop", "warehouse"]},
+        {"item": "underground_city:springs", "count": [1, 4], "weight": 5, "uses": ["workshop", "warehouse"]},
+        {"item": "underground_city:barrel_hoops", "count": [1, 3], "weight": 4, "uses": ["workshop", "warehouse"]},
+        {"item": "minecraft:iron_ingot", "count": [1, 3], "weight": 6, "uses": ["workshop", "warehouse"]},
+        {"item": "underground_city:cash_box", "weight": 2, "min_tier": 2, "uses": ["shop", "pub", "club"]}
+      ]
+    },
+    "trash": {
+      "title": "bin", "seconds": 1.5,
+      "match": [{"id": "modernlife:trash_can"}],
+      "empty_weight": 55,
+      "loot": [
+        {"item": "minecraft:paper", "count": [1, 2], "weight": 10},
+        {"item": "minecraft:glass_bottle", "weight": 6},
+        {"item": "minecraft:iron_nugget", "weight": 3}
+      ]
+    }
+  }
+}

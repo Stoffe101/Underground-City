@@ -1,0 +1,11 @@
+{
+  "center_chunk": [
+    40,
+    91
+  ],
+  "city_radius_blocks": 300,
+  "dimension": "minecraft:overworld",
+  "id": "blackwater",
+  "radius_blocks": 440,
+  "schema_version": 1
+}

@@ -21,5 +21,10 @@
     "max": 0.9
   },
   "witness_chance": 0.1,
-  "summary": "Uneven enforcement. Most trade is tolerated if you hold the right licence; the buyers here pay for discretion."
+  "summary": "Uneven enforcement. Most trade is tolerated if you hold the right licence; the buyers here pay for discretion.",
+  "patrol": {
+    "officers": 1,
+    "every_seconds": 360,
+    "beat_seconds": 120
+  }
 }

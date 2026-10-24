@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "prototype_only": true,
+  "layout": "archipelago",
+  "dimension": "minecraft:overworld",
+  "minimum_city_edge_gap_blocks": 800,
+  "cities": [
+    {
+      "id": "ironhaven",
+      "center_chunk": [
+        0,
+        0
+      ],
+      "radius_blocks": 330,
+      "city_style": "underground_city:ironhaven",
+      "building_chance": 0.78,
+      "max_floors": 9,
+      "park_chance": 0.05,
+      "economy": [
+        "manufacturing",
+        "security",
+        "metallurgy"
+      ],
+      "visual_goal": "Industrial island: a dense grey skyline of factories, warehouses and working-class blocks behind a long quay, with plain temperate countryside and the arrival landing on its western shore."
+    },
+    {
+      "id": "valewood",
+      "center_chunk": [
+        100,
+        14
+      ],
+      "radius_blocks": 240,
+      "city_style": "underground_city:valewood",
+      "building_chance": 0.44,
+      "max_floors": 3,
+      "park_chance": 0.26,
+      "economy": [
+        "agriculture",
+        "wine",
+        "trade"
+      ],
+      "visual_goal": "Green island: a low-rise market town in rolling farmland, vineyards, meadows and woods, the warmest and wettest of the three."
+    },
+    {
+      "id": "blackwater",
+      "center_chunk": [
+        40,
+        91
+      ],
+      "radius_blocks": 300,
+      "city_style": "underground_city:blackwater",
+      "building_chance": 0.84,
+      "max_floors": 11,
+      "park_chance": 0.03,
+      "economy": [
+        "commerce",
+        "technology",
+        "underground_trade"
+      ],
+      "visual_goal": "Port island: a tall glassy commercial core around a harbour bay, marinas and a dark swampy shore; technology and the underground trade."
+    }
+  ],
+  "profile_requirements": {
+    "random_city_chance": 0.0,
+    "city_max_radius_at_least": 330,
+    "disable_ruins": true,
+    "disable_spawners": true,
+    "generate_loot": true
+  }
+}

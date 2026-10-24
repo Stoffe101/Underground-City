@@ -1,0 +1,210 @@
+{
+  "schema_version": 1,
+  "id": "valewood_pit",
+  "title": "Valewood pit",
+  "note": "A small stepped pit on Valewood's island, beside the road to Ironhaven where it leaves the city, with seams of iron, copper and coal; mined seams grow back in active play time (resource_sites/valewood_pit.json). Origin is the north-west corner, extending east and south; the rim is level with the ground.",
+  "size": [
+    13,
+    8,
+    13
+  ],
+  "ops": [
+    {
+      "op": "fill",
+      "from": [
+        0,
+        -8,
+        0
+      ],
+      "to": [
+        12,
+        -2,
+        12
+      ],
+      "block": "minecraft:stone"
+    },
+    {
+      "op": "fill",
+      "from": [
+        0,
+        -1,
+        0
+      ],
+      "to": [
+        12,
+        -1,
+        12
+      ],
+      "block": "minecraft:coarse_dirt"
+    },
+    {
+      "op": "fill",
+      "from": [
+        0,
+        0,
+        0
+      ],
+      "to": [
+        12,
+        7,
+        12
+      ],
+      "block": "minecraft:air"
+    },
+    {
+      "op": "fill",
+      "from": [
+        1,
+        -1,
+        1
+      ],
+      "to": [
+        11,
+        -1,
+        11
+      ],
+      "block": "minecraft:air"
+    },
+    {
+      "op": "fill",
+      "from": [
+        2,
+        -2,
+        2
+      ],
+      "to": [
+        10,
+        -1,
+        10
+      ],
+      "block": "minecraft:air"
+    },
+    {
+      "op": "fill",
+      "from": [
+        3,
+        -3,
+        3
+      ],
+      "to": [
+        9,
+        -1,
+        9
+      ],
+      "block": "minecraft:air"
+    },
+    {
+      "op": "fill",
+      "from": [
+        4,
+        -4,
+        4
+      ],
+      "to": [
+        8,
+        -1,
+        8
+      ],
+      "block": "minecraft:air"
+    },
+    {
+      "op": "block",
+      "at": [
+        1,
+        -2,
+        4
+      ],
+      "block": "minecraft:iron_ore"
+    },
+    {
+      "op": "block",
+      "at": [
+        10,
+        -3,
+        6
+      ],
+      "block": "minecraft:iron_ore"
+    },
+    {
+      "op": "block",
+      "at": [
+        3,
+        -4,
+        6
+      ],
+      "block": "minecraft:iron_ore"
+    },
+    {
+      "op": "block",
+      "at": [
+        8,
+        -5,
+        5
+      ],
+      "block": "minecraft:iron_ore"
+    },
+    {
+      "op": "block",
+      "at": [
+        11,
+        -2,
+        8
+      ],
+      "block": "minecraft:copper_ore"
+    },
+    {
+      "op": "block",
+      "at": [
+        2,
+        -3,
+        8
+      ],
+      "block": "minecraft:copper_ore"
+    },
+    {
+      "op": "block",
+      "at": [
+        9,
+        -4,
+        4
+      ],
+      "block": "minecraft:copper_ore"
+    },
+    {
+      "op": "block",
+      "at": [
+        1,
+        -2,
+        9
+      ],
+      "block": "minecraft:coal_ore"
+    },
+    {
+      "op": "block",
+      "at": [
+        10,
+        -3,
+        3
+      ],
+      "block": "minecraft:coal_ore"
+    },
+    {
+      "op": "block",
+      "at": [
+        4,
+        -5,
+        7
+      ],
+      "block": "minecraft:coal_ore"
+    },
+    {
+      "op": "block",
+      "at": [
+        6,
+        0,
+        0
+      ],
+      "block": "minecraft:spruce_sign[rotation=0]"
+    }
+  ]
+}

@@ -1,0 +1,118 @@
+{
+ "textures": {
+  "front": "underground_city:block/alarm_panel_armed",
+  "case": "underground_city:block/alarm_panel_case",
+  "particle": "underground_city:block/alarm_panel_case"
+ },
+ "elements": [
+  {
+   "from": [
+    4,
+    3,
+    15
+   ],
+   "to": [
+    12,
+    13,
+    16
+   ],
+   "faces": {
+    "north": {
+     "texture": "#front",
+     "uv": [
+      4,
+      3,
+      12,
+      13
+     ]
+    },
+    "south": {
+     "texture": "#case",
+     "uv": [
+      4,
+      3,
+      12,
+      13
+     ]
+    },
+    "east": {
+     "texture": "#case",
+     "uv": [
+      0,
+      3,
+      1,
+      13
+     ]
+    },
+    "west": {
+     "texture": "#case",
+     "uv": [
+      0,
+      3,
+      1,
+      13
+     ]
+    },
+    "up": {
+     "texture": "#case",
+     "uv": [
+      4,
+      0,
+      12,
+      1
+     ]
+    },
+    "down": {
+     "texture": "#case",
+     "uv": [
+      4,
+      0,
+      12,
+      1
+     ]
+    }
+   }
+  }
+ ],
+ "display": {
+  "gui": {
+   "rotation": [
+    0,
+    180,
+    0
+   ],
+   "translation": [
+    0,
+    0,
+    -6
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  "ground": {
+   "scale": [
+    0.5,
+    0.5,
+    0.5
+   ]
+  },
+  "fixed": {
+   "scale": [
+    0.7,
+    0.7,
+    0.7
+   ]
+  },
+  "thirdperson_righthand": {
+   "scale": [
+    0.4,
+    0.4,
+    0.4
+   ]
+  }
+ },
+ "parent": "minecraft:block/block"
+}

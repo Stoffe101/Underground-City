@@ -65,7 +65,7 @@ Recommended next three sprints: **A** (WP12, WP9 shelter shop, WP1 first Crew co
 ## WP4. Illegal production
 
 * **Outcome**: a Farmer can grow the restricted crop in a hidden plot, a Vintner can run a still, a Gunsmith can assemble unregistered builds; each is profitable and carries a physical, discoverable risk. No path is compulsory.
-* **Today**: contracts, contraband classification per city, checkpoint searches, heat and trust, the Sable Leaf (original art), spirits through Vinery/Kaleidoscope Tavern where installed, and unregistered-build contracts exist (D-049 to D-054, D-067); a hidden *facility* does not.
+* **Today**: contracts, contraband classification per city, checkpoint searches, heat and trust, the Cannabis (original art), spirits through Vinery/Kaleidoscope Tavern where installed, and unregistered-build contracts exist (D-049 to D-054, D-067); a hidden *facility* does not.
 * **Build**: a `facility` data kind (a residence region with a production rule, a heat contribution and a discoverability model); production counted in active play only; discovery by evidence (a witness report, a tip, a search) per D-051; the rule that a Crew never inherits a member's heat stays.
 * **Proof**: facility GameTests (yield, heat, discovery by evidence only, no discovery without a witness or a search), arithmetic balance extension (D-052), a scripted client run, a human balance session.
 * **Decide**: whether a Crew facility's heat is split (recommended: attributed only to the person who operated it).

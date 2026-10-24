@@ -109,6 +109,29 @@ public final class CorridorPlan {
         return best;
     }
 
+    /** One end of the open road where it meets a city circle: the point, its arc position, and the unit direction on into the city (the line the road was coming along). */
+    public record End(double x, double z, double s, double dirX, double dirZ) {}
+
+    private End[] ends;
+
+    /** The ends of the open road that meet a city (an open stretch that starts or finishes in open country has no end here). */
+    public synchronized End[] ends() {
+        if (ends != null) return ends;
+        double first = -1, last = -1;
+        for (double at = 0; at <= length; at += 1) if (openAt(at)) { if (first < 0) first = at; last = at; }
+        java.util.List<End> out = new java.util.ArrayList<>();
+        if (first > 0) out.add(endAt(first, -1));
+        if (first >= 0 && last < length - 1e-6) out.add(endAt(last, 1));
+        ends = out.toArray(new End[0]);
+        return ends;
+    }
+
+    private End endAt(double s, int inward) {
+        double[] a = pointAt(s), b = pointAt(s - inward * 4.0);
+        double dx = a[0] - b[0], dz = a[1] - b[1], len = Math.max(1e-6, Math.hypot(dx, dz));
+        return new End(a[0], a[1], s, dx / len, dz / len);
+    }
+
     /** Cheap rejection test used for whole chunks. */
     public boolean nearChunk(int minX, int minZ) { return nearChunk(minX, minZ, 0); }
 

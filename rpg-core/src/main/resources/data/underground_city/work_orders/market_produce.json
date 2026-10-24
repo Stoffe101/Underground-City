@@ -1,0 +1,23 @@
+{
+  "schema_version": 3,
+  "title": "Produce crates for the corner stores",
+  "career": "farmer",
+  "level": 3,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "underground_city:produce_crate",
+      "count": 3
+    },
+    {
+      "item": "underground_city:fruit_crate",
+      "count": 2
+    }
+  ],
+  "credits": 200,
+  "xp": 340,
+  "capacity": 3,
+  "refill_ticks": 9000,
+  "legality": "legal",
+  "requires_skill": "farmer.greenhouse_management"
+}

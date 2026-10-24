@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "city": "blackwater",
+  "item": "minecraft:lead",
+  "unit_price": 8,
+  "initial": 4,
+  "capacity": 8,
+  "units_per_interval": 2,
+  "interval_ticks": 36000,
+  "max_order": 2,
+  "outlets": [
+    "shop:dispatch"
+  ]
+}

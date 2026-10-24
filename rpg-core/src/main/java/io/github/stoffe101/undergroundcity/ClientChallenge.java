@@ -9,7 +9,7 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 public final class ClientChallenge {
     private ClientChallenge() {}
 
-    public static void open(BlockPos pos, byte[] sequence) {
-        Minecraft.getInstance().setScreen(new ChallengeScreen(pos, sequence));
+    public static void open(BlockPos pos, byte[] sequence, int kind, int perSymbol, int inputTicks) {
+        Minecraft.getInstance().setScreen(new ChallengeScreen(pos, sequence, kind == 1 ? ChallengeScreen.Kind.ALARM : ChallengeScreen.Kind.TERMINAL, perSymbol, inputTicks));
     }
 }

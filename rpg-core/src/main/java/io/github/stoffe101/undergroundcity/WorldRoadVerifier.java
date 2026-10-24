@@ -98,13 +98,13 @@ final class WorldRoadVerifier {
     }
 
     private void verify(ServerLevel level) {
-        List<CorridorPlan> plans = CorridorRoadFeature.plans(level);
+        List<CorridorPlan> plans = CorridorRoadFeature.ready(level);   // a reopened world's plan is the one made in the background as it loaded
         if (plans.isEmpty()) throw new IllegalStateException("Road chunks generated but the feature never built a plan");
         JsonArray routes = new JsonArray();
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         for (CorridorPlan plan : plans) {
             int samples = 0, deckMissing = 0, headroomBlocked = 0, bigSteps = 0, bridgeSamples = 0, waterSamples = 0;
-            int railExpected = 0, railMissing = 0, minClearance = Integer.MAX_VALUE;
+            int railExpected = 0, railMissing = 0, minClearance = Integer.MAX_VALUE, vegetationSamples = 0, vegetationBlocks = 0;
             int waterRun = 0, longestWater = 0, bridgeRun = 0, longestBridge = 0, lowestDeck = Integer.MAX_VALUE, highestDeck = Integer.MIN_VALUE;
             double previousStand = Double.NaN;
             JsonArray problems = new JsonArray();
@@ -143,6 +143,19 @@ final class WorldRoadVerifier {
                         if (above.blocksMotion() || !above.getFluidState().isEmpty()) { problem(problems, "headroom", s, x, y, z, above); break; }
                     }
                 }
+                // Growth over the carriageway: trunks, leaves, vines and saplings in the five-wide, six-high band along the centre line (the owner's "vegetation on roads")
+                double[] ga = plan.pointAt(Math.max(0, s - 1)), gb = plan.pointAt(Math.min(plan.length(), s + 1));
+                double gdx = gb[0] - ga[0], gdz = gb[1] - ga[1], gnorm = Math.max(1e-9, Math.hypot(gdx, gdz));
+                int found = 0;
+                for (int off = -2; off <= 2; off++) {
+                    int gx = (int) Math.floor(c[0] - gdz / gnorm * off), gz = (int) Math.floor(c[1] + gdx / gnorm * off);
+                    for (int y = deckY + 1; y <= deckY + 6; y++) {
+                        BlockState growth = level.getBlockState(pos.set(gx, y, gz));
+                        if (growth.is(net.minecraft.tags.BlockTags.LEAVES) || growth.is(net.minecraft.tags.BlockTags.LOGS) || growth.is(net.minecraft.tags.BlockTags.SAPLINGS)
+                            || growth.is(Blocks.VINE)) { found++; if (found == 1) problem(problems, "vegetation_over_road", s, gx, y, gz, growth); }
+                    }
+                }
+                if (found > 0) { vegetationSamples++; vegetationBlocks += found; }
                 double stand = deckY + (slab ? 0.5 : 1.0);
                 if (!Double.isNaN(previousStand) && Math.abs(stand - previousStand) > 0.5 + 1e-9) {
                     bigSteps++;
@@ -206,6 +219,8 @@ final class WorldRoadVerifier {
             route.addProperty("deck_missing", deckMissing);
             route.addProperty("headroom_blocked", headroomBlocked);
             route.addProperty("steps_over_half_block", bigSteps);
+            route.addProperty("samples_with_vegetation_over_road", vegetationSamples);
+            route.addProperty("vegetation_blocks_over_road", vegetationBlocks);
             route.addProperty("bridge_samples", bridgeSamples);
             route.addProperty("longest_bridge_blocks", longestBridge);
             route.addProperty("water_samples_below_deck", waterSamples);

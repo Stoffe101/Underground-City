@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "outlet": "shop:motel_desk",
+  "building": "roadside:saltmarsh_desk",
+  "spot": "counter",
+  "city": "valewood",
+  "title": "Saltmarsh Motel Desk"
+}

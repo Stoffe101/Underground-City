@@ -1,5 +1,7 @@
 # October 19 readiness and October 14 implementation evidence
 
+> **Terminology (D-142):** this report predates the owner's direction of October 23, 2026. The crop it calls "Sable Leaf" (its cuttings and bales) is called **Cannabis** in the game now (Cannabis Seeds, Cannabis Plant, Cannabis Flower); the report keeps the words it was written with.
+
 The **starter profession/economy slice is playable** with Minecraft 1.20.1, Forge 47.4.10, Java 17, original Core and separately obtained Q Shop 1.8.4. This is not the full three-city modpack. Development and all recorded testing took place in Codex Cloud or GitHub-hosted Ubuntu runners; no personal computer, local network or self-hosted runner was used.
 
 ## What works

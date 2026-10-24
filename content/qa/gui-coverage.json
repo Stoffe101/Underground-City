@@ -129,11 +129,74 @@
       "description": "Notice plates stacked beside the terminal (drawn by hand for review, the game draws them in the screen corner): order accepted, delivered, contraband seized and a rare find, each with its icon, accent and words"
     },
     {
+      "id": "civilian_shop.counter",
+      "expected_file": "uc-civilian-shop-counter.png",
+      "owner": "underground_city",
+      "group": "civilian_shop",
+      "description": "The civilian counter: goods for sale (rows with the same layout as the Trade page), two sections on the rail, the wallet and a daily-limit text"
+    },
+    {
+      "id": "hud.settings",
+      "expected_file": "uc-hud-settings.png",
+      "owner": "underground_city",
+      "group": "hud",
+      "description": "Status display settings with the real stack drawn at the top right below the status-effect row: place and clock, wallet and Crew bank, home and next rent, trade progress, heat, the accepted order and the next step"
+    },
+    {
+      "id": "hud.left",
+      "expected_file": "uc-hud-left.png",
+      "owner": "underground_city",
+      "group": "hud",
+      "description": "The same stack anchored to the left side at 120 percent, clear of the top-left corner Xaero's minimap uses and of the bottom-left chat"
+    },
+    {
+      "id": "hud.minimal",
+      "expected_file": "uc-hud-minimal.png",
+      "owner": "underground_city",
+      "group": "hud",
+      "description": "The stack reduced to location and wallet at 80 percent and 60 percent solidity, with the order and next-step cards switched off"
+    },
+    {
       "id": "dialogue.registrar",
       "expected_file": "uc-dialogue-registrar.png",
       "owner": "underground_city",
       "group": "dialogue",
       "description": "Registrar conversation for a citizen already on the rolls"
+    },
+    {
+      "id": "civilian_shop.poor",
+      "expected_file": "uc-civilian-shop-poor.png",
+      "owner": "underground_city",
+      "group": "civilian_shop",
+      "description": "The counter with a wallet too small for most goods: the status 'Need N more' replaces the limit text and the buy buttons are disabled"
+    },
+    {
+      "id": "civilian_shop.scrolled",
+      "expected_file": "uc-civilian-shop-scrolled.png",
+      "owner": "underground_city",
+      "group": "civilian_shop",
+      "description": "A long list (18 goods, very long names, prices up to four digits) scrolled: nothing overlaps, the name is cut with an ellipsis, the scroll bar shows the position"
+    },
+    {
+      "id": "civilian_shop.deliveries",
+      "expected_file": "uc-civilian-shop-deliveries.png",
+      "owner": "underground_city",
+      "group": "civilian_shop",
+      "description": "The deliveries section: goods the shop buys from the citizen, with 'paid' prices and what the player is missing"
+    },
+    {
+      "id": "civilian_shop.empty",
+      "expected_file": "uc-civilian-shop-empty.png",
+      "owner": "underground_city",
+      "group": "civilian_shop",
+      "description": "An empty counter: one plain sentence, no broken rows"
+    },
+    {
+      "id": "civilian_shop.limited",
+      "expected_file": "uc-civilian-shop-limited.png",
+      "owner": "underground_city",
+      "group": "civilian_shop",
+      "description": "Entries on their last units of a daily limit: 'N left today', and a lot button that never asks for more than is left"
     },
     {
       "id": "dialogue.employer",
@@ -402,6 +465,13 @@
       "description": "Home page, Find a home tab: a motel room with the city's welcome, a flat and a house to rent or buy, with the Ironhaven price factor, For me / For the Crew and Pay from toggles"
     },
     {
+      "id": "crew.home_find_many",
+      "expected_file": "uc-crew-home-find-many.png",
+      "owner": "underground_city",
+      "group": "crew",
+      "description": "Find a home for a new player with no Crew, four credits and seven homes in reach: the free welcome rooms listed first (D-136), the page count and arrows in the tab row, clear of the first card's Rent and Buy"
+    },
+    {
       "id": "crew.home_solo",
       "expected_file": "uc-crew-home-solo.png",
       "owner": "underground_city",
@@ -435,6 +505,265 @@
       "owner": "underground_city",
       "group": "crew",
       "description": "Rules page, Crew tab: rename and the typed-name disband confirmation"
+    },
+    {
+      "id": "trade.overflow",
+      "expected_file": "uc-exchange-overflow.png",
+      "owner": "underground_city",
+      "group": "operations_terminal",
+      "description": "Trade tab with twenty-four lines of goods (short and very long names, prices from 3 to 9,800, every stock state) and a balance that buys only some of them: nothing overlaps or runs off, the scroll bar shows"
+    },
+    {
+      "id": "trade.overflow_scrolled",
+      "expected_file": "uc-exchange-overflow-scrolled.png",
+      "owner": "underground_city",
+      "group": "operations_terminal",
+      "description": "Trade tab scrolled to the end of a long list with a large balance"
+    },
+    {
+      "id": "trade.sold_out",
+      "expected_file": "uc-exchange-sold-out.png",
+      "owner": "underground_city",
+      "group": "operations_terminal",
+      "description": "Trade tab where every line is sold out: the status text replaces the stock bar and the buttons are off"
+    },
+    {
+      "id": "lock.idle",
+      "expected_file": "uc-lock-idle.png",
+      "owner": "underground_city",
+      "group": "lockpicking",
+      "description": "Lockpicking screen at the start: three pins unset, the pick far from anything, time and strain meters"
+    },
+    {
+      "id": "lock.close",
+      "expected_file": "uc-lock-close.png",
+      "owner": "underground_city",
+      "group": "lockpicking",
+      "description": "Lockpicking screen with one pin set and the pick close to the next sweet spot (words and brightness, not colour alone)"
+    },
+    {
+      "id": "lock.pressing",
+      "expected_file": "uc-lock-pressing.png",
+      "owner": "underground_city",
+      "group": "lockpicking",
+      "description": "Lockpicking screen pressing on the sweet spot of a four-pin lock: the pick is down, 'It gives'"
+    },
+    {
+      "id": "lock.strain",
+      "expected_file": "uc-lock-strain.png",
+      "owner": "underground_city",
+      "group": "lockpicking",
+      "description": "Lockpicking screen pressing far off the spot with the pick strained to 88 percent and the warning lit"
+    },
+    {
+      "id": "lock.opened",
+      "expected_file": "uc-lock-opened.png",
+      "owner": "underground_city",
+      "group": "lockpicking",
+      "description": "Lockpicking screen after the lock opened"
+    },
+    {
+      "id": "lock.snapped",
+      "expected_file": "uc-lock-snapped.png",
+      "owner": "underground_city",
+      "group": "lockpicking",
+      "description": "Lockpicking screen after the pick snapped"
+    },
+    {
+      "id": "lock.timeout",
+      "expected_file": "uc-lock-timeout.png",
+      "owner": "underground_city",
+      "group": "lockpicking",
+      "description": "Lockpicking screen after time ran out (nothing lost)"
+    },
+    {
+      "id": "alarm.show",
+      "expected_file": "uc-alarm-show.png",
+      "owner": "underground_city",
+      "group": "alarm_panel",
+      "description": "Alarm panel trace (D-128) while the signal shows: six symbols of a high-security panel, the 'Bypass' chip, the panel-specific help line"
+    },
+    {
+      "id": "alarm.input",
+      "expected_file": "uc-alarm-input.png",
+      "owner": "underground_city",
+      "group": "alarm_panel",
+      "description": "Alarm panel trace in the input phase, three answers in, the panel's reset timer"
+    },
+    {
+      "id": "fence.full",
+      "expected_file": "uc-fence-full.png",
+      "owner": "underground_city",
+      "group": "fence",
+      "description": "A fence's screen (D-125): stolen goods in the pockets by item and city of origin, the price each, sell and sell-all, the rate and the budget"
+    },
+    {
+      "id": "fence.partial",
+      "expected_file": "uc-fence-partial.png",
+      "owner": "underground_city",
+      "group": "fence",
+      "description": "The same fence with a budget too small for everything: what a sale would be cut to"
+    },
+    {
+      "id": "fence.nothing",
+      "expected_file": "uc-fence-nothing.png",
+      "owner": "underground_city",
+      "group": "fence",
+      "description": "A fence when the pockets hold nothing marked: the empty state and why"
+    },
+    {
+      "id": "counter.hardware",
+      "expected_file": "uc-counter-hardware.png",
+      "owner": "underground_city",
+      "group": "shop_counter",
+      "description": "A shopkeeper's counter (D-126): the Trade page opened over the counter, headed with the shop's name, the city's hardware lines with stock, a sold-out line"
+    },
+    {
+      "id": "counter.poor",
+      "expected_file": "uc-counter-poor.png",
+      "owner": "underground_city",
+      "group": "shop_counter",
+      "description": "The same counter with six credits: every purchase refused with its reason"
+    },
+    {
+      "id": "operations_terminal.thief",
+      "expected_file": "uc-terminal-thief.png",
+      "owner": "underground_city",
+      "group": "operations_terminal",
+      "description": "Thief page (D-143): the Thief tree every career can follow, in three columns (locks, stealth, fencing), its own points, level and XP"
+    },
+    {
+      "id": "operations_terminal.thief_expert",
+      "expected_file": "uc-thief-expert.png",
+      "owner": "underground_city",
+      "group": "operations_terminal",
+      "description": "Thief page of an experienced thief: most of the tree learned, the last skill selected"
+    },
+    {
+      "id": "operations_terminal.thief_new",
+      "expected_file": "uc-thief-new.png",
+      "owner": "underground_city",
+      "group": "operations_terminal",
+      "description": "Thief page of a character who has never stolen anything: no points, the first skill locked by level"
+    },
+    {
+      "id": "casing.novice",
+      "expected_file": "uc-casing-novice.png",
+      "owner": "underground_city",
+      "group": "casing",
+      "description": "Casing card (D-144) for a beginner: the tier and the lock only, the rest named by the skill that would read it"
+    },
+    {
+      "id": "casing.expert",
+      "expected_file": "uc-casing-expert.png",
+      "owner": "underground_city",
+      "group": "casing",
+      "description": "Casing card for a thief with Casing and Routines: alarm, cameras, who is in, when it is empty, the safe, a recent break-in"
+    },
+    {
+      "id": "casing.locked",
+      "expected_file": "uc-casing-locked.png",
+      "owner": "underground_city",
+      "group": "casing",
+      "description": "Casing card at a door the thief cannot try: a high-security lock without a Pro Pick Set"
+    },
+    {
+      "id": "technician.computer",
+      "expected_file": "uc-tech-computer.png",
+      "owner": "underground_city",
+      "group": "technician",
+      "description": "Personal computer (D-158), the Service app: the city's service calls and jobs, the pay, how long open, whether this player may take it, Track"
+    },
+    {
+      "id": "technician.designs",
+      "expected_file": "uc-tech-designs.png",
+      "owner": "underground_city",
+      "group": "technician",
+      "description": "Personal computer, the Designs app: what an Electronics Bench makes, the parts carried against the parts needed, designs that need a skill"
+    },
+    {
+      "id": "technician.bench",
+      "expected_file": "uc-tech-bench.png",
+      "owner": "underground_city",
+      "group": "technician",
+      "description": "Electronics Bench (D-158): designs ready, missing parts or needing a skill; the selected design's parts and Assemble"
+    },
+    {
+      "id": "technician.trace",
+      "expected_file": "uc-tech-trace.png",
+      "owner": "underground_city",
+      "group": "technician",
+      "description": "A repair at a utility panel (D-158): the circuit in two branches, two test points read, the scanner's outlined stretch, Probe and Replace"
+    },
+    {
+      "id": "technician.patch",
+      "expected_file": "uc-tech-patch.png",
+      "owner": "underground_city",
+      "group": "technician",
+      "description": "An install at a utility panel (D-158): the patch grid of cable tiles, the feed, three devices to feed"
+    },
+    {
+      "id": "lockpick.spool",
+      "expected_file": "uc-lock-spool.png",
+      "owner": "underground_city",
+      "group": "lockpick",
+      "description": "Lock screen with a spool pin announced (Feel for the Pins, D-145)"
+    },
+    {
+      "id": "lockpick.turned",
+      "expected_file": "uc-lock-turned.png",
+      "owner": "underground_city",
+      "group": "lockpick",
+      "description": "Lock screen the moment a spool pin turned back"
+    },
+    {
+      "id": "lockpick.rake",
+      "expected_file": "uc-lock-rake.png",
+      "owner": "underground_city",
+      "group": "lockpick",
+      "description": "Lock screen with the Rake button (Raking, D-143)"
+    },
+    {
+      "id": "technician.quiet",
+      "expected_file": "uc-tech-quiet.png",
+      "owner": "underground_city",
+      "group": "technician",
+      "description": "Personal computer (D-166), the Service app with a back-channel job selected: shown only to a Technician with Bypass Tooling, in the underground colour, what it does and its risk, asking for a Bypass Kit"
+    },
+    {
+      "id": "technician.quiet_patch",
+      "expected_file": "uc-tech-quiet-patch.png",
+      "owner": "underground_city",
+      "group": "technician",
+      "description": "Back-channel work at a utility panel (D-166): the same abstract patch grid as an install, titled and coloured as underground work"
+    },
+    {
+      "id": "workshop.vat",
+      "expected_file": "uc-workshop-vat.png",
+      "owner": "underground_city",
+      "group": "workshop",
+      "description": "A workshop station (D-163): the Fermentation Vat at tier 2 with a batch of berry wine at work and its time left, the recipes with what each needs, the next tier's missing parts"
+    },
+    {
+      "id": "workshop.bench",
+      "expected_file": "uc-workshop-bench.png",
+      "owner": "underground_city",
+      "group": "workshop",
+      "description": "The Machinist's Bench (D-163) at tier 2: the Smith's parts, a recipe needing tier 3, an underground recipe, the lathe's parts and skill still missing"
+    },
+    {
+      "id": "workshop.still",
+      "expected_file": "uc-workshop-still.png",
+      "owner": "underground_city",
+      "group": "workshop",
+      "description": "The Pot Still (D-163): licensed grain spirit refused without the Distiller's Licence, moonshine selected as underground work"
+    },
+    {
+      "id": "counter.pub_sells",
+      "expected_file": "uc-counter-pub-sells.png",
+      "owner": "underground_city",
+      "group": "shop_counter",
+      "description": "The pub's counter (D-164): lines the shop buys say what it pays, and the second button sells the bottles the player carries"
     }
   ],
   "unintegrated_future_interfaces": [
@@ -446,7 +775,6 @@
     "FTB Quests chapters and quest inspector",
     "TaCZ weapon UI, attachments and gun workbenches",
     "NPC dialogue and interactions",
-    "Locks Reforged lockpicking GUI",
     "Property safe inventory (reuses the vanilla chest screen; needs an in-world client capture)",
     "Inventory and item inspector",
     "Future vehicle controls",

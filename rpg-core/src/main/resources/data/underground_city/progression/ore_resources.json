@@ -1,0 +1,127 @@
+{
+  "schema_version": 1,
+  "decision": "D-120",
+  "summary": "Items whose only reliable source in the base game is mining an ore, and what replaces mining in a NEW world made with the scarcity package (underground_city_scarcity: no natural ore in the overworld). A root with a route is obtainable without luck and without digging; a root with route null is needed by nothing the game offers as progression. docs/technical/hybrid-economy.md explains the audit; scripts/audit_item_sources.py enforces it. Existing worlds are never changed: they keep their ore, and this catalogue only states what a scarcity world promises.",
+  "routes_kinds": {
+    "exchange": "sold by a finite, shared regional-exchange line (content/gameplay/materials-supply.json): price, small shelf, slow refill, no stockpile",
+    "derived": "crafted from another root that has a route, by a base-game recipe",
+    "also_from_site": "a second source on an exchange route: the ore also grows back, in active play time, in a built regenerating resource site (resource_sites/<id>.json, D-123); the audit checks the site has a vein of that ore"
+  },
+  "roots": {
+    "minecraft:iron_ingot": {
+      "mined_as": "iron ore",
+      "gameplay": "the second and later backpack tiers, TaCZ guns and ammunition, vehicle parts, tools, locks, rails, anvils, hinges, every Machined Parts recipe",
+      "route": {
+        "kind": "exchange",
+        "lines": [
+          "underground_city:materials/iron_ingot_ironhaven",
+          "underground_city:materials/iron_ingot_valewood",
+          "underground_city:materials/iron_ingot_blackwater"
+        ],
+        "why": "Ironhaven's foundries sell it cheapest; Valewood and Blackwater buy it in and sell it on at a premium. Small shelves, slow refill, no stockpile.",
+        "also_from_site": { "id": "ironhaven_quarry", "ore": "minecraft:iron_ore" }
+      }
+    },
+    "minecraft:iron_nugget": {
+      "mined_as": "iron ore",
+      "gameplay": "the lockpick (two nuggets and a stick)",
+      "route": {
+        "kind": "derived",
+        "from": "minecraft:iron_ingot",
+        "why": "nine nuggets from one ingot by the base-game recipe"
+      }
+    },
+    "minecraft:coal": {
+      "mined_as": "coal ore",
+      "gameplay": "furnaces and smelting chains, torches, the ammunition and gunpowder chain",
+      "route": {
+        "kind": "exchange",
+        "lines": [
+          "underground_city:materials/coal_ironhaven"
+        ],
+        "why": "Ironhaven's foundries sell furnace coal by the lump; Valewood also sells charcoal, which every recipe that takes coal and a torch accepts.",
+        "also_from_site": { "id": "ironhaven_quarry", "ore": "minecraft:coal_ore" }
+      }
+    },
+    "minecraft:charcoal": {
+      "mined_as": "burning logs (not an ore)",
+      "gameplay": "torches, the TaCZ gunpowder recipe",
+      "route": {
+        "kind": "exchange",
+        "lines": [
+          "underground_city:materials/charcoal_valewood"
+        ],
+        "why": "Valewood's charcoal burners; it can also be made in any furnace from logs."
+      }
+    },
+    "minecraft:copper_ingot": {
+      "mined_as": "copper ore",
+      "gameplay": "the copper backpack, Modern Life wiring, TaCZ and vehicle fittings, lightning rods",
+      "route": {
+        "kind": "exchange",
+        "lines": [
+          "underground_city:materials/copper_ingot_ironhaven"
+        ],
+        "why": "Ironhaven's rolling mills.",
+        "also_from_site": { "id": "ironhaven_quarry", "ore": "minecraft:copper_ore" }
+      }
+    },
+    "minecraft:redstone": {
+      "mined_as": "redstone ore",
+      "gameplay": "backpack upgrades (filters, pickup, restock), comparators, repeaters, Modern Life electronics, vehicle controls",
+      "route": {
+        "kind": "exchange",
+        "lines": [
+          "underground_city:materials/redstone_blackwater"
+        ],
+        "why": "Blackwater's electronics wholesalers import it by the sack."
+      }
+    },
+    "minecraft:lapis_lazuli": {
+      "mined_as": "lapis ore",
+      "gameplay": "the pickup upgrade, enchanting, dyes",
+      "route": {
+        "kind": "exchange",
+        "lines": [
+          "underground_city:materials/lapis_blackwater"
+        ],
+        "why": "the harbour importers' glassworks stock."
+      }
+    },
+    "minecraft:gold_ingot": {
+      "mined_as": "gold ore",
+      "gameplay": "the gold backpack and the upgrade rings (eight ingots round a pack), clocks and compasses, powered rails",
+      "route": {
+        "kind": "exchange",
+        "lines": [
+          "underground_city:materials/gold_ingot_blackwater"
+        ],
+        "why": "the harbour's bullion dealers: a few bars at a time at a high price."
+      }
+    },
+    "minecraft:diamond": {
+      "mined_as": "diamond ore",
+      "gameplay": "the diamond backpack tier and the advanced upgrade rings, diamond tools",
+      "route": {
+        "kind": "exchange",
+        "lines": [
+          "underground_city:materials/diamond_blackwater"
+        ],
+        "why": "one gem every two active hours from the harbour's jewellers; a long-term purchase."
+      }
+    },
+    "minecraft:emerald": {
+      "mined_as": "emerald ore (mountain biomes)",
+      "gameplay": "nothing in the approved economy",
+      "needed_by_approved_gameplay": false,
+      "route": null
+    },
+    "minecraft:netherite_ingot": {
+      "mined_as": "ancient debris (the Nether, which the scarcity package does not touch)",
+      "gameplay": "the top backpack tier (a trip to the Nether, D-102)",
+      "needed_by_approved_gameplay": false,
+      "route": null,
+      "note": "The Nether is unchanged and untested: the netherite tier stays a deliberate trip there and is not part of the balanced economy. Listed here so that it is a stated limit, not an accident."
+    }
+  }
+}

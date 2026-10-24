@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "outlet": "shop:bar",
+  "building": "underground_city:bw_club",
+  "spot": "counter",
+  "city": "blackwater",
+  "title": "The Bar"
+}

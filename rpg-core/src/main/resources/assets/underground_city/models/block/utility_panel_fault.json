@@ -1,0 +1,8 @@
+{
+ "parent": "minecraft:block/orientable",
+ "textures": {
+  "top": "underground_city:block/utility_panel_side",
+  "front": "underground_city:block/utility_panel_fault",
+  "side": "underground_city:block/utility_panel_side"
+ }
+}

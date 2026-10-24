@@ -13,7 +13,18 @@ public record TerminalData(String city, String career, int level, int xp, double
                            boolean economy, UUID active, int foreignVisits, String region,
                            List<Row> jobs, List<Offer> offers,
                            int skillPoints, List<SkillRow> skills, List<Contact> contacts, List<LawRow> laws,
-                           int heat, String lawSummary, List<Step> journey, String outlet) {
+                           int heat, String lawSummary, List<Step> journey, String outlet, Thief thief) {
+    /** The Thief track (D-143): its level, XP (and the XP of the next level), unspent Thief points and its tree. */
+    public record Thief(int level, int xp, int nextXp, int points, List<SkillRow> skills) {
+        public static final Thief NONE = new Thief(1, 0, ProgressionRules.thiefXpAtLevel(2), 0, List.of());
+    }
+
+    /** Every snapshot before the Thief track: no Thief data. */
+    public TerminalData(String city, String career, int level, int xp, double balance, boolean economy, UUID active, int foreignVisits, String region,
+                        List<Row> jobs, List<Offer> offers, int skillPoints, List<SkillRow> skills, List<Contact> contacts, List<LawRow> laws,
+                        int heat, String lawSummary, List<Step> journey, String outlet) {
+        this(city, career, level, xp, balance, economy, active, foreignVisits, region, jobs, offers, skillPoints, skills, contacts, laws, heat, lawSummary, journey, outlet, Thief.NONE);
+    }
     public record Req(String item, int count, int held, String label) {
         public Req(String item, int count, int held) { this(item, count, held, ""); }
     }
@@ -29,7 +40,10 @@ public record TerminalData(String city, String career, int level, int xp, double
             this(id, title, level, credits, xp, available, accepted, foreignVisits, reqs, Extra.NONE);
         }
     }
-    public record Offer(String id, String item, int price, int stock, int capacity, int maxOrder) {}
+    /** One line of a shop or exchange. {@code pays} is what a shop pays a supplier a unit (0 when it buys none; D-164) and {@code carried} how many the player carries that it would take. */
+    public record Offer(String id, String item, int price, int stock, int capacity, int maxOrder, int pays, int carried) {
+        public Offer(String id, String item, int price, int stock, int capacity, int maxOrder) { this(id, item, price, stock, capacity, maxOrder, 0, 0); }
+    }
     /** One node of the career tree. state: 0 locked, 1 can be unlocked now, 2 unlocked. */
     public record SkillRow(String id, String branch, String title, String description, int cost, int minLevel,
                            int state, String reason, List<String> requires, String shortTitle, String effects) {
@@ -70,6 +84,12 @@ public record TerminalData(String city, String career, int level, int xp, double
 
     /** True at the provisions desk of a wayside shelter: a shop of the nearest city's basics, with no orders, contacts or law (D-091). */
     public boolean wayside() { return outlet.equals(RegionalStock.WAYSIDE); }
+    /** True at a shopkeeper's counter (D-126); the outlet then reads {@code shop:<kind>|<the shop's name>}. */
+    public boolean counter() { return outlet.startsWith("shop:"); }
+    /** A shop and nothing else (a wayside desk or a counter): no orders, contacts or law. */
+    public boolean shopOnly() { return wayside() || counter(); }
+    /** The name of the shop at a counter, or "". */
+    public String shopTitle() { int bar = outlet.indexOf('|'); return counter() && bar >= 0 ? outlet.substring(bar + 1) : ""; }
 
     public static TerminalData offline() {
         return new TerminalData("UNREGISTERED", "NONE", 1, 0, 0, false, null, 0, "", List.of(), List.of());
@@ -80,8 +100,8 @@ public record TerminalData(String city, String career, int level, int xp, double
         if (citizen == null) return offline();
         WorkOrderLedger ledger = WorkOrderLedger.get(player.server);
         Exchanges.Exchange exchange = Exchanges.at(player.level(), pos).orElse(null);
-        boolean wayside = exchange != null && exchange.wayside();
-        // a wayside desk is only a shop: no orders, contacts or law; the region stays empty so nothing treats the player as being inside the city
+        boolean wayside = exchange != null && exchange.shopOnly();
+        // a wayside desk or a shop counter is only a shop: no orders, contacts or law; the region stays empty so nothing treats the player as being at a terminal of the city
         String region = exchange == null || wayside ? "" : exchange.city();
         if (!region.isEmpty()) ledger.noteVisit(player.getUUID(), region); // physically at a placed terminal inside the city
         CompoundTag record = ledger.player(player.getUUID());
@@ -114,10 +134,18 @@ public record TerminalData(String city, String career, int level, int xp, double
         CityLaws.Law law = region.isEmpty() ? null : CityLaws.INSTANCE.find(region);
         return new TerminalData(citizen.city, citizen.career, citizen.careerLevel(), citizen.careerXp(),
             economy ? QShopEconomy.balance(player) : 0, economy, active, ledger.foreignVisits(player.getUUID(), citizen.city),
-            region, rows, exchange == null ? List.of() : RegionalMarket.offers(ledger, exchange.city(), exchange.outlet(), citizen),
+            region, rows, exchange == null ? List.of() : RegionalMarket.offers(ledger, exchange.city(), exchange.outlet(), citizen, player),
             SkillService.pointsAvailable(citizen), skillRows(citizen), contacts(region, citizen, ledger, player), lawRows(law, citizen),
             region.isEmpty() ? 0 : ledger.heat(player.getUUID(), region), law == null ? "" : law.summary(),
-            Journey.steps(citizen, ledger, player.getUUID()), exchange == null ? "" : exchange.outlet());
+            Journey.steps(citizen, ledger, player.getUUID()), exchange == null ? "" : exchange.counter() ? exchange.outlet() + "|" + exchange.title() : exchange.outlet(),
+            thief(citizen));
+    }
+
+    /** The Thief track of a citizen, for the terminal's Thief page. */
+    static Thief thief(CitizenState.Citizen citizen) {
+        int level = citizen.thiefLevel();
+        int next = level >= ProgressionRules.THIEF_MAX_LEVEL ? citizen.thiefXp() : ProgressionRules.thiefXpAtLevel(level + 1);
+        return new Thief(level, citizen.thiefXp(), next, SkillService.thiefPointsAvailable(citizen), rows(citizen, SkillCatalog.INSTANCE.tree(SkillNode.THIEF)));
     }
 
     private static Extra extra(WorkOrder job, CitizenState.Citizen citizen, WorkOrderLedger ledger, ServerPlayer player) {
@@ -133,8 +161,10 @@ public record TerminalData(String city, String career, int level, int xp, double
             buyer == null ? 0 : ledger.trust(player.getUUID(), buyer.id()), rewards);
     }
 
-    private static List<SkillRow> skillRows(CitizenState.Citizen citizen) {
-        List<SkillNode> tree = SkillRules.displayOrder(SkillCatalog.INSTANCE.tree(citizen.career));
+    private static List<SkillRow> skillRows(CitizenState.Citizen citizen) { return rows(citizen, SkillCatalog.INSTANCE.tree(citizen.career)); }
+
+    private static List<SkillRow> rows(CitizenState.Citizen citizen, List<SkillNode> nodes) {
+        List<SkillNode> tree = SkillRules.displayOrder(nodes);
         List<SkillRow> rows = new ArrayList<>();
         for (SkillNode node : tree) {
             String blocker = SkillService.blocker(citizen, node);
@@ -186,6 +216,7 @@ public record TerminalData(String city, String career, int level, int xp, double
         for (Offer offer : offers) {
             buf.writeUtf(offer.id, 128); buf.writeUtf(offer.item, 128); buf.writeVarInt(offer.price);
             buf.writeVarInt(offer.stock); buf.writeVarInt(offer.capacity); buf.writeVarInt(offer.maxOrder);
+            buf.writeVarInt(offer.pays); buf.writeVarInt(Math.min(9999, offer.carried));
         }
         buf.writeVarInt(skillPoints);
         buf.writeVarInt(skills.size());
@@ -207,7 +238,37 @@ public record TerminalData(String city, String career, int level, int xp, double
         buf.writeVarInt(heat); buf.writeUtf(lawSummary, 210);
         buf.writeVarInt(journey.size());
         for (Step step : journey) { buf.writeUtf(step.id, 24); buf.writeUtf(step.title, 48); buf.writeUtf(step.hint, 160); buf.writeBoolean(step.done); buf.writeUtf(step.page, 16); }
-        buf.writeUtf(outlet, 8);
+        buf.writeUtf(outlet, 96);
+        buf.writeVarInt(thief.level); buf.writeVarInt(thief.xp); buf.writeVarInt(thief.nextXp); buf.writeVarInt(thief.points);
+        writeSkills(buf, thief.skills);
+    }
+
+    private static void writeSkills(FriendlyByteBuf buf, List<SkillRow> skills) {
+        buf.writeVarInt(skills.size());
+        for (SkillRow row : skills) {
+            buf.writeUtf(row.id, 64); buf.writeUtf(row.branch, 16); buf.writeUtf(row.title, 48); buf.writeUtf(row.description, 180);
+            buf.writeVarInt(row.cost); buf.writeVarInt(row.minLevel); buf.writeVarInt(row.state); buf.writeUtf(row.reason, 96);
+            buf.writeVarInt(row.requires.size());
+            for (String requirement : row.requires) buf.writeUtf(requirement, 48);
+            buf.writeUtf(row.shortTitle, 48);
+            buf.writeUtf(row.effects, 140);
+        }
+    }
+
+    private static List<SkillRow> readSkills(FriendlyByteBuf buf) {
+        int skillCount = buf.readVarInt();
+        if (skillCount < 0 || skillCount > MAX_SKILLS) throw new IllegalArgumentException("Invalid skill count");
+        List<SkillRow> skills = new ArrayList<>();
+        for (int i = 0; i < skillCount; i++) {
+            String id = buf.readUtf(64), branch = buf.readUtf(16), skillTitle = buf.readUtf(48), description = buf.readUtf(180);
+            int cost = buf.readVarInt(), minLevel = buf.readVarInt(), state = buf.readVarInt(); String reason = buf.readUtf(96);
+            int required = buf.readVarInt();
+            if (required < 0 || required > 4) throw new IllegalArgumentException("Invalid prerequisite count");
+            List<String> requires = new ArrayList<>();
+            for (int r = 0; r < required; r++) requires.add(buf.readUtf(48));
+            skills.add(new SkillRow(id, branch, skillTitle, description, cost, minLevel, state, reason, List.copyOf(requires), buf.readUtf(48), buf.readUtf(140)));
+        }
+        return List.copyOf(skills);
     }
 
     static TerminalData read(FriendlyByteBuf buf) {
@@ -239,7 +300,7 @@ public record TerminalData(String city, String career, int level, int xp, double
         if (offerCount < 0 || offerCount > MAX_OFFERS) throw new IllegalArgumentException("Invalid offer count");
         List<Offer> offers = new ArrayList<>();
         for (int i = 0; i < offerCount; i++) {
-            offers.add(new Offer(buf.readUtf(128), buf.readUtf(128), buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readVarInt()));
+            offers.add(new Offer(buf.readUtf(128), buf.readUtf(128), buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readVarInt()));
         }
         int points = buf.readVarInt();
         int skillCount = buf.readVarInt();
@@ -269,8 +330,10 @@ public record TerminalData(String city, String career, int level, int xp, double
         if (stepCount < 0 || stepCount > MAX_STEPS) throw new IllegalArgumentException("Invalid journey count");
         List<Step> journey = new ArrayList<>();
         for (int i = 0; i < stepCount; i++) journey.add(new Step(buf.readUtf(24), buf.readUtf(48), buf.readUtf(160), buf.readBoolean(), buf.readUtf(16)));
-        String outlet = buf.readUtf(8);
+        String outlet = buf.readUtf(96);
+        int thiefLevel = buf.readVarInt(), thiefXp = buf.readVarInt(), thiefNext = buf.readVarInt(), thiefPoints = buf.readVarInt();
+        Thief thief = new Thief(Math.max(1, Math.min(ProgressionRules.THIEF_MAX_LEVEL, thiefLevel)), thiefXp, thiefNext, thiefPoints, readSkills(buf));
         return new TerminalData(city, career, level, xp, balance, economy, active, visits, region, List.copyOf(rows), List.copyOf(offers),
-            points, List.copyOf(skills), List.copyOf(contacts), List.copyOf(laws), heat, lawSummary, List.copyOf(journey), outlet);
+            points, List.copyOf(skills), List.copyOf(contacts), List.copyOf(laws), heat, lawSummary, List.copyOf(journey), outlet, thief);
     }
 }

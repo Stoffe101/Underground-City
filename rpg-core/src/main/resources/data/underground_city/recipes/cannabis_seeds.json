@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "group": "underground_city_restricted",
+  "ingredients": [
+    {
+      "item": "underground_city:rare_seeds"
+    },
+    {
+      "item": "underground_city:agro_catalyst"
+    },
+    {
+      "item": "minecraft:wheat_seeds"
+    }
+  ],
+  "result": {
+    "item": "underground_city:cannabis_seeds",
+    "count": 2
+  }
+}

@@ -41,7 +41,7 @@ import java.util.UUID;
 
 /**
  * Dedicated-server tests of the legal and underground career systems (D-049..D-053): skill trees, gated and
- * located deliveries, trust, the city laws and checkpoint inspections, once-only exceptional loot, the Sable Leaf
+ * located deliveries, trust, the city laws and checkpoint inspections, once-only exceptional loot, the Cannabis
  * crop and the terminal packet. They run against the real loaded datapack.
  */
 @GameTestHolder(UndergroundCity.MOD_ID)
@@ -230,19 +230,19 @@ public final class UndergroundGameTests {
             FakePlayer player = player(helper, "valewood", "farmer", 10);
             QShopEconomy.applyBalance(player, 0);
             WorkOrder order = WorkOrderCatalog.INSTANCE.find("underground_city:quiet_bales");
-            check(order != null && order.underground() && order.terms().buyer().equals("marrow"), "Quiet bale contract missing");
+            check(order != null && order.underground() && order.terms().buyer().equals("marrow"), "Quiet flower contract missing");
             rejected(() -> WorkOrderService.accept(player, fixture.ledger, citizen(player), order.id()));
             learn(player, "farmer.fundamentals", "farmer.greenhouse_management", "farmer.restricted_cultivation", "farmer.underground_trade");
             WorkOrderService.accept(player, fixture.ledger, citizen(player), order.id());
             UUID nonce = fixture.ledger.player(player.getUUID()).getUUID("order");
-            player.getInventory().setItem(0, new ItemStack(core("sable_leaf_bale"), 6));
+            player.getInventory().setItem(0, new ItemStack(core("cannabis_flower"), 6));
             // Valewood is not the buyer's city: the goods must travel to Blackwater.
             rejected(() -> WorkOrderService.complete(player, fixture.ledger, nonce, fixture.pos));
-            check(player.getInventory().countItem(core("sable_leaf_bale")) == 6 && QShopEconomy.balance(player) == 0, "A refused delivery changed something");
+            check(player.getInventory().countItem(core("cannabis_flower")) == 6 && QShopEconomy.balance(player) == 0, "A refused delivery changed something");
             setCity(helper, fixture.pos, "blackwater");
             rejected(() -> WorkOrderService.complete(player, fixture.ledger, nonce, null)); // no terminal, no delivery
             WorkOrderService.complete(player, fixture.ledger, nonce, fixture.pos);
-            check(player.getInventory().countItem(core("sable_leaf_bale")) == 0, "Bales not consumed");
+            check(player.getInventory().countItem(core("cannabis_flower")) == 0, "Flower not consumed");
             check(QShopEconomy.balance(player) == order.credits(), "Wrong underground payout");
             check(fixture.ledger.trust(player.getUUID(), "marrow") == 1, "Trust not earned");
             check(fixture.ledger.heat(player.getUUID(), "blackwater") <= 1, "Heat can rise by at most one per hand-off");
@@ -270,18 +270,18 @@ public final class UndergroundGameTests {
                 WorkOrder small = WorkOrderCatalog.INSTANCE.find("underground_city:quiet_bales");
                 WorkOrderService.accept(player, fixture.ledger, citizen(player), small.id());
                 UUID nonce = fixture.ledger.player(player.getUUID()).getUUID("order");
-                player.getInventory().setItem(0, new ItemStack(core("sable_leaf_bale"), 6));
+                player.getInventory().setItem(0, new ItemStack(core("cannabis_flower"), 6));
                 WorkOrderService.complete(player, fixture.ledger, nonce, fixture.pos);
                 fixture.ledger.advance(small.refillTicks()); // let the buyer's demand recover between runs
             }
             check(fixture.ledger.trust(player.getUUID(), "marrow") == 2, "Two deliveries should earn trust 2");
             WorkOrderService.accept(player, fixture.ledger, citizen(player), big.id());
             UUID nonce = fixture.ledger.player(player.getUUID()).getUUID("order");
-            player.getInventory().setItem(0, new ItemStack(core("sable_leaf_bale"), 12));
+            player.getInventory().setItem(0, new ItemStack(core("cannabis_flower"), 12));
             double before = QShopEconomy.balance(player);
             WorkOrderService.complete(player, fixture.ledger, nonce, fixture.pos);
             check(QShopEconomy.balance(player) == before + big.credits(), "Wrong reserve payout");
-            check(player.getInventory().countItem(core("sable_cutting")) == 2 && player.getInventory().countItem(core("sable_leaf_bale")) == 0, "Reward items not delivered with the payment");
+            check(player.getInventory().countItem(core("cannabis_seeds")) == 2 && player.getInventory().countItem(core("cannabis_flower")) == 0, "Reward items not delivered with the payment");
             check(fixture.ledger.trust(player.getUUID(), "marrow") == 3, "Trust gain missing");
         } finally { fixture.close(); }
         helper.succeed();
@@ -312,8 +312,8 @@ public final class UndergroundGameTests {
 
     @GameTest(template = "empty")
     public static void contrabandIsClassifiedByItemAndNbtAndSpecificBeatsCatchAll(GameTestHelper helper) {
-        check("restricted_cultivar".equals(ContrabandCatalog.INSTANCE.classify(new ItemStack(core("sable_leaf_bale")))), "Bale not controlled");
-        check("restricted_cultivar".equals(ContrabandCatalog.INSTANCE.classify(new ItemStack(core("sable_cutting")))), "Cutting not controlled");
+        check("restricted_cultivar".equals(ContrabandCatalog.INSTANCE.classify(new ItemStack(core("cannabis_flower")))), "Flower not controlled");
+        check("restricted_cultivar".equals(ContrabandCatalog.INSTANCE.classify(new ItemStack(core("cannabis_seeds")))), "Seed not controlled");
         check("restricted_components".equals(ContrabandCatalog.INSTANCE.classify(new ItemStack(core("unstamped_plate")))), "Unstamped plate not controlled");
         check("restricted_electronics".equals(ContrabandCatalog.INSTANCE.classify(new ItemStack(core("bypass_kit")))), "Bypass kit not restricted");
         check(ContrabandCatalog.INSTANCE.classify(new ItemStack(Items.WHEAT)) == null && ContrabandCatalog.INSTANCE.classify(new ItemStack(core("machined_parts"))) == null,
@@ -421,13 +421,13 @@ public final class UndergroundGameTests {
             FakePlayer player = player(helper, "valewood", "farmer", 3);
             QShopEconomy.applyBalance(player, 100);
             ItemStack keepsake = new ItemStack(Items.IRON_SWORD); keepsake.setHoverName(net.minecraft.network.chat.Component.literal("Keepsake"));
-            player.getInventory().setItem(0, new ItemStack(core("sable_leaf_bale"), 6));
+            player.getInventory().setItem(0, new ItemStack(core("cannabis_flower"), 6));
             player.getInventory().setItem(1, new ItemStack(Items.WHEAT, 16));
             player.getInventory().setItem(2, keepsake);
-            player.setItemInHand(InteractionHand.OFF_HAND, new ItemStack(core("sable_cutting"), 2));
+            player.setItemInHand(InteractionHand.OFF_HAND, new ItemStack(core("cannabis_seeds"), 2));
             var result = CheckpointService.inspect(player, citizen(player), gate, valewood, fixture.ledger);
-            check(result.outcome() == CheckpointService.Outcome.SEIZED && result.stacksSeized() == 2, "Bale and cutting should be seized: " + result);
-            check(player.getInventory().countItem(core("sable_leaf_bale")) == 0 && player.getOffhandItem().isEmpty(), "Contraband not removed");
+            check(result.outcome() == CheckpointService.Outcome.SEIZED && result.stacksSeized() == 2, "Flower and seed should be seized: " + result);
+            check(player.getInventory().countItem(core("cannabis_flower")) == 0 && player.getOffhandItem().isEmpty(), "Contraband not removed");
             check(player.getInventory().countItem(Items.WHEAT) == 16 && player.getInventory().getItem(2).hasCustomHoverName(), "Legal and personal goods must never be taken");
             check(QShopEconomy.balance(player) == 100 - valewood.fine(CityLaws.PROHIBITED) && result.fine() == valewood.fine(CityLaws.PROHIBITED),
                 "One fine per category, not per stack: " + QShopEconomy.balance(player));
@@ -459,7 +459,7 @@ public final class UndergroundGameTests {
             boat.moveTo(helper.absolutePos(new BlockPos(2, 2, 2)).getX() + 0.5, helper.absolutePos(new BlockPos(2, 2, 2)).getY(), helper.absolutePos(new BlockPos(2, 2, 2)).getZ() + 0.5);
             level.addFreshEntity(boat);
             var hold = (net.minecraft.world.Container) boat;
-            hold.setItem(0, new ItemStack(core("sable_leaf_bale"), 6));
+            hold.setItem(0, new ItemStack(core("cannabis_flower"), 6));
             hold.setItem(1, new ItemStack(Items.WHEAT, 16));
             // The boat is parked somewhere else: the driver is searched, the hold is not (nothing is known about what is not here).
             var parked = CheckpointService.inspect(driver, citizen(driver), gate, valewood, fixture.ledger);
@@ -468,7 +468,7 @@ public final class UndergroundGameTests {
             driver.startRiding(boat, true);
             check(driver.getVehicle() == boat, "The driver is in the boat");
             var result = CheckpointService.inspect(driver, citizen(driver), gate, valewood, fixture.ledger);
-            check(result.outcome() == CheckpointService.Outcome.SEIZED && result.stacksSeized() == 1, "The bale in the hold is seized: " + result);
+            check(result.outcome() == CheckpointService.Outcome.SEIZED && result.stacksSeized() == 1, "The flower in the hold is seized: " + result);
             check(hold.getItem(0).isEmpty() && hold.getItem(1).getCount() == 16, "Only the forbidden cargo is taken from the hold");
             check(QShopEconomy.balance(driver) == 100 - valewood.fine(CityLaws.PROHIBITED), "The fine is charged: " + QShopEconomy.balance(driver));
             boat.discard();
@@ -493,9 +493,9 @@ public final class UndergroundGameTests {
             helper.getLevel().setBlock(ground, net.minecraft.world.level.block.Blocks.STONE.defaultBlockState(), 3);
             List<String> problems = new java.util.ArrayList<>();
             net.minecraft.world.entity.Entity quad = OptionalModProbes.placeVehicleWithCrate(driver, ground, "mts:mtsofficialpack.quad_red", "mts:mtsofficialpack.crate",
-                List.of(new ItemStack(core("sable_leaf_bale"), 6), new ItemStack(Items.WHEAT, 16)), problems);
+                List.of(new ItemStack(core("cannabis_flower"), 6), new ItemStack(Items.WHEAT, 16)), problems);
             check(problems.isEmpty() && quad != null, "A real Quad with a real crate: " + problems);
-            // The crate is the vehicle's hold: three slots or more, the bale first, the wheat second.
+            // The crate is the vehicle's hold: three slots or more, the flower first, the wheat second.
             VehicleCargo.Hold before = VehicleCargo.of(quad);
             check(before != null && before.size() >= 2 && before.get(0).getCount() == 6 && before.get(1).getCount() == 16, "The adapter must see the crate's slots");
             // The seat side: a rider is attached to a seat part, and the seat leads to the same vehicle and the same crate.
@@ -508,7 +508,7 @@ public final class UndergroundGameTests {
             check(parked.outcome() == CheckpointService.Outcome.CLEARED && VehicleCargo.of(quad).get(0).getCount() == 6, "A parked Quad must not be searched: " + parked);
             // Brought into the zone: the contraband goes, the wheat stays, the fine is charged.
             var result = CheckpointService.inspect(driver, citizen(driver), gate, valewood, fixture.ledger, quad);
-            check(result.outcome() == CheckpointService.Outcome.SEIZED && result.stacksSeized() == 1, "The bale in the crate is seized: " + result);
+            check(result.outcome() == CheckpointService.Outcome.SEIZED && result.stacksSeized() == 1, "The flower in the crate is seized: " + result);
             VehicleCargo.Hold after = VehicleCargo.of(quad);
             check(after.get(0).isEmpty() && after.get(1).getCount() == 16, "Only the forbidden cargo leaves the crate");
             check(QShopEconomy.balance(driver) == 100 - valewood.fine(CityLaws.PROHIBITED), "The fine is charged: " + QShopEconomy.balance(driver));
@@ -526,15 +526,15 @@ public final class UndergroundGameTests {
             CheckpointCatalog.Checkpoint gate = new CheckpointCatalog.Checkpoint("test_gate", "Test gate", "blackwater", "minecraft:overworld", 0, 0, 48, "inspection");
             FakePlayer grower = player(helper, "valewood", "farmer", 12);
             QShopEconomy.applyBalance(grower, 100);
-            grower.getInventory().setItem(0, new ItemStack(core("sable_leaf_bale"), 6));
+            grower.getInventory().setItem(0, new ItemStack(core("cannabis_flower"), 6));
             // Blackwater: controlled crops need a permit. Without the licence they are seized (permit-level fine) ...
             var unlicensed = CheckpointService.inspect(grower, citizen(grower), gate, CityLaws.INSTANCE.find("blackwater"), fixture.ledger);
             check(unlicensed.outcome() == CheckpointService.Outcome.SEIZED && unlicensed.fine() == CityLaws.INSTANCE.find("blackwater").fine(CityLaws.PERMIT), "Unlicensed carrying should cost the permit fine");
             // ... with the Controlled-Crop Licence the same goods are legal here.
             learn(grower, "farmer.fundamentals", "farmer.greenhouse_management", "farmer.restricted_cultivation", "farmer.controlled_crop_licence");
-            grower.getInventory().setItem(0, new ItemStack(core("sable_leaf_bale"), 6));
+            grower.getInventory().setItem(0, new ItemStack(core("cannabis_flower"), 6));
             var licensed = CheckpointService.inspect(grower, citizen(grower), gate, CityLaws.INSTANCE.find("blackwater"), fixture.ledger);
-            check(licensed.outcome() == CheckpointService.Outcome.CLEARED && grower.getInventory().countItem(core("sable_leaf_bale")) == 6, "A licensed handler must be left alone in a permit city");
+            check(licensed.outcome() == CheckpointService.Outcome.CLEARED && grower.getInventory().countItem(core("cannabis_flower")) == 6, "A licensed handler must be left alone in a permit city");
             // ... but the licence is no defence in a city where the crop is prohibited outright.
             var valewood = new CheckpointCatalog.Checkpoint("test_gate2", "Test gate", "valewood", "minecraft:overworld", 0, 0, 48, "inspection");
             var stillIllegal = CheckpointService.inspect(grower, citizen(grower), valewood, CityLaws.INSTANCE.find("valewood"), fixture.ledger);
@@ -570,7 +570,7 @@ public final class UndergroundGameTests {
         check(cache != null && ExceptionalLoot.INSTANCE.find(cache.id()) != null, "Criminal caches need an exceptional table");
         check(ExceptionalLoot.INSTANCE.find(UndergroundCity.MOD_ID + ":apartment_common") == null, "Ordinary homes must never hold exceptional finds");
         var level = helper.getLevel();
-        Set<String> exceptionalCore = Set.of("data_ledger", "unstamped_plate", "sable_leaf_bale", "heirloom_seed_packet",
+        Set<String> exceptionalCore = Set.of("data_ledger", "unstamped_plate", "cannabis_flower", "heirloom_seed_packet",
             "prototype_alloy_ingot", "circuit_prototype", "optics_schematic");
         int exceptional = 0;
         for (int i = 0; i < 160; i++) {
@@ -627,21 +627,32 @@ public final class UndergroundGameTests {
 
     // ------------------------------------------------------------------------------------------ crop
 
-    @GameTest(template = "empty")
-    public static void sableLeafGrowsOnlyWithNutrientAndYieldsBalesNotMoney(GameTestHelper helper) {
+    @GameTest(template = "empty", timeoutTicks = 800)
+    public static void cannabisGrowsOnlyWithNutrientAndYieldsFlowerNotMoney(GameTestHelper helper) {
         var level = helper.getLevel();
         BlockPos ground = helper.absolutePos(new BlockPos(2, 1, 2));
+        // The test cell may sit inside natural terrain (the grid of tests moves when tests are added; a hosted run found the lamp's light walled off from the plant): clear its room first.
+        for (int dx = -1; dx <= 2; dx++) for (int dz = -1; dz <= 1; dz++) for (int dy = 1; dy <= 3; dy++) level.setBlockAndUpdate(ground.offset(dx, dy, dz), Blocks.AIR.defaultBlockState());
         level.setBlockAndUpdate(ground, Blocks.FARMLAND.defaultBlockState());
         level.setBlockAndUpdate(ground.east(), Blocks.GLOWSTONE.defaultBlockState()); // a grow lamp: brightness 15 whatever the weather
-        level.setBlockAndUpdate(ground.above(), UndergroundCity.SABLE_CROP.get().defaultBlockState());
-        // The light engine runs between ticks, so the plant is only judged once the lamp's light has settled.
-        helper.runAfterDelay(40, () -> sableLeafBody(helper, ground));
+        level.setBlockAndUpdate(ground.above(), UndergroundCity.CANNABIS_PLANT.get().defaultBlockState());
+        // The light engine runs between ticks, so the plant is only judged once the lamp's light has reached it. A fixed wait of 40 ticks failed on a hosted runner (the stage
+        // never came), where a busy light engine or a cell with no sky above can take longer.
+        whenLit(helper, ground.above(), 0, () -> cannabisBody(helper, ground));
     }
 
-    private static void sableLeafBody(GameTestHelper helper, BlockPos ground) {
+    /** Runs {@code then} once the block at {@code pos} has the light a crop needs (checked every ten ticks, at least twenty in); fails with the light it had if it never comes. */
+    private static void whenLit(GameTestHelper helper, BlockPos pos, int waited, Runnable then) {
+        int light = helper.getLevel().getRawBrightness(pos, 0);
+        if (waited >= 20 && light >= RestrictedCropBlock.LIGHT_NEEDED) { then.run(); return; }
+        check(waited < 600, "The lamp's light never reached the plant: light " + light + " after " + waited + " ticks, " + RestrictedCropBlock.LIGHT_NEEDED + " needed");
+        helper.runAfterDelay(10, () -> whenLit(helper, pos, waited + 10, then));
+    }
+
+    private static void cannabisBody(GameTestHelper helper, BlockPos ground) {
         var level = helper.getLevel();
         BlockPos pos = ground.above();
-        RestrictedCropBlock crop = (RestrictedCropBlock) UndergroundCity.SABLE_CROP.get();
+        RestrictedCropBlock crop = (RestrictedCropBlock) UndergroundCity.CANNABIS_PLANT.get();
         FakePlayer player = player(helper, "valewood", "farmer", 1);
         RandomSource random = RandomSource.create(7);
         for (int i = 0; i < 400; i++) crop.randomTick(level.getBlockState(pos), level, pos, random);
@@ -654,23 +665,24 @@ public final class UndergroundGameTests {
             check(player.getMainHandItem().isEmpty() && level.getBlockState(pos).getValue(RestrictedCropBlock.NOURISHED), "One dose is consumed per stage");
             int guard = 0;
             while (level.getBlockState(pos).getValue(RestrictedCropBlock.AGE) < stage && guard++ < 2000) crop.randomTick(level.getBlockState(pos), level, pos, random);
-            check(level.getBlockState(pos).getValue(RestrictedCropBlock.AGE) == stage && !level.getBlockState(pos).getValue(RestrictedCropBlock.NOURISHED), "Stage " + stage + " not reached or dose not used up");
+            check(level.getBlockState(pos).getValue(RestrictedCropBlock.AGE) == stage && !level.getBlockState(pos).getValue(RestrictedCropBlock.NOURISHED),
+                "Stage " + stage + " not reached or dose not used up (light " + level.getRawBrightness(pos, 0) + ", " + RestrictedCropBlock.LIGHT_NEEDED + " needed)");
         }
         // Mature: another dose does nothing, bone meal does nothing.
         player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(core("cultivation_nutrient")));
         check(crop.use(level.getBlockState(pos), level, pos, player, InteractionHand.MAIN_HAND, new BlockHitResult(Vec3.atCenterOf(pos), Direction.UP, pos, false)) == InteractionResult.PASS, "A mature plant must refuse nutrient");
-        check(!crop.isValidBonemealTarget(level, pos, level.getBlockState(pos), false), "Bone meal must not grow Sable Leaf");
-        // Harvest: mature plants yield two or three bales, young ones never do.
-        int bales = 0, mature = 80, cuttings = 0;
+        check(!crop.isValidBonemealTarget(level, pos, level.getBlockState(pos), false), "Bone meal must not grow Cannabis");
+        // Harvest: mature plants yield two or three flower, young ones never do.
+        int flower = 0, mature = 80, seeds = 0;
         for (int i = 0; i < mature; i++) {
             for (ItemStack drop : Block_getDrops(level, pos, level.getBlockState(pos))) {
-                if (drop.is(core("sable_leaf_bale"))) { check(drop.getCount() >= 2 && drop.getCount() <= 3, "A harvest yields two or three bales"); bales += drop.getCount(); }
-                if (drop.is(core("sable_cutting"))) cuttings += drop.getCount();
+                if (drop.is(core("cannabis_flower"))) { check(drop.getCount() >= 2 && drop.getCount() <= 3, "A harvest yields two or three flower"); flower += drop.getCount(); }
+                if (drop.is(core("cannabis_seeds"))) seeds += drop.getCount();
             }
         }
-        check(bales >= mature * 2 && bales <= mature * 3, "Bale yield out of range: " + bales);
-        check(cuttings >= mature * 0.2 && cuttings <= mature * 0.65, "A mature plant returns a cutting about 40% of the time: " + cuttings);
-        for (ItemStack drop : Block_getDrops(level, pos, crop.defaultBlockState())) check(!drop.is(core("sable_leaf_bale")), "A young plant must not yield bales");
+        check(flower >= mature * 2 && flower <= mature * 3, "Flower yield out of range: " + flower);
+        check(seeds >= mature * 0.2 && seeds <= mature * 0.65, "A mature plant returns a seed about 40% of the time: " + seeds);
+        for (ItemStack drop : Block_getDrops(level, pos, crop.defaultBlockState())) check(!drop.is(core("cannabis_flower")), "A young plant must not yield flower");
         helper.succeed();
     }
 
@@ -678,7 +690,7 @@ public final class UndergroundGameTests {
         return net.minecraft.world.level.block.Block.getDrops(state, level, pos, null);
     }
 
-    @GameTest(template = "empty")
+    @GameTest(template = "empty", timeoutTicks = 400)
     public static void onlyAFarmerWhoLearnedRestrictedCultivationCanPlantACutting(GameTestHelper helper) {
         var level = helper.getLevel();
         BlockPos ground = helper.absolutePos(new BlockPos(4, 1, 4));
@@ -688,22 +700,26 @@ public final class UndergroundGameTests {
         level.setBlockAndUpdate(ground.east(), Blocks.GLOWSTONE.defaultBlockState());
         // A crop only survives in light 8 or more and the light engine runs between ticks, so wait for the lamp. A test
         // world under a roof, or at night, would otherwise refuse the plant for a reason that has nothing to do with the skill.
-        helper.runAfterDelay(40, () -> plantingBody(helper, ground));
+        // Waited for until the plant could stand there, not for a fixed 40 ticks: a hosted runner 178 ticks behind refused the trained farmer (October 23).
+        helper.runAfterDelay(20, () -> UndergroundGameTests.waitUntil(helper, () -> UndergroundCity.CANNABIS_PLANT.get().defaultBlockState().canSurvive(level, ground.above()), 0,
+            () -> plantingBody(helper, ground)));
     }
 
     private static void plantingBody(GameTestHelper helper, BlockPos ground) {
         var level = helper.getLevel();
         FakePlayer untrained = player(helper, "valewood", "farmer", 10);
-        ItemStack cutting = new ItemStack(core("sable_cutting"), 2);
-        untrained.setItemInHand(InteractionHand.MAIN_HAND, cutting);
+        ItemStack seed = new ItemStack(core("cannabis_seeds"), 2);
+        untrained.setItemInHand(InteractionHand.MAIN_HAND, seed);
         var hit = new BlockHitResult(Vec3.atCenterOf(ground), Direction.UP, ground, false);
-        InteractionResult refused = cutting.useOn(new net.minecraft.world.item.context.UseOnContext(untrained, InteractionHand.MAIN_HAND, hit));
-        check(refused == InteractionResult.FAIL, "An untrained farmer planted a controlled cutting (result " + refused + ")");
+        InteractionResult refused = seed.useOn(new net.minecraft.world.item.context.UseOnContext(untrained, InteractionHand.MAIN_HAND, hit));
+        check(refused == InteractionResult.FAIL, "An untrained farmer planted a controlled seed (result " + refused + ")");
         check(level.getBlockState(ground.above()).isAir(), "The plant appeared anyway: " + level.getBlockState(ground.above()) + " above " + level.getBlockState(ground)
             + ", skill held: " + SkillService.has(untrained, RestrictedCuttingItem.SKILL));
         learn(untrained, "farmer.fundamentals", "farmer.greenhouse_management", "farmer.restricted_cultivation");
-        check(cutting.useOn(new net.minecraft.world.item.context.UseOnContext(untrained, InteractionHand.MAIN_HAND, hit)).consumesAction(), "A trained farmer could not plant");
-        check(level.getBlockState(ground.above()).is(UndergroundCity.SABLE_CROP.get()), "No Sable Leaf plant was placed");
+        InteractionResult planted = seed.useOn(new net.minecraft.world.item.context.UseOnContext(untrained, InteractionHand.MAIN_HAND, hit));
+        check(planted.consumesAction(), "A trained farmer could not plant (result " + planted + ", light " + level.getMaxLocalRawBrightness(ground.above()) + ", the plant could stand there "
+            + UndergroundCity.CANNABIS_PLANT.get().defaultBlockState().canSurvive(level, ground.above()) + ", above the soil " + level.getBlockState(ground.above()) + ")");
+        check(level.getBlockState(ground.above()).is(UndergroundCity.CANNABIS_PLANT.get()), "No cannabis plant was placed");
         helper.succeed();
     }
 
@@ -736,8 +752,8 @@ public final class UndergroundGameTests {
             check(sent.contacts().stream().anyMatch(c -> c.underground()), "A farmer with an underground skill must be introduced to a Blackwater buyer");
             check(sent.laws().stream().anyMatch(l -> l.category().equals("restricted_cultivar") && l.status().equals("permit") && l.licensed()), "The licence must show as satisfied");
             check(sent.jobs().stream().anyMatch(j -> j.extra().underground()) && sent.jobs().stream().anyMatch(j -> !j.extra().underground()), "Both legal and underground rows expected");
-            TerminalData.Row bales = sent.jobs().stream().filter(j -> j.id().endsWith(":quiet_bales")).findFirst().orElseThrow();
-            check(!bales.extra().skillOk() && bales.extra().buyerCity().equals("blackwater") && bales.extra().buyer().startsWith("Marrow"), "Underground row presentation");
+            TerminalData.Row flower = sent.jobs().stream().filter(j -> j.id().endsWith(":quiet_bales")).findFirst().orElseThrow();
+            check(!flower.extra().skillOk() && flower.extra().buyerCity().equals("blackwater") && flower.extra().buyer().startsWith("Marrow"), "Underground row presentation");
             FriendlyByteBuf buffer = new FriendlyByteBuf(Unpooled.buffer());
             sent.write(buffer);
             TerminalData received = TerminalData.read(buffer);
@@ -1003,7 +1019,8 @@ public final class UndergroundGameTests {
             // Without the blueprint: a craft request for the pistol is refused on the server, and takes nothing.
             String refused = OptionalModProbes.craftAtTaczTable(player, "gun", "tacz:glock_17");
             check(OptionalModProbes.countTagged(player, "tacz:modern_kinetic_gun", "GunId", "tacz:glock_17") == 0, "No pistol without the blueprint (" + refused + ")");
-            check(player.getInventory().countItem(Items.IRON_INGOT) == iron && player.getInventory().countItem(Items.COPPER_INGOT) == copper, "A refused craft consumed nothing");
+            check(player.getInventory().countItem(Items.IRON_INGOT) == iron && player.getInventory().countItem(Items.COPPER_INGOT) == copper,
+                "A refused craft consumed nothing: iron " + iron + " -> " + player.getInventory().countItem(Items.IRON_INGOT) + ", copper " + copper + " -> " + player.getInventory().countItem(Items.COPPER_INGOT));
             // The decision itself, for another gun the player has no blueprint for, and for one they have.
             ItemStack other = new ItemStack(ForgeRegistries.ITEMS.getValue(ResourceLocation.parse("tacz:modern_kinetic_gun")));
             other.getOrCreateTag().putString("GunId", "tacz:ak47");
@@ -1165,6 +1182,65 @@ public final class UndergroundGameTests {
             }
             helper.succeed();
         });
+    }
+
+    @GameTest(template = "empty")
+    public static void aDistrictSiteSearchStopsWhereNothingNearerCanWin(GameTestHelper helper) {
+        // The archipelago's landing is a flat plateau: every lot fits. The first start must not read the terrain under all of them (an exhaustive search took
+        // more than nine minutes with the real chunk generator).
+        int[] calls = {0};
+        DistrictSites.Ground flat = new DistrictSites.Ground() {
+            @Override public int height(int x, int z) { calls[0]++; return 70; }
+            @Override public boolean wet(int x, int z) { calls[0]++; return false; }
+            @Override public boolean reserved(int x, int z) { return false; }
+        };
+        var site = DistrictSites.find(flat, 0, 0, 94, 60, 3, 160).orElseThrow(() -> new IllegalStateException("no site on flat ground"));
+        check(site.relief() == 0 && site.distance() == 0, "On flat ground the nearest lot wins: " + site);
+        check(calls[0] < 4000, "The search stopped at the first lot (" + calls[0] + " terrain reads)");
+        // The answer is still the best one: a bump at the origin pushes the winner out, to the cheapest of all candidates.
+        DistrictSites.Ground bump = new DistrictSites.Ground() {
+            @Override public int height(int x, int z) { return Math.abs(x) < 20 && Math.abs(z) < 20 ? 78 : 70; }
+            @Override public boolean wet(int x, int z) { return false; }
+            @Override public boolean reserved(int x, int z) { return false; }
+        };
+        var pushed = DistrictSites.find(bump, 0, 0, 25, 41, 3, 160).orElseThrow(() -> new IllegalStateException("no site beside the bump"));
+        double best = Double.MAX_VALUE;
+        for (int dx = -160; dx <= 160; dx += DistrictSites.STEP) for (int dz = -160; dz <= 160; dz += DistrictSites.STEP) {
+            double distance = Math.hypot(dx, dz);
+            if (distance > 160) continue;
+            var other = DistrictSites.evaluate(bump, dx - 12, dz - 20, 25, 41, distance);
+            if (other != null && other.relief() <= 3) best = Math.min(best, other.relief() * 12.0 + other.distance());
+        }
+        check(Math.abs(pushed.relief() * 12.0 + pushed.distance() - best) < 1e-9, "The early exit finds the same cost as an exhaustive search: " + pushed + " vs " + best);
+        // A site that will be graded does not care about relief: with a weight of zero the nearest lot that is not too steep wins at once, on ground that is never level.
+        int[] rolling = {0};
+        DistrictSites.Ground hills = new DistrictSites.Ground() {
+            @Override public int height(int x, int z) { rolling[0]++; return 70 + (Math.floorMod(x / 8 + z / 8, 5)) * 3; }
+            @Override public boolean wet(int x, int z) { return false; }
+            @Override public boolean reserved(int x, int z) { return false; }
+        };
+        var graded = DistrictSites.find(hills, 0, 0, 94, 60, 24, 200, 0.0).orElseThrow(() -> new IllegalStateException("no site on rolling ground"));
+        check(graded.distance() == 0, "With a relief weight of zero the nearest feasible lot wins: " + graded);
+        check(rolling[0] < 4000, "The search for a lot that will be graded stopped at the first lot (" + rolling[0] + " terrain reads)");
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty")
+    public static void theLandingIsLevelInsideTheLotAndEasesBackOverTheRamp(GameTestHelper helper) {
+        var lot = new LandingGrader.Rect(0, 0, 100, 50);
+        check(LandingGrader.target(lot, 72, 85, 50, 25) == 72 && LandingGrader.target(lot, 72, 60, 0, 0) == 72 && LandingGrader.target(lot, 72, 60, 100, 50) == 72, "Inside the lot (corners included) the ground is the level");
+        check(LandingGrader.target(lot, 72, 85, 100 + LandingGrader.RAMP, 25) == 85 && LandingGrader.target(lot, 72, 85, -LandingGrader.RAMP - 5, 25) == 85, "Beyond the ramp the ground is as it was made");
+        int previous = 72;
+        for (int d = 1; d <= LandingGrader.RAMP; d++) {
+            int height = LandingGrader.target(lot, 72, 85, 100 + d, 25);
+            check(height >= previous && height - previous <= 2, "The ramp climbs without a cliff: " + previous + " to " + height + " at " + d);
+            previous = height;
+        }
+        check(previous == 85, "The ramp ends at the natural height");
+        var footprint = DevBootstrap.footprint(33, 49);
+        check(footprint.width() == footprint.left() + footprint.right() && footprint.depth() == 57, "The footprint is the range, the Row, the flats and the motel and the lane's gate: " + footprint);
+        check(footprint.left() == 40 && footprint.right() == 33 + 3 + 24 + 3 + 24, "The footprint matches the district catalogue's sizes: " + footprint);
+        helper.succeed();
     }
 
     @GameTest(template = "empty")

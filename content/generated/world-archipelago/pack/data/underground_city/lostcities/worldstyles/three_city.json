@@ -1,0 +1,12 @@
+{
+  "bridgesupport": "v",
+  "citybiomemultipliers": [],
+  "citystyles": [
+    {
+      "citystyle": "lostcities:citystyle_standard",
+      "factor": 1.0
+    }
+  ],
+  "highwaysupport": "v",
+  "outsidestyle": "lostcities:outside"
+}

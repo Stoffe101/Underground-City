@@ -6,7 +6,7 @@
       "id": "technician.fundamentals",
       "branch": "core",
       "title": "Bench Electronics",
-      "description": "Soldering, schematics and test gear. Opens every other technician skill.",
+      "description": "Test gear: repair up to tier III and make circuit boards at the bench.",
       "cost": 1,
       "min_level": 2,
       "requires": [],
@@ -16,7 +16,7 @@
       "id": "technician.municipal_repairs",
       "branch": "legal",
       "title": "Municipal Repairs",
-      "description": "Keep the city's terminals running. Unlocks municipal repair contracts.",
+      "description": "Repair any building, with a third try; the scanner; terminal contracts.",
       "cost": 2,
       "min_level": 3,
       "requires": [
@@ -28,7 +28,7 @@
       "id": "technician.automation_install",
       "branch": "legal",
       "title": "Automation Installer",
-      "description": "Fit automation to businesses: unlocks commercial automation contracts.",
+      "description": "Fit monitored alarms from the service board; automation contracts.",
       "cost": 2,
       "min_level": 5,
       "requires": [
@@ -42,7 +42,7 @@
       "id": "technician.security_systems",
       "branch": "legal",
       "title": "Security Systems",
-      "description": "Licensed alarm and access installer: restricted electronics are legal.",
+      "description": "Licensed installer: restricted electronics legal; your alarms last twice.",
       "cost": 3,
       "min_level": 8,
       "requires": [
@@ -59,7 +59,7 @@
       "branch": "legal",
       "title": "Systems Integrator",
       "short_title": "Sys. Integrator",
-      "description": "Whole-building contracts.",
+      "description": "Whole-building network upgrades from the service board.",
       "cost": 2,
       "min_level": 11,
       "requires": [
@@ -102,7 +102,7 @@
       "id": "technician.bypass_tooling",
       "branch": "underground",
       "title": "Bypass Tooling",
-      "description": "Defeat secured terminals: unlocks data recovery and the Bypass Kit.",
+      "description": "Secured terminals, alarm jams, and back-channel jobs at a building's panel.",
       "cost": 3,
       "min_level": 7,
       "requires": [
@@ -114,7 +114,7 @@
       "id": "technician.signal_scrubbing",
       "branch": "underground",
       "title": "Signal Scrubbing",
-      "description": "Leave no trace on the wire.",
+      "description": "Leave no trace on the wire; back-channel work on the top tiers.",
       "cost": 2,
       "min_level": 9,
       "requires": [

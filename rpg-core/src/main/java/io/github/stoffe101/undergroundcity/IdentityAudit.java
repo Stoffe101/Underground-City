@@ -83,7 +83,7 @@ public final class IdentityAudit {
         if (!(event.getEntity() instanceof ServerPlayer player) || player instanceof FakePlayer || player.server.usesAuthentication()) return;
         CrewLedger ledger = CrewService.ledger(player.server);
         if (ledger != null && ledger.crewOf(player.getUUID()) != null) {
-            Notice.send(player, Notice.Kind.WARN, "Accounts are not verified here", "This server does not check who is who. Anyone could join as you and use your Crew bank. Play it among friends only.");
+            Notice.send(player, Notice.Kind.WARN, "Accounts are not verified here", "Anyone could join as you and use your Crew bank. Play among friends only.");
         }
     }
 

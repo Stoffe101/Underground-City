@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "city": "ironhaven",
+  "item": "underground_city:barrel_hoops",
+  "unit_price": 8,
+  "initial": 6,
+  "capacity": 12,
+  "units_per_interval": 2,
+  "interval_ticks": 72000,
+  "max_order": 6,
+  "outlets": [
+    "shop:builders"
+  ],
+  "supply": {
+    "pays": 5,
+    "xp": 2,
+    "career": "smith"
+  }
+}

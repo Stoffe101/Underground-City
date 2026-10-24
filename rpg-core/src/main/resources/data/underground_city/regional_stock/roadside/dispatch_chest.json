@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "city": "blackwater",
+  "item": "minecraft:chest",
+  "unit_price": 8,
+  "initial": 6,
+  "capacity": 12,
+  "units_per_interval": 3,
+  "interval_ticks": 36000,
+  "max_order": 6,
+  "outlets": [
+    "shop:dispatch"
+  ]
+}

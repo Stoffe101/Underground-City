@@ -97,6 +97,9 @@ public final class CitizenState extends SavedData {
         return updated;
     }
 
+    /** Adds thievery XP (D-143). Returns the new total. */
+    public int addThiefXp(UUID uuid, int amount) { return addGeneralXp(uuid, ProgressionRules.THIEVERY, amount); }
+
     /** Records a skill. Prerequisites and points are checked by SkillService before this is called. */
     void unlockSkill(UUID uuid, String skillId) {
         Citizen citizen = citizens.get(uuid);
@@ -192,5 +195,8 @@ public final class CitizenState extends SavedData {
         public int generalLevel(String skill) {
             return ProgressionRules.levelForXp(generalXp.getOrDefault(skill, 0));
         }
+        /** Thievery XP and the Thief level it gives (D-143): a track of its own, never the career's. */
+        public int thiefXp() { return generalXp.getOrDefault(ProgressionRules.THIEVERY, 0); }
+        public int thiefLevel() { return ProgressionRules.thiefLevelForXp(thiefXp()); }
     }
 }

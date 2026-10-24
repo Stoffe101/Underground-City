@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "city": "ironhaven",
+  "title": "The Yard",
+  "blurb": "A warehouse office at night. Metal, tools, parts and old watches.",
+  "rate_percent": 45,
+  "same_city_rate_percent": 30,
+  "same_city_heat": 1,
+  "budget": 450,
+  "refill_credits": 60,
+  "refill_minutes": 10,
+  "from_hour": 21,
+  "to_hour": 3,
+  "specialties": [
+    "underground_city:power_drill",
+    "underground_city:machined_parts",
+    "underground_city:refined_alloy",
+    "underground_city:control_circuits",
+    "underground_city:cash_box",
+    "minecraft:iron_ingot",
+    "minecraft:copper_ingot",
+    "minecraft:gold_ingot",
+    "underground_city:vintage_wine",
+    "underground_city:pocket_watch"
+  ]
+}

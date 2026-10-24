@@ -201,6 +201,237 @@ def ledger_wood():
     return s
 
 
+# ------------------------------------------------------------------------------------------------------- Alarm panel (D-128)
+PANEL = ramp('#d9d4c7')
+PANEL_LIGHTS = {'off': None, 'armed': RED, 'entry': AMBER, 'jammed': BLUE}
+
+
+def panel_front(light):
+    """A wall keypad, 8 x 10 pixels at (4, 3): a cream plastic case, a small display, a status light and a keypad. ``light`` is the light's ramp, or None when it is dark."""
+    s = Sprite()
+    s.rect(0, 0, 15, 15, PANEL[2])
+    s.rect(4, 3, 11, 12, PANEL[2])
+    s.line(4, 3, 11, 3, PANEL[4]); s.line(4, 3, 4, 12, PANEL[3])
+    s.line(4, 12, 11, 12, PANEL[0]); s.line(11, 4, 11, 12, PANEL[1])
+    s.rect(5, 4, 10, 5, INK)
+    if light:
+        s.rect(6, 5, 8, 5, light[1]); s.put(5, 4, light[2])
+        s.rect(9, 7, 10, 7, light[4]); s.put(9, 7, light[3])
+    else:
+        s.rect(9, 7, 10, 7, PLASTIC_BLACK[1])
+    for ky in (7, 9, 11):
+        for kx in (5, 7):
+            if ky == 7 and kx == 7:
+                continue
+            s.put(kx, ky, STEEL[1]); s.put(kx + 1, ky, STEEL[2])
+    s.rect(9, 9, 10, 11, PLASTIC_BLACK[1]); s.line(9, 9, 10, 9, PLASTIC_BLACK[2])
+    return s
+
+
+for _name, _ramp in PANEL_LIGHTS.items():
+    TEXTURES['alarm_panel_' + _name] = (lambda r=_ramp: panel_front(r))
+
+
+@tex
+def alarm_panel_case():
+    s = Sprite()
+    s.rect(0, 0, 15, 15, PANEL[1])
+    s.line(0, 0, 15, 0, PANEL[3]); s.line(0, 15, 15, 15, PANEL[0])
+    return s
+
+
+# ------------------------------------------------------------------------------------------------ Scrap heap (D-138)
+RUST = ramp('#8a4b2a')
+
+
+@tex
+def scrap_heap():
+    """A tangle of salvage seen from any side: dark iron, rusted plate, a bright edge of steel, a copper coil and a bolt or two."""
+    s = Sprite()
+    rnd = random.Random(1701)
+    for y in range(16):
+        for x in range(16):
+            s.put(x, y, GUNMETAL[rnd.choice((0, 1, 1, 2))])
+    for (x0, y0, x1, y1) in ((1, 2, 6, 5), (9, 1, 14, 3), (3, 9, 8, 12), (10, 8, 14, 13), (0, 13, 3, 15)):
+        for y in range(y0, y1 + 1):
+            for x in range(x0, x1 + 1):
+                s.put(x, y, RUST[rnd.choice((1, 2, 2, 3))])
+        s.line(x0, y0, x1, y0, RUST[3])
+        s.line(x0, y1, x1, y1, RUST[0])
+    for (x0, y0, x1) in ((7, 6, 13), (2, 7, 6), (5, 14, 12)):
+        s.line(x0, y0, x1, y0, STEEL[3])
+        s.line(x0, y0 + 1, x1, y0 + 1, STEEL[1])
+    for (x, y) in ((11, 4), (12, 5), (13, 4), (12, 3)):
+        s.put(x, y, COPPER[3])
+    s.put(12, 4, COPPER[1])
+    for (x, y) in ((4, 3), (12, 10), (6, 11), (2, 14)):
+        s.put(x, y, STEEL[3]); s.put(x + 1, y + 1, INK)
+    for (x, y) in ((8, 0), (15, 6), (0, 10), (9, 15)):
+        s.put(x, y, INK)
+    return s
+
+
+# ------------------------------------------------------------------------------------------------ Utility panel (D-158)
+UTILITY = ramp('#6f7f8f')
+UTILITY_LIGHTS = {'ok': LEAF_LIME, 'fault': RED}
+
+
+def utility_front(light):
+    """A building's utility panel set into the wall: a grey steel hatch with a hinge, vents, a warning label, a keyhole and a status lamp."""
+    s = Sprite()
+    brushed(s, UTILITY, 11)
+    s.rect(0, 0, 15, 0, UTILITY[3]); s.rect(0, 15, 15, 15, UTILITY[0]); s.rect(0, 0, 0, 15, UTILITY[3]); s.rect(15, 0, 15, 15, UTILITY[0])
+    # the hatch
+    s.rect(2, 2, 13, 13, UTILITY[2])
+    s.line(2, 2, 13, 2, UTILITY[4]); s.line(2, 2, 2, 13, UTILITY[3]); s.line(2, 13, 13, 13, UTILITY[0]); s.line(13, 3, 13, 13, UTILITY[1])
+    for y in (4, 7, 10):
+        s.put(3, y, STEEL[4]); s.put(3, y + 1, GUNMETAL[1])          # hinge knuckles
+    for y in (6, 8):
+        s.line(5, y, 11, y, INK); s.line(5, y + 1, 11, y + 1, UTILITY[3])   # vents
+    s.rect(6, 10, 9, 11, AMBER[3]); s.put(7, 10, INK); s.put(8, 11, INK)    # the warning label
+    s.put(11, 11, INK); s.put(11, 12, GUNMETAL[0])                           # keyhole
+    s.rect(10, 3, 12, 4, light[2]); s.rect(11, 3, 12, 3, light[4]); s.put(10, 4, light[1])   # the status lamp, big enough to read from the street
+    return s
+
+
+for _name, _ramp in UTILITY_LIGHTS.items():
+    TEXTURES['utility_panel_' + _name] = (lambda r=_ramp: utility_front(r))
+
+
+@tex
+def utility_panel_side():
+    s = Sprite()
+    brushed(s, UTILITY, 12)
+    s.rect(0, 0, 15, 0, UTILITY[3]); s.rect(0, 15, 15, 15, UTILITY[0])
+    return s
+
+
+# ------------------------------------------------------------------------------------------------ Personal computer (D-158)
+PC_CASE = ramp('#c9c4b6')
+
+
+@tex
+def computer_case():
+    s = Sprite()
+    s.rect(0, 0, 15, 15, PC_CASE[2])
+    s.rect(0, 0, 15, 0, PC_CASE[4]); s.rect(0, 15, 15, 15, PC_CASE[0])
+    for x in range(2, 14, 3):
+        s.put(x, 12, PC_CASE[1])
+    s.put(13, 3, LEAF_LIME[3])
+    return s
+
+
+@tex
+def computer_screen():
+    """A desktop: a dark blue wallpaper, a title bar, four app tiles (service, bench, network, a red one) and a taskbar with a clock."""
+    s = Sprite()
+    s.rect(0, 0, 15, 15, PLASTIC_BLACK[0])
+    s.rect(1, 1, 14, 14, rgb('#123049'))
+    s.rect(1, 1, 14, 2, rgb('#1d3a52')); s.put(2, 1, CYAN[3]); s.put(13, 1, RED[3])
+    for (x, y, c) in ((3, 4, CYAN), (7, 4, AMBER), (3, 8, LEAF_LIME), (7, 8, RED)):
+        s.rect(x, y, x + 2, y + 2, c[2]); s.put(x, y, c[4])
+    s.rect(11, 5, 13, 10, rgb('#0b1a26')); s.line(11, 6, 13, 6, CYAN[2]); s.line(11, 8, 12, 8, rgb('#8fb7cf'))
+    s.rect(1, 13, 14, 14, rgb('#0b1a26')); s.rect(2, 13, 3, 13, CYAN[3]); s.rect(11, 13, 13, 13, rgb('#8fb7cf'))
+    return s
+
+
+@tex
+def computer_keys():
+    s = Sprite()
+    s.rect(0, 0, 15, 15, PC_CASE[1])
+    for y in range(2, 14, 3):
+        for x in range(1, 15, 2):
+            s.put(x, y, PC_CASE[3]); s.put(x, y + 1, PC_CASE[0])
+    s.rect(4, 13, 11, 14, PC_CASE[3])
+    return s
+
+
+# ------------------------------------------------------------------------------------------------ Electronics bench (D-158)
+@tex
+def bench_top():
+    """A work mat seen from above: a green ESD mat with a board in a clamp, a soldering iron in its stand, a reel of solder and loose parts."""
+    s = Sprite()
+    s.rect(0, 0, 15, 15, WOOD[2])
+    s.rect(1, 1, 14, 14, rgb('#2d6a58'))
+    s.line(1, 1, 14, 1, rgb('#3b8370')); s.line(1, 14, 14, 14, rgb('#1f4b3e'))
+    s.rect(3, 3, 8, 7, PCB[2]); s.line(3, 3, 8, 3, PCB[3]); s.rect(5, 4, 6, 5, INK); s.line(3, 8, 8, 8, STEEL[2])
+    s.line(10, 3, 13, 9, STEEL[3]); s.put(10, 3, AMBER[4]); s.rect(12, 9, 13, 10, BLUE[2])
+    s.rect(3, 10, 5, 12, STEEL[2]); s.put(4, 11, INK)
+    for (x, y, c) in ((8, 11, RED[3]), (9, 12, AMBER[3]), (11, 12, CYAN[3]), (7, 12, COPPER[3])):
+        s.put(x, y, c)
+    return s
+
+
+@tex
+def bench_front():
+    """The bench's front: two drawers with brass pulls under a steel edge, a socket strip."""
+    s = Sprite()
+    s.rect(0, 0, 15, 15, WOOD[2])
+    s.rect(0, 0, 15, 1, STEEL[3]); s.line(0, 2, 15, 2, STEEL[1])
+    for y0 in (4, 10):
+        s.rect(1, y0, 14, y0 + 4, WOOD[3]); s.line(1, y0, 14, y0, WOOD[4]); s.line(1, y0 + 4, 14, y0 + 4, WOOD[0])
+        s.rect(6, y0 + 2, 9, y0 + 2, BRASS[3]); s.put(6, y0 + 2, BRASS[4])
+    s.rect(11, 3, 14, 3, PLASTIC_BLACK[2]); s.put(12, 3, RED[3])
+    return s
+
+
+@tex
+def bench_side():
+    s = Sprite()
+    s.rect(0, 0, 15, 15, WOOD[1])
+    s.rect(0, 0, 15, 1, STEEL[3]); s.line(0, 2, 15, 2, STEEL[1])
+    s.rect(1, 3, 2, 15, WOOD[2]); s.rect(13, 3, 14, 15, WOOD[2])
+    s.rect(3, 6, 12, 7, WOOD[0])
+    return s
+
+
+# ------------------------------------------------------------------------------------------------ Drying rack (D-160)
+RACK_LOADS = ('empty', 'drying', 'dry')
+
+
+@tex
+def rack_wood():
+    s = Sprite()
+    s.rect(0, 0, 15, 15, WOOD[2])
+    for y in (2, 7, 12):
+        s.line(0, y, 15, y, WOOD[1])
+    for (x, y) in ((3, 4), (10, 9), (6, 14), (13, 1)):
+        s.put(x, y, WOOD[3])
+    return s
+
+
+def _rack_hang(bud) -> Sprite:
+    """The hanging face: three lines of twine from the bar with bundles of buds on them (none for an empty rack); transparent between."""
+    s = Sprite()
+    for x in (3, 8, 13):
+        s.line(x, 0, x, 3, BURLAP[2])
+        if bud is None:
+            s.line(x, 3, x, 6, BURLAP[1])
+            continue
+        for (dx, dy, rad) in ((0, 6, 2.2), (-1, 9, 1.8), (1, 9, 1.8), (0, 12, 1.9)):
+            for yy in range(16):
+                for xx in range(16):
+                    if (xx - (x + dx)) ** 2 + (yy - dy) ** 2 <= rad * rad:
+                        s.put(xx, yy, bud[2] if (xx + yy) % 3 else bud[3])
+        s.put(x, 5, bud[1]); s.put(x - 1, 13, bud[1]); s.put(x + 1, 8, AMBER[1] if bud is not LEAF_LIME else AMBER[2])
+    return s
+
+
+@tex
+def rack_hang_empty():
+    return _rack_hang(None)
+
+
+@tex
+def rack_hang_drying():
+    return _rack_hang(LEAF_LIME)
+
+
+@tex
+def rack_hang_dry():
+    return _rack_hang(ramp('#6b6a3f'))
+
+
 # ------------------------------------------------------------------------------------------------------------ models
 def box(f, t, faces, rotation=None, shade=True):
     el = {'from': f, 'to': t, 'faces': faces}
@@ -265,15 +496,69 @@ def ledger_model():
             ], 'display': gui_display((24, 200, 0), 0.6, (0, -2, 0))}
 
 
+def panel_model(light):
+    return {'textures': {'front': f'underground_city:block/alarm_panel_{light}', 'case': 'underground_city:block/alarm_panel_case', 'particle': 'underground_city:block/alarm_panel_case'},
+            'elements': [
+                box([4, 3, 15], [12, 13, 16], {'north': {'texture': '#front', 'uv': [4, 3, 12, 13]}, 'south': {'texture': '#case', 'uv': [4, 3, 12, 13]},
+                                              'east': {'texture': '#case', 'uv': [0, 3, 1, 13]}, 'west': {'texture': '#case', 'uv': [0, 3, 1, 13]},
+                                              'up': {'texture': '#case', 'uv': [4, 0, 12, 1]}, 'down': {'texture': '#case', 'uv': [4, 0, 12, 1]}}),
+            ], 'display': gui_display((0, 180, 0), 1.0, (0, 0, -6))}
+
+
+def panel_states():
+    return {'variants': {f'facing={d},light={light}': ({'model': f'underground_city:block/alarm_panel_{light}'} | ({'y': y} if y else {}))
+                         for d, y in (('north', 0), ('east', 90), ('south', 180), ('west', 270)) for light in PANEL_LIGHTS}}
+
+
+def computer_model():
+    return {'textures': {'case': 'underground_city:block/computer_case', 'screen': 'underground_city:block/computer_screen', 'keys': 'underground_city:block/computer_keys', 'particle': 'underground_city:block/computer_case'},
+            'elements': [
+                box([2, 0, 1.5], [14, 1, 7], {**all_faces('case'), 'up': {'texture': '#keys', 'uv': [0, 0, 16, 16]}}),
+                box([1, 0, 8], [15, 1.5, 15], all_faces('case')),
+                box([6.5, 1.5, 11.5], [9.5, 4, 13], all_faces('case')),
+                box([1.5, 4, 9.5], [14.5, 14, 11.5], {'north': {'texture': '#screen', 'uv': [0, 0, 16, 16]}, 'south': {'texture': '#case'}, 'east': {'texture': '#case'}, 'west': {'texture': '#case'}, 'up': {'texture': '#case'}, 'down': {'texture': '#case'}}),
+                box([3, 5, 11.5], [13, 13, 13.5], all_faces('case')),
+                box([12.5, 0, 2.5], [14.5, 1.6, 5], all_faces('case')),
+            ], 'display': gui_display((28, 215, 0), 0.7, (0, -2, 0))}
+
+
+def rack_model(load):
+    return {'parent': 'minecraft:block/block', 'render_type': 'minecraft:cutout',
+            'textures': {'wood': 'underground_city:block/rack_wood', 'hang': f'underground_city:block/rack_hang_{load}', 'particle': 'underground_city:block/rack_wood'},
+            'elements': [
+                box([1, 0, 7], [2.5, 15, 9], {d: {'texture': '#wood'} for d in ('north', 'south', 'east', 'west', 'up')}),
+                box([13.5, 0, 7], [15, 15, 9], {d: {'texture': '#wood'} for d in ('north', 'south', 'east', 'west', 'up')}),
+                box([2.5, 13.5, 7.25], [13.5, 15, 8.75], all_faces('wood')),
+                box([2.5, 2, 8], [13.5, 13.5, 8], {'north': {'texture': '#hang', 'uv': [2.5, 2.5, 13.5, 14]}, 'south': {'texture': '#hang', 'uv': [2.5, 2.5, 13.5, 14]}}, shade=False),
+            ], 'display': gui_display((24, 200, 0), 0.62, (0, -1, 0))}
+
+
 def write_models():
     os.makedirs(MODELS, exist_ok=True)
-    for name, model in (('operations_terminal', terminal_model()), ('secure_data_terminal', secure_model()), ('property_cache', safe_model()), ('public_ledger', ledger_model())):
+    for name, model in (('operations_terminal', terminal_model()), ('secure_data_terminal', secure_model()), ('property_cache', safe_model()), ('public_ledger', ledger_model()), ('personal_computer', computer_model())):
         model['parent'] = 'minecraft:block/block'
         # A bottom face that lies in the support block's top plane is never seen and z-fights with it (a pale ghost under the block).
         for element in model['elements']:
             if element['from'][1] <= 0.001 and 'rotation' not in element:
                 element['faces'].pop('down', None)
         with open(os.path.join(MODELS, name + '.json'), 'w') as fh:
+            json.dump(model, fh, indent=1)
+    with open(os.path.join(MODELS, 'scrap_heap.json'), 'w') as fh:
+        json.dump({'parent': 'minecraft:block/cube_all', 'textures': {'all': 'underground_city:block/scrap_heap'}}, fh, indent=1)
+    with open(os.path.join(MODELS, 'electronics_bench.json'), 'w') as fh:
+        json.dump({'parent': 'minecraft:block/orientable', 'textures': {'top': 'underground_city:block/bench_top', 'front': 'underground_city:block/bench_front',
+                                                                        'side': 'underground_city:block/bench_side'}}, fh, indent=1)
+    for light in UTILITY_LIGHTS:
+        with open(os.path.join(MODELS, f'utility_panel_{light}.json'), 'w') as fh:
+            json.dump({'parent': 'minecraft:block/orientable', 'textures': {'top': 'underground_city:block/utility_panel_side', 'front': f'underground_city:block/utility_panel_{light}',
+                                                                            'side': 'underground_city:block/utility_panel_side'}}, fh, indent=1)
+    for load in RACK_LOADS:
+        with open(os.path.join(MODELS, f'drying_rack_{load}.json'), 'w') as fh:
+            json.dump(rack_model(load), fh, indent=1)
+    for light in PANEL_LIGHTS:
+        model = panel_model(light)
+        model['parent'] = 'minecraft:block/block'
+        with open(os.path.join(MODELS, f'alarm_panel_{light}.json'), 'w') as fh:
             json.dump(model, fh, indent=1)
 
 
@@ -284,9 +569,19 @@ def facing_states(name):
 def write_states():
     sd = os.path.join(ASSETS, 'blockstates')
     os.makedirs(sd, exist_ok=True)
-    for name in ('operations_terminal', 'secure_data_terminal', 'property_cache', 'public_ledger'):
+    for name in ('operations_terminal', 'secure_data_terminal', 'property_cache', 'public_ledger', 'personal_computer', 'electronics_bench'):
         with open(os.path.join(sd, name + '.json'), 'w') as fh:
             json.dump(facing_states(name), fh, indent=1)
+    with open(os.path.join(sd, 'utility_panel.json'), 'w') as fh:
+        json.dump({'variants': {f'facing={d},state={light}': ({'model': f'underground_city:block/utility_panel_{light}'} | ({'y': y} if y else {}))
+                                for d, y in (('north', 0), ('east', 90), ('south', 180), ('west', 270)) for light in UTILITY_LIGHTS}}, fh, indent=1)
+    with open(os.path.join(sd, 'drying_rack.json'), 'w') as fh:
+        json.dump({'variants': {f'facing={d},load={load}': ({'model': f'underground_city:block/drying_rack_{load}'} | ({'y': y} if y else {}))
+                                for d, y in (('north', 0), ('east', 90), ('south', 180), ('west', 270)) for load in RACK_LOADS}}, fh, indent=1)
+    with open(os.path.join(sd, 'alarm_panel.json'), 'w') as fh:
+        json.dump(panel_states(), fh, indent=1)
+    with open(os.path.join(sd, 'scrap_heap.json'), 'w') as fh:
+        json.dump({'variants': {'': {'model': 'underground_city:block/scrap_heap'}}}, fh, indent=1)
 
 
 def build():

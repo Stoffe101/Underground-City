@@ -33,6 +33,84 @@ public final class RoadMarkerGameTests {
         helper.succeed();
     }
 
+    /** Where a road meets its cities (D-137): one end at each city circle, pointing on into the city along the road's line; a road that starts in open country has no end there. */
+    @GameTest(template = "empty")
+    public static void aRoadKnowsWhereItMeetsEachCityAndWhichWayIsIn(GameTestHelper helper) {
+        CorridorPlan plan = new CorridorPlan("ironhaven_valewood", new double[]{0, 1000}, new double[]{0, 0}, 7,
+            List.of(new CorridorPlan.City(0, 0, 100), new CorridorPlan.City(1000, 0, 100)));
+        CorridorPlan.End[] ends = plan.ends();
+        check(ends.length == 2, "Two ends on a road between two cities: " + ends.length);
+        check(Math.abs(ends[0].x() - 101) <= 1.5 && ends[0].dirX() < -0.99, "The first end is at Ironhaven's circle and points west into it: " + ends[0]);
+        check(Math.abs(ends[1].x() - 899) <= 1.5 && ends[1].dirX() > 0.99, "The second end is at Valewood's circle and points east into it: " + ends[1]);
+        CorridorPlan oneCity = new CorridorPlan("a_b", new double[]{0, 1000}, new double[]{0, 0}, 7, List.of(new CorridorPlan.City(1000, 0, 100)));
+        check(oneCity.ends().length == 1 && oneCity.ends()[0].dirX() > 0.99, "A road that starts in open country meets one city: " + oneCity.ends().length);
+        helper.succeed();
+    }
+
+    /**
+     * A ramp never makes the server generate a chunk (journey runs stalled 4 to 43 s as each was built): it covers every chunk the build touches, and an end whose chunks are not
+     * loaded is not ready; once they are, it is.
+     */
+    @GameTest(template = "empty")
+    public static void aRampWaitsForItsChunksRatherThanGeneratingThem(GameTestHelper helper) {
+        var level = helper.getLevel();
+        CorridorPlan.End far = new CorridorPlan.End(1_000_003.5, 2_000_001.5, 0, 0.6, 0.8);
+        var chunks = RoadApproaches.chunks(far);
+        for (int k = 0; k <= RoadApproaches.FAR; k++) for (int u = -RoadApproaches.HALF; u <= RoadApproaches.HALF; u++) {
+            var column = new net.minecraft.world.level.ChunkPos((int) Math.floor(far.x() + far.dirX() * k - far.dirZ() * u) >> 4, (int) Math.floor(far.z() + far.dirZ() * k + far.dirX() * u) >> 4);
+            check(chunks.contains(column), "The ramp's chunks include the one under column " + k + ", " + u + ": " + column);
+        }
+        // a ramp reads up to FAR (112) blocks in for the city's ground: a diagonal one's band crosses some sixteen chunks
+        check(chunks.size() <= 20, "A diagonal ramp's reach touches a bounded number of chunks: " + chunks.size());
+        check(chunks.containsAll(RoadApproaches.rampChunks(far)) && RoadApproaches.rampChunks(far).size() < chunks.size(), "The ramp's own chunks are a part of its reach's");
+        check(!RoadApproaches.ready(level, far), "An end a million blocks out is not loaded and not ready");
+        check(chunks.stream().allMatch(c -> level.getChunkSource().getChunkNow(c.x, c.z) == null), "Asking whether it is ready loaded nothing");
+        BlockPos here = helper.absolutePos(BlockPos.ZERO);
+        CorridorPlan.End near = new CorridorPlan.End(here.getX() + 0.5, here.getZ() + 0.5, 0, 1, 0);
+        for (var c : RoadApproaches.chunks(near)) level.getChunk(c.x, c.z);
+        check(RoadApproaches.ready(level, near), "Once its chunks are loaded, an end is ready");
+        helper.succeed();
+    }
+
+    /**
+     * A ramp covers every block column of its band, with no holes: stepping a slanting line by whole blocks skipped columns, and journey run 55's walker fell into the five-block shaft one
+     * left on the centre line of the Ironhaven end (whose line runs about six degrees off the x axis, as here).
+     */
+    @GameTest(template = "empty")
+    public static void aRampHasNoHolesWhereTheRoadMeetsTheCityAtASlant(GameTestHelper helper) {
+        double len = Math.hypot(0.995, 0.0998);
+        for (CorridorPlan.End end : new CorridorPlan.End[]{new CorridorPlan.End(334.2, 53.7, 0, -0.995 / len, -0.0998 / len), new CorridorPlan.End(10.3, -7.9, 0, 0.6, 0.8),
+                new CorridorPlan.End(0.5, 0.5, 0, 1, 0)}) {
+            var cells = RoadApproaches.band(end, 0, 64, 3.5);
+            java.util.Set<Long> at = new java.util.HashSet<>();
+            for (var cell : cells) check(at.add(BlockPos.asLong(cell.x(), 0, cell.z())), "A column is laid once: " + cell);
+            check(Math.abs(cells.size() - 64 * 7) <= 24, "About the band's area (64 by 7), not fewer: " + cells.size() + " for " + end);
+            for (var cell : cells) {
+                if (cell.k() < 1 || cell.k() >= 63 || Math.abs(cell.u()) > 2.5) continue;
+                for (int[] d : new int[][]{{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) {
+                    check(at.contains(BlockPos.asLong(cell.x() + d[0], 0, cell.z() + d[1])), "No hole beside " + cell.x() + ", " + cell.z() + " (" + (cell.x() + d[0]) + ", " + (cell.z() + d[1]) + ") for " + end);
+                }
+            }
+        }
+        helper.succeed();
+    }
+
+    /** The travel step points at the road out (a journey walked 720 blocks from the Row to a road's end with nothing saying where it was). */
+    @GameTest(template = "empty")
+    public static void theTravelStepPointsAtTheRoadOutOfTheCity(GameTestHelper helper) {
+        List<CorridorPlan.City> cities = List.of(new CorridorPlan.City(0, 0, 100), new CorridorPlan.City(1000, 0, 100), new CorridorPlan.City(0, 1000, 100));
+        List<CorridorPlan> roads = List.of(new CorridorPlan("ironhaven_valewood", new double[]{0, 1000}, new double[]{0, 0}, 7, cities.subList(0, 2)),
+            new CorridorPlan("ironhaven_blackwater", new double[]{0, 0}, new double[]{0, 1000}, 7, List.of(cities.get(0), cities.get(2))));
+        Journey.RoadOut home = Journey.roadOut(roads, "ironhaven", "ironhaven", -50, 20);
+        check(home != null && home.to().equals("blackwater") && Math.abs(home.z() - 101) <= 1.5, "In Ironhaven, the nearer road out (to Blackwater, its end at z 101): " + home);
+        Journey.RoadOut east = Journey.roadOut(roads, "ironhaven", "ironhaven", 60, -10);
+        check(east != null && east.to().equals("valewood") && Math.abs(east.x() - 101) <= 1.5, "Nearer the east edge, the road to Valewood: " + east);
+        check(Journey.roadOut(roads, "valewood", "ironhaven", 900, 0) == null, "In a rival city already, the step is a terminal there, not a road");
+        Journey.RoadOut onTheRoad = Journey.roadOut(roads, "", "ironhaven", 500, 10);
+        check(onTheRoad != null && onTheRoad.to().equals("valewood") && Math.abs(onTheRoad.x() - 899) <= 1.5, "On the road, the end ahead where it enters Valewood: " + onTheRoad);
+        helper.succeed();
+    }
+
     @GameTest(template = "empty")
     public static void signsSayWhereTheRoadLeadsAndHowLong(GameTestHelper helper) {
         check(RoadMarkers.minutes(1100) == 4 && RoadMarkers.minutes(40) == 1, "Minutes on foot at 4.3 blocks a second: " + RoadMarkers.minutes(1100));

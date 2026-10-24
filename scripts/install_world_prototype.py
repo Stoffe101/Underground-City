@@ -12,9 +12,9 @@ from pathlib import Path
 from build_world_prototype import DEFAULT, package, validate
 
 
-def profile(data: dict) -> dict:
+def profile(data: dict, layout: str = "legacy") -> dict:
     validate(data)
-    return {
+    result = {
         "public": True,
         "lostcity": {
             "description": "Underground City disposable three-city survey",
@@ -34,12 +34,17 @@ def profile(data: dict) -> dict:
         },
         "explosions": {"explosionChance": 0.0, "miniExplosionChance": 0.0},
     }
+    if layout == "archipelago":
+        # D-105/D-106: the archipelago city is a place people live in. Lost Cities' park saplings (stage 1, they grow into trees on the next random tick), its vines on facades
+        # and its free chests of generated loot are all switched off; what a building holds is decided by Core (building stashes), and what grows in a city by the urban cleanup.
+        result["lostcity"].update({"generateLoot": False, "avoidFoliage": True, "vineChance": 0.0})
+    return result
 
 
-def config_files(data: dict) -> dict[str, str]:
+def config_files(data: dict, layout: str = "legacy") -> dict[str, str]:
     """The Lost Cities configuration that selects the three-city profile (relative to a game directory)."""
     return {
-        "config/lostcities/profiles/uc_three_city.json": json.dumps(profile(data), indent=2)+"\n",
+        "config/lostcities/profiles/uc_three_city.json": json.dumps(profile(data, layout), indent=2)+"\n",
         "config/lostcities/common.toml": '[profiles]\ndimensionsWithProfiles = ["minecraft:overworld=uc_three_city", "lostcities:lostcity=biosphere", "lostworlds:abyss=biosphere_caves"]\n',
         # forceSaplingGrowth = false: the mod's default (true) queues every city sapling as a server-thread task that blocks on neighbouring chunks (docs/technical/lost-cities-stalls.md, D-096);
         # it only changes how many city trees stand at generation, and a new world only (an existing world keeps world/serverconfig/lostcities-server.toml)

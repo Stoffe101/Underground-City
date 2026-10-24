@@ -1,0 +1,91 @@
+{
+  "city": "valewood",
+  "floors": {
+    "max": 2,
+    "min": 2
+  },
+  "id": "vw_bakery",
+  "notes": "A bakery: ovens, a counter and a table in the window below, a stock room behind a staff door, a flat to let above.",
+  "schema_version": 1,
+  "spots": [
+    {
+      "facing": "south",
+      "kind": "door",
+      "note": "shop door",
+      "x": 7,
+      "y": 1,
+      "z": 12
+    },
+    {
+      "facing": "south",
+      "kind": "counter",
+      "note": "the counter",
+      "x": 7,
+      "y": 1,
+      "z": 6
+    },
+    {
+      "facing": "north",
+      "kind": "stove",
+      "note": "the ovens",
+      "x": 6,
+      "y": 1,
+      "z": 5
+    },
+    {
+      "facing": "south",
+      "kind": "seat",
+      "note": "a table in the window",
+      "x": 11,
+      "y": 1,
+      "z": 9
+    },
+    {
+      "facing": "north",
+      "kind": "bed",
+      "note": "flat bed",
+      "x": 9,
+      "y": 7,
+      "z": 5
+    },
+    {
+      "facing": "east",
+      "kind": "stove",
+      "note": "flat kitchen",
+      "x": 11,
+      "y": 7,
+      "z": 9
+    },
+    {
+      "facing": "east",
+      "kind": "seat",
+      "note": "flat table",
+      "x": 7,
+      "y": 7,
+      "z": 9
+    },
+    {
+      "facing": "north",
+      "kind": "alarm",
+      "note": "alarm panel by the shop door",
+      "x": 3,
+      "y": 2,
+      "z": 11
+    }
+  ],
+  "units": [
+    {
+      "box": [
+        6,
+        7,
+        4,
+        12,
+        9,
+        11
+      ],
+      "id": "flat",
+      "title": "Flat"
+    }
+  ],
+  "use": "shop"
+}

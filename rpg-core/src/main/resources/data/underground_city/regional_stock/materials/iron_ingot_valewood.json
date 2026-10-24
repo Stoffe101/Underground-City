@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "city": "valewood",
+  "item": "minecraft:iron_ingot",
+  "unit_price": 12,
+  "initial": 8,
+  "capacity": 12,
+  "units_per_interval": 1,
+  "interval_ticks": 36000,
+  "max_order": 6,
+  "outlets": [
+    "city"
+  ]
+}

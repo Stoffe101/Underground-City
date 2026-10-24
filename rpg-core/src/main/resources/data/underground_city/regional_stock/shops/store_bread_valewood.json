@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "city": "valewood",
+  "item": "minecraft:bread",
+  "unit_price": 5,
+  "initial": 16,
+  "capacity": 24,
+  "units_per_interval": 4,
+  "interval_ticks": 24000,
+  "max_order": 8,
+  "outlets": [
+    "shop:general"
+  ]
+}

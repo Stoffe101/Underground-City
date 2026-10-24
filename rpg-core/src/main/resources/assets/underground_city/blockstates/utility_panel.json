@@ -1,0 +1,34 @@
+{
+ "variants": {
+  "facing=north,state=ok": {
+   "model": "underground_city:block/utility_panel_ok"
+  },
+  "facing=north,state=fault": {
+   "model": "underground_city:block/utility_panel_fault"
+  },
+  "facing=east,state=ok": {
+   "model": "underground_city:block/utility_panel_ok",
+   "y": 90
+  },
+  "facing=east,state=fault": {
+   "model": "underground_city:block/utility_panel_fault",
+   "y": 90
+  },
+  "facing=south,state=ok": {
+   "model": "underground_city:block/utility_panel_ok",
+   "y": 180
+  },
+  "facing=south,state=fault": {
+   "model": "underground_city:block/utility_panel_fault",
+   "y": 180
+  },
+  "facing=west,state=ok": {
+   "model": "underground_city:block/utility_panel_ok",
+   "y": 270
+  },
+  "facing=west,state=fault": {
+   "model": "underground_city:block/utility_panel_fault",
+   "y": 270
+  }
+ }
+}

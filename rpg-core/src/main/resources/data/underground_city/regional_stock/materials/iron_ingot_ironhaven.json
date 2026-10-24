@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "city": "ironhaven",
+  "item": "minecraft:iron_ingot",
+  "unit_price": 9,
+  "initial": 24,
+  "capacity": 32,
+  "units_per_interval": 4,
+  "interval_ticks": 24000,
+  "max_order": 16,
+  "outlets": [
+    "city",
+    "shop:hardware"
+  ]
+}

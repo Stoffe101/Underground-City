@@ -1,0 +1,208 @@
+{
+  "schema_version": 1,
+  "id": "stranded_driver",
+  "title": "Stranded driver",
+  "kind": "legit",
+  "roads": [],
+  "weight": 4,
+  "note": "D-139. A driver whose car has boiled over at the verge. Help with a drink or a part; walk on and nothing is lost.",
+  "notice": "A car has broken down at the verge.",
+  "people": [
+    {
+      "name": "Lena Voss",
+      "profession": "none"
+    },
+    {
+      "name": "Ade Mensah",
+      "profession": "none"
+    },
+    {
+      "name": "Harriet Kell",
+      "profession": "none"
+    },
+    {
+      "name": "Tomas Brandt",
+      "profession": "none"
+    }
+  ],
+  "openings": [
+    "The engine boiled over a mile back and I pushed it here. You wouldn't have something to drink? Or a part to patch the hose? I can pay.",
+    "Hose split, radiator's dry, and I've been standing here an hour. Anything to drink would help. A proper part would get me home."
+  ],
+  "props": [
+    {
+      "at": [
+        -2,
+        1,
+        0
+      ],
+      "block": "minecraft:polished_blackstone"
+    },
+    {
+      "at": [
+        -2,
+        2,
+        0
+      ],
+      "block": "minecraft:polished_blackstone"
+    },
+    {
+      "at": [
+        -1,
+        1,
+        0
+      ],
+      "block": "minecraft:light_blue_concrete"
+    },
+    {
+      "at": [
+        -1,
+        2,
+        0
+      ],
+      "block": "minecraft:light_blue_concrete"
+    },
+    {
+      "at": [
+        0,
+        1,
+        0
+      ],
+      "block": "minecraft:light_blue_concrete"
+    },
+    {
+      "at": [
+        0,
+        2,
+        0
+      ],
+      "block": "minecraft:light_blue_concrete"
+    },
+    {
+      "at": [
+        1,
+        1,
+        0
+      ],
+      "block": "minecraft:light_blue_concrete"
+    },
+    {
+      "at": [
+        1,
+        2,
+        0
+      ],
+      "block": "minecraft:light_blue_concrete"
+    },
+    {
+      "at": [
+        2,
+        1,
+        0
+      ],
+      "block": "minecraft:polished_blackstone"
+    },
+    {
+      "at": [
+        2,
+        2,
+        0
+      ],
+      "block": "minecraft:polished_blackstone"
+    },
+    {
+      "at": [
+        -1,
+        1,
+        1
+      ],
+      "block": "minecraft:light_blue_concrete"
+    },
+    {
+      "at": [
+        -1,
+        2,
+        1
+      ],
+      "block": "minecraft:light_blue_concrete"
+    },
+    {
+      "at": [
+        0,
+        1,
+        1
+      ],
+      "block": "minecraft:light_blue_stained_glass"
+    },
+    {
+      "at": [
+        0,
+        2,
+        1
+      ],
+      "block": "minecraft:light_blue_stained_glass"
+    },
+    {
+      "at": [
+        1,
+        1,
+        1
+      ],
+      "block": "minecraft:light_blue_stained_glass"
+    },
+    {
+      "at": [
+        1,
+        2,
+        1
+      ],
+      "block": "minecraft:light_blue_stained_glass"
+    },
+    {
+      "at": [
+        2,
+        1,
+        1
+      ],
+      "block": "minecraft:iron_trapdoor"
+    },
+    {
+      "at": [
+        3,
+        1,
+        0
+      ],
+      "block": "minecraft:campfire"
+    }
+  ],
+  "choices": [
+    {
+      "id": "drink",
+      "label": "Hand over something to drink",
+      "needs": {
+        "tag": "underground_city:roadside_drinks",
+        "count": 1
+      },
+      "pay": 12,
+      "xp": 20,
+      "reply": "That's the first thing to go right today. Here, for your trouble."
+    },
+    {
+      "id": "fix",
+      "label": "Patch the hose (1 machined parts)",
+      "needs": {
+        "item": "underground_city:machined_parts",
+        "count": 1
+      },
+      "pay": 40,
+      "xp": 45,
+      "reply": "It holds! You've earned this. If you pass the Crossroads Diner, tell Dot I sent you."
+    },
+    {
+      "id": "where",
+      "label": "Where are you headed?",
+      "reply": "Into {city}, if this thing ever starts again.",
+      "resolves": false
+    }
+  ]
+}

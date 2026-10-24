@@ -17,7 +17,7 @@
       "branch": "legal",
       "title": "Greenhouse Management",
       "short_title": "Greenhouse Mgmt",
-      "description": "Run a proper greenhouse. Unlocks wholesale greenhouse supply contracts.",
+      "description": "Greenhouse and corner-store contracts; the Grading Table packs a grade up.",
       "cost": 2,
       "min_level": 3,
       "requires": [
@@ -41,7 +41,7 @@
       "id": "farmer.estate_wholesale",
       "branch": "legal",
       "title": "Estate Wholesale",
-      "description": "Supply estates and kitchens. Unlocks the estate pantry contract.",
+      "description": "Supply estates: the estate pantry contract, and a grade up at the table.",
       "cost": 2,
       "min_level": 8,
       "requires": [
@@ -56,7 +56,7 @@
       "branch": "legal",
       "title": "Farm Cooperative",
       "short_title": "Farm Co-op",
-      "description": "Join the district cooperative: steady buyers for every legal contract.",
+      "description": "Steady buyers for every legal contract, and the Mill's geared crank.",
       "cost": 2,
       "min_level": 11,
       "requires": [
@@ -70,7 +70,7 @@
       "id": "farmer.field_logistics",
       "branch": "utility",
       "title": "Field Logistics",
-      "description": "Buy in bulk at the regional exchange.",
+      "description": "Buy in bulk at the exchange; fit the Grading Table's scales and grader.",
       "cost": 1,
       "min_level": 4,
       "requires": [
@@ -85,7 +85,7 @@
       "branch": "crossover",
       "title": "Selective Grafting",
       "short_title": "Sel. Grafting",
-      "description": "Graft Sable Leaf the way a nursery does: more bales from every plant.",
+      "description": "Graft cannabis the way a nursery does: more flower from every plant.",
       "cost": 2,
       "min_level": 9,
       "requires": [
@@ -118,7 +118,7 @@
       "id": "farmer.restricted_cultivation",
       "branch": "underground",
       "title": "Restricted Cultivation",
-      "description": "Raise controlled cultivars under lamps. Needed to plant Sable Leaf.",
+      "description": "Raise controlled cultivars under lamps. Needed to plant cannabis.",
       "cost": 3,
       "min_level": 6,
       "requires": [
@@ -144,7 +144,7 @@
       "id": "farmer.underground_trade",
       "branch": "underground",
       "title": "Underground Trade",
-      "description": "Open a line to a Blackwater buyer. Unlocks quiet bale delivery contracts.",
+      "description": "Open a line to a Blackwater buyer. Unlocks quiet cannabis deliveries.",
       "cost": 3,
       "min_level": 9,
       "requires": [

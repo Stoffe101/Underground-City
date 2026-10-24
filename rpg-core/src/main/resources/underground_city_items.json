@@ -127,7 +127,7 @@
       "stack": 16
     },
     {
-      "id": "sable_cutting",
+      "id": "cannabis_seeds",
       "kind": "seed",
       "stack": 64
     },
@@ -137,7 +137,12 @@
       "stack": 64
     },
     {
-      "id": "sable_leaf_bale",
+      "id": "cannabis_flower",
+      "kind": "product",
+      "stack": 64
+    },
+    {
+      "id": "dried_cannabis",
       "kind": "product",
       "stack": 64
     },
@@ -175,6 +180,181 @@
       "id": "optics_schematic",
       "kind": "rare",
       "stack": 16
+    },
+    {
+      "id": "pocket_watch",
+      "kind": "rare",
+      "stack": 16
+    },
+    {
+      "id": "jewellery_box",
+      "kind": "rare",
+      "stack": 16
+    },
+    {
+      "id": "old_laptop",
+      "kind": "rare",
+      "stack": 16
+    },
+    {
+      "id": "pro_pick_set",
+      "kind": "durable",
+      "stack": 1
+    },
+    {
+      "id": "wristwatch",
+      "kind": "rare",
+      "stack": 16
+    },
+    {
+      "id": "gold_ring",
+      "kind": "rare",
+      "stack": 16
+    },
+    {
+      "id": "pearl_necklace",
+      "kind": "rare",
+      "stack": 16
+    },
+    {
+      "id": "smartphone",
+      "kind": "rare",
+      "stack": 16
+    },
+    {
+      "id": "tablet",
+      "kind": "rare",
+      "stack": 16
+    },
+    {
+      "id": "digital_camera",
+      "kind": "rare",
+      "stack": 16
+    },
+    {
+      "id": "vintage_wine",
+      "kind": "rare",
+      "stack": 16
+    },
+    {
+      "id": "rare_vinyl",
+      "kind": "rare",
+      "stack": 16
+    },
+    {
+      "id": "designer_handbag",
+      "kind": "rare",
+      "stack": 16
+    },
+    {
+      "id": "cash_box",
+      "kind": "rare",
+      "stack": 16
+    },
+    {
+      "id": "power_drill",
+      "kind": "rare",
+      "stack": 16
+    },
+    {
+      "id": "small_painting",
+      "kind": "rare",
+      "stack": 16
+    },
+    {
+      "id": "bearer_bonds",
+      "kind": "rare",
+      "stack": 16
+    },
+    {
+      "id": "e_scrap",
+      "kind": "product",
+      "stack": 64
+    },
+    {
+      "id": "repair_kit",
+      "kind": "durable",
+      "stack": 1
+    },
+    {
+      "id": "diagnostic_scanner",
+      "kind": "durable",
+      "stack": 1
+    },
+    {
+      "id": "flour",
+      "kind": "product",
+      "stack": 64
+    },
+    {
+      "id": "produce_crate",
+      "kind": "product",
+      "stack": 64
+    },
+    {
+      "id": "fruit_crate",
+      "kind": "product",
+      "stack": 64
+    },
+    {
+      "id": "berry_wine",
+      "kind": "product",
+      "stack": 64
+    },
+    {
+      "id": "apple_cider",
+      "kind": "product",
+      "stack": 64
+    },
+    {
+      "id": "aged_wine",
+      "kind": "product",
+      "stack": 64
+    },
+    {
+      "id": "grain_spirit",
+      "kind": "product",
+      "stack": 64
+    },
+    {
+      "id": "moonshine",
+      "kind": "product",
+      "stack": 64
+    },
+    {
+      "id": "fasteners",
+      "kind": "product",
+      "stack": 64
+    },
+    {
+      "id": "steel_bracket",
+      "kind": "product",
+      "stack": 64
+    },
+    {
+      "id": "barrel_hoops",
+      "kind": "product",
+      "stack": 64
+    },
+    {
+      "id": "springs",
+      "kind": "product",
+      "stack": 64
+    },
+    {
+      "id": "gear_set",
+      "kind": "product",
+      "stack": 64
+    },
+    {
+      "id": "firearm_parts_kit",
+      "kind": "product",
+      "stack": 64
+    },
+    {
+      "id": "unmarked_parts_kit",
+      "kind": "product",
+      "stack": 64
     }
   ]
 }

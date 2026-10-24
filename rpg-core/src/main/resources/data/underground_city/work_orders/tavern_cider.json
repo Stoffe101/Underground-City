@@ -1,0 +1,19 @@
+{
+  "schema_version": 3,
+  "title": "Cider on tap",
+  "career": "vintner",
+  "level": 3,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "underground_city:apple_cider",
+      "count": 8
+    }
+  ],
+  "credits": 135,
+  "xp": 300,
+  "capacity": 3,
+  "refill_ticks": 9000,
+  "legality": "legal",
+  "requires_skill": "vintner.cellar_craft"
+}

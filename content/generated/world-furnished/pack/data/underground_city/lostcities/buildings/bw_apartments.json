@@ -1,0 +1,47 @@
+{
+  "allowDoors": false,
+  "allowFillers": false,
+  "filler": "c",
+  "maxcellars": 0,
+  "maxfloors": 4,
+  "mincellars": 0,
+  "minfloors": 4,
+  "overrideFloors": true,
+  "parts": [
+    {
+      "cellar": false,
+      "ground": true,
+      "part": "underground_city:bw_apartments_ground",
+      "top": false
+    },
+    {
+      "cellar": false,
+      "floor": 1,
+      "ground": false,
+      "part": "underground_city:bw_apartments_floor1",
+      "top": false
+    },
+    {
+      "cellar": false,
+      "floor": 2,
+      "ground": false,
+      "part": "underground_city:bw_apartments_floor2",
+      "top": false
+    },
+    {
+      "cellar": false,
+      "floor": 3,
+      "ground": false,
+      "part": "underground_city:bw_apartments_floor3",
+      "top": false
+    },
+    {
+      "cellar": false,
+      "ground": false,
+      "part": "underground_city:bw_apartments_top",
+      "top": true
+    }
+  ],
+  "refpalette": "underground_city:bw_apartments",
+  "rubble": "c"
+}
