@@ -64,6 +64,24 @@ public final class ClientHud {
         }
     }
 
+    /** The grade a workshop good carries and the tier a carried station keeps (D-163), as a line under the item's name. */
+    @Mod.EventBusSubscriber(modid = UndergroundCity.MOD_ID, value = Dist.CLIENT)
+    public static final class Tooltips {
+        @SubscribeEvent
+        public static void tooltip(net.minecraftforge.event.entity.player.ItemTooltipEvent event) {
+            net.minecraft.world.item.ItemStack stack = event.getItemStack();
+            int grade = Workshops.grade(stack);
+            if (grade > 0) event.getToolTip().add(1, net.minecraft.network.chat.Component.literal(Workshops.GRADES[grade] + " grade: buyers pay " + Math.round((Workshops.GRADE_PRICE[grade] - 1) * 100) + "% more")
+                .withStyle(grade == 2 ? net.minecraft.ChatFormatting.GOLD : net.minecraft.ChatFormatting.AQUA));
+            if (stack.getItem() instanceof net.minecraft.world.item.BlockItem bi && bi.getBlock() instanceof WorkshopBlock wb) {
+                int tier = stack.hasTag() && stack.getTag().contains("uc_tier") ? stack.getTag().getInt("uc_tier") : 1;
+                Workshops.Station st = Workshops.INSTANCE.station(wb.station);
+                String career = st == null ? "" : " · " + TerminalScreenText.capitalize(st.career());
+                event.getToolTip().add(1, net.minecraft.network.chat.Component.literal("Tier " + tier + career).withStyle(net.minecraft.ChatFormatting.GRAY));
+            }
+        }
+    }
+
     /** Where the stack was drawn in the last frame, {x, y, w, h} in GUI pixels, or null when it was not (the corner notices move out of its way: {@link ToastPlacement}). */
     private static volatile int[] drawn;
 
@@ -77,7 +95,7 @@ public final class ClientHud {
         // every letter, which showed through the cards at 1280x720, GUI scale 3 (patrol runs 1, 2 and 6)
         g.pose().pushPose();
         g.pose().translate(0, 0, 200);
-        HudLayout.Plan plan = render(g, mc, width, height, state, ClientOrderTracker.current(), ClientPlaces.objectiveOr(ClientOrderTracker.objective()), mc.level == null ? 0 : mc.level.getDayTime(), HudConfig.Settings.fromConfig());
+        HudLayout.Plan plan = render(g, mc, width, height, state, ClientOrderTracker.current(), ClientNavigation.objectiveOr(ClientOrderTracker.objective()), mc.level == null ? 0 : mc.level.getDayTime(), HudConfig.Settings.fromConfig());
         g.pose().popPose();
         if (plan == null || !plan.any()) return;
         int top = Integer.MAX_VALUE, left = 0;

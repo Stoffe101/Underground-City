@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -92,10 +93,16 @@ public final class TechWork {
     static void use(ServerPlayer player, ServerLevel level, TechService.Panel p) {
         TechService.Systems s = TechService.systems(level.getServer());
         TechService.Fault fault = s.faults.get(p.key());
-        TechService.Job job = null;
-        for (TechService.Job j : s.jobs.values()) if (j.key() == p.key()) job = j;
+        TechService.Job job = null, quiet = null;
+        for (TechService.Job j : s.jobs.values()) if (j.key() == p.key()) { if (j.kind().equals("quiet")) quiet = j; else job = j; }
         ItemStack held = player.getMainHandItem();
-        String status = fault != null ? (fault.shop() ? "Fault: the till and card network are down." : "Fault: the alarm and cameras are down.")
+        // back-channel work (D-166): only a Technician with Bypass Tooling knows the job is there, and starts it crouched at the panel with a toolkit in hand
+        if (quiet != null && player.isCrouching() && held.is(item("repair_kit")) && SkillService.has(citizen(player), QUIET_SKILL)) {
+            String refusal = startQuiet(player, level, p, quiet);
+            if (refusal != null) tell(player, refusal);
+            return;
+        }
+        String status = fault != null ? (fault.shop() ? "Fault: the till and card network are down." : "Fault: the cameras are down.")
             : job != null ? (job.kind().equals("install") ? "Install ordered: a monitored alarm." : "Upgrade ordered: the network.") : "All systems normal.";
         if (!held.is(item("repair_kit")) && !held.is(item("security_array"))) { tell(player, Casing.capitalise(p.label()) + ", " + p.address() + ". " + status); return; }
         String refusal;
@@ -162,7 +169,37 @@ public final class TechWork {
         return null;
     }
 
-    static final int TechService_TRACE_SECONDS = 120, TechService_PATCH_SECONDS = 180;
+    static final int TechService_TRACE_SECONDS = 120, TechService_PATCH_SECONDS = 180, QUIET_SECONDS = 150;
+    static final String QUIET_SKILL = "technician.bypass_tooling", QUIET_HIGH = "technician.signal_scrubbing";
+
+    /**
+     * Back-channel work (D-166): at a building's panel, crouched, with a toolkit and a Bypass Kit, a Technician with Bypass Tooling works a patch grid (the same abstract puzzle as an install) to
+     * loop the building's cameras and quieten its alarm line for a while, for somebody who pays off the books. Anybody in sight of the panel may see it and call the police; an officer who sees
+     * it comes at once. Out of time, the panel trips its tamper alarm. A tier V or VI building needs Signal Scrubbing.
+     */
+    static String startQuiet(ServerPlayer player, ServerLevel level, TechService.Panel p, TechService.Job job) {
+        String gate = gate(player);
+        if (gate != null) return gate;
+        CitizenState.Citizen c = citizen(player);
+        if (p.tier() >= 5 && !SkillService.has(c, QUIET_HIGH)) return "A tier " + PropertyIntel.roman(p.tier()) + " building's line is beyond you yet: Signal Scrubbing would let you.";
+        if (player.getInventory().countItem(item("bypass_kit")) < 1) return "Quiet work takes a Bypass Kit.";
+        Optional<CityBuildings.Building> b = CityBuildings.INSTANCE.ofChunk(level, p.door().getX() >> 4, p.door().getZ() >> 4);
+        if (b.isEmpty()) return "This panel's building is not known here.";
+        // the people in sight of the panel: an officer comes at once, anybody else may call it in (the same roll as a break-in's witnesses)
+        for (TownspersonEntity person : level.getEntitiesOfClass(TownspersonEntity.class, new net.minecraft.world.phys.AABB(p.access()).inflate(PoliceResponse.witnessRadius(player)),
+                x -> x.isAlive() && x.hasLineOfSight(player))) {
+            if (person.police()) { PoliceResponse.seenByPatrol(player, level, b.get(), p.door(), person, "at a building's utility panel"); return "An officer saw you at the panel."; }
+        }
+        var at = new BuildingBreachEvent(player.getUUID(), p.door(), b.get().city(), b.get().security() == null ? "" : b.get().security().id(), BuildingBreachEvent.Outcome.NOISE, LockService.clock(player.server));
+        if (PoliceResponse.witnessed(level, player, at)) {
+            PoliceResponse.raise(player, level, b.get(), p.door(), false, false, true);
+            return "Somebody saw you at the panel and is calling it in.";
+        }
+        TechPuzzles.Patch patch = TechPuzzles.Patch.generate(job.id().getMostSignificantBits() ^ player.getUUID().getLeastSignificantBits(), p.tier() >= 5 ? 2 : 1);
+        wear(player, item("repair_kit"));
+        begin(player, new Session(player.getUUID(), "quiet", p.key(), job.id(), null, patch, player.server.getTickCount() + QUIET_SECONDS * 20L, 0, null));
+        return null;
+    }
 
     private static void begin(ServerPlayer player, Session session) {
         ACTIVE.put(player.getUUID(), session);
@@ -229,8 +266,19 @@ public final class TechWork {
             Session s = it.next();
             ServerPlayer player = server.getPlayerList().getPlayer(s.player);
             if (player == null) { ACTIVE.remove(s.player); continue; }
-            if (now > s.endsAt) end(player, s, false, "Out of time. The panel is as it was.");
+            if (now > s.endsAt) {
+                if (s.kind.equals("quiet")) tamper(player, s);
+                end(player, s, false, s.kind.equals("quiet") ? "Out of time. The panel's tamper alarm went off." : "Out of time. The panel is as it was.");
+            }
         }
+    }
+
+    /** A back-channel job run out of time (D-166): the panel's tamper alarm rings as a break-in's would, and the police come to the building. */
+    static void tamper(ServerPlayer player, Session s) {
+        ServerLevel level = player.serverLevel();
+        TechService.Panel p = TechService.systems(player.server).panels.get(s.key);
+        if (p == null) return;
+        CityBuildings.INSTANCE.ofChunk(level, p.door().getX() >> 4, p.door().getZ() >> 4).ifPresent(b -> PoliceResponse.raise(player, level, b, p.door(), true, false, false));
     }
 
     // ------------------------------------------------------------------------------------------------ the pay
@@ -259,9 +307,10 @@ public final class TechWork {
                 credits = j.credits();
                 xp = j.xp();
                 if (s.kind.equals("install")) uses.add(item("security_array"));
+                if (s.kind.equals("quiet")) uses.add(item("bypass_kit"));
             }
         }
-        credits = SkillRules.payout(credits, false, SkillCatalog.INSTANCE.tree(c.career), c.skills());
+        credits = SkillRules.payout(credits, s.kind.equals("quiet"), SkillCatalog.INSTANCE.tree(c.career), c.skills());
         if (!settle(player, s.ref, "tech_" + s.kind, credits, xp, uses)) { end(player, s, false, "The job could not be settled; nothing was taken."); return; }
         switch (s.kind) {
             case "repair" -> { sys.faults.remove(s.key); sys.repairs++; TechService.lamp(level, p, TechBlocks.UtilityPanel.State.OK); }
@@ -269,11 +318,18 @@ public final class TechWork {
                 sys.jobs.remove(s.ref); sys.installs++;
                 sys.monitored.put(s.key, now + TechService.MONITOR_TICKS * (SkillService.has(c, "technician.security_systems") ? 2 : 1));
             }
+            case "quiet" -> {
+                sys.jobs.remove(s.ref); sys.quiets++;
+                sys.quieted.put(s.key, now + TechService.QUIET_TICKS);
+                CityBuildings.INSTANCE.ofChunk(level, p.door().getX() >> 4, p.door().getZ() >> 4).ifPresent(b -> SecurityDevices.loop(level, b, TechService.QUIET_LOOP_TICKS));
+            }
             default -> { sys.jobs.remove(s.ref); sys.upgrades++; sys.upgraded.put(s.key, now + TechService.UPGRADE_TICKS); }
         }
         sys.setDirty();
+        // the call is done: nobody needs to be pointed at it any more (D-161)
+        Navigation.finished(player.server, "tech", s.ref.toString(), player.getUUID(), null, "Somebody else put that call right first.");
         CitizenState.get(player.server).bumpJourney(player.getUUID(), "tech_" + s.kind);
-        String what = switch (s.kind) { case "repair" -> "Repaired"; case "install" -> "Monitored alarm fitted"; default -> "Network upgraded"; };
+        String what = switch (s.kind) { case "repair" -> "Repaired"; case "install" -> "Monitored alarm fitted"; case "quiet" -> "Feeds looped, alarm line quiet"; default -> "Network upgraded"; };
         Notice.send(player, Notice.Kind.DELIVERED, what, Casing.capitalise(p.label()) + ", " + p.address() + ": +" + credits + " credits, +" + xp + " XP.");
         LOGGER.info("[UC-TECH] {} by {} at {} for {} credits", s.kind, player.getGameProfile().getName(), p.address(), credits);
         end(player, s, true, what + ": +" + credits + " credits and " + xp + " XP." + (s.kind.equals("repair") && s.trace != null ? " " + s.probes + (s.probes == 1 ? " probe" : " probes") + (s.probes <= s.trace.optimalProbes() + 1 ? ", neatly done." : ".") : ""));
@@ -360,6 +416,14 @@ public final class TechWork {
         for (TechService.Job j : s.jobs.values()) {
             TechService.Panel p = s.panels.get(j.key());
             if (p == null) continue;
+            if (j.kind().equals("quiet")) {
+                // back-channel work (D-166) is never on a board for anybody who cannot take it
+                if (!tech || !SkillService.has(c, QUIET_SKILL)) continue;
+                int pay = SkillRules.payout(j.credits(), true, SkillCatalog.INSTANCE.tree(c.career), c.skills());
+                String blocked = p.tier() >= 5 && !SkillService.has(c, QUIET_HIGH) ? "Needs Signal Scrubbing" : player.getInventory().countItem(item("bypass_kit")) < 1 ? "Bring a Bypass Kit" : "";
+                out.add(new Call(j.id(), "quiet", p.city(), p.address(), p.label(), p.tier(), pay, j.xp(), p.access(), Math.max(0, (j.until() - now) / 1200), blocked));
+                continue;
+            }
             int credits = c == null ? j.credits() : SkillRules.payout(j.credits(), false, SkillCatalog.INSTANCE.tree(c.career), c.skills());
             String blocked = !tech ? "Technicians only" : j.kind().equals("install") ? (!SkillService.has(c, "technician.automation_install") ? "Needs Installer"
                 : player.getInventory().countItem(item("security_array")) < 1 ? "Bring a Security Array" : "") : !SkillService.has(c, "technician.systems_integrator") ? "Needs Systems Integrator" : "";

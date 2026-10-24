@@ -16,7 +16,7 @@
       "id": "smith.structural_works",
       "branch": "legal",
       "title": "Structural Works",
-      "description": "Fabricate structural steel: unlocks the municipal structural contract.",
+      "description": "The municipal structural contract, and gear sets at the bench.",
       "cost": 2,
       "min_level": 3,
       "requires": [
@@ -73,7 +73,7 @@
       "id": "smith.precision_machining",
       "branch": "utility",
       "title": "Precision Machining",
-      "description": "Tight tolerances, less waste at the exchange.",
+      "description": "Less waste at the exchange; the bench's lathe and precision parts.",
       "cost": 2,
       "min_level": 6,
       "requires": [
@@ -103,7 +103,7 @@
       "id": "smith.unlisted_fabrication",
       "branch": "underground",
       "title": "Unlisted Fabrication",
-      "description": "Make parts that appear on no register. Unlocks unstamped plate contracts.",
+      "description": "Parts on no register: unstamped plate contracts and plate at the bench.",
       "cost": 3,
       "min_level": 7,
       "requires": [

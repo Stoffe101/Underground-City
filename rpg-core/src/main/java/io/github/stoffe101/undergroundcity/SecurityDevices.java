@@ -93,6 +93,12 @@ public final class SecurityDevices {
         return hit.getType() == net.minecraft.world.phys.HitResult.Type.MISS || hit.getLocation().distanceToSqr(eye) < 0.25;
     }
 
+    /** Loops every camera of a building for {@code ticks} of active play (a Technician's back-channel job, D-166), never shortening a loop already running. */
+    static void loop(ServerLevel level, CityBuildings.Building b, long ticks) {
+        long until = LockService.clock(level.getServer()) + ticks;
+        LOOPED.merge(b.key(), until, Math::max);
+    }
+
     static boolean looped(ServerLevel level, CityBuildings.Building b) {
         Long until = LOOPED.get(b.key());
         return until != null && until > LockService.clock(level.getServer());

@@ -188,10 +188,51 @@ public final class StaffZones {
     private record Sighting(long key, long since) {}
     private static final Map<UUID, Sighting> SEEN = new HashMap<>();
 
+    /** Staff doors a redstone signal held open and that were shut again (a pressure plate or a button beside a staff door must not be a way into the back). */
+    static long poweredShut;
+
+    /**
+     * A staff door is opened by its key, a pick or the household, never by redstone: a pressure plate or button the generator or Lost Cities left beside it would otherwise let anybody who
+     * steps on it into the back. Five times a second, the staff doors of the buildings around each player that stand open while powered are shut again; the power stays, so the door stays
+     * shut until the signal goes off and on again, and is then shut again within a fifth of a second. Nothing is removed from the world.
+     */
+    static void shutPowered(ServerLevel level, ServerPlayer player) {
+        int cx = player.blockPosition().getX() >> 4, cz = player.blockPosition().getZ() >> 4;
+        for (int dx = -1; dx <= 1; dx++) for (int dz = -1; dz <= 1; dz++) {
+            if (level.getChunkSource().getChunkNow(cx + dx, cz + dz) == null) continue;
+            Optional<CityBuildings.Building> b = CityBuildings.INSTANCE.ofChunk(level, cx + dx, cz + dz);
+            if (b.isPresent()) shutPowered(level, b.get());
+        }
+    }
+
+    /** Shuts the staff doors of one building that a redstone signal holds open; returns how many. Visible for the tests. */
+    static int shutPowered(ServerLevel level, CityBuildings.Building b) {
+        int shut = 0;
+        for (long key : of(level, b).staffDoors()) {
+            BlockPos lower = BlockPos.of(key);
+            BlockState state = level.getBlockState(lower);
+            if (!(state.getBlock() instanceof DoorBlock door) || !state.getValue(DoorBlock.OPEN) || !state.getValue(DoorBlock.POWERED)) continue;
+            door.setOpen(null, level, state, lower, false);
+            poweredShut++;
+            shut++;
+        }
+        return shut;
+    }
+
     /** Once a second: a person in a staff-only area of an open building whom the household can see is told to leave, then reported. */
     @SubscribeEvent
     public void tick(TickEvent.ServerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END || event.getServer().getTickCount() % 20 != 11) return;
+        if (event.phase != TickEvent.Phase.END) return;
+        int t = event.getServer().getTickCount();
+        if (t % 4 == 1) {
+            ServerLevel doors = event.getServer().overworld();
+            if (doors != null) for (ServerPlayer player : doors.players()) {
+                if (player instanceof FakePlayer) continue;
+                try { shutPowered(doors, player); }
+                catch (RuntimeException error) { org.slf4j.LoggerFactory.getLogger(StaffZones.class).warn("A staff-door check failed: {}", error.toString()); }
+            }
+        }
+        if (t % 20 != 11) return;
         ServerLevel level = event.getServer().overworld();
         if (level == null) return;
         for (ServerPlayer player : level.players()) {
@@ -229,7 +270,7 @@ public final class StaffZones {
     @SubscribeEvent
     public void loggedOut(PlayerEvent.PlayerLoggedOutEvent event) { SEEN.remove(event.getEntity().getUUID()); }
 
-    static void resetForTest() { synchronized (CACHE) { CACHE.clear(); } SEEN.clear(); computed = warned = reported = 0; }
+    static void resetForTest() { synchronized (CACHE) { CACHE.clear(); } SEEN.clear(); computed = warned = reported = poweredShut = 0; }
 
-    static String status() { return "zones read " + computed + ", warned " + warned + ", reported " + reported; }
+    static String status() { return "zones read " + computed + ", warned " + warned + ", reported " + reported + ", powered staff doors shut " + poweredShut; }
 }

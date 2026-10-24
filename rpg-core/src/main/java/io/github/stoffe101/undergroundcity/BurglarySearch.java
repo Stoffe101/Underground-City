@@ -74,7 +74,7 @@ public final class BurglarySearch {
     /** One search in progress. */
     record Active(UUID player, BlockPos pos, Kind kind, long endsAt, BlockPos from, boolean container) {}
     private static final Map<UUID, Active> ACTIVE = new HashMap<>();
-    static long searches, finds, caught;
+    static long searches, finds, caught, stocked;
 
     /** Registered on the Forge bus for its clicks and its clock. */
     BurglarySearch() {}
@@ -292,6 +292,7 @@ public final class BurglarySearch {
             BlockEntity be = level.getBlockEntity(a.pos());
             if (be instanceof RandomizableContainerBlockEntity box) {
                 box.unpackLootTable(player);
+                stock(level, building, a.pos(), box, now);
                 for (int i = 0; i < box.getContainerSize(); i++) { ItemStack stack = box.getItem(i); if (!stack.isEmpty()) { StolenGoods.mark(stack, city, player.getUUID()); got.add(stack.copy()); } }
                 box.setChanged();
                 if (be instanceof MenuProvider provider) player.openMenu(provider);
@@ -324,6 +325,32 @@ public final class BurglarySearch {
     }
 
     /** The finds of one search: one draw, a second one in a wealthy place, each from the entries the tier and the building's use allow, or nothing. Pure apart from the registry (tested). */
+    /** The uses whose back rooms hold the business's own stock (D-164). */
+    static final java.util.Set<String> BUSINESS_USES = java.util.Set.of("shop", "pub", "club", "workshop", "warehouse");
+
+    /**
+     * An empty chest or barrel in the back of a business (off its public floor) holds the business's own stock the first time it is searched: three draws from the {@code stock} kind for the
+     * building's use and tier (a bakery's flour and sugar, a pub's wine and cider, a workshop's fasteners and brackets). A container that holds anything already is left as it is, and a
+     * container is searched once ({@link Records}), so this never refills. Returns how many stacks went in. Visible for the tests.
+     */
+    static int stock(ServerLevel level, CityBuildings.Building building, BlockPos pos, net.minecraft.world.Container box, long now) {
+        Kind stock = LOADER.kinds().get("stock");
+        String use = use(building);
+        if (stock == null || !BUSINESS_USES.contains(use) || StaffZones.onPublicFloor(level, building, pos)) return 0;
+        for (int i = 0; i < box.getContainerSize(); i++) if (!box.getItem(i).isEmpty()) return 0;
+        RandomSource random = RandomSource.create(PopulationPlan.mix(pos.asLong() ^ level.getSeed() ^ 0x570C4L));
+        int slot = 0, stacks = 0;
+        for (int draw = 0; draw < 3 && slot < box.getContainerSize(); draw++) {
+            for (ItemStack found : roll(stock, Thievery.tier(building), use, random)) {
+                if (slot >= box.getContainerSize()) break;
+                box.setItem(slot++, found);
+                stacks++;
+            }
+        }
+        if (stacks > 0) stocked++;
+        return stacks;
+    }
+
     static List<ItemStack> roll(Kind kind, int tier, String use, RandomSource random) {
         List<ItemStack> out = new ArrayList<>();
         int draws = tier >= 4 ? 2 : 1;
@@ -373,6 +400,6 @@ public final class BurglarySearch {
     // ------------------------------------------------------------------------------------------------ seams
     static boolean searching(UUID player) { return ACTIVE.containsKey(player); }
     static Active activeFor(UUID player) { return ACTIVE.get(player); }
-    static void resetForTest() { ACTIVE.clear(); searches = finds = caught = 0; }
-    static String status() { return "searches " + searches + ", finds " + finds + ", caught " + caught + ", in progress " + ACTIVE.size(); }
+    static void resetForTest() { ACTIVE.clear(); searches = finds = caught = stocked = 0; }
+    static String status() { return "searches " + searches + ", finds " + finds + ", caught " + caught + ", back-room containers stocked " + stocked + ", in progress " + ACTIVE.size(); }
 }

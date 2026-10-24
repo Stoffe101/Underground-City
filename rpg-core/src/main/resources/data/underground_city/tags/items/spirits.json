@@ -1,6 +1,8 @@
 {
   "replace": false,
   "values": [
+    "underground_city:grain_spirit",
+    "underground_city:moonshine",
     {
       "id": "kaleidoscope_tavern:brandy",
       "required": false

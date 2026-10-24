@@ -722,6 +722,48 @@
       "owner": "underground_city",
       "group": "lockpick",
       "description": "Lock screen with the Rake button (Raking, D-143)"
+    },
+    {
+      "id": "technician.quiet",
+      "expected_file": "uc-tech-quiet.png",
+      "owner": "underground_city",
+      "group": "technician",
+      "description": "Personal computer (D-166), the Service app with a back-channel job selected: shown only to a Technician with Bypass Tooling, in the underground colour, what it does and its risk, asking for a Bypass Kit"
+    },
+    {
+      "id": "technician.quiet_patch",
+      "expected_file": "uc-tech-quiet-patch.png",
+      "owner": "underground_city",
+      "group": "technician",
+      "description": "Back-channel work at a utility panel (D-166): the same abstract patch grid as an install, titled and coloured as underground work"
+    },
+    {
+      "id": "workshop.vat",
+      "expected_file": "uc-workshop-vat.png",
+      "owner": "underground_city",
+      "group": "workshop",
+      "description": "A workshop station (D-163): the Fermentation Vat at tier 2 with a batch of berry wine at work and its time left, the recipes with what each needs, the next tier's missing parts"
+    },
+    {
+      "id": "workshop.bench",
+      "expected_file": "uc-workshop-bench.png",
+      "owner": "underground_city",
+      "group": "workshop",
+      "description": "The Machinist's Bench (D-163) at tier 2: the Smith's parts, a recipe needing tier 3, an underground recipe, the lathe's parts and skill still missing"
+    },
+    {
+      "id": "workshop.still",
+      "expected_file": "uc-workshop-still.png",
+      "owner": "underground_city",
+      "group": "workshop",
+      "description": "The Pot Still (D-163): licensed grain spirit refused without the Distiller's Licence, moonshine selected as underground work"
+    },
+    {
+      "id": "counter.pub_sells",
+      "expected_file": "uc-counter-pub-sells.png",
+      "owner": "underground_city",
+      "group": "shop_counter",
+      "description": "The pub's counter (D-164): lines the shop buys say what it pays, and the second button sells the bottles the player carries"
     }
   ],
   "unintegrated_future_interfaces": [

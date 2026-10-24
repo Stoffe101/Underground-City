@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "city": "valewood",
+  "item": "underground_city:flour",
+  "unit_price": 6,
+  "initial": 8,
+  "capacity": 32,
+  "units_per_interval": 4,
+  "interval_ticks": 72000,
+  "max_order": 16,
+  "outlets": [
+    "shop:bakery"
+  ],
+  "supply": {
+    "pays": 4,
+    "xp": 1,
+    "career": "farmer"
+  }
+}

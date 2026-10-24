@@ -31,7 +31,7 @@ COUNTER_OUT = ROOT / "rpg-core/src/main/resources/data/underground_city/shop_cou
 CITIES = {"valewood", "ironhaven", "blackwater"}
 OUTLETS = {"city", "wayside"}
 SHOP_OUTLET = re.compile(r"shop:[a-z_]{2,24}")
-MAX_LINES_IN_GAME = 128         # RegionalCatalog.apply refuses more
+MAX_LINES_IN_GAME = 192         # RegionalCatalog.apply refuses more (MAX_LINES)
 EXISTING_REGIONAL_LINES = 13    # the generated commodities (9) and vehicle lines (4)
 STARTER_SHOP_UNIT_PRICES = {"minecraft:bread": 5.0}   # Q Shop starter shop: 4 for 20
 
@@ -60,10 +60,10 @@ def problems(data: dict, wayside: bool = True, other_lines: int = 0) -> list[str
         namespace = line["item"].split(":")[0]
         if not re.fullmatch(r"[a-z0-9_.-]+:[a-z0-9_./-]+", line["item"]):
             found.append(f"{name}: bad item id {line['item']}")
-        if namespace != "minecraft" and line.get("requires_mod") != namespace:
+        if namespace not in ("minecraft", "underground_city") and line.get("requires_mod") != namespace:
             found.append(f"{name}: an item of {namespace} must say requires_mod {namespace}, so the pack without it still loads")
-        if namespace == "minecraft" and line.get("requires_mod"):
-            found.append(f"{name}: a vanilla item needs no requires_mod")
+        if namespace in ("minecraft", "underground_city") and line.get("requires_mod"):
+            found.append(f"{name}: a vanilla or Core item needs no requires_mod")
         if "create" in line["item"].split(":")[0]:
             found.append(f"{name}: the Create mod is not used anywhere in this project")
         for key, low, high in (("price", 1, 1000), ("initial", 0, 256), ("capacity", 1, 256), ("units_per_interval", 1, 64), ("interval_minutes", 1, 600), ("max_order", 1, 64)):
@@ -76,6 +76,14 @@ def problems(data: dict, wayside: bool = True, other_lines: int = 0) -> list[str
         # stock is finite and small: no line may offer a stockpile
         if line["capacity"] * line["price"] > 1200:
             found.append(f"{name}: a full shelf would be worth {line['capacity'] * line['price']} credits; keep the stock small")
+        if "supply" in line:
+            sup = line["supply"]
+            if not any(o.startswith("shop:") for o in line["outlets"]):
+                found.append(f"{name}: only a shop counter buys from suppliers")
+            if not isinstance(sup.get("pays"), int) or not 1 <= sup["pays"] < line["price"]:
+                found.append(f"{name}: a shop pays a supplier 1 credit to less than its own price, never more (no buy-back arbitrage)")
+            if not 0 <= sup.get("xp", 0) <= 50 or sup.get("career", "") not in ("", "farmer", "vintner", "smith", "gunsmith", "technician"):
+                found.append(f"{name}: supply xp 0-50 and a known career")
         if "city" in line["outlets"]:
             city_price[line["item"]] = min(city_price.get(line["item"], 10**9), line["price"])
     # a wayside price carries a convenience premium over the cheapest city or starter-shop price for the same thing
@@ -154,6 +162,8 @@ def build(data: dict, out: Path = OUT) -> dict[Path, str]:
         }
         if line.get("requires_mod"):
             body["requires_mod"] = line["requires_mod"]
+        if line.get("supply"):
+            body["supply"] = line["supply"]   # what the shop pays a supplier a unit (D-164)
         files[out / f"{line['id']}.json"] = json.dumps(body, indent=2) + "\n"
     return files
 

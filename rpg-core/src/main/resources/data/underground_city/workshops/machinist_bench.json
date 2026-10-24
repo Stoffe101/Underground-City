@@ -1,0 +1,152 @@
+{
+  "schema_version": 1,
+  "id": "machinist_bench",
+  "career": "smith",
+  "title": "Machinist's Bench",
+  "note": "Turns iron into the parts every other trade fits: fasteners, brackets, hoops, springs and gear sets. A drill press and a lathe open finer work.",
+  "tiers": [
+    {
+      "tier": 1,
+      "name": "Vice and Files",
+      "batch": 1,
+      "speed": 1.0
+    },
+    {
+      "tier": 2,
+      "name": "Drill Press",
+      "batch": 2,
+      "speed": 1.35,
+      "upgrade": {
+        "parts": {
+          "underground_city:gear_set": 1,
+          "underground_city:steel_bracket": 2,
+          "underground_city:springs": 2
+        }
+      }
+    },
+    {
+      "tier": 3,
+      "name": "Lathe",
+      "batch": 4,
+      "speed": 1.75,
+      "upgrade": {
+        "parts": {
+          "underground_city:gear_set": 2,
+          "underground_city:machined_parts": 2,
+          "underground_city:springs": 2
+        },
+        "skill": "smith.precision_machining"
+      }
+    }
+  ],
+  "recipes": [
+    {
+      "id": "fasteners",
+      "title": "Fasteners",
+      "inputs": {
+        "minecraft:iron_nugget": 6
+      },
+      "output": "underground_city:fasteners",
+      "count": 8,
+      "seconds": 20,
+      "xp": 6,
+      "note": "Six nuggets turned into eight bolts, nuts and rivets."
+    },
+    {
+      "id": "steel_bracket",
+      "title": "Steel brackets",
+      "inputs": {
+        "minecraft:iron_ingot": 2
+      },
+      "output": "underground_city:steel_bracket",
+      "count": 3,
+      "seconds": 40,
+      "xp": 10,
+      "note": "Two ingots bent and drilled into three brackets."
+    },
+    {
+      "id": "barrel_hoops",
+      "title": "Barrel hoops",
+      "inputs": {
+        "minecraft:iron_ingot": 2
+      },
+      "output": "underground_city:barrel_hoops",
+      "count": 4,
+      "seconds": 40,
+      "xp": 10,
+      "note": "Two ingots drawn into four hoops: a Vintner's vat and cask need them."
+    },
+    {
+      "id": "springs",
+      "title": "Coil springs",
+      "inputs": {
+        "minecraft:iron_ingot": 1,
+        "minecraft:redstone": 1
+      },
+      "output": "underground_city:springs",
+      "count": 4,
+      "seconds": 60,
+      "xp": 12,
+      "note": "An ingot wound and tempered into four springs."
+    },
+    {
+      "id": "gear_set",
+      "title": "Gear set",
+      "inputs": {
+        "minecraft:iron_ingot": 2,
+        "minecraft:copper_ingot": 2
+      },
+      "output": "underground_city:gear_set",
+      "count": 1,
+      "seconds": 90,
+      "xp": 25,
+      "skill": "smith.structural_works",
+      "note": "Two iron and two copper cut into a gear set. The top tier of most stations needs one."
+    },
+    {
+      "id": "machined_parts",
+      "title": "Machined parts",
+      "inputs": {
+        "underground_city:refined_alloy": 1,
+        "minecraft:iron_ingot": 1
+      },
+      "output": "underground_city:machined_parts",
+      "count": 2,
+      "seconds": 90,
+      "xp": 25,
+      "tier": 2,
+      "note": "Alloy and iron on the drill press: two machined parts, as the exchange sells them."
+    },
+    {
+      "id": "precision_parts",
+      "title": "Precision machinery parts",
+      "inputs": {
+        "underground_city:machined_parts": 2,
+        "underground_city:refined_alloy": 1
+      },
+      "output": "underground_city:precision_machinery_parts",
+      "count": 2,
+      "seconds": 180,
+      "xp": 45,
+      "tier": 3,
+      "skill": "smith.precision_machining",
+      "note": "Lathe work to tight tolerances, without a control board."
+    },
+    {
+      "id": "unstamped_plate",
+      "title": "Unstamped plate",
+      "inputs": {
+        "underground_city:refined_alloy": 1,
+        "minecraft:iron_ingot": 2
+      },
+      "output": "underground_city:unstamped_plate",
+      "count": 2,
+      "seconds": 120,
+      "xp": 40,
+      "tier": 2,
+      "skill": "smith.unlisted_fabrication",
+      "legality": "underground",
+      "note": "Plate that appears on no register. Restricted components at a checkpoint."
+    }
+  ]
+}

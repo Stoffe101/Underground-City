@@ -71,7 +71,6 @@ public final class ShopCounters extends SimpleJsonResourceReloadListener {
      * open by day and shut at night, as its shopkeeper is). An open shop's street door is not locked: customers walk in to the counter, and its cameras do not take a customer for a burglar.
      */
     static boolean openNow(net.minecraft.server.level.ServerLevel level, CityBuildings.Building building) {
-        if (TechService.shopDown(level, building)) return false;   // its till and card network are down until a Technician puts them right (D-158)
         Optional<Shop> shop = INSTANCE.forBuilding(building.type());
         if (shop.isEmpty()) return false;
         BuildingSpots.Plan plan = BuildingSpots.INSTANCE.forType(building.type());

@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "city": "blackwater",
+  "item": "underground_city:berry_wine",
+  "unit_price": 24,
+  "initial": 3,
+  "capacity": 12,
+  "units_per_interval": 1,
+  "interval_ticks": 72000,
+  "max_order": 4,
+  "outlets": [
+    "shop:bar"
+  ],
+  "supply": {
+    "pays": 15,
+    "xp": 6,
+    "career": "vintner"
+  }
+}

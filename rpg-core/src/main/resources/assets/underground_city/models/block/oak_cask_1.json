@@ -1,0 +1,152 @@
+{
+ "parent": "minecraft:block/block",
+ "textures": {
+  "end": "underground_city:block/ws_cask_end_1",
+  "side": "underground_city:block/ws_cask_side_1",
+  "top": "underground_city:block/ws_cask_top_1",
+  "rack": "underground_city:block/ws_cask_rack_1",
+  "particle": "underground_city:block/ws_cask_end_1"
+ },
+ "elements": [
+  {
+   "from": [
+    1,
+    2,
+    1
+   ],
+   "to": [
+    15,
+    13,
+    15
+   ],
+   "faces": {
+    "north": {
+     "texture": "#end"
+    },
+    "south": {
+     "texture": "#end"
+    },
+    "east": {
+     "texture": "#side"
+    },
+    "west": {
+     "texture": "#side"
+    },
+    "up": {
+     "texture": "#top"
+    },
+    "down": {
+     "texture": "#rack"
+    }
+   }
+  },
+  {
+   "from": [
+    2,
+    0,
+    2
+   ],
+   "to": [
+    4,
+    2,
+    14
+   ],
+   "faces": {
+    "north": {
+     "texture": "#rack"
+    },
+    "south": {
+     "texture": "#rack"
+    },
+    "east": {
+     "texture": "#rack"
+    },
+    "west": {
+     "texture": "#rack"
+    },
+    "up": {
+     "texture": "#rack"
+    }
+   }
+  },
+  {
+   "from": [
+    12,
+    0,
+    2
+   ],
+   "to": [
+    14,
+    2,
+    14
+   ],
+   "faces": {
+    "north": {
+     "texture": "#rack"
+    },
+    "south": {
+     "texture": "#rack"
+    },
+    "east": {
+     "texture": "#rack"
+    },
+    "west": {
+     "texture": "#rack"
+    },
+    "up": {
+     "texture": "#rack"
+    }
+   }
+  }
+ ],
+ "display": {
+  "gui": {
+   "rotation": [
+    30,
+    225,
+    0
+   ],
+   "translation": [
+    0,
+    0,
+    0
+   ],
+   "scale": [
+    0.62,
+    0.62,
+    0.62
+   ]
+  },
+  "ground": {
+   "scale": [
+    0.4,
+    0.4,
+    0.4
+   ]
+  },
+  "fixed": {
+   "scale": [
+    0.6,
+    0.6,
+    0.6
+   ]
+  },
+  "thirdperson_righthand": {
+   "rotation": [
+    75,
+    45,
+    0
+   ],
+   "translation": [
+    0,
+    2.5,
+    0
+   ],
+   "scale": [
+    0.375,
+    0.375,
+    0.375
+   ]
+  }
+ }
+}

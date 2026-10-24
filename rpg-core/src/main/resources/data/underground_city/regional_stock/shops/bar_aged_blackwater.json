@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "city": "blackwater",
+  "item": "underground_city:aged_wine",
+  "unit_price": 55,
+  "initial": 1,
+  "capacity": 6,
+  "units_per_interval": 1,
+  "interval_ticks": 144000,
+  "max_order": 2,
+  "outlets": [
+    "shop:bar"
+  ],
+  "supply": {
+    "pays": 36,
+    "xp": 14,
+    "career": "vintner"
+  }
+}

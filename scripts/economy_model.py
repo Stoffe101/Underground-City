@@ -169,8 +169,8 @@ class Model:
                             o.exchange_goods.add(good)
                             o.goods_units[good] = o.goods_units.get(good, 0) + crafts * n
                     hands += crafts * self.a["overhead"]["craft_operation_minutes"]
-                else:  # a harvest-only Core good: its operating cost per unit is in the reference values
-                    cash += count * self.refs["harvest_units"].get(item, 0)
+                else:  # a harvest-only Core good, or a workshop good (D-163): its operating cost per unit is in the reference values
+                    cash += count * (self.refs["harvest_units"].get(item) or self.refs.get("workshop_units", {}).get(item, 0))
                     hands += count * self.minutes(item)
                     wait = max(wait, self.a["wait_minutes"].get(item, 0))
                 continue

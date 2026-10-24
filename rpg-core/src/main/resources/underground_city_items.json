@@ -280,6 +280,81 @@
       "id": "diagnostic_scanner",
       "kind": "durable",
       "stack": 1
+    },
+    {
+      "id": "flour",
+      "kind": "product",
+      "stack": 64
+    },
+    {
+      "id": "produce_crate",
+      "kind": "product",
+      "stack": 64
+    },
+    {
+      "id": "fruit_crate",
+      "kind": "product",
+      "stack": 64
+    },
+    {
+      "id": "berry_wine",
+      "kind": "product",
+      "stack": 64
+    },
+    {
+      "id": "apple_cider",
+      "kind": "product",
+      "stack": 64
+    },
+    {
+      "id": "aged_wine",
+      "kind": "product",
+      "stack": 64
+    },
+    {
+      "id": "grain_spirit",
+      "kind": "product",
+      "stack": 64
+    },
+    {
+      "id": "moonshine",
+      "kind": "product",
+      "stack": 64
+    },
+    {
+      "id": "fasteners",
+      "kind": "product",
+      "stack": 64
+    },
+    {
+      "id": "steel_bracket",
+      "kind": "product",
+      "stack": 64
+    },
+    {
+      "id": "barrel_hoops",
+      "kind": "product",
+      "stack": 64
+    },
+    {
+      "id": "springs",
+      "kind": "product",
+      "stack": 64
+    },
+    {
+      "id": "gear_set",
+      "kind": "product",
+      "stack": 64
+    },
+    {
+      "id": "firearm_parts_kit",
+      "kind": "product",
+      "stack": 64
+    },
+    {
+      "id": "unmarked_parts_kit",
+      "kind": "product",
+      "stack": 64
     }
   ]
 }

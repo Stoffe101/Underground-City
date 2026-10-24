@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "id": "pot_still",
+  "career": "vintner",
+  "title": "Pot Still",
+  "note": "Distils spirit. A licensed distiller's grain spirit is legal where permitted; moonshine is restricted goods anywhere.",
+  "tiers": [
+    {
+      "tier": 1,
+      "name": "Pot and Worm",
+      "batch": 1,
+      "speed": 1.0
+    },
+    {
+      "tier": 2,
+      "name": "Riveted Pot",
+      "batch": 2,
+      "speed": 1.35,
+      "upgrade": {
+        "parts": {
+          "underground_city:fasteners": 12,
+          "underground_city:steel_bracket": 2
+        }
+      }
+    },
+    {
+      "tier": 3,
+      "name": "Column and Condenser",
+      "batch": 3,
+      "speed": 1.75,
+      "upgrade": {
+        "parts": {
+          "underground_city:still_column_kit": 1,
+          "underground_city:gear_set": 1
+        },
+        "skill": "vintner.cellar_fitout"
+      }
+    }
+  ],
+  "recipes": [
+    {
+      "id": "grain_spirit",
+      "title": "Grain spirit (licensed)",
+      "inputs": {
+        "minecraft:wheat": 6,
+        "minecraft:sugar": 2,
+        "minecraft:glass_bottle": 2
+      },
+      "output": "underground_city:grain_spirit",
+      "count": 2,
+      "seconds": 600,
+      "xp": 60,
+      "skill": "vintner.distillers_licence",
+      "grading": {
+        "tier3": 1,
+        "skills": {
+          "vintner.cellar_masters_label": 1
+        }
+      },
+      "note": "Six wheat and two sugar, ten minutes of play, two bottles. Only a licensed distiller runs it; carrying it is legal with the licence."
+    },
+    {
+      "id": "moonshine",
+      "title": "Moonshine",
+      "inputs": {
+        "minecraft:sugar": 4,
+        "minecraft:apple": 2,
+        "minecraft:glass_bottle": 2
+      },
+      "output": "underground_city:moonshine",
+      "count": 2,
+      "seconds": 420,
+      "xp": 55,
+      "skill": "vintner.still_craft",
+      "grading": {
+        "tier3": 1,
+        "skills": {
+          "vintner.quiet_cellar": 1
+        }
+      },
+      "legality": "underground",
+      "note": "Sugar and apples run hot and fast. Restricted goods at every checkpoint; the back bars pay for a good jug."
+    }
+  ]
+}

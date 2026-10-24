@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "id": "mill",
+  "career": "farmer",
+  "title": "Mill",
+  "note": "A hand quern for grain and beet. Flour goes to the bakery; beet sugar goes to a Vintner's vat.",
+  "tiers": [
+    {
+      "tier": 1,
+      "name": "Hand Quern",
+      "batch": 1,
+      "speed": 1.0
+    },
+    {
+      "tier": 2,
+      "name": "Iron-Banded Stones",
+      "batch": 2,
+      "speed": 1.35,
+      "upgrade": {
+        "parts": {
+          "underground_city:barrel_hoops": 2,
+          "underground_city:fasteners": 8
+        }
+      }
+    },
+    {
+      "tier": 3,
+      "name": "Geared Crank",
+      "batch": 4,
+      "speed": 1.75,
+      "upgrade": {
+        "parts": {
+          "underground_city:gear_set": 2,
+          "underground_city:fasteners": 8
+        },
+        "skill": "farmer.farm_cooperative"
+      }
+    }
+  ],
+  "recipes": [
+    {
+      "id": "flour",
+      "title": "Flour",
+      "inputs": {
+        "minecraft:wheat": 3
+      },
+      "output": "underground_city:flour",
+      "count": 2,
+      "seconds": 30,
+      "xp": 8,
+      "note": "Three wheat ground to two sacks of flour."
+    },
+    {
+      "id": "beet_sugar",
+      "title": "Beet sugar",
+      "inputs": {
+        "minecraft:beetroot": 4
+      },
+      "output": "minecraft:sugar",
+      "count": 3,
+      "seconds": 30,
+      "xp": 8,
+      "note": "Four beetroot pressed and boiled down to three sugar: the sweet a Vintner's vat needs, without a cane field."
+    },
+    {
+      "id": "feed_flour",
+      "title": "Flour (bulk)",
+      "inputs": {
+        "minecraft:wheat": 12
+      },
+      "output": "underground_city:flour",
+      "count": 9,
+      "seconds": 90,
+      "xp": 30,
+      "tier": 3,
+      "note": "A geared mill grinds a whole sheaf at once, a little finer: twelve wheat to nine flour."
+    }
+  ]
+}

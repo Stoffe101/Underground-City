@@ -95,9 +95,15 @@ public final class RegionalMarket {
     static List<TerminalData.Offer> offers(WorkOrderLedger ledger, String city, CitizenState.Citizen citizen) { return offers(ledger, city, RegionalStock.CITY, citizen); }
 
     /** Offers of one outlet of a city (its exchange or the provisions desks of its wayside shelters). */
-    static List<TerminalData.Offer> offers(WorkOrderLedger ledger, String city, String outlet, CitizenState.Citizen citizen) {
+    static List<TerminalData.Offer> offers(WorkOrderLedger ledger, String city, String outlet, CitizenState.Citizen citizen) { return offers(ledger, city, outlet, citizen, null); }
+
+    /** As above, with what a shop pays for each line it buys (D-164) and how many of it {@code player} carries. */
+    static List<TerminalData.Offer> offers(WorkOrderLedger ledger, String city, String outlet, CitizenState.Citizen citizen, net.minecraft.server.level.ServerPlayer player) {
         if (city == null || city.isEmpty()) return List.of();
-        return RegionalCatalog.INSTANCE.forOutlet(city, outlet).stream().map(stock -> new TerminalData.Offer(stock.id(),
-            stock.item().toString(), unitPrice(stock, citizen), ledger.regionalUnits(stock), stock.capacity(), stock.maxOrder())).toList();
+        return RegionalCatalog.INSTANCE.forOutlet(city, outlet).stream().map(stock -> {
+            RegionalCatalog.Supply supply = RegionalStock.isShop(outlet) ? RegionalCatalog.INSTANCE.supply(stock.id()) : null;
+            return new TerminalData.Offer(stock.id(), stock.item().toString(), unitPrice(stock, citizen), ledger.regionalUnits(stock), stock.capacity(), stock.maxOrder(),
+                supply == null ? 0 : supply.pays(), supply == null || player == null ? 0 : ShopSupply.carried(player, stock));
+        }).toList();
     }
 }

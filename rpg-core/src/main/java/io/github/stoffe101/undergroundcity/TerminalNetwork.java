@@ -24,7 +24,7 @@ import java.util.function.Supplier;
  * This is NOT a remote city supplier, contraband order, or raid service.
  */
 public final class TerminalNetwork {
-    private static final String VERSION = "12";
+    private static final String VERSION = "13";
     private static final String STARTER_SHOP_ID = "uc_starter_supply";
     private static final double MAX_TERMINAL_DISTANCE_SQUARED = 64.0;
     private static final java.util.Map<ServerPlayer, Integer> REQUEST_TIMES = new java.util.WeakHashMap<>();
@@ -75,6 +75,19 @@ public final class TerminalNetwork {
                 context.enqueueWork(() -> {
                     ServerPlayer player = context.getSender();
                     if (player != null) RegionalMarket.buy(player, packet.pos, packet.commodity, packet.quantity, packet.nonce);
+                });
+                context.setPacketHandled(true);
+            }, Optional.of(NetworkDirection.PLAY_TO_SERVER));
+        CHANNEL.registerMessage(19, RegionalSell.class,
+            (packet, buffer) -> {
+                buffer.writeBlockPos(packet.pos); buffer.writeUtf(packet.line, 128);
+                buffer.writeVarInt(packet.quantity); buffer.writeUUID(packet.nonce);
+            }, buffer -> new RegionalSell(buffer.readBlockPos(), buffer.readUtf(128), buffer.readVarInt(), buffer.readUUID()),
+            (packet, supplier) -> {
+                NetworkEvent.Context context = supplier.get();
+                context.enqueueWork(() -> {
+                    ServerPlayer player = context.getSender();
+                    if (player != null) ShopSupply.sell(player, packet.pos, packet.line, packet.quantity, packet.nonce);
                 });
                 context.setPacketHandled(true);
             }, Optional.of(NetworkDirection.PLAY_TO_SERVER));
@@ -436,6 +449,11 @@ public final class TerminalNetwork {
     }
 
     /** Client click on a regional offer; quantity is validated and the price is server-owned. */
+    /** Sells goods to the shop at the counter {@code pos} (D-164). */
+    public static void requestShopSell(BlockPos pos, String line, int quantity) {
+        CHANNEL.sendToServer(new RegionalSell(pos.immutable(), line, quantity, UUID.randomUUID()));
+    }
+
     public static void requestRegionalBuy(BlockPos pos, String commodity, int quantity) {
         CHANNEL.sendToServer(new RegionalBuy(pos.immutable(), commodity, quantity, UUID.randomUUID()));
     }
@@ -523,6 +541,7 @@ public final class TerminalNetwork {
 
     private record WorkAction(BlockPos pos, int action, String id, UUID nonce) {}
     private record RegionalBuy(BlockPos pos, String commodity, int quantity, UUID nonce) {}
+    private record RegionalSell(BlockPos pos, String line, int quantity, UUID nonce) {}
     private record SkillAction(BlockPos pos, String skill) {}
     private record OpenRegistration(java.util.Map<String, java.util.List<String>> kits) {}
     private record AskRegistration() {}

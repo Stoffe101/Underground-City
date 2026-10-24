@@ -250,7 +250,7 @@ public final class TerminalScreen extends UcScreen {
         for (int i = 0; i < MAX_OFFERS; i++) {
             int index = i;
             buyOne[i] = add(new UcButton(0, 0, 44, 18, "Buy 1", b -> buy(index, 1)));
-            buyLot[i] = add(new UcButton(0, 0, 50, 18, "Buy " + LOT, b -> buy(index, LOT)));
+            buyLot[i] = add(new UcButton(0, 0, 50, 18, "Buy " + LOT, b -> lotPressed(index)));
         }
         layoutTree();
         refresh();
@@ -270,6 +270,40 @@ public final class TerminalScreen extends UcScreen {
         accept.active = false; cancel.active = false;
         TerminalNetwork.requestWork(terminalPosition, action, row().id(), data.active());
     }
+    /** How many of a line the player could sell to the shop now (D-164): what they carry, the order limit and the shelf's room; 0 when the shop buys none of it. */
+    private int sellable(TerminalData.Offer offer) {
+        if (!data.counter() || offer.pays() <= 0) return 0;
+        return Math.max(0, Math.min(Math.min(offer.carried(), offer.maxOrder()), offer.capacity() - offer.stock()));
+    }
+
+    /** The second button of a row: Sell when the shop buys the line and the player carries some (D-164), otherwise Buy a lot. */
+    private void lotPressed(int index) {
+        if (terminalPosition == null || index + offerScroll >= data.offers().size()) return;
+        TerminalData.Offer offer = data.offers().get(index + offerScroll);
+        if (data.counter() && offer.pays() > 0 && offer.carried() > 0) {
+            int n = sellable(offer);
+            if (n <= 0) return;
+            for (UcButton button : buyOne) button.active = false;
+            for (UcButton button : buyLot) button.active = false;
+            TerminalNetwork.requestShopSell(terminalPosition, offer.id(), n);
+            return;
+        }
+        buy(index, Math.min(LOT, offer.maxOrder()));
+    }
+
+    /** Journey/QA hook: a real click on the Sell button of a line (scrolled into view first), or false when it is not offered. */
+    boolean clickSellOffer(String id) {
+        for (int i = 0; i < data.offers().size(); i++) {
+            if (!data.offers().get(i).id().equals(id)) continue;
+            int rows = Math.min(MAX_OFFERS, offerRows());
+            if (i < offerScroll || i >= offerScroll + rows) { offerScroll = Math.max(0, i - rows + 1); layoutOffers(); }
+            UcButton b = buyLot[i - offerScroll];
+            if (!b.visible || !b.active) return false;
+            return mouseClicked(b.getX() + b.getWidth() / 2.0, b.getY() + b.getHeight() / 2.0, 0);
+        }
+        return false;
+    }
+
     private void buy(int index, int quantity) {
         if (terminalPosition == null || index + offerScroll >= data.offers().size()) return;
         for (UcButton button : buyOne) button.active = false;
@@ -422,6 +456,15 @@ public final class TerminalScreen extends UcScreen {
             buyLot[i].label("Buy " + lot);
             applyBuy(buyOne[i], offer, 1);
             applyBuy(buyLot[i], offer, lot);
+            if (data.counter() && offer.pays() > 0 && offer.carried() > 0) {
+                // the shop buys this line and the player carries some: the second button sells (D-164)
+                int n = sellable(offer);
+                buyLot[i].visible = true;
+                buyLot[i].label("Sell " + Math.max(1, n));
+                buyLot[i].active = terminalPosition != null && n > 0 && data.economy();
+                buyLot[i].tooltip(n > 0 ? "Sell " + n + " x " + itemName(offer.item()) + " to the shop for " + offer.pays() * n + " credits (more for Fine or Reserve)"
+                    : "The shelf is full. The shop buys again when its customers have bought some.");
+            }
         }
     }
 
@@ -917,7 +960,8 @@ public final class TerminalScreen extends UcScreen {
             } else {
                 int barW = Math.min(TradeLayout.BAR_W, Math.max(0, sw - 40));
                 if (barW >= 12) UcUi.bar(g, sx, ry + 19, barW, 5, offer.capacity() == 0 ? 0f : (float) offer.stock() / offer.capacity(), UcUi.LEGAL);
-                g.drawString(font, UcUi.fit(font, offer.stock() + "/" + offer.capacity(), Math.max(0, sw - (barW >= 12 ? barW + 4 : 0))), sx + (barW >= 12 ? barW + 4 : 0), ry + 17, UcUi.DIM, false);
+                String count = offer.stock() + "/" + offer.capacity() + (data.counter() && offer.pays() > 0 ? "  buys at " + offer.pays() : "");
+                g.drawString(font, UcUi.fit(font, count, Math.max(0, sw - (barW >= 12 ? barW + 4 : 0))), sx + (barW >= 12 ? barW + 4 : 0), ry + 17, data.counter() && offer.pays() > 0 && offer.carried() > 0 ? UcUi.OK : UcUi.DIM, false);
             }
         }
         int more = data.offers().size() - rows;
@@ -942,6 +986,8 @@ public final class TerminalScreen extends UcScreen {
             java.util.List<net.minecraft.network.chat.Component> lines = new java.util.ArrayList<>();
             lines.add(net.minecraft.network.chat.Component.literal(itemName(offer.item())));
             lines.add(net.minecraft.network.chat.Component.literal(offer.price() + " credits each, " + offer.stock() + " of " + offer.capacity() + " in stock"));
+            if (data.counter() && offer.pays() > 0)
+                lines.add(net.minecraft.network.chat.Component.literal("The shop buys it at " + offer.pays() + " a unit while the shelf has room" + (offer.carried() > 0 ? "; you carry " + offer.carried() : "")));
             String reason = buyRefusal(offer, 1);
             if (!reason.isEmpty()) lines.add(net.minecraft.network.chat.Component.literal(reason));
             UcUi.tooltip(g, font, lines, mouseX, mouseY, width, height);

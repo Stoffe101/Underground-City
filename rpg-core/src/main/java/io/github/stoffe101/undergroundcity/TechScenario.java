@@ -34,16 +34,22 @@ import static io.github.stoffe101.undergroundcity.ThiefScenario.shot;
  * with real clicks (probes read test points, a binary search, one replacement) and pays once; the Electronics Bench makes a toolkit from carried parts and refuses a design that needs a skill; an
  * install job at a panel is worked on the patch grid and arms a monitored alarm; and the record holds across a save, quit and reopen.
  *
- * <p>Scripted rather than played, each logged as SCRIPTED: the clock, the travel to Valewood, standing at the panel, the service call (the service raises one every 5 to 10 minutes), placing the
- * computer and the bench (a home holds them), two iron ingots, the skills and XP of an Installer, a Municipal Security Array, the install job, and the patch grid's answer (read from the server; a
- * person works it out by eye; every turn was a real click).
+ * <p>Navigation (D-161): Track on the board makes the call the player's destination, which with the {@code navigation} set is one waypoint on Xaero's Minimap (also in its waypoint list and on
+ * the world map); the player walks to the panel with the movement keys; arriving keeps the marker, finishing the job removes it, tracking the install job replaces it, and a call still open when
+ * the world is saved and reopened is tracked again, once. Without Xaero the same steps pass on the status display alone.
+ *
+ * <p>Scripted rather than played, each logged as SCRIPTED: the clock, the travel to Valewood, the service calls (the service raises one every 5 to 10 minutes), placing the computers and the
+ * bench (a home holds them), two iron ingots, the skills and XP of an Installer, a Municipal Security Array, the install job, and the patch grid's answer (read from the server; a person works it
+ * out by eye; every turn was a real click). The walk to the panel is a teleport only for whatever the walker cannot reach, and says so.
  */
 final class TechScenario {
     private TechScenario() {}
 
     private static final class Facts {
-        TechService.Panel panel;
-        BlockPos computer, bench;
+        TechService.Panel panel, second;
+        BlockPos computer, bench, nearComputer;
+        Vec3 stand;
+        int ownWaypoints = -1;
         double balanceBefore;
         int xpBefore;
         int[] solution;
@@ -153,7 +159,7 @@ final class TechScenario {
             boolean fault = server(() -> level().getBlockState(F.panel.pos()).getValue(TechBlocks.UtilityPanel.STATE) == TechBlocks.UtilityPanel.State.FAULT);
             boolean down = server(() -> TechService.systems(level().getServer()).faults.containsKey(F.panel.key()));
             if (!fault || !down) Playtest.fail("no fault at the panel (lamp " + fault + ", record " + down + ")");
-            else pass("4 a service call: the Technician is told, and the panel's lamp turns red (" + (F.panel.category().equals("commercial") ? "the shop shuts" : "the alarm and cameras are off") + ")");
+            else pass("4 a service call: the Technician is told, and the panel's lamp turns red (" + (F.panel.category().equals("commercial") ? "the shop cannot pay suppliers" : "the cameras are off") + ")");
         });
     }
 
@@ -184,14 +190,96 @@ final class TechScenario {
             pass("5 the computer's service board lists the call: " + calls.get(at).address() + ", " + calls.get(at).credits() + " credits" + (calls.get(at).blocked().isEmpty() ? ", can take it" : ", " + calls.get(at).blocked()));
         });
         JourneyScenario.click("Track", true);
-        until("tracking", () -> ClientPlaces.tracked() != null && mc().screen == null, 100);
+        until("tracking", () -> ClientNavigation.current() != null && mc().screen == null, 100);
         Playtest.wait("draw", 20);
         shot("3-tracking");
         Playtest.queue("the arrow", () -> {
-            var o = ClientPlaces.objectiveOr(null);
+            var o = ClientNavigation.objectiveOr(null);
             if (o == null || o.target() == null) Playtest.fail("no tracking card");
             else pass("6 Track points the status display's next-step card at the panel (" + o.targetName() + ")");
         });
+        xaeroShows("6b", "the service call", "Till repair|Alarm repair");
+        xaeroScreens("3");
+    }
+
+    // ------------------------------------------------------------------------------------------------ Xaero's Minimap (D-161)
+
+    private static boolean noXaero() { return XaeroWaypoints.state() == XaeroWaypoints.State.ABSENT; }
+
+    /** The tracked destination is one waypoint of ours on Xaero's minimap, named for the job (or, without the mod, the status display alone points the way). */
+    private static void xaeroShows(String step, String what, String names) {
+        final int[] polls = {0};
+        until("the waypoint on Xaero's minimap", () -> {
+            if (++polls[0] % 60 == 0) Playtest.log("TECH xaero waiting: " + XaeroWaypoints.describe() + " (scenario loader " + XaeroWaypoints.class.getClassLoader() + ")");
+            return noXaero() || XaeroWaypoints.state() == XaeroWaypoints.State.FAILED || XaeroWaypoints.showing();
+        }, 400);
+        Playtest.wait("draw", 20);
+        Playtest.queue("on Xaero's minimap: " + what, () -> {
+            Navigation.Destination d = ClientNavigation.current();
+            int ours = XaeroWaypoints.ours(), own = XaeroWaypoints.playersOwn();
+            if (F.ownWaypoints < 0) F.ownWaypoints = own;
+            Playtest.log("TECH xaero: " + XaeroWaypoints.describe() + "; ours " + ours + ", the player's own " + own + "; tracking " + (d == null ? "nothing" : d.title() + " at " + d.pos().toShortString()));
+            if (noXaero()) { pass(step + " Xaero's Minimap is not installed: the status display's arrow points the way to " + what + " and nothing failed"); return; }
+            if (d == null || !XaeroWaypoints.showing() || ours != 1 || !d.title().matches("(" + names + ").*")) Playtest.fail("no single waypoint for " + what + " on Xaero's minimap (" + XaeroWaypoints.describe() + ", ours " + ours + ")");
+            else pass(step + " " + what + " is one waypoint on Xaero's minimap, \"" + XaeroWaypoints.name(d) + "\" at " + d.pos().toShortString() + "; the player's own waypoints: " + own);
+        });
+        shot(step + "-minimap");
+    }
+
+    /** Xaero's own waypoint list (U) and world map (M) with the destination on them. */
+    private static void xaeroScreens(String n) {
+        Playtest.queue("Xaero's waypoint list (U)", () -> { if (!noXaero()) { Playtest.focusWindow(); Playtest.tap("u"); } },
+            () -> noXaero() || mc().screen != null && mc().screen.getClass().getName().contains("Waypoint"), 100);
+        Playtest.wait("draw", 20);
+        Playtest.queue("the waypoint list", () -> { if (!noXaero()) Playtest.log("TECH xaero waypoint list: " + (mc().screen == null ? "none" : mc().screen.getClass().getName())); });
+        shot(n + "c-xaero-waypoints");
+        Playtest.queue("close it", () -> { if (mc().screen != null) mc().setScreen(null); });
+        Playtest.wait("settle", 10);
+        Playtest.queue("Xaero's world map (M)", () -> { if (!noXaero()) { Playtest.focusWindow(); Playtest.tap("m"); } },
+            () -> noXaero() || mc().screen != null && mc().screen.getClass().getName().contains("GuiMap"), 200);
+        Playtest.wait("the map draws", 80);
+        Playtest.queue("the world map", () -> { if (!noXaero()) Playtest.log("TECH xaero world map: " + (mc().screen == null ? "none" : mc().screen.getClass().getName())); });
+        shot(n + "d-xaero-world-map");
+        Playtest.queue("close it", () -> { if (mc().screen != null) mc().setScreen(null); });
+        Playtest.wait("settle", 10);
+    }
+
+    /** Nothing is tracked any more and our waypoint has left Xaero's minimap; the player's own are as they were. */
+    private static void xaeroCleared(String step, String why) {
+        until("tracking ended", () -> ClientNavigation.current() == null, 200);
+        until("the waypoint gone from Xaero's minimap", () -> noXaero() || XaeroWaypoints.ours() == 0, 100);
+        Playtest.queue("cleared: " + why, () -> {
+            int ours = XaeroWaypoints.ours(), own = XaeroWaypoints.playersOwn();
+            Playtest.log("TECH xaero after " + why + ": " + XaeroWaypoints.describe() + "; ours " + ours + ", the player's own " + own);
+            if (ClientNavigation.current() != null) Playtest.fail("still tracking after " + why);
+            else if (!noXaero() && (ours != 0 || own != F.ownWaypoints)) Playtest.fail("after " + why + " our waypoints are " + ours + " and the player's own " + own + " (were " + F.ownWaypoints + ")");
+            else pass(step + " " + why + " ends the tracking" + (noXaero() ? "" : ": our waypoint is gone from Xaero's minimap and the player's own " + own + " are untouched"));
+        });
+        shot(step + "-cleared");
+    }
+
+    /** A computer beside the player (scripted), its service board, the job at {@code address} of {@code kind} selected and Track clicked. */
+    private static void trackFromComputer(String label, java.util.function.Supplier<String> address, String kind) {
+        Playtest.queue("a computer beside the player (scripted)", () -> {
+            scripted("a personal computer was set down beside the player for " + label);
+            F.nearComputer = server(() -> {
+                var p = me();
+                BlockPos c = freeCellNear(p.blockPosition(), null);
+                if (c != null) level().setBlock(c, UndergroundCity.PERSONAL_COMPUTER.get().defaultBlockState().setValue(TechBlocks.Computer.FACING, Direction.fromYRot(p.getYRot()).getOpposite()), 3);
+                return c;
+            });
+            if (F.nearComputer == null) Playtest.fail("no room for a computer");
+        });
+        useBlock("the computer", () -> F.nearComputer, () -> mc().screen instanceof ComputerScreen, null);
+        Playtest.wait("draw", 10);
+        Playtest.queue("select " + label, () -> {
+            if (!(mc().screen instanceof ComputerScreen screen)) { Playtest.fail("no computer screen"); return; }
+            List<TechWork.Call> calls = screen.calls();
+            for (int i = 0; i < calls.size(); i++) if (calls.get(i).address().equals(address.get()) && calls.get(i).kind().startsWith(kind)) { screen.select(i); return; }
+            Playtest.fail("the service board does not list " + label + " (" + calls.stream().map(c -> c.kind() + " " + c.address()).toList() + ")");
+        });
+        JourneyScenario.click("Track", true);
+        until("tracking " + label, () -> ClientNavigation.current() != null && mc().screen == null, 100);
     }
 
     /** A free cell on the ground within three blocks of {@code from}, not the player's own and not {@code besides}, with air above it, and farther from the panel than the player (never in the way). */
@@ -204,6 +292,10 @@ final class TechScenario {
                 if (F.panel != null && c.distSqr(F.panel.pos()) <= from.distSqr(F.panel.pos())) continue;
                 if (c.equals(besides) || !level.getBlockState(c).isAir() || !level.getBlockState(c.above()).isAir() || !level.getBlockState(c.below()).isSolidRender(level, c.below())) continue;
                 if (BuildingGuard.protectedAt(level, c).isPresent() && !level.canSeeSky(c)) continue;   // not inside somebody's building
+                // in plain sight of the player's eyes, so a person could reach out and click it (a ledge or a lamp post in the way is no good)
+                var eye = me().getEyePosition();
+                if (level.clip(new net.minecraft.world.level.ClipContext(eye, Vec3.atCenterOf(c), net.minecraft.world.level.ClipContext.Block.OUTLINE,
+                        net.minecraft.world.level.ClipContext.Fluid.NONE, me())).getType() != net.minecraft.world.phys.HitResult.Type.MISS) continue;
                 return c.immutable();
             }
         }
@@ -254,18 +346,19 @@ final class TechScenario {
                 return null;
             });
         });
-        Playtest.queue("stand at the panel (scripted)", () -> {
-            Vec3 stand = server(() -> standFor(F.panel));
-            scripted("the player was put on the street in front of the panel at " + F.panel.pos().toShortString());
-            server(() -> {
-                var p = me();
-                p.teleportTo(level(), stand.x, stand.y, stand.z, p.getYRot(), 0f);
-                p.setDeltaMovement(Vec3.ZERO);
-                return null;
-            });
+        Playtest.queue("where to stand at the panel", () -> {
+            F.stand = server(() -> standFor(F.panel));
+            Playtest.log(String.format(Locale.ROOT, "TECH the panel is %.0f blocks away; walking there", mc().player.position().distanceTo(F.stand)));
+        });
+        ThiefScenario.walkOrTeleport("walk to the panel", () -> F.stand, 1.2, 1600);
+        Playtest.queue("still tracked on arrival", () -> {
+            boolean kept = ClientNavigation.current() != null && (noXaero() || XaeroWaypoints.showing());
+            if (!kept) Playtest.fail("the tracking ended on arriving, before the work was done");
+            else pass("7b arriving at the panel does not end the tracking: the marker stays until the repair is done");
             F.balanceBefore = server(() -> QShopEconomy.balance(me()));
             F.xpBefore = ThiefScenario.citizen().careerXp();
         });
+        shot("3e-arrived");
         Playtest.wait("settle", 20);
         useBlock("the panel with the toolkit", () -> F.panel.pos(), () -> mc().screen instanceof TraceScreen, item("repair_kit"));
         Playtest.wait("draw", 10);
@@ -293,6 +386,7 @@ final class TechScenario {
             if (!ClientTech.lastDone || paid != expected || xp <= 0 || !cleared || !lamp) Playtest.fail("the repair did not pay once and put the building right");
             else pass("8 the repair, worked with real clicks, pays " + paid + " credits and " + xp + " XP once, clears the fault and turns the lamp green");
         });
+        xaeroCleared("8b", "the repair");
     }
 
     /**
@@ -399,11 +493,19 @@ final class TechScenario {
                 for (String skill : new String[] {"technician.fundamentals", "technician.municipal_repairs", "technician.automation_install"}) citizens.unlockSkill(me().getUUID(), skill);
                 me().getInventory().add(new ItemStack(item("security_array")));
                 TechService.Systems s = TechService.systems(server);
-                TechService.newJob(s, "install", F.panel, TechService.installFee(F.panel.tier()), TechService.installXp(F.panel.tier()), LockService.clock(server));
+                // the service never opens two jobs at one building: the job is given only when the building has none already (tech run 6 tracked the city's own while the panel took the script's)
+                if (s.jobs.values().stream().noneMatch(j -> j.key() == F.panel.key()))
+                    TechService.newJob(s, "install", F.panel, TechService.installFee(F.panel.tier()), TechService.installXp(F.panel.tier()), LockService.clock(server));
+                else if (s.jobs.values().stream().noneMatch(j -> j.key() == F.panel.key() && j.kind().equals("install"))) {
+                    s.jobs.values().removeIf(j -> j.key() == F.panel.key());
+                    TechService.newJob(s, "install", F.panel, TechService.installFee(F.panel.tier()), TechService.installXp(F.panel.tier()), LockService.clock(server));
+                }
                 return null;
             });
-            F.balanceBefore = server(() -> QShopEconomy.balance(me()));
         });
+        trackFromComputer("the install job", () -> F.panel.address(), "install");
+        xaeroShows("9b", "the install job", "Alarm install");
+        Playtest.queue("back to the panel", () -> F.balanceBefore = server(() -> QShopEconomy.balance(me())));
         useBlock("the panel with the security array", () -> F.panel.pos(), () -> mc().screen instanceof PatchScreen, item("security_array"));
         Playtest.wait("draw", 10);
         shot("8-install-patch");
@@ -439,11 +541,28 @@ final class TechScenario {
             else pass("10 the install, worked on the patch grid with real clicks, pays " + paid + " credits and fits a monitored alarm (always armed)");
         });
         shot("9-installed");
+        xaeroCleared("10b", "the install");
     }
 
     // ------------------------------------------------------------------------------------------------ the record across a reopen
 
     private static void reopen() {
+        Playtest.queue("a second call, at another building (scripted)", () -> {
+            F.second = server(() -> {
+                BlockPos here = me().blockPosition();
+                TechService.Panel best = null;
+                for (TechService.Panel p : TechService.systems(level().getServer()).panels.values()) {
+                    if (p.pos() == null || p.key() == F.panel.key() || p.tier() > 2 || p.pos().distSqr(here) > 96 * 96) continue;
+                    if (best == null || p.pos().distSqr(here) < best.pos().distSqr(here)) best = p;
+                }
+                if (best != null) TechService.open(level().getServer(), level(), best, LockService.clock(level().getServer()));
+                return best;
+            });
+            if (F.second == null) Playtest.fail("no second panel for a call");
+            else scripted("a second fault was raised at " + F.second.address());
+        });
+        trackFromComputer("the second call", () -> F.second.address(), "repair");
+        xaeroShows("11a", "the second call", "Till repair|Alarm repair");
         final long[] before = new long[3];
         Playtest.queue("save and quit to the title screen, then open the world again", () -> {
             server(() -> {
@@ -475,5 +594,17 @@ final class TechScenario {
             if (!wrong.isEmpty()) Playtest.fail("the Technician's record changed across the reopen: " + wrong);
             else pass("11 after a save, quit and reopen the panels, the repair and the monitored alarm are as they were");
         });
+        until("the open call is tracked again", () -> ClientNavigation.current() != null, 200);
+        until("its waypoint back on Xaero's minimap", () -> noXaero() || XaeroWaypoints.showing(), 400);
+        Playtest.wait("draw", 20);
+        Playtest.queue("the tracking after the reopen", () -> {
+            Navigation.Destination d = ClientNavigation.current();
+            int ours = XaeroWaypoints.ours();
+            Playtest.log("TECH tracking after the reopen: " + (d == null ? "nothing" : d.title()) + "; " + XaeroWaypoints.describe() + ", ours " + ours);
+            if (d == null || !d.title().contains(F.second.address())) Playtest.fail("the open call was not tracked after the reopen");
+            else if (!noXaero() && ours != 1) Playtest.fail("after the reopen Underground City has " + ours + " waypoints on Xaero's map, not one");
+            else pass("12 after the reopen the still-open call is tracked again" + (noXaero() ? "" : ", one waypoint on Xaero's minimap and no duplicate"));
+        });
+        shot("12-reopened");
     }
 }

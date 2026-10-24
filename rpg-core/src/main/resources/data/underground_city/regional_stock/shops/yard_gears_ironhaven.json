@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "city": "ironhaven",
+  "item": "underground_city:gear_set",
+  "unit_price": 45,
+  "initial": 2,
+  "capacity": 4,
+  "units_per_interval": 1,
+  "interval_ticks": 144000,
+  "max_order": 2,
+  "outlets": [
+    "shop:builders"
+  ],
+  "supply": {
+    "pays": 30,
+    "xp": 10,
+    "career": "smith"
+  }
+}

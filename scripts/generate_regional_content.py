@@ -105,6 +105,10 @@ def load_property() -> tuple[dict, dict]:
     return policies, loot
 
 
+#: The workshop stations (D-163), in the order UndergroundCity.WORKSHOPS registers them.
+WORKSHOP_STATIONS = ("grading_table", "mill", "fermentation_vat", "oak_cask", "pot_still", "machinist_bench", "gunsmith_bench")
+
+
 def lootable_item_ids(data: dict) -> set[str]:
     return {f"{NAMESPACE}:{e['id']}" for e in data["commodities"] + data["products"] + data["tools"] + data.get("specials", [])}
 
@@ -131,6 +135,7 @@ def unit_costs(data: dict, contracts: dict) -> dict[str, float]:
             total = sum(prices[f"{NAMESPACE}:{k}"] * n for k, n in p["inputs"].items() if ":" not in k)
             costs[f"{NAMESPACE}:{p['id']}"] = total / p["count"]
     costs.update(refs["harvest_units"])
+    costs.update({k: v for k, v in refs.get("workshop_units", {}).items() if k != "note"})   # goods made only at a workshop station (D-163)
     costs.update(refs["vanilla"])
     costs.update(refs.get("mods", {}))   # third-party goods a contract names (Vinery wine, Tadacko's spirits)
     return costs
@@ -256,6 +261,20 @@ def build(data: dict, contracts: dict) -> dict[Path, bytes]:
         "item.underground_city.electronics_bench": "Electronics Bench",
         "block.underground_city.drying_rack": "Drying Rack",
         "item.underground_city.drying_rack": "Drying Rack",
+        "block.underground_city.grading_table": "Grading Table",
+        "item.underground_city.grading_table": "Grading Table",
+        "block.underground_city.mill": "Mill",
+        "item.underground_city.mill": "Mill",
+        "block.underground_city.fermentation_vat": "Fermentation Vat",
+        "item.underground_city.fermentation_vat": "Fermentation Vat",
+        "block.underground_city.oak_cask": "Oak Cask",
+        "item.underground_city.oak_cask": "Oak Cask",
+        "block.underground_city.pot_still": "Pot Still",
+        "item.underground_city.pot_still": "Pot Still",
+        "block.underground_city.machinist_bench": "Machinist's Bench",
+        "item.underground_city.machinist_bench": "Machinist's Bench",
+        "block.underground_city.gunsmith_bench": "Gunsmith's Bench",
+        "item.underground_city.gunsmith_bench": "Gunsmith's Bench",
     }
 
     def emit_item(entry, kind, stack):
@@ -405,6 +424,10 @@ def build(data: dict, contracts: dict) -> dict[Path, bytes]:
     for dropped in ("personal_computer", "electronics_bench", "drying_rack"):
         files[Path(f"rpg-core/src/main/resources/data/{NAMESPACE}/loot_tables/blocks/{dropped}.json")] = jdump({"type": "minecraft:block", "pools": [{"rolls": 1,
             "entries": [{"type": "minecraft:item", "name": f"{NAMESPACE}:{dropped}"}], "conditions": [{"condition": "minecraft:survives_explosion"}]}]}).encode()
+    # the trades' workshop stations (D-163): drawn in three tiers by tools/art/gen_workshops.py; a station drops itself, at its tier, and what is in it from code, so its loot table is empty
+    for station in WORKSHOP_STATIONS:
+        files[Path(f"rpg-core/src/main/resources/assets/{NAMESPACE}/models/item/{station}.json")] = jdump({"parent": f"{NAMESPACE}:block/{station}_1"}).encode()
+        files[Path(f"rpg-core/src/main/resources/data/{NAMESPACE}/loot_tables/blocks/{station}.json")] = jdump({"type": "minecraft:block", "pools": []}).encode()
     files[Path(f"rpg-core/src/main/resources/assets/{NAMESPACE}/models/item/sealed_envelope.json")] = jdump(
         {"parent": "minecraft:item/generated", "textures": {"layer0": f"{NAMESPACE}:item/sealed_envelope"}}).encode()
     blueprint = json.loads((ROOT / "content/region-blueprints/cities.json").read_text(encoding="utf-8"))

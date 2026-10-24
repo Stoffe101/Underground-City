@@ -24,8 +24,8 @@ public final class PatchScreen extends UcScreen {
     TechNetwork.PatchView view() { return v; }
     int[] cellCentre(int index) { return new int[] {gx + (index % v.w()) * cell + cell / 2, gy + (index / v.w()) * cell + cell / 2}; }
 
-    @Override protected int accent() { return UcUi.LEGAL; }
-    @Override protected String titleText() { return v.kind().equals("install") ? "Install: wire the alarm" : "Upgrade: route the network"; }
+    @Override protected int accent() { return v.kind().equals("quiet") ? UcUi.UNDERGROUND : UcUi.LEGAL; }
+    @Override protected String titleText() { return v.kind().equals("install") ? "Install: wire the alarm" : v.kind().equals("quiet") ? "Back channel: loop the feeds" : "Upgrade: route the network"; }
     @Override protected UcUi.Icon titleIcon() { return UcUi.Icon.GEAR; }
     @Override protected boolean showFooter() { return true; }
 

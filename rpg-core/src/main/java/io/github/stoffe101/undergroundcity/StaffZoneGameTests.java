@@ -78,6 +78,14 @@ public final class StaffZoneGameTests {
             check(StaffZones.onPublicSide(level, b, inside, Vec3.atBottomCenterOf(front)) && !StaffZones.onPublicSide(level, b, inside, Vec3.atBottomCenterOf(back)), "the sides of the staff door are not told apart");
             check(StaffZones.of(level, b) == z && StaffZones.computed == 1, "the zones were read again within the minute");
 
+            // a redstone signal (a pressure plate or a button beside it) never holds a staff door open: it is shut again, the power left as it is (the fourth pass's open defect)
+            for (BlockPos half : new BlockPos[] {inside, inside.above()}) level.setBlock(half, level.getBlockState(half).setValue(DoorBlock.OPEN, true).setValue(DoorBlock.POWERED, true), 2);
+            check(StaffZones.shutPowered(level, b) == 1 && !level.getBlockState(inside).getValue(DoorBlock.OPEN) && level.getBlockState(inside).getValue(DoorBlock.POWERED),
+                "a staff door held open by redstone was not shut");
+            check(StaffZones.shutPowered(level, b) == 0, "a shut staff door was shut again");
+            for (BlockPos half : new BlockPos[] {street, street.above()}) level.setBlock(half, level.getBlockState(half).setValue(DoorBlock.OPEN, true).setValue(DoorBlock.POWERED, true), 2);
+            check(StaffZones.shutPowered(level, b) == 0 && level.getBlockState(street).getValue(DoorBlock.OPEN), "a street door was taken for a staff door");
+
             // with the inside door gone (an opening), the back room joins the floor
             level.setBlock(inside.above(), air, 2);
             level.setBlock(inside, air, 2);

@@ -23,6 +23,8 @@ final class Scenarios {
             case "places" -> PlacesScenario.build();
             case "tech" -> TechScenario.build();
             case "organic" -> OrganicScenario.build();
+            case "crowd" -> CrowdScenario.build();
+            case "workshop" -> WorkshopScenario.build();
             case "sccamera" -> CameraMeasureScenario.build();
             case "alarm" -> AlarmScenario.build();
             case "security" -> SecurityScenario.build();

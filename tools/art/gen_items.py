@@ -884,6 +884,208 @@ def sealed_envelope():
     return finish(s)
 
 
+
+# ------------------------------------------------------------------------------------------------ workshops (D-163)
+WINE = ramp('#7b2346')
+CIDER = ramp('#d39a2c')
+CLEAR = ramp('#cfe3e8')
+FLOUR = ramp('#efe6cf')
+CRATE = ramp('#9b7349')
+
+
+def _bottle(s: Sprite, glass, liquid, cap, label=None, tall=True):
+    """A bottle: a cap, a neck and a body with a lit edge, the liquid seen through the glass and a paper label."""
+    top = 1 if tall else 3
+    s.rect(7, top, 8, top + 2, cap[2]); s.put(7, top, cap[4])
+    s.rect(7, top + 3, 8, top + 4, glass[2])
+    s.polygon([(5, top + 5), (10, top + 5), (11, top + 7), (11, 15), (4, 15), (4, top + 7)], glass[1])
+    s.rect(5, top + 8, 10, 14, liquid[2]); s.line(5, top + 8, 10, top + 8, liquid[3])
+    s.line(5, top + 7, 5, 14, glass[4])
+    if label:
+        s.rect(5, 10, 10, 12, label[3]); s.line(6, 11, 9, 11, label[1])
+
+
+@item
+def flour():
+    """A tied cotton sack of flour with a wheat ear printed on it and a little flour at the neck."""
+    s = Sprite()
+    s.polygon([(4, 5), (11, 5), (13, 9), (13, 15), (2, 15), (2, 9)], FLOUR[2])
+    s.rect(6, 2, 9, 5, FLOUR[3]); s.line(5, 5, 10, 5, BURLAP[1])
+    s.line(3, 9, 3, 14, FLOUR[4]); s.line(12, 10, 12, 14, FLOUR[1])
+    s.line(7, 8, 7, 13, AMBER[2]); s.put(6, 9, AMBER[3]); s.put(8, 9, AMBER[3]); s.put(6, 11, AMBER[3]); s.put(8, 11, AMBER[3])
+    s.put(5, 2, WHITE[4]); s.put(10, 3, WHITE[4])
+    return finish(s)
+
+
+def _crate(s: Sprite, fruit):
+    """A slatted crate with a heap of produce above the rim."""
+    for (x, y, r, c) in fruit:
+        disc(s, x, y, r, c)
+    bevel_rect(s, 1, 8, 14, 14, CRATE)
+    s.line(1, 10, 14, 10, CRATE[1]); s.line(1, 12, 14, 12, CRATE[1])
+    s.line(4, 8, 4, 14, CRATE[0]); s.line(11, 8, 11, 14, CRATE[0])
+
+
+@item
+def produce_crate():
+    """A crate heaped with carrots and potatoes."""
+    s = Sprite()
+    _crate(s, ((4, 7, 2.2, SOIL), (8, 6, 2.4, BURLAP), (12, 7, 2.0, SOIL)))
+    s.line(6, 3, 9, 7, AMBER[3]); s.line(6, 3, 6, 2, LEAF[3]); s.line(10, 4, 12, 7, AMBER[2]); s.put(10, 3, LEAF[3])
+    return finish(s)
+
+
+@item
+def fruit_crate():
+    """A crate heaped with red apples and dark berries."""
+    s = Sprite()
+    _crate(s, ((4, 7, 2.3, RED), (8, 6, 2.4, RED), (12, 7, 2.1, RED)))
+    s.put(8, 3, LEAF[3]); s.put(4, 4, SOIL[1])
+    for (x, y) in ((6, 7), (10, 7), (11, 5)):
+        s.put(x, y, PURPLE[1])
+    s.put(7, 5, WHITE[4]); s.put(3, 6, WHITE[4])
+    return finish(s)
+
+
+@item
+def berry_wine():
+    """A dark bottle of red berry wine with a cream label."""
+    s = Sprite()
+    _bottle(s, GREEN_GLASS, WINE, RED, PAPER)
+    s.put(7, 11, WINE[2]); s.put(8, 11, WINE[2])
+    return finish(s)
+
+
+@item
+def apple_cider():
+    """A short clear bottle of golden cider with a swing cap and an apple on the label."""
+    s = Sprite()
+    _bottle(s, CLEAR, CIDER, STEEL, PAPER, tall=False)
+    s.put(7, 11, RED[3]); s.put(8, 11, RED[2])
+    return finish(s)
+
+
+@item
+def aged_wine():
+    """A tall bottle of cask-aged wine: a wax seal, a dark label with a gold band."""
+    s = Sprite()
+    _bottle(s, GREEN_GLASS, WINE, BRASS)
+    s.rect(5, 9, 10, 12, BLACK[2]); s.line(5, 10, 10, 10, BRASS[3]); s.put(7, 11, BRASS[4])
+    return finish(s)
+
+
+@item
+def grain_spirit():
+    """A square clear bottle of grain spirit with a printed licence strip over the cap."""
+    s = Sprite()
+    s.rect(7, 1, 8, 3, BLUE[2]); s.put(7, 1, BLUE[4])
+    s.rect(7, 4, 8, 5, CLEAR[2])
+    bevel_rect(s, 4, 6, 11, 15, CLEAR, strong=False)
+    s.rect(5, 8, 10, 14, CLEAR[3])
+    s.rect(5, 10, 10, 12, PAPER[3]); s.line(6, 11, 9, 11, BLUE[2])
+    s.line(6, 3, 9, 3, AMBER[3])
+    return finish(s)
+
+
+@item
+def moonshine():
+    """A stoneware jug with a cork and three X's scratched on it."""
+    s = Sprite()
+    s.rect(7, 1, 8, 2, BURLAP[2])
+    s.rect(6, 3, 9, 4, PAPER[2])
+    s.polygon([(5, 5), (10, 5), (12, 8), (12, 15), (3, 15), (3, 8)], PAPER[2])
+    s.rect(3, 6, 12, 8, BURLAP[2]); s.line(3, 6, 12, 6, BURLAP[3])
+    s.line(4, 9, 4, 14, PAPER[4]); s.line(11, 9, 11, 14, PAPER[1])
+    s.line(11, 6, 13, 5, PAPER[1]); s.line(13, 5, 13, 9, PAPER[1])
+    for x in (4, 8):
+        for d in range(3):
+            s.put(x + d, 10 + d, INK); s.put(x + 2 - d, 10 + d, INK)
+    return finish(s)
+
+
+@item
+def fasteners():
+    """A handful of hex bolts and nuts."""
+    s = Sprite()
+    for (x, y) in ((3, 4), (9, 3)):
+        s.rect(x, y, x + 3, y + 2, STEEL[3]); s.line(x, y, x + 3, y, STEEL[4])
+        s.rect(x + 1, y + 3, x + 2, y + 8, STEEL[2]); s.line(x + 1, y + 4, x + 2, y + 4, STEEL[1]); s.line(x + 1, y + 6, x + 2, y + 6, STEEL[1])
+    for (cx, cy) in ((5, 13), (11, 12)):
+        disc(s, cx, cy, 2.2, GUNMETAL, hole=0.8)
+    return finish(s)
+
+
+@item
+def steel_bracket():
+    """Two drilled L-brackets."""
+    s = Sprite()
+    for (ox, oy) in ((1, 2), (7, 6)):
+        s.rect(ox, oy, ox + 2, oy + 8, STEEL[2]); s.rect(ox, oy + 6, ox + 7, oy + 8, STEEL[2])
+        s.line(ox, oy, ox, oy + 8, STEEL[4]); s.line(ox, oy + 8, ox + 7, oy + 8, STEEL[1])
+        s.put(ox + 1, oy + 2, INK); s.put(ox + 5, oy + 7, INK)
+    return finish(s)
+
+
+@item
+def barrel_hoops():
+    """Two iron hoops leaning together."""
+    s = Sprite()
+    disc(s, 6, 7, 5.6, STEEL, hole=3.9)
+    disc(s, 10, 10, 5.0, GUNMETAL, hole=3.4)
+    s.put(3, 4, WHITE[4]); s.put(6, 2, STEEL[4])
+    return finish(s)
+
+
+@item
+def springs():
+    """Two coil springs, one standing and one lying down: lit coils in front, dark ones behind."""
+    s = Sprite()
+    for y in range(2, 13, 2):
+        s.line(2, y, 7, y + 1, STEEL[4]); s.line(7, y + 1, 2, y + 2, STEEL[1])
+    for x in range(8, 15, 2):
+        s.line(x, 9, x + 1, 14, STEEL[3]); s.line(x + 1, 14, x + 2, 9, STEEL[1])
+    return finish(s)
+
+
+@item
+def gear_set():
+    """Two cut gears, a steel one and a brass one, on a shaft."""
+    s = Sprite()
+    s.rect(0, 9, 15, 10, STEEL[2]); s.line(0, 9, 15, 9, STEEL[4])
+    gear(s, 5, 9, 4.8, 3.7, 8, STEEL, hole=1.0)
+    gear(s, 11, 9, 3.9, 3.0, 7, BRASS, hole=0.9)
+    s.put(5, 9, INK); s.put(11, 9, INK)
+    return finish(s)
+
+
+@item
+def firearm_parts_kit():
+    """An open olive tool roll holding springs, a bracket and a machined part, with a licence tag."""
+    s = Sprite()
+    bevel_rect(s, 1, 4, 14, 13, OLIVE)
+    s.line(1, 6, 14, 6, OLIVE[1])
+    s.rect(3, 7, 5, 11, STEEL[2]); s.line(3, 7, 5, 7, STEEL[4])
+    for y in (8, 10):
+        s.line(7, y, 9, y + 1, STEEL[3])
+    gear(s, 12, 9, 2.0, 1.5, 5, BRASS, hole=0.5)
+    s.rect(10, 2, 13, 4, PAPER[3]); s.put(11, 3, BLUE[2])
+    return finish(s)
+
+
+@item
+def unmarked_parts_kit():
+    """A plain grey tool roll tied with string: the same parts, no tag, a scratched-out stamp."""
+    s = Sprite()
+    bevel_rect(s, 1, 4, 14, 13, GUNMETAL)
+    s.line(1, 6, 14, 6, GUNMETAL[1])
+    s.rect(3, 7, 5, 11, STEEL[2])
+    for y in (8, 10):
+        s.line(7, y, 9, y + 1, STEEL[3])
+    gear(s, 12, 9, 2.0, 1.5, 5, STEEL, hole=0.5)
+    s.line(8, 4, 8, 13, BURLAP[2])
+    s.line(2, 12, 5, 12, RED[1]); s.line(2, 11, 5, 13, RED[1])
+    return finish(s)
+
 def save_all(only=None):
     os.makedirs(ITEM_DIR, exist_ok=True)
     for name, fn in ITEMS.items():

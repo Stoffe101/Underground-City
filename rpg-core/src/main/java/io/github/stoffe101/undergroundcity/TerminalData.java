@@ -40,7 +40,10 @@ public record TerminalData(String city, String career, int level, int xp, double
             this(id, title, level, credits, xp, available, accepted, foreignVisits, reqs, Extra.NONE);
         }
     }
-    public record Offer(String id, String item, int price, int stock, int capacity, int maxOrder) {}
+    /** One line of a shop or exchange. {@code pays} is what a shop pays a supplier a unit (0 when it buys none; D-164) and {@code carried} how many the player carries that it would take. */
+    public record Offer(String id, String item, int price, int stock, int capacity, int maxOrder, int pays, int carried) {
+        public Offer(String id, String item, int price, int stock, int capacity, int maxOrder) { this(id, item, price, stock, capacity, maxOrder, 0, 0); }
+    }
     /** One node of the career tree. state: 0 locked, 1 can be unlocked now, 2 unlocked. */
     public record SkillRow(String id, String branch, String title, String description, int cost, int minLevel,
                            int state, String reason, List<String> requires, String shortTitle, String effects) {
@@ -131,7 +134,7 @@ public record TerminalData(String city, String career, int level, int xp, double
         CityLaws.Law law = region.isEmpty() ? null : CityLaws.INSTANCE.find(region);
         return new TerminalData(citizen.city, citizen.career, citizen.careerLevel(), citizen.careerXp(),
             economy ? QShopEconomy.balance(player) : 0, economy, active, ledger.foreignVisits(player.getUUID(), citizen.city),
-            region, rows, exchange == null ? List.of() : RegionalMarket.offers(ledger, exchange.city(), exchange.outlet(), citizen),
+            region, rows, exchange == null ? List.of() : RegionalMarket.offers(ledger, exchange.city(), exchange.outlet(), citizen, player),
             SkillService.pointsAvailable(citizen), skillRows(citizen), contacts(region, citizen, ledger, player), lawRows(law, citizen),
             region.isEmpty() ? 0 : ledger.heat(player.getUUID(), region), law == null ? "" : law.summary(),
             Journey.steps(citizen, ledger, player.getUUID()), exchange == null ? "" : exchange.counter() ? exchange.outlet() + "|" + exchange.title() : exchange.outlet(),
@@ -213,6 +216,7 @@ public record TerminalData(String city, String career, int level, int xp, double
         for (Offer offer : offers) {
             buf.writeUtf(offer.id, 128); buf.writeUtf(offer.item, 128); buf.writeVarInt(offer.price);
             buf.writeVarInt(offer.stock); buf.writeVarInt(offer.capacity); buf.writeVarInt(offer.maxOrder);
+            buf.writeVarInt(offer.pays); buf.writeVarInt(Math.min(9999, offer.carried));
         }
         buf.writeVarInt(skillPoints);
         buf.writeVarInt(skills.size());
@@ -296,7 +300,7 @@ public record TerminalData(String city, String career, int level, int xp, double
         if (offerCount < 0 || offerCount > MAX_OFFERS) throw new IllegalArgumentException("Invalid offer count");
         List<Offer> offers = new ArrayList<>();
         for (int i = 0; i < offerCount; i++) {
-            offers.add(new Offer(buf.readUtf(128), buf.readUtf(128), buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readVarInt()));
+            offers.add(new Offer(buf.readUtf(128), buf.readUtf(128), buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readVarInt()));
         }
         int points = buf.readVarInt();
         int skillCount = buf.readVarInt();

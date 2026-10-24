@@ -119,9 +119,26 @@ def earliest_levels(orders: dict[str, dict], recipes: dict[str, dict], kits: dic
     # an Electronics Bench design (D-158) is a recipe gated by a Technician skill: its output is had at the skill's level once its parts are
     skill_level = {node['id']: node.get('min_level', 1) for tree in load_dir('skill_trees').values() for node in tree.get('nodes', [])}
     designs = [d for file in load_dir('tech_designs').values() for d in file.get('designs', [])]
+    # a workshop station's recipe (D-163) is had at the level of its skill, once its inputs are and, for a better tier, once that tier's parts (and the tier's skill) are
+    stations = list(load_dir('workshops').values())
     changed = True
     while changed:
         changed = False
+        for station in stations:
+            tiers = station['tiers']
+            for rec in station['recipes']:
+                if rec.get('mod'):
+                    continue
+                need = max(level.get(f"underground_city:{station['id']}", INF), skill_level.get(rec.get('skill') or '', 1))
+                for item in rec['inputs']:
+                    need = max(need, 1 if item.startswith('minecraft:') else level.get(item, INF))
+                for tier in tiers[1:rec.get('tier', 1)]:
+                    up = tier.get('upgrade', {})
+                    need = max(need, skill_level.get(up.get('skill') or '', 1))
+                    for item in up.get('parts', {}):
+                        need = max(need, 1 if item.startswith('minecraft:') else level.get(item, INF))
+                if need < INF and offer(rec['output'], need):
+                    changed = True
         for design in designs:
             need = skill_level.get(design.get('skill') or '', 1)
             for item in design['inputs']:

@@ -160,7 +160,9 @@ public record WorkOrder(String id, String title, String career, int level, int m
         boolean freshVanillaTool = stack.isDamageableItem() && tag != null
             && tag.getAllKeys().equals(Set.of("Damage"))
             && tag.contains("Damage", Tag.TAG_INT) && tag.getInt("Damage") == 0;
-        if (stack.hasTag() && !freshVanillaTool) return false;
+        // a workshop grade (D-163) is the one tag a delivery accepts: the buyer pays more for it instead of refusing it
+        boolean gradedOnly = tag != null && tag.getAllKeys().equals(Set.of(Workshops.QUALITY));
+        if (stack.hasTag() && !freshVanillaTool && !gradedOnly) return false;
         return stack.serializeNBT().getCompound("ForgeCaps").isEmpty();
     }
 

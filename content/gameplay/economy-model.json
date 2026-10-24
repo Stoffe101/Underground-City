@@ -12,7 +12,7 @@
     "buyer_trip_round_trip_minutes": 12
   },
   "hands_on_minutes_each": {
-    "note": "Hands-on minutes to obtain ONE of the item from the world with starter tools, including crafting it. Waiting (crops, smelting) is parallel and listed separately in wait_minutes.",
+    "note": "Hands-on minutes to obtain ONE of the item from the world with starter tools, including crafting it. Waiting (crops, smelting) is parallel and listed separately in wait_minutes. Workshop goods (D-163) count their inputs at these rates plus a little handling at the station; the station's own time is waiting.",
     "minecraft:wheat": 0.3,
     "minecraft:carrot": 0.3,
     "minecraft:potato": 0.3,
@@ -51,7 +51,22 @@
     "vinery:cherry_wine": 2.4,
     "kaleidoscope_tavern:vodka": 1.5,
     "minecraft:sugar": 0.25,
-    "minecraft:lever": 0.12
+    "minecraft:lever": 0.12,
+    "underground_city:flour": 0.55,
+    "underground_city:produce_crate": 3.9,
+    "underground_city:fruit_crate": 3.9,
+    "underground_city:berry_wine": 1.25,
+    "underground_city:apple_cider": 1.45,
+    "underground_city:aged_wine": 2.1,
+    "underground_city:grain_spirit": 1.7,
+    "underground_city:moonshine": 1.45,
+    "underground_city:fasteners": 0.1,
+    "underground_city:steel_bracket": 0.65,
+    "underground_city:barrel_hoops": 0.5,
+    "underground_city:springs": 0.36,
+    "underground_city:gear_set": 3.6,
+    "underground_city:firearm_parts_kit": 2.3,
+    "underground_city:unmarked_parts_kit": 3.8
   },
   "wait_minutes": {
     "note": "Latency before the FIRST delivery of an order that needs growing or ageing; later cycles overlap with other work.",
@@ -65,7 +80,22 @@
     "vinery:noir_wine": 22,
     "vinery:cherry_wine": 22,
     "kaleidoscope_tavern:vodka": 12,
-    "minecraft:sugar": 15
+    "minecraft:sugar": 15,
+    "underground_city:flour": 25,
+    "underground_city:produce_crate": 25,
+    "underground_city:fruit_crate": 25,
+    "underground_city:berry_wine": 15,
+    "underground_city:apple_cider": 10,
+    "underground_city:aged_wine": 21,
+    "underground_city:grain_spirit": 30,
+    "underground_city:moonshine": 22,
+    "underground_city:fasteners": 1,
+    "underground_city:steel_bracket": 1,
+    "underground_city:barrel_hoops": 1,
+    "underground_city:springs": 1,
+    "underground_city:gear_set": 2,
+    "underground_city:firearm_parts_kit": 4,
+    "underground_city:unmarked_parts_kit": 7
   },
   "gun_minutes": {
     "iron_value_credits": 7.7,

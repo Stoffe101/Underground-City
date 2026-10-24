@@ -146,12 +146,38 @@ public final class HouseholdService {
         if (recent && mem.seen() && mem.intruder().equals(player.getUUID())) lines = ACCUSE;
         else if (recent) lines = BROKEN_INTO;
         else if (body.role().equals("fence")) lines = FENCE;
-        else if (body.role().equals("worker")) lines = WORK;
+        else if (body.role().equals("worker")) {
+            // a shopkeeper whose supplied shelf runs low asks for it (D-164): the opportunity comes from the shop, not from a board
+            String wanted = wanted(level, body);
+            if (wanted != null) return wanted;
+            lines = WORK;
+        }
         else {
             int hour = PopulationPlan.hourOf(dayTime(level));
             lines = hour < 12 ? HOME_MORNING : hour < 18 ? HOME_DAY : HOME_EVENING;
         }
         return lines.get((int) Math.floorMod(h >>> 8, (long) lines.size()));
+    }
+
+    /**
+     * What a shopkeeper is short of (D-164): the supplied line of their counter with the emptiest shelf, when it is below a third full, as a line asking for it with what they pay; or null.
+     * Read from the same shared shelf a supplier fills and the city's customers empty.
+     */
+    static String wanted(ServerLevel level, TownspersonEntity body) {
+        var shop = ShopCounters.shopOf(body);
+        if (shop.isEmpty()) return null;
+        WorkOrderLedger ledger = WorkOrderLedger.get(level.getServer());
+        RegionalStock lowest = null;
+        double share = 1.0;
+        for (RegionalStock line : RegionalCatalog.INSTANCE.forOutlet(shop.get().city(), shop.get().outlet())) {
+            if (RegionalCatalog.INSTANCE.supply(line.id()) == null) continue;
+            double s = ledger.regionalUnits(line) / (double) line.capacity();
+            if (s < share) { share = s; lowest = line; }
+        }
+        if (lowest == null || share >= 1.0 / 3) return null;
+        String item = lowest.registryItem().getDescription().getString();
+        int pays = RegionalCatalog.INSTANCE.supply(lowest.id()).pays();
+        return "We're nearly out of " + item + ". Bring some to the counter and I'll pay " + pays + " a unit.";
     }
 
     // ------------------------------------------------------------------------------------------------ the bodies
@@ -389,6 +415,17 @@ public final class HouseholdService {
         net.minecraft.world.level.block.state.BlockState state = level.getBlockState(door);
         if (!(state.getBlock() instanceof net.minecraft.world.level.block.DoorBlock block)) return;
         PropertyLocks.get(level.getServer()).exitOpen(door, LockService.clock(level.getServer()) + BuildingGuard.EXIT_TICKS);
+        if (!state.getValue(net.minecraft.world.level.block.DoorBlock.OPEN)) block.setOpen(null, level, state, door, true);
+    }
+
+    /**
+     * Opens a street door for a person of the street going in or coming out (D-162): it shuts again after {@code ticks}, far sooner than a door somebody leaving by opens, so nobody slips in
+     * behind. The street service only asks when no player stands close to the door.
+     */
+    static void openDoorBriefly(ServerLevel level, BlockPos door, int ticks) {
+        net.minecraft.world.level.block.state.BlockState state = level.getBlockState(door);
+        if (!(state.getBlock() instanceof net.minecraft.world.level.block.DoorBlock block)) return;
+        PropertyLocks.get(level.getServer()).exitOpen(door, LockService.clock(level.getServer()) + ticks);
         if (!state.getValue(net.minecraft.world.level.block.DoorBlock.OPEN)) block.setOpen(null, level, state, door, true);
     }
 

@@ -39,7 +39,7 @@ import java.util.UUID;
  * <li><b>Panels.</b> In a new archipelago world Core sets a panel into the wall beside a building's street door the first time somebody comes near (a full block for a wall block, so nothing
  * falls); in any other world the street door itself is the access point. A panel's lamp shows whether the systems are well.</li>
  * <li><b>Faults</b> come now and then to buildings of a city somebody is in (at most {@link #MAX_FAULTS} at a time) and are put right by somebody else after {@link #FAULT_TICKS} of active play if
- * no player comes ({@link #SHOP_FAULT_TICKS} for a shop). While a shop's systems are down its street door stays shut; while another building's are down its alarm and cameras are off. Each fault is a <b>service call</b> on the service board.</li>
+ * no player comes ({@link #SHOP_FAULT_TICKS} for a shop). While a shop's till is down it stays open but buys nothing from suppliers; while another building's systems are down its cameras are off and its alarm stays armed (D-165). Each fault is a <b>service call</b> on the service board.</li>
  * <li><b>A repair</b> is the trace puzzle ({@link TechPuzzles.Trace}) at the panel with a Technician's Toolkit; it pays the first Technician who gets it right, once, through the work-order
  * ledger's single commit, and puts the building right.</li>
  * <li><b>Install and upgrade jobs</b> are the patch puzzle ({@link TechPuzzles.Patch}): a monitored alarm armed and watched for {@link #MONITOR_TICKS}, a network that does not fault for
@@ -52,9 +52,12 @@ import java.util.UUID;
 public final class TechService {
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    static final int MAX_FAULTS = 2, MAX_INSTALLS = 2, MAX_UPGRADES = 1;
+    /** At most this many open faults in a city, of which at most {@link #MAX_SECURITY_FAULTS} are a building's cameras (D-165: a city is never half blind). */
+    static final int MAX_FAULTS = 2, MAX_SECURITY_FAULTS = 1, MAX_INSTALLS = 2, MAX_UPGRADES = 1, MAX_QUIET = 1;
+    /** Back-channel work (D-166): how long a quietened alarm line stays quiet and a looped building's cameras show an empty room, in active ticks. */
+    static final long QUIET_TICKS = 10 * 1200L, QUIET_LOOP_TICKS = 20 * 1200L;
     /** Active ticks: how long a fault waits for a player (a shop's half as long, so no shop stays shut for long), the gap between faults in a city, how long a job stays open, a monitored alarm, an upgraded network. */
-    static final long FAULT_TICKS = 40 * 1200L, SHOP_FAULT_TICKS = 20 * 1200L, FAULT_GAP_MIN = 5 * 1200L, FAULT_GAP_MAX = 10 * 1200L, JOB_TICKS = 90 * 1200L, MONITOR_TICKS = 8 * 72_000L, UPGRADE_TICKS = 4 * 72_000L;
+    static final long FAULT_TICKS = 20 * 1200L, SHOP_FAULT_TICKS = 20 * 1200L, FAULT_GAP_MIN = 8 * 1200L, FAULT_GAP_MAX = 15 * 1200L, JOB_TICKS = 90 * 1200L, MONITOR_TICKS = 8 * 72_000L, UPGRADE_TICKS = 4 * 72_000L;
     /** How often the service looks round (server ticks), and how many panels it may place near one player per look. */
     static final int CYCLE = 100, PANELS_PER_PLAYER = 2, PANEL_CHUNKS = 2;
 
@@ -80,7 +83,7 @@ public final class TechService {
         }
     }
 
-    /** An open fault, a service call: {@code shop} faults close a shop, the others turn a building's alarm and cameras off. */
+    /** An open fault, a service call: {@code shop} faults stop a shop paying suppliers, the others turn a building's cameras off (D-165). */
     record Fault(UUID id, long key, boolean shop, long since) {
         CompoundTag save() { CompoundTag t = new CompoundTag(); t.putUUID("id", id); t.putLong("key", key); t.putBoolean("shop", shop); t.putLong("since", since); return t; }
         static Fault load(CompoundTag t) { return new Fault(t.getUUID("id"), t.getLong("key"), t.getBoolean("shop"), t.getLong("since")); }
@@ -104,8 +107,10 @@ public final class TechService {
         final Map<Long, Fault> faults = new LinkedHashMap<>();
         final Map<UUID, Job> jobs = new LinkedHashMap<>();
         final Map<Long, Long> monitored = new HashMap<>(), upgraded = new HashMap<>();
+        /** Buildings whose alarm line a Technician quietened off the books (D-166), until when. */
+        final Map<Long, Long> quieted = new HashMap<>();
         final Map<String, Long> nextFault = new HashMap<>();
-        long repairs, installs, upgrades, expired;
+        long repairs, installs, upgrades, expired, quiets;
 
         static Systems load(CompoundTag root) {
             Systems s = new Systems();
@@ -116,6 +121,9 @@ public final class TechService {
             for (String k : m.getAllKeys()) s.monitored.put(Long.parseLong(k), m.getLong(k));
             for (String k : u.getAllKeys()) s.upgraded.put(Long.parseLong(k), u.getLong(k));
             for (String k : n.getAllKeys()) s.nextFault.put(k, n.getLong(k));
+            CompoundTag q = root.getCompound("quieted");
+            for (String k : q.getAllKeys()) s.quieted.put(Long.parseLong(k), q.getLong(k));
+            s.quiets = root.getLong("quiets");
             s.repairs = root.getLong("repairs"); s.installs = root.getLong("installs"); s.upgrades = root.getLong("upgrades"); s.expired = root.getLong("expired");
             return s;
         }
@@ -132,6 +140,9 @@ public final class TechService {
             upgraded.forEach((k, v) -> u.putLong(Long.toString(k), v));
             nextFault.forEach(n::putLong);
             root.put("monitored", m); root.put("upgraded", u); root.put("next_fault", n);
+            CompoundTag q = new CompoundTag();
+            quieted.forEach((k, v) -> q.putLong(Long.toString(k), v));
+            root.put("quieted", q); root.putLong("quiets", quiets);
             root.putLong("repairs", repairs); root.putLong("installs", installs); root.putLong("upgrades", upgrades); root.putLong("expired", expired);
             return root;
         }
@@ -139,13 +150,16 @@ public final class TechService {
 
     // ------------------------------------------------------------------------------------------------ what other systems ask
 
-    /** True while a shop's systems are down: its street door stays shut in its hours (the shopkeeper still serves anybody already inside). */
+    /**
+     * True while a shop's till and card network are down. Since D-165 the shop stays open and its shopkeeper still sells over the counter, but it buys nothing from suppliers
+     * ({@link ShopSupply}) and its customers buy nothing off the shelf until a Technician puts it right: a lost day's trade, not a shut door.
+     */
     static boolean shopDown(ServerLevel level, CityBuildings.Building b) {
         Fault f = systems(level.getServer()).faults.get(b.key());
         return f != null && f.shop();
     }
 
-    /** True while a building's security systems are down: its alarm is not armed and its cameras see nothing. */
+    /** True while a building's security systems are faulted: its cameras see nothing. Its alarm stays armed (D-165), so a fault is a gap in the watching, never an open house. */
     static boolean securityDown(ServerLevel level, CityBuildings.Building b) {
         Fault f = systems(level.getServer()).faults.get(b.key());
         return f != null && !f.shop();
@@ -154,6 +168,12 @@ public final class TechService {
     /** True while a building has a monitored alarm fitted by a Technician: armed, and the police come sooner. */
     static boolean monitored(ServerLevel level, CityBuildings.Building b) {
         Long until = systems(level.getServer()).monitored.get(b.key());
+        return until != null && LockService.clock(level.getServer()) < until;
+    }
+
+    /** True while a building's alarm line was quietened off the books by a Technician (D-166): its alarm does not call anybody. */
+    static boolean quieted(ServerLevel level, CityBuildings.Building b) {
+        Long until = systems(level.getServer()).quieted.get(b.key());
         return until != null && LockService.clock(level.getServer()) < until;
     }
 
@@ -281,8 +301,10 @@ public final class TechService {
     static Fault fault(MinecraftServer server, ServerLevel level, String city, Random random, long now) {
         Systems s = systems(server);
         if (s.faults.values().stream().filter(f -> city.equals(s.panels.containsKey(f.key()) ? s.panels.get(f.key()).city() : "")).count() >= MAX_FAULTS) return null;
+        long cameras = s.faults.values().stream().filter(f -> !f.shop() && city.equals(s.panels.containsKey(f.key()) ? s.panels.get(f.key()).city() : "")).count();
         List<Panel> candidates = new ArrayList<>();
-        for (Panel p : s.panels.values()) if (p.city().equals(city) && !s.faults.containsKey(p.key()) && !upgraded(level, p.key())) candidates.add(p);
+        for (Panel p : s.panels.values())
+            if (p.city().equals(city) && !s.faults.containsKey(p.key()) && !upgraded(level, p.key()) && ("commercial".equals(p.category()) || cameras < MAX_SECURITY_FAULTS)) candidates.add(p);
         if (candidates.isEmpty()) return null;
         return open(server, level, candidates.get(random.nextInt(candidates.size())), now);
     }
@@ -295,7 +317,7 @@ public final class TechService {
         s.faults.put(p.key(), f);
         s.setDirty();
         lamp(level, p, TechBlocks.UtilityPanel.State.FAULT);
-        String what = shop ? "the till and card network are down" : "the alarm and cameras are down";
+        String what = shop ? "the till and card network are down" : "the cameras are down";
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             if (isTechnician(player) && CityRegions.INSTANCE.cityAt(level, player.blockPosition()).map(p.city()::equals).orElse(false))
                 Notice.send(player, Notice.Kind.ORDER, "Service call", Casing.capitalise(p.label()) + ", " + p.address() + ": " + what + ". " + repairFee(p.tier()) + " credits.");
@@ -306,11 +328,11 @@ public final class TechService {
 
     /** Keeps a city's open install and upgrade jobs topped up. */
     static void jobs(Systems s, ServerLevel level, String city, Random random, long now) {
-        int installs = 0, upgrades = 0;
+        int installs = 0, upgrades = 0, quiet = 0;
         for (Job j : s.jobs.values()) {
             Panel p = s.panels.get(j.key());
             if (p == null || !p.city().equals(city)) continue;
-            if (j.kind().equals("install")) installs++; else upgrades++;
+            if (j.kind().equals("install")) installs++; else if (j.kind().equals("quiet")) quiet++; else upgrades++;
         }
         List<Panel> panels = new ArrayList<>();
         for (Panel p : s.panels.values()) if (p.city().equals(city)) panels.add(p);
@@ -327,7 +349,17 @@ public final class TechService {
                 upgrades++;
             }
         }
+        // back-channel work (D-166): now and then somebody wants a building's feeds looped and its alarm line quiet for a while; never a building with a monitored alarm
+        if (quiet < MAX_QUIET && random.nextInt(3) == 0) {
+            Panel p = panels.get(random.nextInt(panels.size()));
+            boolean taken = s.jobs.values().stream().anyMatch(j -> j.key() == p.key());
+            if (!taken && p.tier() >= 3 && !monitoredKey(s, p.key(), now) && !s.faults.containsKey(p.key())) newJob(s, "quiet", p, quietFee(p.tier()), quietXp(p.tier()), now);
+        }
     }
+
+    /** What a back-channel job pays and teaches (D-166): more than legal work of the same tier, for the risk of being seen at the panel. */
+    static int quietFee(int tier) { return 70 + 30 * Math.max(1, tier); }
+    static int quietXp(int tier) { return 60 + 20 * Math.max(1, tier); }
 
     private static boolean monitoredKey(Systems s, long key, long now) { Long until = s.monitored.get(key); return until != null && now < until; }
 

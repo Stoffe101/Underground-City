@@ -90,6 +90,20 @@ public final class UndergroundCity {
     public static final RegistryObject<Block> DRYING_RACK = BLOCKS.register("drying_rack",
         () -> new DryingRack.Rack(BlockBehaviour.Properties.of().mapColor(net.minecraft.world.level.material.MapColor.WOOD).strength(1.0f).noOcclusion().sound(net.minecraft.world.level.block.SoundType.WOOD)));
     public static final RegistryObject<Item> DRYING_RACK_ITEM = ITEMS.register("drying_rack", () -> new BlockItem(DRYING_RACK.get(), new Item.Properties()));
+    // the workshops of the trades (D-163): one block a station; its tiers and recipes are data (data/underground_city/workshops)
+    static final String[] WORKSHOPS = {"grading_table", "mill", "fermentation_vat", "oak_cask", "pot_still", "machinist_bench", "gunsmith_bench"};
+    public static final java.util.Map<String, RegistryObject<Block>> WORKSHOP_BLOCKS = new java.util.LinkedHashMap<>();
+    public static final java.util.Map<String, RegistryObject<Item>> WORKSHOP_ITEMS = new java.util.LinkedHashMap<>();
+    static {
+        for (String id : WORKSHOPS) {
+            boolean metal = id.equals("pot_still"), stone = id.equals("mill");
+            RegistryObject<Block> block = BLOCKS.register(id, () -> new WorkshopBlock(id, WorkshopBlock.shapeOf(id), BlockBehaviour.Properties.of()
+                .mapColor(metal ? net.minecraft.world.level.material.MapColor.COLOR_ORANGE : stone ? net.minecraft.world.level.material.MapColor.STONE : net.minecraft.world.level.material.MapColor.WOOD)
+                .strength(2.0f).noOcclusion().sound(metal ? net.minecraft.world.level.block.SoundType.COPPER : stone ? net.minecraft.world.level.block.SoundType.STONE : net.minecraft.world.level.block.SoundType.WOOD)));
+            WORKSHOP_BLOCKS.put(id, block);
+            WORKSHOP_ITEMS.put(id, ITEMS.register(id, () -> new BlockItem(block.get(), new Item.Properties())));
+        }
+    }
     /** A courier's sealed letter from a roadside encounter (D-139): pays its fee once, at any terminal or counter in the city it is addressed to. */
     public static final RegistryObject<Item> SEALED_ENVELOPE = ITEMS.register("sealed_envelope", () -> new EnvelopeItem(new Item.Properties().stacksTo(1)));
 
@@ -105,6 +119,9 @@ public final class UndergroundCity {
         BLOCK_ENTITIES.register("property_cache", () -> net.minecraft.world.level.block.entity.BlockEntityType.Builder
             .of(PropertyCacheBlockEntity::new, PROPERTY_CACHE.get()).build(null));
 
+    public static final RegistryObject<net.minecraft.world.level.block.entity.BlockEntityType<WorkshopBlock.Entity>> WORKSHOP_ENTITY =
+        BLOCK_ENTITIES.register("workshop", () -> net.minecraft.world.level.block.entity.BlockEntityType.Builder
+            .of(WorkshopBlock.Entity::new, WORKSHOP_BLOCKS.values().stream().map(RegistryObject::get).toArray(Block[]::new)).build(null));
     public static final RegistryObject<net.minecraft.world.level.block.entity.BlockEntityType<DryingRack.Entity>> DRYING_RACK_ENTITY =
         BLOCK_ENTITIES.register("drying_rack", () -> net.minecraft.world.level.block.entity.BlockEntityType.Builder
             .of(DryingRack.Entity::new, DRYING_RACK.get()).build(null));
@@ -161,6 +178,8 @@ public final class UndergroundCity {
         LockNetwork.register();
         BurglaryNetwork.register();
         PlacesNetwork.register();
+        NavigationNetwork.register();
+        WorkshopNetwork.register();
         TechNetwork.register();
         FenceNetwork.register();
         MinecraftForge.EVENT_BUS.register(this);
@@ -190,6 +209,7 @@ public final class UndergroundCity {
         MinecraftForge.EVENT_BUS.register(new PolicePatrols());
         MinecraftForge.EVENT_BUS.register(new PropertyIntel());
         MinecraftForge.EVENT_BUS.register(new TechService());
+        MinecraftForge.EVENT_BUS.register(new Navigation());
         MinecraftForge.EVENT_BUS.register(new TechWork());
         MinecraftForge.EVENT_BUS.register(new StaffZones());
         MinecraftForge.EVENT_BUS.register(new ResourceSites());
@@ -234,6 +254,7 @@ public final class UndergroundCity {
         event.addListener(ExceptionalLoot.INSTANCE);
         event.addListener(SkillCatalog.INSTANCE);
         event.addListener(TechDesigns.INSTANCE);
+        event.addListener(Workshops.INSTANCE);
         event.addListener(SkillCatalog.Specializations.INSTANCE);
         event.addListener(PropertyCatalog.INSTANCE);
         event.addListener(ContrabandCatalog.INSTANCE);
@@ -259,6 +280,7 @@ public final class UndergroundCity {
             event.accept(PERSONAL_COMPUTER_ITEM);
             event.accept(ELECTRONICS_BENCH_ITEM);
             event.accept(DRYING_RACK_ITEM);
+            WORKSHOP_ITEMS.values().forEach(event::accept);
         }
         if (event.getTabKey() == CreativeModeTabs.OP_BLOCKS && event.hasPermissions()) {
             event.accept(PROPERTY_CACHE_ITEM);

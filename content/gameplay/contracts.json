@@ -655,6 +655,233 @@
         }
       ],
       "origin": "blackwater"
+    },
+    {
+      "id": "bakery_flour",
+      "title": "Flour for the Valewood bakery",
+      "career": "farmer",
+      "level": 2,
+      "legality": "legal",
+      "requires_skill": "farmer.fundamentals",
+      "capacity": 3,
+      "refill_ticks": 6000,
+      "credits": 80,
+      "xp": 220,
+      "requirements": [
+        {
+          "item": "underground_city:flour",
+          "count": 16
+        }
+      ]
+    },
+    {
+      "id": "market_produce",
+      "title": "Produce crates for the corner stores",
+      "career": "farmer",
+      "level": 3,
+      "legality": "legal",
+      "requires_skill": "farmer.greenhouse_management",
+      "capacity": 3,
+      "refill_ticks": 9000,
+      "credits": 200,
+      "xp": 340,
+      "requirements": [
+        {
+          "item": "underground_city:produce_crate",
+          "count": 3
+        },
+        {
+          "item": "underground_city:fruit_crate",
+          "count": 2
+        }
+      ]
+    },
+    {
+      "id": "pub_berry_wine",
+      "title": "Berry wine for the pub",
+      "career": "vintner",
+      "level": 2,
+      "legality": "legal",
+      "requires_skill": "vintner.fundamentals",
+      "capacity": 3,
+      "refill_ticks": 9000,
+      "credits": 120,
+      "xp": 260,
+      "requirements": [
+        {
+          "item": "underground_city:berry_wine",
+          "count": 6
+        }
+      ]
+    },
+    {
+      "id": "tavern_cider",
+      "title": "Cider on tap",
+      "career": "vintner",
+      "level": 3,
+      "legality": "legal",
+      "requires_skill": "vintner.cellar_craft",
+      "capacity": 3,
+      "refill_ticks": 9000,
+      "credits": 135,
+      "xp": 300,
+      "requirements": [
+        {
+          "item": "underground_city:apple_cider",
+          "count": 8
+        }
+      ]
+    },
+    {
+      "id": "estate_aged_wine",
+      "title": "Aged wine for an estate dinner",
+      "career": "vintner",
+      "level": 6,
+      "legality": "legal",
+      "requires_skill": "vintner.estate_vintages",
+      "credits": 230,
+      "xp": 440,
+      "requirements": [
+        {
+          "item": "underground_city:aged_wine",
+          "count": 4
+        }
+      ]
+    },
+    {
+      "id": "licensed_grain_spirit",
+      "title": "Licensed grain spirit for the taproom",
+      "career": "vintner",
+      "level": 10,
+      "legality": "legal",
+      "requires_skill": "vintner.distillers_licence",
+      "buyer": "blackwater_taproom",
+      "credits": 150,
+      "xp": 420,
+      "requirements": [
+        {
+          "item": "underground_city:grain_spirit",
+          "count": 6
+        }
+      ]
+    },
+    {
+      "id": "quiet_moonshine",
+      "title": "Moonshine for the back bar",
+      "career": "vintner",
+      "level": 7,
+      "legality": "underground",
+      "requires_skill": "vintner.still_craft",
+      "buyer": "ironhaven_backbar",
+      "trust_gain": 1,
+      "capacity": 2,
+      "refill_ticks": 18000,
+      "credits": 200,
+      "xp": 340,
+      "requirements": [
+        {
+          "item": "underground_city:moonshine",
+          "count": 6
+        }
+      ],
+      "origin": "valewood"
+    },
+    {
+      "id": "yard_fasteners",
+      "title": "Fasteners and brackets for the builders' yard",
+      "career": "smith",
+      "level": 2,
+      "legality": "legal",
+      "requires_skill": "smith.fundamentals",
+      "capacity": 3,
+      "refill_ticks": 6000,
+      "credits": 140,
+      "xp": 240,
+      "requirements": [
+        {
+          "item": "underground_city:fasteners",
+          "count": 32
+        },
+        {
+          "item": "underground_city:steel_bracket",
+          "count": 6
+        }
+      ]
+    },
+    {
+      "id": "cooperage_hoops",
+      "title": "Hoops for the Valewood cooperage",
+      "career": "smith",
+      "level": 3,
+      "legality": "legal",
+      "requires_skill": "smith.structural_works",
+      "capacity": 3,
+      "refill_ticks": 9000,
+      "credits": 80,
+      "xp": 220,
+      "requirements": [
+        {
+          "item": "underground_city:barrel_hoops",
+          "count": 12
+        }
+      ]
+    },
+    {
+      "id": "depot_gear_sets",
+      "title": "Gear sets for the Northgate depot",
+      "career": "smith",
+      "level": 6,
+      "legality": "legal",
+      "requires_skill": "smith.precision_machining",
+      "credits": 160,
+      "xp": 360,
+      "requirements": [
+        {
+          "item": "underground_city:gear_set",
+          "count": 3
+        },
+        {
+          "item": "underground_city:springs",
+          "count": 8
+        }
+      ]
+    },
+    {
+      "id": "armoury_parts_kits",
+      "title": "Parts kits for the city armoury",
+      "career": "gunsmith",
+      "level": 3,
+      "legality": "legal",
+      "requires_skill": "gunsmith.licensed_repairs",
+      "credits": 210,
+      "xp": 380,
+      "requirements": [
+        {
+          "item": "underground_city:firearm_parts_kit",
+          "count": 2
+        }
+      ]
+    },
+    {
+      "id": "unmarked_kits",
+      "title": "Unmarked kits for Dray",
+      "career": "gunsmith",
+      "level": 8,
+      "legality": "underground",
+      "requires_skill": "gunsmith.unregistered_builds",
+      "buyer": "dray",
+      "trust_gain": 1,
+      "capacity": 1,
+      "refill_ticks": 24000,
+      "credits": 400,
+      "xp": 420,
+      "requirements": [
+        {
+          "item": "underground_city:unmarked_parts_kit",
+          "count": 2
+        }
+      ],
+      "origin": "valewood"
     }
   ],
   "reference_values": {
@@ -706,6 +933,24 @@
       "vinery:cherry_wine": 18,
       "vinery:apple_cider": 11,
       "kaleidoscope_tavern:vodka": 12
+    },
+    "workshop_units": {
+      "note": "Operating cost per unit of goods made only at a workshop station (D-163): the inputs at reference value plus the station's time, so contract margins are judged like any other.",
+      "underground_city:flour": 3,
+      "underground_city:produce_crate": 24,
+      "underground_city:fruit_crate": 24,
+      "underground_city:berry_wine": 12,
+      "underground_city:apple_cider": 10,
+      "underground_city:aged_wine": 30,
+      "underground_city:grain_spirit": 14,
+      "underground_city:moonshine": 16,
+      "underground_city:fasteners": 1.5,
+      "underground_city:steel_bracket": 6,
+      "underground_city:barrel_hoops": 4,
+      "underground_city:springs": 3,
+      "underground_city:gear_set": 22,
+      "underground_city:firearm_parts_kit": 60,
+      "underground_city:unmarked_parts_kit": 95
     }
   }
 }

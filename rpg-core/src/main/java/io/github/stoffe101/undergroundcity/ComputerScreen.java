@@ -65,12 +65,13 @@ public final class ComputerScreen extends UcScreen {
     private void track() {
         if (app != 0 || selected >= calls.size()) return;
         TechWork.Call c = calls.get(selected);
-        ClientPlaces.track(new PropertyIntel.Entry(c.id().getMostSignificantBits(), c.city(), c.access(), c.address(), "", c.label(), c.tier(), 0, 0, -1, 0, false, false, "", -1, -1, ""));
+        if (ClientNavigation.tracking("tech", c.id().toString())) NavigationNetwork.stop();
+        else NavigationNetwork.track("tech", c.id().toString());
         onClose();
     }
 
     private static String kindWord(String kind) {
-        return switch (kind) { case "repair_shop" -> "Till repair"; case "repair_security" -> "Alarm repair"; case "install" -> "Alarm install"; default -> "Network upgrade"; };
+        return switch (kind) { case "repair_shop" -> "Till repair"; case "repair_security" -> "Alarm repair"; case "install" -> "Alarm install"; case "quiet" -> "Back channel: loop the feeds"; default -> "Network upgrade"; };
     }
 
     @Override public boolean mouseClicked(double mx, double my, int button) {
@@ -107,7 +108,7 @@ public final class ComputerScreen extends UcScreen {
             int y = listY + 2 + i * ROW, x = listX + 3, w = listW - 6;
             boolean sel = scroll + i == selected;
             g.fill(x, y, x + w, y + ROW - 2, sel ? UcUi.ROW_HOVER : UcUi.ROW);
-            if (sel) g.fill(x, y, x + 2, y + ROW - 2, UcUi.LEGAL);
+            if (sel) g.fill(x, y, x + 2, y + ROW - 2, c.kind().equals("quiet") ? UcUi.UNDERGROUND : UcUi.LEGAL);
             UcUi.text(g, font, PropertyIntel.roman(c.tier()), x + 6, y + 7, ClientPlaces.TIER_COLOUR[Math.max(0, Math.min(6, c.tier()))]);
             UcUi.text(g, font, UcUi.fit(font, c.address(), w - 80), x + 26, y + 2, UcUi.TEXT);
             UcUi.textRight(g, font, c.credits() + " cr", x + w - 4, y + 2, UcUi.AMBER);
@@ -125,11 +126,13 @@ public final class ComputerScreen extends UcScreen {
         ly = line(g, x, ly, w, c.kind().startsWith("repair") ? "Open" : "Open for", c.minutesOpen() + " min", UcUi.DIM);
         UcUi.text(g, font, "You", x, ly, UcUi.DIM);
         ly = UcUi.wrapped(g, font, c.blocked().isEmpty() ? "Can take it" : c.blocked(), x + 44, ly, w - 44, c.blocked().isEmpty() ? UcUi.OK : UcUi.UNDERGROUND_TEXT, 2);
-        String what = c.kind().equals("repair_shop") ? "The till and card network are down." : c.kind().equals("repair_security") ? "The alarm and cameras are down." : "";
+        String what = c.kind().equals("repair_shop") ? "The till and card network are down." : c.kind().equals("repair_security") ? "The cameras are down (the alarm still works)."
+            : c.kind().equals("quiet") ? "Off the books: loop its cameras and quiet its alarm line for ten minutes. Anybody who sees you at the panel may call the police." : "";
         if (!what.isEmpty()) ly = UcUi.wrapped(g, font, what, x, ly + 4, w, UcUi.SOFT, 2);
         int room = Math.min(3, (listY + listH - (ly + 4)) / (font.lineHeight + 1));   // only what fits above the footer (1280x720 at GUI scale 2 has room for two lines)
         if (room > 0) UcUi.wrapped(g, font, c.kind().startsWith("repair") ? "Go to its utility panel by the street door with your toolkit." : c.kind().equals("install")
-            ? "Bring a Municipal Security Array to its utility panel." : "Bring your toolkit to its utility panel.", x, ly + 4, w, UcUi.DIM, room);
+            ? "Bring a Municipal Security Array to its utility panel." : c.kind().equals("quiet") ? "Crouch at its utility panel with your toolkit and a Bypass Kit, unseen."
+            : "Bring your toolkit to its utility panel.", x, ly + 4, w, UcUi.DIM, room);
     }
 
     private void renderDesigns(GuiGraphics g) {

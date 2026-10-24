@@ -93,7 +93,8 @@ public final class TechGameTests {
             s.panels.put(b.key(), new TechService.Panel(b.key(), null, door, "valewood", 2, "residential", "test house", "1 Test Street"));
             TechService.Fault fault = new TechService.Fault(UUID.randomUUID(), b.key(), false, LockService.clock(helper.getLevel().getServer()));
             s.faults.put(b.key(), fault);
-            check(TechService.securityDown(helper.getLevel(), b) && !PoliceResponse.armed(helper.getLevel(), b, b.security().response()), "a fault did not turn the alarm off");
+            // D-165: a fault blinds the cameras but leaves the alarm armed (this building's alarm chance is 1.0)
+            check(TechService.securityDown(helper.getLevel(), b) && PoliceResponse.armed(helper.getLevel(), b, b.security().response()), "a fault turned the alarm off");
             FakePlayer farmer = player(helper, "uc_tech_farmer", "farmer");
             farmer.getInventory().add(new ItemStack(TechWork.item("repair_kit")));
             check(TechWork.startRepair(farmer, helper.getLevel(), s.panels.get(b.key()), fault) != null, "a Farmer was let into a building's systems");
@@ -208,7 +209,8 @@ public final class TechGameTests {
             s.monitored.put(b.key(), LockService.clock(helper.getLevel().getServer()) - 1);
             check(!TechService.monitored(helper.getLevel(), b), "a monitored alarm did not run out");
             s.faults.put(b.key(), new TechService.Fault(UUID.randomUUID(), b.key(), true, 0));
-            check(TechService.shopDown(helper.getLevel(), b) && !ShopCounters.openNow(helper.getLevel(), b), "a shop with its systems down was open");
+            // D-165: a shop whose till is down stays open and sells, but cannot pay a supplier until a Technician comes
+            check(TechService.shopDown(helper.getLevel(), b) && ShopSupply.tillRefusal(helper.getLevel(), b) != null, "a shop with its till down still bought from a supplier");
         } finally {
             s.monitored.remove(b.key());
             s.faults.remove(b.key());

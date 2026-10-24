@@ -70,6 +70,56 @@ public final class VisualCaptureHarness {
         return new TerminalData("ironhaven","smith",3,520,balance,true,null,1,"ironhaven",List.of(),offers,0,List.of(),List.of(),List.of(),0,"",List.of(),"shop:hardware|Hardware and Metals");
     }
 
+    /** The pub's counter (D-164): it sells stew and bread and buys a Vintner's wine and cider; the player carries three bottles of wine. */
+    private static TerminalData pubCounter(double balance) {
+        List<TerminalData.Offer> offers=List.of(
+            new TerminalData.Offer("underground_city:shops/pub_bread_ironhaven","minecraft:bread",5,10,16,4),
+            new TerminalData.Offer("underground_city:shops/pub_cider_ironhaven","underground_city:apple_cider",18,4,12,4,12,0),
+            new TerminalData.Offer("underground_city:shops/pub_stew_ironhaven","minecraft:mushroom_stew",6,6,8,2),
+            new TerminalData.Offer("underground_city:shops/pub_wine_ironhaven","underground_city:berry_wine",22,4,12,4,14,3));
+        return new TerminalData("valewood","vintner",3,520,balance,true,null,1,"ironhaven",List.of(),offers,0,List.of(),List.of(),List.of(),0,"",List.of(),"shop:pub|The Anvil");
+    }
+
+    /** A workshop station's screen as the server would fill it (D-163): the vat at work, the Machinist's Bench ready to be fitted, the still with its licensed and underground recipes. */
+    private static net.minecraft.client.gui.screens.Screen workshopCapture(String pose) {
+        net.minecraft.core.BlockPos at=net.minecraft.core.BlockPos.ZERO;
+        WorkshopNetwork.Part berries=new WorkshopNetwork.Part("minecraft:sweet_berries",8,16), sugar=new WorkshopNetwork.Part("minecraft:sugar",2,4), bottles=new WorkshopNetwork.Part("minecraft:glass_bottle",3,6);
+        return switch(pose) {
+            case "workshop-bench" -> {
+                var rows=List.of(
+                    new WorkshopNetwork.Row("fasteners","Fasteners","underground_city:fasteners",8,14,1,true,"",false,false,"Six nuggets turned into eight bolts, nuts and rivets.",List.of(new WorkshopNetwork.Part("minecraft:iron_nugget",6,18))),
+                    new WorkshopNetwork.Row("steel_bracket","Steel brackets","underground_city:steel_bracket",3,29,1,true,"",false,false,"Two ingots bent and drilled into three brackets.",List.of(new WorkshopNetwork.Part("minecraft:iron_ingot",2,7))),
+                    new WorkshopNetwork.Row("barrel_hoops","Barrel hoops","underground_city:barrel_hoops",4,29,1,true,"",false,false,"Two ingots drawn into four hoops: a Vintner's vat and cask need them.",List.of(new WorkshopNetwork.Part("minecraft:iron_ingot",2,7))),
+                    new WorkshopNetwork.Row("springs","Coil springs","underground_city:springs",4,44,1,true,"",false,false,"An ingot wound and tempered into four springs.",List.of(new WorkshopNetwork.Part("minecraft:iron_ingot",1,7),new WorkshopNetwork.Part("minecraft:redstone",1,0))),
+                    new WorkshopNetwork.Row("gear_set","Gear set","underground_city:gear_set",1,66,1,true,"",false,false,"Two iron and two copper cut into a gear set. The top tier of most stations needs one.",List.of(new WorkshopNetwork.Part("minecraft:iron_ingot",2,7),new WorkshopNetwork.Part("minecraft:copper_ingot",2,3))),
+                    new WorkshopNetwork.Row("precision_parts","Precision machinery parts","underground_city:precision_machinery_parts",2,102,3,false,"Needs a tier 3 Machinist's Bench.",false,false,"Lathe work to tight tolerances, without a control board.",List.of(new WorkshopNetwork.Part("underground_city:machined_parts",2,0),new WorkshopNetwork.Part("underground_city:refined_alloy",1,0))),
+                    new WorkshopNetwork.Row("unstamped_plate","Unstamped plate","underground_city:unstamped_plate",2,88,2,true,"",false,true,"Plate that appears on no register. Restricted components at a checkpoint.",List.of(new WorkshopNetwork.Part("underground_city:refined_alloy",1,1),new WorkshopNetwork.Part("minecraft:iron_ingot",2,7))));
+                var screen=new WorkshopScreen(new WorkshopNetwork.View(at,"machinist_bench","Machinist's Bench","smith",2,"Drill Press",3,2,135,"Lathe","Precision Machining",false,
+                    List.of(new WorkshopNetwork.Part("underground_city:gear_set",2,1),new WorkshopNetwork.Part("underground_city:machined_parts",2,0),new WorkshopNetwork.Part("underground_city:springs",2,6)),"",0,0,0,0,"","",rows));
+                screen.select("gear_set");
+                yield screen;
+            }
+            case "workshop-still" -> {
+                var rows=List.of(
+                    new WorkshopNetwork.Row("grain_spirit","Grain spirit (licensed)","underground_city:grain_spirit",2,600,1,false,"Needs the skill Distiller's Licence.",true,false,"Six wheat and two sugar, ten minutes of play, two bottles. Only a licensed distiller runs it; carrying it is legal with the licence.",List.of(new WorkshopNetwork.Part("minecraft:wheat",6,12),sugar,new WorkshopNetwork.Part("minecraft:glass_bottle",2,6))),
+                    new WorkshopNetwork.Row("moonshine","Moonshine","underground_city:moonshine",2,420,1,true,"",true,true,"Sugar and apples run hot and fast. Restricted goods at every checkpoint; the back bars pay for a good jug.",List.of(new WorkshopNetwork.Part("minecraft:sugar",4,4),new WorkshopNetwork.Part("minecraft:apple",2,5),new WorkshopNetwork.Part("minecraft:glass_bottle",2,6))));
+                var screen=new WorkshopScreen(new WorkshopNetwork.View(at,"pot_still","Pot Still","vintner",1,"Pot and Worm",3,1,100,"Riveted Pot","",true,
+                    List.of(new WorkshopNetwork.Part("underground_city:fasteners",12,4),new WorkshopNetwork.Part("underground_city:steel_bracket",2,0)),"",0,0,0,0,"","",rows));
+                screen.select("moonshine");
+                yield screen;
+            }
+            default -> {
+                var rows=List.of(
+                    new WorkshopNetwork.Row("berry_wine","Berry wine","underground_city:berry_wine",3,266,1,true,"",true,false,"Eight punnets of berries and two sugar, six minutes of play, three bottles. Cellar Craft and a cooled vat lift the grade.",List.of(berries,sugar,bottles)),
+                    new WorkshopNetwork.Row("apple_cider","Apple cider","underground_city:apple_cider",3,222,1,true,"",true,false,"Six apples and a sugar, five minutes of play, three bottles.",List.of(new WorkshopNetwork.Part("minecraft:apple",6,2),new WorkshopNetwork.Part("minecraft:sugar",1,4),bottles)),
+                    new WorkshopNetwork.Row("glow_wine","Glow-berry wine","underground_city:berry_wine",4,311,2,true,"",true,false,"Cave glow berries make a lighter wine that never comes out below Fine.",List.of(new WorkshopNetwork.Part("minecraft:glow_berries",8,0),sugar,bottles)));
+                yield new WorkshopScreen(new WorkshopNetwork.View(at,"fermentation_vat","Fermentation Vat","vintner",2,"Iron Hoops and Tap",3,2,135,"Cooling Jacket","Cellar Fit-Out",false,
+                    List.of(new WorkshopNetwork.Part("underground_city:gear_set",1,0),new WorkshopNetwork.Part("underground_city:barrel_hoops",4,4),new WorkshopNetwork.Part("minecraft:copper_ingot",4,2)),
+                    "Berry wine x2",188,266,1,0,"","Started: Berry wine x2, 5 min of play, Fine.",rows));
+            }
+        };
+    }
+
     /** A fence's quote (D-125): stolen goods in the pockets, priced at the fence's rate; partial when the budget is low, empty when nothing is marked. */
     private static FenceService.Quote fenceQuote(String pose) {
         List<FenceService.Row> rows=switch(pose) {
@@ -210,7 +260,8 @@ public final class VisualCaptureHarness {
             new TechWork.Call(id,"repair_security","valewood","3 Willow Way","house",3,66,170,net.minecraft.core.BlockPos.ZERO,4,""),
             new TechWork.Call(id,"repair_shop","valewood","12 Market Row","shop",2,54,140,net.minecraft.core.BlockPos.ZERO,11,""),
             new TechWork.Call(id,"install","valewood","19 Hayward Street","townhouse",5,135,285,net.minecraft.core.BlockPos.ZERO,62,"Needs Installer"),
-            new TechWork.Call(id,"upgrade","valewood","14 Meadow Close","office",4,148,300,net.minecraft.core.BlockPos.ZERO,80,"Needs Systems Integrator"));
+            new TechWork.Call(id,"upgrade","valewood","14 Meadow Close","office",4,148,300,net.minecraft.core.BlockPos.ZERO,80,"Needs Systems Integrator"),
+            new TechWork.Call(id,"quiet","valewood","7 Orchard Lane","townhouse",4,190,140,net.minecraft.core.BlockPos.ZERO,58,"Bring a Bypass Kit"));
         List<TechNetwork.DesignRow> designs=List.of(
             new TechNetwork.DesignRow("circuit_boards","Circuit boards","underground_city:control_circuits",2,List.of(new TechNetwork.Part("underground_city:e_scrap",3,5),new TechNetwork.Part("minecraft:copper_ingot",1,8),new TechNetwork.Part("minecraft:redstone",1,16)),"Bench Electronics",true,"Two boards from scrap: cheaper than the exchange's, and a repair of a well-off building needs one."),
             new TechNetwork.DesignRow("repair_kit","Technician's toolkit","underground_city:repair_kit",1,List.of(new TechNetwork.Part("minecraft:iron_ingot",2,0),new TechNetwork.Part("minecraft:copper_ingot",2,8),new TechNetwork.Part("underground_city:control_circuits",1,2)),"",true,"Opens a utility panel to repair a fault. Forty repairs."),
@@ -220,6 +271,8 @@ public final class VisualCaptureHarness {
         return switch(pose) {
             case "tech-computer" -> { ComputerScreen screen=new ComputerScreen(calls,designs,true,4); yield screen; }
             case "tech-designs" -> { ComputerScreen screen=new ComputerScreen(calls,designs,true,4); screen.showDesigns(3); yield screen; }
+            case "tech-quiet" -> { ComputerScreen screen=new ComputerScreen(calls,designs,true,7); screen.select(4); yield screen; }
+            case "tech-quiet-patch" -> { TechPuzzles.Patch p=TechPuzzles.Patch.generate(11,1); yield new PatchScreen(new TechNetwork.PatchView("quiet",p.w,p.h,p.source,p.outputs,p.tiles,122)); }
             case "tech-bench" -> { BenchScreen screen=new BenchScreen(designs,""); screen.select("circuit_boards"); yield screen; }
             case "tech-trace" -> new TraceScreen(new TechNetwork.TraceView(4,3,true,new int[]{5,4,5,5,0,1,3,3,5,1},new int[]{1,-1,0,-1,-1,-1,-1,-1,-1,-1},false,false,3,0,3,94,2));
             default -> { TechPuzzles.Patch p=TechPuzzles.Patch.generate(7,1); yield new PatchScreen(new TechNetwork.PatchView("install",p.w,p.h,p.source,p.outputs,p.tiles,151)); }
@@ -342,6 +395,11 @@ public final class VisualCaptureHarness {
         cases.add(Case.challenge("uc-tech-bench","tech-bench"));
         cases.add(Case.challenge("uc-tech-trace","tech-trace"));
         cases.add(Case.challenge("uc-tech-patch","tech-patch"));
+        cases.add(Case.challenge("uc-tech-quiet","tech-quiet"));
+        cases.add(Case.challenge("uc-tech-quiet-patch","tech-quiet-patch"));
+        cases.add(Case.challenge("uc-workshop-vat","workshop-vat"));
+        cases.add(Case.challenge("uc-workshop-bench","workshop-bench"));
+        cases.add(Case.challenge("uc-workshop-still","workshop-still"));
         cases.add(new Case("uc-skills-vintner",TerminalScreen.Page.SKILLS,careerSkills("vintner",11,java.util.Set.of("vintner.fundamentals","vintner.cellar_craft","vintner.still_craft")),0,false,"vintner.bootleg_trade"));
         cases.add(new Case("uc-skills-smith",TerminalScreen.Page.SKILLS,careerSkills("smith",11,java.util.Set.of("smith.fundamentals","smith.structural_works","smith.armoury_contracts","smith.unlisted_fabrication")),0,false,"smith.contraband_armoury"));
         cases.add(new Case("uc-skills-gunsmith",TerminalScreen.Page.SKILLS,careerSkills("gunsmith",11,java.util.Set.of("gunsmith.fundamentals","gunsmith.licensed_repairs","gunsmith.dealer_licence")),0,false,"gunsmith.unregistered_builds"));
@@ -383,6 +441,7 @@ public final class VisualCaptureHarness {
         cases.add(Case.challenge("uc-fence-nothing","fence-nothing"));
         cases.add(new Case("uc-counter-hardware",TerminalScreen.Page.IMPORTS,counter(140),0));
         cases.add(new Case("uc-counter-poor",TerminalScreen.Page.IMPORTS,counter(6),0));
+        cases.add(new Case("uc-counter-pub-sells",TerminalScreen.Page.IMPORTS,pubCounter(140),0));
         cases.add(Case.ledger("uc-ledger"));
         cases.add(Case.notices("uc-notices"));
         for(String pose:new String[]{"nocrew","nocrew-invited","unregistered","unavailable","members","members-member","money","money-consent","money-shared","money-shared-nospend","home","home-notice","home-owned","home-find","home-find-many","home-solo","rules-permissions","rules-mode","rules-mode-active","rules-disband"}) {
@@ -458,6 +517,8 @@ public final class VisualCaptureHarness {
             if(capture.challenge.equals("alarm-show")) screen.poseShowing(3,true); else screen.poseInput(3,0.6);
         } else if(capture.challenge!=null && capture.challenge.startsWith("casing-")) {
             mc.setScreen(new CasingScreen(casingFixture(capture.challenge)));
+        } else if(capture.challenge!=null && capture.challenge.startsWith("workshop-")) {
+            mc.setScreen(workshopCapture(capture.challenge));
         } else if(capture.challenge!=null && capture.challenge.startsWith("tech-")) {
             mc.setScreen(techCapture(capture.challenge));
         } else if(capture.challenge!=null && capture.challenge.startsWith("fence-")) {

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "note": "What a fence thinks one item is worth, in credits (D-125). The worth is the cheapest honest price of the item where one exists (the cities' shelves and the regional exchange), so a fence, who pays at most 60 percent of it, never pays more than the item costs to buy. Items with no worth here are not bought at all: nothing a person can come by for free (stone, logs, dirt) and nothing worthless (paper, bread). Goods with no honest price at all (fence-only goods: what burglars find in homes and offices, D-144) are listed under fence_only; a fence may pay more of their worth (up to 80 percent with the Thief skills) because nothing honest can be undercut by them.",
+  "note": "What a fence thinks one item is worth, in credits (D-125). The worth is the cheapest honest price of the item where one exists (the cities' shelves and the regional exchange), so a fence, who pays at most 60 percent of it, never pays more than the item costs to buy. Items with no worth here are not bought at all: nothing a person can come by for free (stone, logs, dirt) and nothing worthless (paper, bread). Goods with no honest price at all (fence-only goods: what burglars find in homes and offices, D-144) are listed under fence_only; a fence may pay more of their worth (up to 80 percent with the Thief skills) because nothing honest can be undercut by them. Workshop goods (D-163) are worth what the cheapest shop counter that sells them charges (D-164), so stolen stock from a back room fences for less than an honest sale.",
   "values": {
     "minecraft:iron_ingot": 9,
     "minecraft:copper_ingot": 7,
@@ -37,7 +37,19 @@
     "underground_city:small_painting": 220,
     "underground_city:bearer_bonds": 400,
     "minecraft:music_disc_13": 30,
-    "minecraft:music_disc_cat": 30
+    "minecraft:music_disc_cat": 30,
+    "underground_city:flour": 6,
+    "underground_city:produce_crate": 40,
+    "underground_city:fruit_crate": 40,
+    "underground_city:berry_wine": 22,
+    "underground_city:apple_cider": 18,
+    "underground_city:aged_wine": 55,
+    "underground_city:grain_spirit": 26,
+    "underground_city:fasteners": 3,
+    "underground_city:steel_bracket": 12,
+    "underground_city:barrel_hoops": 8,
+    "underground_city:springs": 6,
+    "underground_city:gear_set": 45
   },
   "fence_only": [
     "minecraft:music_disc_13",

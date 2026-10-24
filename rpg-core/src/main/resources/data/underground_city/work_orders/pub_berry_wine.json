@@ -1,0 +1,19 @@
+{
+  "schema_version": 3,
+  "title": "Berry wine for the pub",
+  "career": "vintner",
+  "level": 2,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "underground_city:berry_wine",
+      "count": 6
+    }
+  ],
+  "credits": 120,
+  "xp": 260,
+  "capacity": 3,
+  "refill_ticks": 9000,
+  "legality": "legal",
+  "requires_skill": "vintner.fundamentals"
+}

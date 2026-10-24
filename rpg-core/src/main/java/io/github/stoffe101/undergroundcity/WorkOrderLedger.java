@@ -25,7 +25,7 @@ import java.util.WeakHashMap;
  * saved. Recovery runs before the player can interact. No second wallet lives here.
  */
 public final class WorkOrderLedger {
-    private static final String PURCHASE = "purchase", SEIZURE = "seizure", SALE = "sale", ENCOUNTER = "encounter";
+    private static final String PURCHASE = "purchase", SEIZURE = "seizure", SALE = "sale", ENCOUNTER = "encounter", SUPPLY = "supply";
     /** How many searches a person's history keeps (the latest ones; who was searched where, what was found and what it cost). */
     static final int SEARCH_HISTORY = 12;
     /** One heat step cools every five minutes of active play. */
@@ -188,6 +188,11 @@ public final class WorkOrderLedger {
             record.putInt("sales", Math.addExact(record.getInt("sales"), 1));
             record.putLong("fenced_credits", Math.addExact(record.getLong("fenced_credits"), pending.getLong("credits")));
             applyTargets(record, pending);
+            record.remove("pending");
+        } else if (SUPPLY.equals(pending.getString("kind"))) {
+            // Goods sold to a shop (D-164) never touch an accepted order; the supplier's career XP was restored by the recovery that settles it.
+            record.putInt("supplies", Math.addExact(record.getInt("supplies"), 1));
+            record.putLong("supply_credits", Math.addExact(record.getLong("supply_credits"), pending.getLong("credits")));
             record.remove("pending");
         } else if (ENCOUNTER.equals(pending.getString("kind"))) {
             // A roadside encounter (D-139) never touches an accepted order; its career XP was restored by the recovery that settles it.
@@ -412,6 +417,51 @@ public final class WorkOrderLedger {
         while (recent.size() > 64) recent.remove(0);
         record.put("recent_encounters", recent);
         putPlayer(player, record); persist(); // BEFORE touching inventory or Q Shop
+    }
+
+    boolean hasSupply(UUID player, UUID supply) {
+        ListTag recent = player(player).getList("recent_supplies", Tag.TAG_STRING);
+        for (int i = 0; i < recent.size(); i++) if (recent.getString(i).equals(supply.toString())) return true;
+        return false;
+    }
+
+    /**
+     * Durably commits goods sold to a shop (D-164): the shelf's shared units raised by {@code quantity} (never above its capacity), the sale's nonce, and the absolute inventory (the goods
+     * gone), wallet and career-XP targets, together, BEFORE the live player or the Q Shop wallet changes. Recovery replays the targets and {@link #settle} retires the record, exactly as for a
+     * purchase; the same nonce is refused a second time, so a repeated packet never pays twice or fills the shelf twice.
+     */
+    void prepareSupply(UUID player, UUID supply, RegionalStock stock, int quantity, long credits, ListTag inventoryAfter, double balanceAfter, int xpAfter) {
+        checkHealthy();
+        CompoundTag record = player(player);
+        if (record.contains("pending")) throw new IllegalStateException("Finish recovery before selling");
+        if (hasSupply(player, supply)) throw new IllegalStateException("That sale was already made");
+        if (quantity < 1 || credits < 1 || !Double.isFinite(balanceAfter) || balanceAfter < 0 || xpAfter < 0 || xpAfter > ProgressionRules.MAX_XP) throw new IllegalArgumentException("Invalid settlement");
+        int units = regionalUnits(stock);
+        if (units + quantity > stock.capacity()) throw new IllegalStateException("The shop has room for " + Math.max(0, stock.capacity() - units) + " more");
+        root.getCompound("regional").getCompound(stock.id()).putInt("units", units + quantity);
+        CompoundTag pending = new CompoundTag();
+        pending.putString("kind", SUPPLY); pending.putString("line", stock.id()); pending.putInt("quantity", quantity); pending.putLong("credits", credits);
+        pending.put("inventory", inventoryAfter.copy()); pending.putDouble("balance", balanceAfter); pending.putInt("xp", xpAfter);
+        record.put("pending", pending);
+        ListTag recent = record.getList("recent_supplies", Tag.TAG_STRING);
+        recent.add(net.minecraft.nbt.StringTag.valueOf(supply.toString()));
+        while (recent.size() > 16) recent.remove(0);
+        record.put("recent_supplies", recent);
+        putPlayer(player, record); persist(); // BEFORE touching inventory or Q Shop
+    }
+
+    /**
+     * A shop's customers buying from its shelf (D-164): takes up to {@code quantity} units from a line, never below empty, and returns how many it took. The people the population service
+     * walks into an open shop do this, so a shelf a supplier filled empties again in active play. Persists once.
+     */
+    int drawDown(RegionalStock stock, int quantity) {
+        if (faulted || quantity < 1) return 0;
+        int units = regionalUnits(stock);
+        int taken = Math.min(units, quantity);
+        if (taken == 0) return 0;
+        root.getCompound("regional").getCompound(stock.id()).putInt("units", units - taken);
+        persist();
+        return taken;
     }
 
     /** Test seam: sets a supplier line's shared units, standing in for other buyers (GameTests and the scripted journey). Never called by gameplay. */
