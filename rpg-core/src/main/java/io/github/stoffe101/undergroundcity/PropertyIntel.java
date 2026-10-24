@@ -397,7 +397,9 @@ public final class PropertyIntel {
         ServerLevel level = event.getServer().overworld();
         long start = System.nanoTime();
         while (!s.queue.isEmpty() && System.nanoTime() - start < SURVEY_SLICE_NANOS) {
-            long[] c = s.queue.poll();
+            long[] c = s.queue.peek();
+            if (!CityBuildings.INSTANCE.askable(level, (int) c[0], (int) c[1])) break;   // Lost Cities is generating: the survey goes on next tick (D-167)
+            s.queue.poll();
             s.chunks++;
             Optional<CityBuildings.Building> found = CityBuildings.INSTANCE.ofChunk(level, (int) c[0], (int) c[1]);
             if (found.isEmpty()) continue;

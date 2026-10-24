@@ -276,7 +276,7 @@ public final class HouseholdService {
         List<Candidate> candidates = new ArrayList<>();
         for (int dx = -RADIUS_CHUNKS; dx <= RADIUS_CHUNKS; dx++) for (int dz = -RADIUS_CHUNKS; dz <= RADIUS_CHUNKS; dz++) {
             int cx = here.x + dx, cz = here.z + dz;
-            if (level.getChunkSource().getChunkNow(cx, cz) == null) continue;
+            if (level.getChunkSource().getChunkNow(cx, cz) == null || !CityBuildings.INSTANCE.askable(level, cx, cz)) continue;
             if (!CityBuildings.INSTANCE.known(cx, cz)) { if (budget-- <= 0) continue; lookups++; }
             Optional<CityBuildings.Building> found = CityBuildings.INSTANCE.ofChunk(level, cx, cz);
             if (found.isEmpty()) continue;

@@ -78,7 +78,10 @@ public final class AlarmPanels {
     /** The panel of a building, only when the block is really there (an old world, a griefed wall or a building of another package has none). */
     static Optional<BlockPos> placedPanel(ServerLevel level, CityBuildings.Building b) {
         Optional<BlockPos> pos = panelOf(b);
-        if (pos.isEmpty() || !level.isLoaded(pos.get()) || !(level.getBlockState(pos.get()).getBlock() instanceof AlarmPanelBlock)) return Optional.empty();
+        if (pos.isEmpty()) return Optional.empty();
+        // only from a chunk that is fully there: reading through the level would wait for one still being generated (measured: 404 ms on arriving in Ironhaven, D-167)
+        var chunk = level.getChunkSource().getChunkNow(pos.get().getX() >> 4, pos.get().getZ() >> 4);
+        if (chunk == null || !(chunk.getBlockState(pos.get()).getBlock() instanceof AlarmPanelBlock)) return Optional.empty();
         return pos;
     }
 

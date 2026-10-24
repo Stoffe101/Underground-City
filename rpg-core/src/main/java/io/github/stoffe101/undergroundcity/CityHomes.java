@@ -144,7 +144,7 @@ public final class CityHomes {
         int budget = LOOKUPS, registered = 0;
         for (int dx = -RADIUS_CHUNKS; dx <= RADIUS_CHUNKS; dx++) for (int dz = -RADIUS_CHUNKS; dz <= RADIUS_CHUNKS; dz++) {
             int cx = here.x + dx, cz = here.z + dz;
-            if (level.getChunkSource().getChunkNow(cx, cz) == null) continue;
+            if (level.getChunkSource().getChunkNow(cx, cz) == null || !CityBuildings.INSTANCE.askable(level, cx, cz)) continue;   // never waits on Lost Cities (D-167)
             if (!CityBuildings.INSTANCE.known(cx, cz) && budget-- <= 0) continue;
             Optional<CityBuildings.Building> b = CityBuildings.INSTANCE.ofChunk(level, cx, cz);
             if (b.isPresent()) registered += ensureBuilding(level, b.get());

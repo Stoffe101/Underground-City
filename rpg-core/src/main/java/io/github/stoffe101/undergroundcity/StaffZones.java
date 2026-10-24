@@ -199,7 +199,7 @@ public final class StaffZones {
     static void shutPowered(ServerLevel level, ServerPlayer player) {
         int cx = player.blockPosition().getX() >> 4, cz = player.blockPosition().getZ() >> 4;
         for (int dx = -1; dx <= 1; dx++) for (int dz = -1; dz <= 1; dz++) {
-            if (level.getChunkSource().getChunkNow(cx + dx, cz + dz) == null) continue;
+            if (level.getChunkSource().getChunkNow(cx + dx, cz + dz) == null || !CityBuildings.INSTANCE.askable(level, cx + dx, cz + dz)) continue;   // never waits on Lost Cities (D-167)
             Optional<CityBuildings.Building> b = CityBuildings.INSTANCE.ofChunk(level, cx + dx, cz + dz);
             if (b.isPresent()) shutPowered(level, b.get());
         }

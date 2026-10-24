@@ -268,7 +268,8 @@ public final class TechService {
             int placed = 0;
             int cx = player.chunkPosition().x, cz = player.chunkPosition().z;
             for (int dx = -PANEL_CHUNKS; dx <= PANEL_CHUNKS && placed < PANELS_PER_PLAYER; dx++) for (int dz = -PANEL_CHUNKS; dz <= PANEL_CHUNKS && placed < PANELS_PER_PLAYER; dz++) {
-                if (level.getChunkSource().getChunkNow(cx + dx, cz + dz) == null || !CityBuildings.INSTANCE.known(cx + dx, cz + dz) && dx * dx + dz * dz > 2) continue;
+                if (level.getChunkSource().getChunkNow(cx + dx, cz + dz) == null || !CityBuildings.INSTANCE.known(cx + dx, cz + dz) && dx * dx + dz * dz > 2
+                    || !CityBuildings.INSTANCE.askable(level, cx + dx, cz + dz)) continue;   // never waits on Lost Cities (D-167)
                 Optional<CityBuildings.Building> b = CityBuildings.INSTANCE.ofChunk(level, cx + dx, cz + dz);
                 if (b.isPresent() && ensurePanel(level, b.get())) placed++;
             }

@@ -358,6 +358,8 @@ public final class BuildingGuard {
 
     /** Shuts every door standing open without a reason within six blocks of a position (and three above, two below); returns how many it shut. */
     static int watchAround(ServerLevel level, BlockPos at) {
+        // the watch comes round every ten ticks: a plan Lost Cities cannot give without waiting on its generation workers is asked next time (D-167)
+        for (BlockPos p : new BlockPos[] {at, at.offset(6, 0, 6), at.offset(-6, 0, -6)}) if (!CityBuildings.INSTANCE.askable(level, p.getX() >> 4, p.getZ() >> 4)) return 0;
         if (CityBuildings.INSTANCE.at(level, at).isEmpty() && CityBuildings.INSTANCE.at(level, at.offset(6, 0, 6)).isEmpty() && CityBuildings.INSTANCE.at(level, at.offset(-6, 0, -6)).isEmpty()) return 0;
         int shut = 0;
         BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos();

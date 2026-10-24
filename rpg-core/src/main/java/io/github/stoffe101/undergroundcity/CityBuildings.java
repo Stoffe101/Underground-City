@@ -257,6 +257,17 @@ public final class CityBuildings extends SimpleJsonResourceReloadListener {
     /** True when the plan of a chunk is already known, so asking about it costs nothing (a first question to Lost Cities costs tens of milliseconds). */
     public boolean known(int cx, int cz) { return override != null || cache.containsKey(ChunkPos.asLong(cx, cz)); }
 
+    /**
+     * True when {@link #ofChunk} can answer now without waiting on Lost Cities' generation workers (D-167): the plan is cached or recorded, the chunk is outside every city circle,
+     * or Lost Cities is not generating. Callers that can wait a few seconds (the street population, the households, the door watch) skip a chunk until then.
+     */
+    public boolean askable(ServerLevel level, int cx, int cz) {
+        if (known(cx, cz) || LostCitiesLink.askable(level, cx, cz)) return true;
+        if (CityRegions.INSTANCE.cityAt(level, new BlockPos(cx * 16 + 8, level.getSeaLevel(), cz * 16 + 8)).isEmpty()) return true;
+        LostCitiesLink.deferred++;
+        return false;
+    }
+
     /** The building plan of a chunk (cached). Empty for a chunk that is not a city building. */
     public Optional<Building> ofChunk(ServerLevel level, int cx, int cz) {
         BiFunction<Integer, Integer, Optional<Building>> seam = override;
