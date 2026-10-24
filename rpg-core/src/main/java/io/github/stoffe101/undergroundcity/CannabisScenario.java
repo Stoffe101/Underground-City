@@ -474,11 +474,14 @@ final class CannabisScenario {
         Playtest.queue("what the client calls them", () -> {
             List<String> names = new ArrayList<>();
             boolean old = false;
+            // the former name, from the alias table that keeps older saves loading (the one place it is still written, D-142)
+            java.util.Set<String> former = new java.util.HashSet<>();
+            for (String renamed : RenamedIds.ITEMS.keySet()) former.add(renamed.substring(0, renamed.indexOf('_')));
             for (ItemStack st : mc().player.getInventory().items) {
                 if (st.isEmpty()) continue;
                 String id = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(st.getItem()).toString(), name = st.getHoverName().getString();
                 if (id.contains("cannabis") || id.contains("nutrient")) names.add(id + " = \"" + name + "\"");
-                if (name.toLowerCase(Locale.ROOT).contains("sable") || id.contains("sable")) old = true;
+                for (String word : former) if (name.toLowerCase(Locale.ROOT).contains(word) || id.contains(word)) old = true;
             }
             Playtest.log("CANNABIS names on the client: " + names);
             boolean right = names.stream().anyMatch(n -> n.endsWith("\"Cannabis Flower\"")) && names.stream().filter(n -> n.contains("cannabis_seeds")).allMatch(n -> n.endsWith("\"Cannabis Seeds\""));
