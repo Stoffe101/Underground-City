@@ -28,7 +28,7 @@ public final class RegistrationScreen extends UcScreen {
             "Smiths, engineers, arms makers", "Strict gates, goods searched", "Valewood, Blackwater: about 4 min"),
         new City("valewood", "VALEWOOD", UcUi.VALEWOOD, "A green low-rise town of farms, vineyards and a busy market square.",
             "Farmers, vintners, traders", "Modest patrols, arms licensed", "Ironhaven, Blackwater: about 4 min"),
-        new City("blackwater", "BLACKWATER", UcUi.BLACKWATER, "Glass towers, a working harbour and nightlife on the water.",
+        new City("blackwater", "BLACKWATER", UcUi.BLACKWATER, "Glass towers, old quays and nightlife by the water.",
             "Technicians, shippers, brokers", "Uneven enforcement", "Ironhaven, Valewood: about 4 min"));
     private static final List<Career> CAREERS = List.of(
         new Career("farmer", "FARMER", UcUi.Icon.FARMER, 0xff86c45a, "Crops and greenhouses", "Restricted cultivation"),
