@@ -88,19 +88,21 @@ The fifth pass left one hitch open: the first street pass after arriving in a ci
 
 **A second hitch found on the way.** `AlarmPanels.placedPanel` checked `level.isLoaded` and then read the panel's block through the level, which waits for a chunk still being generated: 404 ms on the teleport into Ironhaven and 190 ms into Blackwater in run 3. It now reads only a chunk `getChunkNow` returns, the rule above.
 
-| Segment (one client, software renderer, one process) | run 1 (before): ticks over 100 ms, max | run 2 (record): over 100 ms, max | run 3 (record and deferral): over 100 ms, max |
-| --- | --- | --- | --- |
-| standing at the spawn, 30 s | 7, 589 ms | 5, 636 ms | 3, 179 ms |
-| on the road, standing, 30 s | 11, 250 ms | 6, 265 ms | 1, 112 ms |
-| walking the road into Valewood (150 blocks) | 12, 307 ms | 0, 77 ms | 3, 385 ms |
-| walking into Valewood's streets | (the walk stopped at the road) | 0, 87 ms | 1, 123 ms |
-| standing in Valewood, 3 min | 0, 95 ms | 1, 120 ms | 0, 99 ms |
-| teleport to Blackwater | 2, 765 ms | 1, 332 ms | 3, 304 ms |
-| standing in Blackwater, 2 min | 8, 156 ms | 0, 79 ms | 3, 184 ms |
-| teleport to Ironhaven | 3, 1150 ms | 2, 225 ms | 3, 404 ms |
-| p99 walking the road | 174 ms | 59 ms | 71 ms |
+| Segment (one client, software renderer, one process) | run 1 (before): ticks over 100 ms, max | run 2 (record): over 100 ms, max | run 3 (record and deferral): over 100 ms, max | run 4 (all fixes): over 100 ms, max |
+| --- | --- | --- | --- | --- |
+| standing at the spawn, 30 s | 7, 589 ms | 5, 636 ms | 3, 179 ms | 8, 133 ms |
+| on the road, standing, 30 s | 11, 250 ms | 6, 265 ms | 1, 112 ms | 1, 124 ms |
+| walking the road into Valewood (150 blocks) | 12, 307 ms | 0, 77 ms | 3, 385 ms | 3, 137 ms |
+| walking into Valewood's streets | (the walk stopped at the road) | 0, 87 ms | 1, 123 ms | 7, 115 ms |
+| standing in Valewood, 3 min | 0, 95 ms | 1, 120 ms | 0, 99 ms | 6, 132 ms |
+| teleport to Blackwater | 2, 765 ms | 1, 332 ms | 3, 304 ms | 1, 201 ms |
+| standing in Blackwater, 2 min | 8, 156 ms | 0, 79 ms | 3, 184 ms | 1, 165 ms |
+| teleport to Ironhaven | 3, 1150 ms | 2, 225 ms | 3, 404 ms | 2, 235 ms |
+| p99 walking the road | 174 ms | 59 ms | 71 ms | 86 ms |
 
-Each run is a new world, so the terrain differs; one run per row. In run 3 the 385 ms walking tick and a 196 ms one were the staff-door check (`StaffZones.shutPowered`, five times a second) asking Lost Cities without the deferral; it now defers too, as do the utility panels, city homes and the property survey. The 304 ms on the teleport into Blackwater is Minecraft's own chunk saving as the old area unloads (`ChunkMap.processUnloads` -> `ChunkSerializer.write`), not Core and not Lost Cities. Run 3's counters: 3,085 plans recorded on the workers, 1,217 questions answered from the record, 50 asked of Lost Cities, 5,328 put off while it generated. A run after the last two fixes is reported in the sixth pass's report.
+Each run is a new world, so the terrain differs; one run per row. In run 3 the 385 ms walking tick and a 196 ms one were the staff-door check (`StaffZones.shutPowered`, five times a second) asking Lost Cities without the deferral; it now defers too, as do the utility panels, city homes and the property survey. The 304 ms on the teleport into Blackwater is Minecraft's own chunk saving as the old area unloads (`ChunkMap.processUnloads` -> `ChunkSerializer.write`), not Core and not Lost Cities. Run 3's counters: 3,085 plans recorded on the workers, 1,217 questions answered from the record, 50 asked of Lost Cities, 5,328 put off while it generated.
+
+**Run 4, after the last two fixes:** no tick over 250 ms in any segment after the world was made (11 segments, 15,800 ticks); the worst were 235 ms and 201 ms on the teleports into Ironhaven and Blackwater (Minecraft's chunk saving as the old area unloads, as above) and 137 ms walking the road. The sampler still caught the server thread waiting on Lost Cities' lock in 5 samples (about 20 ms) on the road, from vanilla villager pathfinding into a chunk still generating, not from Core. In the long ticks while standing in the cities the sampler caught only vanilla frames (mob pathfinding in four samples, chunk unloading in one) and no Core code; the integrated server shares four cores with a software-rendered client, so these figures are not a dedicated server's.
 
 Not measured: a dedicated server, two players, a vehicle at speed, and a world reopened after a restart (the record then comes from the file).
 
