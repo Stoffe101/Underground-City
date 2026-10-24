@@ -59,6 +59,13 @@ public final class PropertyCacheBlock extends BaseEntityBlock {
             return InteractionResult.CONSUME;
         }
         if (entry.kind() == PropertyCacheBlockEntity.Entry.Kind.PICK) {
+            // nobody cracks a safe in a building while it is open (D-147, as nobody searches its furniture): by day anybody may walk into the club by its public door, and the back office's safe
+            // would make its high-security door and the Pro Pick Set pointless (found writing the advanced burglary scenario)
+            var building = CityBuildings.INSTANCE.at(serverLevel, pos);
+            if (building.isPresent() && BuildingGuard.openToPublic(serverLevel, building.get(), null)) {
+                serverPlayer.sendSystemMessage(Component.literal(BurglarySearch.WHILE_OPEN));
+                return InteractionResult.CONSUME;
+            }
             var city = CityRegions.INSTANCE.nearest(serverLevel, pos).orElse("");
             String refusal = LockService.begin(serverPlayer, serverLevel, new LockService.Target(LockService.Kind.SAFE, pos.immutable(), entry.profile(), city, "safe", cache.label(), entry.picksNeeded()));
             if (refusal != null) serverPlayer.sendSystemMessage(Component.literal(refusal));
