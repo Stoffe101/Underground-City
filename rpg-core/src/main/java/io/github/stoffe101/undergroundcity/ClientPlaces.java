@@ -26,7 +26,7 @@ import java.util.Map;
 /**
  * The client's half of property intelligence (D-157). While the player looks at a door within reach for a moment, it asks the server what the place is and shows a small card under the
  * crosshair (what it is, its tier as a word and a numeral, whether they could try it); the card goes as soon as they look away, so a street full of doors draws nothing. The Inspect key cases the
- * door they look at; the Places key opens their book. A place chosen on the Places screen is tracked: the status display's next-step card points the way until the player gets there.
+ * door they look at; the Places key opens their book. A place chosen on the Places screen is tracked on the server ({@link Navigation}, D-161).
  */
 @OnlyIn(Dist.CLIENT)
 @Mod.EventBusSubscriber(modid = UndergroundCity.MOD_ID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.MOD)
@@ -56,8 +56,6 @@ public final class ClientPlaces {
     private static int asks;
     static int asks() { return asks; }
 
-    private static PropertyIntel.Entry tracked;
-    private static int arrivedTicks;
 
     private ClientPlaces() {}
 
@@ -85,7 +83,6 @@ public final class ClientPlaces {
         thiefLevel = level;
         casing = hasCasing;
         bookVersion++;
-        if (tracked != null) for (PropertyIntel.Row row : next) if (row.entry().key() == tracked.key()) tracked = row.entry();
     }
 
     static List<PropertyIntel.Row> rows() { return rows; }
@@ -105,20 +102,6 @@ public final class ClientPlaces {
         return known == null ? null : known.peek();
     }
 
-    // ------------------------------------------------------------------------------------------------ tracking
-
-    static void track(PropertyIntel.Entry entry) { tracked = entry; arrivedTicks = 0; }
-    static void stopTracking() { tracked = null; }
-    static PropertyIntel.Entry tracked() { return tracked; }
-
-    /** The status display's next-step card: a tracked place while there is one, else the journey's own next step. */
-    static Journey.Objective objectiveOr(Journey.Objective journey) {
-        PropertyIntel.Entry t = tracked;
-        if (t == null) return journey;
-        String what = Thievery.tierWord(t.tier()) + " " + t.label() + ", " + t.address() + " (" + TerminalScreenText.capitalize(t.city()) + ")";
-        return new Journey.Objective("Tracking a place", what + ". Press J to change or stop.", "", t.door(), t.address());
-    }
-
     // ------------------------------------------------------------------------------------------------ the clock
 
     @Mod.EventBusSubscriber(modid = UndergroundCity.MOD_ID, value = Dist.CLIENT)
@@ -127,6 +110,7 @@ public final class ClientPlaces {
         public static void tick(TickEvent.ClientTickEvent event) {
             if (event.phase != TickEvent.Phase.END) return;
             Minecraft mc = Minecraft.getInstance();
+            ClientNavigation.clientTick(mc);   // the tracked destination on Xaero's map (D-161)
             if (mc.player == null || mc.level == null) { looking = null; return; }
             while (PLACES.consumeClick()) if (mc.screen == null) { mc.setScreen(new PlacesScreen()); PlacesNetwork.askBook(); }
             BlockPos door = doorInSight(mc);
@@ -146,12 +130,6 @@ public final class ClientPlaces {
                     asked = looking;
                     askedAt = now;
                 }
-            }
-            PropertyIntel.Entry t = tracked;
-            if (t != null) {
-                double dx = t.door().getX() + 0.5 - mc.player.getX(), dz = t.door().getZ() + 0.5 - mc.player.getZ();
-                if (dx * dx + dz * dz < 16) { if (++arrivedTicks > 40) tracked = null; }
-                else arrivedTicks = 0;
             }
         }
     }

@@ -45,7 +45,7 @@ public final class PopulationCatalog extends SimpleJsonResourceReloadListener {
                 if (!ProgressionRules.validCity(city)) throw new IllegalArgumentException("Invalid city in " + key);
                 JsonObject mix = json.getAsJsonObject("mix"), names = json.getAsJsonObject("names");
                 nextCities.put(city, new Def(city, json.get("count").getAsInt(), json.get("reach_chunks").getAsInt(),
-                    new PopulationPlan.Mix(mix.get("resident").getAsInt(), mix.get("worker").getAsInt(), mix.get("courier").getAsInt(), mix.get("guard").getAsInt()),
+                    new PopulationPlan.Mix(mix.get("resident").getAsInt(), mix.get("worker").getAsInt(), mix.get("courier").getAsInt(), mix.get("guard").getAsInt(), mix.has("visitor") ? mix.get("visitor").getAsInt() : 0),
                     new PopulationPlan.Names(strings(names.getAsJsonArray("first")), strings(names.getAsJsonArray("last"))), strings(json.getAsJsonArray("flavour"))));
             }
             if (json.has("lines")) {
@@ -57,7 +57,7 @@ public final class PopulationCatalog extends SimpleJsonResourceReloadListener {
             }
         });
         for (Def def : nextCities.values()) {
-            if (def.count() < 0 || def.count() > 400 || def.reachChunks() < 1 || def.reachChunks() > 16) throw new IllegalArgumentException("Invalid population size or reach for " + def.city());
+            if (def.count() < 0 || def.count() > 1200 || def.reachChunks() < 1 || def.reachChunks() > 16) throw new IllegalArgumentException("Invalid population size or reach for " + def.city());
         }
         cities = Map.copyOf(nextCities);
         lines = Map.copyOf(nextLines);

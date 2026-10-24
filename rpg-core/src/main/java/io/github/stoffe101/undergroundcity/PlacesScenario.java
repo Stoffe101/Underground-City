@@ -228,7 +228,7 @@ final class PlacesScenario {
             else pass("10 the Places screen lists the places glanced at and cased, with what was learned");
         });
         JourneyScenario.click("Track", true);
-        until("tracking", () -> ClientPlaces.tracked() != null && mc().screen == null, 100);
+        until("tracking", () -> ClientNavigation.current() != null && mc().screen == null, 100);
         Playtest.queue("step back from the door (scripted)", () -> {
             scripted("the player was moved 30 blocks along the street to see the arrow");
             server(() -> { var p = me(); p.teleportTo(p.getX() + 30, p.getY() + 1, p.getZ()); return null; });
@@ -237,7 +237,7 @@ final class PlacesScenario {
         Playtest.wait("draw", 20);
         shot("8-tracking");
         Playtest.queue("the arrow", () -> {
-            var o = ClientPlaces.objectiveOr(null);
+            var o = ClientNavigation.objectiveOr(null);
             if (o == null || o.target() == null) Playtest.fail("no tracking card");
             else pass("11 Track points the status display's next-step card at the place (" + o.targetName() + ")");
         });

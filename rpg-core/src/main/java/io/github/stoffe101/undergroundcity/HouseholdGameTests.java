@@ -59,7 +59,7 @@ public final class HouseholdGameTests {
         check(a.size() == HouseholdPlan.MAX_RESIDENTS, "eight flats gave " + a.size() + " residents, not the cap of " + HouseholdPlan.MAX_RESIDENTS);
         check(a.stream().map(HouseholdPlan.Resident::id).distinct().count() == a.size(), "two residents share an identity");
         check(!a.equals(HouseholdPlan.residents("ironhaven", 5908L, 43L, many, names())) && !a.equals(HouseholdPlan.residents("ironhaven", 5909L, 42L, many, names())), "another building or another world gave the same people");
-        for (var who : a) check(who.role().equals("resident") && (who.skin() % PopulationPlan.OUTFITS == 7 || who.skin() % PopulationPlan.OUTFITS == 8), "a resident is not dressed as one: skin " + who.skin());
+        for (var who : a) check(who.role().equals("resident") && java.util.Arrays.stream(PopulationPlan.outfitsOf("resident", "ironhaven")).anyMatch(o -> o == who.skin() % PopulationPlan.OUTFITS), "a resident is not dressed as one: skin " + who.skin());
         var staff = HouseholdPlan.residents("blackwater", 5908L, 7L, big, names());
         check(staff.size() == HouseholdPlan.MAX_WORKERS && staff.stream().allMatch(w -> w.role().equals("worker")), "an office gave " + staff.size() + " workers");
         for (var who : staff) check(java.util.Arrays.stream(PopulationPlan.outfitsOf("worker", "blackwater")).anyMatch(o -> o == who.skin() % PopulationPlan.OUTFITS), "a worker is not dressed as one of the city's trades");

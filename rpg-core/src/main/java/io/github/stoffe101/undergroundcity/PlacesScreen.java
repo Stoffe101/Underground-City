@@ -71,8 +71,7 @@ public final class PlacesScreen extends UcScreen {
         trackB.active = row != null;
         markB.active = row != null;
         forgetB.active = row != null;
-        PropertyIntel.Entry tracked = ClientPlaces.tracked();
-        trackB.label(row != null && tracked != null && tracked.key() == row.entry().key() ? "Stop" : "Track");
+        trackB.label(row != null && ClientNavigation.tracking("place", Long.toString(row.entry().key())) ? "Stop" : "Track");
         markB.label(row != null && row.entry().marked() ? "Unmark" : "Mark");
     }
 
@@ -115,9 +114,8 @@ public final class PlacesScreen extends UcScreen {
     private void track() {
         PropertyIntel.Row row = selectedRow();
         if (row == null) return;
-        PropertyIntel.Entry tracked = ClientPlaces.tracked();
-        if (tracked != null && tracked.key() == row.entry().key()) ClientPlaces.stopTracking();
-        else { ClientPlaces.track(row.entry()); onClose(); return; }
+        if (ClientNavigation.tracking("place", Long.toString(row.entry().key()))) NavigationNetwork.stop();
+        else { NavigationNetwork.track("place", Long.toString(row.entry().key())); onClose(); return; }
         labels();
     }
 

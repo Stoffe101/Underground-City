@@ -1,13 +1,14 @@
 {
   "schema_version": 1,
   "city": "ironhaven",
-  "count": 54,
-  "reach_chunks": 6,
+  "count": 540,
+  "reach_chunks": 12,
   "mix": {
-    "resident": 52,
-    "worker": 30,
+    "resident": 46,
+    "worker": 34,
     "courier": 8,
-    "guard": 10
+    "guard": 6,
+    "visitor": 6
   },
   "names": {
     "first": [
@@ -42,7 +43,31 @@
       "Emil",
       "Frida",
       "Gerd",
-      "Hollis"
+      "Hollis",
+      "Agnes",
+      "Bertil",
+      "Carmen",
+      "Dusan",
+      "Elin",
+      "Fergus",
+      "Greta",
+      "Henrik",
+      "Ines",
+      "Jonas",
+      "Klara",
+      "Lukas",
+      "Milo",
+      "Nadia",
+      "Oskar",
+      "Petra",
+      "Rafael",
+      "Saskia",
+      "Tobias",
+      "Una",
+      "Viktor",
+      "Wilma",
+      "Xander",
+      "Zofia"
     ],
     "last": [
       "Anvil",
@@ -72,7 +97,27 @@
       "Zeller",
       "Cobb",
       "Dray",
-      "Hargreave"
+      "Hargreave",
+      "Bellamy",
+      "Crane",
+      "Dalton",
+      "Ferris",
+      "Gaunt",
+      "Hobb",
+      "Kell",
+      "Lockwood",
+      "Marsh",
+      "Nettle",
+      "Oakes",
+      "Rook",
+      "Slate",
+      "Thorne",
+      "Vickers",
+      "Wade",
+      "Ashby",
+      "Birch",
+      "Colt",
+      "Drummond"
     ]
   },
   "flavour": [

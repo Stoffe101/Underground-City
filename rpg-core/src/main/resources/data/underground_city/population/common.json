@@ -76,6 +76,26 @@
       "any": [
         "Move along."
       ]
+    },
+    "visitor": {
+      "morning": [
+        "Long night. I'm heading home to sleep it off.",
+        "Is anything open for breakfast round here?"
+      ],
+      "day": [
+        "Just killing time before the evening.",
+        "My friends are late, as usual."
+      ],
+      "evening": [
+        "We're meeting at the club later. The queue gets long after ten.",
+        "First round's on me tonight. Don't tell anyone.",
+        "The music starts at nine. Best night of the week.",
+        "Have you been to the place on the corner? The bartender knows everyone."
+      ],
+      "any": [
+        "Evening. Or is it morning already?",
+        "Mind the doorman, he's in a mood tonight."
+      ]
     }
   }
 }

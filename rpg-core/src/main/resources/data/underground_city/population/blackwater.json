@@ -1,13 +1,14 @@
 {
   "schema_version": 1,
   "city": "blackwater",
-  "count": 48,
-  "reach_chunks": 6,
+  "count": 560,
+  "reach_chunks": 12,
   "mix": {
-    "resident": 50,
-    "worker": 28,
-    "courier": 12,
-    "guard": 10
+    "resident": 38,
+    "worker": 32,
+    "courier": 10,
+    "guard": 6,
+    "visitor": 14
   },
   "names": {
     "first": [
@@ -40,7 +41,30 @@
       "Beck",
       "Cyrus",
       "Dalia",
-      "Emre"
+      "Emre",
+      "Aiden",
+      "Bianca",
+      "Caspian",
+      "Delphine",
+      "Ezra",
+      "Freya",
+      "Gael",
+      "Harper",
+      "Imani",
+      "Jasper",
+      "Kenji",
+      "Lucia",
+      "Marlowe",
+      "Noor",
+      "Orion",
+      "Priya",
+      "Raven",
+      "Sienna",
+      "Theo",
+      "Valentina",
+      "Wren",
+      "Zara",
+      "Mateo"
     ],
     "last": [
       "Achterberg",
@@ -68,7 +92,24 @@
       "Yilmaz",
       "Zhang",
       "Delacroix",
-      "Vesper"
+      "Vesper",
+      "Ashgrove",
+      "Blackwood",
+      "Everhart",
+      "Fairfax",
+      "Graves",
+      "Holloway",
+      "Ingram",
+      "Jansen",
+      "Kingsley",
+      "Langford",
+      "Montague",
+      "Okafor",
+      "Pereira",
+      "Quill",
+      "Rosales",
+      "Sterling",
+      "Vasquez"
     ]
   },
   "flavour": [

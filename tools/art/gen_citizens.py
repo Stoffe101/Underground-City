@@ -47,7 +47,44 @@ OUTFITS = {
     "courier":    dict(shirt=(60, 130, 170), pants=(42, 46, 56), shoes=(30, 30, 34), cap_color=(60, 130, 170), hat="cap"),
     "guard":      dict(shirt=(40, 58, 96), pants=(30, 40, 66), shoes=(20, 20, 24), badge=(232, 190, 80), hat="cap", cap_color=(30, 44, 78)),
     "mechanic":   dict(shirt=(60, 98, 86), pants=(60, 98, 86), shoes=(40, 34, 30), stain=True),
+    # D-162: more people need more clothes (indexes 12 to 19)
+    "suit":       dict(shirt=(46, 50, 62), pants=(40, 44, 56), shoes=(22, 20, 22), collar=(226, 228, 232), tie=(120, 36, 44)),
+    "casual":     dict(shirt=(120, 128, 140), pants=(58, 74, 112), shoes=(220, 220, 214), hood=True),
+    "elder":      dict(shirt=(150, 120, 96), pants=(92, 88, 84), shoes=(70, 52, 40), cardigan=(110, 84, 70), grey=True),
+    "warehouse":  dict(shirt=(104, 108, 112), pants=(60, 62, 70), shoes=(40, 34, 30), vest=(200, 220, 60), hat="cap", cap_color=(60, 62, 70)),
+    "cafe":       dict(shirt=(36, 36, 40), pants=(44, 44, 50), shoes=(30, 28, 30), apron=(130, 92, 60)),
+    "nightout":   dict(shirt=(170, 40, 70), pants=(30, 30, 36), shoes=(24, 22, 26), jacket=(28, 28, 32)),
+    "nightout2":  dict(shirt=(60, 44, 120), pants=(60, 44, 120), shoes=(26, 24, 30), sparkle=(230, 214, 160)),
+    "fieldhand":  dict(shirt=(214, 196, 160), pants=(70, 92, 70), shoes=(86, 62, 40), overalls=(70, 92, 70), hat="straw"),
 }
+
+# the colourings an outfit comes in (ten per outfit, the first is the base): uniforms barely change, everyday clothes a lot
+EVERYDAY = [(96, 150, 140), (190, 160, 90), (150, 70, 70), (70, 90, 150), (120, 140, 90), (200, 200, 196), (60, 60, 66), (170, 110, 150), (220, 150, 90), (90, 120, 120)]
+TROUSERS = [(72, 80, 96), (60, 72, 66), (50, 58, 82), (90, 74, 60), (40, 40, 46), (110, 104, 92), (58, 74, 112), (76, 60, 52), (96, 96, 104), (64, 52, 70)]
+UNIFORM = {"guard", "courier", "dockhand", "warehouse", "technician", "foundry", "mechanic"}
+NIGHT = [(170, 40, 70), (40, 120, 160), (200, 160, 60), (130, 40, 140), (220, 220, 224), (30, 140, 110), (210, 90, 50), (90, 90, 200), (190, 60, 110), (60, 60, 64)]
+
+
+def coloured(name: str, variant: int, rnd: random.Random) -> dict:
+    """An outfit in one of its colourings: everyday clothes take a shirt and trousers from the palettes, night clothes a bright colour, uniforms only shade a little."""
+    outfit = dict(OUTFITS[name])
+    if variant == 0:
+        return outfit
+    shade = lambda c, k: tuple(max(0, min(255, int(v * k))) for v in c)
+    if name in UNIFORM:
+        k = 0.88 + 0.03 * (variant % 5)
+        outfit["shirt"], outfit["pants"] = shade(outfit["shirt"], k), shade(outfit["pants"], k)
+    elif name in ("nightout", "nightout2"):
+        outfit["shirt"] = NIGHT[variant % len(NIGHT)]
+        if name == "nightout2":
+            outfit["pants"] = outfit["shirt"]
+    elif name in ("suit", "office"):
+        outfit["shirt"] = [(46, 50, 62), (60, 60, 64), (36, 44, 70), (70, 64, 58), (226, 228, 232), (180, 196, 214)][variant % 6] if name == "suit" else [(226, 228, 232), (180, 196, 214), (232, 222, 200), (200, 214, 200)][variant % 4]
+        outfit["tie"] = [(120, 36, 44), (40, 60, 120), (60, 90, 60), (120, 100, 40), (90, 40, 90)][variant % 5]
+    else:
+        outfit["shirt"] = EVERYDAY[(variant * 3 + len(name)) % len(EVERYDAY)]
+        outfit["pants"] = TROUSERS[(variant * 7 + len(name)) % len(TROUSERS)]
+    return outfit
 
 
 def fill(img: Image.Image, rect, color) -> None:
@@ -67,7 +104,7 @@ def box(img: Image.Image, parts: dict, color, shade: float = 1.0) -> None:
 def draw(spec: dict, rnd: random.Random) -> Image.Image:
     img = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
     skin, hair, eyes = spec["skin"], spec["hair"], spec["eyes"]
-    outfit = OUTFITS[spec["outfit"]]
+    outfit = coloured(spec["outfit"], spec.get("variant", 0), rnd)
     # body parts
     box(img, HEAD, skin)
     box(img, R_ARM, skin); box(img, L_ARM, skin)
@@ -118,8 +155,23 @@ def draw(spec: dict, rnd: random.Random) -> Image.Image:
     if "apron" in outfit:
         fill(img, (bx0 + 1, bz0 + 3, bx1 - 1, bz1), outfit["apron"])
         fill(img, (bx0 + 3, bz0 + 4, bx0 + 5, bz0 + 6), tuple(max(0, v - 28) for v in outfit["apron"]))   # a pocket
+    if "collar" in outfit:
+        fill(img, (bx0 + 2, bz0, bx1 - 2, bz0 + 8), outfit["collar"])   # a shirt under an open jacket
     if "tie" in outfit:
         fill(img, (bx0 + 3, bz0, bx0 + 5, bz0 + 7), outfit["tie"])
+    if "jacket" in outfit:
+        fill(img, (bx0, bz0, bx0 + 2, bz1), outfit["jacket"]); fill(img, (bx1 - 2, bz0, bx1, bz1), outfit["jacket"])
+        for arm in (R_ARM, L_ARM):
+            for key in ("front", "back", "left", "right"):
+                fill(img, arm[key], outfit["jacket"])
+    if "cardigan" in outfit:
+        fill(img, (bx0, bz0, bx0 + 3, bz1), outfit["cardigan"]); fill(img, (bx1 - 3, bz0, bx1, bz1), outfit["cardigan"])
+    if "overalls" in outfit:
+        fill(img, (bx0 + 1, bz0 + 4, bx1 - 1, bz1), outfit["overalls"])
+        fill(img, (bx0 + 1, bz0, bx0 + 2, bz0 + 4), outfit["overalls"]); fill(img, (bx1 - 2, bz0, bx1 - 1, bz0 + 4), outfit["overalls"])
+    if "sparkle" in outfit:
+        for _ in range(5):
+            img.putpixel((rnd.randint(bx0, bx1 - 1), rnd.randint(bz0, bz1 - 1)), outfit["sparkle"] + (255,))
     if outfit.get("plaid"):
         for z in range(bz0, bz1, 3):
             fill(img, (bx0, z, bx1, z + 1), tuple(max(0, v - 38) for v in outfit["shirt"]))
@@ -157,13 +209,17 @@ def draw(spec: dict, rnd: random.Random) -> Image.Image:
     return img
 
 
-def specs(count: int = 48) -> list[dict]:
+def specs(count: int = 200) -> list[dict]:
+    """Skin {@code i} wears outfit {@code i % 20} in colouring {@code i // 20} (PopulationPlan.OUTFITS and SKINS say the same)."""
     rnd = random.Random(2026_10_20)
     outfits = list(OUTFITS)
     out = []
     for index in range(count):
         outfit = outfits[index % len(outfits)]
-        out.append({"index": index, "outfit": outfit, "skin": rnd.choice(SKIN), "hair": rnd.choice(HAIR), "eyes": rnd.choice(EYES),
+        hair = rnd.choice(HAIR)
+        if OUTFITS[outfit].get("grey"):
+            hair = rnd.choice([(120, 120, 124), (226, 226, 222), (180, 180, 182)])
+        out.append({"index": index, "outfit": outfit, "variant": index // len(outfits), "skin": rnd.choice(SKIN), "hair": hair, "eyes": rnd.choice(EYES),
                     "style": rnd.choice(["short", "long", "bob", "buzz", "crop", "bald"] if outfit not in ("guard", "dockhand") else ["short", "buzz", "crop", "bob"]),
                     "sleeves": rnd.choice(["long", "short"]), "glasses": rnd.random() < 0.18})
     return out
@@ -174,9 +230,11 @@ def build(root: Path | None = None) -> list[Path]:
     folder = root / ASSETS
     folder.mkdir(parents=True, exist_ok=True)
     written = []
+    for old in folder.glob("c_*.png"):
+        old.unlink()   # the 48 two-digit skins before D-162
     for spec in specs():
         image = draw(spec, random.Random(spec["index"] * 7919))
-        path = folder / f"c_{spec['index']:02d}.png"
+        path = folder / f"c_{spec['index']:03d}.png"
         image.save(path)
         written.append(path)
     return written

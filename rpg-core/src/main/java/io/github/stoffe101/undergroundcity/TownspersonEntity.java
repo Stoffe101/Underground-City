@@ -34,12 +34,16 @@ import net.minecraft.world.level.Level;
  */
 public final class TownspersonEntity extends PathfinderMob {
     private static final EntityDataAccessor<Integer> SKIN = SynchedEntityData.defineId(TownspersonEntity.class, EntityDataSerializers.INT);
+    /** A person's build (0 to 9): drawn a little shorter or taller than the model (D-162), so a crowd is not one height. */
+    private static final EntityDataAccessor<Integer> BUILD = SynchedEntityData.defineId(TownspersonEntity.class, EntityDataSerializers.INT);
     private long person, homeKey;
     private String city = "", role = "resident";
     /** An errand: where to go and how fast, and the game time at which the body leaves (set by {@link PoliceResponse} for an officer and by {@link HouseholdService} for a commuter; none of it is saved). */
     private BlockPos errand;
     private double errandSpeed = 1.0;
     private long leaveAt = Long.MAX_VALUE;
+    /** Standing still on purpose (talking, looking in a shop window, browsing): no wandering off. */
+    private boolean holding;
 
     public TownspersonEntity(EntityType<? extends TownspersonEntity> type, Level level) {
         super(type, level);
@@ -51,13 +55,13 @@ public final class TownspersonEntity extends PathfinderMob {
         return Mob.createMobAttributes().add(Attributes.MAX_HEALTH, 20.0).add(Attributes.MOVEMENT_SPEED, 0.24).add(Attributes.FOLLOW_RANGE, 16.0);
     }
 
-    @Override protected void defineSynchedData() { super.defineSynchedData(); entityData.define(SKIN, 0); }
+    @Override protected void defineSynchedData() { super.defineSynchedData(); entityData.define(SKIN, 0); entityData.define(BUILD, 5); }
 
     @Override protected void registerGoals() {
         goalSelector.addGoal(0, new FloatGoal(this));
         goalSelector.addGoal(1, new PanicGoal(this, 1.35) { @Override public boolean canUse() { return !police() && super.canUse(); } });
         goalSelector.addGoal(2, new ErrandGoal());
-        goalSelector.addGoal(5, new WaterAvoidingRandomStrollGoal(this, 0.55, 0.002f) { @Override public boolean canUse() { return !police() && errand == null && super.canUse(); } });
+        goalSelector.addGoal(5, new WaterAvoidingRandomStrollGoal(this, 0.55, 0.002f) { @Override public boolean canUse() { return !police() && errand == null && !holding && super.canUse(); } });
         goalSelector.addGoal(6, new LookAtPlayerGoal(this, Player.class, 8.0f));
         goalSelector.addGoal(7, new RandomLookAroundGoal(this));
     }
@@ -68,6 +72,7 @@ public final class TownspersonEntity extends PathfinderMob {
         city = who.city();
         role = who.role();
         entityData.set(SKIN, who.skin());
+        entityData.set(BUILD, (int) Math.floorMod(PopulationPlan.mix(who.id() ^ 0xB01DL), 10));
         setCustomName(Component.literal(who.name()));
         setCustomNameVisible(false);   // the name shows when the crosshair rests on them, as for any named creature
         restrictTo(anchor, role.equals("guard") ? 3 : 14);
@@ -114,7 +119,29 @@ public final class TownspersonEntity extends PathfinderMob {
     BlockPos errandPlace() { return errand; }
 
     /** Sends an officer (or a commuter) to a place at a speed (a multiple of their walking speed); null stands them still. */
-    void errand(BlockPos where, double speed) { errand = where; errandSpeed = speed; if (where == null) getNavigation().stop(); }
+    void errand(BlockPos where, double speed) {
+        boolean changed = where == null || !where.equals(errand);
+        errand = where; errandSpeed = speed;
+        if (changed && !police()) { getNavigation().stop(); freshErrand = true; }
+        if (where == null) getNavigation().stop();
+    }
+
+    /** A new errand is walked at once, not after the last path runs out. */
+    private boolean freshErrand;
+
+    /** Stands still on purpose, or walks on again. */
+    void hold(boolean on) { holding = on; if (on) getNavigation().stop(); }
+
+    /**
+     * Steps straight to {@code to} without a path (through a doorway the navigation will not plan through, since these people never open doors themselves): the door is opened for them by
+     * {@link PopulationService} or {@link HouseholdService}.
+     */
+    void stepThrough(BlockPos to) {
+        errand = null;
+        holding = false;
+        getNavigation().stop();
+        getMoveControl().setWantedPosition(to.getX() + 0.5, to.getY(), to.getZ() + 0.5, 0.6);
+    }
 
     /** An officer (or a commuter) leaves (is removed) this many ticks from now; nobody is left standing in a street for good. */
     void leaveIn(long ticks) { leaveAt = level().getGameTime() + ticks; }
@@ -132,14 +159,24 @@ public final class TownspersonEntity extends PathfinderMob {
         @Override public boolean canContinueToUse() { return errand != null; }
         @Override public void tick() {
             if (errand == null) return;
-            if (--repath > 0 && !getNavigation().isDone()) return;
-            repath = 10;
-            if (distanceToSqr(errand.getX() + 0.5, errand.getY(), errand.getZ() + 0.5) > 2.5 * 2.5) getNavigation().moveTo(errand.getX() + 0.5, errand.getY(), errand.getZ() + 0.5, errandSpeed);
+            if (police()) {
+                // an officer chases somebody who moves: a fresh path twice a second
+                if (--repath > 0 && !getNavigation().isDone()) return;
+                repath = 10;
+                if (distanceToSqr(errand.getX() + 0.5, errand.getY(), errand.getZ() + 0.5) > 2.5 * 2.5) getNavigation().moveTo(errand.getX() + 0.5, errand.getY(), errand.getZ() + 0.5, errandSpeed);
+                return;
+            }
+            // anybody else: a path when the errand is new, then at most every two seconds once the last one is used up, so a body that cannot get somewhere stops asking (D-162)
+            if (freshErrand) { freshErrand = false; repath = 0; }
+            if (--repath > 0 || !getNavigation().isDone()) return;
+            repath = 40;
+            if (distanceToSqr(errand.getX() + 0.5, errand.getY(), errand.getZ() + 0.5) > 1.8 * 1.8) getNavigation().moveTo(errand.getX() + 0.5, errand.getY(), errand.getZ() + 0.5, errandSpeed);
         }
     }
 
     public long person() { return person; }
     public int skin() { return entityData.get(SKIN); }
+    public int build() { return entityData.get(BUILD); }
     public String city() { return city; }
     public String role() { return role; }
 

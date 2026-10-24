@@ -1,13 +1,14 @@
 {
   "schema_version": 1,
   "city": "valewood",
-  "count": 42,
-  "reach_chunks": 5,
+  "count": 300,
+  "reach_chunks": 10,
   "mix": {
     "resident": 58,
-    "worker": 26,
-    "courier": 8,
-    "guard": 8
+    "worker": 28,
+    "courier": 6,
+    "guard": 4,
+    "visitor": 4
   },
   "names": {
     "first": [
@@ -40,7 +41,28 @@
       "Calla",
       "Dorian",
       "Esme",
-      "Flint"
+      "Flint",
+      "Abel",
+      "Bryony",
+      "Clem",
+      "Delia",
+      "Elias",
+      "Fern",
+      "Gideon",
+      "Hattie",
+      "Isaac",
+      "Juniper",
+      "Kit",
+      "Linnea",
+      "Matthias",
+      "Otto",
+      "Primrose",
+      "Reuben",
+      "Sorrel",
+      "Teodor",
+      "Willow",
+      "Bastian",
+      "Doran"
     ],
     "last": [
       "Ashby",
@@ -68,7 +90,26 @@
       "Yewdale",
       "Abbot",
       "Hartley",
-      "Moorcroft"
+      "Moorcroft",
+      "Applegate",
+      "Barley",
+      "Copse",
+      "Dewberry",
+      "Elm",
+      "Fallow",
+      "Greenhill",
+      "Hayward",
+      "Ivyridge",
+      "Kettle",
+      "Larkin",
+      "Meadows",
+      "Pennyroyal",
+      "Rye",
+      "Sheaf",
+      "Thatcher",
+      "Wheatley",
+      "Yarrow",
+      "Brook"
     ]
   },
   "flavour": [

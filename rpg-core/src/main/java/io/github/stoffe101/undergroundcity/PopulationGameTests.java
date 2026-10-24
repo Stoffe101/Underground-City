@@ -159,7 +159,8 @@ public final class PopulationGameTests {
         check(PopulationService.activeCount() == 5, "the service does not know its bodies");
         PopulationService.removeOutOfDate(level);   // no player is in this test world: nobody is near
         check(PopulationService.activeCount() == 0, "bodies with nobody near were kept: " + PopulationService.activeCount());
-        check(PopulationService.MAX_PER_PLAYER <= PopulationService.MAX_ACTIVE && PopulationService.MAX_ACTIVE <= 64, "the budget is not bounded");
+        for (PopulationDensity.Preset p : PopulationDensity.Preset.values())
+            check(p.perPlayer <= p.world && p.world <= 200 && PopulationDensity.target(1e9, p) == p.perPlayer, "the budget of " + p + " is not bounded");
         helper.succeed();
     }
     @GameTest(template = "empty", batch = "uc_population")
@@ -175,6 +176,37 @@ public final class PopulationGameTests {
         PopulationService.streetOf(level, new net.minecraft.world.level.ChunkPos(chunk.x + 1, chunk.z));
         check(PopulationService.lcCalls == lookups + 1, "another chunk was not asked");
         PopulationService.clearCaches();
+        helper.succeed();
+    }
+
+    /** D-162: how busy a street is, by area, hour and city, and who is about to fill it. */
+    @GameTest(template = "empty")
+    public static void streetsAreBusyWhereAndWhenPeopleWouldBe(GameTestHelper helper) {
+        check(PopulationDensity.weight("blackwater", PopulationDensity.Area.COMMERCIAL, 13) > PopulationDensity.weight("blackwater", PopulationDensity.Area.RESIDENTIAL, 13), "shops are not busier than homes at lunch");
+        check(PopulationDensity.weight("blackwater", PopulationDensity.Area.NIGHTLIFE, 22) > 2 * PopulationDensity.weight("blackwater", PopulationDensity.Area.NIGHTLIFE, 10), "Blackwater's bars do not fill after dark");
+        check(PopulationDensity.weight("blackwater", PopulationDensity.Area.NIGHTLIFE, 22) > PopulationDensity.weight("valewood", PopulationDensity.Area.NIGHTLIFE, 22), "Valewood is as lively at night as Blackwater");
+        check(PopulationDensity.weight("ironhaven", PopulationDensity.Area.INDUSTRIAL, 3) > PopulationDensity.weight("ironhaven", PopulationDensity.Area.COMMERCIAL, 3), "Ironhaven's works do not run a night shift");
+        check(PopulationDensity.weight("valewood", PopulationDensity.Area.RESIDENTIAL, 3) < 0.05, "a Valewood lane is busy at three in the morning");
+        // a 7 x 7 window of busy shops at noon fills the normal budget; of homes at three in the morning almost nobody
+        double noon = 49 * PopulationDensity.weight("blackwater", PopulationDensity.Area.COMMERCIAL, 12), small = 49 * PopulationDensity.weight("valewood", PopulationDensity.Area.RESIDENTIAL, 3);
+        check(PopulationDensity.target(noon, PopulationDensity.Preset.NORMAL) >= 40 && PopulationDensity.target(small, PopulationDensity.Preset.NORMAL) <= 3,
+            "the targets are " + PopulationDensity.target(noon, PopulationDensity.Preset.NORMAL) + " at noon and " + PopulationDensity.target(small, PopulationDensity.Preset.NORMAL) + " at night");
+        check(PopulationDensity.areaOf("commercial", "bw_club") == PopulationDensity.Area.NIGHTLIFE && PopulationDensity.areaOf("industrial", "ih_works") == PopulationDensity.Area.INDUSTRIAL
+            && PopulationDensity.areaOf(null, "") == PopulationDensity.Area.RESIDENTIAL, "buildings are read as the wrong area");
+        // the rosters: visitors are about at night and not at ten in the morning; one Ironhaven worker in five works nights; a city has enough people to fill a street
+        PopulationCatalog.Def bw = PopulationCatalog.INSTANCE.city("blackwater"), ih = PopulationCatalog.INSTANCE.city("ironhaven");
+        check(bw != null && ih != null && bw.count() >= 400 && ih.count() >= 400, "the rosters are too small for busy streets");
+        var people = PopulationPlan.roster("blackwater", 5908L, bw.count(), bw.mix(), bw.names(), bw.reachChunks());
+        long visitors = people.stream().filter(p -> p.role().equals("visitor")).count();
+        long outAtNight = people.stream().filter(p -> p.role().equals("visitor") && PopulationPlan.place(p, 5908L, 22, 3) != PopulationPlan.Place.HOME).count();
+        long outInMorning = people.stream().filter(p -> p.role().equals("visitor") && PopulationPlan.place(p, 5908L, 10, 3) != PopulationPlan.Place.HOME).count();
+        check(visitors > 30 && outAtNight >= visitors * 9 / 10 && outInMorning == 0, "visitors: " + visitors + ", out at 22:00 " + outAtNight + ", at 10:00 " + outInMorning);
+        var works = PopulationPlan.roster("ironhaven", 5908L, ih.count(), ih.mix(), ih.names(), ih.reachChunks());
+        long night = works.stream().filter(p -> p.role().equals("worker") && PopulationPlan.place(p, 5908L, 2, 1) != PopulationPlan.Place.HOME).count();
+        check(night > 10, "nobody works Ironhaven's night shift: " + night);
+        java.util.Set<Integer> skins = new java.util.HashSet<>();
+        for (var p : people) skins.add(p.skin());
+        check(skins.size() >= 80, "a city of " + people.size() + " wears only " + skins.size() + " different skins");
         helper.succeed();
     }
 }

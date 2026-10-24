@@ -1,6 +1,6 @@
 # The people of the cities (D-108)
 
-Status: **implemented; GameTested as arithmetic and bodies; its cost measured once in a real street (below); nobody has met one.** This document says what exists, what it costs, what it deliberately is not, and what was evaluated and not adopted.
+Status: **implemented; the fifth pass (D-162) replaced the handful of street bodies with a population sized by area and hour; GameTested as arithmetic and bodies; measured through real clients before and after (crowd runs, below); nobody has met one.** This document says what exists, what it costs, what it deliberately is not, and what was evaluated and not adopted.
 
 ## What the owner's first playtest found
 
@@ -14,6 +14,31 @@ The generated cities were empty: Lost Cities builds streets and buildings and no
 * **Budget**: at most 12 people around any one player and 40 in the world, one added per second. The service counts passes, the mean and worst cost of a pass in microseconds, bodies spawned and removed, and spots it could not find: `/uc_population status` (operators).
 * **Speaking** (`PopulationService.talk`): right-click opens the same dialogue screen as the district's named people, with one choice, Goodbye. What they say is by role and time of day (`common.json`), now and then a line about their city, and a different greeting by name for a player they have spoken to before (the list of who has met whom is in memory and bounded; it is not saved).
 * **Crime**: striking a civilian makes them run, adds 2 heat in their city for the striker (existing heat rules: it decays with active time and raises checkpoint search chances) and shows a notice. They cannot be hurt. **Striking does not call the police; nothing else happens** (a *break-in* can: see [police response](police-response.md)).
+
+## The fifth pass: a populated city by area and hour (D-162)
+
+The owner's biggest playtest complaint was empty cities: about six people in sight after a minute, at most twelve around a player and forty in the world, one added a second. Raising the caps alone would only have scattered more people on the same leashes. The street population is now sized by **where** and **when**:
+
+* **Footfall by area and hour** (`PopulationDensity`): every chunk of a city is an area by what stands in it (open street, residential, commercial, office, industrial, nightlife or public: from the furnished plan's use or the Lost Cities building's category). Each area has a day curve, 0 to 1 by hour: shops fill late morning to evening, offices at nine and five, nightlife from evening to two, industry round the clock with a dip at night. Each city leans its own way: Ironhaven's industry runs shifts, Blackwater's streets and nightlife are the busiest (1.25 to 1.7), Valewood goes to bed early.
+* **The target round a player** is the sum of the weights of the 7 × 7 chunks round them, at 0.9 people a chunk of a fully busy area, times the density setting, within its budget.
+* **Density setting** (server config `population.density`): **QUIET** (half as busy, 24 a player, 64 in the world), **NORMAL** (the default: 48 a player, 120 in the world) or **BUSY** (1.4 times, 72 and 180).
+* **Errands:** a person out has a purpose (work, shop, home, a venue, a delivery, a stroll) and walks to a door that serves it.
+  * **New people** come out of a door (60%) or appear out of every player's sight, never in view. Two are added a second for each player at most.
+  * **Going in:** a person reaching their door goes in. The door opens a moment and only when no player is within six blocks, so nobody can follow a person in.
+  * **Customers:** a shopper at an open shop goes in and browses its public floor (the same floor `StaffZones` reads) for 15 to 45 seconds, then leaves by the door. One in two buys a unit off a supplied shelf on the way out (D-164).
+  * **Talk:** a stroll that ends near somebody idle becomes a conversation of two people facing each other.
+  * **Thinning:** when the hour quietens, the surplus goes in at a door, two a pass and only people no player can see (one with no door near is simply gone, unseen).
+* **Roster and identity:** 540 people in Ironhaven, 300 in Valewood and 560 in Blackwater (data), with a visitor role for the evening.
+  * Schedules by role: residents out a longer stretch, Ironhaven's night shift (one worker in five), visitors from late afternoon until three.
+  * **200 original skins** (20 outfits in 10 colourings, `tools/art/gen_citizens.py`) chosen by role and city, and a build per person (height and width vary a little).
+  * The same person is the same person every time: arithmetic of the world seed, nothing saved.
+* **Witnesses:** more people in sight still count at most three in the witness roll (`PoliceResponse.witnessed`). A crowded street makes a break-in riskier up to a point, not certain.
+* **Bounded work:**
+  * A pass runs every ten ticks over at most four players.
+  * Lost Cities is asked about at most three new chunks a pass (the area and the street level are cached), and at most four doors are scanned a pass (cached, 4,096).
+  * A walker re-plans its path every two seconds once its last path is done; an officer re-plans every half second.
+  * Nobody is saved, and nobody is placed in a chunk that is not loaded.
+* `/uc_population status` (operators) and `PopulationService.status` count everything a pass does: people out and the peak, passes with their mean and worst cost, Lost Cities lookups, spawns (and how many at a door), removals, people who went in at a door, shoppers and what they bought, conversations and walkers given up.
 
 ## What it is not
 

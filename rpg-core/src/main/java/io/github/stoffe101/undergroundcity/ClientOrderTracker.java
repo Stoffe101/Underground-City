@@ -113,6 +113,13 @@ public final class ClientOrderTracker {
             BlockPos t = next.target();
             double dx = t.getX() + .5 - mc.player.getX(), dz = t.getZ() + .5 - mc.player.getZ();
             int distance = (int) Math.round(Math.hypot(dx, dz));
+            Navigation.Destination tracked = ClientNavigation.current();
+            if (tracked != null && t.equals(tracked.pos()) && XaeroWaypoints.showing()) {
+                // Xaero's minimap already points the way (D-161): one arrow on screen is enough
+                UcUi.icon(g, UcUi.Icon.PIN, x + 5, cy - 3, UcUi.AMBER);
+                g.drawString(font, UcUi.fit(font, "On your minimap  " + (distance < 4 ? "here" : distance + " m"), WIDTH - 36), x + 26, cy + 1, UcUi.AMBER, false);
+                return;
+            }
             float bearing = (float) Math.toDegrees(Math.atan2(-dx, dz));
             float relative = Mth.wrapDegrees(bearing - mc.player.getYRot());
             g.pose().pushPose();
