@@ -66,6 +66,25 @@ Officers chase a thief only while one of them can see them (32 blocks, line of s
     6. Told "Staff only" once by the household, and out of sight in time.
     7. Out to the street on foot.
   * **Defects found on the way:** organic run 3 found that a person in a doorway or on the pavement under an awning counted as "in the back" (fixed: the ground outside the street doors is read too). The roof test now uses the block heightmap, because the sky light lags behind a change and passes through glass.
+* **Fifth pass fixes (D-164 and its follow-ups):**
+  * **A staff door is opened by its key, a pick or the household, never by redstone.** Five times a second, the staff doors of the buildings around each player that stand open while powered (a pressure plate or a button left beside one) are shut again. The power stays, so the door stays shut until the signal goes off and on again. Nothing is removed from the world. The fourth pass had noted that redstone could open a staff door. `StaffZones.status()` counts the doors shut this way. GameTested (`StaffZoneGameTests`: a staff door held open by redstone is shut once, its power left on, and a street door is not touched); no real-client run covers it.
+  * **A back room holds the business's stock.** An empty chest or barrel off the public floor of a shop, pub, club, workshop or warehouse is filled once, the first time it is searched: three draws of the business's own goods (a bakery's flour, wheat, sugar and bread; a pub's berry wine and cider; a club's spirits; a workshop's fasteners and brackets), marked stolen like any find. A container that holds anything already is left alone. Data: the `stock` kind in `search_spots/furniture.json`. GameTested (`WorkshopGameTests.anEmptyBackRoomBarrelHoldsTheBusinesssStockAndAFullOneIsLeftAlone`). The fourth pass had found the bakery's flour barrels empty.
+  * **Fences value the workshop goods** at what the cheapest shop counter charges for them, so stolen back-room stock fences for less than an honest sale.
+  * **Cameras and alarm panels against the graded tier (investigated, no change):** the cameras and alarm panels of a furnished building follow its class's own tier, because they are part of how its chunks generate. A graded building may therefore have more or fewer devices than its tier label suggests. What a thief meets is consistent with what they read: the casing card counts the cameras actually in the building (`SecurityDevices.cameras`) and says whether the alarm has a panel by the door. So the inconsistency is only in the label, and changing the generated buildings of existing worlds was not justified.
+  * **Loot value by tier:** `python scripts/burglary_audit.py` follows the search roll exactly and prints the expected fence credits of one search of each kind and of one visit to a typical building, by tier. Fence credits a visit, at a fence's usual 48% rate:
+
+    | use | tier 1 | tier 2 | tier 3 | tier 4 | tier 5 | tier 6 |
+    | --- | --- | --- | --- | --- | --- | --- |
+    | house | 2 | 18 | 49 | 138 | 173 | 203 |
+    | flats | 1 | 9 | 27 | 75 | 93 | 101 |
+    | shop | 34 | 47 | 61 | 86 | 104 | 121 |
+    | pub | 39 | 52 | 67 | 87 | 91 | 104 |
+    | club | 45 | 66 | 89 | 130 | 152 | 173 |
+    | office | 3 | 11 | 34 | 74 | 100 | 158 |
+    | workshop | 26 | 35 | 44 | 69 | 86 | 92 |
+    | warehouse | 51 | 55 | 56 | 62 | 63 | 64 |
+
+    The rules it checks hold: a richer tier is never worth less, and no single search averages more than 120 credits. **Finding for the owner:** a tier I or II home is worth almost nothing to a fence (2 and 18 credits a visit). A beginner's first burglaries are possible but barely pay, while a low-tier business's back room pays more (34 to 51). Whether a shabby home should pay more is a design call left open.
 * A **street door** is one with a side that leads outside: the cell beside it open to the sky, or open floor leading within three blocks to a cell that is (a front step under the eaves, a porch). Before D-150 only the first counted, and a Valewood house's front door, its step under the eaves and its hall roofed, was an "inside door" that was never locked.
 * A house **to let** (D-127) is a vacant listing: its door belongs to the home's own guard, and it is neither cased nor searched.
 * An **iron** street door (the club, the office, the warehouse, the workshop, the Ironhaven flats) opens by no hand; where the guard lets a person through one, Core opens or shuts it as a click would a wooden door (D-151). Before, a tenant of an Ironhaven flat could not get in, and a thief was shut in the club once its door closed.

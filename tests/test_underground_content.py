@@ -120,6 +120,11 @@ class SkillTreeTests(unittest.TestCase):
         # another skill builds on it; a skill nothing builds on must carry an effect, open a work order, or be one of the two skills Core code checks directly.
         orders = load("work_orders")
         gated = {o.get("requires_skill") for o in orders.values() if o.get("requires_skill")}
+        # a workshop recipe, a station tier or a recipe's grade that a skill opens or lifts (D-163) is work the skill does
+        for station in load("workshops").values():
+            gated |= {t.get("upgrade", {}).get("skill") for t in station["tiers"] if t.get("upgrade", {}).get("skill")}
+            for r in station["recipes"]:
+                gated |= ({r["skill"]} if r.get("skill") else set()) | set(r.get("grading", {}).get("skills", {}))
         checked_in_code = {"farmer.restricted_cultivation", "technician.bypass_tooling"}   # RestrictedCuttingItem, SecureTerminalService
         percent = ("legal_payout_percent", "underground_payout_percent", "yield_percent", "upgrade_discount_percent", "inspection_modifier", "exchange_discount", "licences")
         for career, tree in self.trees.items():
@@ -129,10 +134,11 @@ class SkillTreeTests(unittest.TestCase):
                     continue
                 effective = any(node["effects"].get(k) for k in percent) or node["id"] in gated or node["id"] in checked_in_code
                 self.assertTrue(effective, f"{node['id']} is a dead leaf: nothing needs it and it does nothing")
-        # and the stepping stones are exactly the foundations plus the Vintner's still
+        # and the stepping stones are exactly the Gunsmith's and the Technician's foundations (D-163 gave the Farmer's, the Smith's and the Vintner's foundations and the Vintner's
+        # still work of their own: a contract or a workshop recipe each)
         stones = sorted(n["id"] for tree in self.trees.values() for n in tree["nodes"]
                         if not any(n["effects"].get(k) for k in percent) and n["id"] not in gated and n["id"] not in checked_in_code)
-        self.assertEqual(stones, sorted([f"{c}.fundamentals" for c in CAREERS] + ["vintner.still_craft"]))
+        self.assertEqual(stones, ["gunsmith.fundamentals", "technician.fundamentals"])
 
     def test_the_utility_branch_is_more_than_a_discount(self):
         for career, tree in self.trees.items():

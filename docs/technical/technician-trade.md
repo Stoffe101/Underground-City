@@ -1,6 +1,6 @@
 # The Technician's trade: panels, service calls, the bench and the computer (D-158)
 
-**Status (October 24, 2026): the legal trade is in Core and GameTested; one scripted real client went through it (tech run, see below). Nobody has played it. The underground side of the brief's "Hacker" (getting into a building's systems uninvited) was not built in this pass. The existing underground Technician skills (Bypass Tooling, Signal Scrubbing, Data Brokerage, Ghost Traffic) and the alarm-panel jam from D-131 are unchanged.**
+**Status (October 24, 2026, fifth pass): the legal trade is in Core and GameTested; scripted real clients went through it (tech runs, see below), the latest with Xaero's Minimap installed and once without. Nobody has played it. The fifth pass rebalanced the faults (D-165: a shop stays open, an alarm stays armed) and added an abstract underground side, back-channel work at a building's panel (D-166, GameTested only; no real client has done one).**
 
 Before this pass a Technician had contracts on the work-order board and one jam at an alarm panel, but no work in the city itself. Now every city building has electrics and a network, reached at a **utility panel** beside its street door, and people pay to have them repaired, fitted and upgraded.
 
@@ -13,12 +13,13 @@ Before this pass a Technician had contracts on the work-order board and one jam 
 
 ## Faults and service calls
 
-* Faults come only in a city somebody is in, so nothing breaks while nobody plays. Each city gets one every **5 to 10 minutes** of active play, with at most **2 open per city**. A fault never strikes a building whose network was upgraded lately.
-* **What a fault does depends on the building:**
-  * In a **shop** (a commercial building), the till and card network go down. Its street door stays shut in its hours, and a person who tries it is told why ("Closed: the till and card network are down. A Technician has been called."). The shopkeeper still serves anybody already inside.
-  * In **any other building**, the alarm and cameras go off: `PoliceResponse.armed` is false and the camera loop skips it. A burglar who notices gains a window.
+* Faults come only in a city somebody is in, so nothing breaks while nobody plays. Each city gets one every **8 to 15 minutes** of active play (it was 5 to 10 before D-165), with at most **2 open per city**, and at most **one** of them a building's cameras. A fault never strikes a building whose network was upgraded lately.
+* **What a fault does depends on the building (D-165):**
+  * In a **shop** (a commercial building), the till and card network go down. The shop **stays open** and its shopkeeper still sells over the counter, but it cannot pay a supplier (`ShopSupply` refuses: "The till and card network are down, so the shop cannot pay a supplier.") and its customers buy nothing off the shelf until a Technician comes. A lost day's trade, never a shut door.
+  * In **any other building**, the **cameras** go off (the camera loop skips it). The **alarm stays armed**, so a fault is a gap in the watching and never an open house.
 * Technicians in the city get a **Service call** notice with the address and the fee.
-* **If nobody comes,** somebody else puts it right: after **40 minutes** of active play, or **20 minutes** for a shop, so no shop stays shut for long. Nobody is punished for not coming.
+* **If nobody comes,** somebody else puts it right after **20 minutes** of active play (it was 40 for a building's systems before D-165). Nobody is punished for not coming.
+* **Why the rebalance (owner brief, fifth pass):** shops shut too often, and a fault turned a building's alarm off for up to 40 minutes, which made burglary trivial wherever a fault stood.
 
 ## The work
 
@@ -48,6 +49,18 @@ Before this pass a Technician had contracts on the work-order board and one jam 
 * **Install and upgrade jobs:** a city somebody is in keeps up to **2 install** jobs and **1 upgrade** job open. Each stays open for 90 minutes of active play.
   * Installs go to residential and other non-shop buildings of tier II or above that have no monitored alarm.
   * Upgrades go to offices, industrial buildings and shops of tier III or above.
+
+## Back-channel work (D-166, the abstract underground side)
+
+Now and then somebody wants a building's camera feeds looped and its alarm line quiet for a while, and pays off the books. It is game fiction made of the same abstract puzzle as an install, with nothing in it that resembles a real system.
+
+* **Who sees it:** a back-channel job is listed on the computer's service board (as "Back channel: loop the feeds", in the underground colour) **only to a Technician with Bypass Tooling**. Nobody else is ever shown it, and the panel says nothing about it to anybody else. At most one is open per city, only on a tier III building or above, never one with a monitored alarm, for 90 minutes of active play.
+* **The work:** crouched at the building's utility panel with a Technician's Toolkit in hand and a **Bypass Kit** in the inventory, the Technician works a **patch grid** (a bigger grid from tier V) within **150 seconds**. Tier V and VI buildings need **Signal Scrubbing**.
+* **Being seen:** when the work starts, an officer in sight comes at once (the beat's own response), and anybody else in sight may call it in (the same witness roll as a break-in). Either way the work does not start.
+* **Running out of time** trips the panel's **tamper alarm**: the police come to the building as for a ringing alarm.
+* **Done:** the Bypass Kit is used, the job is paid once through the work-order ledger's single commit at the **underground** rate (70 + 30·tier credits, 60 + 20·tier XP, before underground payout skills), and for **10 minutes** of active play the building's **alarm does not call anybody** (`PoliceResponse.armed` is false) and its **cameras show an empty room for 20 minutes**.
+* **Why:** the owner asked for the Technician's underground side as fictional puzzles. It ties the Technician to the Thief track (a Crew's thief walks in while the line is quiet) without any real intrusion technique, and its risk (witnesses, officers, the tamper alarm) is the same kind of risk as a break-in.
+* **Tested:** `WorkshopGameTests.aQuietenedLineDoesNotCallAndBackChannelWorkIsHidden` (a quietened line does not call and comes back; the loop; the job hidden from a Technician without Bypass Tooling and shown, asking for a kit, to one with it; no start without a kit). **No real client has done one.**
 
 ## The Electronics Bench and the personal computer
 

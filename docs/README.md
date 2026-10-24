@@ -58,6 +58,9 @@ The docs here distinguish **confirmed product direction**, **design proposals**,
 - [The Thief track and the burglary loop: tiers, casing, searchable rooms, locks and tools, cameras, police who look, fences' doors, staff-only rooms (D-143 to D-151, D-159)](technical/thief-and-burglary.md)
 - [Property intelligence: the neighbourhood grade, the card under the crosshair, casing in layers, the risk now, the Places book (D-157)](technical/property-intelligence.md)
 - [The Technician's trade: utility panels, service calls, the repair and patch puzzles, the Electronics Bench and the computer (D-158)](technical/technician-trade.md)
+- [Tracked destinations and Xaero's Minimap waypoints (D-161)](technical/navigation.md)
+- [Workshops of the trades: stations, tiers, grades and who supplies whom (D-163)](technical/workshops.md)
+- [Selling to a shop: supply, shelves and the city's customers (D-164)](technical/shop-supply.md)
 - [The hybrid resource economy: no natural ore, shelves, a regenerating quarry, the reachability audit (D-120, D-123)](technical/hybrid-economy.md)
 - [The people who live and work in the furnished buildings (D-124)](technical/households.md)
 - [AI-assisted development, docs and PR workflow](technical/agent-workflow.md)
@@ -85,6 +88,7 @@ The docs here distinguish **confirmed product direction**, **design proposals**,
 - [Sprint report, October 23, 2026 (second pass): roadside places, road encounters and the SecurityCraft trial](production/living-world-roadside.md)
 - [Sprint report, October 23 to 24, 2026 (third pass): the Thief track, burglary, security, police on the beat, the SecurityCraft decision and the crop's real name](production/thief-progression-pass.md)
 - [Sprint report, October 24, 2026 (fourth pass): property intelligence, the Technician's trade, staff-only rooms and Cannabis processing](production/professions-business-pass.md)
+- [Sprint report, October 24, 2026 (fifth pass): living population, workshops of the trades, shop supply, Xaero waypoints and the Technician's rebalance and back channel](production/living-population-professions-pass.md)
 
 ## Legal and assets
 
