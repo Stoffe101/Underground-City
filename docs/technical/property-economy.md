@@ -14,16 +14,16 @@ You can **rent** a home for a small price per active hour or **buy** it. A rente
 | --- | --- | --- | --- | --- |
 | Motel room (1) | 10 | rent only | **yes** | Row Motel rooms 1 to 4 (2 containers, 1 private) |
 | Small apartment (2) | 40 | 2,000 | **yes** | Row Flats 1 and 2 (5 containers, 2 private, bed, crafting, furnace, terminal) |
-| Comfortable apartment (3) | 55 | 3,000 | no | none |
+| Comfortable apartment (3) | 55 | 3,000 | **yes** (furnished cities) | city listings: a comfortable apartment in a furnished tower or tenement |
 | Larger apartment (4) | 70 | 4,200 | no | none |
-| Small house (5) | 85 | 5,400 | no | none |
+| Small house (5) | 85 | 5,400 | **yes** (furnished cities) | city listings: three house types in the furnished cities |
 | House with workshop (6) | 100 | 7,000 | **yes** | the Row House (10 containers, 3 private, adds the workshop) |
-| Farmhouse (7) | 115 | 8,500 | no | none |
-| Commercial workshop (8) | 135 | 10,500 | no | none |
-| Warehouse or production facility (9) | 170 | 14,000 | no | none |
+| Farmhouse (7) | 115 | 8,500 | **yes** | Harrow Farmhouse, a roadside place (D-138) |
+| Commercial workshop (8) | 135 | 10,500 | **yes** (furnished cities) | Ironhaven's workshop, **trade premises** (D-169) |
+| Warehouse or production facility (9) | 170 | 14,000 | **yes** (furnished cities) | Ironhaven's warehouse, **trade premises** (D-169) |
 | Premium residence (10) | 260 | 28,000 | no | none |
 
-Ten categories are *priced*; **three have a building**. The model can say whether the ladder is sensible; it cannot make the missing buildings exist. Adding one is a district JSON (`scripts/generate_district.py`) and a line in `ladder.json`. The model's invariants (monotonic ladder, purchase at least 20 and at most 100 rents, deposit two rents, no single sale buys a home outright) are checked on the whole table, built or not.
+Ten categories are *priced*; **eight have a building** in a new furnished archipelago world (October 24; three before the city homes of D-127 and the roadside places of D-138). The city listings exist only with the furnished package; a world without it has the Row's three categories and the roadside motel and farmhouse. The model can say whether the ladder is sensible; it cannot make the missing buildings exist. Adding one is a district JSON (`scripts/generate_district.py`) and a line in `ladder.json`. The model's invariants (monotonic ladder, purchase at least 20 and at most 100 rents, deposit two rents, no single sale buys a home outright) are checked on the whole table, built or not.
 
 | Rule | Value |
 | --- | --- |
@@ -97,7 +97,7 @@ The shipped ladder is coherent; rent and purchase are different things; the mote
 
 ## Limits, said plainly
 
-* Seven of the ten categories exist only as prices. There is no premium residence, no warehouse and no farmhouse yet.
+* Two of the ten categories exist only as prices: the larger apartment and the premium residence. Six of the eight built ones need the furnished package (D-117) or a new archipelago world (the roadside places).
 * Under the household policy the Vintner alone does not rent the house inside 400 hours (its rent would be over a quarter of its income). That is a weak Vintner mid-game, not a property rule.
 * The Home page was photographed at three resolutions by the scripted client and read by me; no person has used it. Its two-click confirmation for Move out and Sell back is untested on a real mouse.
 * `ResidenceGuard` does not see fire spread from outside, lightning, fluid dispensers or vehicles of other mods (recorded in D-090 and unchanged).

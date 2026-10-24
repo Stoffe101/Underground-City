@@ -2,6 +2,8 @@
 
 **Goal:** prove that two players can enjoy a 60–90-minute vertical slice of civilian life, progression, exploration, and a small story without having to farm diamonds or rely on extra human players.
 
+> **Reconciled October 24, 2026 (sixth pass):** much of this scope is now implemented, and the milestone after it, the **First Fully Playable Sandbox Alpha**, is defined in the [roadmap](roadmap.md#milestone-first-fully-playable-sandbox-alpha). Against the acceptance list below: 1 is met at L4 and L3; 2 is met for careers and wallets at L4 but **personal loot does not exist** (Lootr was reviewed and not adopted); 3 is met for stock, but **no treasury exists**; 4 is met at L2 (the rifle chain, and kit-built TaCZ firearms since D-168), with blueprints as rewards rather than research; 5 is **not met: there is no tax** (rent runs on active time instead); 6 is met for NPC persistence at L2, and work orders resume, but there are no quests beyond the civic project (D-171); 7 is met at L4 with offline profiles; 8 cannot be checked, because the prototype has no defined end. The Vintner is a separate career since D-067, and the Smith and Technician are implemented. The exclusions below (crowds, police AI, interiors) were each started at the owner's direction.
+
 ## Proposed scope, not already implemented
 
 - One urban district, one small farm/outskirts, one resource site, and a safe route between them.
