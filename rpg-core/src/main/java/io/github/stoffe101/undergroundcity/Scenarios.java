@@ -26,6 +26,7 @@ final class Scenarios {
             case "crowd" -> CrowdScenario.build();
             case "hitch" -> HitchScenario.build();
             case "raid" -> RaidScenario.build();
+            case "civic" -> CivicScenario.build();
             case "workshop" -> WorkshopScenario.build();
             case "sccamera" -> CameraMeasureScenario.build();
             case "alarm" -> AlarmScenario.build();
