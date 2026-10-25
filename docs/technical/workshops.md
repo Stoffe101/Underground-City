@@ -11,7 +11,7 @@ Each station is one block in the world and one data file, `data/underground_city
 | Station | Trade | Tier 1 → 2 → 3 (batches at once, speed) | What it makes |
 | --- | --- | --- | --- |
 | **Grading Table** | Farmer | Plain Table (1, 100%) → Sorting Rails (2, 135%) → Scales and Grader (4, 175%) | Produce Crate (6 carrots, 6 potatoes), Fruit Crate (6 apples, 6 berries), and at tier 2 a root crate with beetroot. Graded. |
-| **Mill** | Farmer | Hand Quern → Iron-Banded Stones → Geared Crank | Flour (3 wheat → 2), beet sugar (4 beetroot → 3 sugar, for a Vintner), and at tier 3 bulk flour (12 → 9). |
+| **Mill** | Farmer | Hand Quern → Iron-Banded Stones → Geared Crank (fitted from a Smith's gearbox since the eighth pass) | Flour (3 wheat → 2), beet sugar (4 beetroot → 3 sugar, for a Vintner), and at tier 3 bulk flour (12 → 9). |
 | **Fermentation Vat** | Vintner | Open Vat → Iron Hoops and Tap → Cooling Jacket | Berry Wine (8 berries, 2 sugar, 3 bottles → 3, six minutes), Apple Cider, and at tier 2 with Cellar Craft glow-berry wine (never below Fine). Graded. |
 | **Oak Cask** | Vintner | Single Cask → Rack and Hoops → Cellar Rack | Cask-Aged Wine (3 berry wine → 2, fifteen minutes; never below Fine, and keeps the grade of the wine that went in). With Vinery installed and Estate Vintages, Vinery's red wine rested in oak and graded. |
 | **Pot Still** | Vintner | Pot and Worm → Riveted Pot → Column and Condenser | Grain Spirit (licensed: needs the Distiller's Licence) and **Moonshine** (underground: needs Home Distilling). Both are restricted spirits at a checkpoint without the licence. Graded. |

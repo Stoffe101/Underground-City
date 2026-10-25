@@ -30,7 +30,7 @@
       "speed": 1.75,
       "upgrade": {
         "parts": {
-          "underground_city:gear_set": 2,
+          "underground_city:gearbox": 1,
           "underground_city:fasteners": 8
         },
         "skill": "farmer.farm_cooperative"

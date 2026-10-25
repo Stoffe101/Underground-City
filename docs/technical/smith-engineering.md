@@ -143,6 +143,6 @@ The server checks every move against the player's own session. A handler's excep
 ## Limits
 
 * Nobody has played it. The scripted client runs are not human playtesting.
-* The Mill's Geared Crank (a Farmer using a gearbox) and the Irrigation Sprinkler are designed, not built. A pump assembly is sold and made, but nothing uses one yet.
+* The Irrigation Sprinkler is designed, not built. A pump assembly is sold and made, but nothing uses one yet. (The Mill's Geared Crank, the Farmer's top tier, is fitted from a gearbox and eight fasteners since this pass; it took two gear sets before.)
 * The city's great machines (one-time restorations) are not built.
 * The breakdown cadence (10 to 16 minutes), the fees and the stall effect are first values from the economy model's ranges, not tuned by play.

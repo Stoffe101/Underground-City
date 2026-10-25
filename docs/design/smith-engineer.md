@@ -44,8 +44,8 @@ Why this mechanic: it is physical (material comes off a bar, the profile changes
 | Assembly | Made from | Used by |
 | --- | --- | --- |
 | Bearing Set | iron nuggets and a spring, at the bench | drive repairs; gearboxes |
-| Drive Shaft | iron ingots, turned by hand | gearboxes; pumps; the depot buys them |
-| Gearbox | two gear sets, a drive shaft, a bearing set, fasteners | the Mill's Geared Crank (Farmer); pumps; the depot and yard buy them |
+| Drive Shaft | iron ingots, turned by hand | gearboxes; pumps; the Northgate depot orders them |
+| Gearbox | two gear sets, a drive shaft, a bearing set, fasteners | the Mill's Geared Crank (the Farmer's top tier); pumps; the Ironhaven works orders them |
 | Pump Assembly | a gearbox, a drive shaft, brackets, springs (Heavy Assembly) | an Irrigation Sprinkler; the city's great machines |
 | Irrigation Sprinkler | a pump assembly, copper, a bucket | a Farmer's crops grow faster around it |
 
@@ -72,4 +72,4 @@ The tree costs 29 points, the most a level-30 career earns, so a Smith who plays
 * No Create, and nothing that needs it.
 * No dependency on a human Smith: NPC sellers stock every assembly at a mark-up.
 * The city's great machines (one-time restorations with a permanent change) are designed but are only built if the service calls are finished and tested first; see the technical page for what was built.
-* The Mill's Geared Crank and the Irrigation Sprinkler in the table above are designed and not built in this pass: a gearbox and a pump assembly are made and sold, and repairs and the depot use them, but no Farmer's tool uses them yet.
+* The Irrigation Sprinkler in the table above is designed and not built in this pass: a pump assembly is made and sold but nothing uses one yet. The Mill's Geared Crank is built: it is fitted from a gearbox and fasteners.
