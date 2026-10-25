@@ -827,6 +827,13 @@
       "owner": "underground_city",
       "group": "workshop",
       "description": "The Engineer's Toolkit's list of service calls, one out of reach"
+    },
+    {
+      "id": "places.glance_cards",
+      "expected_file": "uc-glance-cards.png",
+      "owner": "underground_city",
+      "group": "places",
+      "description": "The glance card at a street door, one of each kind: a pub open until 02:00, a shop and a cased club shut with their opening hour, a public building's hours, a home to let and a house"
     }
   ],
   "unintegrated_future_interfaces": [

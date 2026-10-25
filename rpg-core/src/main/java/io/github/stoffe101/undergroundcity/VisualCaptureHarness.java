@@ -481,6 +481,7 @@ public final class VisualCaptureHarness {
         cases.add(Case.challenge("uc-smith-turning-spoiled","smith-turning-spoiled"));
         cases.add(Case.challenge("uc-smith-drive","smith-drive"));
         cases.add(Case.challenge("uc-smith-calls","smith-calls"));
+        cases.add(Case.challenge("uc-glance-cards","glance-cards"));
         cases.add(Case.challenge("uc-workshop-vat","workshop-vat"));
         cases.add(Case.challenge("uc-workshop-bench","workshop-bench"));
         cases.add(Case.challenge("uc-workshop-running","workshop-running"));
@@ -585,6 +586,9 @@ public final class VisualCaptureHarness {
             mc.setScreen(HudSettingsScreen.forCapture(choices));
         } else if(capture.challenge!=null && capture.challenge.startsWith("lock-")) {
             mc.setScreen(lockCapture(capture.challenge));
+        } else if(capture.challenge!=null && capture.challenge.startsWith("glance-")) {
+            // the glance card at a street door (D-157) with its business hours (D-185), drawn by hand below over a bare screen: in the game it sits under the crosshair with no screen open
+            mc.setScreen(new net.minecraft.client.gui.screens.Screen(net.minecraft.network.chat.Component.literal("Glance cards")) {});
         } else if(capture.challenge!=null && capture.challenge.startsWith("notices-")) {
             // the corner notices over a terminal: an order taken, a delivery paid with a level-up, a search at a checkpoint and a rare find
             TerminalScreen screen=new TerminalScreen(BlockPos.ZERO,fixture(2,8,true,true));
@@ -636,6 +640,17 @@ public final class VisualCaptureHarness {
         frames=0;
     }
     private static final java.util.List<UcToast> noticeCaptures=new java.util.ArrayList<>();
+    /** One card of each kind a player meets at a street door: a pub open past midnight, a shop shut until morning, a club cased and shut by day, a public building's hours, a home to let and a house with no hours. */
+    private static java.util.List<PropertyIntel.Peek> glanceCards() {
+        BlockPos d=BlockPos.ZERO;
+        return java.util.List.of(
+            new PropertyIntel.Peek(d,PropertyIntel.Status.OPEN,"commercial","pub","14 Dock Row","ironhaven",2,0,-1,false,false,12,2),
+            new PropertyIntel.Peek(d,PropertyIntel.Status.TARGET,"commercial","corner store","3 Mill Lane","blackwater",1,0,-1,false,false,8,18),
+            new PropertyIntel.Peek(d,PropertyIntel.Status.TARGET,"commercial","club","2 Quay Street","blackwater",4,1,1,true,false,18,3),
+            new PropertyIntel.Peek(d,PropertyIntel.Status.NOT_A_TARGET,"public","office","9 Market Square","valewood",0,3,-1,false,false,8,18),
+            new PropertyIntel.Peek(d,PropertyIntel.Status.TO_LET,"apartment","row flat","5 Founders Row","ironhaven",1,0,-1,false,false),
+            new PropertyIntel.Peek(d,PropertyIntel.Status.TARGET,"residential","house","27 Orchard Hill","valewood",3,2,-1,true,false));
+    }
     @SubscribeEvent public static void tick(TickEvent.RenderTickEvent event) {
         if(!ENABLED||started||completed||event.phase!=TickEvent.Phase.END) return;
         Minecraft mc=Minecraft.getInstance();
@@ -667,6 +682,11 @@ public final class VisualCaptureHarness {
                 g.pose().popPose();
                 y+=toast.height()+4;
             }
+        }
+        if(cases.get(current).challenge!=null && cases.get(current).challenge.startsWith("glance-")) {
+            var g=event.getGuiGraphics();
+            int top=14;
+            for(PropertyIntel.Peek peek:glanceCards()) { ClientPlaces.drawCard(g,mc,peek,g.guiWidth()/2,top); top+=44; }
         }
         if(++frames<12) return;
         String filename=cases.get(current).name+".png";
