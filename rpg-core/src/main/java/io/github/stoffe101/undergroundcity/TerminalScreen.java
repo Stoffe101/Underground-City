@@ -521,6 +521,13 @@ public final class TerminalScreen extends UcScreen {
         Item value = location == null ? null : ForgeRegistries.ITEMS.getValue(location);
         return value == null ? Items.BARRIER : value;
     }
+    /** A requirement's icon: the item, and for a TaCZ gun its first accepted model (a bare gun item draws as a missing texture). */
+    static ItemStack icon(TerminalData.Req req) {
+        ItemStack stack = new ItemStack(item(req.item()));
+        if (!req.gun().isEmpty()) stack.getOrCreateTag().putString("GunId", req.gun());
+        return stack;
+    }
+
     static String itemName(String id) { return new ItemStack(item(id)).getHoverName().getString(); }
     static String capitalize(String id) { return id.isEmpty() ? id : Character.toUpperCase(id.charAt(0)) + id.substring(1); }
 
@@ -746,7 +753,7 @@ public final class TerminalScreen extends UcScreen {
             g.fill(lx + 2, ry, lx + lw - 8, ry + ROW_H - 2, sel ? 0xff1f3a52 : over ? UcUi.ROW_HOVER : UcUi.ROW);
             if (sel) g.fill(lx + 2, ry, lx + 5, ry + ROW_H - 2, accent());
             TerminalData.Req first = job.reqs().isEmpty() ? null : job.reqs().get(0);
-            if (first != null) g.renderItem(new ItemStack(item(first.item())), lx + 9, ry + 5);
+            if (first != null) g.renderItem(icon(first), lx + 9, ry + 5);
             boolean locked = !job.accepted() && lockReason(job).length() > 0 && data.active() == null;
             UcUi.Icon status = job.accepted() ? (ready(job) ? UcUi.Icon.CHECK : UcUi.Icon.TRUCK) : locked ? UcUi.Icon.LOCK : null;
             g.drawString(font, UcUi.fit(font, job.title(), lw - 44 - (status != null ? 22 : 0)), lx + 30, ry + 4, sel ? UcUi.TEXT : UcUi.SOFT, false);
@@ -784,7 +791,7 @@ public final class TerminalScreen extends UcScreen {
         ty += 16;
         for (TerminalData.Req req : job.reqs()) {
             boolean enough = req.held() >= req.count();
-            g.renderItem(new ItemStack(item(req.item())), tx, ty - 3);
+            g.renderItem(icon(req), tx, ty - 3);
             String name = req.label().isEmpty() ? itemName(req.item()) : req.label();
             g.drawString(font, UcUi.fit(font, req.count() + " x " + name, w - 100), tx + 21, ty, UcUi.INK, false);
             String have = req.held() + "/" + req.count();
