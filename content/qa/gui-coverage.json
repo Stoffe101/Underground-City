@@ -799,6 +799,34 @@
       "owner": "underground_city",
       "group": "terminal",
       "description": "The bonded store job (D-173) accepted and tracked: the order's Track button and the status display pointing at the store"
+    },
+    {
+      "id": "smith.turning",
+      "expected_file": "uc-smith-turning.png",
+      "owner": "underground_city",
+      "group": "workshop",
+      "description": "Turning a part to its drawing (D-182): a stretch selected, the tool at a line, roughed sections hatched with tool marks"
+    },
+    {
+      "id": "smith.turning_spoiled",
+      "expected_file": "uc-smith-turning-spoiled.png",
+      "owner": "underground_city",
+      "group": "workshop",
+      "description": "A section cut below its line shown red, selected, with Sleeve active"
+    },
+    {
+      "id": "smith.drive",
+      "expected_file": "uc-smith-drive.png",
+      "owner": "underground_city",
+      "group": "workshop",
+      "description": "A machine's drive stripped at a service call: a worn bearing, a new gear stage, the gear steppers, the plate and the output against it"
+    },
+    {
+      "id": "smith.calls",
+      "expected_file": "uc-smith-calls.png",
+      "owner": "underground_city",
+      "group": "workshop",
+      "description": "The Engineer's Toolkit's list of service calls, one out of reach"
     }
   ],
   "unintegrated_future_interfaces": [

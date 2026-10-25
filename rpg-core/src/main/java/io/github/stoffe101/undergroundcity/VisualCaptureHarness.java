@@ -264,6 +264,34 @@ public final class VisualCaptureHarness {
             base.skillPoints(),base.skills(),base.contacts(),base.laws(),base.heat(),base.lawSummary(),base.journey(),base.outlet(),
             new TerminalData.Thief(level,xp,ProgressionRules.thiefXpAtLevel(level+1),free,List.copyOf(rows)));
     }
+    /** The Smith's screens (D-182) as the server fills them: a drawing part-way through, one with a spoiled section, a two-stage drive with a worn bearing and a new gear stage, and the toolkit's calls. */
+    private static net.minecraft.client.gui.screens.Screen smithCapture(String pose) {
+        return switch(pose) {
+            case "smith-turning" -> {
+                TurningScreen screen=new TurningScreen(new SmithNetwork.TurnView("Machined parts",new int[]{6,6,3,3,5,7,4},new int[]{6,7,4,4,6,8,8},new boolean[]{false,true,true,true,true,false,false},
+                    3,3,7,0,"Roughed: tool marks to finish off."));
+                screen.select(2,3); screen.setLine(3);
+                yield screen;
+            }
+            case "smith-turning-spoiled" -> {
+                TurningScreen screen=new TurningScreen(new SmithNetwork.TurnView("Drive shaft",new int[]{2,2,2,7,7,7},new int[]{2,2,3,7,8,8},new boolean[]{true,true,true,true,false,false},
+                    2,4,5,0,"Too deep: section 2 is below its line. Sleeve it back up a step."));
+                screen.select(1,1); screen.setLine(1);
+                yield screen;
+            }
+            case "smith-drive" -> {
+                int[] driver={0,2}, driven={4,3};
+                yield new DriveScreen(new SmithNetwork.DriveView("freight hoist","14 Foundry Row",1440,new int[]{0,1,2,1,2,3},new int[]{0,1,2,0,0,0},driver,driven,new boolean[]{false,true},
+                    new boolean[]{true,false},57,63,true,(int)Math.round(SmithPuzzles.Drive.output(1440,driver,driven)),SmithPuzzles.Drive.clockwise(new boolean[]{false,true}),3,"1 bearing set, 1 gear set",
+                    "It runs anticlockwise: the load would wind the wrong way."));
+            }
+            default -> new ServiceCallsScreen(List.of(
+                new SmithWork.Call(new java.util.UUID(1,1),"freight hoist","ironhaven","14 Foundry Row","the works",2,63,150,BlockPos.ZERO,6,"1 bearing set, 1 gear set",""),
+                new SmithWork.Call(new java.util.UUID(1,2),"timber saw","ironhaven","2 Yard Lane","builders' yard",3,77,180,BlockPos.ZERO,19,"1 steel bracket, 2 gear sets",""),
+                new SmithWork.Call(new java.util.UUID(1,3),"cellar pump","blackwater","9 Quay Street","club",5,105,240,BlockPos.ZERO,2,"","A tier V machine is beyond you yet: Master Engineer would let you.")));
+        };
+    }
+
     /** The Skills page's General tab (D-174) as the server fills it: Trading at level 4 (the first discount owned, the next at level 6), Social at level 2, the Thief track at level 3, and the three skills nothing uses yet. */
     private static TerminalData generalSkills() {
         List<TerminalData.General> rows=new ArrayList<>();
@@ -448,6 +476,11 @@ public final class VisualCaptureHarness {
         cases.add(Case.challenge("uc-tech-patch","tech-patch"));
         cases.add(Case.challenge("uc-tech-quiet","tech-quiet"));
         cases.add(Case.challenge("uc-tech-quiet-patch","tech-quiet-patch"));
+        // the Smith's hands-on work and machinery (eighth pass, D-182)
+        cases.add(Case.challenge("uc-smith-turning","smith-turning"));
+        cases.add(Case.challenge("uc-smith-turning-spoiled","smith-turning-spoiled"));
+        cases.add(Case.challenge("uc-smith-drive","smith-drive"));
+        cases.add(Case.challenge("uc-smith-calls","smith-calls"));
         cases.add(Case.challenge("uc-workshop-vat","workshop-vat"));
         cases.add(Case.challenge("uc-workshop-bench","workshop-bench"));
         cases.add(Case.challenge("uc-workshop-running","workshop-running"));
@@ -577,6 +610,8 @@ public final class VisualCaptureHarness {
             mc.setScreen(workshopCapture(capture.challenge));
         } else if(capture.challenge!=null && capture.challenge.startsWith("tech-")) {
             mc.setScreen(techCapture(capture.challenge));
+        } else if(capture.challenge!=null && capture.challenge.startsWith("smith-")) {
+            mc.setScreen(smithCapture(capture.challenge));
         } else if(capture.challenge!=null && capture.challenge.startsWith("fence-")) {
             mc.setScreen(FenceScreen.forCapture(fenceQuote(capture.challenge),0));
         } else if(capture.challenge!=null) {

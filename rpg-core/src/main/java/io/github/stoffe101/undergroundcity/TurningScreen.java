@@ -49,8 +49,9 @@ public final class TurningScreen extends UcScreen {
         cell = Math.max(20, Math.min(44, (bodyW() - 24) / n));
         gx = bodyX() + (bodyW() - n * cell) / 2;
         int wellTop = bodyY() + 26, wellBottom = bodyBottom() - 16;
-        mid = (wellTop + wellBottom) / 2;
-        unit = Math.max(3, Math.min(9, (wellBottom - wellTop - 8) / (2 * SmithPuzzles.Turning.STOCK)));
+        // the bar and, under it, the section numbers inside the well (the numbers ran into the note line below it in engineer run 1's pictures)
+        unit = Math.max(3, Math.min(9, (wellBottom - wellTop - 22) / (2 * SmithPuzzles.Turning.STOCK)));
+        mid = wellTop + 4 + SmithPuzzles.Turning.STOCK * unit + Math.max(0, (wellBottom - wellTop - 22 - 2 * SmithPuzzles.Turning.STOCK * unit) / 2);
         int by = py + ph - FOOTER + 2;
         roughB = add(new UcButton(px + PAD, by, 64, 18, "Roughing", b -> { finish = false; labels(); }).kind(UcButton.Kind.CHIP)
             .tooltip("Roughing: cuts up to " + v.rough() + " steps deep in one pass", "and leaves tool marks (hatched). Shortcut: R"));

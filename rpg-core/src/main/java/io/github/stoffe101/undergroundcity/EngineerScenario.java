@@ -260,6 +260,8 @@ final class EngineerScenario {
             else pass("9 (B) the toolkit (a right click in the air) lists the call with what to bring; Track (a real click) points the way to it (" + d.title() + ")");
         });
         JourneyScenario.closeScreen("close the list");
+        // the toolkit away before the yard: a click past the keeper with it in hand is a click in the air, which opens the list of calls (engineer run 2 waited behind it)
+        emptyHand();
         buyParts();
         // the repair
         final Vec3[] stand = new Vec3[1];
@@ -439,6 +441,18 @@ final class EngineerScenario {
         }, () -> mc().player.getMainHandItem().is(toolkit), 100);
     }
 
+    /** A hotbar slot that does not hold the toolkit (an empty one if there is one), as a person puts a tool away before talking to somebody. */
+    private static void emptyHand() {
+        Item toolkit = SmithWork.item("engineer_toolkit");
+        Playtest.queue("put the toolkit away", () -> {
+            Playtest.focusWindow();
+            int slot = -1;
+            for (int i = 0; i < 9 && slot < 0; i++) if (mc().player.getInventory().getItem(i).isEmpty()) slot = i;
+            for (int i = 0; i < 9 && slot < 0; i++) if (!mc().player.getInventory().getItem(i).is(toolkit)) slot = i;
+            Playtest.tap(String.valueOf(Math.max(0, slot) + 1));
+        }, () -> !mc().player.getMainHandItem().is(toolkit), 100);
+    }
+
     /** The parts the drive will take that the Smith does not carry, bought over the Builders' Yard's counter with real clicks. */
     private static void buyParts() {
         SmithScenario.enterBuilding("the Builders' Yard", () -> F.yardDoor);
@@ -525,7 +539,7 @@ final class EngineerScenario {
 
     /**
      * One click of the real pointer: moved onto {@code where}, a few ticks, pressed ({@code button} 1 left, 3 right); then, when {@code watch} is given, the step waits until what it
-     * returns changes (the server's answer). A click with no {@code where} is a check: {@code ok} must hold.
+     * returns changes (the server's answer). A click with no {@code where} is a check: {@code ok} must come to hold within five seconds.
      */
     record Click(String what, Supplier<int[]> where, int button, Supplier<Object> watch, BooleanSupplier ok) {}
 
@@ -547,8 +561,9 @@ final class EngineerScenario {
             }
             Click c = now[0];
             if (c.where() == null) {
-                if (c.ok() != null && !c.ok().getAsBoolean()) { Playtest.fail(label + ": " + c.what() + " does not hold"); todo.clear(); return true; }
-                now[0] = null;
+                // a check waits for the click before it to land: a software-rendered client draws a few frames a second, and a click is read on the next frame (engineer run 1)
+                if (c.ok() == null || c.ok().getAsBoolean()) { now[0] = null; return false; }
+                if (t[0]++ > 100) { Playtest.fail(label + ": " + c.what() + " does not hold"); todo.clear(); return true; }
                 return false;
             }
             if (t[0] == 0) {
