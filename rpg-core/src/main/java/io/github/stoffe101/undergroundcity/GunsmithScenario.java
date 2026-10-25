@@ -105,6 +105,8 @@ final class GunsmithScenario {
             else pass("3 the Gunsmith's Bench from the kit is placed with a real right click on open ground no building owns");
         });
         stopIfFailed("the bench");
+        // the placing click can open the new bench at once (gunsmith run 3): close it, so the screen opened below shows the parts given next
+        closeScreen("close anything the placing click opened");
         Playtest.queue("a Smith's parts for a kit (scripted)", () -> {
             server(() -> {
                 var inv = me().getInventory();
@@ -149,6 +151,7 @@ final class GunsmithScenario {
             else pass("5 TaCZ's Gun Smith Table from the kit is placed with a real right click beside the bench");
         });
         stopIfFailed("the table");
+        closeScreen("close anything the placing click opened");
         learnBlueprint();
         stopIfFailed("the blueprint");
         build("the first pistol, from the kit the starter kit carries", "7");
