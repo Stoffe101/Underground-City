@@ -189,6 +189,7 @@ public final class UndergroundCity {
         MinecraftForge.EVENT_BUS.register(new WorkOrderService());
         MinecraftForge.EVENT_BUS.register(new SupplierNpc());
         MinecraftForge.EVENT_BUS.register(new PropertyCommands());
+        MinecraftForge.EVENT_BUS.register(new PrepareCommands());
         MinecraftForge.EVENT_BUS.register(new DistrictBuilder());
         MinecraftForge.EVENT_BUS.register(new CityNpcs());
         MinecraftForge.EVENT_BUS.register(new CheckpointPosts());

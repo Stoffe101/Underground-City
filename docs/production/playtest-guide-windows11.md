@@ -70,6 +70,22 @@ This is the supported launch for anything beyond the two of you at one desk. It 
 
 **Moving from the developer launch.** There is **no tool that moves a world played in offline mode to real accounts**, and nothing converts identities silently. On an authenticated server a person who played offline is a stranger: no citizenship, no Crew, no wallet, no homes. The server warns at start and `/uc_identity` lists the offline-derived identities it found. Start the authenticated world **fresh**; keep the developer world on your own network if you want to keep it.
 
+## 3c. The scripts (PowerShell, in `scripts\windows`)
+
+The commands in this guide are wrapped in a few PowerShell scripts, so that a session needs no typing of gradle flags. They run in the repository folder and never touch your normal Minecraft. If PowerShell refuses to run them ("running scripts is disabled"), allow scripts for this window only: `Set-ExecutionPolicy -Scope Process Bypass`.
+
+| Script | What it does |
+| --- | --- |
+| `uc-update.ps1` | fetches the playtest branch and fast-forwards to it; refuses when you have local changes; prints the commit both players must share |
+| `uc-server.ps1 -Sets furnished,scarcity -World UC-S2 [-LanOfflineMode] [-AcceptEula]` | backs up the game folder, then starts the dev server; a new `-World` name makes a new world beside the old one (never replacing it). Offline mode must be asked for on every start, and only for a home network |
+| `uc-client.ps1 -Name Alice -Sets furnished,scarcity [-Join] [-Xaero] [-World UC-S1]` | starts a client: `-Join` for a server, otherwise single player; `-Xaero` adds Xaero's Minimap and World Map (client only) |
+| `uc-new-world.ps1 -Name Alice -World UC-S1` | a single-player client in a NEW world with the furnished cities and scarcity; refuses a name that exists |
+| `uc-second-copy.ps1` | copies the repository to `..\Underground-City-P2` for a second player on the same PC |
+| `uc-backup.ps1` | copies `rpg-core\run-dev` (worlds, saves, configs) to `backups\run-dev-<date-time>`; stop the server and clients first |
+| `uc-logs.ps1` | packs the logs, crash reports and screenshots (never a world) into `reports\uc-report-<date-time>.zip` for a bug report |
+
+**Tested in the cloud:** PowerShell 7 parsed all of them, and a test (`tests/test_windows_scripts.py`) ran the server, client, new-world and logs scripts against a stand-in for gradle: the commands they build, the server settings they write, and their refusals (an unknown set, a bad name, an existing world, offline mode not asked for). **Not tested:** Windows PowerShell 5.1 on a real Windows 11 machine, `robocopy` (the backup and the second copy), and the real gradle launches through them. Run `uc-backup.ps1` once by hand and look at the folder it made before you trust it.
+
 ## 4. Start the clients
 
 Player 1 (same PC as the server, or another):
@@ -123,7 +139,7 @@ Things that deserve a careful look: does anything feel unfair or confusing; are 
 
 **Built and tested in the cloud (not by a person):** registration, the terminal, work orders, the regional exchange, the Public Ledger, skill trees, checkpoints and searches, firearms crafting with blueprints (with the firearms set), Founders Row, the Row Flats, Crews with a bank, shared homes and a server-side guard, the road waymarkers and wayside shelters. Two scripted clients have played the Crew steps above against a dedicated server that was then **killed without a stop sequence and restarted** (see the sprint report for the exact result).
 
-**Not built, so do not look for it (October 24):** vehicle fuel, vehicle repair or insurance, boat customs, a harbour, per-player loot, a medical item, any tax, a buyer-to-buyer property market, factions or gang wars, story quests, and buildings for two of the ten property categories (the larger apartment and the premium residence). Crew contracts, burglary, one raid, police patrols and daily routines **do** exist now (sections 6e to 6i). Evicting a tenant by force does not exist: unpaid rent only withdraws comforts (section 6d). **The home guard** now stops pistons, hoppers, fluids, fire, mobs, item frames, armor stands and modded containers at a leased home's walls (section 6b); it does not stop fire that spreads in from outside, lightning, or mods that move blocks with their own code. **Q Shop's own shop screens always spend your own wallet, even when the Crew shares finances**; only the Underground City exchange (the Operations Terminal in a city, the provisions desk in a wayside shelter) can use the Crew bank, and only for a member who holds the *Spend* right.
+**Not built, so do not look for it (October 25):** vehicle fuel, vehicle repair or insurance, boat customs, a harbour, per-player loot, a medical item, any tax, a buyer-to-buyer property market, factions or gang wars and story quests. All ten property categories now have a building (the Blackwater lofts and the Valewood villa were added on October 25, D-176). Crew contracts, burglary, one raid, police patrols and daily routines **do** exist now (sections 6e to 6i). Evicting a tenant by force does not exist: unpaid rent only withdraws comforts (section 6d). **The home guard** now stops pistons, hoppers, fluids, fire, mobs, item frames, armor stands and modded containers at a leased home's walls (section 6b); it does not stop fire that spreads in from outside, lightning, or mods that move blocks with their own code. **Q Shop's own shop screens always spend your own wallet, even when the Crew shares finances**; only the Underground City exchange (the Operations Terminal in a city, the provisions desk in a wayside shelter) can use the Crew bank, and only for a member who holds the *Spend* right.
 
 **Survival set** (`-PucExtraSets=survival`, opt-in): backpack, thirst, clean and dirty water, canteens and flasks, the kitchen and sleeping bags. The goods are **for sale** (section 6b), finite and shared like every other supplier line, and the cloud has driven the mods' own code for each mechanic. Nothing in the default pack depends on it.
 
@@ -302,29 +318,66 @@ Start a new world as in 6f (`-PucWorldLayout=archipelago -PucPack=world,furnishe
 
 Things to write down: whether casing told you what you needed before you broke in; whether the lock felt like skill or luck; whether a house's finds felt worth the risk and the walk to a fence; whether the police felt fair (could you see why they found or lost you? did you notice the officer on the beat in time?); whether the first Thief point came at a good moment.
 
-## 6i. The alpha world: a Crew contract, the Valewood market, trade premises, a gun with a serial and the bonded store (about 90 minutes, two players, a NEW world only)
+## 6i. Three sessions for the seventh pass (a NEW world each time)
 
-**Written for the October 24 sixth pass (D-167 to D-173).** GameTests cover every row; the Crew contract was run with two scripted clients connected (server-driven), the raid and the integrated first hour through one scripted client (see `sixth-pass-alpha.md` for which rows passed and every shortcut); **no person has done any of it.** This is the section that most needs a person.
+**Written for the October 25 seventh pass (D-175 to D-179).** The cloud drove each career's trade, trade premises, homes, the back channel and an unmarked gun through scripted clients, and a Crew contract with two scripted clients on a dedicated server (`seventh-pass-alpha-readiness.md` says which runs passed and lists every shortcut). **No person has played the current branch or its recent systems.** These three sessions are what the alpha milestone is waiting for (criterion 12 in `roadmap.md`).
 
-Start a new world with the furnished cities and the scarcity package and the firearms set (`gradlew runClient -PucExtraSets=furnished,scarcity -PucDevWorldName=UC-Alpha-1` starts one beside your existing world, which is never touched). Both players register; one picks the **Farmer**, the other the **Smith** (or the Vintner), and both join one Crew (section 5).
+Two kinds of play, never mixed up in a report:
+
+* **Track A, organic:** no commands, no teleports, no time skips, no operator rights. You start with what registration gives you. Sessions 1 and 2 are Track A.
+* **Track B, prepared:** an operator sets the character up with `/uc_prepare` (career or Thief level, credits, a named kit). Every use is written in chat and in the server log as `PREPARED (Track B)`, so a screenshot or a log shows which kind of play it was. Session 3 is Track B.
+
+Use the furnished cities and the scarcity package (`-Sets furnished,scarcity`, the default of `uc-new-world.ps1`). Xaero's Minimap is optional (`-Xaero`): with it, a tracked destination is also a waypoint on the minimap.
+
+### Session 1: the first hour on your own (30 to 60 minutes, Track A, each player alone)
+
+Start: `.\scripts\windows\uc-new-world.ps1 -Name <you> -World UC-S1-<you>` (each player on their own PC or copy).
 
 | # | Do this | You should see |
 | --- | --- | --- |
-| 1 | Walk from the landing into the nearest city and stand in a street for a minute; then walk across a bridge into another city | no freeze on arrival (the October 24 fix: the server no longer waits for Lost Cities while new chunks generate). Write down any pause you feel and where you were |
-| 2 | Open the terminal's work orders in Ironhaven | **Crew:** a line naming the depot canteen contract and how many of its three parts are in; part orders for flour (Farmer), fittings (Smith, level 3) and cider (Vintner) |
-| 3 | Each player takes and delivers the part of their career | each is paid their part's credits and XP at once; the Crew line counts the parts; a part already delivered is refused before anything is taken |
-| 4 | If nobody can make the third part, press **Supplier** on the Crew line | the price is stated first; it is paid from the asking player's wallet; the filled part earns nobody a share |
-| 5 | When the last part lands | the bonus is split equally between those who delivered parts and lands in each wallet once (a player who is offline gets it at their next login) |
-| 6 | In Valewood, open the work orders | the **Valewood Market Council** asks for frames, produce, wine, lights and lanterns towards "Reopen the Valewood market" (lanterns are open to every career). Deliver some each |
-| 7 | When the fifth contribution lands, walk to Valewood's centre | two market stalls with lanterns stand on an open street; residents mention the market; the council now offers better-paying stall orders to those it trusts. Restart the server: the stalls are still there and nothing is built twice |
-| 8 | Rent Ironhaven's **commercial workshop** (Find a home) and run a station inside it | one more batch at a time and a quarter faster for whoever may use its workstations; three bulk orders (flour, house wine, depot fittings) now accept you. Let the rent lapse: the bonus stops, nothing is taken |
-| 9 | As a Gunsmith (with the firearms set), right-click the kit's **Glock 17 blueprint** to learn the gun (registration says so, and so does opening the table before you have), make a **Firearm Parts Kit** at the Gunsmith's Bench, then build a Glock 17 at TaCZ's Gun Smith Table from it | before the blueprint is read the table's pistol tab is empty; the gun's tooltip shows a serial (IH-, VW- or BW-) and the maker; TaCZ's own iron-only recipe for that gun is refused. An unmarked kit builds a gun with no number, which a checkpoint treats as restricted |
-| 10 | With a Thief of level 8 who has learned Professional Tools, take **Kessler's** job in Blackwater (the bonded store) and press **Track** | the status display (and Xaero's Minimap, if installed) points at a warehouse door near Ironhaven's centre |
-| 11 | After 03:00 (the yard's night trade runs until three), case the store, open its high-security door with a Pro Pick Set (a Technician's back channel can loop its cameras first), and search inside | the **seized shipment** turns up once, for the job holder only, marked stolen; Ironhaven's heat rises (the watchman reports it); the tracked destination moves to Blackwater |
-| 12 | Carry it to Blackwater (mind the checkpoints) and deliver | paid once; a checkpoint on the way can seize it |
-| 13 | Rob a shabby house as a beginner and sell to a fence | a savings tin or silver cutlery now and then: a tier 1 house is worth about 23 credits to a fence, not 2 |
+| 1 | Register: a home city, then a career (Farmer, Vintner, Smith, Gunsmith or Technician) | your career's kit: a station (Mill, Fermentation Vat, Machinist's Bench, Gunsmith's Bench) or the Technician's toolkit and computer, and its recipes already in the recipe book |
+| 2 | Right-click a public **Operations Terminal** (one stands inside Valewood's General Store, Ironhaven's workshop and Blackwater's corner store) and read the **Journey** tab | what to do first, in order; the **Work** tab lists orders your level can take |
+| 3 | Set your station down outside a building and make your first batch (Start, wait, **Take**) | the time left counts down on the screen and **Take** lights by itself when the batch is done; a part you lack says where it is sold (a shop, the exchange or another trade) |
+| 4 | Buy what you lack from a shopkeeper: walk in by day, right-click the person behind the counter, **What do you sell?** | the shop's own shelf; buying greys the buttons for a moment, then they light again. Stepping into a back room makes the household (or a camera) say *Staff only*; leave and nothing happens |
+| 5 | Sell or deliver what you made (a shop that buys it, or a work order) | credits in your wallet, career XP; your first skill point by about level 2 |
+| 6 | Learn a skill on the **Skills** tab (the **General** tab shows Trading and Social, earned by playing) | the node's effect is written on its card; a level 3 legal node costs one point |
+| 7 | Rent the cheapest home you can (press **K**, **Home**, **Find a home**) | the deposit and the hourly rent are stated before you agree; rent is charged only while somebody of the household is online |
+| 8 | Optional: case a shabby house at night and try a lock | it is your choice; police chase only what they see |
 
-Things to write down: whether the Crew contract felt like working together or like two people doing their own orders; whether the split felt fair; whether the market stalls felt like *your* doing; whether the bonded store felt prepared for and dangerous; whether the premises were worth their rent; and, above all, **after 90 minutes, did you want to keep playing, and what would you do next?**
+Write down: the first moment you did not know what to do; whether your career felt like a trade or a menu; whether you ever felt stuck for money or for a part.
+
+### Session 2: a co-op sandbox (60 to 120 minutes, Track A, two players, a dedicated server)
+
+Start: the host runs `.\scripts\windows\uc-server.ps1 -Sets furnished,scarcity -World UC-S2 -LanOfflineMode -AcceptEula` (developer clients, a home network only; section 3 explains why), and each player `.\scripts\windows\uc-client.ps1 -Name <you> -Sets furnished,scarcity -Join` (the second player from a second copy, `uc-second-copy.ps1`). Pick **different careers**, for example Farmer and Smith.
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Make a Crew (K, **Crew**) and invite the other player | both on the roster, each with their own wallet and career; the Crew bank is optional |
+| 2 | Play your own careers for twenty minutes | separate orders, separate stations; neither of you is ever charged while away |
+| 3 | Open **Work** in Ironhaven: the **Crew** line for the depot canteen contract | its parts listed per career; your part shows **Deliver**, the other trade's part says it is theirs or that you may **Supplier** it |
+| 4 | Each delivers their part; one of you presses **Supplier** on the part nobody makes | each paid at once; the supplier's price is stated first and comes out of the asker's wallet; when the last part lands both get an equal share of the bonus, once |
+| 5 | One player disconnects in the middle and comes back | nothing lost or paid twice; a share earned while offline arrives at the next login |
+| 6 | Valewood: contribute to *Reopen the Valewood market* | after the fifth contribution two stalls stand in the street and residents talk about them |
+| 7 | Rent a home together or a commercial workshop (trade premises) and set a station in it | a station in trade premises runs one more batch a quarter faster; three bulk orders accept you |
+| 8 | Stop the server (`stop`), start it again with the same command, both rejoin | homes, stations, the Crew, wallets and orders exactly as they were |
+
+Write down: did the Crew contract feel like working together; was the split fair; did one of you wait on the other; was anything confusing about who owns what.
+
+### Session 3: prepared advanced play (about 60 minutes, Track B)
+
+Start a new world as in session 1 (single player has commands on) or use the session 2 server with `op <name>` typed into the server window. Then, for the player who tries each part:
+
+| Part | Setup (logged as PREPARED) | Then, without commands |
+| --- | --- | --- |
+| Trade premises and a bulk order (Smith) | `/uc_prepare level @s 5`, `/uc_prepare credits @s 1000`, `/uc_prepare kit @s smith_crate` | rent Ironhaven's commercial workshop on the Home page, walk in with the key, set the Machinist's Bench down inside, make two batches at a time, learn Forge Fundamentals and deliver *Fittings by the crate* at the workshop's terminal |
+| A registered and an unmarked gun (Gunsmith, firearms set) | `/uc_prepare level @s 8`, `/uc_prepare credits @s 450`, `/uc_prepare kit @s gunsmith` | learn Unregistered Builds, buy parts, make an unmarked parts kit at the bench and build the Glock 17 at TaCZ's table; the gun has no serial and a checkpoint treats it as restricted |
+| The back channel (Technician) | `/uc_prepare level @s 7`, `/uc_prepare kit @s technician` | learn Bypass Tooling, take a quiet job on the computer, track it, crouch and use the toolkit on the building's utility panel and solve the grid; its cameras are looped for a while and the kit is used up |
+| The bonded store (Thief) | `/uc_prepare thief @s 8`, `/uc_prepare kit @s thief` | learn Professional Tools, take Kessler's job in Blackwater, track it, case and open the store after 03:00, find the seized shipment and deliver it |
+| A villa and its upgrade | `/uc_prepare credits @s 26000` | buy the Valewood villa on **Find a home** and fit an upgrade on **Your homes** |
+
+Write down for each part: did it feel prepared for, dangerous or rewarding; what was unclear; what would you have done next.
+
+**The question that matters most, after every session: Would you voluntarily keep playing, and what would you want to do next?**
 
 ## 7. Logs, screenshots and bug reports
 
@@ -334,10 +387,11 @@ Things to write down: whether the Crew contract felt like working together or li
 * Please report (GitHub issue or message): what you did, what you expected, what happened, the time, both players' names, and attach the two `latest.log` files and screenshots. Do **not** attach the world folder unless asked; it is large.
 * If a transfer ever looks wrong: do not keep playing in that world. Stop the server, back the whole `run-dev` up, and report.
 
-## 8. After the session (five questions)
+## 8. After the session (six questions)
 
-1. Did the first ten minutes tell you what to do? What was the first moment you did not know?
-2. Did the Crew screen explain itself? Which button did you not understand?
-3. Did you want a shared bank, or would you rather keep your own money? Why?
-4. Did a shared home feel like it was yours, or like a menu?
-5. What would you do next in this world if you could? (This is the most useful answer.)
+1. **Would you voluntarily keep playing, and what would you want to do next?** (This is the most useful answer.)
+2. Did the first ten minutes tell you what to do? What was the first moment you did not know?
+3. Did your career feel like a trade, with choices, or like a list of orders?
+4. Did the Crew screen explain itself? Which button did you not understand?
+5. Did a home or the premises feel like yours, or like a menu?
+6. Was anything unfair: a price, a camera, the police, a refusal you did not understand?
