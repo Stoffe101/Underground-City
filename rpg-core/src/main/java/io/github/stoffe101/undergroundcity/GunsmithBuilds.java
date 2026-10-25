@@ -122,6 +122,22 @@ public final class GunsmithBuilds {
     }
 
     /** What a gun says about where it came from, under its name. */
+    /** A blueprint used: the next tick, the gun it taught is recorded under TaCZ Blueprints' table spelling too (see {@link BlueprintGate#learnBothSpellings}). */
+    @SubscribeEvent
+    public static void blueprintUsed(net.minecraftforge.event.entity.player.PlayerInteractEvent.RightClickItem event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        ResourceLocation item = ForgeRegistries.ITEMS.getKey(event.getItemStack().getItem());
+        if (item == null || !item.getNamespace().equals("taczblueprints")) return;
+        MinecraftServer server = player.server;
+        server.tell(new net.minecraft.server.TickTask(server.getTickCount() + 1, () -> BlueprintGate.learnBothSpellings(player)));
+    }
+
+    /** Guns learned before this reconciliation (an older save) are recorded under both spellings at login. */
+    @SubscribeEvent
+    public static void loggedIn(net.minecraftforge.event.entity.player.PlayerEvent.PlayerLoggedInEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) BlueprintGate.learnBothSpellings(player);
+    }
+
     /** Opening TaCZ's table while carrying a blueprint not yet read: the table will show only learned guns, so say how to learn this one (gunsmith run 2). */
     @SubscribeEvent
     public static void openTable(net.minecraftforge.event.entity.player.PlayerInteractEvent.RightClickBlock event) {

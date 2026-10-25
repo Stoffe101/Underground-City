@@ -114,13 +114,46 @@ public final class BlueprintGate {
         }
     }
 
+    /**
+     * TaCZ Blueprints (0.1.3) records a gun learned from a blueprint under the blueprint's {@code GunId} ({@code tacz:glock_17}), but its table screen shows a gun only when
+     * {@code tacz:gun/glock_17} is learned, so no gun learned from a blueprint ever appeared on the table (gunsmith run 4). This records every learned gun under both
+     * spellings and sends the addon's own sync packet so the screen sees them. Server thread; returns how many spellings were added (0 when the addon is absent or changed).
+     */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    static int learnBothSpellings(ServerPlayer player) {
+        if (broken || !ModList.get().isLoaded("taczblueprints")) return 0;
+        try {
+            Field field = Class.forName("com.raiiiden.taczblueprints.capability.GunUnlocksProvider").getField("UNLOCKS");
+            Object unlocks = player.getCapability((Capability) field.get(null)).resolve().orElse(null);
+            if (unlocks == null) return 0;
+            Method all = unlocks.getClass().getMethod("getUnlockedGuns"), unlock = unlocks.getClass().getMethod("unlockGun", String.class);
+            Set<String> learned = new java.util.HashSet<>((Set<String>) all.invoke(unlocks));
+            int added = 0;
+            for (String id : learned) for (String spelling : spellings(id)) if (!learned.contains(spelling)) { unlock.invoke(unlocks, spelling); added++; }
+            if (added > 0) {
+                Class<?> packet = Class.forName("com.raiiiden.taczblueprints.network.SyncUnlockedGunsPacket");
+                Object sync = packet.getConstructor(Set.class).newInstance(new java.util.HashSet<>((Set<String>) all.invoke(unlocks)));
+                Class.forName("com.raiiiden.taczblueprints.network.ModNetworking").getMethod("sendToPlayer", ServerPlayer.class, packet).invoke(null, player, sync);
+                LOGGER.info("[UC] recorded {} learned gun(s) of {} under TaCZ Blueprints' table spelling too", added, player.getGameProfile().getName());
+            }
+            return added;
+        } catch (ReflectiveOperationException | RuntimeException error) {
+            broken = true;
+            LOGGER.error("[UC] could not reconcile TaCZ Blueprints' two spellings of a learned gun (a version it was not written for?): the gate steps aside", error);
+            return 0;
+        }
+    }
+
     /** Every spelling of a gun's id the two mods use: {@code ns:id} and {@code ns:gun/id}, from its {@code GunId} (or, failing that, its item). */
     static Set<String> gunSpellings(ItemStack stack, String itemKey) {
         CompoundTag tag = stack.getTag();
         String gunId = tag != null && tag.contains("GunId") ? tag.getString("GunId") : null;
-        String source = gunId != null && !gunId.isEmpty() ? gunId : itemKey;
-        if (source == null) return Set.of();
-        ResourceLocation id = new ResourceLocation(source);
+        return spellings(gunId != null && !gunId.isEmpty() ? gunId : itemKey);
+    }
+
+    static Set<String> spellings(String source) {
+        ResourceLocation id = source == null ? null : ResourceLocation.tryParse(source);
+        if (id == null) return Set.of();
         String bare = id.getPath().startsWith("gun/") ? id.getPath().substring(4) : id.getPath();
         return Set.of(new ResourceLocation(id.getNamespace(), bare).toString(), new ResourceLocation(id.getNamespace(), "gun/" + bare).toString());
     }
