@@ -28,6 +28,12 @@
   ],
   "result": {
     "type": "gun",
-    "id": "tacz:m870"
+    "id": "tacz:m870",
+    "nbt": {
+      "display": {
+        "Name": "{\"translate\": \"underground_city.gun.registered\", \"with\": [{\"translate\": \"tacz.gun.m870.name\"}], \"italic\": false}"
+      },
+      "UcKitLabel": 1
+    }
   }
 }

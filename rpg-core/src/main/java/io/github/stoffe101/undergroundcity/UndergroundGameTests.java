@@ -1073,6 +1073,8 @@ public final class UndergroundGameTests {
             CompoundTag tag = gun.getTag();
             check(GunsmithBuilds.REGISTERED.equals(tag.getString(GunsmithBuilds.PROVENANCE)) && tag.getString(GunsmithBuilds.SERIAL).matches("VW-\\d{5}") && tag.getString(GunsmithBuilds.MAKER).equals(player.getGameProfile().getName()),
                 "A registered build carries Valewood's serial and its maker: " + tag);
+            // the recipe is named "Registered Glock 17" on the table's list; the gun keeps TaCZ's own name (gunsmith run 5)
+            check(!tag.contains(GunsmithBuilds.KIT_LABEL) && !tag.getCompound("display").contains("Name"), "The built gun keeps TaCZ's own name, not the recipe's label: " + tag);
             check(player.getInventory().countItem(core("firearm_parts_kit")) == 1 && player.getInventory().countItem(Items.IRON_INGOT) == 4, "One kit and four ingots were used");
             check(citizen(player).careerXp() == xp + GunsmithBuilds.XP_REGISTERED, "The build paid the Gunsmith's XP: " + xp + " -> " + citizen(player).careerXp());
             check("firearms_licensed".equals(ContrabandCatalog.INSTANCE.classify(gun)), "A registered pistol is a licensed firearm at a checkpoint: " + ContrabandCatalog.INSTANCE.classify(gun));
@@ -1110,6 +1112,7 @@ public final class UndergroundGameTests {
             ItemStack unmarked = firstGun(player, "tacz:glock_17");
             check(GunsmithBuilds.UNMARKED.equals(GunsmithBuilds.provenance(unmarked)) && !unmarked.getTag().contains(GunsmithBuilds.SERIAL) && !unmarked.getTag().contains(GunsmithBuilds.MAKER),
                 "An unmarked build has no serial and no maker: " + unmarked.getTag());
+            check(!unmarked.getTag().contains(GunsmithBuilds.KIT_LABEL) && !unmarked.getTag().getCompound("display").contains("Name"), "The unmarked gun keeps TaCZ's own name: " + unmarked.getTag());
             check(citizen(player).careerXp() == xp + GunsmithBuilds.XP_UNMARKED, "The unmarked build paid its XP");
             check("firearms_restricted".equals(ContrabandCatalog.INSTANCE.classify(unmarked)), "An unmarked build of a civilian model is restricted at a checkpoint: " + ContrabandCatalog.INSTANCE.classify(unmarked));
             player.getInventory().removeItem(unmarked);

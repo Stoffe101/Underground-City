@@ -11,7 +11,8 @@
     "ChunkGeneratorStructuresMixin"
   ],
   "client": [
-    "ToastComponentMixin"
+    "ToastComponentMixin",
+    "GunSmithTableScreenMixin"
   ],
   "injectors": {
     "defaultRequire": 0

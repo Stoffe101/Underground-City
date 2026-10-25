@@ -22,6 +22,12 @@
   ],
   "result": {
     "type": "gun",
-    "id": "tacz:p320"
+    "id": "tacz:p320",
+    "nbt": {
+      "display": {
+        "Name": "{\"translate\": \"underground_city.gun.registered\", \"with\": [{\"translate\": \"tacz.gun.p320.name\"}], \"italic\": false}"
+      },
+      "UcKitLabel": 1
+    }
   }
 }

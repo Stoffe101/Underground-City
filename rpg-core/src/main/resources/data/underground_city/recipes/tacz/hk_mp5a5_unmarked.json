@@ -28,6 +28,12 @@
   ],
   "result": {
     "type": "gun",
-    "id": "tacz:hk_mp5a5"
+    "id": "tacz:hk_mp5a5",
+    "nbt": {
+      "display": {
+        "Name": "{\"translate\": \"underground_city.gun.unmarked\", \"with\": [{\"translate\": \"tacz.gun.hk_mp5a5.name\"}], \"italic\": false}"
+      },
+      "UcKitLabel": 1
+    }
   }
 }

@@ -28,6 +28,12 @@
   ],
   "result": {
     "type": "gun",
-    "id": "tacz:db_long"
+    "id": "tacz:db_long",
+    "nbt": {
+      "display": {
+        "Name": "{\"translate\": \"underground_city.gun.registered\", \"with\": [{\"translate\": \"tacz.gun.db_long.name\"}], \"italic\": false}"
+      },
+      "UcKitLabel": 1
+    }
   }
 }

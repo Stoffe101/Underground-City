@@ -22,6 +22,12 @@
   ],
   "result": {
     "type": "gun",
-    "id": "tacz:glock_17"
+    "id": "tacz:glock_17",
+    "nbt": {
+      "display": {
+        "Name": "{\"translate\": \"underground_city.gun.registered\", \"with\": [{\"translate\": \"tacz.gun.glock_17.name\"}], \"italic\": false}"
+      },
+      "UcKitLabel": 1
+    }
   }
 }

@@ -28,6 +28,12 @@
   ],
   "result": {
     "type": "gun",
-    "id": "tacz:m1911"
+    "id": "tacz:m1911",
+    "nbt": {
+      "display": {
+        "Name": "{\"translate\": \"underground_city.gun.registered\", \"with\": [{\"translate\": \"tacz.gun.m1911.name\"}], \"italic\": false}"
+      },
+      "UcKitLabel": 1
+    }
   }
 }

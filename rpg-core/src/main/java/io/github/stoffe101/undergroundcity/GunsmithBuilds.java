@@ -42,6 +42,7 @@ public final class GunsmithBuilds {
     private static final Logger LOGGER = LogUtils.getLogger();
     public static final String SERIAL = "UcSerial", MAKER = "UcMaker", PROVENANCE = "UcProvenance";
     public static final String REGISTERED = "registered", UNMARKED = "unmarked";
+    static final String KIT_LABEL = "UcKitLabel";
     static final int XP_REGISTERED = 80, XP_UNMARKED = 110;
     private static final ResourceLocation LICENSED_KIT = ResourceLocation.fromNamespaceAndPath(UndergroundCity.MOD_ID, "firearm_parts_kit");
     private static final ResourceLocation UNMARKED_KIT = ResourceLocation.fromNamespaceAndPath(UndergroundCity.MOD_ID, "unmarked_parts_kit");
@@ -105,6 +106,7 @@ public final class GunsmithBuilds {
         ItemStack marked = stack.copy();
         CompoundTag tag = marked.getOrCreateTag();
         ServerPlayer player = craft.player();
+        unlabel(tag);
         tag.putString(PROVENANCE, craft.provenance());
         String serial = "";
         if (REGISTERED.equals(craft.provenance())) {
@@ -121,7 +123,17 @@ public final class GunsmithBuilds {
         LOGGER.info("[UC] {} built {} from a {} kit{}", player.getGameProfile().getName(), tag.getString("GunId"), craft.provenance(), serial.isEmpty() ? "" : ", serial " + serial);
     }
 
-    /** What a gun says about where it came from, under its name. */
+    /** The kit recipe's name ("Registered Glock 17") tells the table's list the routes apart; the gun the table hands over keeps TaCZ's own name. */
+    static void unlabel(CompoundTag tag) {
+        if (!tag.contains(KIT_LABEL)) return;
+        tag.remove(KIT_LABEL);
+        if (tag.contains("display", net.minecraft.nbt.Tag.TAG_COMPOUND)) {
+            CompoundTag display = tag.getCompound("display");
+            display.remove("Name");
+            if (display.isEmpty()) tag.remove("display");
+        }
+    }
+
     /** A blueprint used: the next tick, the gun it taught is recorded under TaCZ Blueprints' table spelling too (see {@link BlueprintGate#learnBothSpellings}). */
     @SubscribeEvent
     public static void blueprintUsed(net.minecraftforge.event.entity.player.PlayerInteractEvent.RightClickItem event) {
@@ -147,6 +159,7 @@ public final class GunsmithBuilds {
         if (blueprint != null) Notice.send(player, Notice.Kind.WARN, "Blueprint not read", "Right-click the " + blueprint + " in your pack to learn it: the table shows only the guns you have learned.");
     }
 
+    /** What a gun says about where it came from, under its name. */
     @SubscribeEvent
     public static void tooltip(ItemTooltipEvent event) {
         CompoundTag tag = event.getItemStack().getTag();

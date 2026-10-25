@@ -34,6 +34,12 @@
   ],
   "result": {
     "type": "gun",
-    "id": "tacz:ak47"
+    "id": "tacz:ak47",
+    "nbt": {
+      "display": {
+        "Name": "{\"translate\": \"underground_city.gun.unmarked\", \"with\": [{\"translate\": \"tacz.gun.ak47.name\"}], \"italic\": false}"
+      },
+      "UcKitLabel": 1
+    }
   }
 }

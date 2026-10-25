@@ -369,6 +369,9 @@ def build(data: dict, contracts: dict) -> dict[Path, bytes]:
     lang["generator.underground_city.archipelago"] = "Underground City: Archipelago"   # the world type list at world creation (D-104)
     lang["key.underground_city.crew"] = "Open the Crew screen"
     lang["key.categories.underground_city"] = "Underground City"
+    # the names of Core's kit recipes on TaCZ's Gun Smith Table, around TaCZ's own gun name (D-168, gunsmith run 5)
+    lang["underground_city.gun.registered"] = "Registered %s"
+    lang["underground_city.gun.unmarked"] = "Unmarked %s"
     corridors = json.loads(CORRIDORS.read_text(encoding="utf-8"))
     for route in corridors["routes"]:
         for gate in route["checkpoints"]:

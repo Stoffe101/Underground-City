@@ -22,6 +22,12 @@
   ],
   "result": {
     "type": "gun",
-    "id": "tacz:uzi"
+    "id": "tacz:uzi",
+    "nbt": {
+      "display": {
+        "Name": "{\"translate\": \"underground_city.gun.unmarked\", \"with\": [{\"translate\": \"tacz.gun.uzi.name\"}], \"italic\": false}"
+      },
+      "UcKitLabel": 1
+    }
   }
 }
