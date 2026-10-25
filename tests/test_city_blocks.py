@@ -45,6 +45,35 @@ class CityBlockTests(unittest.TestCase):
 
 
 
+class StreetDoorTests(unittest.TestCase):
+    """Every street door of a furnished building can be walked through: nothing that blocks a person stands in the cell before it or behind it, at the feet or the head. A ring of hedge
+    planters stood before all four doors of the Blackwater lofts, and a sofa behind the Valewood cottage's front door (homes run 1, seventh pass)."""
+
+    PASSABLE = ("carpet", "pressure_plate", "rail", "button", "torch", "sign", "light_bulb", "banner", "floor_mat", "poppy", "dandelion", "daisy", "minecraft:grass", "fern", "air")
+
+    def passable(self, spec) -> bool:
+        options = [s for _, s in spec] if isinstance(spec, list) else [spec]
+        return all(any(p in str(o) for p in self.PASSABLE) for o in options)
+
+    def test_every_street_door_can_be_walked_through(self):
+        import city_content
+        doors = 0
+        for b in city_content.all_buildings():
+            ground = next(part for part, flags in b.parts if flags.get("ground"))
+            for spot in (s for s in b.spots if s.kind == "door"):
+                doors += 1
+                dx, dz = citykit.DIRS[spot.facing]
+                for side in (1, -1):
+                    x, z = spot.x + side * dx, spot.z + side * dz
+                    if not (0 <= x < ground.xsize and 0 <= z < ground.zsize):
+                        continue
+                    for y in (spot.y, spot.y + 1):
+                        ch = ground.get(x, y, z)
+                        if ch != " ":
+                            self.assertTrue(self.passable(ground.palette.entries[ch]), f"{b.id} {spot.note} at {spot.x},{spot.z}: {ground.palette.entries[ch]} stands at {x},{y},{z}")
+        self.assertGreater(doors, 20)
+
+
 class CameraTests(unittest.TestCase):
     """Lost Cities writes a part lower x and lower z first and, as each block goes in, has its neighbours check their shape; a wall-hung camera whose wall is written after it finds
     no wall and turns to air. The first cameras by tier (D-149) hung over south doors looking north and never existed in a generated world (read back from the advanced burglary run's world)."""

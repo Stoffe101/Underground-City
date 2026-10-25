@@ -130,7 +130,9 @@ def lofts() -> Building:
 
     parts: list[Part] = []
     g = b.new_part("ground", ground=True)
-    plaza(g)
+    # the planters' gaps are in front of the street doors (x 2 on the north and south, z 5 and 6 on the west): with the plaza's usual gaps a hedge stood before every door and nobody
+    # could walk in (homes run 1, seventh pass)
+    plaza(g, gaps=(2, 5, 6, 7, 8))
     parts.append(g)
     for i in (1, 2):
         f = b.new_part(f"floor{i}", floor=i)

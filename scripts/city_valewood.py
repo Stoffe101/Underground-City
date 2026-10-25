@@ -249,7 +249,7 @@ def cottage(bid: str, look: Look) -> Building:
     k.counter_run(g, 5, 1, 4, "east", "south", ["fridge", "drawers", "stove", "sink"], "oak")
     k.table(g, 6, 1, 6, 1, 1, "oak", "small")
     k.chair(g, 5, 1, 6, "east"); k.chair(g, 7, 1, 6, "west")
-    k.sofa(g, 5, 1, 8, "east", "north", look.sofa, 3)
+    k.sofa(g, 5, 1, 8, "east", "north", look.sofa, 2)                        # two seats: a third stood right behind the front door at x 7
     g.put(6, 0, 7, ml("floor_mat", facing="north"))
     k.lamp_ceiling(g, 6, 5)
     # bedroom (x 9..10, z 4..5) and washroom (x 9..10, z 7..8)
