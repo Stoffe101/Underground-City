@@ -44,7 +44,7 @@ Every claim names one level. Levels are never added together: forty GameTests ar
 | P2 City sandbox | partly met: roads walkable end to end (6 of 6 road ends), arrival hitch removed at its cause (D-167); no dedicated-server measurement with two players | L3 (journey runs 57 and 65 walked Ironhaven to Valewood both ways; hitch runs 1 to 4) | legacy world only | legacy world once |
 | P3 Identity and skills | met for registration and persistence; partly for skills (three general skills earned in play: the Thief track, Trading and Social, D-174; no panel) | L4 (reconnect, restart), L3 (thief run 12; Trading and Social XP seen in workshop run 4 and civic run 3), L2 (their effects) | yes | no |
 | P4 Economy loop | partly met: earn, spend, produce, deliver and reconcile after a restart; **no tax** (rent on active time stands in) | L4 (Crew and combined journeys), L3 (Cannabis run 6, workshop run 3) | yes | no |
-| P5 Career depth | five careers with a legal loop each; the Gunsmith now builds real TaCZ firearms (D-168) | L3 for the Farmer, Vintner and Technician; L2 for the Gunsmith and Smith | first vanilla orders only | no |
+| P5 Career depth | five careers with a legal loop each; the Gunsmith now builds real TaCZ firearms (D-168) | L3 for the Farmer, Vintner, Technician and Gunsmith (gunsmith run 6); L2 for the Smith's station | first vanilla orders only | no |
 | P6 City life and loot | substantial but opt-in; contextual loot by room and tier; **per-player loot absent** (Lootr reviewed, not adopted) | L3 (crowd runs, thief run 12, journey run 65, workshop run 3) | civilian counter only | no |
 | P7 Conflict | burglary, witnesses, alarms, police beat, arrest and fines, one raid (D-173, L3); no factions or jail | L3 (burglary, alarm, thief, heist, patrol and organic runs) | none | no |
 | P8 Expansion | three cities, roads, roadside places, freight on foot, trade premises (D-169), one civic project (D-171, L3); no vehicle economy | L3 (freight run 5, the October 16 drives) | none | no |
@@ -60,7 +60,7 @@ The [expansion plan](expansion-plan.md) is still a proposal (D-088). Since Octob
 | WP2 | Skill growth | partly: real effects (D-098), skill gates (D-158, D-163), the Thief track (D-143), Trading and Social earned in play with capped effects (D-174); no perk table, no general-skills panel, nothing past level 30 | L3 (thief run 12; Trading and Social XP in workshop run 4 and civic run 3), L2 (their effects) |
 | WP3 | Property | largely built: rent on active time, grace and lapse, upgrades, Crew bills; 8 of 10 categories have a building; trade premises (D-169); the larger apartment and premium residence have none; no property tax | L4 (rent in the Crew journey) |
 | WP4 | Illegal production | partly: Cannabis with drying, moonshine, unmarked kits and unmarked TaCZ builds (D-168); no hidden facility kind | L3 (Cannabis runs 6 and 9, law run 2) |
-| WP5 | Advanced manufacturing | partly: seven Core stations, the Electronics Bench, kit-to-firearm builds at the Gun Smith Table | L3 (workshop run 3, tech run 5), L2 (TaCZ builds) |
+| WP5 | Advanced manufacturing | partly: seven Core stations, the Electronics Bench, kit-to-firearm builds at the Gun Smith Table | L3 (workshop runs 3 and 4, tech run 5, gunsmith run 6: bench to TaCZ table to the armoury), L2 (unmarked builds) |
 | WP6 | Contextual loot | partly: furniture by room and tier, salvage, quarry and pit; beginner loot rebalanced (D-172); no per-player rolls | L3 (thief run 12) |
 | WP7 | Burglary | largely built; free-form, no mission kind | L3 (heist run 8, organic run 5) |
 | WP8 | Law and raids | response, arrest, patrols; **one raid** (the bonded store, D-173) | L3 (patrol runs, raid run 3) |
@@ -82,7 +82,7 @@ The next milestone is not a feature count. It is met when **the owner and one fr
 | # | Criterion | Evidence needed | Where it stands (October 24) |
 | --- | --- | --- | --- |
 | 1 | A new player registers, chooses a city and a career, and in the first 30 minutes earns credits through legal work, buys something useful, and gains XP visibly, without a free skill or resource | L3, then L5 | L3: journey run 66 (28 steps with real input, 3 logged shortcuts, the road walked both ways); L5 none |
-| 2 | Each of the five careers has a solo loop from its starter kit to a level-10 contract with no dead end | L1 item-source audit + L3 per career | L1 holds; L3 for Farmer, Vintner, Technician; Smith and Gunsmith L2 |
+| 2 | Each of the five careers has a solo loop from its starter kit to a level-10 contract with no dead end | L1 item-source audit + L3 per career | L1 holds; L3 for Farmer, Vintner, Technician and Gunsmith (to a level-4 contract, gunsmith run 6); Smith L2 past its first order |
 | 3 | Each career has an underground option on the same character | L2 + L3 for at least two | L3 for the Farmer (Cannabis grown, dried and policed, sixth pass) and any career's raid; back channel and unmarked builds L2 |
 | 4 | A home: rent a first place, upgrade it, move up at least two rungs, with no offline charge | L2 + L4 | L4 for the Row's lease and rent; 8 of 10 rungs physical |
 | 5 | A business: premises that make the work better, never idle income | L2 + L3 | L2 (D-169) |
@@ -194,14 +194,14 @@ Read against commit `78e672c` (the fifth pass) by a separate read of the code, d
 * **Exists:** five careers (D-067); skill effects (D-098); seven workshop stations with tiers fitted from real parts (`Workshops`, `workshops/*.json`; D-163); the Technician's legal trade, Electronics Bench and computer (D-158, D-165); Cannabis growing and drying (D-160); the server-side TaCZ Blueprints gate (`BlueprintGate`, D-073); the rifle blueprint route (D-087); the item-source audit (0 findings).
 * **Evidence per career:**
   * Farmer: L3, Cannabis run 6 (seed to licensed delivery; 12 shortcuts, including random tick speed 120). Grading Table and Mill: L2 only.
-  * Vintner: L3, workshop run 3 (batch, tier 2, sale to the pub; 6 shortcuts; last 22 blocks a teleport). The XP fix found in that run was not re-run in a client.
+  * Vintner: L3, workshop run 3 (batch, tier 2, sale to the pub; 6 shortcuts; last 22 blocks a teleport) and workshop run 4 (the XP fix holds: 40 career XP from the batch, 18 from the sale).
   * Smith: L3 for the first order only (journey steps 5 to 8). Machinist's Bench: L2.
-  * Gunsmith: L2, `theRestrictedRifleChainRunsFromExchangePartsThroughTheBlueprintAndTheTableToPaymentAndTrust` on real TaCZ, and from the sixth pass kit builds of real TaCZ firearms with a serial or unmarked (D-168, two GameTests with TaCZ); L3 for firing a Glock (October 16 `gun` scenario). The table's screen was never used with a mouse. Gunsmith's Bench: L2.
+  * Gunsmith: L3, gunsmith run 6 (10 steps, 6 shortcuts): the kit's blueprint read, a parts kit made at the Gunsmith's Bench, two Glock 17s built on TaCZ's own table screen with real clicks (registered serials IH-00001 and IH-00002), delivered to the armoury for 400 credits. L2 for the restricted rifle chain and unmarked kit builds (D-168); L3 for firing a Glock (October 16 `gun` scenario).
   * Technician: L3, tech run 5 (11 steps), technav run 5 and tech run 7 (18 steps each). The back channel (D-166): L2 only.
 * **"No recipe dead ends":** L1 audit plus an L2 test that reads every loaded recipe (D-095).
-* **Missing:** a Gunsmith loop through a client; the Farmer's, Smith's and Gunsmith's stations through a client; anything past level 30. The underground "hacking" side was not built beyond the abstract back channel (`professions-business-pass.md`).
-* **Risks:** until the sixth pass the Gunsmith's Bench made parts kits that no TaCZ recipe used; D-168 joins them (kits build fourteen TaCZ firearms at the Gun Smith Table), at L2 only.
-* **Next step:** one L3 run per remaining station, then a Gunsmith run from bench to a delivered gun.
+* **Missing:** the Farmer's and Smith's stations through a client; an unmarked kit build through a client; anything past level 30. The underground "hacking" side was not built beyond the abstract back channel (`professions-business-pass.md`).
+* **Risks:** until the sixth pass the Gunsmith's Bench made parts kits that no TaCZ recipe used; D-168 joins them (kits build fourteen TaCZ firearms at the Gun Smith Table). The first client runs found that TaCZ Blueprints 0.1.3 never showed a learned gun on the table (it records one spelling and its screen looks for another); Core now records both (gunsmith runs 2 to 6).
+* **Next step:** one L3 run each for the Farmer's and Smith's stations, and an unmarked build delivered to Dray.
 
 #### P6 City life and loot
 
