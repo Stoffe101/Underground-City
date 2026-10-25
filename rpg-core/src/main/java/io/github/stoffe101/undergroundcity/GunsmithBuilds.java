@@ -122,6 +122,15 @@ public final class GunsmithBuilds {
     }
 
     /** What a gun says about where it came from, under its name. */
+    /** Opening TaCZ's table while carrying a blueprint not yet read: the table will show only learned guns, so say how to learn this one (gunsmith run 2). */
+    @SubscribeEvent
+    public static void openTable(net.minecraftforge.event.entity.player.PlayerInteractEvent.RightClickBlock event) {
+        if (!(event.getEntity() instanceof ServerPlayer player) || event.getHand() != net.minecraft.world.InteractionHand.MAIN_HAND) return;
+        if (!"tacz:gun_smith_table".equals(String.valueOf(ForgeRegistries.BLOCKS.getKey(event.getLevel().getBlockState(event.getPos()).getBlock())))) return;
+        String blueprint = BlueprintGate.unread(player);
+        if (blueprint != null) Notice.send(player, Notice.Kind.WARN, "Blueprint not read", "Right-click the " + blueprint + " in your pack to learn it: the table shows only the guns you have learned.");
+    }
+
     @SubscribeEvent
     public static void tooltip(ItemTooltipEvent event) {
         CompoundTag tag = event.getItemStack().getTag();

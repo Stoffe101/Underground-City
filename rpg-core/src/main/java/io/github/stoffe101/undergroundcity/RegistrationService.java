@@ -24,6 +24,11 @@ public final class RegistrationService {
         int given = StarterKits.INSTANCE.grant(player, careerId);
         player.sendSystemMessage(Component.literal("You are a citizen of " + (cityId.isEmpty() ? "" : Character.toUpperCase(cityId.charAt(0)) + cityId.substring(1)) + ", working as a " + Dialogue.careerTitle(careerId).toLowerCase(Locale.ROOT)
             + ". Welcome pack: " + given + " items, including an Operations Terminal."));
+        String blueprint = BlueprintGate.unread(player);
+        if (blueprint != null) {
+            player.sendSystemMessage(Component.literal("Your pack holds a " + blueprint + ": right-click it to learn the gun. The Gun Smith Table shows only the guns you have learned."));
+            Notice.send(player, Notice.Kind.INFO, "Read your blueprint", "Right-click the " + blueprint + " to learn it before you use the Gun Smith Table.");
+        }
         return Outcome.REGISTERED;
     }
 

@@ -93,6 +93,27 @@ public final class BlueprintGate {
         return true;
     }
 
+    /**
+     * The name of a gun whose blueprint the player carries but has not read (right-clicked), or null. The addon's table shows only learned guns, so a new Gunsmith
+     * who opens the table with the kit's blueprint still in the pack sees an empty pistol tab (gunsmith run 2); this is what tells them why.
+     */
+    static String unread(Player player) {
+        if (broken || !ModList.get().isLoaded("taczblueprints")) return null;
+        try {
+            Set<String> learned = unlocked(player);
+            for (ItemStack stack : player.getInventory().items) {
+                ResourceLocation id = ForgeRegistries.ITEMS.getKey(stack.getItem());
+                if (stack.isEmpty() || id == null || !id.getNamespace().equals("taczblueprints") || stack.getTag() == null || stack.getTag().getString("GunId").isEmpty()) continue;
+                boolean known = false;
+                for (String spelling : gunSpellings(stack, null)) known |= learned.contains(spelling);
+                if (!known) return stack.getHoverName().getString();
+            }
+            return null;
+        } catch (ReflectiveOperationException | RuntimeException error) {
+            return null;
+        }
+    }
+
     /** Every spelling of a gun's id the two mods use: {@code ns:id} and {@code ns:gun/id}, from its {@code GunId} (or, failing that, its item). */
     static Set<String> gunSpellings(ItemStack stack, String itemKey) {
         CompoundTag tag = stack.getTag();

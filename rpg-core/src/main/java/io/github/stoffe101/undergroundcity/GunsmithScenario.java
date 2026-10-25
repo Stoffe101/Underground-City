@@ -149,7 +149,9 @@ final class GunsmithScenario {
             else pass("5 TaCZ's Gun Smith Table from the kit is placed with a real right click beside the bench");
         });
         stopIfFailed("the table");
-        build("the first pistol, from the kit the starter kit carries", "6");
+        learnBlueprint();
+        stopIfFailed("the blueprint");
+        build("the first pistol, from the kit the starter kit carries", "7");
         Playtest.queue("the first pistol", () -> {
             int gained = xp() - F.xpBefore;
             Playtest.log("GUNSMITH career XP after the first build: +" + gained + " (the bench's batch pays when it finishes)");
@@ -171,7 +173,7 @@ final class GunsmithScenario {
             int kits = count(UndergroundCity.item("firearm_parts_kit"));
             Playtest.log("GUNSMITH took from the bench: parts kits now " + kits);
             if (kits < 1) Playtest.fail("Take did not hand over the bench's parts kit");
-            else pass("7 after four minutes of play, Take (a real click) hands over the Firearm Parts Kit the bench made");
+            else pass("8 after four minutes of play, Take (a real click) hands over the Firearm Parts Kit the bench made");
         });
         closeScreen("close the bench");
         stopIfFailed("the bench's kit");
@@ -179,7 +181,7 @@ final class GunsmithScenario {
             server(() -> { me().getInventory().add(new ItemStack(Items.IRON_INGOT, 4)); return null; });
             scripted("four iron ingots were given (the regional exchanges sell iron; the starter kit's four went into the first gun)");
         });
-        build("the second pistol, from the bench's kit", "8");
+        build("the second pistol, from the bench's kit", "9");
         Playtest.queue("two registered pistols", () -> {
             List<String> marks = server(GunsmithScenario::marks);
             Playtest.log("GUNSMITH registered pistols in the inventory: " + marks);
@@ -226,11 +228,45 @@ final class GunsmithScenario {
             List<String> left = server(GunsmithScenario::marks);
             Playtest.log(String.format(Locale.ROOT, "GUNSMITH the armoury's order: wallet %.0f -> %.0f (+%.0f), registered pistols left %d, career XP %d", F.walletBefore, wallet(), paid, left.size(), xp()));
             if (orderTaken() || paid < 1 || !left.isEmpty()) Playtest.fail("the armoury's order was not delivered and paid with the two registered pistols");
-            else pass("9 Accept and Deliver (real clicks) hand both registered pistols to the city armoury for " + Math.round(paid) + " credits");
+            else pass("10 Accept and Deliver (real clicks) hand both registered pistols to the city armoury for " + Math.round(paid) + " credits");
         });
         shot("5-delivered");
         closeScreen("close the terminal");
         Playtest.queue("summary", ThiefScenario::summary);
+    }
+
+    /**
+     * The kit's Glock 17 blueprint is read with a real right click (TaCZ Blueprints: the table shows only the guns a player has learned). Before it, Core must have said so: at
+     * registration (gunsmith run 2 opened the table to an empty pistol tab, and nothing in the game had said why).
+     */
+    private static void learnBlueprint() {
+        Playtest.queue("Core said to read the blueprint", () -> {
+            String said = Playtest.heardSince(0, "right-click it to learn the gun");
+            Playtest.log("GUNSMITH the registration hint: " + (said == null ? "not heard" : "\"" + said + "\""));
+            if (said == null) Playtest.fail("nothing told the new Gunsmith to read the kit's blueprint before the table");
+        });
+        Item blueprint = ForgeRegistries.ITEMS.getValue(ResourceLocation.fromNamespaceAndPath("taczblueprints", "blueprint_pistol"));
+        hold("the Glock 17 blueprint", blueprint);
+        final int[] t = {0};
+        Playtest.queue("right-click the blueprint (looking at the sky)", () -> { t[0] = 0; Playtest.focusWindow(); }, () -> {
+            if (learned()) { if (t[0] % 16 == 10 || t[0] % 16 == 11) Playtest.mouseButton(3, false); return true; }
+            look(mc().player.getEyePosition().add(0.3, 10, 0.3));
+            t[0]++;
+            boolean sky = mc().hitResult == null || mc().hitResult.getType() == net.minecraft.world.phys.HitResult.Type.MISS;
+            if (t[0] % 16 == 10 && sky) Playtest.mouseButton(3, true);
+            if (t[0] % 16 == 12) Playtest.mouseButton(3, false);
+            return false;
+        }, 400);
+        Playtest.wait("settle", 6);
+        Playtest.queue("the Glock 17 is learned", () -> {
+            Playtest.log("GUNSMITH learned guns: " + server(() -> OptionalModProbes.unlockedGuns(me())) + "; blueprints left " + count(blueprint));
+            if (!learned()) Playtest.fail("a right click on the blueprint did not teach the Glock 17");
+            else pass("6 Core tells the new Gunsmith to read the kit's blueprint, and a real right click on it teaches the Glock 17");
+        });
+    }
+
+    private static boolean learned() {
+        return server(() -> OptionalModProbes.unlockedGuns(me()).stream().anyMatch(g -> g.equals("tacz:glock_17") || g.equals("tacz:gun/glock_17")));
     }
 
     /** One kit build on TaCZ's table with real clicks: open it, the tab that holds the kit recipe, the kit recipe, Craft; the new gun must carry a serial nobody has yet. */
