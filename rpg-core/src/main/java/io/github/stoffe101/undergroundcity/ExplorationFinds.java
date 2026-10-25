@@ -189,7 +189,7 @@ final class ExplorationFinds {
         Find find = id == null ? null : rec.finds.get(id);
         if (find == null) return "An empty crate, picked over long ago.";
         Set<String> mine = rec.found.computeIfAbsent(player.getUUID(), k -> new HashSet<>());
-        if (mine.contains(find.id())) return "You have been through this crate already. Somebody else may still find something in it.";
+        if (mine.contains(find.id())) { revisits++; return "You have been through this crate already. Somebody else may still find something in it."; }
         List<ItemStack> got = roll(level.getSeed(), find, player.getUUID());
         mine.add(find.id());
         rec.opened++;
@@ -210,6 +210,8 @@ final class ExplorationFinds {
     }
 
     static boolean TESTING;
+    /** Visits to a crate the player had already been through, since the server started (for the status line). */
+    static volatile int revisits;
 
     // ------------------------------------------------------------------------------------------------ placing the crates
 
@@ -319,7 +321,7 @@ final class ExplorationFinds {
     }
 
     /** For the status line. */
-    static String status(MinecraftServer server) { Record r = record(server); return r.finds.size() + " crates placed, " + r.opened + " opened by " + r.found.size() + " players"; }
+    static String status(MinecraftServer server) { Record r = record(server); return r.finds.size() + " crates placed, " + r.opened + " opened by " + r.found.size() + " players, " + revisits + " visits to a crate already gone through"; }
 
     static Optional<Find> at(MinecraftServer server, BlockPos pos) {
         Record r = record(server);

@@ -34,6 +34,7 @@ final class Scenarios {
             case "farmer" -> FarmerScenario.build();
             case "vintner" -> VintnerScenario.build();
             case "backchannel" -> TechScenario.buildQuiet();
+            case "finds" -> FindScenario.build();
             case "unmarked" -> GunsmithScenario.buildUnmarked();
             case "homes" -> HomeScenario.build();
             case "premises" -> PremisesScenario.build();

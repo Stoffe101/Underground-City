@@ -1458,12 +1458,15 @@ final class JourneyScenario {
      */
     static void use(String label, Supplier<BlockPos> block, BooleanSupplier done, int budget, boolean top) {
         final int[] t = {0};
+        final boolean[] face = {false};
         Playtest.queue(label, Playtest::focusWindow, () -> {
             // done between the press and its release: let go, or the held button goes on using whatever is selected next (Cannabis run 7: a seed went into the wrong cell while the hotbar changed)
             if (done.getAsBoolean()) { if (t[0] % 16 == 10 || t[0] % 16 == 11) Playtest.mouseButton(3, false); return true; }   // pressed at 10, released at 12
             BlockPos b = block.get();
             if (b == null) { Playtest.fail(label + ": no block"); return true; }
-            look(top ? Vec3.atCenterOf(b).add(0, 0.42, 0) : t[0] >= 40 && !aimedAt(b) ? nearFace(b) : Vec3.atCenterOf(b));
+            // off the block after two seconds: aim at its near face from then on (switching back once it lands flips the aim every frame at a software renderer's rate, engineer run 4)
+            if (!top && t[0] >= 40 && !aimedAt(b)) face[0] = true;
+            look(top ? Vec3.atCenterOf(b).add(0, 0.42, 0) : face[0] ? nearFace(b) : Vec3.atCenterOf(b));
             t[0]++;
             // click only once the crosshair is on that block: a software-rendered frame lags the aim, and a click on the wrong block places or opens the wrong thing
             boolean onIt = mc().hitResult instanceof BlockHitResult hit && hit.getType() == HitResult.Type.BLOCK && hit.getBlockPos().equals(b) && (!top || hit.getDirection() == Direction.UP);
