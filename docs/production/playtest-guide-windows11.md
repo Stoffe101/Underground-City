@@ -350,7 +350,7 @@ Write down: the first moment you did not know what to do; whether your career fe
 
 ### Session 2: a co-op sandbox (60 to 120 minutes, Track A, two players, a dedicated server)
 
-Start: the host runs `.\scripts\windows\uc-server.ps1 -Sets furnished,scarcity -World UC-S2 -LanOfflineMode -AcceptEula` (developer clients, a home network only; section 3 explains why), and each player `.\scripts\windows\uc-client.ps1 -Name <you> -Sets furnished,scarcity -Join` (the second player from a second copy, `uc-second-copy.ps1`). Pick **different careers**, for example Farmer and Smith.
+Start, with real accounts (the recommended way, and the only one for a server anybody reaches from outside your home): the authenticated server pack of section 3b, `online-mode=true` and a white-list of your two names, with the furnished and scarcity sets on server and clients alike. Two developer clients at home instead: the host runs `.\scripts\windows\uc-server.ps1 -Sets furnished,scarcity -World UC-S2 -LanOfflineMode -AcceptEula` (offline mode: on your own home network only, never port-forwarded or otherwise reachable from the internet; section 3 explains why), and each player `.\scripts\windows\uc-client.ps1 -Name <you> -Sets furnished,scarcity -Join` (the second player from a second copy, `uc-second-copy.ps1`). Pick **different careers**, for example Farmer and Smith.
 
 | # | Do this | You should see |
 | --- | --- | --- |
