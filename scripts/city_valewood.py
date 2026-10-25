@@ -302,6 +302,8 @@ def shop(bid: str, look: Look) -> Building:
         g.put(x, 0, 9, ml("floor_mat", facing="north"))
     for (x, z) in ((6, 8), (9, 8)):
         k.lamp_ceiling(g, x, z)
+    # a public Operations Terminal on the shop floor (D-175): the city's exchange for anybody who has not carried their own terminal into town
+    g.put(12, 1, 10, "underground_city:operations_terminal[facing=west]")
     # the stair to the flat in the west of the shop floor
     u = b.new_part("floor", floor=1)
     shell(u, look, X0, Z0, X1, Z1)
@@ -412,18 +414,118 @@ def bakery(bid: str, look: Look) -> Building:
     return b
 
 
+# ---------------------------------------------------------------------------------------------------- the villa (the premium residence, D-176)
+
+VILLA = Look("minecraft:smooth_quartz", "minecraft:polished_deepslate", "minecraft:dark_oak_planks", "minecraft:white_concrete", "minecraft:smooth_quartz", "minecraft:polished_deepslate",
+             "deepslate_tile_stairs", "minecraft:polished_deepslate", "dark_oak_door", "white", ("light_gray", "cyan"))
+
+
+def villa(bid: str, look: Look, security: str = "villa") -> Building:
+    """The ladder's premium residence (tier 10): a two-storey villa on a full lot, a flat roof behind a parapet. Below, a living room, a kitchen and dining room, a study and a workroom with its own
+    garden door (room for a trade's stations); above, three bedrooms and a bathroom off a landing."""
+    p = Palette(bid)
+    b = Building(bid, p, use="house", city=CITY, min_floors=2, max_floors=2, filler="minecraft:polished_deepslate", security=security,
+                 notes="A two-storey villa: living room, kitchen, study and a workroom below; three bedrooms and a bathroom above; a garden round it.")
+    X0, Z0, X1, Z1 = 2, 2, 13, 13    # the footprint, walls included
+    g = b.new_part("ground", ground=True)
+    lawn(g)
+    fence_with_gaps(g)
+    walkway(g, X0, Z0, X1, Z1)
+    shell(g, look, X0, Z0, X1, Z1)
+    g.door(7, 1, Z1, "south", look.door); g.door(8, 1, Z1, "south", look.door, hinge="right")       # the front door, double, on the south side
+    g.door(X1, 1, 11, "east", look.door)                                                               # the workroom's garden door
+    for x in (4, 5, 11):
+        g.window(x, 2, Z1, GLASS, 2)
+    for x in (4, 5, 6, 10, 11):
+        g.window(x, 2, Z0, GLASS, 2)
+    for z in (4, 6, 10):
+        g.window(X0, 2, z, GLASS, 2)
+    for z in (4, 6):
+        g.window(X1, 2, z, GLASS, 2)
+    # the partitions: the kitchen and study to the north (z 3..7) behind a wall at z 8 with a wide doorway, the study (x 9..12) behind a wall at x 8, the workroom (x 10..12, z 9..12) behind x 9
+    g.fill(4, 1, 8, X1 - 1, 3, 8, look.wall)
+    g.clear(6, 1, 8, 7, 2, 8)
+    g.fill(8, 1, 3, 8, 3, 7, look.wall)
+    g.door(8, 1, 5, "west", look.door)
+    g.fill(9, 1, 9, 9, 3, 12, look.wall)
+    g.door(9, 1, 10, "west", look.door)
+    # living room (x 4..8, z 9..12; the stair climbs column 3 beside it)
+    k.sofa(g, 4, 1, 9, "south", "east", look.sofa, 3)
+    k.table(g, 6, 1, 10, 1, 1, "dark_oak", "coffee")
+    g.put(8, 1, 10, ml("dark_oak_small_table", type="single")); k.tv(g, 8, 2, 10, "west")
+    g.put(4, 1, 12, ml("modern_dark_oak_bookshelf", facing="east"))
+    g.put(5, 1, 12, "minecraft:potted_fern")
+    # kitchen and dining (x 3..7, z 3..7)
+    k.counter_run(g, 3, 1, 3, "east", "south", ["fridge", "drawers", "stove", "sink", "dishwasher"], "dark_oak")
+    k.table(g, 5, 1, 6, 1, 1, "dark_oak", "small")
+    k.chair(g, 4, 1, 6, "east", "dark_oak"); k.chair(g, 6, 1, 6, "west", "dark_oak")
+    g.put(3, 1, 7, ml("trash_can"))
+    # study (x 9..12, z 3..7): a desk with a screen, bookcases on the east wall
+    g.put(10, 1, 4, ml("dark_oak_small_table", type="single")); g.put(10, 2, 4, ml("monitor", facing="south")); k.chair(g, 10, 1, 5, "north", "dark_oak")
+    for z in (3, 4, 5):
+        g.put(12, 1, z, ml("modern_dark_oak_bookshelf", facing="west"))
+    g.put(12, 1, 7, ml("dark_oak_night_stand", facing="west"))
+    # the workroom (x 10..12, z 9..12): a bench and two barrels; the rest of the floor is room for a trade's stations
+    g.put(12, 1, 9, "minecraft:crafting_table")
+    g.put(10, 1, 12, "minecraft:barrel[facing=up,open=false]"); g.put(11, 1, 12, "minecraft:barrel[facing=up,open=false]")
+    for (x, z) in ((6, 11), (5, 5), (10, 6), (11, 10)):
+        k.lamp_ceiling(g, x, z)
+    u = b.new_part("floor", floor=1)
+    u.floor(0, 0, 15, 15, "air")
+    shell(u, look, X0, Z0, X1, Z1)
+    stair_run(g, u, 3, 12, "dark_oak_stairs")                                # up column 3 to the landing at z 7
+    u.fill(4, 1, 8, 4, 3, X1 - 1, look.wall)                                 # the stairwell's wall, so nobody steps into it from the bedrooms' side
+    for x in (4, 6, 10, 11):
+        u.window(x, 2, Z0, GLASS, 2)
+    for x in (6, 10, 11):
+        u.window(x, 2, Z1, GLASS, 2)
+    u.window(X1, 2, 4, GLASS, 2); u.window(X1, 2, 10, GLASS, 2); u.window(X1, 2, 11, GLASS, 2); u.window(X0, 2, 4, GLASS, 2); u.window(X0, 2, 7, GLASS, 2)
+    # the landing runs along z 7; the north bedrooms behind a wall at z 6, the bathroom and the third bedroom behind z 8
+    u.fill(3, 1, 6, X1 - 1, 3, 6, look.wall); u.fill(8, 1, 3, 8, 3, 5, look.wall)
+    u.door(5, 1, 6, "south", look.door); u.door(10, 1, 6, "south", look.door)
+    u.fill(5, 1, 8, X1 - 1, 3, 8, look.wall); u.fill(8, 1, 9, 8, 3, 12, look.wall)
+    u.door(6, 1, 8, "north", look.door); u.door(10, 1, 8, "north", look.door)
+    # bedroom 1 (x 3..7, z 3..5): a double bed, night stands, a bookcase
+    k.bed(u, 5, 1, 4, "north", look.beds[0]); k.bed(u, 6, 1, 4, "north", look.beds[0])
+    u.put(4, 1, 3, ml("dark_oak_night_stand", facing="south")); u.put(7, 1, 3, ml("dark_oak_night_stand", facing="south"))
+    u.put(3, 1, 5, ml("modern_dark_oak_bookshelf", facing="east")); u.put(3, 2, 3, ml("mirror", facing="east"))
+    # bedroom 2 (x 9..12, z 3..5)
+    k.bed(u, 11, 1, 4, "north", look.beds[1]); u.put(12, 1, 3, ml("dark_oak_night_stand", facing="south")); u.put(9, 1, 3, ml("oak_kitchen_drawer_cabinet", facing="east"))
+    # the bathroom (x 5..7, z 9..12)
+    u.floor(5, 9, 7, 12, look.tile)
+    k.toilet(u, 7, 1, 12, "west"); k.sink(u, 7, 1, 10, "west"); k.shower(u, 5, 1, 12, "north", look.tile)
+    # bedroom 3 (x 9..12, z 9..12)
+    k.bed(u, 12, 1, 11, "south", look.beds[0]); u.put(11, 1, 12, ml("dark_oak_night_stand", facing="north"))
+    u.put(9, 1, 12, ml("modern_dark_oak_bookshelf", facing="east"))
+    u.put(12, 1, 7, "minecraft:potted_fern")
+    for (x, z) in ((5, 4), (10, 4), (7, 7), (6, 10), (11, 10)):
+        k.lamp_ceiling(u, x, z)
+    t = b.new_part("top", top=True)
+    t.ring(X0, Z0, X1, Z1, 0, 0, look.plinth)                                # a flat roof behind a low parapet
+    for (x, z) in ((4, 4), (11, 4), (4, 11), (11, 11)):
+        t.put(x, 0, z, "minecraft:potted_azalea_bush")
+    t.fill(10, 0, 6, 10, 1, 6, look.plinth)                                  # the chimney stack
+    b.spots += [
+        Spot("door", 7, 1, Z1, "south", "front door"), Spot("door", X1, 1, 11, "east", "garden door"),
+        Spot("bed", 5, 7, 4, "north", "main bedroom"), Spot("bed", 11, 7, 4, "north", "second bedroom"), Spot("bed", 12, 7, 11, "south", "third bedroom"),
+        Spot("stove", 5, 1, 3, "south"), Spot("seat", 4, 1, 10, "east", "sofa"), Spot("seat", 4, 1, 6, "east", "dining"), Spot("desk", 10, 1, 5, "north", "study"),
+    ]
+    b.units.append(k.Unit("house", "Villa", (X0 + 1, 1, Z0 + 1, X1 - 1, 10, Z1 - 1)))     # both floors inside the walls; the garden stays the street's (D-127)
+    return b
+
+
 def buildings() -> list[Building]:
     house_a = house("vw_house_a", WHITE_BRICK, "townhouse")   # the better-off house of the middle (D-157)
     house_b = k.mirror_building(house("vw_house_b_src", TIMBER), "vw_house_b")
-    return [house_a, house_b, cottage("vw_cottage", STONE_COTTAGE), shop("vw_shop", WHITE_BRICK), bakery("vw_bakery", TIMBER)]
+    return [house_a, house_b, cottage("vw_cottage", STONE_COTTAGE), shop("vw_shop", WHITE_BRICK), bakery("vw_bakery", TIMBER), villa("vw_villa", VILLA)]
 
 
 def zones() -> list[tuple[float, list[tuple[str, int]]]]:
     """Which buildings stand how far from the centre (a fraction of the city radius): the market shops in the middle, houses round them, cottages and gardens at the edge."""
     return [
         (0.30, [("vw_shop", 3), ("vw_bakery", 2), ("vw_house_a", 1), ("vw_house_b", 1)]),
-        (0.70, [("vw_house_a", 3), ("vw_house_b", 3), ("vw_cottage", 2), ("vw_shop", 1), ("vw_bakery", 1)]),
-        (1.00, [("vw_cottage", 4), ("vw_house_a", 2), ("vw_house_b", 2)]),
+        (0.70, [("vw_house_a", 3), ("vw_house_b", 3), ("vw_cottage", 2), ("vw_shop", 1), ("vw_bakery", 1), ("vw_villa", 1)]),
+        (1.00, [("vw_cottage", 4), ("vw_house_a", 2), ("vw_house_b", 2), ("vw_villa", 1)]),   # the villas stand back from the market, among the houses and on the edge
     ]
 
 

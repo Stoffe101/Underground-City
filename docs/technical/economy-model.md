@@ -115,15 +115,15 @@ Everything between the markers is written by `--update-doc` and checked by a uni
 | smith      | 7  | unstamped_plate_run      | un   | 300     | 148  | 152 | 12.9 | 707   | 360 | 4/h    | unlisted_fabrication    |                     |
 | smith      | 11 | armoury_order            | un   | 600     | 296  | 304 | 21.3 | 856   | 600 | 3/h    | contraband_armoury      |                     |
 | technician | 1  | switches                 | le   | 16      | 0    | 16  | 3.4  | 281   | 100 | 12/h   |                         |                     |
-| technician | 1  | torches                  | le   | 32      | 0    | 32  | 8.7  | 221   | 125 | 12/h   |                         |                     |
+| technician | 1  | torches                  | le   | 52      | 0    | 52  | 5.1  | 612   | 125 | 12/h   |                         |                     |
 | technician | 2  | civic_market_lights      | le   | 100     | 0    | 100 | 15.2 | 395   | 240 | 6/h    |                         |                     |
-| technician | 2  | repeaters                | le   | 68      | 0    | 68  | 7.5  | 544   | 180 | 12/h   |                         |                     |
+| technician | 2  | repeaters                | le   | 84      | 0    | 84  | 7.5  | 672   | 180 | 12/h   |                         |                     |
 | technician | 3  | controller_install       | le   | 135     | 82   | 53  | 5.2  | 617   | 320 | 6/h    |                         |                     |
-| technician | 3  | crew_fair_lighting       | le   | 150     | 0    | 150 | 16.9 | 533   | 300 | 6/h    |                         |                     |
+| technician | 3  | crew_fair_lighting       | le   | 150     | 0    | 150 | 13.9 | 647   | 300 | 6/h    |                         |                     |
 | technician | 3  | daylight                 | le   | 120     | 0    | 120 | 14.5 | 497   | 250 | 12/h   |                         |                     |
-| technician | 3  | municipal_terminals      | le   | 160     | 0    | 160 | 26.3 | 365   | 280 | 12/h   | municipal_repairs       |                     |
+| technician | 3  | municipal_terminals      | le   | 210     | 0    | 210 | 13.9 | 906   | 280 | 12/h   | municipal_repairs       |                     |
 | technician | 4  | sensor_repairs           | le   | 210     | 128  | 82  | 5.8  | 848   | 330 | 6/h    |                         |                     |
-| technician | 5  | commercial_automation    | le   | 190     | 0    | 190 | 35.1 | 325   | 340 | 6/h    | automation_install      |                     |
+| technician | 5  | commercial_automation    | le   | 290     | 0    | 290 | 29.1 | 598   | 340 | 6/h    | automation_install      |                     |
 | technician | 5  | security_array_install   | le   | 230     | 140  | 90  | 5.5  | 991   | 600 | 6/h    |                         |                     |
 | technician | 7  | ledger_recovery          | un   | 270     | 130  | 140 | 13.5 | 622   | 360 | 4/h    | bypass_tooling          |                     |
 | technician | 11 | ledger_brokerage         | un   | 800     | 390  | 410 | 31.5 | 781   | 620 | 3/h    | data_brokerage          |                     |
@@ -162,29 +162,29 @@ Everything between the markers is written by `--update-doc` and checked by a uni
 
 | level | farmer     | vintner    | smith      | gunsmith   | technician |
 |-------|------------|------------|------------|------------|------------|
-| 1     | 143 / 595  | 147 / 658  | 282 / 1471 | 112 / 439  | 140 / 877  |
-| 2     | 143 / 595  | 193 / 933  | 282 / 1471 | 360 / 1080 | 272 / 720  |
-| 3     | 245 / 727  | 265 / 1285 | 442 / 1222 | 380 / 1283 | 297 / 1506 |
-| 4     | 245 / 727  | 315 / 1210 | 442 / 1222 | 443 / 1869 | 371 / 1779 |
-| 5     | 338 / 2000 | 315 / 1210 | 442 / 1222 | 443 / 1869 | 472 / 2785 |
-| 6     | 338 / 2000 | 315 / 1210 | 478 / 1222 | 443 / 1869 | 519 / 2785 |
-| 8     | 339 / 2289 | 368 / 1679 | 478 / 1222 | 443 / 1869 | 519 / 2785 |
-| 10    | 374 / 2451 | 368 / 1679 | 478 / 1222 | 443 / 1869 | 519 / 2785 |
-| 12    | 411 / 2451 | 399 / 1679 | 478 / 1222 | 482 / 1869 | 519 / 2785 |
+| 1     | 143 / 595  | 147 / 658  | 282 / 1471 | 112 / 439  | 306 / 735  |
+| 2     | 143 / 595  | 193 / 933  | 282 / 1471 | 360 / 1080 | 336 / 720  |
+| 3     | 245 / 727  | 315 / 1210 | 442 / 1222 | 443 / 1869 | 453 / 604  |
+| 4     | 245 / 727  | 315 / 1210 | 442 / 1222 | 443 / 1869 | 453 / 604  |
+| 5     | 338 / 2000 | 315 / 1210 | 478 / 1222 | 443 / 1869 | 521 / 2427 |
+| 6     | 339 / 2289 | 368 / 1679 | 478 / 1222 | 443 / 1869 | 521 / 2427 |
+| 8     | 374 / 2451 | 368 / 1679 | 478 / 1222 | 443 / 1869 | 521 / 2427 |
+| 10    | 374 / 2451 | 368 / 1679 | 478 / 1222 | 482 / 1869 | 521 / 2427 |
+| 12    | 411 / 2451 | 399 / 1679 | 478 / 1222 | 482 / 1869 | 521 / 2427 |
 
 ### The same with Core only (no TaCZ, Vinery, Kaleidoscope Tavern)
 
 | level | farmer     | vintner    | smith      | gunsmith   | technician |
 |-------|------------|------------|------------|------------|------------|
-| 1     | 143 / 595  | 147 / 658  | 282 / 1471 | 112 / 439  | 140 / 877  |
-| 2     | 143 / 595  | 193 / 933  | 282 / 1471 | 360 / 1080 | 272 / 720  |
-| 3     | 245 / 727  | 265 / 1285 | 442 / 1222 | 380 / 1283 | 297 / 1506 |
-| 4     | 245 / 727  | 298 / 1289 | 442 / 1222 | 443 / 1869 | 371 / 1779 |
-| 5     | 338 / 2000 | 298 / 1289 | 442 / 1222 | 443 / 1869 | 472 / 2785 |
-| 6     | 338 / 2000 | 298 / 1289 | 478 / 1222 | 443 / 1869 | 519 / 2785 |
-| 8     | 339 / 2289 | 368 / 1679 | 478 / 1222 | 443 / 1869 | 519 / 2785 |
-| 10    | 374 / 2451 | 368 / 1679 | 478 / 1222 | 443 / 1869 | 519 / 2785 |
-| 12    | 411 / 2451 | 399 / 1679 | 478 / 1222 | 482 / 1869 | 519 / 2785 |
+| 1     | 143 / 595  | 147 / 658  | 282 / 1471 | 112 / 439  | 306 / 735  |
+| 2     | 143 / 595  | 193 / 933  | 282 / 1471 | 360 / 1080 | 336 / 720  |
+| 3     | 245 / 727  | 265 / 1285 | 442 / 1222 | 443 / 1869 | 453 / 604  |
+| 4     | 245 / 727  | 298 / 1289 | 442 / 1222 | 443 / 1869 | 453 / 604  |
+| 5     | 338 / 2000 | 298 / 1289 | 478 / 1222 | 443 / 1869 | 521 / 2427 |
+| 6     | 339 / 2289 | 368 / 1679 | 478 / 1222 | 443 / 1869 | 521 / 2427 |
+| 8     | 374 / 2451 | 368 / 1679 | 478 / 1222 | 443 / 1869 | 521 / 2427 |
+| 10    | 374 / 2451 | 368 / 1679 | 478 / 1222 | 482 / 1869 | 521 / 2427 |
+| 12    | 411 / 2451 | 399 / 1679 | 478 / 1222 | 482 / 1869 | 521 / 2427 |
 
 ### Entry (apprentice) orders against the rest: mean net credits per hands-on hour
 
@@ -194,34 +194,36 @@ Everything between the markers is written by `--update-doc` and checked by a uni
 | vintner    | 2            | 323         | 15                 | 426         | 76%                       |
 | smith      | 3            | 577         | 11                 | 596         | 97%                       |
 | gunsmith   | 3            | 449         | 7                  | 714         | 63%                       |
-| technician | 4            | 385         | 7                  | 582         | 66%                       |
+| technician | 4            | 515         | 7                  | 715         | 72%                       |
 
 ### Rent against income (a household of one)
 
 | home                      | rent/h | at level | mean net/h | share | weakest career | share |
 |---------------------------|--------|----------|------------|-------|----------------|-------|
-| row_motel:motel_1         | 10     | 1        | 165        | 6%    | gunsmith 112   | 9%    |
-| row_motel:motel_2         | 10     | 1        | 165        | 6%    | gunsmith 112   | 9%    |
-| row_motel:motel_3         | 10     | 1        | 165        | 6%    | gunsmith 112   | 9%    |
-| row_motel:motel_4         | 10     | 1        | 165        | 6%    | gunsmith 112   | 9%    |
-| row_flats:flat_1          | 40     | 4        | 363        | 11%   | farmer 245     | 16%   |
-| row_flats:flat_2          | 40     | 4        | 363        | 11%   | farmer 245     | 16%   |
-| row_flats:row_house       | 100    | 8        | 430        | 23%   | farmer 339     | 29%   |
-| rs_saltmarsh_motel:room_1 | 10     | 1        | 165        | 6%    | gunsmith 112   | 9%    |
-| rs_saltmarsh_motel:room_2 | 10     | 1        | 165        | 6%    | gunsmith 112   | 9%    |
-| rs_saltmarsh_motel:room_3 | 10     | 1        | 165        | 6%    | gunsmith 112   | 9%    |
-| rs_saltmarsh_motel:room_4 | 10     | 1        | 165        | 6%    | gunsmith 112   | 9%    |
-| rs_harrow_farm:farmhouse  | 115    | 6        | 419        | 27%   | vintner 315    | 37%   |
-| city:ih_flats             | 40     | 4        | 363        | 11%   | farmer 245     | 16%   |
-| city:bw_apartments        | 55     | 5        | 402        | 14%   | vintner 315    | 17%   |
+| row_motel:motel_1         | 10     | 1        | 198        | 5%    | gunsmith 112   | 9%    |
+| row_motel:motel_2         | 10     | 1        | 198        | 5%    | gunsmith 112   | 9%    |
+| row_motel:motel_3         | 10     | 1        | 198        | 5%    | gunsmith 112   | 9%    |
+| row_motel:motel_4         | 10     | 1        | 198        | 5%    | gunsmith 112   | 9%    |
+| row_flats:flat_1          | 40     | 4        | 380        | 11%   | farmer 245     | 16%   |
+| row_flats:flat_2          | 40     | 4        | 380        | 11%   | farmer 245     | 16%   |
+| row_flats:row_house       | 100    | 8        | 437        | 23%   | vintner 368    | 27%   |
+| rs_saltmarsh_motel:room_1 | 10     | 1        | 198        | 5%    | gunsmith 112   | 9%    |
+| rs_saltmarsh_motel:room_2 | 10     | 1        | 198        | 5%    | gunsmith 112   | 9%    |
+| rs_saltmarsh_motel:room_3 | 10     | 1        | 198        | 5%    | gunsmith 112   | 9%    |
+| rs_saltmarsh_motel:room_4 | 10     | 1        | 198        | 5%    | gunsmith 112   | 9%    |
+| rs_harrow_farm:farmhouse  | 115    | 6        | 430        | 27%   | farmer 339     | 34%   |
+| city:ih_flats             | 40     | 4        | 380        | 11%   | farmer 245     | 16%   |
+| city:bw_apartments        | 55     | 5        | 419        | 13%   | vintner 315    | 17%   |
 | city:vw_cottage           | 85     | 7        | 430        | 20%   | farmer 339     | 25%   |
 | city:vw_house_a           | 85     | 7        | 430        | 20%   | farmer 339     | 25%   |
 | city:vw_house_b           | 85     | 7        | 430        | 20%   | farmer 339     | 25%   |
-| city:ih_workshop          | 135    | 12       | 916        | 15%   | vintner 399    | 34%   |
+| city:ih_workshop          | 135    | 12       | 917        | 15%   | vintner 399    | 34%   |
 | city:ih_warehouse         | 170    | 15       | 966        | 18%   | vintner 399    | 43%   |
-| city:ih_pub               | 10     | 1        | 165        | 6%    | gunsmith 112   | 9%    |
-| city:vw_bakery            | 40     | 4        | 363        | 11%   | farmer 245     | 16%   |
-| city:bw_store             | 55     | 5        | 402        | 14%   | vintner 315    | 17%   |
+| city:ih_pub               | 10     | 1        | 198        | 5%    | gunsmith 112   | 9%    |
+| city:vw_bakery            | 40     | 4        | 380        | 11%   | farmer 245     | 16%   |
+| city:bw_store             | 55     | 5        | 419        | 13%   | vintner 315    | 17%   |
+| city:bw_lofts             | 70     | 6        | 430        | 16%   | farmer 339     | 21%   |
+| city:vw_villa             | 260    | 15       | 966        | 27%   | vintner 399    | 65%   |
 
 ### Active hours until each housing milestone (household policy in `simulate`)
 
@@ -229,22 +231,22 @@ Everything between the markers is written by `--update-doc` and checked by a uni
 |-------------------------------|-----------|----------|------------|-----------|-----------------|----------------|
 | farmer                        | 2         | 9        | 8          | 32        | 30              | 411            |
 | vintner                       | 1         | 8        | -          | 26        | 30              | 399            |
-| smith                         | 1         | 7        | 2          | 25        | 30              | 517            |
+| smith                         | 1         | 7        | 2          | 24        | 30              | 517            |
 | gunsmith                      | 1         | 8        | 2          | 25        | 30              | 521            |
-| technician                    | 1         | 7        | 2          | 22        | 30              | 566            |
-| farmer + gunsmith             | 1         | 4        | 2          | 14        | 30/30           | 932            |
-| smith + technician            | 0         | 4        | 1          | 12        | 30/30           | 951            |
-| farmer + smith + gunsmith     | 0         | 3        | 1          | 8         | 30/30/30        | 1449           |
+| technician                    | 1         | 6        | 2          | 22        | 30              | 566            |
+| farmer + gunsmith             | 1         | 4        | 2          | 13        | 30/30           | 932            |
+| smith + technician            | 0         | 3        | 1          | 11        | 30/30           | 1015           |
+| farmer + smith + gunsmith     | 0         | 2        | 1          | 8         | 30/30/30        | 1449           |
 | vintner + technician + farmer | 0         | 3        | 1          | 10        | 30/30/30        | 1266           |
 
 ### Vehicle and boat tiers: active hours of the five careers' mean wage to afford one (prices are the planning table of D-101)
 
 | tier | vehicle   | acquired by      | price | materials value | at level | mean net/h | hours | meant to be |
 |------|-----------|------------------|-------|-----------------|----------|------------|-------|-------------|
-| 1    | bicycle   | dealer           | 60    | 30              | 2        | 250        | 0.2   | 0.25        |
-| 2    | motorboat | dealer           | 600   | 240             | 5        | 402        | 1.5   | 1.5         |
-| 3    | quad      | bench (proposed) | 1450  | not priced      | 8        | 430        | 3.4   | 3.5         |
-| 4    | small_car | bench (proposed) | 3400  | not priced      | 10       | 437        | 7.8   | 8           |
+| 1    | bicycle   | dealer           | 60    | 30              | 2        | 263        | 0.2   | 0.25        |
+| 2    | motorboat | dealer           | 600   | 240             | 5        | 419        | 1.4   | 1.5         |
+| 3    | quad      | bench (proposed) | 1450  | not priced      | 8        | 437        | 3.3   | 3.5         |
+| 4    | small_car | bench (proposed) | 3400  | not priced      | 10       | 445        | 7.6   | 8           |
 | 5    | large_car | bench (proposed) | 8800  | not priced      | 12       | 458        | 19.2  | 20          |
 | 6    | truck     | bench (proposed) | 13000 | not priced      | 12       | 458        | 28.4  | 30          |
 
@@ -256,30 +258,26 @@ Everything between the markers is written by `--update-doc` and checked by a uni
 | vintner    | 1     | 147       | 147     | 147             | 100%                             |
 | smith      | 1     | 282       | 282     | 282             | 100%                             |
 | gunsmith   | 1     | 112       | 112     | 112             | 100%                             |
-| technician | 1     | 140       | 140     | 140             | 100%                             |
+| technician | 1     | 306       | 140     | 140             | 46%                              |
 | farmer     | 3     | 245       | 245     | 245             | 100%                             |
-| vintner    | 3     | 265       | 265     | 265             | 100%                             |
-| smith      | 3     | 442       | 453     | 452             | 103%                             |
-| gunsmith   | 3     | 380       | 309     | 406             | 107%                             |
-| technician | 3     | 297       | 277     | 277             | 93%                              |
+| vintner    | 3     | 315       | 315     | 315             | 100%                             |
+| smith      | 3     | 442       | 453     | 456             | 103%                             |
+| gunsmith   | 3     | 443       | 443     | 443             | 100%                             |
+| technician | 3     | 453       | 281     | 281             | 62%                              |
 | farmer     | 5     | 338       | 333     | 348             | 103%                             |
 | vintner    | 5     | 315       | 315     | 315             | 100%                             |
-| smith      | 5     | 442       | 453     | 456             | 103%                             |
+| smith      | 5     | 478       | 493     | 490             | 103%                             |
 | gunsmith   | 5     | 443       | 447     | 446             | 101%                             |
-| technician | 5     | 472       | 464     | 464             | 98%                              |
-| farmer     | 8     | 339       | 335     | 348             | 103%                             |
+| technician | 5     | 521       | 515     | 515             | 99%                              |
+| farmer     | 8     | 374       | 370     | 383             | 102%                             |
 | vintner    | 8     | 368       | 368     | 368             | 100%                             |
 | smith      | 8     | 478       | 493     | 490             | 103%                             |
 | gunsmith   | 8     | 443       | 447     | 446             | 101%                             |
-| technician | 8     | 519       | 515     | 515             | 99%                              |
+| technician | 8     | 521       | 515     | 515             | 99%                              |
 
 ### Orders that cost more than they pay when every ore unit is bought from a shelf (a scarcity world; the quarry's base metals do not help these)
 
-| career     | L | order               | credits | shelf cost |
-|------------|---|---------------------|---------|------------|
-| technician | 3 | municipal_terminals | 160     | 216        |
-| technician | 2 | repeaters           | 68      | 72         |
-| technician | 1 | torches             | 32      | 96         |
+none
 
 ### Where a scarcity world's ore comes from: cheapest shelf price, units an hour the shelves sustain (all cities), units an hour the regrowing sites give back (the old quarry and the Valewood pit, shared by everybody)
 
@@ -292,7 +290,9 @@ Everything between the markers is written by `--update-doc` and checked by a uni
 | gold_ingot   | 38             | 3.3       | 0       |
 | iron_ingot   | 9              | 32.0      | 28      |
 | lapis_lazuli | 11             | 5.7       | 0       |
-| redstone     | 6              | 18.7      | 0       |
+| quartz       | 8              | 10.0      | 0       |
+| redstone     | 6              | 36.0      | 0       |
+| e_scrap      | 5              | 17.3      | 0       |
 
 ### Salvage yards (D-138): heaps that refill in active time, and the mean items an active hour if every heap is stripped (one rotation of each yard stands in a world)
 
@@ -304,8 +304,8 @@ Everything between the markers is written by `--update-doc` and checked by a uni
 
 | city       | fence         | rate              | best rate | budget | per hour | best legal/h (L5) | share |
 |------------|---------------|-------------------|-----------|--------|----------|-------------------|-------|
-| blackwater | The Back Room | 50% (32% at home) | 60%       | 600    | 420      | 472               | 89%   |
-| ironhaven  | The Yard      | 45% (30% at home) | 55%       | 450    | 360      | 472               | 76%   |
+| blackwater | The Back Room | 50% (32% at home) | 60%       | 600    | 420      | 521               | 81%   |
+| ironhaven  | The Yard      | 45% (30% at home) | 55%       | 450    | 360      | 521               | 69%   |
 
 ### Loops the data allows
 
@@ -315,9 +315,9 @@ none found
 
 | hands-on minutes | farmer net/h at L5 | vintner net/h at L5 | smith net/h at L5 | gunsmith net/h at L5 | technician net/h at L5 | smith rents flat (h) | smith buys flat (h) |
 |------------------|--------------------|---------------------|-------------------|----------------------|------------------------|----------------------|---------------------|
-| x0.7             | 388                | 402                 | 529               | 572                  | 488                    | 1                    | 6                   |
-| x1.0             | 338                | 315                 | 442               | 443                  | 472                    | 1                    | 7                   |
-| x1.4             | 317                | 271                 | 386               | 404                  | 453                    | 1                    | 8                   |
+| x0.7             | 388                | 402                 | 572               | 572                  | 642                    | 1                    | 6                   |
+| x1.0             | 338                | 315                 | 478               | 443                  | 521                    | 1                    | 7                   |
+| x1.4             | 317                | 271                 | 422               | 404                  | 498                    | 1                    | 8                   |
 
 <!-- economy-model:end -->
 

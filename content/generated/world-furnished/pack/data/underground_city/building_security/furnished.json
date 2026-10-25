@@ -72,6 +72,25 @@
       "stash_policy": "underground_city:apartment_affluent",
       "tier": 4
     },
+    "villa": {
+      "category": "residential",
+      "grade": [
+        4,
+        5
+      ],
+      "label": "villa",
+      "lock_profile": "high_security",
+      "locked_exterior": true,
+      "response": {
+        "alarm_chance": 0.8,
+        "dispatch_seconds": 70,
+        "officers": 2,
+        "window_seconds": 150
+      },
+      "stash_chance": 0.8,
+      "stash_policy": "underground_city:apartment_affluent",
+      "tier": 5
+    },
     "warehouse": {
       "category": "industrial",
       "grade": [
@@ -119,6 +138,11 @@
       "type_prefix": "underground_city:vw_bakery"
     },
     {
+      "class": "villa",
+      "priority": 10,
+      "type_prefix": "underground_city:vw_villa"
+    },
+    {
       "class": "flat_block",
       "priority": 10,
       "type_prefix": "underground_city:ih_flats"
@@ -142,6 +166,11 @@
       "class": "flat_tower",
       "priority": 10,
       "type_prefix": "underground_city:bw_apartments"
+    },
+    {
+      "class": "flat_tower",
+      "priority": 10,
+      "type_prefix": "underground_city:bw_lofts"
     },
     {
       "class": "office",

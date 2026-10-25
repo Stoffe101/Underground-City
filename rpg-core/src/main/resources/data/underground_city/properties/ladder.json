@@ -47,7 +47,7 @@
       "id": "large_apartment",
       "tier": 4,
       "title": "Larger apartment",
-      "built": false,
+      "built": true,
       "rent_hint": 70,
       "buy_hint": 4200
     },
@@ -95,9 +95,9 @@
       "id": "premium_residence",
       "tier": 10,
       "title": "Premium residence",
-      "built": false,
+      "built": true,
       "rent_hint": 260,
-      "buy_hint": 28000
+      "buy_hint": 25000
     }
   ],
   "listings": [
@@ -601,6 +601,55 @@
         "plumbing"
       ],
       "summary": "A modern flat over a corner store, up its own stair: a bedroom and an open kitchen and living room."
+    },
+    {
+      "building": "underground_city:bw_lofts",
+      "share_percent": 40,
+      "category": "large_apartment",
+      "area": "Blackwater",
+      "tenures": [
+        "rent",
+        "buy"
+      ],
+      "rent": 70,
+      "deposit": 140,
+      "buy_price": 4200,
+      "upkeep": 14,
+      "max_containers": 12,
+      "private_claims": 3,
+      "facilities": [
+        "bed",
+        "storage",
+        "crafting",
+        "furnace",
+        "plumbing"
+      ],
+      "summary": "A loft: one large flat a floor of a three-storey block, two bedrooms, a bathroom and an open kitchen and living room. Room for a couple or a Crew, and more storage than a comfortable flat."
+    },
+    {
+      "building": "underground_city:vw_villa",
+      "share_percent": 50,
+      "category": "premium_residence",
+      "area": "Valewood",
+      "tenures": [
+        "rent",
+        "buy"
+      ],
+      "rent": 260,
+      "deposit": 520,
+      "buy_price": 25000,
+      "upkeep": 52,
+      "max_containers": 28,
+      "private_claims": 6,
+      "facilities": [
+        "bed",
+        "storage",
+        "crafting",
+        "furnace",
+        "plumbing",
+        "workshop"
+      ],
+      "summary": "A two-storey villa on a full lot: three bedrooms, a study, a kitchen and dining room, and a workroom with its own garden door, room for a trade's stations."
     }
   ],
   "upgrades": [

@@ -57,6 +57,9 @@ NEW_SECURITY_CLASSES = {
     # a white-brick townhouse is the better-off house of Valewood's middle: tier 4 with a camera and a panel, so the city has wealthy targets too (D-157: the survey of a new world found none)
     "townhouse": {"label": "townhouse", "category": "residential", "grade": [3, 5], "tier": 4, "lock_profile": "secured", "locked_exterior": True, "stash_policy": "underground_city:apartment_affluent",
                   "stash_chance": 0.7, "response": {"alarm_chance": 0.55, "dispatch_seconds": 100, "officers": 1, "window_seconds": 120}},
+    # the villa, the ladder's premium residence (D-176): the wealthiest homes in the region, with the alarm, the cameras and the lock that go with it
+    "villa": {"label": "villa", "category": "residential", "grade": [4, 5], "tier": 5, "lock_profile": "high_security", "locked_exterior": True, "stash_policy": "underground_city:apartment_affluent",
+              "stash_chance": 0.8, "response": {"alarm_chance": 0.8, "dispatch_seconds": 70, "officers": 2, "window_seconds": 150}},
     "house": {"label": "house", "category": "residential", "grade": [2, 5], "tier": 3, "lock_profile": "deadbolt", "locked_exterior": True, "stash_policy": "underground_city:apartment_affluent", "stash_chance": 0.6, "panel": False,
               "response": {"alarm_chance": 0.4, "dispatch_seconds": 110, "officers": 1, "window_seconds": 120}},
 }

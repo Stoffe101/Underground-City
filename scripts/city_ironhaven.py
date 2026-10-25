@@ -109,6 +109,7 @@ def workshop() -> Building:
         g.put(x, 1, z, "minecraft:barrel[facing=up,open=false]")
     g.put(12, 1, 13, "minecraft:chest[facing=north,type=single,waterlogged=false]"); g.put(11, 1, 13, "minecraft:chest[facing=north,type=single,waterlogged=false]")
     g.put(6, 1, 12, ml("metal_duct", axis="y")); g.put(6, 2, 12, ml("metal_duct", axis="y")); g.put(6, 3, 12, ml("metal_duct", axis="y"))
+    g.put(9, 1, 13, "underground_city:operations_terminal[facing=north]")      # a public Operations Terminal by the bay door (D-175): the city's exchange
     for (x, z) in ((5, 7), (10, 7), (5, 11), (10, 11)):
         g.put(x, 5, z, ml("light_bulb", face="ceiling", facing="north", powered=True))
     # the mezzanine over the north half (z 3..7): its slab is the upper floor's own; the stair climbs along the east wall to it

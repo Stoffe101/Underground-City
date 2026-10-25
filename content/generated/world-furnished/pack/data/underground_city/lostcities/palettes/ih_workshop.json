@@ -122,76 +122,80 @@
       "char": "t"
     },
     {
-      "block": "modernlife:light_bulb[face=ceiling,facing=north,powered=true]",
+      "block": "underground_city:operations_terminal[facing=north]",
       "char": "u"
     },
     {
-      "block": "minecraft:spruce_planks",
+      "block": "modernlife:light_bulb[face=ceiling,facing=north,powered=true]",
       "char": "z"
     },
     {
-      "block": "minecraft:oak_stairs[facing=north,half=bottom,shape=straight]",
+      "block": "minecraft:spruce_planks",
       "char": "A"
     },
     {
-      "block": "minecraft:glass_pane",
+      "block": "minecraft:oak_stairs[facing=north,half=bottom,shape=straight]",
       "char": "C"
     },
     {
-      "block": "modernlife:oak_small_table[type=w_end]",
+      "block": "minecraft:glass_pane",
       "char": "D"
     },
     {
-      "block": "modernlife:oak_small_table[type=e_end]",
+      "block": "modernlife:oak_small_table[type=w_end]",
       "char": "E"
     },
     {
-      "block": "modernlife:dual_monitor[facing=south]",
+      "block": "modernlife:oak_small_table[type=e_end]",
       "char": "F"
     },
     {
-      "block": "modernlife:printer[facing=south]",
+      "block": "modernlife:dual_monitor[facing=south]",
       "char": "G"
     },
     {
-      "block": "modernlife:oak_chair[facing=south]",
+      "block": "modernlife:printer[facing=south]",
       "char": "H"
     },
     {
-      "block": "modernlife:photocopier[facing=south]",
+      "block": "modernlife:oak_chair[facing=south]",
       "char": "I"
     },
     {
-      "block": "modernlife:modern_oak_bookshelf[facing=east]",
+      "block": "modernlife:photocopier[facing=south]",
       "char": "J"
     },
     {
-      "block": "modernlife:oak_small_table[type=single]",
+      "block": "modernlife:modern_oak_bookshelf[facing=east]",
       "char": "K"
     },
     {
-      "block": "modernlife:old_tv[facing=south]",
+      "block": "modernlife:oak_small_table[type=single]",
       "char": "L"
     },
     {
-      "block": "modernlife:oak_chair[facing=east]",
+      "block": "modernlife:old_tv[facing=south]",
       "char": "M"
     },
     {
-      "block": "minecraft:glass",
+      "block": "modernlife:oak_chair[facing=east]",
       "char": "N"
     },
     {
-      "block": "minecraft:polished_blackstone_bricks",
+      "block": "minecraft:glass",
       "char": "O"
     },
     {
-      "block": "minecraft:campfire[facing=north,lit=false,signal_fire=false,waterlogged=false]",
+      "block": "minecraft:polished_blackstone_bricks",
       "char": "P"
     },
     {
-      "block": "underground_city:alarm_panel[facing=north,light=off]",
+      "block": "minecraft:campfire[facing=north,lit=false,signal_fire=false,waterlogged=false]",
       "char": "Q"
+    },
+    {
+      "block": "underground_city:alarm_panel[facing=north,light=off]",
+      "char": "R"
     }
   ]
 }

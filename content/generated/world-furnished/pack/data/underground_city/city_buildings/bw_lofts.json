@@ -1,0 +1,139 @@
+{
+  "city": "blackwater",
+  "floors": {
+    "max": 3,
+    "min": 3
+  },
+  "id": "bw_lofts",
+  "notes": "A three-storey loft block: one large flat a floor (two bedrooms, a bathroom, an open kitchen and living room) beside a stair core.",
+  "schema_version": 1,
+  "spots": [
+    {
+      "facing": "west",
+      "kind": "door",
+      "note": "street door",
+      "x": 1,
+      "y": 1,
+      "z": 5
+    },
+    {
+      "facing": "north",
+      "kind": "door",
+      "note": "street door",
+      "x": 2,
+      "y": 1,
+      "z": 1
+    },
+    {
+      "facing": "south",
+      "kind": "door",
+      "note": "street door",
+      "x": 2,
+      "y": 1,
+      "z": 14
+    },
+    {
+      "facing": "west",
+      "kind": "stove",
+      "note": "loft 1 stove",
+      "x": 13,
+      "y": 1,
+      "z": 8
+    },
+    {
+      "facing": "north",
+      "kind": "bed",
+      "note": "loft 1 bed",
+      "x": 6,
+      "y": 1,
+      "z": 3
+    },
+    {
+      "facing": "north",
+      "kind": "bed",
+      "note": "loft 1 second bed",
+      "x": 13,
+      "y": 1,
+      "z": 3
+    },
+    {
+      "facing": "north",
+      "kind": "bed",
+      "note": "loft 2 bed",
+      "x": 6,
+      "y": 7,
+      "z": 3
+    },
+    {
+      "facing": "north",
+      "kind": "bed",
+      "note": "loft 2 second bed",
+      "x": 13,
+      "y": 7,
+      "z": 3
+    },
+    {
+      "facing": "north",
+      "kind": "bed",
+      "note": "loft 3 bed",
+      "x": 6,
+      "y": 13,
+      "z": 3
+    },
+    {
+      "facing": "north",
+      "kind": "bed",
+      "note": "loft 3 second bed",
+      "x": 13,
+      "y": 13,
+      "z": 3
+    },
+    {
+      "facing": "east",
+      "kind": "alarm",
+      "note": "alarm panel by the street door",
+      "x": 2,
+      "y": 2,
+      "z": 4
+    }
+  ],
+  "units": [
+    {
+      "box": [
+        5,
+        1,
+        2,
+        13,
+        3,
+        13
+      ],
+      "id": "flat_1",
+      "title": "Loft 1"
+    },
+    {
+      "box": [
+        5,
+        7,
+        2,
+        13,
+        9,
+        13
+      ],
+      "id": "flat_2",
+      "title": "Loft 2"
+    },
+    {
+      "box": [
+        5,
+        13,
+        2,
+        13,
+        15,
+        13
+      ],
+      "id": "flat_3",
+      "title": "Loft 3"
+    }
+  ],
+  "use": "flats"
+}

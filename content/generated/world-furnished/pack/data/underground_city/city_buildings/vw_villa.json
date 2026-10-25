@@ -1,0 +1,106 @@
+{
+  "city": "valewood",
+  "floors": {
+    "max": 2,
+    "min": 2
+  },
+  "id": "vw_villa",
+  "notes": "A two-storey villa: living room, kitchen, study and a workroom below; three bedrooms and a bathroom above; a garden round it.",
+  "schema_version": 1,
+  "spots": [
+    {
+      "facing": "south",
+      "kind": "door",
+      "note": "front door",
+      "x": 7,
+      "y": 1,
+      "z": 13
+    },
+    {
+      "facing": "east",
+      "kind": "door",
+      "note": "garden door",
+      "x": 13,
+      "y": 1,
+      "z": 11
+    },
+    {
+      "facing": "north",
+      "kind": "bed",
+      "note": "main bedroom",
+      "x": 5,
+      "y": 7,
+      "z": 4
+    },
+    {
+      "facing": "north",
+      "kind": "bed",
+      "note": "second bedroom",
+      "x": 11,
+      "y": 7,
+      "z": 4
+    },
+    {
+      "facing": "south",
+      "kind": "bed",
+      "note": "third bedroom",
+      "x": 12,
+      "y": 7,
+      "z": 11
+    },
+    {
+      "facing": "south",
+      "kind": "stove",
+      "x": 5,
+      "y": 1,
+      "z": 3
+    },
+    {
+      "facing": "east",
+      "kind": "seat",
+      "note": "sofa",
+      "x": 4,
+      "y": 1,
+      "z": 10
+    },
+    {
+      "facing": "east",
+      "kind": "seat",
+      "note": "dining",
+      "x": 4,
+      "y": 1,
+      "z": 6
+    },
+    {
+      "facing": "north",
+      "kind": "desk",
+      "note": "study",
+      "x": 10,
+      "y": 1,
+      "z": 5
+    },
+    {
+      "facing": "north",
+      "kind": "alarm",
+      "note": "alarm panel by the front door",
+      "x": 6,
+      "y": 2,
+      "z": 12
+    }
+  ],
+  "units": [
+    {
+      "box": [
+        3,
+        1,
+        3,
+        12,
+        10,
+        12
+      ],
+      "id": "house",
+      "title": "Villa"
+    }
+  ],
+  "use": "house"
+}

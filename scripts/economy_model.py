@@ -685,18 +685,23 @@ def shop_sell_vs_orders(model: Model) -> list[str]:
 PREMISES = {"commercial_workshop", "warehouse"}
 
 
+# homes the model takes to be a two-income household's (D-176): the villa's three bedrooms are for a couple or a Crew, as the business premises are a Crew's (an assumption, not a measurement)
+SHARED_HOMES = {"premium_residence"}
+
+
 def rent_shares(model: Model, mods: set[str]) -> list[dict]:
     """Rent as a share of the net income a household typically has at the level where it rents that category."""
     rows = []
     # the level at which a household typically takes each kind of home; business premises (D-127) are taken late, and usually by a Crew with two incomes
-    typical = {"motel_room": 1, "small_apartment": 4, "comfortable_apartment": 5, "small_house": 7, "workshop_house": 8, "commercial_workshop": 12, "warehouse": 15}
+    typical = {"motel_room": 1, "small_apartment": 4, "comfortable_apartment": 5, "large_apartment": 6, "small_house": 7, "workshop_house": 8, "commercial_workshop": 12, "warehouse": 15,
+               "premium_residence": 15}
     for listing in model.listings():
         level = typical.get(listing["category"], 6)
         incomes = {c: model.income(c, level, mods)["net"] for c in CAREERS}
         mean = sum(incomes.values()) / len(incomes)
         worst = min(incomes, key=incomes.get)
         # business premises are a Crew's: the household pays them from two incomes (an assumption of the model, not a measurement; docs/technical/economy-model.md)
-        if listing["category"] in PREMISES:
+        if listing["category"] in PREMISES or listing["category"] in SHARED_HOMES:
             mean *= 2
         rows.append({"listing": listing["id"], "category": listing["category"], "rent": listing["rent"], "level": level,
                      "mean_income": mean, "mean_share": listing["rent"] / mean if mean else None,

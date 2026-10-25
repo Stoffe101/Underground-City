@@ -81,88 +81,92 @@
       "char": "l"
     },
     {
-      "block": "minecraft:oak_stairs[facing=north,half=bottom,shape=straight]",
+      "block": "underground_city:operations_terminal[facing=west]",
       "char": "m"
     },
     {
-      "block": "minecraft:spruce_door[facing=west,half=lower,hinge=left,open=false]",
+      "block": "minecraft:oak_stairs[facing=north,half=bottom,shape=straight]",
       "char": "n"
     },
     {
-      "block": "minecraft:spruce_door[facing=west,half=upper,hinge=left,open=false]",
+      "block": "minecraft:spruce_door[facing=west,half=lower,hinge=left,open=false]",
       "char": "o"
     },
     {
-      "block": "minecraft:red_bed[facing=south,part=foot]",
+      "block": "minecraft:spruce_door[facing=west,half=upper,hinge=left,open=false]",
       "char": "p"
     },
     {
-      "block": "minecraft:red_bed[facing=south,part=head]",
+      "block": "minecraft:red_bed[facing=south,part=foot]",
       "char": "q"
     },
     {
-      "block": "modernlife:oak_night_stand[facing=east]",
+      "block": "minecraft:red_bed[facing=south,part=head]",
       "char": "r"
     },
     {
-      "block": "modernlife:oak_night_stand[facing=west]",
+      "block": "modernlife:oak_night_stand[facing=east]",
       "char": "s"
     },
     {
-      "block": "modernlife:modern_oak_bookshelf[facing=north]",
+      "block": "modernlife:oak_night_stand[facing=west]",
       "char": "t"
     },
     {
-      "block": "modernlife:refrigerator[facing=west,half=lower]",
+      "block": "modernlife:modern_oak_bookshelf[facing=north]",
       "char": "u"
     },
     {
-      "block": "modernlife:refrigerator[facing=west,half=upper]",
+      "block": "modernlife:refrigerator[facing=west,half=lower]",
       "char": "z"
     },
     {
-      "block": "modernlife:oak_kitchen_drawer_cabinet[facing=west]",
+      "block": "modernlife:refrigerator[facing=west,half=upper]",
       "char": "A"
     },
     {
-      "block": "modernlife:stove[facing=west,open_door=false]",
+      "block": "modernlife:oak_kitchen_drawer_cabinet[facing=west]",
       "char": "C"
     },
     {
-      "block": "modernlife:kitchen_sink[facing=west]",
+      "block": "modernlife:stove[facing=west,open_door=false]",
       "char": "D"
     },
     {
-      "block": "modernlife:oak_small_table[type=n_end]",
+      "block": "modernlife:kitchen_sink[facing=west]",
       "char": "E"
     },
     {
-      "block": "modernlife:oak_small_table[type=s_end]",
+      "block": "modernlife:oak_small_table[type=n_end]",
       "char": "F"
     },
     {
-      "block": "modernlife:oak_chair[facing=west]",
+      "block": "modernlife:oak_small_table[type=s_end]",
       "char": "G"
     },
     {
-      "block": "modernlife:oak_chair[facing=east]",
+      "block": "modernlife:oak_chair[facing=west]",
       "char": "H"
     },
     {
-      "block": "modernlife:gray_sofa[facing=north,type=left]",
+      "block": "modernlife:oak_chair[facing=east]",
       "char": "I"
     },
     {
-      "block": "modernlife:gray_sofa[facing=north,type=middle]",
+      "block": "modernlife:gray_sofa[facing=north,type=left]",
       "char": "J"
     },
     {
-      "block": "modernlife:gray_sofa[facing=north,type=right]",
+      "block": "modernlife:gray_sofa[facing=north,type=middle]",
       "char": "K"
     },
     {
-      "block": "underground_city:alarm_panel[facing=north,light=off]",
+      "block": "modernlife:gray_sofa[facing=north,type=right]",
       "char": "L"
+    },
+    {
+      "block": "underground_city:alarm_panel[facing=north,light=off]",
+      "char": "M"
     }
   ]
 }

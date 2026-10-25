@@ -62,6 +62,103 @@ def apartments() -> Building:
     return tenement("bw_apartments", CITY, 4, look, plaza, roof, "flat_tower", "A four-storey apartment block in dark concrete: two flats a floor either side of a central corridor, a roof terrace.")
 
 
+# ---------------------------------------------------------------------------------------------------- the lofts (the larger apartment, D-176)
+
+def lofts() -> Building:
+    """Three storeys, one large flat on each: two bedrooms, a bathroom, a kitchen and a living room beside a stair core on the west side. The ladder's larger apartment (tier 4): room for a
+    couple or a Crew, more storage than a comfortable flat."""
+    p = Palette("bw_lofts")
+    b = Building("bw_lofts", p, use="flats", city=CITY, min_floors=3, max_floors=3, filler=BLACK, security="flat_tower",
+                 notes="A three-storey loft block: one large flat a floor (two bedrooms, a bathroom, an open kitchen and living room) beside a stair core.")
+    X0, Z0, X1, Z1 = 1, 1, 14, 14
+    FLAT_DOOR, STREET_DOOR = "modernlife:modern_white_door", "modernlife:iron_glass_door"
+
+    def door(part: Part, x: int, z: int, facing: str, material: str, hinge: str = "left") -> None:
+        part.put(x, 1, z, f"{material}[facing={facing},half=lower,hinge={hinge},open=false,powered=false]")
+        part.put(x, 2, z, f"{material}[facing={facing},half=upper,hinge={hinge},open=false,powered=false]")
+
+    def shell(part: Part) -> None:
+        part.floor(X0, Z0, X1, Z1, "minecraft:dark_oak_planks")
+        part.ring(X0, Z0, X1, Z1, 1, 5, CONCRETE)
+        part.ring(X0, Z0, X1, Z1, 1, 1, BLACK)
+        for (x, z) in ((X0, Z0), (X1, Z0), (X0, Z1), (X1, Z1)):
+            part.fill(x, 1, z, x, 5, z, BLACK)
+        part.floor(X0 + 1, Z0 + 1, X1 - 1, Z1 - 1, WHITE, y=4)
+        part.floor(X0 + 1, Z0 + 1, X1 - 1, Z1 - 1, CONCRETE, y=5)
+        part.floor(2, 2, 3, 13, "minecraft:polished_andesite")                 # the stair core's floor
+
+    def flat(part: Part, colours: tuple[str, str]) -> None:
+        """The flat east of the core (x 5..13, z 2..13): bedrooms to the north, the living room, kitchen and bathroom to the south."""
+        part.fill(4, 1, 2, 4, 3, 13, WHITE)                                    # the core wall, the flat's door in it
+        door(part, 4, 7, "west", FLAT_DOOR)
+        part.fill(5, 1, 6, 13, 3, 6, WHITE)                                    # the bedrooms' wall, a door into each
+        part.fill(9, 1, 2, 9, 3, 5, WHITE)
+        door(part, 6, 6, "south", FLAT_DOOR); door(part, 11, 6, "south", FLAT_DOOR)
+        # bedroom 1 (x 5..8): a double bed against the north wall, night stands, a bookcase and a wardrobe of drawers
+        k.bed(part, 6, 1, 3, "north", colours[0]); k.bed(part, 7, 1, 3, "north", colours[0])
+        part.put(5, 1, 2, ml("oak_night_stand", facing="south")); part.put(8, 1, 2, ml("oak_night_stand", facing="south"))
+        part.put(8, 1, 5, ml("modern_oak_bookshelf", facing="west")); part.put(5, 1, 5, ml("oak_kitchen_drawer_cabinet", facing="east"))
+        part.put(5, 2, 2, ml("alarm_clock", facing="south"))
+        # bedroom 2 (x 10..13): a single bed, a desk with a screen, a night stand
+        k.bed(part, 13, 1, 3, "north", colours[1])
+        part.put(12, 1, 2, ml("oak_night_stand", facing="south"))
+        part.put(10, 1, 2, ml("dark_oak_small_table", type="single")); part.put(10, 2, 2, ml("monitor", facing="south")); k.chair(part, 10, 1, 3, "north", "dark_oak")
+        part.put(13, 1, 5, ml("modern_oak_bookshelf", facing="west"))
+        # the bathroom in the south-east corner (x 11..13, z 11..13)
+        part.fill(10, 1, 10, 13, 3, 10, WHITE); part.fill(10, 1, 11, 10, 3, 13, WHITE)
+        door(part, 10, 12, "west", FLAT_DOOR)
+        part.floor(11, 11, 13, 13, "minecraft:white_concrete")
+        k.toilet(part, 13, 1, 13, "west"); k.sink(part, 13, 1, 11, "west"); k.shower(part, 11, 1, 13, "north")
+        # the kitchen along the east wall (z 7..9) and a table
+        k.counter_run(part, 13, 1, 7, "south", "west", ["fridge", "stove", "sink"], "dark_oak")
+        k.table(part, 11, 1, 8, 1, 1, "dark_oak", "small"); k.chair(part, 10, 1, 8, "east", "dark_oak"); k.chair(part, 11, 1, 9, "north", "dark_oak")
+        # the living room (x 5..9, z 8..13): a sofa, a coffee table, a screen, shelves
+        k.sofa(part, 5, 1, 10, "south", "east", "white", 3)
+        k.table(part, 7, 1, 11, 1, 1, "dark_oak", "coffee")
+        part.put(9, 1, 11, ml("dark_oak_small_table", type="single")); k.tv(part, 9, 2, 11, "west")
+        part.put(5, 1, 13, ml("modern_dark_oak_bookshelf", facing="east")); part.put(9, 1, 13, ml("dark_oak_wall_shelf", facing="north"))
+        part.put(5, 1, 8, "minecraft:potted_fern")
+        for (x, z) in (6, 4), (11, 4), (7, 10), (11, 8), (12, 12):
+            k.lamp_ceiling(part, x, z)
+        # windows: the bedrooms to the north and east, the kitchen, the living room and the bathroom
+        for x in (6, 7, 11, 12):
+            part.window(x, 2, Z0, GLASS, 2)
+        for z in (3, 4, 8):
+            part.window(X1, 2, z, GLASS, 2)
+        for x in (6, 7, 8, 12):
+            part.window(x, 2, Z1, GLASS, 2)
+
+    parts: list[Part] = []
+    g = b.new_part("ground", ground=True)
+    plaza(g)
+    parts.append(g)
+    for i in (1, 2):
+        f = b.new_part(f"floor{i}", floor=i)
+        f.floor(0, 0, 15, 15, "air")
+        parts.append(f)
+    for part in parts:
+        shell(part)
+    colours = (("gray", "cyan"), ("white", "blue"), ("black", "light_gray"))
+    for i, part in enumerate(parts):
+        flat(part, colours[i])
+        part.put(2, 3, 4, ml("light_bulb", face="ceiling", facing="north", powered=True))
+        part.window(X0, 2, 3, GLASS, 2)
+    # the street doors open into the core: a double door on the west side, one on the north and one on the south
+    door(g, X0, 5, "west", STREET_DOOR, "left"); door(g, X0, 6, "west", STREET_DOOR, "right")
+    door(g, 2, Z0, "north", STREET_DOOR); door(g, 2, Z1, "south", STREET_DOOR)
+    k.stair_run(parts[0], parts[1], 3, 12, "north")                           # up column 3 to the first floor's landing at z 7, beside its flat door
+    k.stair_run(parts[1], parts[2], 2, 8, "south")                            # up column 2 to the second floor's landing at z 13, then along column 3 to the door
+    t = b.new_part("top", top=True)
+    roof_terrace(t, 1, 1, 14, 14)
+    b.spots += [Spot("door", 1, 1, 5, "west", "street door"), Spot("door", 2, 1, 1, "north", "street door"), Spot("door", 2, 1, 14, "south", "street door"),
+                Spot("stove", 13, 1, 8, "west", "loft 1 stove")]
+    for i in range(3):
+        b.spots.append(Spot("bed", 6, 1 + 6 * i, 3, "north", f"loft {i + 1} bed"))
+        b.spots.append(Spot("bed", 13, 1 + 6 * i, 3, "north", f"loft {i + 1} second bed"))
+        b.units.append(k.Unit(f"flat_{i + 1}", f"Loft {i + 1}", (5, 6 * i + 1, 2, 13, 6 * i + 3, 13)))
+    return b
+
+
 # ---------------------------------------------------------------------------------------------------- the office
 
 def office() -> Building:
@@ -276,6 +373,7 @@ def store() -> Building:
         g.put(x, 1, 12, "minecraft:barrel[facing=up,open=true]")
     g.put(6, 1, 12, "minecraft:melon"); g.put(4, 1, 13, "minecraft:pumpkin"); g.put(5, 1, 13, "minecraft:melon")
     g.put(9, 1, 13, ml("trash_can", facing="north")); g.put(7, 1, 13, ml("floor_mat", facing="north")); g.put(8, 1, 13, ml("floor_mat", facing="north"))
+    g.put(10, 1, 13, "underground_city:operations_terminal[facing=north]")     # a public Operations Terminal inside the door (D-175): the city's exchange
     # the till by the door: a counter along x = 11 from z 9 to 12, the clerk behind it at x = 12; a receipt printer, a mug, a plant, and the camera screen behind
     for z in range(9, 13):
         g.put(11, 1, z, ml("dark_oak_kitchen_cabinet", facing="west"))
@@ -318,15 +416,15 @@ def store() -> Building:
 
 
 def buildings() -> list[Building]:
-    return [apartments(), office(), club(), store()]
+    return [apartments(), lofts(), office(), club(), store()]
 
 
 def zones() -> list[tuple[float, list[tuple[str, int]]]]:
     """Offices and clubs in the dense core by the water, apartment blocks toward the edge."""
     return [
         (0.35, [("bw_office", 4), ("bw_club", 2), ("bw_apartments", 2)]),
-        (0.70, [("bw_apartments", 4), ("bw_office", 2), ("bw_club", 1), ("bw_store", 2)]),
-        (1.00, [("bw_apartments", 3), ("bw_office", 1), ("bw_club", 1), ("bw_store", 1)]),
+        (0.70, [("bw_apartments", 4), ("bw_lofts", 1), ("bw_office", 2), ("bw_club", 1), ("bw_store", 2)]),
+        (1.00, [("bw_apartments", 3), ("bw_lofts", 2), ("bw_office", 1), ("bw_club", 1), ("bw_store", 1)]),
     ]
 
 

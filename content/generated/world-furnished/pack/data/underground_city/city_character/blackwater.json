@@ -28,6 +28,10 @@
           "weight": 4
         },
         {
+          "id": "underground_city:bw_lofts",
+          "weight": 1
+        },
+        {
           "id": "underground_city:bw_office",
           "weight": 2
         },
@@ -47,6 +51,10 @@
         {
           "id": "underground_city:bw_apartments",
           "weight": 3
+        },
+        {
+          "id": "underground_city:bw_lofts",
+          "weight": 2
         },
         {
           "id": "underground_city:bw_office",
