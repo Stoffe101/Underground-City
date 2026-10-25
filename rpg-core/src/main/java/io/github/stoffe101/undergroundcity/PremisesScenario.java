@@ -75,6 +75,10 @@ final class PremisesScenario {
         Playtest.queue("start at the workshop's door (scripted)", () -> { scripted("the player was put at the workshop's street door " + F.door.door().toShortString()); ThiefScenario.standAt(F.door); },
             () -> mc().player.position().distanceTo(F.door.stand()) < 0.8, 200);
         Playtest.wait("settle", 30);
+        Playtest.queue("the Crew view builds on the server", () -> Playtest.log("PREMISES Crew view: " + server(() -> {
+            try { CrewView v = CrewView.of(me(), CrewActions.armed(me())); return v.nearby().size() + " listings, storage " + (v.storageOk() ? "ok" : v.problem()); }
+            catch (RuntimeException error) { org.slf4j.LoggerFactory.getLogger(PremisesScenario.class).error("[UC-PLAYTEST] the Crew view failed", error); return "FAILED " + error; }
+        })));
         JourneyScenario.pressUntil("press K for the Crew and Home screen", "k", () -> mc().screen instanceof CrewScreen, 200);
         Playtest.wait("draw", 10);
         JourneyScenario.clickAt("the Home rail", () -> mc().screen instanceof CrewScreen s ? s.centreOf("rail_home") : null);

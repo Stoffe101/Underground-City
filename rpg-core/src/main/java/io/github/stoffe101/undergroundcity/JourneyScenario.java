@@ -194,7 +194,12 @@ final class JourneyScenario {
         final int[] t = {0};
         Playtest.queue(label, () -> { t[0] = 0; Playtest.focusWindow(); }, () -> {
             if (open.getAsBoolean()) return true;
-            if (t[0]++ % 40 == 0) Playtest.tap(key);
+            if (t[0] % 40 == 0) {
+                if (t[0] > 0) Playtest.log(label + ": not yet after " + t[0] + " ticks; the screen is " + (mc().screen == null ? "none" : mc().screen.getClass().getSimpleName())
+                    + (mc().getConnection() == null ? ", no connection" : ""));
+                Playtest.tap(key);
+            }
+            t[0]++;
             return false;
         }, budget);
     }

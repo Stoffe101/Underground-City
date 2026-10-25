@@ -19,7 +19,7 @@ import static io.github.stoffe101.undergroundcity.ThiefScenario.shot;
 
 /**
  * The Vintner's cellar and still through a real client (D-163, D-164; the seventh pass's Vintner stations), in Blackwater. A prepared track throughout, every prerequisite logged as SCRIPTED: a
- * Vintner at level 10 with 200 credits, the clock at 20:00 (the club's bar open), the trip to Blackwater, a crafting table and the materials of an Oak Cask and a Pot Still (logs and slabs,
+ * Vintner at level 10 with 200 credits, the clock at 13:00 (the club's bar is staffed by day, 08:00 to 18:00, like every shop), the trip to Blackwater, a crafting table and the materials of an Oak Cask and a Pot Still (logs and slabs,
  * copper, bricks and a furnace), and six wheat for the spirit.
  *
  * <p>Everything else is real clicks: Vine and Cellar Fundamentals, Cellar Craft, Home Distilling and the Distiller's Licence learned at the corner store's public terminal; berry wine from the
@@ -45,8 +45,9 @@ final class VintnerScenario {
         ThiefScenario.register(1, "the Vintner card", "1 a new citizen registers as a Vintner through the registration screen");
         Playtest.queue("prepared (scripted)", () -> {
             Playtest.command("gamerule doDaylightCycle false");
-            Playtest.command("time set 14000");
-            scripted("PREPARED: the Vintner's XP was raised to level 10 (10,125 XP) and 200 credits added; the clock set to 20:00 and stopped (the club's bar is open in the evening)");
+            Playtest.command("time set 7000");
+            // every shop's staff work 08:00 to 18:00, the club's bar too (HouseholdPlan.where; vintner run 6 looked for it at 20:00 and found it shut)
+            scripted("PREPARED: the Vintner's XP was raised to level 10 (10,125 XP) and 200 credits added; the clock set to 13:00 and stopped (the club's bar is staffed by day)");
             server(() -> {
                 CitizenState state = CitizenState.get(mc().getSingleplayerServer());
                 int xp = state.find(me().getUUID()).map(CitizenState.Citizen::careerXp).orElse(0);
