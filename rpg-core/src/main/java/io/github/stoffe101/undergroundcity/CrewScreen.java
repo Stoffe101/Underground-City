@@ -972,6 +972,17 @@ public final class CrewScreen extends UcScreen {
     /** QA hooks for the Home page: its tab (0 your homes, 1 find a home) and which held home is shown. */
     public void showHomeTab(int tab) { homeTab = tab; build(); }
     public void selectHome(String id) { selectedHome = id; build(); }
+
+    /** QA hook: the centre of a home's row in the "Your homes" list (GUI coordinates), or null when it is not on that list or the tab is not shown. */
+    public int[] homeRowCentre(String id) {
+        if (page != Page.HOME || homeTab != 0) return null;
+        int y = cy + 22;
+        for (CrewView.HomeRow home : view.homes()) {
+            if (home.id().equals(id)) return new int[]{cx + homeListW() / 2, y + (HROW - 2) / 2};
+            y += HROW;
+        }
+        return null;
+    }
     /** QA hooks: who a home found on the Find tab would be for, and where its money would come from. */
     public boolean forCrewChosen() { return forCrew; }
     public boolean fromBankChosen() { return fromBank; }

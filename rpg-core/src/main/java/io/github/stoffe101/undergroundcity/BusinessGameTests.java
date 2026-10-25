@@ -201,6 +201,13 @@ public final class BusinessGameTests {
             ServerPlayer solo = citizen(helper, "uc_cc_solo", "vintner", 3);
             CrewLedger.Crew crew = rig.ledger.create(solo.getUUID(), "uc_cc_solo", "Just Me");
             QShopEconomy.applyBalance(solo, 1000);
+            // the parts of the other trades are on a member's terminal, marked as theirs, so a supplier can be paid for them; somebody in no Crew does not see them (seventh pass)
+            ServerPlayer outsider = citizen(helper, "uc_cc_outsider", "vintner", 3);
+            BlockPos at = helper.absolutePos(new BlockPos(1, 1, 1));
+            var shown = TerminalData.snapshot(solo, at).jobs().stream().filter(row -> row.id().equals("underground_city:crew_fair_produce")).findFirst();
+            check(shown.isPresent() && shown.get().extra().career().equals("farmer"), "a Crew member sees the Farmer's part of the fair, marked as a Farmer's: " + shown);
+            check(TerminalData.snapshot(outsider, at).jobs().stream().noneMatch(row -> row.id().equals("underground_city:crew_fair_produce")), "somebody in no Crew does not see another trade's Crew part");
+            refused(() -> WorkOrderService.accept(solo, o.ledger, of(solo), "underground_city:crew_fair_produce"), "", "a Vintner taking the Farmer's part");
             // every part filled by suppliers: the contract completes, but nobody delivered a part, so nobody is owed a bonus
             for (CrewContracts.Part part : fair.parts()) CrewContracts.fill(solo, o.ledger, fair.id(), part.id());
             long spent = fair.parts().stream().mapToLong(CrewContracts.Part::fillPrice).sum();

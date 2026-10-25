@@ -323,8 +323,11 @@ public final class TerminalScreen extends UcScreen {
         return false;
     }
 
+    private boolean bought;
+
     private void buy(int index, int quantity) {
         if (terminalPosition == null || index + offerScroll >= data.offers().size()) return;
+        bought = true;
         for (UcButton button : buyOne) button.active = false;
         for (UcButton button : buyLot) button.active = false;
         TerminalNetwork.requestRegionalBuy(terminalPosition, data.offers().get(index + offerScroll).id(), quantity);
@@ -376,6 +379,8 @@ public final class TerminalScreen extends UcScreen {
         if (data.active() != null) return "Finish or cancel your accepted order";
         // a Crew contract part shows to everybody (so a solo player learns Crews exist) and says so before the click, not after (the first-hour audit)
         if (!extra.rewards().isEmpty() && extra.rewards().get(0).startsWith("Crew: found or join")) return "A Crew contract: found or join a Crew first";
+        if (!extra.career().isEmpty() && !extra.career().equals("any") && !extra.career().equals(data.career()))
+            return "A " + capitalize(extra.career()) + "'s part: a member of that trade takes it, or pay a supplier";
         if (!extra.skillOk()) return "Requires the skill " + extra.skill();
         if (data.level() < job.level()) return "Career level " + job.level() + " required";
         if (extra.minTrust() > extra.trust()) return extra.buyer() + " trusts you " + extra.trust() + "/" + extra.minTrust();
@@ -554,6 +559,25 @@ public final class TerminalScreen extends UcScreen {
     /** Journey/QA hook: a real mouse click at the centre of the work page's primary button (Accept order, or Deliver once the goods are in hand). */
     boolean clickPrimary() { return mouseClicked(accept.getX() + accept.getWidth() / 2.0, accept.getY() + accept.getHeight() / 2.0, 0); }
 
+    /** Journey/QA hook: selects the order with this id on the Work page (the legal or underground list it is on); false when it is not listed. */
+    boolean selectJobById(String id) {
+        for (int pass = 0; pass < 2; pass++) {
+            List<TerminalData.Row> rows = jobs();
+            for (int i = 0; i < rows.size(); i++) if (rows.get(i).id().equals(id)) { selectJob(i); return true; }
+            setView(!undergroundView);
+        }
+        return false;
+    }
+
+    /** Journey/QA hook: a click at the centre of the Supplier button through the screen's own click handler (false while it is hidden or greyed). */
+    boolean clickSupplier() {
+        if (!supplier.visible || !supplier.active) return false;
+        return mouseClicked(supplier.getX() + supplier.getWidth() / 2.0, supplier.getY() + supplier.getHeight() / 2.0, 0);
+    }
+
+    /** Journey/QA hook: the primary button's label and whether it may be pressed now ("Accept order" or "Deliver and collect"). */
+    String primaryState() { return accept.visible ? accept.getMessage().getString() + (accept.active ? "" : " (greyed)") : "hidden"; }
+
     /** Journey/QA hook: a real mouse click at the centre of the trade page's "Open civilian shop" button. */
     boolean clickShop() { return mouseClicked(shop.getX() + shop.getWidth() / 2.0, shop.getY() + shop.getHeight() / 2.0, 0); }
 
@@ -562,6 +586,9 @@ public final class TerminalScreen extends UcScreen {
         UcButton button = (lot ? buyLot : buyOne)[row];
         return mouseClicked(button.getX() + button.getWidth() / 2.0, button.getY() + button.getHeight() / 2.0, 0);
     }
+
+    /** Journey/QA hook: true when this screen can take a purchase of the offer (a purchase greys every Buy button until the terminal's next snapshot opens a fresh screen). */
+    boolean buyReady(String id) { return !bought && data.offers().stream().anyMatch(o -> o.id().equals(id) && buyRefusal(o, 1).isEmpty()); }
 
     /** Journey/QA hook: turns the mouse wheel over the exchange list until the offer is on screen, then clicks its BUY 1 button. False when the offer is not listed or its button is not active. */
     boolean clickBuyOffer(String id) {
@@ -853,6 +880,9 @@ public final class TerminalScreen extends UcScreen {
             stateColor = ready(job) ? darkGreen : darkAmber;
             stateIcon = ready(job) ? UcUi.Icon.CHECK : UcUi.Icon.WARNING;
         } else if (data.active() != null) { state = "Finish your accepted order first"; stateIcon = UcUi.Icon.LOCK; }
+        else if (!extra.career().isEmpty() && !extra.career().equals("any") && !extra.career().equals(data.career())) {
+            state = "A " + capitalize(extra.career()) + "'s part of the Crew's contract: a member of that trade takes it, or a supplier fills it"; stateColor = darkAmber; stateIcon = UcUi.Icon.INFO;
+        }
         else if (!extra.skillOk()) { state = "Locked: requires the skill " + extra.skill(); stateColor = darkRed; stateIcon = UcUi.Icon.LOCK; }
         else if (data.level() < job.level()) { state = "Locked: career level " + job.level() + " required"; stateColor = darkRed; stateIcon = UcUi.Icon.LOCK; }
         else if (extra.minTrust() > extra.trust()) { state = "Locked: " + extra.buyer() + " trusts you " + extra.trust() + "/" + extra.minTrust(); stateColor = darkRed; stateIcon = UcUi.Icon.LOCK; }

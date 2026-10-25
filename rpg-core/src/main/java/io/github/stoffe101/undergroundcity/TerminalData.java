@@ -43,9 +43,13 @@ public record TerminalData(String city, String career, int level, int xp, double
         public Req(String item, int count, int held, String label, String gun) { this(item, count, held, label, gun, ""); }
     }
     /** Legal/underground presentation of a contract: what it needs, who buys it, what else it pays. */
+    /** {@code career} is the order's trade, so the screen can say when a Crew contract part belongs to another member's trade ("" for anybody's). */
     public record Extra(boolean underground, String skill, boolean skillOk, String buyer, String buyerCity,
-                        int minTrust, int trust, List<String> rewards) {
-        public static final Extra NONE = new Extra(false, "", true, "", "", 0, 0, List.of());
+                        int minTrust, int trust, List<String> rewards, String career) {
+        public static final Extra NONE = new Extra(false, "", true, "", "", 0, 0, List.of(), "");
+        public Extra(boolean underground, String skill, boolean skillOk, String buyer, String buyerCity, int minTrust, int trust, List<String> rewards) {
+            this(underground, skill, skillOk, buyer, buyerCity, minTrust, trust, rewards, "");
+        }
     }
     public record Row(String id, String title, int level, int credits, int xp, int available,
                       boolean accepted, int foreignVisits, List<Req> reqs, Extra extra) {
@@ -129,6 +133,11 @@ public record TerminalData(String city, String career, int level, int xp, double
         final WorkOrder acceptedOrder = accepted;
         List<WorkOrder> jobs = new ArrayList<>(WorkOrderCatalog.INSTANCE.forCareer(citizen.career));
         jobs.addAll(WorkOrderCatalog.INSTANCE.forCareer(WorkOrder.ANY_CAREER));   // a civic contribution anybody can make (D-171)
+        // a Crew contract's parts of the other trades (D-170, seventh pass): a Crew of two that has no Vintner must still see the Vintner's part to have a supplier fill it, or the contract
+        // can never be finished (the two-player Crew run found the canteen's cider part on nobody's terminal). Shown to members only; only a member of that trade can take it.
+        if (CrewService.ledger(player.server) != null && CrewService.ledger(player.server).crewOf(player.getUUID()) != null)
+            for (WorkOrder job : WorkOrderCatalog.INSTANCE.all())
+                if (!job.terms().crewPart().isEmpty() && !job.career().equals(citizen.career) && !job.career().equals(WorkOrder.ANY_CAREER)) jobs.add(job);
         jobs.removeIf(job -> !job.terms().requiresCivic().isEmpty() && !CivicProjects.finished(ledger, job.terms().requiresCivic()));   // opens when its project is finished
         jobs.removeIf(job -> job.maxLevel() > 0 && citizen.careerLevel() > job.maxLevel()); // apprentice orders fade out; an accepted one is re-added below
         if (acceptedOrder != null) {
@@ -179,7 +188,7 @@ public record TerminalData(String city, String career, int level, int xp, double
         return new Extra(job.underground(), needed == null ? terms.requiresSkill() : needed.title(),
             terms.requiresSkill().isEmpty() || SkillService.has(citizen, terms.requiresSkill()),
             buyer == null ? "" : buyer.title(), buyer == null ? "" : buyer.city(), terms.minTrust(),
-            buyer == null ? 0 : GeneralSkills.effectiveTrust(citizen, ledger, player.getUUID(), buyer.id()), List.copyOf(rewards));
+            buyer == null ? 0 : GeneralSkills.effectiveTrust(citizen, ledger, player.getUUID(), buyer.id()), List.copyOf(rewards), job.career());
     }
 
     private static List<SkillRow> skillRows(CitizenState.Citizen citizen) { return rows(citizen, SkillCatalog.INSTANCE.tree(citizen.career)); }
@@ -232,6 +241,7 @@ public record TerminalData(String city, String career, int level, int xp, double
             buf.writeUtf(extra.buyer, 48); buf.writeUtf(extra.buyerCity, 32); buf.writeVarInt(extra.minTrust); buf.writeVarInt(extra.trust);
             buf.writeVarInt(extra.rewards.size());
             for (String reward : extra.rewards) buf.writeUtf(reward, 80);
+            buf.writeUtf(extra.career == null ? "" : extra.career, 32);
         }
         buf.writeVarInt(offers.size());
         for (Offer offer : offers) {
@@ -319,8 +329,9 @@ public record TerminalData(String city, String career, int level, int xp, double
             if (rewardCount < 0 || rewardCount > MAX_REWARDS) throw new IllegalArgumentException("Invalid reward count");
             List<String> rewards = new ArrayList<>();
             for (int r = 0; r < rewardCount; r++) rewards.add(buf.readUtf(80));
+            String rowCareer = buf.readUtf(32);
             rows.add(new Row(id, title, rowLevel, credits, rowXp, available, accepted, rowVisits, List.copyOf(reqs),
-                new Extra(underground, skill, skillOk, buyer, buyerCity, minTrust, trust, List.copyOf(rewards))));
+                new Extra(underground, skill, skillOk, buyer, buyerCity, minTrust, trust, List.copyOf(rewards), rowCareer)));
         }
         int offerCount = buf.readVarInt();
         if (offerCount < 0 || offerCount > MAX_OFFERS) throw new IllegalArgumentException("Invalid offer count");
