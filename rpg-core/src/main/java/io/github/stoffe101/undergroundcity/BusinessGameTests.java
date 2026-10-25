@@ -380,6 +380,68 @@ public final class BusinessGameTests {
         helper.succeed();
     }
 
+    /**
+     * Two players on the bonded store (eighth pass): Kessler offers one job at a time, and a second thief waits for his demand to return, not for the first to log in again; each who
+     * holds the job finds their own consignment once, a companion without it finds nothing and takes no heat for the
+     * holder's report (no guilt by association), and a shipment handed from one to another is paid once in all, to whoever delivers it on their own order: never twice, never to
+     * somebody without the job.
+     */
+    @GameTest(template = "empty", timeoutTicks = 300)
+    public static void twoOnTheBondedStoreFindOneShipmentEachAndAHandedOverShipmentIsPaidOnce(GameTestHelper helper) throws Exception {
+        if (!QShopEconomy.available()) { helper.succeed(); return; }
+        try (Orders o = new Orders(helper, "ironhaven")) {
+            BlockPos centre = o.pos;
+            int scx = (centre.getX() >> 4) + 1, scz = centre.getZ() >> 4;
+            CityBuildings.Building store = new CityBuildings.Building("ironhaven", scx, scz, "underground_city:ih_warehouse", "", 2, 0, centre.getY(), null);
+            CityBuildings.INSTANCE.overrideForTest((cx, cz) -> cx == scx && cz == scz ? java.util.Optional.of(store) : java.util.Optional.empty());
+            try {
+                ServerPlayer a = citizen(helper, "uc_raid_a", "technician", 2), b = citizen(helper, "uc_raid_b", "farmer", 2), c = citizen(helper, "uc_raid_c", "smith", 2);
+                WorkOrder job = WorkOrderCatalog.INSTANCE.find("underground_city:raid_bonded_store");
+                for (ServerPlayer p : List.of(a, b)) {
+                    CitizenState.get(p.server).addThiefXp(p.getUUID(), ProgressionRules.thiefXpAtLevel(Raids.MIN_THIEF_LEVEL));
+                    for (String id : List.of("thief.casing", "thief.steady_hands", "thief.feel_for_pins", "thief.pro_tools")) CitizenState.get(p.server).unlockSkill(p.getUUID(), id);
+                }
+                // Kessler offers one job at a time: a second thief waits for his demand to come back (half an hour of active play), never for the first to come online again
+                WorkOrderService.accept(a, o.ledger, of(a), job.id());
+                refused(() -> WorkOrderService.accept(b, o.ledger, of(b), job.id()), "demand", "a second bonded store job while the first is held");
+                o.ledger.advance(job.refillTicks());
+                WorkOrderService.accept(b, o.ledger, of(b), job.id());
+                java.util.function.ToIntFunction<ServerPlayer> shipments = p -> p.getInventory().countItem(UndergroundCity.item(Raids.SHIPMENT));
+                // the companion without the job searches first: nothing, and no heat
+                Raids.searchedForTest(c, helper.getLevel(), store, o.ledger);
+                check(shipments.applyAsInt(c) == 0 && o.ledger.heat(c.getUUID(), "ironhaven") == 0, "a companion without the job found a shipment or took heat");
+                int heatB = o.ledger.heat(b.getUUID(), "ironhaven");
+                Raids.searchedForTest(a, helper.getLevel(), store, o.ledger);
+                Raids.searchedForTest(a, helper.getLevel(), store, o.ledger);
+                check(shipments.applyAsInt(a) == 1, "the first holder found " + shipments.applyAsInt(a) + " shipments in two searches, not one");
+                check(o.ledger.heat(b.getUUID(), "ironhaven") == heatB && o.ledger.heat(c.getUUID(), "ironhaven") == 0, "the watchman's report on one thief heated the others");
+                // handed to the companion, who has no job: Kessler pays nobody without one
+                ItemStack shipment = a.getInventory().items.stream().filter(st -> st.is(UndergroundCity.item(Raids.SHIPMENT))).findFirst().orElseThrow();
+                c.getInventory().add(shipment.split(1));
+                String dimension = helper.getLevel().dimension().location().toString();
+                CityRegions.INSTANCE.replaceForTest(List.of(new CityRegions.Region("blackwater", dimension, centre.getX() >> 4, centre.getZ() >> 4, 64)));
+                double balanceA = QShopEconomy.balance(a), balanceB = QShopEconomy.balance(b), balanceC = QShopEconomy.balance(c);
+                refused(() -> WorkOrderService.complete(c, o.ledger, UUID.randomUUID(), centre), "", "a delivery by somebody without the job");
+                // then to the second holder, who delivers it on their own order: paid once, and their own consignment is no longer to be found
+                ItemStack carried = c.getInventory().items.stream().filter(st -> st.is(UndergroundCity.item(Raids.SHIPMENT))).findFirst().orElseThrow();
+                b.getInventory().add(carried.split(1));
+                WorkOrderService.complete(b, o.ledger, o.ledger.player(b.getUUID()).getUUID("order"), centre);
+                check(QShopEconomy.balance(b) == balanceB + job.credits() && shipments.applyAsInt(b) == 0 && Raids.open(b, o.ledger).isEmpty(), "the second holder was not paid once for the shipment");
+                CityRegions.INSTANCE.replaceForTest(List.of(new CityRegions.Region("ironhaven", dimension, centre.getX() >> 4, centre.getZ() >> 4, 64)));
+                Raids.searchedForTest(b, helper.getLevel(), store, o.ledger);
+                check(shipments.applyAsInt(b) == 0, "a settled job found another shipment");
+                // the first holder gave theirs away: their job stays open with nothing to deliver, and they find no second one
+                Raids.searchedForTest(a, helper.getLevel(), store, o.ledger);
+                CityRegions.INSTANCE.replaceForTest(List.of(new CityRegions.Region("blackwater", dimension, centre.getX() >> 4, centre.getZ() >> 4, 64)));
+                refused(() -> WorkOrderService.complete(a, o.ledger, o.ledger.player(a.getUUID()).getUUID("order"), centre), "", "a delivery without the shipment");
+                check(shipments.applyAsInt(a) == 0 && QShopEconomy.balance(a) == balanceA && QShopEconomy.balance(c) == balanceC, "one shipment was paid more than once, or to somebody without the job");
+            } finally {
+                CityBuildings.INSTANCE.overrideForTest(null);
+            }
+        }
+        helper.succeed();
+    }
+
     @GameTest(template = "empty")
     public static void recordedLostCitiesPlansSurviveASaveAndLoadUnchanged(GameTestHelper helper) {
         Map<Long, LostCitiesLink.ChunkSample> samples = Map.of(
