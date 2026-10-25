@@ -253,6 +253,25 @@ public final class VisualCaptureHarness {
             base.skillPoints(),base.skills(),base.contacts(),base.laws(),base.heat(),base.lawSummary(),base.journey(),base.outlet(),
             new TerminalData.Thief(level,xp,ProgressionRules.thiefXpAtLevel(level+1),free,List.copyOf(rows)));
     }
+    /** The Skills page's General tab (D-174) as the server fills it: Trading at level 4 (the first discount owned, the next at level 6), Social at level 2, the Thief track at level 3, and the three skills nothing uses yet. */
+    private static TerminalData generalSkills() {
+        List<TerminalData.General> rows=new ArrayList<>();
+        int[][] xp={{1400,4},{300,2}};
+        String[] used={GeneralSkills.TRADING,GeneralSkills.SOCIAL};
+        for(int i=0;i<2;i++) {
+            String id=used[i]; int level=xp[i][1];
+            boolean active=id.equals(GeneralSkills.TRADING)?GeneralSkills.tradingDiscount(level)>0:level>=GeneralSkills.SOCIAL_TRUST_LEVEL;
+            rows.add(new TerminalData.General(id,id.substring(0,1).toUpperCase()+id.substring(1),level,xp[i][0],ProgressionRules.xpAtLevel(level),ProgressionRules.xpAtLevel(level+1),
+                active?GeneralSkills.gives(id,level):"",GeneralSkills.next(id,level),GeneralSkills.earned(id),true));
+        }
+        for(String id:List.of("driving","fitness","shooting"))
+            rows.add(new TerminalData.General(id,id.substring(0,1).toUpperCase()+id.substring(1),1,0,0,ProgressionRules.xpAtLevel(2),"","",GeneralSkills.earned(id),false));
+        TerminalData base=farmerData();
+        int thiefXp=ProgressionRules.thiefXpAtLevel(3)+60;
+        return new TerminalData(base.city(),base.career(),base.level(),base.xp(),base.balance(),base.economy(),base.active(),base.foreignVisits(),base.region(),base.jobs(),base.offers(),
+            base.skillPoints(),base.skills(),base.contacts(),base.laws(),base.heat(),base.lawSummary(),base.journey(),base.outlet(),
+            new TerminalData.Thief(3,thiefXp,ProgressionRules.thiefXpAtLevel(4),0,List.of()),List.copyOf(rows));
+    }
     /** The Technician's screens as the server would fill them (D-158): a service board, the bench's designs, a repair half worked, an install grid. */
     private static net.minecraft.client.gui.screens.Screen techCapture(String pose) {
         java.util.UUID id=new java.util.UUID(1,2);
@@ -422,6 +441,7 @@ public final class VisualCaptureHarness {
         cases.add(new Case("uc-skills-gunsmith",TerminalScreen.Page.SKILLS,careerSkills("gunsmith",11,java.util.Set.of("gunsmith.fundamentals","gunsmith.licensed_repairs","gunsmith.dealer_licence")),0,false,"gunsmith.unregistered_builds"));
         cases.add(new Case("uc-skills-technician",TerminalScreen.Page.SKILLS,careerSkills("technician",11,java.util.Set.of("technician.fundamentals","technician.municipal_repairs","technician.automation_install")),0,false,"technician.bypass_tooling"));
         cases.add(new Case("uc-skills-farmer-deep",TerminalScreen.Page.SKILLS,careerSkills("farmer",22,java.util.Set.of("farmer.fundamentals","farmer.greenhouse_management","farmer.cultivar_broker","farmer.estate_wholesale","farmer.restricted_cultivation","farmer.concealed_stores","farmer.underground_trade","farmer.grey_market_contacts","farmer.field_logistics")),0,false,"farmer.back_lot_network"));
+        cases.add(new Case("uc-skills-general",TerminalScreen.Page.SKILLS,generalSkills(),0,false,"general"));
         cases.add(new Case("uc-skills-available",TerminalScreen.Page.SKILLS,rich("valewood",false,0,VALEWOOD_LAW),0,false,"farmer.concealed_stores"));
         cases.add(new Case("uc-skills-locked",TerminalScreen.Page.SKILLS,rich("valewood",false,0,VALEWOOD_LAW),0,false,"farmer.underground_trade"));
         cases.add(new Case("uc-skills-legal-locked",TerminalScreen.Page.SKILLS,rich("valewood",false,0,VALEWOOD_LAW),0,false,"farmer.controlled_crop_licence"));
@@ -554,7 +574,8 @@ public final class VisualCaptureHarness {
             TerminalScreen screen=new TerminalScreen(BlockPos.ZERO,capture.data);
             mc.setScreen(screen); screen.showPage(capture.page);
             if(capture.page==TerminalScreen.Page.CONTRACTS && capture.underground) screen.showView(true);
-            if(capture.skill!=null) screen.selectSkill(capture.skill);
+            if(capture.skill!=null && capture.skill.equals("general")) screen.showGeneral();
+            else if(capture.skill!=null) screen.selectSkill(capture.skill);
             // The "legal with rewards" case selects the heirloom contract (index 1 of the legal list).
             if(capture.name.equals("uc-contract-legal-rewards")) screen.selectJob(1);
             if(capture.name.equals("uc-exchange-overflow-scrolled")) for(int i=0;i<8;i++) screen.mouseScrolled(0,0,-1.0);

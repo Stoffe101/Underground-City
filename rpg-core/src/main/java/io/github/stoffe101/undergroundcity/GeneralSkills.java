@@ -82,6 +82,35 @@ public final class GeneralSkills {
         return amount;
     }
 
+    /** The general skills the terminal's General tab lists, in its order; the Thief track has its own tab and a summary row. */
+    static final java.util.List<String> SHOWN = java.util.List.of(TRADING, SOCIAL, "driving", "fitness", "shooting");
+
+    /** One general skill for the terminal: its level and XP, what it gives now, the next change and how it is earned; {@code used} is false while nothing consumes it. */
+    static TerminalData.General row(CitizenState.Citizen citizen, String skill) {
+        int xp = citizen.generalXp.getOrDefault(skill, 0), level = citizen.generalLevel(skill);
+        int from = ProgressionRules.xpAtLevel(level), to = level >= 30 ? from : ProgressionRules.xpAtLevel(level + 1);
+        boolean used = skill.equals(TRADING) || skill.equals(SOCIAL);
+        String title = skill.substring(0, 1).toUpperCase(Locale.ROOT) + skill.substring(1);
+        boolean active = skill.equals(TRADING) ? tradingDiscount(level) > 0 : skill.equals(SOCIAL) && level >= SOCIAL_TRUST_LEVEL;
+        return new TerminalData.General(skill, title, level, xp, from, to, active ? gives(skill, level) : "", used ? next(skill, level) : "", earned(skill), used);
+    }
+
+    /** The next level at which a skill changes something, and what it then gives ("" at the top). */
+    static String next(String skill, int level) {
+        int[] steps = skill.equals(TRADING) ? new int[] {3, 6, 10} : skill.equals(SOCIAL) ? new int[] {SOCIAL_TRUST_LEVEL} : new int[0];
+        for (int step : steps) if (level < step) return "Level " + step + ": " + gives(skill, step);
+        return "";
+    }
+
+    /** How a general skill's XP is earned, in one line. */
+    static String earned(String skill) {
+        return switch (skill) {
+            case TRADING -> "Legal deliveries (an eighth of the pay, up to " + ORDER_TRADING_CAP + " XP) and goods sold to a shop (up to " + SHOP_TRADING_CAP + ").";
+            case SOCIAL -> "Civic contributions (" + CIVIC_SOCIAL_XP + " XP), Crew contract parts (" + CREW_PART_SOCIAL_XP + ") and a legal buyer's trust growing (" + TRUST_SOCIAL_XP + ").";
+            default -> "Nothing earns or uses this skill yet.";
+        };
+    }
+
     /** What a general skill gives at a level, in one line for a notice or {@code /uc skills}. */
     static String gives(String skill, int level) {
         if (skill.equals(TRADING)) {

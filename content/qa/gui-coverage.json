@@ -234,6 +234,13 @@
       "description": "Installed Q Shop actual trade modal opened by mouse event"
     },
     {
+      "id": "skills.general",
+      "expected_file": "uc-skills-general.png",
+      "owner": "underground_city",
+      "group": "skills",
+      "description": "Skills page, General tab (D-174): Trading and Social as cards with level, XP to the next level, what they give now and next and how they are earned; the Thief track in one line; driving, fitness and shooting named as not used yet"
+    },
+    {
       "id": "skills.available",
       "expected_file": "uc-skills-available.png",
       "owner": "underground_city",

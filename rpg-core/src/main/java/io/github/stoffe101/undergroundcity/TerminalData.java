@@ -13,10 +13,20 @@ public record TerminalData(String city, String career, int level, int xp, double
                            boolean economy, UUID active, int foreignVisits, String region,
                            List<Row> jobs, List<Offer> offers,
                            int skillPoints, List<SkillRow> skills, List<Contact> contacts, List<LawRow> laws,
-                           int heat, String lawSummary, List<Step> journey, String outlet, Thief thief) {
+                           int heat, String lawSummary, List<Step> journey, String outlet, Thief thief, List<General> general) {
     /** The Thief track (D-143): its level, XP (and the XP of the next level), unspent Thief points and its tree. */
     public record Thief(int level, int xp, int nextXp, int points, List<SkillRow> skills) {
         public static final Thief NONE = new Thief(1, 0, ProgressionRules.thiefXpAtLevel(2), 0, List.of());
+    }
+
+    /** A general skill for the Skills page's General tab (D-174): level, XP from the start of the level to the next, what it gives now and next, how it is earned. */
+    public record General(String id, String title, int level, int xp, int levelXp, int nextXp, String now, String next, String earn, boolean used) {}
+
+    /** Every snapshot before the General tab: no general skills shown. */
+    public TerminalData(String city, String career, int level, int xp, double balance, boolean economy, UUID active, int foreignVisits, String region,
+                        List<Row> jobs, List<Offer> offers, int skillPoints, List<SkillRow> skills, List<Contact> contacts, List<LawRow> laws,
+                        int heat, String lawSummary, List<Step> journey, String outlet, Thief thief) {
+        this(city, career, level, xp, balance, economy, active, foreignVisits, region, jobs, offers, skillPoints, skills, contacts, laws, heat, lawSummary, journey, outlet, thief, List.of());
     }
 
     /** Every snapshot before the Thief track: no Thief data. */
@@ -143,7 +153,7 @@ public record TerminalData(String city, String career, int level, int xp, double
             SkillService.pointsAvailable(citizen), skillRows(citizen), contacts(region, citizen, ledger, player), lawRows(law, citizen),
             region.isEmpty() ? 0 : ledger.heat(player.getUUID(), region), law == null ? "" : law.summary(),
             Journey.steps(citizen, ledger, player.getUUID()), exchange == null ? "" : exchange.counter() ? exchange.outlet() + "|" + exchange.title() : exchange.outlet(),
-            thief(citizen));
+            thief(citizen), GeneralSkills.SHOWN.stream().map(skill -> GeneralSkills.row(citizen, skill)).toList());
     }
 
     /** The Thief track of a citizen, for the terminal's Thief page. */
@@ -248,6 +258,11 @@ public record TerminalData(String city, String career, int level, int xp, double
         buf.writeUtf(outlet, 96);
         buf.writeVarInt(thief.level); buf.writeVarInt(thief.xp); buf.writeVarInt(thief.nextXp); buf.writeVarInt(thief.points);
         writeSkills(buf, thief.skills);
+        buf.writeVarInt(general.size());
+        for (General row : general) {
+            buf.writeUtf(row.id, 24); buf.writeUtf(row.title, 32); buf.writeVarInt(row.level); buf.writeVarInt(row.xp); buf.writeVarInt(row.levelXp); buf.writeVarInt(row.nextXp);
+            buf.writeUtf(row.now, 200); buf.writeUtf(row.next, 200); buf.writeUtf(row.earn, 200); buf.writeBoolean(row.used);
+        }
     }
 
     private static void writeSkills(FriendlyByteBuf buf, List<SkillRow> skills) {
@@ -340,7 +355,12 @@ public record TerminalData(String city, String career, int level, int xp, double
         String outlet = buf.readUtf(96);
         int thiefLevel = buf.readVarInt(), thiefXp = buf.readVarInt(), thiefNext = buf.readVarInt(), thiefPoints = buf.readVarInt();
         Thief thief = new Thief(Math.max(1, Math.min(ProgressionRules.THIEF_MAX_LEVEL, thiefLevel)), thiefXp, thiefNext, thiefPoints, readSkills(buf));
+        int generalCount = buf.readVarInt();
+        if (generalCount < 0 || generalCount > 8) throw new IllegalArgumentException("Invalid general skill count");
+        List<General> general = new ArrayList<>();
+        for (int i = 0; i < generalCount; i++)
+            general.add(new General(buf.readUtf(24), buf.readUtf(32), buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readUtf(200), buf.readUtf(200), buf.readUtf(200), buf.readBoolean()));
         return new TerminalData(city, career, level, xp, balance, economy, active, visits, region, List.copyOf(rows), List.copyOf(offers),
-            points, List.copyOf(skills), List.copyOf(contacts), List.copyOf(laws), heat, lawSummary, List.copyOf(journey), outlet, thief);
+            points, List.copyOf(skills), List.copyOf(contacts), List.copyOf(laws), heat, lawSummary, List.copyOf(journey), outlet, thief, List.copyOf(general));
     }
 }

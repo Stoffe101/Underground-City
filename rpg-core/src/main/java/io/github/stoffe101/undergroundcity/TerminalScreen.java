@@ -11,6 +11,7 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.registries.ForgeRegistries;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -46,6 +47,9 @@ public final class TerminalScreen extends UcScreen {
     private int railW, cx, cy, cw, ch;
     private UcButton shop, accept, cancel, supplier, track, unlock, legalChip, undergroundChip, register, showMe;
     private final UcButton[] rail = new UcButton[Page.values().length];
+    /** The Skills page's two views: the trade's tree, or the general skills (D-174) with a summary of the Thief track. */
+    private boolean generalView;
+    private UcButton treeChip, generalChip;
     private final UcButton[] buyOne = new UcButton[MAX_OFFERS], buyLot = new UcButton[MAX_OFFERS];
     // the skill tree, laid out once per snapshot and size: node cards by index
     private int[] nodeX = new int[0], nodeY = new int[0], nodeTier = new int[0], nodeCol = new int[0];
@@ -240,6 +244,10 @@ public final class TerminalScreen extends UcScreen {
             .tooltip("Dependable, licensed work. Always available and never a crime."));
         undergroundChip = add(new UcButton(cx + 100, cy, 128, 16, "Underground", b -> setView(true)).kind(UcButton.Kind.CHIP).accent(UcUi.UNDERGROUND).icon(UcUi.Icon.UNDERGROUND)
             .tooltip("Higher pay for restricted goods. It needs an underground skill, and carrying the goods past a checkpoint is a risk."));
+        treeChip = add(new UcButton(cx, cy, 104, 16, "Trade tree", b -> setGeneral(false)).kind(UcButton.Kind.CHIP).accent(UcUi.LEGAL).icon(UcUi.Icon.POINT)
+            .tooltip("Your trade's skill tree: what each skill unlocks and what it costs."));
+        generalChip = add(new UcButton(cx + 108, cy, 96, 16, "General", b -> setGeneral(true)).kind(UcButton.Kind.CHIP).accent(UcUi.AMBER).icon(UcUi.Icon.XP)
+            .tooltip("Skills every citizen raises by playing: what they give now, what comes next, and how they are earned."));
         accept = add(new UcButton(0, 0, 100, 20, "Accept order", b -> send(row().accepted() ? 1 : 0)).kind(UcButton.Kind.PRIMARY));
         cancel = add(new UcButton(0, 0, 70, 20, "Cancel", b -> send(2)).kind(UcButton.Kind.DANGER));
         track = add(new UcButton(0, 0, 70, 16, "Track", b -> {
@@ -272,6 +280,10 @@ public final class TerminalScreen extends UcScreen {
     private TerminalData.Row row() { List<TerminalData.Row> list = jobs(); return list.isEmpty() ? null : list.get(Math.max(0, Math.min(selected, list.size() - 1))); }
     private boolean exchangeOpen() { return (!data.region().isEmpty() || data.shopOnly()) && !data.offers().isEmpty(); }
     private void setView(boolean underground) { undergroundView = underground; selected = 0; jobScroll = 0; refresh(); }
+    private void setGeneral(boolean general) { generalView = general; refresh(); }
+    /** The Skills page keeps a row for its two view chips above the column headings; the Thief page has no chips. */
+    private int tabRow() { return current == Page.SKILLS && !data.career().isEmpty() ? 20 : 0; }
+    private boolean generalShown() { return current == Page.SKILLS && generalView && !data.career().isEmpty(); }
     private void send(int action) {
         if (terminalPosition == null || row() == null) return;
         accept.active = false; cancel.active = false;
@@ -319,13 +331,17 @@ public final class TerminalScreen extends UcScreen {
     }
     public void showPage(Page page) {
         boolean treeChanged = (page == Page.THIEF) != (current == Page.THIEF);
+        int tabsBefore = tabRow();
         current = page;
         if (treeChanged) { selectedSkill = 0; skillScroll = 0; layoutTree(); }
+        else if (tabRow() != tabsBefore) layoutTree();   // the Skills page's tab row moves the tree down (the captures found it laid out for another page)
         refresh();
     }
     public Page currentPage() { return current; }
     /** QA hook: choose the legal or the underground contract list. */
     public void showView(boolean underground) { setView(underground); }
+    /** Opens the Skills page's General tab (the visual captures). */
+    public void showGeneral() { setGeneral(true); }
     /** QA hook: pick the n-th contract of the current list. */
     public void selectJob(int index) { selected = index; ensureVisible(); refresh(); }
     /** QA hook: pick a skill node by id. */
@@ -428,7 +444,9 @@ public final class TerminalScreen extends UcScreen {
         // guide page
         showMe.visible = current == Page.GUIDE && nextStep() != null && !nextStep().page().isEmpty();
         // skills page
-        boolean skills = skillsPage() && !tree().isEmpty();
+        treeChip.visible = generalChip.visible = current == Page.SKILLS && registered;
+        treeChip.selected(!generalView); generalChip.selected(generalView);
+        boolean skills = skillsPage() && !tree().isEmpty() && !generalShown();
         unlock.visible = skills;
         if (skills) {
             selectedSkill = Math.max(0, Math.min(selectedSkill, tree().size() - 1));
@@ -580,7 +598,7 @@ public final class TerminalScreen extends UcScreen {
             lastInColumn[col] = r;
             maxRow = Math.max(maxRow, r);
         }
-        treeTop = cy + 16; treeBottom = cy + ch - 68;
+        treeTop = cy + 16 + tabRow(); treeBottom = cy + ch - 68;
         int viewH = treeBottom - treeTop;
         // Nodes keep their full height (two title lines and the state). A tree that is deeper than the page is scrolled, never squeezed: the viewport clips it.
         nodeH = NODE_H;
@@ -846,6 +864,7 @@ public final class TerminalScreen extends UcScreen {
 
     // ---- SKILLS
     private void renderSkills(GuiGraphics g, int mouseX, int mouseY) {
+        if (generalShown()) { renderGeneral(g); return; }
         if (tree().isEmpty()) {
             if (thiefView()) emptyState(g, UcUi.Icon.KEY, "No Thief tree yet", "Register to open the Thief tree. Any trade can follow it: Thief XP comes from getting into places, cracking safes and selling what you took.");
             else emptyState(g, UcUi.Icon.POINT, "No skill tree yet", "Register to open your trade's skill tree: a legal branch, an underground branch and the foundations between them. None locks out another.");
@@ -857,13 +876,14 @@ public final class TerminalScreen extends UcScreen {
         int[] colors = thiefView() ? new int[] {UcUi.AMBER, STEALTH, UcUi.UNDERGROUND} : new int[] {UcUi.LEGAL, UcUi.SOFT, UcUi.UNDERGROUND};
         UcUi.Icon[] icons = thiefView() ? new UcUi.Icon[] {UcUi.Icon.LOCK, UcUi.Icon.TARGET, UcUi.Icon.TAG} : new UcUi.Icon[] {UcUi.Icon.LEGAL, null, UcUi.Icon.UNDERGROUND};
         int[] headingEnd = new int[3];
+        int hy = cy + tabRow();
         for (int c = 0; c < 3; c++) {
             int x = cx + c * (colW + gap);
-            g.fill(x, cy + 12, x + colW, cy + 13, UcUi.shade(colors[c], 0.5f));
+            g.fill(x, hy + 12, x + colW, hy + 13, UcUi.shade(colors[c], 0.5f));
             int textX = x + 2 + (icons[c] != null ? 14 : 0);
-            UcUi.display(g, font, titles[c], textX, cy + 2, colors[c]);
+            UcUi.display(g, font, titles[c], textX, hy + 2, colors[c]);
             headingEnd[c] = textX + UcUi.displayWidth(font, titles[c]);
-            if (icons[c] != null) UcUi.icon(g, icons[c], x - 2, cy - 2, colors[c]);
+            if (icons[c] != null) UcUi.icon(g, icons[c], x - 2, hy - 2, colors[c]);
         }
         // the tree is clipped to its viewport and scrolled; the headings above and the detail panel below stay put
         g.enableScissor(cx - 2, treeTop - 1, cx + cw + 2, treeBottom + 1);
@@ -907,11 +927,44 @@ public final class TerminalScreen extends UcScreen {
             for (int c : new int[] {1, 2, 0}) {
                 int hintRight = cx + c * (colW + gap) + colW - 4;
                 if (hintRight - font.width(hint) < headingEnd[c] + 6) continue;
-                UcUi.text(g, font, hint, hintRight - font.width(hint), cy + 3, UcUi.DIM);
+                UcUi.text(g, font, hint, hintRight - font.width(hint), hy + 3, UcUi.DIM);
                 break;
             }
         }
         renderSkillDetail(g);
+    }
+
+    /** The General tab: the general skills in use as cards (level, XP to the next level, what they give now and next, how they are earned), the Thief track in one line, and the skills nothing uses yet named as such. */
+    private void renderGeneral(GuiGraphics g) {
+        int top = cy + tabRow() + 2;
+        UcUi.well(g, cx, top, cw, cy + ch - top);
+        int y = top + 6, x = cx + 8, w = cw - 16;
+        List<String> unused = new ArrayList<>();
+        for (TerminalData.General row : data.general()) {
+            if (!row.used()) { unused.add(row.title()); continue; }
+            UcUi.display(g, font, row.title(), x, y, UcUi.AMBER);
+            String level = "L" + row.level();
+            UcUi.display(g, font, level, x + UcUi.displayWidth(font, row.title()) + 8, y, UcUi.TEXT);
+            String xp = row.level() >= 30 ? row.xp() + " XP (top level)" : row.xp() + " / " + row.nextXp() + " XP";
+            UcUi.text(g, font, xp, x + w - font.width(xp), y, UcUi.SOFT);
+            float share = row.level() >= 30 ? 1f : (row.xp() - row.levelXp()) / (float) Math.max(1, row.nextXp() - row.levelXp());
+            UcUi.bar(g, x, y + 11, w, 3, Math.max(0f, Math.min(1f, share)), UcUi.AMBER);
+            int ly = y + 18;
+            // whole sentences on up to two lines each: the captures at 1280 x 720 cut "at most 10%" off with an ellipsis
+            if (!row.now().isEmpty()) ly = UcUi.wrapped(g, font, "Now: " + row.now(), x, ly, w, UcUi.OK, 2);
+            if (!row.next().isEmpty()) ly = UcUi.wrapped(g, font, "Next: " + row.next(), x, ly, w, UcUi.LEGAL, 2);
+            ly = UcUi.wrapped(g, font, "Earned by: " + row.earn(), x, ly, w, UcUi.DIM, 2);
+            y = ly + 8;
+        }
+        // the Thief track has its own tab; here it is one line, so every general progression is in one place
+        TerminalData.Thief thief = data.thief();
+        UcUi.display(g, font, "Thief", x, y, UcUi.UNDERGROUND_TEXT);
+        UcUi.display(g, font, "L" + thief.level(), x + UcUi.displayWidth(font, "Thief") + 8, y, UcUi.TEXT);
+        String txp = thief.level() >= ProgressionRules.THIEF_MAX_LEVEL ? thief.xp() + " XP (top level)" : thief.xp() + " / " + thief.nextXp() + " XP";
+        UcUi.text(g, font, txp, x + w - font.width(txp), y, UcUi.SOFT);
+        y = UcUi.wrapped(g, font, "Earned by getting into places, cracking safes and selling what you took. Its tree and points are on the Thief tab.", x, y + 11, w, UcUi.DIM, 2) + 8;
+        if (!unused.isEmpty())
+            UcUi.wrapped(g, font, String.join(", ", unused) + ": nothing in the game earns or uses these yet.", x, y, w, UcUi.FAINT, 2);
     }
 
     private void renderNode(GuiGraphics g, int i, boolean sel, boolean over) {
