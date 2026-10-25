@@ -23,6 +23,10 @@ Each station is one block in the world and one data file, `data/underground_city
   * A batch that is ready waits in the station until somebody takes it.
   * Breaking the station gives back the station, at its tier, and whatever was in it: a finished batch's goods, or a running batch's inputs.
   * Career XP for a batch is paid when its goods are taken, and only when the station is of the player's own trade.
+  * **Whose a batch is (D-180, D-184).** A batch is its maker's. Only the maker, or a member of the maker's Crew, takes it, starts over it or breaks the station while it is in it; the career XP is always the maker's.
+    * **Inside a home or trade premises somebody holds**, a batch never lapses to anybody else. The property's guard decides who reaches the station at all, and the batch stays its maker's however long it waits.
+    * **Outside any property** (a station on a street or in the wild), the batch is held for its run and then for two hours of the **maker's own play time** (`PlayClock`, which runs only while that player plays, so nothing lapses while they are away). After that it is salvage: anybody may take it. The maker is told who took it and where, at once or when they next log in, and keeps the career XP.
+    * A station saved before D-184 keeps the older rule (two hours on the world's active clock) outside a property, and never lapses inside one. A station saved before D-180 names nobody and hands over to anybody, as it always did.
 * **Tiers** are fitted from real parts the player carries, never from credits. Most parts are a Smith's: fasteners, brackets, hoops, springs and gear sets. The Oak Cask takes a Cellar Cooperage Set, the Pot Still a Still Column Kit, and the Gunsmith's test fixture an Optical Component, a Technician's goods. Every top tier needs a skill.
   * The block shows its tier: iron bands and brackets at tier 2, brass fittings, a gauge or a lamp at tier 3.
   * A better tier runs more batches at once, works faster and opens more recipes.

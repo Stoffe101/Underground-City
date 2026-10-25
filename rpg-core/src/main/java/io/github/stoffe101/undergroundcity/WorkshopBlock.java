@@ -42,6 +42,7 @@ import java.util.Map;
  * next tier from real parts. Breaking it gives back the station at its tier and whatever was in it.
  */
 final class WorkshopBlock extends HorizontalDirectionalBlock implements EntityBlock {
+    private static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
     static final IntegerProperty TIER = IntegerProperty.create("tier", 1, 3);
     static final BooleanProperty WORKING = BooleanProperty.create("working");
 
@@ -125,6 +126,8 @@ final class WorkshopBlock extends HorizontalDirectionalBlock implements EntityBl
         /** The career XP of everything ready, summed batch by batch (a pile of fasteners topped with one gear set is paid as fasteners and a gear set, not as gear sets), and when it was ready. */
         int readyXp;
         long readySince;
+        /** The maker's own play time when their latest batch here started, and how much more of it the hold lasts (its run and two hours); -1 in a station saved before D-184. */
+        long makerPlay = -1, holdTicks;
         /** The jigs set at this bench (eighth pass): a precision part turned by hand leaves its setup, by recipe, at the best grade it was turned to. Kept when the station is carried away. */
         final java.util.Map<String, Integer> jigs = new java.util.TreeMap<>();
 
@@ -206,6 +209,8 @@ final class WorkshopBlock extends HorizontalDirectionalBlock implements EntityBl
             if (readyBy != null) tag.putUUID("ready_by", readyBy);
             tag.putInt("ready_xp", readyXp);
             tag.putLong("ready_since", readySince);
+            tag.putLong("maker_play", makerPlay);
+            tag.putLong("hold_ticks", holdTicks);
             if (!jigs.isEmpty()) tag.put("jigs", saveJigs(jigs));
         }
 
@@ -225,6 +230,8 @@ final class WorkshopBlock extends HorizontalDirectionalBlock implements EntityBl
             readyBy = tag.hasUUID("ready_by") ? tag.getUUID("ready_by") : null;
             readyXp = Math.max(0, tag.getInt("ready_xp"));
             readySince = Math.max(0, tag.getLong("ready_since"));
+            makerPlay = tag.contains("maker_play") ? tag.getLong("maker_play") : -1;
+            holdTicks = Math.max(0, tag.getLong("hold_ticks"));
             jigs.clear();
             jigs.putAll(loadJigs(tag.getCompound("jigs")));
             for (Tag t : tag.getList("ready", Tag.TAG_COMPOUND)) { ItemStack s = ItemStack.of((CompoundTag) t); if (!s.isEmpty()) ready.add(s); }
@@ -289,7 +296,8 @@ final class WorkshopBlock extends HorizontalDirectionalBlock implements EntityBl
         Workshops.Recipe r = st == null ? null : st.recipe(recipeId);
         if (r == null) return "There is no such recipe here.";
         if (e.busy()) return "The " + st.title() + " is still at work.";
-        if (!e.ready.isEmpty() && !mayTake(player, e)) return "Somebody else's batch is waiting here to be taken; the " + st.title() + " is theirs until they take it (anybody's after two hours of play).";
+        if (!e.ready.isEmpty() && !mayTake(player, e)) return "Somebody else's batch is waiting here to be taken; the " + st.title() + " is theirs until they take it"
+            + (inProperty(e) ? "." : " (salvage once they have played two hours without coming for it).");
         if (!e.ready.isEmpty() && e.readyBy != null && !e.readyBy.equals(player.getUUID())) return "A Crew mate's batch is ready here: take it first (the career XP stays theirs).";
         String why = refusal(player, e, st, r, batches);
         if (why != null) return why;
@@ -320,9 +328,11 @@ final class WorkshopBlock extends HorizontalDirectionalBlock implements EntityBl
         e.recipe = r.id();
         e.batches = batches;
         e.startedBy = player.getUUID();
+        e.makerPlay = PlayClock.of(level.getServer(), player.getUUID());
         e.grade = r.turned() ? jig : Workshops.gradeFor(r, e.tier, skill -> has(c, skill), inputGrade);
         e.since = LockService.clock(level.getServer());
         e.duration = Premises.ticks(r, st.tier(e.tier), Premises.tradeAt(level, e.getBlockPos(), player.getUUID()) != null);   // trade premises work a quarter faster (D-169)
+        e.holdTicks = e.duration + ABANDONED_TICKS;
         e.inputs.clear();
         e.inputs.addAll(taken);
         e.setChanged();
@@ -350,8 +360,9 @@ final class WorkshopBlock extends HorizontalDirectionalBlock implements EntityBl
         int batchesBefore = e.readyBatches;
         if (e.ready.isEmpty()) return e.busy() ? "Still at work: " + minutes(e.ticksLeft(now)) + " left." : "Nothing to take.";
         // a batch is its maker's: only they or their Crew take it, and the career XP is the maker's (two players at one station, D-180)
-        if (!mayTake(player, e)) return "This batch is somebody else's work: only they, or their Crew, can take it.";
+        if (!mayTake(player, e)) return "This batch is somebody else's work: only they, or their Crew, can take it" + (inProperty(e) ? "." : " (until they have played two hours without coming for it).");
         java.util.UUID maker = e.readyBy != null ? e.readyBy : player.getUUID();
+        boolean salvaged = e.readyBy != null && !ownerOrCrew(player, e.readyBy);
         int xp = e.readyXp;
         e.readyBy = null;
         e.readyXp = 0;
@@ -371,23 +382,50 @@ final class WorkshopBlock extends HorizontalDirectionalBlock implements EntityBl
             if (c != null && st.career().equals(c.career) && xp > 0) CitizenState.get(player.server).addCareerXp(maker, xp);
         }
         CitizenState.get(player.server).bumpJourney(player.getUUID(), "workshop_made");
+        if (salvaged) {
+            // never a silent loss: the maker hears who took it and where (now, or when they next log in); the career XP stays theirs
+            BlockPos at = e.getBlockPos();
+            PlayClock.note(player.server, maker, "Batch taken as salvage", "The " + (st == null ? "station" : st.title()) + " at " + at.getX() + ", " + at.getY() + ", " + at.getZ()
+                + " held your batch for two hours of your play outside any home; " + player.getGameProfile().getName() + " took it. The career XP stayed yours.");
+            LOGGER.info("[UC-WORKSHOP] {} took {} goods left by {} at {} as salvage", player.getGameProfile().getName(), items, maker, at.toShortString());
+        }
         return "Took " + items + " from the " + (st == null ? "station" : st.title()) + ".";
     }
 
-    /** How long a finished batch waits for its maker before anybody may take it (active play): a station in a street is not held for a player who never comes back. */
+    /** How long a batch outside any home is held for its maker after its run, in the maker's own play time (D-184): a station in a street is not held for a player who never comes back. */
     static final long ABANDONED_TICKS = 2 * 72_000L;
 
-    /** True when {@code player} may take what is ready: it is theirs, nobody's (a station saved before D-180), a member of the maker's Crew's, or it has waited two hours of play. */
+    /**
+     * True when {@code player} may take what is ready (D-180, D-184): it is theirs, a member of the maker's Crew's, or nobody's (a station saved before D-180). Inside a home or trade
+     * premises somebody holds, a batch is never anybody else's: the property's guard decides who reaches the station, and the batch stays its maker's. Outside, it becomes salvage once
+     * the maker has played two hours past its run without coming for it (their own play time, so nothing lapses while they are away).
+     */
     static boolean mayTake(ServerPlayer player, Entity e) {
         if (e.readyBy == null || ownerOrCrew(player, e.readyBy)) return true;
-        return e.readySince != 0 && LockService.clock(player.server) - e.readySince >= ABANDONED_TICKS;
+        return salvage(player.server, e, e.readyBy);
     }
 
     /** True when {@code player} may take the station down: nothing of somebody else's is at work in it or waiting in it (breaking it hands over both, D-180). */
     static boolean mayBreak(ServerPlayer player, Entity e) {
-        long now = LockService.clock(player.server);
-        boolean batch = !e.busy() || e.startedBy == null || ownerOrCrew(player, e.startedBy) || now - e.since - e.duration >= ABANDONED_TICKS;
+        boolean batch = !e.busy() || e.startedBy == null || ownerOrCrew(player, e.startedBy) || salvage(player.server, e, e.startedBy);
         return batch && (e.ready.isEmpty() || mayTake(player, e));
+    }
+
+    /** Whether the maker's batch here is salvage now: never inside a held property; outside, two hours of the maker's own play past its run (a station saved before D-184: the world's clock). */
+    static boolean salvage(net.minecraft.server.MinecraftServer server, Entity e, java.util.UUID maker) {
+        if (inProperty(e)) return false;
+        if (e.makerPlay >= 0) return PlayClock.of(server, maker) - e.makerPlay >= e.holdTicks;
+        long now = LockService.clock(server);
+        return e.busy() ? now - e.since - e.duration >= ABANDONED_TICKS : e.readySince != 0 && now - e.readySince >= ABANDONED_TICKS;
+    }
+
+    /** True when the station stands inside a home or trade premises somebody holds (D-184). */
+    static boolean inProperty(Entity e) {
+        if (!(e.getLevel() instanceof ServerLevel level)) return false;
+        CrewLedger ledger = CrewService.ledger(level.getServer());
+        if (ledger == null) return false;
+        CrewLedger.Residence r = ledger.residenceAt(level.dimension().location().toString(), e.getBlockPos());
+        return r != null && r.owned();
     }
 
     static boolean ownerOrCrew(ServerPlayer player, java.util.UUID owner) {

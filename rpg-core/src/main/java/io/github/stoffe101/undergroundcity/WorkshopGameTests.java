@@ -63,6 +63,42 @@ public final class WorkshopGameTests {
     }
 
     /**
+     * D-184: inside a home somebody holds, a batch is never anybody else's (no lapse on the world's clock or the maker's), and nobody else may break the station to get at it; the
+     * maker's Crew still takes it for them. Outside, the hold runs on the maker's own play time (the companion test above).
+     */
+    @GameTest(template = "empty", timeoutTicks = 200)
+    public static void aBatchInsideAHomeIsNeverAnybodyElses(GameTestHelper helper) throws Exception {
+        BlockPos base = helper.absolutePos(new BlockPos(0, 2, 0));
+        try (CrewGameTests.Rig rig = new CrewGameTests.Rig(helper)) {
+            FakePlayer maker = player(helper, "uc_home_maker", "smith"), stranger = player(helper, "uc_home_stranger", "smith"), mate = player(helper, "uc_home_mate", "smith");
+            rig.wallet.balances.put(maker.getUUID(), 500d);
+            maker.moveTo(base.getX() + 2.5, base.getY() + 1, base.getZ() + 2.5);
+            CrewLedger.Residence home = rig.ledger.registerResidence("test:bench_home", "Bench Home", "flat", "minecraft:overworld", "test", base, base.offset(4, 3, 4), 100, 40);
+            CrewService.lease(maker, CrewGameTests.id(), "test:bench_home", false, false);
+            check(home.owned(), "the home was not leased");
+            BlockPos pos = base.offset(2, 1, 2);
+            helper.getLevel().setBlock(pos, UndergroundCity.WORKSHOP_BLOCKS.get("machinist_bench").get().defaultBlockState(), 3);
+            WorkshopBlock.Entity e = (WorkshopBlock.Entity) helper.getLevel().getBlockEntity(pos);
+            check(WorkshopBlock.inProperty(e), "a station inside a leased home is not taken for one in a property");
+            maker.getInventory().add(new ItemStack(Items.IRON_NUGGET, 6));
+            check(WorkshopBlock.start(maker, helper.getLevel(), e, "fasteners", 1).startsWith("Started"), "the maker's batch did not start");
+            check(!WorkshopBlock.mayBreak(stranger, e), "a stranger may break a station with the maker's batch running in it");
+            e.since -= e.duration;
+            e.check(helper.getLevel(), helper.getLevel().getBlockState(pos));
+            e.readySince -= WorkshopBlock.ABANDONED_TICKS * 10;
+            PlayClock.addForTest(maker.server, maker.getUUID(), e.holdTicks * 10);
+            check(!WorkshopBlock.mayTake(stranger, e) && !WorkshopBlock.mayBreak(stranger, e), "a batch inside a home lapsed to a stranger");
+            check(WorkshopBlock.collect(stranger, helper.getLevel(), e).contains("somebody else's"), "a stranger took a batch inside a home");
+            rig.ledger.create(maker.getUUID(), "uc_home_maker", "Home Crew");
+            rig.ledger.accept(rig.ledger.invite(maker.getUUID(), mate.getUUID(), "uc_home_mate", "uc_home_maker").id(), mate.getUUID(), "uc_home_mate");
+            check(WorkshopBlock.mayTake(mate, e) && WorkshopBlock.collect(mate, helper.getLevel(), e).startsWith("Took 8"), "the maker's Crew mate could not take the batch inside the home");
+            check(!PlayClock.get(maker.server).notes.containsKey(maker.getUUID()), "a Crew mate's take was reported as salvage");
+            helper.getLevel().setBlock(pos, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(), 3);
+        }
+        helper.succeed();
+    }
+
+    /**
      * Two players at one station (D-180): a batch is its maker's. Somebody else can neither take it nor start over it; the maker takes it and is paid its career XP; a member of the maker's
      * Crew may take it for them (the XP stays the maker's); a station saved before the field existed still hands over to anybody, as before.
      */
@@ -111,13 +147,17 @@ public final class WorkshopGameTests {
         check(WorkshopBlock.collect(mixer, helper.getLevel(), e).startsWith("Took"), "the mixer could not take their pile");
         int expected = e.station().recipe("fasteners").xp() + e.station().recipe("barrel_hoops").xp();
         check(CitizenState.get(mixer.server).find(mixer.getUUID()).orElseThrow().careerXp() - mixerXp == expected, "a mixed pile was not paid each recipe's XP once");
-        // a batch nobody comes back for is anybody's after two hours of play
+        // outside any home a batch nobody comes back for is salvage after two hours of its maker's own play (D-184): the world's clock alone does not lapse it
         mixer.getInventory().add(new ItemStack(Items.IRON_NUGGET, 6));
         check(WorkshopBlock.start(mixer, helper.getLevel(), e, "fasteners", 1).startsWith("Started"), "the mixer's last batch did not start");
         e.since -= e.duration; e.check(helper.getLevel(), helper.getLevel().getBlockState(pos));
         check(!WorkshopBlock.mayTake(stranger, e), "a stranger may take a fresh batch");
-        e.readySince -= WorkshopBlock.ABANDONED_TICKS;
-        check(WorkshopBlock.mayTake(stranger, e) && WorkshopBlock.collect(stranger, helper.getLevel(), e).startsWith("Took 8"), "a batch left two hours is still held for its maker");
+        e.readySince -= WorkshopBlock.ABANDONED_TICKS * 3;
+        check(!WorkshopBlock.mayTake(stranger, e), "a batch lapsed on the world's clock while its maker was away");
+        PlayClock.addForTest(mixer.server, mixer.getUUID(), e.holdTicks);
+        check(WorkshopBlock.mayTake(stranger, e) && WorkshopBlock.collect(stranger, helper.getLevel(), e).startsWith("Took 8"), "a batch its maker left for two hours of their play is still held");
+        check(mixer.server.getPlayerList().getPlayer(mixer.getUUID()) != null || PlayClock.get(mixer.server).notes.containsKey(mixer.getUUID()), "the maker was not told their batch was taken as salvage");
+        PlayClock.get(mixer.server).notes.remove(mixer.getUUID());
         // an old station: nobody named, anybody takes it
         e.ready.add(new ItemStack(UndergroundCity.item("fasteners"), 8));
         e.readyBy = null;
