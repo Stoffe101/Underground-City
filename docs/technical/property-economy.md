@@ -15,15 +15,15 @@ You can **rent** a home for a small price per active hour or **buy** it. A rente
 | Motel room (1) | 10 | rent only | **yes** | Row Motel rooms 1 to 4 (2 containers, 1 private) |
 | Small apartment (2) | 40 | 2,000 | **yes** | Row Flats 1 and 2 (5 containers, 2 private, bed, crafting, furnace, terminal) |
 | Comfortable apartment (3) | 55 | 3,000 | **yes** (furnished cities) | city listings: a comfortable apartment in a furnished tower or tenement |
-| Larger apartment (4) | 70 | 4,200 | no | none |
+| Larger apartment (4) | 70 | 4,200 | **yes** (furnished cities) | the Blackwater lofts (D-176): one loft a floor of a three-storey block, 12 containers, 3 private |
 | Small house (5) | 85 | 5,400 | **yes** (furnished cities) | city listings: three house types in the furnished cities |
 | House with workshop (6) | 100 | 7,000 | **yes** | the Row House (10 containers, 3 private, adds the workshop) |
 | Farmhouse (7) | 115 | 8,500 | **yes** | Harrow Farmhouse, a roadside place (D-138) |
 | Commercial workshop (8) | 135 | 10,500 | **yes** (furnished cities) | Ironhaven's workshop, **trade premises** (D-169) |
 | Warehouse or production facility (9) | 170 | 14,000 | **yes** (furnished cities) | Ironhaven's warehouse, **trade premises** (D-169) |
-| Premium residence (10) | 260 | 28,000 | no | none |
+| Premium residence (10) | 260 | 25,000 | **yes** (furnished cities) | the Valewood villa (D-176): three bedrooms, a study and a workroom with a garden door, 28 containers, 6 private, the workshop facility |
 
-Ten categories are *priced*; **eight have a building** in a new furnished archipelago world (October 24; three before the city homes of D-127 and the roadside places of D-138). The city listings exist only with the furnished package; a world without it has the Row's three categories and the roadside motel and farmhouse. The model can say whether the ladder is sensible; it cannot make the missing buildings exist. Adding one is a district JSON (`scripts/generate_district.py`) and a line in `ladder.json`. The model's invariants (monotonic ladder, purchase at least 20 and at most 100 rents, deposit two rents, no single sale buys a home outright) are checked on the whole table, built or not.
+Ten categories are *priced* and **all ten have a building** in a new furnished archipelago world (October 25: the lofts and the villa of D-176; eight on October 24, three before the city homes of D-127 and the roadside places of D-138). The villa's purchase came down from 28,000 to 25,000 so that it stays within a hundred rents, the model's own ceiling. The city listings exist only with the furnished package; a world without it has the Row's three categories and the roadside motel and farmhouse. The model can say whether the ladder is sensible; it cannot make the missing buildings exist. Adding one is a district JSON (`scripts/generate_district.py`) and a line in `ladder.json`. The model's invariants (monotonic ladder, purchase at least 20 and at most 100 rents, deposit two rents, no single sale buys a home outright) are checked on the whole table, built or not.
 
 | Rule | Value |
 | --- | --- |
