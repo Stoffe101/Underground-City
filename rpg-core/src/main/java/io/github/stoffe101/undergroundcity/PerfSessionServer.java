@@ -40,7 +40,7 @@ public final class PerfSessionServer {
     static final int PHASE = Integer.getInteger("uc.journey.phase", 1);
     static final double MINUTES = Double.parseDouble(System.getProperty("uc.perf.minutes", "30"));
     static final String FARMER = "UC_Farmer", SMITH = "UC_Smith";
-    private static final int ARRIVAL_TICKS = 200, SAMPLE_EVERY = 600, AFTER_RESTART_TICKS = 2400;
+    private static final int ARRIVAL_TICKS = 200, SAMPLE_EVERY = 600, AFTER_RESTART_TICKS = 2400, RAID_TICKS = 1200;
 
     private record Segment(String name, String farmerCity, String smithCity, long dayTime) {}
     private static final List<Segment> PLAN = List.of(
@@ -80,6 +80,9 @@ public final class PerfSessionServer {
             if (++sinceSample >= SAMPLE_EVERY) { sinceSample = 0; sample(server); }
             if (PHASE == 1) {
                 if (ticksInSegment == ARRIVAL_TICKS) enter(PLAN.get(index).name());
+                // a minute in, once the chunks round the players have been generated and their plans recorded: the bonded store is taken in Ironhaven and delivered in Blackwater
+                if (ticksInSegment == RAID_TICKS && index == 0) raidTake(server, farmer, smith);
+                if (ticksInSegment == RAID_TICKS && PLAN.get(index).farmerCity().equals("blackwater")) raidDeliver(server, farmer, smith);
                 if (ticksInSegment >= segmentTicks) next(server, farmer, smith);
             } else {
                 if (ticksInSegment == ARRIVAL_TICKS) enter("after_restart");
@@ -119,6 +122,7 @@ public final class PerfSessionServer {
             current = "after_restart_arrival";
             ticksInSegment = 0;
             System.out.println("[UC-PERF] phase 2: both players rejoined the restarted server as the same citizens");
+            raidReplay(server, farmer);
         }
     }
 
@@ -139,6 +143,116 @@ public final class PerfSessionServer {
         System.out.println("[UC-PERF] SCRIPTED: segment " + s.name() + " begins: " + FARMER + " teleported to " + a.toShortString() + " (" + s.farmerCity() + "), " + SMITH + " to " + bb.toShortString()
             + " (" + s.smithCity() + "), the time set to " + s.dayTime() + "; " + segmentTicks / 1200.0 + " minutes");
         trackPlaces(level, farmer, smith);
+    }
+
+    // ------------------------------------------------------------------------------------------------ the bonded store with two players (eighth pass)
+
+    private static final JsonObject RAID = new JsonObject();
+    private static final String RAID_JOB = "underground_city:raid_bonded_store";
+    private static java.util.UUID raidNonce;
+
+    /**
+     * The bonded store with two players, server-driven while both real clients are connected (PREPARED, logged): both are made thieves of level 8 with Professional Tools; the farmer takes
+     * Kessler's job and the smith is turned away (one job at a time); the smith's search of the store finds nothing and heats nobody, the farmer's finds the shipment once. The searches are the
+     * call the burglary search makes; nobody walks into the store here (raid run 3 did, with one client). Delivered in Blackwater at the night segment, and replayed after the restart.
+     * Whatever goes wrong is written into the report and never stops the measurement.
+     */
+    private static void raidTake(MinecraftServer server, ServerPlayer farmer, ServerPlayer smith) {
+        try {
+            WorkOrderLedger orders = WorkOrderLedger.get(server);
+            WorkOrder job = WorkOrderCatalog.INSTANCE.find(RAID_JOB);
+            for (ServerPlayer p : List.of(farmer, smith)) {
+                CitizenState.get(server).addThiefXp(p.getUUID(), ProgressionRules.thiefXpAtLevel(Raids.MIN_THIEF_LEVEL));
+                for (String id : List.of("thief.casing", "thief.steady_hands", "thief.feel_for_pins", "thief.pro_tools")) CitizenState.get(server).unlockSkill(p.getUUID(), id);
+            }
+            System.out.println("[UC-PERF] PREPARED: both players made thieves of level " + Raids.MIN_THIEF_LEVEL + " with Professional Tools for the two-player bonded store step (server-driven)");
+            WorkOrderService.accept(farmer, orders, CitizenState.get(server).find(farmer.getUUID()).orElseThrow(), job.id());
+            raidNonce = orders.player(farmer.getUUID()).getUUID("order");
+            RAID.addProperty("nonce", raidNonce.toString());
+            String refused = null;
+            try { WorkOrderService.accept(smith, orders, CitizenState.get(server).find(smith.getUUID()).orElseThrow(), job.id()); } catch (IllegalStateException e) { refused = e.getMessage(); }
+            RAID.addProperty("second_job", refused == null ? "TAKEN (not refused)" : "refused: " + refused);
+            var raid = Raids.open(farmer, orders).orElseThrow();
+            CityBuildings.Building store = raid.contains("key") ? storeBuilding(server.overworld(), raid.getLong("key")) : null;
+            if (store == null) { RAID.addProperty("result", "no bonded store could be named"); return; }
+            int heatSmith = orders.heat(smith.getUUID(), "ironhaven"), heatFarmer = orders.heat(farmer.getUUID(), "ironhaven");
+            Raids.searched(smith, server.overworld(), store);
+            Raids.searched(farmer, server.overworld(), store);
+            Raids.searched(farmer, server.overworld(), store);
+            int found = shipments(farmer), companion = shipments(smith);
+            RAID.addProperty("store", store.type() + " at chunk " + store.chunkX() + ", " + store.chunkZ());
+            RAID.addProperty("holder_shipments_after_two_searches", found);
+            RAID.addProperty("companion_shipments", companion);
+            RAID.addProperty("holder_heat", heatFarmer + " -> " + orders.heat(farmer.getUUID(), "ironhaven"));
+            RAID.addProperty("companion_heat", heatSmith + " -> " + orders.heat(smith.getUUID(), "ironhaven"));
+            boolean ok = refused != null && found == 1 && companion == 0 && orders.heat(smith.getUUID(), "ironhaven") == heatSmith && orders.heat(farmer.getUUID(), "ironhaven") > heatFarmer;
+            RAID.addProperty("taken", ok ? "passed" : "FAILED");
+            System.out.println("[UC-PERF] RAID taken: " + RAID);
+        } catch (RuntimeException error) {
+            RAID.addProperty("taken", "FAILED: " + error);
+            System.out.println("[UC-PERF] RAID failed: " + error);
+        }
+    }
+
+    /** Kessler pays the holder once in Blackwater (a delivery at the point the holder stands, inside the city); the same delivery again is refused and the companion is paid nothing. */
+    private static void raidDeliver(MinecraftServer server, ServerPlayer farmer, ServerPlayer smith) {
+        if (raidNonce == null || !"passed".equals(RAID.has("taken") ? RAID.get("taken").getAsString() : "")) return;
+        try {
+            // where the holder stands, if that is in Blackwater (the client walks on its own), or a street near its centre
+            BlockPos inBlackwater = CityRegions.INSTANCE.cityAt(farmer.level(), farmer.blockPosition()).orElse("").equals("blackwater") ? farmer.blockPosition() : street(server.overworld(), "blackwater");
+            WorkOrderLedger orders = WorkOrderLedger.get(server);
+            WorkOrder job = WorkOrderCatalog.INSTANCE.find(RAID_JOB);
+            double farmerBefore = QShopEconomy.balance(farmer), smithBefore = QShopEconomy.balance(smith);
+            WorkOrderService.complete(farmer, orders, raidNonce, inBlackwater);
+            String again;
+            try { WorkOrderService.complete(farmer, orders, raidNonce, inBlackwater); again = "PAID AGAIN"; } catch (IllegalStateException e) { again = "refused"; }
+            double paid = QShopEconomy.balance(farmer) - farmerBefore, companion = QShopEconomy.balance(smith) - smithBefore;
+            RAID.addProperty("holder_paid", paid);
+            RAID.addProperty("companion_paid", companion);
+            RAID.addProperty("second_delivery", again);
+            boolean ok = paid == job.credits() && companion == 0 && again.equals("refused") && shipments(farmer) == 0 && Raids.open(farmer, orders).isEmpty();
+            RAID.addProperty("delivered", ok ? "passed" : "FAILED");
+            System.out.println("[UC-PERF] RAID delivered: " + RAID);
+        } catch (RuntimeException error) {
+            RAID.addProperty("delivered", "FAILED: " + error);
+            System.out.println("[UC-PERF] RAID delivery failed: " + error);
+        }
+    }
+
+    /** After the restart: the settled job is still settled, and its delivery replayed is refused and pays nothing. */
+    private static void raidReplay(MinecraftServer server, ServerPlayer farmer) {
+        try {
+            Path folder = server.getWorldPath(LevelResource.ROOT).toAbsolutePath().normalize().getParent();
+            Path phase1 = folder.resolve("perf-session-phase1.json");
+            if (!Files.isRegularFile(phase1)) return;
+            var json = com.google.gson.JsonParser.parseString(Files.readString(phase1)).getAsJsonObject();
+            if (!json.has("raid_two_players") || !json.getAsJsonObject("raid_two_players").has("nonce")) return;
+            java.util.UUID nonce = java.util.UUID.fromString(json.getAsJsonObject("raid_two_players").get("nonce").getAsString());
+            WorkOrderLedger orders = WorkOrderLedger.get(server);
+            double before = QShopEconomy.balance(farmer);
+            String replay;
+            try { WorkOrderService.complete(farmer, orders, nonce, farmer.blockPosition()); replay = "PAID AGAIN"; } catch (IllegalStateException e) { replay = "refused"; }
+            RAID.addProperty("after_restart_replay", replay);
+            RAID.addProperty("after_restart_paid", QShopEconomy.balance(farmer) - before);
+            RAID.addProperty("after_restart_job_open", Raids.open(farmer, orders).isPresent());
+            RAID.addProperty("after_restart", replay.equals("refused") && QShopEconomy.balance(farmer) == before && Raids.open(farmer, orders).isEmpty() ? "passed" : "FAILED");
+            System.out.println("[UC-PERF] RAID after the restart: " + RAID);
+        } catch (RuntimeException | IOException error) {
+            RAID.addProperty("after_restart", "FAILED: " + error);
+        }
+    }
+
+    private static int shipments(ServerPlayer p) { return p.getInventory().countItem(UndergroundCity.item(Raids.SHIPMENT)); }
+
+    /** The building of the bonded store named by the job, among Ironhaven's middle chunks (Raids.store found it there). */
+    private static CityBuildings.Building storeBuilding(ServerLevel level, long key) {
+        var region = CityRegions.INSTANCE.all().stream().filter(r -> r.id().equals("ironhaven")).findFirst().orElse(null);
+        if (region == null) return null;
+        for (int dx = -10; dx <= 10; dx++) for (int dz = -10; dz <= 10; dz++) {
+            var b = CityBuildings.INSTANCE.ofChunk(level, region.centerChunkX() + dx, region.centerChunkZ() + dz);
+            if (b.isPresent() && b.get().key() == key) return b.get();
+        }
+        return null;
     }
 
     /**
@@ -225,6 +339,7 @@ public final class PerfSessionServer {
         JsonObject samples = new JsonObject();
         SAMPLES.forEach(samples::add);
         REPORT.add("samples", samples);
+        if (RAID.size() > 0) REPORT.add("raid_two_players", RAID);
         Path folder = server.getWorldPath(LevelResource.ROOT).toAbsolutePath().normalize().getParent();
         Files.writeString(folder.resolve("perf-session-phase" + PHASE + ".json"), REPORT + "\n");
         for (var entry : TICKS.entrySet()) System.out.println("[UC-PERF] " + entry.getKey() + ": " + summary(entry.getValue()));

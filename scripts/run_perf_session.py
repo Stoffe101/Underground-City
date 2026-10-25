@@ -144,9 +144,15 @@ def main() -> int:
         report['phases'].append(phase(number, modules, args.minutes))
         print(f'perf session phase {number} done', flush=True)
     report['xaero_two_clients'] = waypoints(report)
+    # the server-driven two-player bonded store step (phase 1 takes and delivers it, phase 2 replays the delivery)
+    raid = {}
+    for p in report['phases']:
+        raid.update(p.get('raid_two_players') or {})
+    report['raid_two_players'] = raid
     (OUTPUT / 'report.json').write_text(json.dumps(report, indent=1) + '\n')
     print(table(report))
     print('xaero with two clients: ' + json.dumps(report['xaero_two_clients']))
+    print('bonded store with two players: ' + json.dumps(report['raid_two_players']))
     return 0
 
 
