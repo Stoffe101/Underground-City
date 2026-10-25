@@ -75,16 +75,24 @@ Officers chase a thief only while one of them can see them (32 blocks, line of s
 
     | use | tier 1 | tier 2 | tier 3 | tier 4 | tier 5 | tier 6 |
     | --- | --- | --- | --- | --- | --- | --- |
-    | house | 2 | 18 | 49 | 138 | 173 | 203 |
-    | flats | 1 | 9 | 27 | 75 | 93 | 101 |
-    | shop | 34 | 47 | 61 | 86 | 104 | 121 |
-    | pub | 39 | 52 | 67 | 87 | 91 | 104 |
-    | club | 45 | 66 | 89 | 130 | 152 | 173 |
+    | house | 23 | 33 | 56 | 144 | 173 | 199 |
+    | flats | 13 | 19 | 31 | 80 | 92 | 98 |
+    | shop | 38 | 50 | 63 | 88 | 102 | 118 |
+    | pub | 41 | 54 | 69 | 91 | 95 | 108 |
+    | club | 49 | 70 | 91 | 132 | 149 | 169 |
     | office | 3 | 11 | 34 | 74 | 100 | 158 |
-    | workshop | 26 | 35 | 44 | 69 | 86 | 92 |
+    | workshop | 30 | 39 | 46 | 72 | 83 | 88 |
     | warehouse | 51 | 55 | 56 | 62 | 63 | 64 |
 
-    The rules it checks hold: a richer tier is never worth less, and no single search averages more than 120 credits. **Finding for the owner:** a tier I or II home is worth almost nothing to a fence (2 and 18 credits a visit). A beginner's first burglaries are possible but barely pay, while a low-tier business's back room pays more (34 to 51). Whether a shabby home should pay more is a design call left open.
+    The rules it checks hold: a richer tier is never worth less, and no single search averages more than 120 credits. (Rerun on October 25, eighth pass: the sixth pass's beginner loot lifted a tier I home from 2 to 23 credits a visit and a tier II from 18 to 33.)
+
+    **Earnings by stage (eighth-pass review, from these numbers):**
+    * **Beginner** (tier I and II homes and shops, a lockpick, no skill): 13 to 70 credits a visit at a fence.
+    * **Intermediate** (tier III and IV, a Pro Pick Set): 31 to 144.
+    * **Advanced** (tier V and VI, safes, the bonded store raid on top): 64 to 199 a visit.
+
+    A careful visit takes roughly five to ten minutes of casing, entry, searching and the walk to a fence. That puts a beginner on a few hundred credits an hour before losses, around or under a legal career's 315 to 521 net an hour at level 5 in the economic model, and an advanced burglar above it, with the risk of arrest, confiscation and heat. A fence's budget caps what it pays at 360 (Ironhaven) to 420 (Blackwater) credits an hour, so burglary cannot outrun the best legal work for long. This is an estimate from expected values, not a measured session, and no person has played it.
+
 * A **street door** is one with a side that leads outside: the cell beside it open to the sky, or open floor leading within three blocks to a cell that is (a front step under the eaves, a porch). Before D-150 only the first counted, and a Valewood house's front door, its step under the eaves and its hall roofed, was an "inside door" that was never locked.
 * A house **to let** (D-127) is a vacant listing: its door belongs to the home's own guard, and it is neither cased nor searched.
 * An **iron** street door (the club, the office, the warehouse, the workshop, the Ironhaven flats) opens by no hand; where the guard lets a person through one, Core opens or shuts it as a click would a wooden door (D-151). Before, a tenant of an Ironhaven flat could not get in, and a thief was shut in the club once its door closed.

@@ -79,6 +79,7 @@ The docs here distinguish **confirmed product direction**, **design proposals**,
 - [Expansion plan: the next twelve work packages, with proof levels (a proposal)](production/expansion-plan.md)
 - [Playtest guide: two players on Windows 11](production/playtest-guide-windows11.md)
 - [Sprint report, October 25, 2026 (seventh pass): first playable alpha readiness](production/seventh-pass-alpha-readiness.md)
+- [Sprint report, October 25, 2026 (eighth pass): the living sandbox alpha (the Smith as an engineer, ownership, business hours, exploration finds)](production/eighth-pass-living-sandbox.md)
 - [Sprint report, October 17, 2026: the living world, profession depth and a production-quality visual overhaul](production/sprint-2026-10-17.md)
 - [Sprint report, October 18, 2026: Crews, shared homes and finances, survival, the Gunsmith's component loop](production/sprint-2026-10-18.md)
 - [PR #23 follow-up: the shared-finance bug, authentication, home security, survival supply, the combined journey](production/pr23-playtest-readiness.md)

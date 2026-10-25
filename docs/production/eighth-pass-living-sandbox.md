@@ -18,9 +18,17 @@ Nothing here is at L5.
 
 ## What changed for a player
 
-* **The Smith is an engineer** (D-182). Precision parts are turned by hand to a drawing the first time. The fewer passes, the better the grade; a mistake can be sleeved and saved. The bench keeps a jig for later batches. The cities' works and machine-run shops break down in active play: a Smith takes the service call, strips the drive, replaces worn parts with parts of their own making, gears it to the machine's plate and runs it. While a works stands idle its city's metal lines stop restocking, and while a shop's machine is down its prices rise by a fifth. A repair pays once through the work-order ledger and runs a catch-up shift. Design: [smith-engineer.md](../design/smith-engineer.md). Build: [smith-engineering.md](../technical/smith-engineering.md).
-* **Leaving a single-player world can no longer hang the game** (D-183). See the bug list.
-* **A shop whose doorway has a floor mat has a public floor again.** The corner store's customers were treated as "in the back".
+* **The Smith is an engineer (D-182).**
+  * **Turning by hand.** Precision parts (machined parts, drive shafts, precision machinery parts) are turned to a drawing the first time: choose a stretch of the bar, the tool (roughing deep and marked, finishing one step and clean), the line, and cut. The fewer passes, the better the grade; the shop's standard is the true minimum (an exact search). A section cut too far can be sleeved back with a nugget, at Fine at best. Closing a drawing takes nothing.
+  * **Jigs.** The bench keeps the best grade turned for each recipe and, from the Drill Press on, runs it as a batch (Reserve only with Production Tooling), so the hands-on work is for new or better parts, not every one.
+  * **The cities' machinery.** Industrial buildings and four shops run on a machine (a drive housing beside the street door in a new world). It breaks down only in a city somebody is in. The Smith hears the call, opens the toolkit's list, tracks it, strips the drive, replaces the worn parts with their own (or bought) bearing sets, gear sets, brackets and springs, gears the open stages to the plate and runs it. A works standing idle stops its city's metal lines restocking; a shop on a stopped machine charges a fifth more; a repair pays once through the ledger and runs a catch-up shift.
+  * **Assemblies and uses.** Bearing sets, drive shafts, gearboxes and pump assemblies; the Mill's top tier (the Farmer's Geared Crank) is fitted from a gearbox; the Northgate depot orders drive shafts and the Ironhaven works gearboxes. Every assembly is also sold at the yard or the hardware desk, so no trade waits for a Smith.
+  * **Skills.** Millwright, Production Tooling, Heavy Assembly and Master Engineer join the tree (29 points in all); no existing node changed.
+* **Batches inside and outside property (D-184).** Inside a home or trade premises somebody holds, a batch is never anybody else's. Outside, it is held on its maker's own play time (two hours past its run), then it is salvage, and the maker is told.
+* **Business hours (D-185).** Shops 08:00 to 18:00, cafes 07:00 to 20:00, restaurants 11:00 to 23:00, pubs and bars 12:00 to 02:00, clubs 18:00 to 03:00, industrial suppliers 07:00 to 19:00; the glance card at a street door says when a place is open, and the evening crowd makes for the venues that are serving.
+* **Exploration finds (D-186).** A battered crate in each roadside place and wayside shelter of a new world gives each player something once, rolled for them and never stored in the crate.
+* **Leaving a single-player world can no longer hang the game (D-183).**
+* **A shop whose doorway has a floor mat has a public floor again.**
 
 ## Evidence
 

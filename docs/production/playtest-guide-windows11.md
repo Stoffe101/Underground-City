@@ -139,7 +139,7 @@ Things that deserve a careful look: does anything feel unfair or confusing; are 
 
 **Built and tested in the cloud (not by a person):** registration, the terminal, work orders, the regional exchange, the Public Ledger, skill trees, checkpoints and searches, firearms crafting with blueprints (with the firearms set), Founders Row, the Row Flats, Crews with a bank, shared homes and a server-side guard, the road waymarkers and wayside shelters. Two scripted clients have played the Crew steps above against a dedicated server that was then **killed without a stop sequence and restarted** (see the sprint report for the exact result).
 
-**Not built, so do not look for it (October 25):** vehicle fuel, vehicle repair or insurance, boat customs, a harbour, per-player loot, a medical item, any tax, a buyer-to-buyer property market, factions or gang wars and story quests. All ten property categories now have a building (the Blackwater lofts and the Valewood villa were added on October 25, D-176). Crew contracts, burglary, one raid, police patrols and daily routines **do** exist now (sections 6e to 6i). Evicting a tenant by force does not exist: unpaid rent only withdraws comforts (section 6d). **The home guard** now stops pistons, hoppers, fluids, fire, mobs, item frames, armor stands and modded containers at a leased home's walls (section 6b); it does not stop fire that spreads in from outside, lightning, or mods that move blocks with their own code. **Q Shop's own shop screens always spend your own wallet, even when the Crew shares finances**; only the Underground City exchange (the Operations Terminal in a city, the provisions desk in a wayside shelter) can use the Crew bank, and only for a member who holds the *Spend* right.
+**Not built, so do not look for it (October 25):** vehicle fuel, vehicle repair or insurance, boat customs, a harbour, per-player loot beyond the roadside crates (D-186), a medical item, any tax, a buyer-to-buyer property market, factions or gang wars and story quests. All ten property categories now have a building (the Blackwater lofts and the Valewood villa were added on October 25, D-176). Crew contracts, burglary, one raid, police patrols and daily routines **do** exist now (sections 6e to 6i). Evicting a tenant by force does not exist: unpaid rent only withdraws comforts (section 6d). **The home guard** now stops pistons, hoppers, fluids, fire, mobs, item frames, armor stands and modded containers at a leased home's walls (section 6b); it does not stop fire that spreads in from outside, lightning, or mods that move blocks with their own code. **Q Shop's own shop screens always spend your own wallet, even when the Crew shares finances**; only the Underground City exchange (the Operations Terminal in a city, the provisions desk in a wayside shelter) can use the Crew bank, and only for a member who holds the *Spend* right.
 
 **Survival set** (`-PucExtraSets=survival`, opt-in): backpack, thirst, clean and dirty water, canteens and flasks, the kitchen and sleeping bags. The goods are **for sale** (section 6b), finite and shared like every other supplier line, and the cloud has driven the mods' own code for each mechanic. Nothing in the default pack depends on it.
 
@@ -318,9 +318,9 @@ Start a new world as in 6f (`-PucWorldLayout=archipelago -PucPack=world,furnishe
 
 Things to write down: whether casing told you what you needed before you broke in; whether the lock felt like skill or luck; whether a house's finds felt worth the risk and the walk to a fence; whether the police felt fair (could you see why they found or lost you? did you notice the officer on the beat in time?); whether the first Thief point came at a good moment.
 
-## 6i. Three sessions for the seventh pass (a NEW world each time)
+## 6i. Three sessions for the alpha (a NEW world each time)
 
-**Written for the October 25 seventh pass (D-175 to D-179).** The cloud drove each career's trade, trade premises, homes, the back channel and an unmarked gun through scripted clients, and a Crew contract with two scripted clients on a dedicated server (`seventh-pass-alpha-readiness.md` says which runs passed and lists every shortcut). **No person has played the current branch or its recent systems.** These three sessions are what the alpha milestone is waiting for (criterion 12 in `roadmap.md`).
+**Written for the October 25 seventh pass (D-175 to D-179) and brought up to date for the eighth (D-182 to D-186: the Smith's turning and machinery, batches inside and outside homes, business hours, roadside crates).** The cloud drove each career's trade, trade premises, homes, the back channel, an unmarked gun and the Smith's engineering through scripted clients, and a Crew contract with two scripted clients on a dedicated server (`seventh-pass-alpha-readiness.md` and `eighth-pass-living-sandbox.md` say which runs passed and list every shortcut). **The current branch and its recent gameplay systems have not received human playtesting.** These three sessions are what the alpha milestone is waiting for (criterion 12 in `roadmap.md`).
 
 Two kinds of play, never mixed up in a report:
 
@@ -343,6 +343,8 @@ Start: `.\scripts\windows\uc-new-world.ps1 -Name <you> -World UC-S1-<you>` (each
 | 6 | Learn a skill on the **Skills** tab (the **General** tab shows Trading and Social, earned by playing) | the node's effect is written on its card; a level 3 legal node costs one point |
 | 7 | Rent the cheapest home you can (press **K**, **Home**, **Find a home**) | the deposit and the hourly rent are stated before you agree; rent is charged only while somebody of the household is online |
 | 8 | Optional: case a shabby house at night and try a lock | it is your choice; police chase only what they see |
+| 9 | **If you are a Smith:** on the Machinist's Bench pick the drive shaft and press **Turn** | a drawing: click a section (Shift- or right-click another to stretch it), pick Roughing or Finishing, set the line with + and -, **Cut**. Rough to one step above each line, then finish. A section cut too far turns red: **Sleeve** it (a nugget). Close takes nothing. Fewer passes, better grade; the bench keeps a jig |
+| 10 | **If you are a Smith in a city:** wait for a **Service call** notice (one every 10 to 16 minutes of play) | right-click in the air with the Engineer's Toolkit for the list, **Track** the call, right-click the machine's drive housing beside its street door with the toolkit, replace the red parts, gear the open stage to the plate, **Run test**. Paid once; the machine runs again |
 
 Write down: the first moment you did not know what to do; whether your career felt like a trade or a menu; whether you ever felt stuck for money or for a part.
 
@@ -360,6 +362,9 @@ Start: the host runs `.\scripts\windows\uc-server.ps1 -Sets furnished,scarcity -
 | 6 | Valewood: contribute to *Reopen the Valewood market* | after the fifth contribution two stalls stand in the street and residents talk about them |
 | 7 | Rent a home together or a commercial workshop (trade premises) and set a station in it | a station in trade premises runs one more batch a quarter faster; three bulk orders accept you |
 | 8 | Stop the server (`stop`), start it again with the same command, both rejoin | homes, stations, the Crew, wallets and orders exactly as they were |
+| 9 | Walk a road between two cities and look round each roadside place and shelter for a **battered crate** | each of you finds something in it once (different things); going back finds nothing more |
+| 10 | Go out at 20:00: the Blackwater club opens 18:00 to 03:00, the Ironhaven pub 12:00 to 02:00, shops 08:00 to 18:00 | the glance card at a street door says the hours; the street round an open bar is busier at night |
+| 11 | One of you starts a batch at a station inside your home, the other at a station outside on the street, and both log off | inside a home a batch is never anybody else's; outside it waits for two hours of its maker's own play, then anybody may take it and the maker is told who did |
 
 Write down: did the Crew contract feel like working together; was the split fair; did one of you wait on the other; was anything confusing about who owns what.
 
@@ -374,6 +379,7 @@ Start a new world as in session 1 (single player has commands on) or use the ses
 | The back channel (Technician) | `/uc_prepare level @s 7`, `/uc_prepare kit @s technician` | learn Bypass Tooling, take a quiet job on the computer, track it, crouch and use the toolkit on the building's utility panel and solve the grid; its cameras are looped for a while and the kit is used up |
 | The bonded store (Thief) | `/uc_prepare thief @s 8`, `/uc_prepare kit @s thief` | learn Professional Tools, take Kessler's job in Blackwater, track it, case and open the store after 03:00, find the seized shipment and deliver it |
 | A villa and its upgrade | `/uc_prepare credits @s 26000` | buy the Valewood villa on **Find a home** and fit an upgrade on **Your homes** |
+| A machine beyond a new Smith (Smith) | `/uc_prepare level @s 8`, `/uc_prepare credits @s 400` | learn Millwright on the Skills page, wait for (or find on the toolkit's list) a tier III or IV call, buy the parts at the Builders' Yard if you lack them, and repair it: two gear stages, a fourth test run |
 
 Write down for each part: did it feel prepared for, dangerous or rewarding; what was unclear; what would you have done next.
 
