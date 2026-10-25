@@ -189,7 +189,8 @@ final class ExplorationFinds {
         Find find = id == null ? null : rec.finds.get(id);
         if (find == null) return "An empty crate, picked over long ago.";
         Set<String> mine = rec.found.computeIfAbsent(player.getUUID(), k -> new HashSet<>());
-        if (mine.contains(find.id())) { revisits++; return "You have been through this crate already. Somebody else may still find something in it."; }
+        // short enough for the action bar at 1280x720 (finds run 1: the longer line ran off both edges of the screen)
+        if (mine.contains(find.id())) { revisits++; return "You have been through this crate already."; }
         List<ItemStack> got = roll(level.getSeed(), find, player.getUUID());
         mine.add(find.id());
         rec.opened++;
@@ -203,8 +204,10 @@ final class ExplorationFinds {
         player.getInventory().setChanged();
         level.playSound(null, pos, SoundEvents.BARREL_OPEN, SoundSource.BLOCKS, 0.7f, 0.9f);
         Table t = TABLES.get(find.kind());
-        String text = (t == null ? "You go through the crate." : t.text()) + (names.isEmpty() ? " Nothing worth taking." : " You keep: " + String.join(", ", names) + ".");
-        Notice.send(player, Notice.Kind.DELIVERED, "A find", text);
+        // the place's line and the whole list in the chat, the list alone on the notice (finds run 1: both on the notice ran past its three lines)
+        String list = names.isEmpty() ? "nothing worth taking" : String.join(", ", names);
+        player.sendSystemMessage(Component.literal((t == null ? "In the crate:" : t.text()) + " " + list + "."));
+        Notice.send(player, Notice.Kind.DELIVERED, "A find", names.isEmpty() ? "Nothing worth taking." : "You keep " + list + ".");
         LOGGER.info("[UC-FIND] {} went through {} ({}): {}", player.getGameProfile().getName(), find.id(), find.kind(), names);
         return "";
     }
