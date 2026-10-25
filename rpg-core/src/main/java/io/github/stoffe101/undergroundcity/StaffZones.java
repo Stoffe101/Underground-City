@@ -178,6 +178,21 @@ public final class StaffZones {
         return !z.isPublic(feet) && !z.isOutside(feet) && !(level.getBlockState(feet).getBlock() instanceof DoorBlock) && roofed(level, feet);
     }
 
+    /**
+     * True when a person standing at {@code feet} is inside {@code b}'s walls: under its roof, and not on the ground outside a street door (the pavement under the eaves or an awning, within
+     * three blocks of the door). The outside flood alone would also count a room reached through a doorless opening as outside, where a camera must still see a burglar at night.
+     */
+    static boolean indoors(ServerLevel level, CityBuildings.Building b, BlockPos feet) {
+        if (!roofed(level, feet)) return false;
+        if (!of(level, b).isOutside(feet)) return true;
+        for (int dx = -3; dx <= 3; dx++) for (int dz = -3; dz <= 3; dz++) for (int dy = -1; dy <= 1; dy++) {
+            BlockPos at = feet.offset(dx, dy, dz);
+            BlockState state = level.getBlockState(at);
+            if (state.getBlock() instanceof DoorBlock && BuildingGuard.exterior(level, at, state)) return false;
+        }
+        return true;
+    }
+
     /** True when something solid stands above {@code pos} (read from the block heightmap: the sky light lags behind a change and passes through glass). */
     static boolean roofed(net.minecraft.world.level.Level level, BlockPos pos) {
         return level.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING, pos.getX(), pos.getZ()) > pos.getY() + 1;
@@ -187,6 +202,9 @@ public final class StaffZones {
 
     private record Sighting(long key, long since) {}
     private static final Map<UUID, Sighting> SEEN = new HashMap<>();
+    /** Who was reported, for which building and when: one call per stay in the back, not one every few seconds while they are still seen there. */
+    private static final Map<UUID, Sighting> REPORTED = new HashMap<>();
+    static final long REPORT_AGAIN_TICKS = 1200;
 
     /** Staff doors a redstone signal held open and that were shut again (a pressure plate or a button beside a staff door must not be a way into the back). */
     static long poweredShut;
@@ -247,19 +265,31 @@ public final class StaffZones {
         if (found.isEmpty() || !BuildingGuard.openToPublic(level, found.get(), null) || !inStaffArea(level, found.get(), player.blockPosition())) { SEEN.remove(player.getUUID()); return; }
         CityBuildings.Building b = found.get();
         if (!seenByHousehold(level, b, player)) return;
+        sighted(level, player, b, null);
+    }
+
+    /**
+     * A person in the back of an open shop was seen, by the household or by one of its cameras ({@code camera} not null): told once to go back out front, and reported only when still in the
+     * back after the grace. A customer who strays a step off the public floor by day is a customer, whoever or whatever saw them (smith run 3: a camera called the police at once, D-178).
+     */
+    static void sighted(ServerLevel level, ServerPlayer player, CityBuildings.Building b, BlockPos camera) {
         long now = LockService.clock(level.getServer());
+        Sighting last = REPORTED.get(player.getUUID());
+        if (last != null && last.key() == b.key() && now - last.since() < REPORT_AGAIN_TICKS) return;   // reported a moment ago: the police are on their way, no second call (D-178 review)
         Sighting s = SEEN.get(player.getUUID());
         if (s == null || s.key() != b.key()) {
             SEEN.put(player.getUUID(), new Sighting(b.key(), now));
             warned++;
-            player.displayClientMessage(Component.literal("\"Staff only. Back out front, please.\"").withStyle(ChatFormatting.GOLD), true);
+            player.displayClientMessage(Component.literal(camera == null ? "\"Staff only. Back out front, please.\"" : "A camera turns to you: staff only. Back out front, please.").withStyle(ChatFormatting.GOLD), true);
             return;
         }
         if (now - s.since() < GRACE_TICKS) return;
         SEEN.remove(player.getUUID());
+        REPORTED.put(player.getUUID(), new Sighting(b.key(), now));
         reported++;
-        player.sendSystemMessage(Component.literal("You stayed in the back after you were told to leave. They are calling the police.").withStyle(ChatFormatting.RED));
-        PoliceResponse.raise(player, level, b, player.blockPosition(), false, false, true);
+        player.sendSystemMessage(Component.literal(camera == null ? "You stayed in the back after you were told to leave. They are calling the police."
+            : "A camera kept you in the back after you were told to leave. The building's alarm is calling the police.").withStyle(ChatFormatting.RED));
+        PoliceResponse.raise(player, level, b, camera == null ? player.blockPosition() : camera, camera != null, false, true);
     }
 
     static boolean seenByHousehold(ServerLevel level, CityBuildings.Building b, ServerPlayer player) {
@@ -268,9 +298,9 @@ public final class StaffZones {
     }
 
     @SubscribeEvent
-    public void loggedOut(PlayerEvent.PlayerLoggedOutEvent event) { SEEN.remove(event.getEntity().getUUID()); }
+    public void loggedOut(PlayerEvent.PlayerLoggedOutEvent event) { SEEN.remove(event.getEntity().getUUID()); REPORTED.remove(event.getEntity().getUUID()); }
 
-    static void resetForTest() { synchronized (CACHE) { CACHE.clear(); } SEEN.clear(); computed = warned = reported = poweredShut = 0; }
+    static void resetForTest() { synchronized (CACHE) { CACHE.clear(); } SEEN.clear(); REPORTED.clear(); computed = warned = reported = poweredShut = 0; }
 
     static String status() { return "zones read " + computed + ", warned " + warned + ", reported " + reported + ", powered staff doors shut " + poweredShut; }
 }

@@ -265,8 +265,21 @@ public final class HouseholdService {
 
     private record Candidate(CityBuildings.Building building, BuildingSpots.Plan plan, HouseholdPlan.Resident who, int spot) {}
 
+    /** How many people serving a counter (a shopkeeper in their hours, a fence at theirs) may be added near a player beyond {@link #MAX_PER_PLAYER}: a shop is never empty because the flats next door filled the quota. */
+    static final int KEEPERS_OVER = 3;
+
+    /** True when the candidate serves at a shop's counter or a fence's spot: the people a player walks in to talk to. */
+    private static boolean serves(Candidate c) {
+        String kind = c.plan().spots().get(c.spot()).kind();
+        if (kind.equals("fence")) return true;
+        var shop = ShopCounters.INSTANCE.forBuilding(c.building().type());
+        return shop.isPresent() && shop.get().spot().equals(kind) && shop.get().city().equals(c.building().city()) && c.who().role().equals("worker");
+    }
+
     private static void topUp(ServerLevel level, ServerPlayer player) {
-        if (ACTIVE.size() >= MAX_ACTIVE || near(level, player) >= MAX_PER_PLAYER) return;
+        int nearNow = near(level, player);
+        if (ACTIVE.size() >= MAX_ACTIVE || nearNow >= MAX_PER_PLAYER + KEEPERS_OVER) return;
+        boolean keepersOnly = nearNow >= MAX_PER_PLAYER;
         long day = PopulationPlan.dayOf(dayTime(level));
         int hour = PopulationPlan.hourOf(dayTime(level));
         java.util.Set<Long> out = new java.util.HashSet<>();
@@ -292,12 +305,22 @@ public final class HouseholdService {
                 if (spot != HouseholdPlan.AWAY) candidates.add(new Candidate(building, plan, who, spot));
             }
         }
+        if (keepersOnly) candidates.removeIf(c -> !serves(c));
         if (candidates.isEmpty()) return;
         long salt = PopulationPlan.mix(level.getSeed() + day * 24 + hour);
-        candidates.sort(Comparator.comparingLong(c -> PopulationPlan.mix(c.who().id() ^ salt)));
-        Candidate chosen = candidates.get(0);
-        Optional<BlockPos> stand = standAt(level, chosen);
-        if (stand.isEmpty()) { spotMisses++; return; }
+        // whoever serves a counter first, then the nearer buildings (in bands of two chunks), then the hour's own order: the keeper of the shop a player stands in is never left out (smith run 6)
+        candidates.sort(Comparator.<Candidate>comparingInt(c -> serves(c) ? 0 : 1)
+            .thenComparingInt(c -> Math.max(Math.abs(c.building().chunkX() - here.x), Math.abs(c.building().chunkZ() - here.z)) / 2)
+            .thenComparingLong(c -> PopulationPlan.mix(c.who().id() ^ salt)));
+        // the first candidate with somewhere to stand: one spot with no floor beside it (a desk in a walled corner) must not keep everybody else in sight from coming in for the hour (D-178 review)
+        Candidate chosen = null;
+        Optional<BlockPos> stand = Optional.empty();
+        for (int i = 0; i < Math.min(candidates.size(), 4) && stand.isEmpty(); i++) {
+            chosen = candidates.get(i);
+            stand = standAt(level, chosen);
+            if (stand.isEmpty()) spotMisses++;
+        }
+        if (stand.isEmpty()) return;
         TownspersonEntity body = UndergroundCity.TOWNSPERSON.get().create(level);
         if (body == null) return;
         PopulationPlan.Person person = new PopulationPlan.Person(chosen.who().id(), chosen.who().name(), chosen.who().skin(), chosen.who().role(), chosen.building().city(), 0, 0);
@@ -445,7 +468,10 @@ public final class HouseholdService {
         return true;
     }
 
-    /** The place a person stands for a spot: the spot itself if somebody can stand there (a seat), else the nearest free floor beside it (a counter, a bed, a stove). Never outside the building's chunk. */
+    /**
+     * The place a person stands for a spot: the spot itself if somebody can stand there (a seat), else the nearest free floor beside it (a counter, a bed, a stove). Never outside the building's
+     * chunk, and never on the far side of a wall: two cells from a desk in a corner is the yard beyond the wall (smith run 3: the warehouse's keeper served from outside, D-178).
+     */
     static Optional<BlockPos> standAt(ServerLevel level, Candidate c) {
         BuildingSpots.Spot spot = c.plan().spots().get(c.spot());
         int baseX = c.building().chunkX() * 16 + spot.x(), baseZ = c.building().chunkZ() * 16 + spot.z(), y = c.building().streetY() + spot.y();
@@ -453,9 +479,20 @@ public final class HouseholdService {
         for (int[] d : around) {
             BlockPos feet = new BlockPos(baseX + d[0], y, baseZ + d[1]);
             if (feet.getX() >> 4 != c.building().chunkX() || feet.getZ() >> 4 != c.building().chunkZ()) continue;
-            if (PopulationService.standable(level, feet)) return Optional.of(feet);
+            if (PopulationService.standable(level, feet) && besideSpot(level, new BlockPos(baseX, y, baseZ), d)) return Optional.of(feet);
         }
         return Optional.empty();
+    }
+
+    /** Where somebody serving at spot {@code spot} of {@code plan} stands in {@code b} (the city probe's counter audit, D-178). */
+    static Optional<BlockPos> standFor(ServerLevel level, CityBuildings.Building b, BuildingSpots.Plan plan, int spot) { return standAt(level, new Candidate(b, plan, null, spot)); }
+
+    /** True when the cell {@code d} from a spot is on its side of any wall: a cell next to it always is; past that, something between them must leave head height open (a counter does, a wall does not). */
+    static boolean besideSpot(ServerLevel level, BlockPos spot, int[] d) {
+        if (Math.abs(d[0]) + Math.abs(d[1]) <= 1) return true;
+        java.util.function.Predicate<BlockPos> open = cell -> level.getBlockState(cell.above()).getCollisionShape(level, cell.above()).isEmpty();
+        if (d[0] != 0 && d[1] != 0) return open.test(spot.offset(d[0], 0, 0)) || open.test(spot.offset(0, 0, d[1]));
+        return open.test(spot.offset(d[0] / 2, 0, d[1] / 2));
     }
 
     // ------------------------------------------------------------------------------------------------ status and seams

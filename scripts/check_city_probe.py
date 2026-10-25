@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Judge a city probe report (``run_city_probe.py``) of a furnished world: every city chunk has its city's style, every building chunk is one of that city's furnished buildings, and none of
-them is empty (a palette error makes Lost Cities skip a chunk and leaves bare ground, which only the blocks show).
+them is empty (a palette error makes Lost Cities skip a chunk and leaves bare ground, which only the blocks show), and every shop counter can be reached by a customer (D-178).
 
     python scripts/check_city_probe.py build/probe/furn10.json [--log run-cityprobe-furn10/logs/latest.log]
 
@@ -35,6 +35,21 @@ def judge(report: dict, character: dict[str, set[str]], min_cover: int = 30) -> 
             problems.append(f"{where}: building {building!r} is not one of {city}'s furnished buildings")
         elif chunk.get("covered_columns_at_street_plus_4", 0) < min_cover:
             problems.append(f"{where}: {building} stands on only {chunk.get('covered_columns_at_street_plus_4')} columns: it did not generate")
+    return problems + counter_problems(report)
+
+
+def counter_problems(report: dict) -> list[str]:
+    """Every shop counter the probe found (D-178): its keeper has somewhere to stand, inside the walls, and a customer on the public floor within three blocks can see them."""
+    problems = []
+    for chunk in report["chunks"]:
+        for counter in chunk.get("counters", []):
+            where = f"chunk {chunk['chunk_x']},{chunk['chunk_z']} {counter.get('building')} spot {counter.get('spot')}"
+            if "stand" not in counter:
+                problems.append(f"{where}: the keeper has nowhere to stand")
+            elif counter.get("stand_outside"):
+                problems.append(f"{where}: the keeper stands outside the walls at {counter['stand']}")
+            elif not counter.get("reachable"):
+                problems.append(f"{where}: no public cell within three blocks sees the keeper at {counter['stand']} ({counter.get('public_within_reach')} within reach)")
     return problems
 
 

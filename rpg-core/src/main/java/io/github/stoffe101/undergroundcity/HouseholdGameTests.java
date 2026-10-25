@@ -346,4 +346,25 @@ public final class HouseholdGameTests {
         }
         helper.succeed();
     }
+
+    /**
+     * A person serving at a spot stands beside it on its side of any wall (D-178): smith run 3 found the warehouse's keeper standing in the yard outside its east wall, two cells from the desk in the
+     * corner, where nobody inside could reach them. A counter between leaves head height open and still counts; a wall does not, straight or round a corner.
+     */
+    @GameTest(template = "empty")
+    public static void aServingSpotIsNeverStoodAtFromBeyondAWall(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        BlockPos spot = helper.absolutePos(new BlockPos(2, 2, 2));
+        check(HouseholdService.besideSpot(level, spot, new int[] {1, 0}), "the cell next to a spot is not beside it");
+        level.setBlockAndUpdate(spot.east(), net.minecraft.world.level.block.Blocks.STONE_BRICKS.defaultBlockState());
+        level.setBlockAndUpdate(spot.east().above(), net.minecraft.world.level.block.Blocks.STONE_BRICKS.defaultBlockState());
+        check(!HouseholdService.besideSpot(level, spot, new int[] {2, 0}), "a cell beyond a wall counts as beside the spot");
+        level.setBlockAndUpdate(spot.west(), net.minecraft.world.level.block.Blocks.OAK_SLAB.defaultBlockState());
+        check(HouseholdService.besideSpot(level, spot, new int[] {-2, 0}), "a counter between the spot and the cell shuts it off");
+        level.setBlockAndUpdate(spot.south(), net.minecraft.world.level.block.Blocks.STONE_BRICKS.defaultBlockState());
+        level.setBlockAndUpdate(spot.south().above(), net.minecraft.world.level.block.Blocks.STONE_BRICKS.defaultBlockState());
+        check(!HouseholdService.besideSpot(level, spot, new int[] {1, 1}), "a corner walled on both sides counts as beside the spot");
+        check(HouseholdService.besideSpot(level, spot, new int[] {-1, -1}), "an open corner is not beside the spot");
+        helper.succeed();
+    }
 }

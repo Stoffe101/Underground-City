@@ -71,6 +71,9 @@ public final class DialogueScreen extends UcScreen {
 
     private boolean released;
 
+    /** A new screen for the same person replaces this one: the conversation goes on, so closing this one is not its end. */
+    void continued() { released = true; }
+
     private final java.util.List<UcButton> choiceButtons = new java.util.ArrayList<>();
 
     /** The centre of the n-th answer in GUI coordinates (scripted-player runs click it with the real mouse). */

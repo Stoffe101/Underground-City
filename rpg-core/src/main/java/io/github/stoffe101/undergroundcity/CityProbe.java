@@ -233,9 +233,51 @@ public final class CityProbe {
         out.add("samples", samples);
         String key = (sample.city() ? "city:" : "outside:") + (type.isEmpty() ? "none" : type);
         dump(level, chunk, sample, street, type);
+        out.add("counters", counters(level, cx, cz));
         int[] total = totals.computeIfAbsent(key, k -> new int[3]);
         total[0]++; if (onStructure > 0) total[1]++; if (trees > 0) total[2]++;
         return out;
+    }
+
+    // ----------------------------------------------------------------------------------------------------- counters a customer can reach
+
+    /**
+     * Every spot a shop's keeper serves at in this chunk's furnished building: where the keeper stands, and whether a customer on the public floor can speak to them, i.e. a public cell within
+     * three blocks with nothing solid between the eyes (a survival player reaches a person three blocks off). Smith run 3 found the warehouse's keeper standing outside its wall (D-178).
+     */
+    static JsonArray counters(ServerLevel level, int cx, int cz) {
+        JsonArray list = new JsonArray();
+        CityBuildings.Building b = CityBuildings.INSTANCE.ofChunk(level, cx, cz).orElse(null);
+        if (b == null) return list;
+        var shop = ShopCounters.INSTANCE.forBuilding(b.type());
+        BuildingSpots.Plan plan = BuildingSpots.INSTANCE.forType(b.type());
+        if (shop.isEmpty() || plan == null) return list;
+        StaffZones.Zones zones = StaffZones.of(level, b);
+        for (int i = 0; i < plan.spots().size(); i++) {
+            if (!plan.spots().get(i).kind().equals(shop.get().spot())) continue;
+            JsonObject c = new JsonObject();
+            c.addProperty("building", b.type()); c.addProperty("spot", i);
+            BlockPos stand = HouseholdService.standFor(level, b, plan, i).orElse(null);
+            int within = 0, seen = 0;
+            if (stand != null) {
+                c.addProperty("stand", stand.getX() + "," + stand.getY() + "," + stand.getZ());
+                c.addProperty("stand_public", zones.isPublic(stand));
+                c.addProperty("stand_outside", zones.isOutside(stand) || !StaffZones.roofed(level, stand));
+                net.minecraft.world.phys.Vec3 chest = net.minecraft.world.phys.Vec3.atBottomCenterOf(stand).add(0, 1.2, 0);
+                for (long key : zones.publicCells()) {
+                    BlockPos cell = BlockPos.of(key);
+                    if (cell.equals(stand) || Math.abs(cell.getY() - stand.getY()) > 1 || cell.distToCenterSqr(net.minecraft.world.phys.Vec3.atCenterOf(stand)) > 3.2 * 3.2) continue;
+                    within++;
+                    net.minecraft.world.phys.Vec3 eye = net.minecraft.world.phys.Vec3.atBottomCenterOf(cell).add(0, 1.62, 0);
+                    if (level.clip(new net.minecraft.world.level.ClipContext(eye, chest, net.minecraft.world.level.ClipContext.Block.COLLIDER, net.minecraft.world.level.ClipContext.Fluid.NONE, null))
+                        .getType() == net.minecraft.world.phys.HitResult.Type.MISS) seen++;
+                }
+            }
+            c.addProperty("public_within_reach", within); c.addProperty("public_in_sight", seen);
+            c.addProperty("reachable", stand != null && seen > 0);
+            list.add(c);
+        }
+        return list;
     }
 
     // ----------------------------------------------------------------------------------------------------- a text picture of a chunk

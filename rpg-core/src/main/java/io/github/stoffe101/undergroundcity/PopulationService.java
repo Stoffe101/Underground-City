@@ -890,7 +890,8 @@ public final class PopulationService {
 
     /** A choice in a conversation with a townsperson: the fence's trade, or closing it. */
     static void choose(ServerPlayer player, TownspersonEntity body, String id) {
-        if (player.distanceToSqr(body) > 100.0) return;
+        // the screen is already closed on the client; answering with a close could shut a newer conversation (a second right click had replaced it: farmer run 2, D-178)
+        if (id.equals("end") || player.distanceToSqr(body) > 100.0) return;
         if (id.equals("shop") && ShopCounters.shopOf(body).isPresent()) { TerminalNetwork.closeDialogue(player); ShopCounters.open(player, body); return; }
         FenceCatalog.Fence fence = FenceService.fenceOf(body);
         if (fence != null && id.equals("fence_offer")) { TerminalNetwork.closeDialogue(player); FenceService.open(player, body); return; }

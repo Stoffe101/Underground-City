@@ -121,7 +121,10 @@ public final class SecurityDevices {
         CityBuildings.Building b = found.get();
         if (!CityBuildings.INSTANCE.known(b.chunkX(), b.chunkZ())) return;
         // a customer on the public floor of an open shop, or at a fence's at their hours, is not a burglar; one in its staff-only rooms is watched as at night (D-159)
-        if (BuildingGuard.openToPublic(level, b, null) && !StaffZones.inStaffArea(level, b, player.blockPosition())) return;
+        // a person outside its walls (the lawn, the yard, the pavement under the eaves: the building's chunk, not its rooms) is a passer-by, not somebody inside (farmer run 3, D-178)
+        if (!StaffZones.indoors(level, b, player.blockPosition())) return;
+        boolean open = BuildingGuard.openToPublic(level, b, null);
+        if (open && !StaffZones.inStaffArea(level, b, player.blockPosition())) return;
         if (CityHomes.holdsKey(player, b)) return;   // nor a tenant crossing their own building's lobby, or anybody their home lets in (a housemate is never a burglar for coming home)
         List<BlockPos> cameras = cameras(level, b);
         if (cameras.isEmpty()) return;
@@ -144,6 +147,7 @@ public final class SecurityDevices {
                 }
                 if (now - warned < WARNING_TICKS) continue;
             }
+            if (open) { StaffZones.sighted(level, player, b, camera); return; }   // in the shop's hours a camera warns first, as the household does (D-178)
             long key = camera.asLong() ^ player.getUUID().getLeastSignificantBits();
             Long last = SEEN_AT.get(key);
             if (last != null && now - last < CALL_AGAIN_TICKS) continue;

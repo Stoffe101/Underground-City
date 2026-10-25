@@ -25,6 +25,18 @@ class CheckCityProbeTests(unittest.TestCase):
     def test_an_empty_building_is_caught(self):
         self.assertIn("did not generate", c.judge({"chunks": [chunk(cover=0)]}, CHARACTER)[0])
 
+    def test_a_counter_without_a_reachable_keeper_is_caught(self):
+        good = dict(chunk(), counters=[{"building": "underground_city:vw_shop", "spot": 1, "stand": "1,72,3", "stand_outside": False, "reachable": True, "public_within_reach": 4}])
+        self.assertEqual([], c.judge({"chunks": [good]}, CHARACTER))
+        nowhere = dict(chunk(), counters=[{"building": "underground_city:ih_warehouse", "spot": 2, "reachable": False}])
+        outside = dict(chunk(), counters=[{"building": "underground_city:ih_warehouse", "spot": 2, "stand": "15,72,2", "stand_outside": True, "reachable": True}])
+        hidden = dict(chunk(), counters=[{"building": "underground_city:ih_warehouse", "spot": 2, "stand": "11,72,2", "stand_outside": False, "reachable": False, "public_within_reach": 0}])
+        problems = c.judge({"chunks": [nowhere, outside, hidden]}, CHARACTER)
+        self.assertEqual(3, len(problems))
+        self.assertIn("nowhere to stand", problems[0])
+        self.assertIn("outside the walls", problems[1])
+        self.assertIn("sees the keeper", problems[2])
+
     def test_a_chunk_outside_every_city_is_ignored(self):
         self.assertEqual([], c.judge({"chunks": [chunk(city=False, style="", building="")]}, CHARACTER))
 
