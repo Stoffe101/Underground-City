@@ -167,6 +167,15 @@ public final class Navigation {
                 return Optional.of(new Destination(kind, ref, e.label() + " · " + e.address(), Thievery.tierWord(e.tier()) + " · its street door", overworld, e.door(), e.city(), now));
             }
             case "order" -> { return orderDestination(player, ref, WorkOrderLedger.get(server)); }
+            case "machine" -> {
+                // a Smith's service call (eighth pass): the machine's drive housing, or its street door where the door stands in for one
+                UUID id = UUID.fromString(ref);
+                for (SmithWork.Call call : SmithWork.calls(player)) {
+                    if (!call.id().equals(id)) continue;
+                    return Optional.of(new Destination(kind, ref, Casing.capitalise(call.machine()) + " · " + call.address(), call.credits() + " credits · the drive by the street door", overworld, call.access(), call.city(), now));
+                }
+                return Optional.empty();
+            }
             default -> { return Optional.empty(); }
         }
     }
@@ -212,6 +221,12 @@ public final class Navigation {
                 for (TechService.Fault f : s.faults.values()) if (f.id().equals(id)) return null;
                 if (s.jobs.containsKey(id)) return null;
                 return "That service call has been dealt with.";
+            }
+            case "machine" -> {
+                UUID id;
+                try { id = UUID.fromString(d.ref()); } catch (IllegalArgumentException e) { return "That service call is gone."; }
+                for (MachineService.Breakdown b : MachineService.works(server).breakdowns.values()) if (b.id().equals(id)) return null;
+                return "That machine is running again.";
             }
             case "place" -> {
                 try { return PropertyIntel.book(server).get(player, Long.parseLong(d.ref())) == null ? "That place is no longer in your book." : null; }

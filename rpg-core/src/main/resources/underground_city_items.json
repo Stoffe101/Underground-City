@@ -292,6 +292,11 @@
       "stack": 1
     },
     {
+      "id": "engineer_toolkit",
+      "kind": "durable",
+      "stack": 1
+    },
+    {
       "id": "diagnostic_scanner",
       "kind": "durable",
       "stack": 1
@@ -358,6 +363,26 @@
     },
     {
       "id": "gear_set",
+      "kind": "product",
+      "stack": 64
+    },
+    {
+      "id": "bearing_set",
+      "kind": "product",
+      "stack": 64
+    },
+    {
+      "id": "drive_shaft",
+      "kind": "product",
+      "stack": 64
+    },
+    {
+      "id": "gearbox",
+      "kind": "product",
+      "stack": 64
+    },
+    {
+      "id": "pump_assembly",
       "kind": "product",
       "stack": 64
     },

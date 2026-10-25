@@ -10,7 +10,8 @@
       "cost": 1,
       "min_level": 2,
       "requires": [],
-      "effects": {}
+      "effects": {},
+      "effect": "turning by hand; tier I-II machinery"
     },
     {
       "id": "smith.structural_works",
@@ -22,7 +23,8 @@
       "requires": [
         "smith.fundamentals"
       ],
-      "effects": {}
+      "effects": {},
+      "effect": "gear sets and gearboxes"
     },
     {
       "id": "smith.armoury_contracts",
@@ -81,7 +83,8 @@
       ],
       "effects": {
         "exchange_discount": 0.05
-      }
+      },
+      "effect": "the Lathe"
     },
     {
       "id": "smith.fit_out_trade",
@@ -169,6 +172,63 @@
         "inspection_modifier": -0.06,
         "underground_payout_percent": 3
       }
+    },
+    {
+      "id": "smith.millwright",
+      "branch": "legal",
+      "title": "Millwright",
+      "short_title": "Millwright",
+      "description": "The cities' hoists, saws and pumps: bigger drives, more gear stages.",
+      "cost": 1,
+      "min_level": 5,
+      "requires": [
+        "smith.fundamentals"
+      ],
+      "effects": {},
+      "effect": "machinery to tier IV; 4 test runs"
+    },
+    {
+      "id": "smith.production_tooling",
+      "branch": "utility",
+      "title": "Production Tooling",
+      "short_title": "Prod. Tooling",
+      "description": "A jig as good as the hand that set it, batch after batch.",
+      "cost": 1,
+      "min_level": 7,
+      "requires": [
+        "smith.precision_machining"
+      ],
+      "effects": {},
+      "effect": "jig batches up to Reserve"
+    },
+    {
+      "id": "smith.heavy_assembly",
+      "branch": "legal",
+      "title": "Heavy Assembly",
+      "short_title": "Heavy Assembly",
+      "description": "Gearboxes into pumps: machines the other trades run.",
+      "cost": 1,
+      "min_level": 8,
+      "requires": [
+        "smith.structural_works"
+      ],
+      "effects": {},
+      "effect": "pump assemblies"
+    },
+    {
+      "id": "smith.master_engineer",
+      "branch": "legal",
+      "title": "Master Engineer",
+      "short_title": "Master Engineer",
+      "description": "Any machine in any city, and a hand sure enough to rough a step deeper.",
+      "cost": 2,
+      "min_level": 12,
+      "requires": [
+        "smith.millwright",
+        "smith.heavy_assembly"
+      ],
+      "effects": {},
+      "effect": "any machinery; roughing a step deeper"
     }
   ]
 }

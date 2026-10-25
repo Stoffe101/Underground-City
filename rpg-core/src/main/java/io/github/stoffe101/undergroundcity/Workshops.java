@@ -35,14 +35,19 @@ public final class Workshops extends SimpleJsonResourceReloadListener {
     public record Tier(int tier, String name, int batch, double speed, Map<ResourceLocation, Integer> parts, String skill) {}
 
     /** How a graded recipe's grade is decided: a base, a step at tier 2 and at tier 3, a step for each skill held, the grade of what went in when {@code fromInput} (ageing), and a ceiling. */
-    public record Grading(int base, int tier2, int tier3, Map<String, Integer> skills, boolean fromInput, int max) {
-        static final Grading NONE = new Grading(0, 0, 0, Map.of(), false, 0);
+    public record Grading(int base, int tier2, int tier3, Map<String, Integer> skills, boolean fromInput, int max, ResourceLocation fromItem) {
+        static final Grading NONE = new Grading(0, 0, 0, Map.of(), false, 0, null);
+        Grading(int base, int tier2, int tier3, Map<String, Integer> skills, boolean fromInput, int max) { this(base, tier2, tier3, skills, fromInput, max, null); }
     }
 
-    /** One recipe. {@code seconds} of active play for one batch at tier 1 (0 makes it at once); {@code mod} names a mod whose items it needs (it is hidden without it). */
+    /**
+     * One recipe. {@code seconds} of active play for one batch at tier 1 (0 makes it at once); {@code mod} names a mod whose items it needs (it is hidden without it). {@code handsOn} is the number
+     * of sections of the drawing a precision part is turned to by hand (eighth pass, {@link SmithPuzzles.Turning}), 0 for an ordinary batch; such a recipe runs as a batch only from a jig.
+     */
     public record Recipe(String id, String title, Map<ResourceLocation, Integer> inputs, ResourceLocation output, int count, int seconds, int tier, String skill, int xp, Grading grading,
-                         String legality, String mod, String note) {
-        boolean graded() { return grading.max() > 0; }
+                         String legality, String mod, String note, int handsOn) {
+        boolean graded() { return grading.max() > 0 || handsOn > 0; }
+        boolean turned() { return handsOn > 0; }
     }
 
     public record Station(String id, String career, String title, String note, List<Tier> tiers, List<Recipe> recipes) {
@@ -89,14 +94,16 @@ public final class Workshops extends SimpleJsonResourceReloadListener {
                 Map<String, Integer> skills = new LinkedHashMap<>();
                 if (g.has("skills")) for (var s : g.getAsJsonObject("skills").entrySet()) skills.put(s.getKey(), s.getValue().getAsInt());
                 grading = new Grading(g.has("base") ? g.get("base").getAsInt() : 0, g.has("tier2") ? g.get("tier2").getAsInt() : 0, g.has("tier3") ? g.get("tier3").getAsInt() : 0,
-                    Map.copyOf(skills), g.has("from_input") && g.get("from_input").getAsBoolean(), g.has("max") ? g.get("max").getAsInt() : 2);
+                    Map.copyOf(skills), g.has("from_input") && g.get("from_input").getAsBoolean(), g.has("max") ? g.get("max").getAsInt() : 2,
+                    g.has("from_item") ? ResourceLocation.parse(g.get("from_item").getAsString()) : null);
             }
             Recipe recipe = new Recipe(r.get("id").getAsString(), r.get("title").getAsString(), counts(r.getAsJsonObject("inputs"), id), ResourceLocation.parse(r.get("output").getAsString()),
                 r.get("count").getAsInt(), r.get("seconds").getAsInt(), r.has("tier") ? r.get("tier").getAsInt() : 1, r.has("skill") ? r.get("skill").getAsString() : "",
                 r.has("xp") ? r.get("xp").getAsInt() : 0, grading, r.has("legality") ? r.get("legality").getAsString() : "legal", r.has("mod") ? r.get("mod").getAsString() : "",
-                r.has("note") ? r.get("note").getAsString() : "");
+                r.has("note") ? r.get("note").getAsString() : "", r.has("hands_on") ? r.getAsJsonObject("hands_on").get("sections").getAsInt() : 0);
             if (recipe.inputs().isEmpty() || recipe.count() < 1 || recipe.count() > 16 || recipe.seconds() < 0 || recipe.seconds() > 3 * 3600 || recipe.tier() < 1 || recipe.tier() > tiers.size()
-                || recipe.xp() < 0 || recipe.xp() > 200 || recipe.grading().max() > 2 || !(recipe.legality().equals("legal") || recipe.legality().equals("underground")))
+                || recipe.xp() < 0 || recipe.xp() > 200 || recipe.grading().max() > 2 || !(recipe.legality().equals("legal") || recipe.legality().equals("underground"))
+                || recipe.handsOn() != 0 && (recipe.handsOn() < 4 || recipe.handsOn() > 10) || recipe.grading().fromItem() != null && !recipe.inputs().containsKey(recipe.grading().fromItem()))
                 throw new IllegalArgumentException("Invalid recipe " + recipe.id() + " of workshop " + id);
             recipes.add(recipe);
         }

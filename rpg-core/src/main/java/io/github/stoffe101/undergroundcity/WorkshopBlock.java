@@ -87,8 +87,9 @@ final class WorkshopBlock extends HorizontalDirectionalBlock implements EntityBl
     public void setPlacedBy(Level level, BlockPos pos, BlockState state, net.minecraft.world.entity.LivingEntity placer, ItemStack stack) {
         super.setPlacedBy(level, pos, state, placer, stack);
         // a station carried away keeps its tier (the item remembers it)
-        if (!level.isClientSide && stack.hasTag() && stack.getTag().contains("uc_tier") && level.getBlockEntity(pos) instanceof Entity e) {
-            e.tier = Math.max(1, Math.min(3, stack.getTag().getInt("uc_tier")));
+        if (!level.isClientSide && stack.hasTag() && (stack.getTag().contains("uc_tier") || stack.getTag().contains("uc_jigs")) && level.getBlockEntity(pos) instanceof Entity e) {
+            if (stack.getTag().contains("uc_tier")) e.tier = Math.max(1, Math.min(3, stack.getTag().getInt("uc_tier")));
+            e.jigs.putAll(loadJigs(stack.getTag().getCompound("uc_jigs")));
             e.setChanged();
             level.setBlock(pos, state.setValue(TIER, e.tier), 3);
         }
@@ -101,6 +102,7 @@ final class WorkshopBlock extends HorizontalDirectionalBlock implements EntityBl
             for (ItemStack stack : e.contents(LockService.clock(server.getServer()))) net.minecraft.world.Containers.dropItemStack(level, pos.getX(), pos.getY(), pos.getZ(), stack);
             ItemStack self = new ItemStack(this);
             if (e.tier > 1) self.getOrCreateTag().putInt("uc_tier", e.tier);
+            if (!e.jigs.isEmpty()) self.getOrCreateTag().put("uc_jigs", saveJigs(e.jigs));
             net.minecraft.world.Containers.dropItemStack(level, pos.getX(), pos.getY(), pos.getZ(), self);
         }
         super.onRemove(state, level, pos, next, moved);
@@ -123,6 +125,8 @@ final class WorkshopBlock extends HorizontalDirectionalBlock implements EntityBl
         /** The career XP of everything ready, summed batch by batch (a pile of fasteners topped with one gear set is paid as fasteners and a gear set, not as gear sets), and when it was ready. */
         int readyXp;
         long readySince;
+        /** The jigs set at this bench (eighth pass): a precision part turned by hand leaves its setup, by recipe, at the best grade it was turned to. Kept when the station is carried away. */
+        final java.util.Map<String, Integer> jigs = new java.util.TreeMap<>();
 
         Entity(BlockPos pos, BlockState state) { super(UndergroundCity.WORKSHOP_ENTITY.get(), pos, state); }
 
@@ -202,6 +206,7 @@ final class WorkshopBlock extends HorizontalDirectionalBlock implements EntityBl
             if (readyBy != null) tag.putUUID("ready_by", readyBy);
             tag.putInt("ready_xp", readyXp);
             tag.putLong("ready_since", readySince);
+            if (!jigs.isEmpty()) tag.put("jigs", saveJigs(jigs));
         }
 
         @Override
@@ -220,12 +225,37 @@ final class WorkshopBlock extends HorizontalDirectionalBlock implements EntityBl
             readyBy = tag.hasUUID("ready_by") ? tag.getUUID("ready_by") : null;
             readyXp = Math.max(0, tag.getInt("ready_xp"));
             readySince = Math.max(0, tag.getLong("ready_since"));
+            jigs.clear();
+            jigs.putAll(loadJigs(tag.getCompound("jigs")));
             for (Tag t : tag.getList("ready", Tag.TAG_COMPOUND)) { ItemStack s = ItemStack.of((CompoundTag) t); if (!s.isEmpty()) ready.add(s); }
             for (Tag t : tag.getList("inputs", Tag.TAG_COMPOUND)) { ItemStack s = ItemStack.of((CompoundTag) t); if (!s.isEmpty()) inputs.add(s); }
         }
     }
 
     // ------------------------------------------------------------------------------------------------ the work (server side)
+
+    static CompoundTag saveJigs(java.util.Map<String, Integer> jigs) {
+        CompoundTag t = new CompoundTag();
+        jigs.forEach(t::putInt);
+        return t;
+    }
+
+    static java.util.Map<String, Integer> loadJigs(CompoundTag t) {
+        java.util.Map<String, Integer> out = new java.util.TreeMap<>();
+        for (String k : t.getAllKeys()) if (out.size() < 32) out.put(k, Math.max(0, Math.min(2, t.getInt(k))));
+        return out;
+    }
+
+    /**
+     * The grade a jig run of a turned recipe makes (eighth pass): the jig's own grade, held to Standard on a Drill Press and Fine on a Lathe, one better with Production Tooling. -1 when there is no
+     * jig or the station is still a Vice and Files (every precision part is turned by hand there).
+     */
+    static int jigGrade(Entity e, Workshops.Recipe r, CitizenState.Citizen c) {
+        Integer jig = e.jigs.get(r.id());
+        if (jig == null || e.tier < 2) return -1;
+        int hold = (e.tier >= 3 ? 1 : 0) + (has(c, "smith.production_tooling") ? 1 : 0);
+        return Math.min(jig, hold);
+    }
 
     /** How many of an item the player carries (grades counted together). */
     static int carried(ServerPlayer player, ResourceLocation id) {
@@ -263,7 +293,12 @@ final class WorkshopBlock extends HorizontalDirectionalBlock implements EntityBl
         if (!e.ready.isEmpty() && e.readyBy != null && !e.readyBy.equals(player.getUUID())) return "A Crew mate's batch is ready here: take it first (the career XP stays theirs).";
         String why = refusal(player, e, st, r, batches);
         if (why != null) return why;
-        // the grade of what goes in: the lowest grade among the stacks taken, so a Reserve cannot be made from Standard by mixing
+        CitizenState.Citizen maker = CitizenState.get(player.server).find(player.getUUID()).orElse(null);
+        // a precision part is turned by hand to its drawing first; from the Drill Press on, the jig it left repeats it (eighth pass)
+        int jig = r.turned() ? jigGrade(e, r, maker) : -1;
+        if (r.turned() && jig < 0) return e.tier < 2 ? "A Vice and Files has no jig: turn each " + r.title().toLowerCase(java.util.Locale.ROOT) + " by hand (Turn by hand)."
+            : "No jig for " + r.title().toLowerCase(java.util.Locale.ROOT) + " yet: turn one by hand first, and the bench keeps the setup.";
+        // the grade of what goes in: the lowest grade among the stacks taken (of the one input a recipe names, when it names one), so a Reserve cannot be made from Standard by mixing
         int inputGrade = 2;
         List<ItemStack> taken = new ArrayList<>();
         for (var in : r.inputs().entrySet()) {
@@ -273,7 +308,7 @@ final class WorkshopBlock extends HorizontalDirectionalBlock implements EntityBl
                 if (need <= 0) break;
                 if (!s.is(item)) continue;
                 int n = Math.min(need, s.getCount());
-                inputGrade = Math.min(inputGrade, Workshops.grade(s));
+                if (r.grading().fromItem() == null || r.grading().fromItem().equals(in.getKey())) inputGrade = Math.min(inputGrade, Workshops.grade(s));
                 ItemStack part = s.copy();
                 part.setCount(n);
                 taken.add(part);
@@ -281,11 +316,11 @@ final class WorkshopBlock extends HorizontalDirectionalBlock implements EntityBl
                 need -= n;
             }
         }
-        CitizenState.Citizen c = CitizenState.get(player.server).find(player.getUUID()).orElse(null);
+        CitizenState.Citizen c = maker;
         e.recipe = r.id();
         e.batches = batches;
         e.startedBy = player.getUUID();
-        e.grade = Workshops.gradeFor(r, e.tier, skill -> has(c, skill), inputGrade);
+        e.grade = r.turned() ? jig : Workshops.gradeFor(r, e.tier, skill -> has(c, skill), inputGrade);
         e.since = LockService.clock(level.getServer());
         e.duration = Premises.ticks(r, st.tier(e.tier), Premises.tradeAt(level, e.getBlockPos(), player.getUUID()) != null);   // trade premises work a quarter faster (D-169)
         e.inputs.clear();

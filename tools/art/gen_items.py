@@ -1123,6 +1123,78 @@ def unmarked_parts_kit():
     s.line(2, 12, 5, 12, RED[1]); s.line(2, 11, 5, 13, RED[1])
     return finish(s)
 
+@item
+def bearing_set():
+    """Two ball bearings: a steel outer race with a ring of lit balls, the brass inner race and its bore."""
+    s = Sprite()
+    for (cx, cy, rad) in ((5.5, 6.5, 4.6), (10.5, 10.5, 4.2)):
+        disc(s, cx, cy, rad, STEEL, hole=rad - 1.6)
+        disc(s, cx, cy, rad - 2.2, BRASS, hole=1.1)
+        for k in range(6):
+            import math
+            a = k * math.pi / 3
+            s.put(int(cx + 0.5 + (rad - 1.3) * math.cos(a)), int(cy + 0.5 + (rad - 1.3) * math.sin(a)), WHITE[3])
+    return finish(s)
+
+
+@item
+def drive_shaft():
+    """A stepped steel shaft lying across: a thick middle, turned-down journals at both ends and a keyway."""
+    s = Sprite()
+    cylinder_h(s, 1, 3, 7, 9, STEEL)
+    cylinder_h(s, 3, 6, 6, 10, STEEL)
+    cylinder_h(s, 6, 11, 5, 11, STEEL)
+    cylinder_h(s, 11, 13, 6, 10, STEEL)
+    cylinder_h(s, 13, 15, 7, 9, STEEL)
+    s.line(7, 7, 10, 7, GUNMETAL[0])
+    s.put(6, 5, WHITE[4]); s.put(3, 6, WHITE[3])
+    return finish(s)
+
+
+@item
+def gearbox():
+    """A bolted cast case with its cover off on one side: a gear inside, the shaft through it, bolt heads at the corners."""
+    s = Sprite()
+    bevel_rect(s, 1, 3, 14, 13, GUNMETAL)
+    s.rect(3, 5, 12, 11, GUNMETAL[0])
+    gear(s, 7, 8, 3.6, 2.7, 7, BRASS, hole=0.9)
+    s.rect(11, 7, 15, 9, STEEL[2]); s.line(11, 7, 15, 7, STEEL[4])
+    for (x, y) in ((2, 4), (13, 4), (2, 12), (13, 12)):
+        s.put(x, y, STEEL[4])
+    s.put(7, 8, INK)
+    return finish(s)
+
+
+@item
+def pump_assembly():
+    """A gearbox on the left driving a round pump housing with its outlet pipe on top."""
+    s = Sprite()
+    bevel_rect(s, 1, 6, 6, 13, GUNMETAL)
+    gear(s, 3.5, 9.5, 1.8, 1.2, 5, BRASS, hole=0.4)
+    s.rect(6, 9, 8, 10, STEEL[2])
+    disc(s, 11.5, 10, 3.9, STEEL, hole=0.0)
+    disc(s, 11.5, 10, 2.0, GUNMETAL, hole=0.0)
+    s.put(11, 9, BRASS[3]); s.put(12, 10, BRASS[1])
+    s.rect(10, 3, 12, 6, COPPER[2]); s.line(10, 3, 10, 6, COPPER[4]); s.rect(8, 2, 14, 3, COPPER[3]); s.line(8, 2, 14, 2, COPPER[4])
+    return finish(s)
+
+
+@item
+def engineer_toolkit():
+    """An open steel tool box: a red lid, a spanner and a dial gauge sticking out of the tray."""
+    s = Sprite()
+    bevel_rect(s, 1, 8, 14, 14, RED)
+    s.line(1, 10, 14, 10, RED[1])
+    s.rect(5, 6, 10, 7, STEEL[1]); s.line(5, 6, 10, 6, STEEL[3])
+    s.line(3, 2, 6, 7, STEEL[3]); s.put(2, 2, STEEL[4]); s.put(4, 1, STEEL[4]); s.put(3, 1, STEEL[2])
+    disc(s, 11, 4.5, 2.8, GUNMETAL, hole=0.0)
+    disc(s, 11, 4.5, 1.9, WHITE, hole=0.0)
+    s.line(11, 5, 12, 3, INK)
+    s.rect(11, 7, 11, 8, STEEL[2])
+    s.put(7, 12, STEEL[4]); s.put(8, 12, STEEL[4])
+    return finish(s)
+
+
 def save_all(only=None):
     os.makedirs(ITEM_DIR, exist_ok=True)
     for name, fn in ITEMS.items():

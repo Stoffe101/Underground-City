@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "note": "The cities' machinery (eighth pass, the Smith's engineering): which buildings run on a machine a Smith services, what it is called, which shop it keeps supplied, and what a works put back to work restocks. Every industrial building has a machine; these shops have one too.",
+  "buildings": [
+    {"building": "underground_city:ih_warehouse", "machine": "timber saw", "shop": "shop:builders"},
+    {"building": "underground_city:ih_workshop", "machine": "power hammer", "shop": "shop:hardware"},
+    {"building": "underground_city:vw_bakery", "machine": "dough mixer", "shop": "shop:bakery"},
+    {"building": "underground_city:bw_club", "machine": "cellar pump", "shop": "shop:bar"}
+  ],
+  "industrial": ["freight hoist", "conveyor", "stamping press", "extractor fan", "rolling mill"],
+  "restock_items": [
+    "minecraft:iron_ingot", "minecraft:copper_ingot", "minecraft:iron_nugget", "underground_city:refined_alloy", "underground_city:machined_parts",
+    "underground_city:gear_set", "underground_city:fasteners", "underground_city:steel_bracket", "underground_city:springs", "underground_city:bearing_set",
+    "underground_city:drive_shaft", "underground_city:gearbox"
+  ],
+  "restock_share": 0.25,
+  "shortage_percent": 20
+}

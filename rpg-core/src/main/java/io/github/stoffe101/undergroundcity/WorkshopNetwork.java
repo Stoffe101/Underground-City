@@ -23,7 +23,7 @@ import java.util.function.Function;
  * asks to start a batch, to take what is ready, or to fit the next tier. Every request is judged on the server against the player's reach and inventory.
  */
 public final class WorkshopNetwork {
-    private static final String VERSION = "2";   // 2: a part says where it is sold, and the Refresh message (seventh pass)
+    private static final String VERSION = "3";   // 2: a part says where it is sold, and the Refresh message (seventh pass); 3: turned recipes, jigs and the Turn message (eighth pass)
     private static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
         ResourceLocation.fromNamespaceAndPath(UndergroundCity.MOD_ID, "workshop"), () -> VERSION, VERSION::equals, VERSION::equals);
 
@@ -31,7 +31,13 @@ public final class WorkshopNetwork {
     record Part(String item, int need, int have, String where) {
         Part(String item, int need, int have) { this(item, need, have, ""); }
     }
-    record Row(String id, String title, String output, int count, int seconds, int tier, boolean allowed, String reason, boolean graded, boolean underground, String note, List<Part> parts) {}
+    /** {@code turned}: a precision part turned by hand to a drawing (eighth pass); {@code jigSet} the grade of the bench's jig for it and {@code jigRun} the grade a jig run makes here (-1: none). */
+    record Row(String id, String title, String output, int count, int seconds, int tier, boolean allowed, String reason, boolean graded, boolean underground, String note, List<Part> parts,
+               boolean turned, int jigSet, int jigRun) {
+        Row(String id, String title, String output, int count, int seconds, int tier, boolean allowed, String reason, boolean graded, boolean underground, String note, List<Part> parts) {
+            this(id, title, output, count, seconds, tier, allowed, reason, graded, underground, note, parts, false, -1, -1);
+        }
+    }
     record View(BlockPos pos, String station, String title, String career, int tier, String tierName, int maxTier, int batch, int speedPercent, String nextName, String nextSkill, boolean nextSkillOk,
                 List<Part> nextParts, String running, int secondsLeft, int secondsTotal, int grade, int readyCount, String readyItem, String note, List<Row> rows) {}
     record Start(BlockPos pos, String recipe, int batches) {}
@@ -39,6 +45,8 @@ public final class WorkshopNetwork {
     record Upgrade(BlockPos pos) {}
     /** The open screen asks again when its batch should be done (the countdown had stood still, and Take stayed grey until the station was opened again: smith run 1). */
     record Refresh(BlockPos pos) {}
+    /** Open the drawing of a turned recipe (eighth pass). */
+    record Turn(BlockPos pos, String recipe) {}
 
     static final double REACH_SQUARED = 64.0;
 
@@ -51,6 +59,11 @@ public final class WorkshopNetwork {
         toServer(2, Collect.class, (m, b) -> b.writeBlockPos(m.pos), b -> new Collect(b.readBlockPos()), (m, player) -> act(player, m.pos, e -> WorkshopBlock.collect(player, player.serverLevel(), e)));
         toServer(3, Upgrade.class, (m, b) -> b.writeBlockPos(m.pos), b -> new Upgrade(b.readBlockPos()), (m, player) -> act(player, m.pos, e -> WorkshopBlock.upgrade(player, player.serverLevel(), e)));
         toServer(4, Refresh.class, (m, b) -> b.writeBlockPos(m.pos), b -> new Refresh(b.readBlockPos()), (m, player) -> act(player, m.pos, e -> ""));
+        toServer(5, Turn.class, (m, b) -> { b.writeBlockPos(m.pos); b.writeUtf(m.recipe, 64); }, b -> new Turn(b.readBlockPos(), b.readUtf(64)), (m, player) -> {
+            if (player.distanceToSqr(net.minecraft.world.phys.Vec3.atCenterOf(m.pos)) > REACH_SQUARED || !(player.serverLevel().getBlockEntity(m.pos) instanceof WorkshopBlock.Entity e)) return;
+            String refusal = SmithWork.startTurning(player, player.serverLevel(), e, m.recipe);
+            if (refusal != null) open(player, m.pos, e, refusal);
+        });
     }
 
     private static void act(ServerPlayer player, BlockPos pos, Function<WorkshopBlock.Entity, String> what) {
@@ -84,7 +97,9 @@ public final class WorkshopNetwork {
             for (var in : r.inputs().entrySet()) parts.add(part(player, in.getKey(), in.getValue()));
             String why = WorkshopBlock.refusal(player, e, st, r, 1);
             boolean gated = e.tier < r.tier() || !r.skill().isEmpty() && !WorkshopBlock.has(c, r.skill());
-            rows.add(new Row(r.id(), r.title(), r.output().toString(), r.count(), (int) (Premises.ticks(r, tier, trade) / 20), r.tier(), !gated, why == null ? "" : why, r.graded(), r.legality().equals("underground"), r.note(), parts));
+            Integer jigSet = e.jigs.get(r.id());
+            rows.add(new Row(r.id(), r.title(), r.output().toString(), r.count(), (int) (Premises.ticks(r, tier, trade) / 20), r.tier(), !gated, why == null ? "" : why, r.graded(), r.legality().equals("underground"), r.note(), parts,
+                r.turned(), jigSet == null ? -1 : jigSet, r.turned() ? WorkshopBlock.jigGrade(e, r, c) : -1));
         }
         Workshops.Recipe running = e.busy() ? st.recipe(e.recipe) : null;
         int readyCount = 0;
@@ -123,6 +138,7 @@ public final class WorkshopNetwork {
         for (Row r : v.rows) {
             b.writeUtf(r.id, 64); b.writeUtf(r.title, 96); b.writeUtf(r.output, 128); b.writeVarInt(r.count); b.writeVarInt(r.seconds); b.writeVarInt(r.tier); b.writeBoolean(r.allowed);
             b.writeUtf(r.reason, 128); b.writeBoolean(r.graded); b.writeBoolean(r.underground); b.writeUtf(r.note, 256); writeParts(r.parts, b);
+            b.writeBoolean(r.turned); b.writeVarInt(r.jigSet + 1); b.writeVarInt(r.jigRun + 1);
         }
     }
 
@@ -141,7 +157,8 @@ public final class WorkshopNetwork {
         int n = Math.min(64, b.readVarInt());
         List<Row> rows = new ArrayList<>();
         for (int i = 0; i < n; i++)
-            rows.add(new Row(b.readUtf(64), b.readUtf(96), b.readUtf(128), b.readVarInt(), b.readVarInt(), b.readVarInt(), b.readBoolean(), b.readUtf(128), b.readBoolean(), b.readBoolean(), b.readUtf(256), readParts(b)));
+            rows.add(new Row(b.readUtf(64), b.readUtf(96), b.readUtf(128), b.readVarInt(), b.readVarInt(), b.readVarInt(), b.readBoolean(), b.readUtf(128), b.readBoolean(), b.readBoolean(), b.readUtf(256), readParts(b),
+                b.readBoolean(), b.readVarInt() - 1, b.readVarInt() - 1));
         return new View(pos, station, title, career, tier, tierName, maxTier, batch, speed, nextName, nextSkill, nextOk, nextParts, running, left, total, grade, readyCount, readyItem, note, rows);
     }
 
@@ -166,6 +183,7 @@ public final class WorkshopNetwork {
     static void start(BlockPos pos, String recipe, int batches) { CHANNEL.sendToServer(new Start(pos, recipe, batches)); }
     static void collect(BlockPos pos) { CHANNEL.sendToServer(new Collect(pos)); }
     static void upgrade(BlockPos pos) { CHANNEL.sendToServer(new Upgrade(pos)); }
+    static void turn(BlockPos pos, String recipe) { CHANNEL.sendToServer(new Turn(pos, recipe)); }
     /** When the client last asked a station again (client side, milliseconds): an answer arriving after the player closed or left the screen must not open it again (D-178 review). */
     static volatile long refreshedAt;
     static void refresh(BlockPos pos) { refreshedAt = System.currentTimeMillis(); CHANNEL.sendToServer(new Refresh(pos)); }

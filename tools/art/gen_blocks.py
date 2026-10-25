@@ -306,6 +306,51 @@ def utility_panel_side():
     return s
 
 
+# ------------------------------------------------------------------------------------------------ Machine drive housing (eighth pass: the Smith's machinery)
+DRIVE = ramp('#5d6a5a')
+DRIVE_STATES = ('running', 'stopped')
+
+
+def drive_front(state):
+    """A machine's drive housing set into a building's wall: a riveted olive steel guard with a slot through which the flywheel and belt show, a maker's plate and a lamp; a stopped one
+    carries a red tag on a wire and a smoke stain above the slot."""
+    s = Sprite()
+    brushed(s, DRIVE, 21)
+    s.rect(0, 0, 15, 0, DRIVE[3]); s.rect(0, 15, 15, 15, DRIVE[0]); s.rect(0, 0, 0, 15, DRIVE[3]); s.rect(15, 0, 15, 15, DRIVE[0])
+    for (x, y) in ((2, 2), (13, 2), (2, 13), (13, 13)):
+        s.put(x, y, STEEL[4]); s.put(x + 1, y + 1, DRIVE[0])          # rivets
+    s.rect(3, 5, 12, 11, INK)                                           # the slot in the guard
+    import math
+    for k in range(8):                                                  # the flywheel's spokes and rim, seen through the slot
+        a = k * math.pi / 4 + (0.0 if state == 'running' else 0.3)
+        s.put(int(7.5 + 2.6 * math.cos(a)), int(8 + 2.6 * math.sin(a)), STEEL[3])
+    s.put(7, 8, BRASS[3]); s.put(8, 8, BRASS[2])
+    s.line(4, 6, 11, 6, GUNMETAL[2]); s.line(4, 10, 11, 10, GUNMETAL[1])   # the belt above and below the hub
+    s.rect(5, 12, 10, 13, BRASS[2]); s.line(5, 12, 10, 12, BRASS[4]); s.put(7, 13, INK); s.put(8, 13, INK)   # the maker's plate
+    lamp = LEAF_LIME if state == 'running' else RED
+    s.rect(11, 2, 12, 3, lamp[3]); s.put(12, 2, lamp[4])
+    if state == 'stopped':
+        for (x, y) in ((5, 4), (6, 3), (8, 4), (9, 3), (7, 2)):
+            s.put(x, y, GUNMETAL[0])                                    # soot above the slot
+        s.line(10, 5, 11, 8, STEEL[2])                                  # the tag's wire
+        s.rect(10, 8, 12, 10, RED[3]); s.line(10, 8, 12, 8, RED[4]); s.put(11, 9, PAPER[4])
+    return s
+
+
+for _state in DRIVE_STATES:
+    TEXTURES['machine_drive_' + _state] = (lambda st=_state: drive_front(st))
+
+
+@tex
+def machine_drive_side():
+    s = Sprite()
+    brushed(s, DRIVE, 22)
+    s.rect(0, 0, 15, 0, DRIVE[3]); s.rect(0, 15, 15, 15, DRIVE[0])
+    for (x, y) in ((2, 2), (13, 2), (2, 13), (13, 13)):
+        s.put(x, y, STEEL[4])
+    return s
+
+
 # ------------------------------------------------------------------------------------------------ Personal computer (D-158)
 PC_CASE = ramp('#c9c4b6')
 
@@ -552,6 +597,10 @@ def write_models():
         with open(os.path.join(MODELS, f'utility_panel_{light}.json'), 'w') as fh:
             json.dump({'parent': 'minecraft:block/orientable', 'textures': {'top': 'underground_city:block/utility_panel_side', 'front': f'underground_city:block/utility_panel_{light}',
                                                                             'side': 'underground_city:block/utility_panel_side'}}, fh, indent=1)
+    for state in DRIVE_STATES:
+        with open(os.path.join(MODELS, f'machine_drive_{state}.json'), 'w') as fh:
+            json.dump({'parent': 'minecraft:block/orientable', 'textures': {'top': 'underground_city:block/machine_drive_side', 'front': f'underground_city:block/machine_drive_{state}',
+                                                                            'side': 'underground_city:block/machine_drive_side'}}, fh, indent=1)
     for load in RACK_LOADS:
         with open(os.path.join(MODELS, f'drying_rack_{load}.json'), 'w') as fh:
             json.dump(rack_model(load), fh, indent=1)
@@ -575,6 +624,9 @@ def write_states():
     with open(os.path.join(sd, 'utility_panel.json'), 'w') as fh:
         json.dump({'variants': {f'facing={d},state={light}': ({'model': f'underground_city:block/utility_panel_{light}'} | ({'y': y} if y else {}))
                                 for d, y in (('north', 0), ('east', 90), ('south', 180), ('west', 270)) for light in UTILITY_LIGHTS}}, fh, indent=1)
+    with open(os.path.join(sd, 'machine_drive.json'), 'w') as fh:
+        json.dump({'variants': {f'facing={d},running={str(state == "running").lower()}': ({'model': f'underground_city:block/machine_drive_{state}'} | ({'y': y} if y else {}))
+                                for d, y in (('north', 0), ('east', 90), ('south', 180), ('west', 270)) for state in DRIVE_STATES}}, fh, indent=1)
     with open(os.path.join(sd, 'drying_rack.json'), 'w') as fh:
         json.dump({'variants': {f'facing={d},load={load}': ({'model': f'underground_city:block/drying_rack_{load}'} | ({'y': y} if y else {}))
                                 for d, y in (('north', 0), ('east', 90), ('south', 180), ('west', 270)) for load in RACK_LOADS}}, fh, indent=1)

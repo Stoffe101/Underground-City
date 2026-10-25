@@ -80,6 +80,9 @@ public final class UndergroundCity {
     public static final RegistryObject<Block> UTILITY_PANEL = BLOCKS.register("utility_panel",
         () -> new TechBlocks.UtilityPanel(BlockBehaviour.Properties.of().mapColor(net.minecraft.world.level.material.MapColor.METAL).strength(5.0f, 1200.0f).requiresCorrectToolForDrops().sound(net.minecraft.world.level.block.SoundType.METAL)));
     public static final RegistryObject<Item> UTILITY_PANEL_ITEM = ITEMS.register("utility_panel", () -> new BlockItem(UTILITY_PANEL.get(), new Item.Properties()));
+    // the Smith's machinery (eighth pass): a building's drive housing, placed by Core beside the street doors of industrial buildings and the shops that run on a machine
+    public static final RegistryObject<Block> MACHINE_DRIVE = BLOCKS.register("machine_drive",
+        () -> new MachineBlock(BlockBehaviour.Properties.of().mapColor(net.minecraft.world.level.material.MapColor.METAL).strength(5.0f, 1200.0f).requiresCorrectToolForDrops().sound(net.minecraft.world.level.block.SoundType.METAL)));
     public static final RegistryObject<Block> PERSONAL_COMPUTER = BLOCKS.register("personal_computer",
         () -> new TechBlocks.Computer(BlockBehaviour.Properties.of().mapColor(net.minecraft.world.level.material.MapColor.SAND).strength(1.5f).noOcclusion().sound(net.minecraft.world.level.block.SoundType.METAL)));
     public static final RegistryObject<Item> PERSONAL_COMPUTER_ITEM = ITEMS.register("personal_computer", () -> new BlockItem(PERSONAL_COMPUTER.get(), new Item.Properties()));
@@ -181,6 +184,7 @@ public final class UndergroundCity {
         NavigationNetwork.register();
         WorkshopNetwork.register();
         TechNetwork.register();
+        SmithNetwork.register();
         FenceNetwork.register();
         MinecraftForge.EVENT_BUS.register(this);
         MinecraftForge.EVENT_BUS.register(new RenamedIds());
@@ -212,6 +216,8 @@ public final class UndergroundCity {
         MinecraftForge.EVENT_BUS.register(new TechService());
         MinecraftForge.EVENT_BUS.register(new Navigation());
         MinecraftForge.EVENT_BUS.register(new TechWork());
+        MinecraftForge.EVENT_BUS.register(new MachineService());
+        MinecraftForge.EVENT_BUS.register(new SmithWork());
         MinecraftForge.EVENT_BUS.register(new StaffZones());
         MinecraftForge.EVENT_BUS.register(new ResourceSites());
         MinecraftForge.EVENT_BUS.register(new HouseholdService());
@@ -256,6 +262,7 @@ public final class UndergroundCity {
         event.addListener(SkillCatalog.INSTANCE);
         event.addListener(TechDesigns.INSTANCE);
         event.addListener(Workshops.INSTANCE);
+        event.addListener(MachineService.Loader.INSTANCE);
         event.addListener(SkillCatalog.Specializations.INSTANCE);
         event.addListener(PropertyCatalog.INSTANCE);
         event.addListener(ContrabandCatalog.INSTANCE);

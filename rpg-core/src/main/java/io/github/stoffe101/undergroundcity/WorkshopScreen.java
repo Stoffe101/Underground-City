@@ -19,7 +19,7 @@ import net.minecraftforge.registries.ForgeRegistries;
 public final class WorkshopScreen extends UcScreen {
     private WorkshopNetwork.View view;
     private int selected, scroll, batches = 1;
-    private UcButton start, take, fit, more;
+    private UcButton start, take, fit, more, byHand;
     private int listX, listY, listW, listH;
     private static final int ROW = 22, STATUS = 34;
     /** When the shown view arrived (client ticks), so the batch's time left counts down on screen and the screen asks again once it is up. */
@@ -72,8 +72,15 @@ public final class WorkshopScreen extends UcScreen {
         listX = bodyX(); listY = bodyY() + STATUS; listW = (int) (bodyW() * 0.44); listH = bodyBottom() - listY;
         int by = py + ph - FOOTER + 2;
         start = add(new UcButton(px + pw - PAD - 70, by, 70, 18, "Start", b -> {
-            if (selected < view.rows().size()) WorkshopNetwork.start(view.pos(), view.rows().get(selected).id(), batches);
+            if (selected >= view.rows().size()) return;
+            WorkshopNetwork.Row r = view.rows().get(selected);
+            // a turned part is turned by hand until the bench holds a jig for it (eighth pass)
+            if (r.turned() && r.jigRun() < 0) WorkshopNetwork.turn(view.pos(), r.id());
+            else WorkshopNetwork.start(view.pos(), r.id(), batches);
         }).kind(UcButton.Kind.PRIMARY));
+        byHand = add(new UcButton(bodyX() + bodyW() - 92, bodyBottom() - 18, 92, 18, "Turn by hand", b -> {
+            if (selected < view.rows().size()) WorkshopNetwork.turn(view.pos(), view.rows().get(selected).id());
+        }).kind(UcButton.Kind.CHIP).tooltip("Turn one to the drawing yourself:", "a better part sets a better jig."));
         more = add(new UcButton(px + pw - PAD - 70 - 4 - 44, by, 44, 18, "x1", b -> { batches = batches % Math.max(1, view.batch()) + 1; labels(); }));
         take = add(new UcButton(px + pw - PAD - 70 - 4 - 44 - 4 - 56, by, 56, 18, "Take", b -> WorkshopNetwork.collect(view.pos())));
         fit = add(new UcButton(bodyX() + bodyW() - 96, bodyY() + 4, 96, 18, "Fit tier", b -> WorkshopNetwork.upgrade(view.pos())));
@@ -89,7 +96,11 @@ public final class WorkshopScreen extends UcScreen {
     private void labels() {
         if (start == null) return;
         boolean busy = !view.running().isEmpty();
-        start.active = !busy && selected < view.rows().size() && ready(view.rows().get(selected));
+        WorkshopNetwork.Row row = selected < view.rows().size() ? view.rows().get(selected) : null;
+        start.active = !busy && row != null && ready(row);
+        start.label(row != null && row.turned() ? (row.jigRun() < 0 ? "Turn" : "Run jig") : "Start");
+        byHand.visible = row != null && row.turned() && row.jigRun() >= 0;
+        byHand.active = !busy && row != null && ready(row);
         more.label("x" + batches);
         more.active = view.batch() > 1;
         take.active = view.readyCount() > 0;
@@ -159,7 +170,11 @@ public final class WorkshopScreen extends UcScreen {
         String time = r.seconds() == 0 ? "at once" : r.seconds() < 90 ? r.seconds() + " s of play" : (r.seconds() + 59) / 60 + " min of play";
         UcUi.text(g, font, UcUi.fit(font, "Makes " + r.count() * batches + " " + item(r.output()).getDescription().getString() + ", " + time, w), x, y + 11, UcUi.SOFT);
         int ly = y + 23;
-        if (r.graded()) { UcUi.text(g, font, UcUi.fit(font, "Graded: Standard, Fine or Reserve", w), x, ly, UcUi.AMBER); ly += 11; }
+        if (r.turned()) {
+            String jig = r.jigSet() < 0 ? "Turned by hand to a drawing: the cleaner, the better the grade." : r.jigRun() < 0 ? "Jig set at " + Workshops.GRADES[r.jigSet()] + "; a Drill Press runs it."
+                : "Jig set at " + Workshops.GRADES[r.jigSet()] + ": runs at " + Workshops.GRADES[r.jigRun()] + " here.";
+            ly = UcUi.wrapped(g, font, jig, x, ly, w, UcUi.AMBER, 2) + 1;
+        } else if (r.graded()) { UcUi.text(g, font, UcUi.fit(font, "Graded: Standard, Fine or Reserve", w), x, ly, UcUi.AMBER); ly += 11; }
         ly = UcUi.wrapped(g, font, r.note(), x, ly, w, UcUi.DIM, 3) + 4;
         for (WorkshopNetwork.Part p : r.parts()) {
             g.renderItem(new ItemStack(item(p.item())), x, ly - 4);

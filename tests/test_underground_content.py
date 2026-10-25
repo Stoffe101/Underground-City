@@ -125,7 +125,8 @@ class SkillTreeTests(unittest.TestCase):
             gated |= {t.get("upgrade", {}).get("skill") for t in station["tiers"] if t.get("upgrade", {}).get("skill")}
             for r in station["recipes"]:
                 gated |= ({r["skill"]} if r.get("skill") else set()) | set(r.get("grading", {}).get("skills", {}))
-        checked_in_code = {"farmer.restricted_cultivation", "technician.bypass_tooling"}   # RestrictedCuttingItem, SecureTerminalService
+        # RestrictedCuttingItem, SecureTerminalService; the Smith's jig grade (WorkshopBlock.jigGrade) and machinery reach (SmithWork.reach, eighth pass)
+        checked_in_code = {"farmer.restricted_cultivation", "technician.bypass_tooling", "smith.millwright", "smith.production_tooling", "smith.master_engineer"}
         percent = ("legal_payout_percent", "underground_payout_percent", "yield_percent", "upgrade_discount_percent", "inspection_modifier", "exchange_discount", "licences")
         for career, tree in self.trees.items():
             needed = {r for n in tree["nodes"] for r in n["requires"]}

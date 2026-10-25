@@ -1,0 +1,19 @@
+{
+  "schema_version": 3,
+  "title": "Drive shafts for the Northgate depot",
+  "career": "smith",
+  "level": 3,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "underground_city:drive_shaft",
+      "count": 4
+    }
+  ],
+  "credits": 140,
+  "xp": 320,
+  "capacity": 2,
+  "refill_ticks": 12000,
+  "legality": "legal",
+  "requires_skill": "smith.fundamentals"
+}

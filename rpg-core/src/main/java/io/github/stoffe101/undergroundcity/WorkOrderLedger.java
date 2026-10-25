@@ -505,6 +505,7 @@ public final class WorkOrderLedger {
         if (units < 0 || last > now) throw new IllegalStateException("Invalid saved supplier stock");
         if (units >= stock.capacity()) last = now; // a full shelf cannot bank a hidden backlog
         long intervals = (now - last) / stock.intervalTicks();
+        if (intervals > 0 && MachineService.stalled(stock)) { last = now; intervals = 0; }   // the works that make it stand idle (the Smith's machinery): the time is lost, not banked
         if (intervals > 0) {
             long gained = Math.multiplyExact(intervals, (long) stock.unitsPerInterval());
             units = (int) Math.min(stock.capacity(), units + gained);
@@ -639,6 +640,27 @@ public final class WorkOrderLedger {
         root.getCompound("regional").getCompound(stock.id()).putInt("units", units - taken);
         persist();
         return taken;
+    }
+
+    /** Brings these lines' active-time refill up to now and persists once: what they gained before a works stopped stays theirs (the Smith's machinery). */
+    void bank(java.util.Collection<RegionalStock> stocks) {
+        if (faulted || stocks.isEmpty()) return;
+        for (RegionalStock stock : stocks) regionalUnits(stock);
+        persist();
+    }
+
+    /**
+     * A works put back to work (the Smith's machinery, eighth pass): adds up to {@code quantity} units to a line, never above its capacity, and returns how many it added. A catch-up shift after a
+     * repair; it creates goods for the shelf, never credits. Persists once.
+     */
+    int topUp(RegionalStock stock, int quantity) {
+        if (faulted || quantity < 1) return 0;
+        int units = regionalUnits(stock);
+        int added = Math.min(stock.capacity() - units, quantity);
+        if (added <= 0) return 0;
+        root.getCompound("regional").getCompound(stock.id()).putInt("units", units + added);
+        persist();
+        return added;
     }
 
     /** Test seam: sets a supplier line's shared units, standing in for other buyers (GameTests and the scripted journey). Never called by gameplay. */

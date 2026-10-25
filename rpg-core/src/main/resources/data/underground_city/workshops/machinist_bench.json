@@ -3,7 +3,7 @@
   "id": "machinist_bench",
   "career": "smith",
   "title": "Machinist's Bench",
-  "note": "Turns iron into the parts every other trade fits: fasteners, brackets, hoops, springs and gear sets. A drill press and a lathe open finer work.",
+  "note": "Turns iron into the parts every other trade fits: fasteners, brackets, hoops, springs and gear sets. Precision parts are turned by hand to a drawing first; from the Drill Press on, the bench keeps the setup as a jig and repeats it. A drill press and a lathe open finer work.",
   "tiers": [
     {
       "tier": 1,
@@ -90,6 +90,34 @@
       "note": "An ingot wound and tempered into four springs."
     },
     {
+      "id": "bearing_set",
+      "title": "Bearing set",
+      "inputs": {
+        "minecraft:iron_nugget": 4,
+        "underground_city:springs": 1
+      },
+      "output": "underground_city:bearing_set",
+      "count": 2,
+      "seconds": 45,
+      "xp": 12,
+      "note": "Four nuggets rolled into balls and races, with a spring for the cage: two bearing sets. A worn bearing in a machine is replaced with one."
+    },
+    {
+      "id": "drive_shaft",
+      "title": "Drive shaft",
+      "inputs": {
+        "minecraft:iron_ingot": 3
+      },
+      "output": "underground_city:drive_shaft",
+      "count": 1,
+      "seconds": 120,
+      "xp": 30,
+      "hands_on": {
+        "sections": 6
+      },
+      "note": "A stepped shaft turned to a drawing. Turned by hand at a Vice and Files; a Drill Press runs it from the jig you set. Gearboxes and pumps are built on one."
+    },
+    {
       "id": "gear_set",
       "title": "Gear set",
       "inputs": {
@@ -104,6 +132,28 @@
       "note": "Two iron and two copper cut into a gear set. The top tier of most stations needs one."
     },
     {
+      "id": "gearbox",
+      "title": "Gearbox",
+      "inputs": {
+        "underground_city:gear_set": 2,
+        "underground_city:drive_shaft": 1,
+        "underground_city:bearing_set": 1,
+        "underground_city:fasteners": 4
+      },
+      "output": "underground_city:gearbox",
+      "count": 1,
+      "seconds": 150,
+      "tier": 2,
+      "skill": "smith.structural_works",
+      "xp": 50,
+      "grading": {
+        "from_input": true,
+        "from_item": "underground_city:drive_shaft",
+        "max": 2
+      },
+      "note": "Two gear sets on a turned shaft and a bearing, bolted into a case. It keeps the grade of the shaft it was built on. A Mill's Geared Crank takes one."
+    },
+    {
       "id": "machined_parts",
       "title": "Machined parts",
       "inputs": {
@@ -115,7 +165,10 @@
       "seconds": 90,
       "xp": 25,
       "tier": 2,
-      "note": "Alloy and iron on the drill press: two machined parts, as the exchange sells them."
+      "note": "Alloy and iron turned to a drawing: turned by hand the first time, then run from the bench's jig. The Gunsmith's parts kits are built around them.",
+      "hands_on": {
+        "sections": 7
+      }
     },
     {
       "id": "precision_parts",
@@ -130,7 +183,32 @@
       "xp": 45,
       "tier": 3,
       "skill": "smith.precision_machining",
-      "note": "Lathe work to tight tolerances, without a control board."
+      "note": "Lathe work to tight tolerances, turned by hand to a long drawing, then from a jig.",
+      "hands_on": {
+        "sections": 9
+      }
+    },
+    {
+      "id": "pump_assembly",
+      "title": "Pump assembly",
+      "inputs": {
+        "underground_city:gearbox": 1,
+        "underground_city:drive_shaft": 1,
+        "underground_city:steel_bracket": 2,
+        "underground_city:springs": 2
+      },
+      "output": "underground_city:pump_assembly",
+      "count": 1,
+      "seconds": 180,
+      "tier": 3,
+      "skill": "smith.heavy_assembly",
+      "xp": 70,
+      "grading": {
+        "from_input": true,
+        "from_item": "underground_city:gearbox",
+        "max": 2
+      },
+      "note": "A gearbox driving an impeller on its own shaft. The heart of an Irrigation Sprinkler and of the cities' waterworks."
     },
     {
       "id": "unstamped_plate",

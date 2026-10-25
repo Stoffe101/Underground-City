@@ -254,6 +254,7 @@ def build(data: dict, contracts: dict) -> dict[Path, bytes]:
         "item.underground_city.scrap_heap": "Scrap Heap",
         "item.underground_city.sealed_envelope": "Sealed Envelope",
         "block.underground_city.utility_panel": "Utility Panel",
+        "block.underground_city.machine_drive": "Machine Drive Housing",
         "item.underground_city.utility_panel": "Utility Panel",
         "block.underground_city.personal_computer": "Personal Computer",
         "item.underground_city.personal_computer": "Personal Computer",
