@@ -99,6 +99,17 @@ public final class VisualCaptureHarness {
                 screen.select("gear_set");
                 yield screen;
             }
+            case "workshop-running" -> {
+                // a batch at work with its countdown, and a batch of the same station ready to take (the seventh pass's countdown and Take)
+                var rows=List.of(
+                    new WorkshopNetwork.Row("fasteners","Fasteners","underground_city:fasteners",8,14,1,true,"",false,false,"Six nuggets turned into eight bolts, nuts and rivets.",List.of(new WorkshopNetwork.Part("minecraft:iron_nugget",6,12))),
+                    new WorkshopNetwork.Row("springs","Coil springs","underground_city:springs",4,44,1,true,"",false,false,"An ingot wound and tempered into four springs.",List.of(new WorkshopNetwork.Part("minecraft:iron_ingot",1,7),new WorkshopNetwork.Part("minecraft:redstone",1,0,"Sold at Hardware and Metals, Ironhaven 6; Ironhaven exchange 6"))));
+                var screen=new WorkshopScreen(new WorkshopNetwork.View(at,"machinist_bench","Machinist's Bench","smith",1,"Vice and Files",3,2,125,"Drill Press","",true,
+                    List.of(new WorkshopNetwork.Part("underground_city:gear_set",1,0,"Made at a Machinist's Bench"),new WorkshopNetwork.Part("underground_city:steel_bracket",2,2),new WorkshopNetwork.Part("underground_city:springs",2,0)),
+                    "Fasteners x2",23,32,0,8,"underground_city:fasteners","Trade premises: one more batch at a time, a quarter faster.",rows));
+                screen.select("fasteners");
+                yield screen;
+            }
             case "workshop-still" -> {
                 var rows=List.of(
                     new WorkshopNetwork.Row("grain_spirit","Grain spirit (licensed)","underground_city:grain_spirit",2,600,1,false,"Needs the skill Distiller's Licence.",true,false,"Six wheat and two sugar make two bottles. Only a licensed distiller runs it; carrying it is legal with the licence.",List.of(new WorkshopNetwork.Part("minecraft:wheat",6,12),sugar,new WorkshopNetwork.Part("minecraft:glass_bottle",2,6))),
@@ -371,6 +382,10 @@ public final class VisualCaptureHarness {
             :List.of(new TerminalData.Row("underground_city:crew_canteen_flour","Crew contract: flour for the depot canteen",2,120,300,2,false,0,
                     List.of(new TerminalData.Req("underground_city:flour",24,24)),
                     new TerminalData.Extra(false,"",true,"","",0,0,List.of("Crew: 1/3 parts in, bonus 240 shared; supplier 180"))),
+                // another trade's part (seventh pass): listed to every member, with whose it is and the supplier
+                new TerminalData.Row("underground_city:crew_canteen_fittings","Crew contract: fittings for the depot canteen",3,140,320,2,false,0,
+                    List.of(new TerminalData.Req("underground_city:fasteners",24,0,"","","Sold at Builders' Yard, Ironhaven 3; Ironhaven exchange 4"),new TerminalData.Req("underground_city:steel_bracket",6,0)),
+                    new TerminalData.Extra(false,"",true,"","",0,0,List.of("Crew: 1/3 parts in, bonus 240 shared; supplier 210"),"smith")),
                 new TerminalData.Row("underground_city:civic_market_lanterns","Lanterns for the Valewood market square",1,60,160,2,false,0,
                     List.of(new TerminalData.Req("minecraft:lantern",4,1)),
                     new TerminalData.Extra(false,"",true,"Valewood Market Council","valewood",0,1,List.of())));
@@ -435,6 +450,7 @@ public final class VisualCaptureHarness {
         cases.add(Case.challenge("uc-tech-quiet-patch","tech-quiet-patch"));
         cases.add(Case.challenge("uc-workshop-vat","workshop-vat"));
         cases.add(Case.challenge("uc-workshop-bench","workshop-bench"));
+        cases.add(Case.challenge("uc-workshop-running","workshop-running"));
         cases.add(Case.challenge("uc-workshop-still","workshop-still"));
         cases.add(new Case("uc-skills-vintner",TerminalScreen.Page.SKILLS,careerSkills("vintner",11,java.util.Set.of("vintner.fundamentals","vintner.cellar_craft","vintner.still_craft")),0,false,"vintner.bootleg_trade"));
         cases.add(new Case("uc-skills-smith",TerminalScreen.Page.SKILLS,careerSkills("smith",11,java.util.Set.of("smith.fundamentals","smith.structural_works","smith.armoury_contracts","smith.unlisted_fabrication")),0,false,"smith.contraband_armoury"));
@@ -464,6 +480,7 @@ public final class VisualCaptureHarness {
         cases.add(new Case("uc-exchange-sold-out",TerminalScreen.Page.IMPORTS,manyOffers(12,true,500),0));
         cases.add(new Case("uc-contract-regional",TerminalScreen.Page.CONTRACTS,regionalContract(true,2,1),0));
         cases.add(new Case("uc-contract-crew",TerminalScreen.Page.CONTRACTS,crewAndRaid(false),0));
+        cases.add(new Case("uc-contract-crew-other",TerminalScreen.Page.CONTRACTS,crewAndRaid(false),0));
         cases.add(new Case("uc-contract-raid-tracked",TerminalScreen.Page.CONTRACTS,crewAndRaid(true),0,true,null));
         cases.add(new Case("uc-contract-visit-locked",TerminalScreen.Page.CONTRACTS,regionalContract(false,0,0),0));
         if(!QShopEconomy.available()) throw new IllegalStateException("Visual coverage requires installed Q Shop 1.8.4");
@@ -578,6 +595,7 @@ public final class VisualCaptureHarness {
             else if(capture.skill!=null) screen.selectSkill(capture.skill);
             // The "legal with rewards" case selects the heirloom contract (index 1 of the legal list).
             if(capture.name.equals("uc-contract-legal-rewards")) screen.selectJob(1);
+            if(capture.name.equals("uc-contract-crew-other")) screen.selectJobById("underground_city:crew_canteen_fittings");
             if(capture.name.equals("uc-exchange-overflow-scrolled")) for(int i=0;i<8;i++) screen.mouseScrolled(0,0,-1.0);
         }
         frames=0;

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Two real clients on a dedicated server for half an hour on a NEW furnished archipelago world, measured (alpha criterion 9; PerfSessionServer, PerfSessionClient).
 
-Phase 1: both clients join; the server registers them, then runs three segments (both in Ironhaven by day, Ironhaven and Valewood by day, both in Blackwater at night), each opened with a
+Both clients load Xaero's Minimap and World Map, the server does not. Phase 1: both clients join; the server registers them, then runs three segments (both in Ironhaven by day, Ironhaven and Valewood by day, both in Blackwater at night), each opened with a
 logged teleport to a street near the city's centre, while the clients walk on their own; then a timed full save and a normal stop. Phase 2 starts the same world again, both clients rejoin,
 two more minutes are measured. The report (build/perf-session/report.json) holds the server's tick percentiles per segment, the entity, chunk and heap samples, and each client's frames
 per minute; build/perf-session/logs has every process's log.
@@ -29,7 +29,9 @@ MODULE = ROOT / 'rpg-core'
 OUTPUT = ROOT / 'build' / 'perf-session'
 SERVER = MODULE / 'run-perf-server'
 SETS = 'world,furnished,scarcity'
-WORLD_FLAGS = ['-PucDevWorld=true', '-PucAutoWorld=false', '-PucWorldLayout=archipelago', f'-PucPack={SETS}', '-PucJourneyScenario=perf']
+# Xaero's Minimap and World Map on the clients only: a client mod must not be needed on the server (the playtest guide's -Xaero)
+CLIENT_SETS = SETS + ',navigation'
+WORLD_FLAGS = ['-PucDevWorld=true', '-PucAutoWorld=false', '-PucWorldLayout=archipelago', '-PucJourneyScenario=perf']
 NAMES = {'farmer': 'UC_Farmer', 'smith': 'UC_Smith'}
 
 
@@ -73,13 +75,13 @@ def phase(number: int, modules: list[Path], minutes: float) -> dict:
     budget = 900 + (minutes * 60 if number == 1 else 300) + 600
     try:
         server_log = OUTPUT / 'logs' / f'server-phase{number}.log'
-        processes.append(start(MODULE, 'runServer', ['-PucRunDir=run-perf-server', f'-PucJourneyPhase={number}', f'-PucPerfMinutes={minutes}', '-PucServerHeap=3G', *WORLD_FLAGS], server_log))
+        processes.append(start(MODULE, 'runServer', ['-PucRunDir=run-perf-server', f'-PucJourneyPhase={number}', f'-PucPerfMinutes={minutes}', '-PucServerHeap=3G', f'-PucPack={SETS}', *WORLD_FLAGS], server_log))
         deadline = time.monotonic() + 900
         while 'Done (' not in server_log.read_text(errors='replace'):
             if processes[0][0].poll() is not None or time.monotonic() > deadline: raise RuntimeError(f'the server did not start; see {server_log}')
             time.sleep(2)
         for module, role in zip(modules, NAMES):
-            processes.append(start(module, 'runClient', [f'-PucRunDir=run-journey-client-{role}', f'-PucJourneyClient={NAMES[role]}', f'-PucJourneyPhase={number}', '-PucClientHeap=2G', *WORLD_FLAGS],
+            processes.append(start(module, 'runClient', [f'-PucRunDir=run-journey-client-{role}', f'-PucJourneyClient={NAMES[role]}', f'-PucJourneyPhase={number}', '-PucClientHeap=2G', f'-PucPack={CLIENT_SETS}', *WORLD_FLAGS],
                                    OUTPUT / 'logs' / f'{role}-phase{number}.log', OUTPUT / 'tmp' / role))
         deadline = time.monotonic() + budget
         while not marker.exists():
@@ -121,7 +123,7 @@ def main() -> int:
     parser.add_argument('--minutes', type=float, default=30.0, help='length of phase 1 (three equal segments)')
     args = parser.parse_args()
     modules = prepare()
-    report = {'sets': SETS, 'minutes': args.minutes, 'phases': []}
+    report = {'server_sets': SETS, 'client_sets': CLIENT_SETS, 'minutes': args.minutes, 'phases': []}
     for number in (1, 2):
         report['phases'].append(phase(number, modules, args.minutes))
         print(f'perf session phase {number} done', flush=True)

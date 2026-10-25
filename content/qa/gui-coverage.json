@@ -759,6 +759,13 @@
       "description": "The Machinist's Bench (D-163) at tier 2: the Smith's parts, a recipe needing tier 3, an underground recipe, the lathe's parts and skill still missing"
     },
     {
+      "id": "workshop.running",
+      "expected_file": "uc-workshop-running.png",
+      "owner": "underground_city",
+      "group": "workshop",
+      "description": "The Machinist's Bench in trade premises (seventh pass): two batches of fasteners at work with the seconds left counting down, a finished batch ready to Take, and where a missing part is sold or made"
+    },
+    {
       "id": "workshop.still",
       "expected_file": "uc-workshop-still.png",
       "owner": "underground_city",
@@ -778,6 +785,13 @@
       "owner": "underground_city",
       "group": "terminal",
       "description": "The work orders page with a Crew contract (D-170): the Crew line counts the parts in, the part orders by career, and the Supplier button for a part nobody can make"
+    },
+    {
+      "id": "contract.crew_other_trade",
+      "expected_file": "uc-contract-crew-other.png",
+      "owner": "underground_city",
+      "group": "terminal",
+      "description": "Another trade's part of a Crew contract (seventh pass): a Farmer sees the Smith's fittings part, whose it is, where its goods are sold, and the Supplier button"
     },
     {
       "id": "contract.raid_tracked",
