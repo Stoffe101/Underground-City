@@ -24,4 +24,24 @@ Branch `feature/world-playability-overhaul`, draft PR [#25](https://github.com/S
 
 ## Bugs found and fixed in this pass
 
+Each was found by a scripted client, a GameTest, CI or a code review in this pass, and fixed where it starts.
+
+| Bug | Found by | Fix |
+| --- | --- | --- |
+| A second right click on a shopkeeper closed the conversation: the replaced screen told the server it had ended, and the server answered a choice it did not know by closing it | Smith client run | a replaced screen for the same person continues the conversation; the server ignores "end" and anything said from more than 10 blocks away (D-178) |
+| A shop's camera called the police on a customer at the counter in opening hours | Farmer client run | in hours a camera warns first (*Staff only*) and reports only somebody who stays in the back (D-178) |
+| Cameras watched people on the lawn or the pavement outside a building | Smith client run | a camera watches only somebody indoors: under a roof, and not in the open cells by an exterior door (D-178) |
+| A shopkeeper could stand outside their own wall, unreachable across it | Smith client run | a keeper's stand cell must be open to the counter at head height, and diagonally through one open side (D-178; GameTest) |
+| The hardware desk's foreman never appeared: counter staff were spawned in the same order as everybody else and the cap was reached first | Smith client run | the people who serve at counters are spawned first (D-178) |
+| A request the server dropped because another was in flight was lost silently, and the screen waited for an answer that never came | Smith and premises client runs | the server answers a dropped request with a fresh view (at most once every half second) |
+| Find a home showed only the eight easiest homes within 64 blocks, so the workshop premises a player stood at could not be rented | premises client run 1 | the homes of the building the player stands at come first, and the list holds sixteen (D-181) |
+| Anybody could take the batch another player had started, and break the station to get at it; a pile of two recipes paid the last recipe's XP for every batch | code review | a batch is its maker's (D-180; GameTest) |
+| A station's countdown stood still on screen and Take did not light until the screen was reopened | Farmer client run | the station refreshes the open screen when the batch is done, and the seconds left round up |
+| The new batch-ownership clock wrote a negative time for a batch finished at tick zero, and the GameTest caught it in CI | CI | a finished batch's time is at least 1 |
+| A station screen sent a stale view over a fresh one when the server's refresh and the screen's own request crossed | code review | a view that arrives within 1.5 s of a refresh, with no matching screen open, is ignored |
+| `/uc_prepare` read item registries while its class loaded, before they existed | local client run | the kits are built when first used |
+| A missing part's "where to get it" line could overflow a station's tooltip | Farmer client run | the line is cut to 110 characters |
+
+The scripted clients themselves were made more robust where a person would simply try again (a lost key tap, a buy click that raced the screen's refresh, a hotbar tap that missed, a recipe search that stopped short of the book's last page); those are test changes, not game fixes, and each is noted in the run that needed it.
+
 ## Next
