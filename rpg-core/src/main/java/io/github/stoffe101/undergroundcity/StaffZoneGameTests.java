@@ -91,6 +91,20 @@ public final class StaffZoneGameTests {
             level.setBlock(inside, air, 2);
             StaffZones.resetForTest();
             check(StaffZones.of(level, b).isPublic(back) && StaffZones.onPublicFloor(level, b, backBarrel), "an open doorway did not join the back room to the floor");
+
+            // Modern Life's floor mat counts as "solid" for blocksMotion (it copies bamboo's properties) though it is a sixteenth of a block high: mats just inside the street door must
+            // not cut the public floor off (the corner store's whole floor was staff only, unmarked run 2, eighth pass)
+            var mat = net.minecraftforge.registries.ForgeRegistries.BLOCKS.getValue(net.minecraft.resources.ResourceLocation.parse("modernlife:floor_mat"));
+            if (mat != null && mat != Blocks.AIR) {
+                BlockPos inDoor = new BlockPos(x0 + 7, y + 1, z0 + 3);
+                for (int x = 6; x <= 8; x++) level.setBlock(new BlockPos(x0 + x, y + 1, z0 + 3), mat.defaultBlockState(), 2);
+                StaffZones.resetForTest();
+                com.mojang.logging.LogUtils.getLogger().info("[UC-TEST] a Modern Life floor mat: blocksMotion {}, collision height {}", level.getBlockState(inDoor).blocksMotion(),
+                    level.getBlockState(inDoor).getCollisionShape(level, inDoor).max(Direction.Axis.Y));
+                check(StaffZones.clear(level, inDoor) && StaffZones.walkable(level, inDoor), "a floor mat is taken for a wall");
+                z = StaffZones.of(level, b);
+                check(z.isPublic(inDoor) && z.isPublic(front) && !StaffZones.inStaffArea(level, b, front), "floor mats inside the street door cut the public floor off");
+            }
         } finally {
             for (int x = 0; x < 16; x++) for (int z = 0; z < 16; z++) for (int dy = 0; dy <= 6; dy++) level.setBlock(new BlockPos(x0 + x, y + dy, z0 + z), air, 2);
             StaffZones.resetForTest();

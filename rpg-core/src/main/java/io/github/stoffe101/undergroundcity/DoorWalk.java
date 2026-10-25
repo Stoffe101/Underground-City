@@ -65,7 +65,7 @@ final class DoorWalk {
                     for (int k = 1; k <= 4 && clear; k++) {
                         BlockPos cell = pos.relative(out, k);
                         level.getChunk(cell.getX() >> 4, cell.getZ() >> 4);
-                        clear = !level.getBlockState(cell).blocksMotion() && !level.getBlockState(cell.above()).blocksMotion() && level.getBlockState(cell.below()).blocksMotion();
+                        clear = StaffZones.walkable(level, cell);
                     }
                     if (!clear) continue;
                     Vec3 stand = Vec3.atBottomCenterOf(pos).add(out.getStepX() * 3.5, 0, out.getStepZ() * 3.5);

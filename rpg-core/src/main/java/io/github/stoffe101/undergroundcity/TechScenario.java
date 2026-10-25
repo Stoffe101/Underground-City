@@ -286,7 +286,7 @@ final class TechScenario {
         if (!(state.getBlock() instanceof TechBlocks.UtilityPanel)) return null;
         Direction out = state.getValue(TechBlocks.UtilityPanel.FACING);
         BlockPos cell = p.pos().below().relative(out, 2);
-        if (level.getBlockState(cell).blocksMotion() || level.getBlockState(cell.above()).blocksMotion() || !level.getBlockState(cell.below()).blocksMotion()) return null;
+        if (!StaffZones.walkable(level, cell)) return null;
         return Vec3.atBottomCenterOf(cell);
     }
 

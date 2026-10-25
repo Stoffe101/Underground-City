@@ -155,7 +155,7 @@ public final class BuildingGuard {
         if (exposed(level, lower.relative(side).above())) return true;
         for (int k = 1; k < COVERED_STEP; k++) {
             BlockPos cell = lower.relative(side, k);
-            if (level.getBlockState(cell).blocksMotion() || level.getBlockState(cell.above()).blocksMotion()) return false;
+            if (!StaffZones.clear(level, cell) || !StaffZones.clear(level, cell.above())) return false;
             if (exposed(level, lower.relative(side, k + 1).above())) return true;
         }
         return false;
@@ -222,8 +222,8 @@ public final class BuildingGuard {
             return;
         }
         if (!(lowerState.getBlock() instanceof DoorBlock) || !exterior(level, lower, lowerState)) return;
-        // a Technician's tool at a street door that stands in for the building's utility panel (D-158) is work on its systems, not an attempt on its lock
-        if (event.getHand() == InteractionHand.MAIN_HAND && outsideSide(level, lower, lowerState, player.position()) && TechWork.useDoor(player, level, found.get())) {
+        // a Technician's or a Smith's tool at a street door that stands in for the building's utility panel (D-158) or its machine's drive (eighth pass) is work on it, not an attempt on its lock
+        if (event.getHand() == InteractionHand.MAIN_HAND && outsideSide(level, lower, lowerState, player.position()) && (TechWork.useDoor(player, level, found.get()) || SmithWork.useDoor(player, level, found.get()))) {
             event.setCanceled(true);
             event.setCancellationResult(InteractionResult.SUCCESS);
             return;

@@ -339,7 +339,7 @@ final class ThiefScenario {
             boolean clear = true;
             for (int k = 1; k <= 2 && clear; k++) {
                 BlockPos cell = pos.relative(out, k);
-                clear = !level.getBlockState(cell).blocksMotion() && !level.getBlockState(cell.above()).blocksMotion() && level.getBlockState(cell.below()).blocksMotion();
+                clear = StaffZones.walkable(level, cell);
             }
             if (!clear) continue;
             Vec3 stand = Vec3.atBottomCenterOf(pos).add(out.getStepX() * 2.2, 0, out.getStepZ() * 2.2);
@@ -471,7 +471,7 @@ final class ThiefScenario {
             double bestDistance = Double.MAX_VALUE;
             for (BlockPos cell : BlockPos.betweenClosed(spot.offset(-3, -1, -3), spot.offset(3, 0, 3))) {
                 if (!building.contains(cell) || cell.equals(spot)) continue;
-                if (level.getBlockState(cell).blocksMotion() || level.getBlockState(cell.above()).blocksMotion() || !level.getBlockState(cell.below()).blocksMotion()) continue;
+                if (!StaffZones.walkable(level, cell)) continue;
                 Vec3 eye = Vec3.atBottomCenterOf(cell).add(0, 1.62, 0), target = Vec3.atCenterOf(spot);
                 double distance = eye.distanceTo(target);
                 if (distance > 4.0 || distance >= bestDistance) continue;
@@ -661,7 +661,7 @@ final class ThiefScenario {
                 BlockPos best = null;
                 double bestDistance = Double.MAX_VALUE;
                 for (BlockPos cell : BlockPos.betweenClosed(fence.blockPosition().offset(-3, -1, -3), fence.blockPosition().offset(3, 1, 3))) {
-                    if (cell.equals(fence.blockPosition()) || level().getBlockState(cell).blocksMotion() || level().getBlockState(cell.above()).blocksMotion() || !level().getBlockState(cell.below()).blocksMotion()) continue;
+                    if (cell.equals(fence.blockPosition()) || !StaffZones.walkable(level(), cell)) continue;
                     Vec3 eye = Vec3.atBottomCenterOf(cell).add(0, 1.62, 0);
                     double distance = eye.distanceTo(fence.getEyePosition());
                     if (distance < 1.5 || distance > 3.5 || distance >= bestDistance) continue;

@@ -6,6 +6,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.DoorBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
@@ -85,8 +86,23 @@ public final class StaffZones {
     }
 
     /** A cell a person can stand in: two cells free to walk through above something that holds them. */
-    static boolean walkable(ServerLevel level, BlockPos cell) {
-        return !level.getBlockState(cell).blocksMotion() && !level.getBlockState(cell.above()).blocksMotion() && level.getBlockState(cell.below()).blocksMotion();
+    static boolean walkable(BlockGetter level, BlockPos cell) {
+        return clear(level, cell) && clear(level, cell.above()) && level.getBlockState(cell.below()).blocksMotion();
+    }
+
+    /** The highest collision a person walks over without noticing: a mat, a rug, a carpet. */
+    static final double LOW_STEP = 3 / 16.0;
+
+    /**
+     * True when nothing a person would bump into stands in this cell: no collision, or one no higher than {@link #LOW_STEP}. {@code blocksMotion()} alone is not enough: Modern Life's floor
+     * mat copies bamboo's block properties, which force it "solid" although it is a sixteenth of a block high, so the mats inside the corner store's door read as a wall, its public floor came out
+     * empty and a customer at its terminal was "in the back" (unmarked run 2, eighth pass).
+     */
+    static boolean clear(BlockGetter level, BlockPos cell) {
+        BlockState state = level.getBlockState(cell);
+        if (!state.blocksMotion()) return true;
+        net.minecraft.world.phys.shapes.VoxelShape shape = state.getCollisionShape(level, cell);
+        return shape.isEmpty() || shape.max(Direction.Axis.Y) <= LOW_STEP;
     }
 
     static Zones compute(ServerLevel level, CityBuildings.Building b, long now) {
