@@ -172,7 +172,14 @@ final class StationSteps {
             }
             Playtest.tap(String.valueOf(slot + 1));
         });
-        Playtest.wait("select", 4);
+        // the tap is a real key press; when it is missed the next right click uses whatever is in hand (vintner run 4 set an oak log down where the crafting table was to go)
+        final int[] t = {0};
+        Playtest.queue("the " + label + " is in hand", () -> t[0] = 0, () -> {
+            if (mc().player.getMainHandItem().is(item)) return true;
+            if (++t[0] % 10 == 0) for (int i = 0; i < 9; i++) if (mc().player.getInventory().getItem(i).is(item)) { Playtest.focusWindow(); Playtest.tap(String.valueOf(i + 1)); break; }
+            return false;
+        }, 120);
+        Playtest.queue("holding the " + label, () -> { if (!mc().player.getMainHandItem().is(item)) Playtest.fail("the " + label + " never came to hand"); });
     }
 
     /** Places a station from the inventory with a real right click on open ground no building owns, within 24 blocks of the player, walking there first. */

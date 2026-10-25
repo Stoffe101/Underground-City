@@ -63,6 +63,8 @@ public record CrewView(boolean storageOk, String problem, UUID self, String self
     }
 
     /** The order of the homes on offer: the city's free welcome first, then the least cash to move in, then the nearest. */
+    /** Homes this close (blocks from the player to the home's box) are the building the player stands at or in, and are listed first. */
+    static final int HERE_BLOCKS = 12;
     static final java.util.Comparator<LeaseRow> MOVE_IN_ORDER = java.util.Comparator.<LeaseRow>comparingInt(row -> row.offer().welcome() ? 0 : 1)
         .thenComparingLong(CrewView::moveInCost).thenComparingInt(LeaseRow::distance).thenComparing(LeaseRow::id);
 
@@ -74,7 +76,7 @@ public record CrewView(boolean storageOk, String problem, UUID self, String self
         public static final RulesRow DEFAULT = new RulesRow(60, 6, 2, 1, 60, 2);
     }
 
-    public static final int MAX_MEMBERS = 8, MAX_INVITES = 6, MAX_CANDIDATES = 12, MAX_LOG = 14, MAX_HOMES = 8, MAX_NEARBY = 8, MAX_UPGRADES = 6, MAX_RECEIPTS = 5;
+    public static final int MAX_MEMBERS = 8, MAX_INVITES = 6, MAX_CANDIDATES = 12, MAX_LOG = 14, MAX_HOMES = 8, MAX_NEARBY = 16, MAX_UPGRADES = 6, MAX_RECEIPTS = 5;
 
     public boolean can(Perm perm) { return role.equals(Role.FOUNDER.title) || (myPerms & (1 << perm.ordinal())) != 0; }
     public boolean founder() { return role.equals(Role.FOUNDER.title); }
@@ -151,8 +153,9 @@ public record CrewView(boolean storageOk, String problem, UUID self, String self
             }
             nearby.add(new LeaseRow(r.id, r.title, r.kind, price, terms == null && ledger.usesStarter(player.getUUID(), r), (int) distance, offer));
         }
-        // what a player can move into now comes first: a journey run found the free welcome rooms on the third page, behind homes a new player cannot pay for
-        nearby.sort(MOVE_IN_ORDER);
+        // what a player can move into now comes first: a journey run found the free welcome rooms on the third page, behind homes a new player cannot pay for; but the homes of the building the
+        // player stands at come before everything, or premises, a loft or the villa in a street of cheaper flats never reached the list at all (premises run 1, seventh pass)
+        nearby.sort(java.util.Comparator.<LeaseRow>comparingInt(row -> row.distance() <= HERE_BLOCKS ? 0 : 1).thenComparing(MOVE_IN_ORDER));
         if (nearby.size() > MAX_NEARBY) nearby.subList(MAX_NEARBY, nearby.size()).clear();
         List<UpgradeRow> upgrades = new ArrayList<>();
         int tradeDiscount = SkillService.upgradeDiscountPercent(player);
