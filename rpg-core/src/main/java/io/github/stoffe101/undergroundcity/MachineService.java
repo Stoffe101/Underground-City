@@ -256,9 +256,10 @@ public final class MachineService {
      * open air in front of it on the street side. Null when there is none (the door is then the access point).
      */
     static BlockPos machineSpot(ServerLevel level, CityBuildings.Building b, TechService.StreetDoor door) {
-        for (Direction side : new Direction[] {door.out().getCounterClockWise(), door.out().getClockWise()}) {
+        // the side without a utility panel above first, so the two are not stacked where the wall has room for both (engineer run 3); under it only when that is the one side there is
+        for (int pass = 0; pass < 2; pass++) for (Direction side : new Direction[] {door.out().getCounterClockWise(), door.out().getClockWise()}) {
             BlockPos spot = door.lower().relative(side);
-            if (!b.contains(spot)) continue;
+            if (!b.contains(spot) || pass == 0 && level.getBlockState(spot.above()).is(UndergroundCity.UTILITY_PANEL.get())) continue;
             BlockState wall = level.getBlockState(spot);
             if (!wall.isSolidRender(level, spot) || wall.hasBlockEntity() || wall.getBlock() instanceof DoorBlock) continue;
             if (!level.getBlockState(spot.relative(door.out())).isAir() || !level.getBlockState(spot.relative(door.out()).above()).isAir()) continue;

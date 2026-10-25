@@ -21,7 +21,7 @@ import java.util.PriorityQueue;
  * A route a person on foot can really walk, for the scripted player ({@link PathWalker}): an A* search over block cells that uses a player's own collision, so a thin thing at head height (an open
  * trapdoor shutter, a sign, a lantern, a pane) blocks the way as it blocks a person, which the game's mob pathfinding does not (it treats an open trapdoor as open air, and a scripted player
  * following such a route walked into the Row's shutters). A cell can be stood in when the feet and the head have no collision and the floor below holds a person; one step up costs a jump and
- * needs headroom, up to three steps down are a drop; wooden doors and fence gates are walkable (the walker opens them). Runs on the server thread, bounded by a node budget; test-only.
+ * needs headroom, up to three steps down are a drop; doors and fence gates are walkable (the walker opens them). Runs on the server thread, bounded by a node budget; test-only.
  */
 final class PlayerPath {
     private PlayerPath() {}
@@ -31,8 +31,12 @@ final class PlayerPath {
 
     private record Node(BlockPos pos, double g, double f) {}
 
+    /**
+     * A door or gate the walker can open with a right click: a wooden one, and an iron one too, since Core opens an iron street door for whoever its guard lets through (D-151; before this
+     * the planner routed round a shop with iron glass doors, 187 steps for five blocks in unmarked run 2). A locked one stops the walker, which plans again and, failing that, is scripted.
+     */
     private static boolean openable(BlockState state) {
-        return state.getBlock() instanceof DoorBlock door && state.is(BlockTags.WOODEN_DOORS) || state.getBlock() instanceof FenceGateBlock;
+        return state.getBlock() instanceof DoorBlock || state.getBlock() instanceof FenceGateBlock;
     }
 
     /** A block the planner may look at: in a chunk that is generated and loaded now; anything else reads as a wall. */

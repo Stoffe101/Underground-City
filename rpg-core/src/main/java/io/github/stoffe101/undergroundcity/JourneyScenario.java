@@ -277,6 +277,16 @@ final class JourneyScenario {
         p.setXRot((float) -Math.toDegrees(Math.atan2(d.y, Math.hypot(d.x, d.z))));
     }
 
+    /**
+     * The middle of the face of {@code b} turned to the player's eye, a hair inside it. Close up, the line to a block's centre can cross the block above it first (engineer run 3: a
+     * utility panel set over a drive housing took every click aimed at the housing's centre); a person looks at the face itself.
+     */
+    static Vec3 nearFace(BlockPos b) {
+        Vec3 c = Vec3.atCenterOf(b), d = mc().player.getEyePosition().subtract(c);
+        Direction face = Direction.getNearest(d.x, Math.abs(d.y) > Math.max(Math.abs(d.x), Math.abs(d.z)) ? d.y : 0, d.z);
+        return c.add(face.getStepX() * 0.49, face.getStepY() * 0.49, face.getStepZ() * 0.49);
+    }
+
     static boolean aimedAt(BlockPos pos) {
         HitResult hit = mc().hitResult;
         return hit instanceof BlockHitResult b && hit.getType() == HitResult.Type.BLOCK && b.getBlockPos().equals(pos);
@@ -1453,7 +1463,7 @@ final class JourneyScenario {
             if (done.getAsBoolean()) { if (t[0] % 16 == 10 || t[0] % 16 == 11) Playtest.mouseButton(3, false); return true; }   // pressed at 10, released at 12
             BlockPos b = block.get();
             if (b == null) { Playtest.fail(label + ": no block"); return true; }
-            look(top ? Vec3.atCenterOf(b).add(0, 0.42, 0) : Vec3.atCenterOf(b));
+            look(top ? Vec3.atCenterOf(b).add(0, 0.42, 0) : t[0] >= 40 && !aimedAt(b) ? nearFace(b) : Vec3.atCenterOf(b));
             t[0]++;
             // click only once the crosshair is on that block: a software-rendered frame lags the aim, and a click on the wrong block places or opens the wrong thing
             boolean onIt = mc().hitResult instanceof BlockHitResult hit && hit.getType() == HitResult.Type.BLOCK && hit.getBlockPos().equals(b) && (!top || hit.getDirection() == Direction.UP);

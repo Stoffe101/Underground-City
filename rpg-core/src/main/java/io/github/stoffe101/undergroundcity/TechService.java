@@ -209,9 +209,10 @@ public final class TechService {
      * air in front of it on the street side. Null when there is none (the door is then the access point).
      */
     static BlockPos panelSpot(ServerLevel level, CityBuildings.Building b, StreetDoor door) {
-        for (Direction side : new Direction[] {door.out().getClockWise(), door.out().getCounterClockWise()}) {
+        // the side without a drive housing below first (the Smith's machine, D-182), so the two are not stacked where the wall has room for both
+        for (int pass = 0; pass < 2; pass++) for (Direction side : new Direction[] {door.out().getClockWise(), door.out().getCounterClockWise()}) {
             BlockPos spot = door.lower().above().relative(side);
-            if (!b.contains(spot)) continue;
+            if (!b.contains(spot) || pass == 0 && level.getBlockState(spot.below()).is(UndergroundCity.MACHINE_DRIVE.get())) continue;
             BlockState wall = level.getBlockState(spot);
             if (!wall.isSolidRender(level, spot) || wall.hasBlockEntity() || wall.getBlock() instanceof DoorBlock) continue;
             if (!level.getBlockState(spot.relative(door.out())).isAir()) continue;
