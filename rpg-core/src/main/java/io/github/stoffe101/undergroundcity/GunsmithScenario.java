@@ -205,9 +205,11 @@ final class GunsmithScenario {
             F.walletBefore = wallet();
         });
         hold("the terminal", UndergroundCity.TERMINAL_ITEM.get());
-        final BlockPos[] spot = new BlockPos[1];
-        JourneyScenario.placeAhead("the terminal", UndergroundCity.TERMINAL.get(), spot, pos -> server(() -> BuildingGuard.protectedAt(level(), pos).isEmpty() && BuildingGuard.protectedAt(level(), pos.below()).isEmpty()));
-        Playtest.queue("the terminal stands", () -> { F.terminal = spot[0]; if (spot[0] == null || !mc().level.getBlockState(spot[0]).is(UndergroundCity.TERMINAL.get())) Playtest.fail("the terminal could not be placed"); });
+        // on the cell the ground search found free beside the player (gunsmith run 5: the bench and the table left the generic spot search nowhere within its reach)
+        Playtest.queue("where the terminal goes", () -> F.terminal = F.stand.south().east());
+        use("place the terminal with a right click on the ground", () -> F.terminal.below(), () -> server(() -> level().getBlockState(F.terminal).is(UndergroundCity.TERMINAL.get())), 600, true);
+        Playtest.queue("the terminal stands", () -> { if (!server(() -> level().getBlockState(F.terminal).is(UndergroundCity.TERMINAL.get()))) Playtest.fail("the terminal could not be placed"); });
+        closeScreen("close anything the placing click opened");
         stopIfFailed("the terminal");
         use("open the terminal", () -> F.terminal, () -> mc().screen instanceof TerminalScreen, 600);
         click("Work", true);
