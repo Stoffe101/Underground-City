@@ -118,6 +118,11 @@ final class WorkshopBlock extends HorizontalDirectionalBlock implements EntityBl
         int readyBatches;
         /** What went in (given back if the station is broken before the batch is done). */
         final List<ItemStack> inputs = new ArrayList<>();
+        /** Who started the batch at work, and whose work is ready to take (null in a station saved before D-180: anybody may take it, as before). */
+        java.util.UUID startedBy, readyBy;
+        /** The career XP of everything ready, summed batch by batch (a pile of fasteners topped with one gear set is paid as fasteners and a gear set, not as gear sets), and when it was ready. */
+        int readyXp;
+        long readySince;
 
         Entity(BlockPos pos, BlockState state) { super(UndergroundCity.WORKSHOP_ENTITY.get(), pos, state); }
 
@@ -164,7 +169,13 @@ final class WorkshopBlock extends HorizontalDirectionalBlock implements EntityBl
         }
 
         void finish() {
+            if (ready.isEmpty() || readyBy == null) readyBy = startedBy;
+            startedBy = null;
             ready.addAll(made());
+            Workshops.Station st = station();
+            Workshops.Recipe done = st == null || recipe.isEmpty() ? null : st.recipe(recipe);
+            if (done != null) readyXp += done.xp() * Math.max(1, batches);
+            if (getLevel() instanceof ServerLevel sl) readySince = LockService.clock(sl.getServer());
             if (!recipe.isEmpty()) { readyRecipe = recipe; readyBatches += batches; }
             recipe = ""; batches = 0; grade = 0; since = 0; duration = 0;
             inputs.clear();
@@ -187,6 +198,10 @@ final class WorkshopBlock extends HorizontalDirectionalBlock implements EntityBl
             tag.put("inputs", in);
             tag.putString("ready_recipe", readyRecipe);
             tag.putInt("ready_batches", readyBatches);
+            if (startedBy != null) tag.putUUID("started_by", startedBy);
+            if (readyBy != null) tag.putUUID("ready_by", readyBy);
+            tag.putInt("ready_xp", readyXp);
+            tag.putLong("ready_since", readySince);
         }
 
         @Override
@@ -201,6 +216,10 @@ final class WorkshopBlock extends HorizontalDirectionalBlock implements EntityBl
             ready.clear(); inputs.clear();
             readyRecipe = tag.getString("ready_recipe");
             readyBatches = Math.max(0, Math.min(64, tag.getInt("ready_batches")));
+            startedBy = tag.hasUUID("started_by") ? tag.getUUID("started_by") : null;
+            readyBy = tag.hasUUID("ready_by") ? tag.getUUID("ready_by") : null;
+            readyXp = Math.max(0, tag.getInt("ready_xp"));
+            readySince = Math.max(0, tag.getLong("ready_since"));
             for (Tag t : tag.getList("ready", Tag.TAG_COMPOUND)) { ItemStack s = ItemStack.of((CompoundTag) t); if (!s.isEmpty()) ready.add(s); }
             for (Tag t : tag.getList("inputs", Tag.TAG_COMPOUND)) { ItemStack s = ItemStack.of((CompoundTag) t); if (!s.isEmpty()) inputs.add(s); }
         }
@@ -240,6 +259,8 @@ final class WorkshopBlock extends HorizontalDirectionalBlock implements EntityBl
         Workshops.Recipe r = st == null ? null : st.recipe(recipeId);
         if (r == null) return "There is no such recipe here.";
         if (e.busy()) return "The " + st.title() + " is still at work.";
+        if (!e.ready.isEmpty() && !mayTake(player, e)) return "Somebody else's batch is waiting here to be taken; the " + st.title() + " is theirs until they take it (anybody's after two hours of play).";
+        if (!e.ready.isEmpty() && e.readyBy != null && !e.readyBy.equals(player.getUUID())) return "A Crew mate's batch is ready here: take it first (the career XP stays theirs).";
         String why = refusal(player, e, st, r, batches);
         if (why != null) return why;
         // the grade of what goes in: the lowest grade among the stacks taken, so a Reserve cannot be made from Standard by mixing
@@ -263,6 +284,7 @@ final class WorkshopBlock extends HorizontalDirectionalBlock implements EntityBl
         CitizenState.Citizen c = CitizenState.get(player.server).find(player.getUUID()).orElse(null);
         e.recipe = r.id();
         e.batches = batches;
+        e.startedBy = player.getUUID();
         e.grade = Workshops.gradeFor(r, e.tier, skill -> has(c, skill), inputGrade);
         e.since = LockService.clock(level.getServer());
         e.duration = Premises.ticks(r, st.tier(e.tier), Premises.tradeAt(level, e.getBlockPos(), player.getUUID()) != null);   // trade premises work a quarter faster (D-169)
@@ -292,6 +314,13 @@ final class WorkshopBlock extends HorizontalDirectionalBlock implements EntityBl
         String recipeBefore = e.readyRecipe;
         int batchesBefore = e.readyBatches;
         if (e.ready.isEmpty()) return e.busy() ? "Still at work: " + minutes(e.ticksLeft(now)) + " left." : "Nothing to take.";
+        // a batch is its maker's: only they or their Crew take it, and the career XP is the maker's (two players at one station, D-180)
+        if (!mayTake(player, e)) return "This batch is somebody else's work: only they, or their Crew, can take it.";
+        java.util.UUID maker = e.readyBy != null ? e.readyBy : player.getUUID();
+        int xp = e.readyXp;
+        e.readyBy = null;
+        e.readyXp = 0;
+        e.readySince = 0;
         int items = 0;
         for (ItemStack s : e.ready) { items += s.getCount(); ItemStack copy = s.copy(); if (!player.getInventory().add(copy)) player.drop(copy, false); }
         e.ready.clear();
@@ -302,11 +331,47 @@ final class WorkshopBlock extends HorizontalDirectionalBlock implements EntityBl
         // career XP for the work of the player's own trade (a batch is paid its recipe's XP once, when its goods are taken)
         if (st != null && !recipeBefore.isEmpty()) {
             Workshops.Recipe r = st.recipe(recipeBefore);
-            CitizenState.Citizen c = CitizenState.get(player.server).find(player.getUUID()).orElse(null);
-            if (r != null && c != null && st.career().equals(c.career) && r.xp() > 0) CitizenState.get(player.server).addCareerXp(player.getUUID(), r.xp() * Math.max(1, batchesBefore));
+            CitizenState.Citizen c = CitizenState.get(player.server).find(maker).orElse(null);
+            if (xp == 0 && r != null) xp = r.xp() * Math.max(1, batchesBefore);   // a station saved before the XP was summed per batch
+            if (c != null && st.career().equals(c.career) && xp > 0) CitizenState.get(player.server).addCareerXp(maker, xp);
         }
         CitizenState.get(player.server).bumpJourney(player.getUUID(), "workshop_made");
         return "Took " + items + " from the " + (st == null ? "station" : st.title()) + ".";
+    }
+
+    /** How long a finished batch waits for its maker before anybody may take it (active play): a station in a street is not held for a player who never comes back. */
+    static final long ABANDONED_TICKS = 2 * 72_000L;
+
+    /** True when {@code player} may take what is ready: it is theirs, nobody's (a station saved before D-180), a member of the maker's Crew's, or it has waited two hours of play. */
+    static boolean mayTake(ServerPlayer player, Entity e) {
+        if (e.readyBy == null || ownerOrCrew(player, e.readyBy)) return true;
+        return e.readySince > 0 && LockService.clock(player.server) - e.readySince >= ABANDONED_TICKS;
+    }
+
+    /** True when {@code player} may take the station down: nothing of somebody else's is at work in it or waiting in it (breaking it hands over both, D-180). */
+    static boolean mayBreak(ServerPlayer player, Entity e) {
+        long now = LockService.clock(player.server);
+        boolean batch = !e.busy() || e.startedBy == null || ownerOrCrew(player, e.startedBy) || now - e.since - e.duration >= ABANDONED_TICKS;
+        return batch && (e.ready.isEmpty() || mayTake(player, e));
+    }
+
+    static boolean ownerOrCrew(ServerPlayer player, java.util.UUID owner) {
+        if (owner.equals(player.getUUID())) return true;
+        CrewLedger ledger = CrewService.ledger(player.server);
+        CrewLedger.Crew mine = ledger == null ? null : ledger.crewOf(player.getUUID());
+        return mine != null && mine == ledger.crewOf(owner);
+    }
+
+    /** Nobody takes another player's batch by breaking the station it is in (the review of D-180: the drop went to whoever broke it). */
+    @net.minecraftforge.fml.common.Mod.EventBusSubscriber(modid = UndergroundCity.MOD_ID)
+    static final class BreakGuard {
+        private BreakGuard() {}
+        @net.minecraftforge.eventbus.api.SubscribeEvent
+        public static void breaking(net.minecraftforge.event.level.BlockEvent.BreakEvent event) {
+            if (!(event.getPlayer() instanceof ServerPlayer player) || player.isCreative() || !(event.getLevel().getBlockEntity(event.getPos()) instanceof Entity e) || mayBreak(player, e)) return;
+            event.setCanceled(true);
+            player.displayClientMessage(Component.literal("Somebody else's batch is in this station: only they, or their Crew, may take it down."), true);
+        }
     }
 
     /** Fits the next tier from the parts the player carries. Returns what the player is told. */

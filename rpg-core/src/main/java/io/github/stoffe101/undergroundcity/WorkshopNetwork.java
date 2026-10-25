@@ -23,7 +23,7 @@ import java.util.function.Function;
  * asks to start a batch, to take what is ready, or to fit the next tier. Every request is judged on the server against the player's reach and inventory.
  */
 public final class WorkshopNetwork {
-    private static final String VERSION = "1";
+    private static final String VERSION = "2";   // 2: a part says where it is sold, and the Refresh message (seventh pass)
     private static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
         ResourceLocation.fromNamespaceAndPath(UndergroundCity.MOD_ID, "workshop"), () -> VERSION, VERSION::equals, VERSION::equals);
 
@@ -37,6 +37,8 @@ public final class WorkshopNetwork {
     record Start(BlockPos pos, String recipe, int batches) {}
     record Collect(BlockPos pos) {}
     record Upgrade(BlockPos pos) {}
+    /** The open screen asks again when its batch should be done (the countdown had stood still, and Take stayed grey until the station was opened again: smith run 1). */
+    record Refresh(BlockPos pos) {}
 
     static final double REACH_SQUARED = 64.0;
 
@@ -48,6 +50,7 @@ public final class WorkshopNetwork {
             (m, player) -> act(player, m.pos, e -> WorkshopBlock.start(player, player.serverLevel(), e, m.recipe, m.batches)));
         toServer(2, Collect.class, (m, b) -> b.writeBlockPos(m.pos), b -> new Collect(b.readBlockPos()), (m, player) -> act(player, m.pos, e -> WorkshopBlock.collect(player, player.serverLevel(), e)));
         toServer(3, Upgrade.class, (m, b) -> b.writeBlockPos(m.pos), b -> new Upgrade(b.readBlockPos()), (m, player) -> act(player, m.pos, e -> WorkshopBlock.upgrade(player, player.serverLevel(), e)));
+        toServer(4, Refresh.class, (m, b) -> b.writeBlockPos(m.pos), b -> new Refresh(b.readBlockPos()), (m, player) -> act(player, m.pos, e -> ""));
     }
 
     private static void act(ServerPlayer player, BlockPos pos, Function<WorkshopBlock.Entity, String> what) {
@@ -89,7 +92,7 @@ public final class WorkshopNetwork {
         for (var s : e.ready) { readyCount += s.getCount(); readyItem = net.minecraftforge.registries.ForgeRegistries.ITEMS.getKey(s.getItem()).toString(); }
         return new View(pos, st.id(), st.title(), st.career(), e.tier, tier.name(), st.tiers().size(), Premises.batch(tier, trade), (int) Math.round(tier.speed() * (trade ? Premises.SPEED : 1) * 100), next == null ? "" : next.name(),
             next == null || next.skill().isEmpty() ? "" : WorkshopBlock.skillTitle(next.skill()), next != null && (next.skill().isEmpty() || WorkshopBlock.has(c, next.skill())), nextParts,
-            running == null ? "" : running.title() + " x" + e.batches, (int) (e.ticksLeft(now) / 20), (int) (e.duration / 20), e.grade, readyCount, readyItem, note, rows);
+            running == null ? "" : running.title() + " x" + e.batches, (int) ((e.ticksLeft(now) + 19) / 20), (int) (e.duration / 20), e.grade, readyCount, readyItem, note, rows);
     }
 
     /** A part with what the player carries of it and, while they carry too few, where it is sold or made. */
@@ -163,4 +166,7 @@ public final class WorkshopNetwork {
     static void start(BlockPos pos, String recipe, int batches) { CHANNEL.sendToServer(new Start(pos, recipe, batches)); }
     static void collect(BlockPos pos) { CHANNEL.sendToServer(new Collect(pos)); }
     static void upgrade(BlockPos pos) { CHANNEL.sendToServer(new Upgrade(pos)); }
+    /** When the client last asked a station again (client side, milliseconds): an answer arriving after the player closed or left the screen must not open it again (D-178 review). */
+    static volatile long refreshedAt;
+    static void refresh(BlockPos pos) { refreshedAt = System.currentTimeMillis(); CHANNEL.sendToServer(new Refresh(pos)); }
 }

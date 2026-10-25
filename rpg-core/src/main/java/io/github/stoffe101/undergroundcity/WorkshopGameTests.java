@@ -62,6 +62,69 @@ public final class WorkshopGameTests {
         helper.succeed();
     }
 
+    /**
+     * Two players at one station (D-180): a batch is its maker's. Somebody else can neither take it nor start over it; the maker takes it and is paid its career XP; a member of the maker's
+     * Crew may take it for them (the XP stays the maker's); a station saved before the field existed still hands over to anybody, as before.
+     */
+    @GameTest(template = "empty", timeoutTicks = 200)
+    public static void aBatchIsItsMakersAndOnlyTheirCrewTakesItForThem(GameTestHelper helper) {
+        BlockPos pos = helper.absolutePos(new BlockPos(1, 2, 1));
+        helper.getLevel().setBlock(pos, UndergroundCity.WORKSHOP_BLOCKS.get("machinist_bench").get().defaultBlockState(), 3);
+        WorkshopBlock.Entity e = (WorkshopBlock.Entity) helper.getLevel().getBlockEntity(pos);
+        FakePlayer maker = player(helper, "uc_ws_maker", "smith"), stranger = player(helper, "uc_ws_stranger", "smith");
+        maker.getInventory().add(new ItemStack(Items.IRON_NUGGET, 12));
+        stranger.getInventory().add(new ItemStack(Items.IRON_NUGGET, 12));
+        check(WorkshopBlock.start(maker, helper.getLevel(), e, "fasteners", 1).startsWith("Started"), "the maker's batch did not start");
+        e.since -= e.duration;
+        e.check(helper.getLevel(), helper.getLevel().getBlockState(pos));
+        check(!e.busy() && maker.getUUID().equals(e.readyBy), "the finished batch does not name its maker");
+        check(WorkshopBlock.collect(stranger, helper.getLevel(), e).contains("somebody else's"), "a stranger took the maker's batch");
+        check(WorkshopBlock.start(stranger, helper.getLevel(), e, "fasteners", 1).contains("Somebody else's batch"), "a stranger started over the maker's waiting batch");
+        check(count(stranger, Items.IRON_NUGGET) == 12, "the refused stranger lost their nuggets");
+        int xp = CitizenState.get(maker.server).find(maker.getUUID()).orElseThrow().careerXp();
+        check(WorkshopBlock.collect(maker, helper.getLevel(), e).startsWith("Took 8"), "the maker could not take their own batch");
+        check(CitizenState.get(maker.server).find(maker.getUUID()).orElseThrow().careerXp() > xp, "the maker was not paid the batch's XP");
+        // a Crew mate takes it for the maker; the XP is the maker's
+        try (CrewGameTests.Rig rig = new CrewGameTests.Rig(helper)) {
+            rig.ledger.create(maker.getUUID(), "uc_ws_maker", "Bench Crew");
+            rig.ledger.accept(rig.ledger.invite(maker.getUUID(), stranger.getUUID(), "uc_ws_stranger", "uc_ws_maker").id(), stranger.getUUID(), "uc_ws_stranger");
+            maker.getInventory().add(new ItemStack(Items.IRON_NUGGET, 6));
+            check(WorkshopBlock.start(maker, helper.getLevel(), e, "fasteners", 1).startsWith("Started"), "the maker's second batch did not start");
+            e.since -= e.duration;
+            e.check(helper.getLevel(), helper.getLevel().getBlockState(pos));
+            int makerXp = CitizenState.get(maker.server).find(maker.getUUID()).orElseThrow().careerXp(), mateXp = CitizenState.get(maker.server).find(stranger.getUUID()).orElseThrow().careerXp();
+            check(WorkshopBlock.start(stranger, helper.getLevel(), e, "fasteners", 1).contains("Crew mate"), "a Crew mate started over the maker's waiting batch");
+            check(WorkshopBlock.collect(stranger, helper.getLevel(), e).startsWith("Took 8"), "a Crew mate could not take the maker's batch");
+            check(CitizenState.get(maker.server).find(maker.getUUID()).orElseThrow().careerXp() > makerXp && CitizenState.get(maker.server).find(stranger.getUUID()).orElseThrow().careerXp() == mateXp,
+                "the XP of a batch a Crew mate took went to the mate, not the maker");
+        } catch (Exception error) { throw new AssertionError("the Crew rig failed: " + error); }
+        // a pile of two recipes is paid as the two: the last recipe's XP was once paid for every batch in the pile (the review of D-180)
+        FakePlayer mixer = player(helper, "uc_ws_mixer", "smith");
+        mixer.getInventory().add(new ItemStack(Items.IRON_NUGGET, 6));
+        mixer.getInventory().add(new ItemStack(Items.IRON_INGOT, 2));
+        check(WorkshopBlock.start(mixer, helper.getLevel(), e, "fasteners", 1).startsWith("Started"), "the mixer's fasteners did not start");
+        e.since -= e.duration; e.check(helper.getLevel(), helper.getLevel().getBlockState(pos));
+        check(WorkshopBlock.start(mixer, helper.getLevel(), e, "barrel_hoops", 1).startsWith("Started"), "the mixer could not start hoops over their own waiting fasteners");
+        check(!WorkshopBlock.mayBreak(stranger, e) && WorkshopBlock.mayBreak(mixer, e), "a stranger may break a station with somebody else's batch in it, or its maker may not");
+        e.since -= e.duration; e.check(helper.getLevel(), helper.getLevel().getBlockState(pos));
+        int mixerXp = CitizenState.get(mixer.server).find(mixer.getUUID()).orElseThrow().careerXp();
+        check(WorkshopBlock.collect(mixer, helper.getLevel(), e).startsWith("Took"), "the mixer could not take their pile");
+        int expected = e.station().recipe("fasteners").xp() + e.station().recipe("barrel_hoops").xp();
+        check(CitizenState.get(mixer.server).find(mixer.getUUID()).orElseThrow().careerXp() - mixerXp == expected, "a mixed pile was not paid each recipe's XP once");
+        // a batch nobody comes back for is anybody's after two hours of play
+        mixer.getInventory().add(new ItemStack(Items.IRON_NUGGET, 6));
+        check(WorkshopBlock.start(mixer, helper.getLevel(), e, "fasteners", 1).startsWith("Started"), "the mixer's last batch did not start");
+        e.since -= e.duration; e.check(helper.getLevel(), helper.getLevel().getBlockState(pos));
+        check(!WorkshopBlock.mayTake(stranger, e), "a stranger may take a fresh batch");
+        e.readySince -= WorkshopBlock.ABANDONED_TICKS;
+        check(WorkshopBlock.mayTake(stranger, e) && WorkshopBlock.collect(stranger, helper.getLevel(), e).startsWith("Took 8"), "a batch left two hours is still held for its maker");
+        // an old station: nobody named, anybody takes it
+        e.ready.add(new ItemStack(UndergroundCity.item("fasteners"), 8));
+        e.readyBy = null;
+        check(WorkshopBlock.collect(stranger, helper.getLevel(), e).startsWith("Took 8"), "a station saved before D-180 refused its goods");
+        helper.succeed();
+    }
+
     @GameTest(template = "empty", timeoutTicks = 200)
     public static void aBatchTakesItsInputsAndGivesGradedGoodsAfterItsTime(GameTestHelper helper) {
         BlockPos pos = helper.absolutePos(new BlockPos(1, 2, 1));

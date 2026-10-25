@@ -22,6 +22,8 @@ public final class WorkshopScreen extends UcScreen {
     private UcButton start, take, fit, more;
     private int listX, listY, listW, listH;
     private static final int ROW = 22, STATUS = 34;
+    /** When the shown view arrived (client ticks), so the batch's time left counts down on screen and the screen asks again once it is up. */
+    private int age, askIn;
 
     WorkshopScreen(WorkshopNetwork.View view) {
         super(Component.literal("Underground City | " + view.title()));
@@ -30,7 +32,17 @@ public final class WorkshopScreen extends UcScreen {
 
     BlockPos pos() { return view.pos(); }
     WorkshopNetwork.View view() { return view; }
-    void update(WorkshopNetwork.View next) { view = next; if (selected >= view.rows().size()) selected = 0; batches = Math.min(batches, view.batch()); labels(); }
+    void update(WorkshopNetwork.View next) { view = next; age = 0; if (selected >= view.rows().size()) selected = 0; batches = Math.min(batches, view.batch()); labels(); }
+
+    /** The batch's seconds left now: the server's figure less the time since it came (the batch runs on the active clock, which a client in the game is part of). */
+    private int secondsLeft() { return Math.max(0, view.secondsLeft() - age / 20); }
+
+    @Override public void tick() {
+        super.tick();
+        age++;
+        // a batch whose time is up: ask the station again (every two seconds until it says the batch is done), so Take lights without closing and reopening it
+        if (!view.running().isEmpty() && secondsLeft() == 0 && --askIn <= 0) { WorkshopNetwork.refresh(view.pos()); askIn = 40; }
+    }
     /** Scenario hook. */
     void select(String id) { for (int i = 0; i < view.rows().size(); i++) if (view.rows().get(i).id().equals(id)) selected = i; labels(); }
     /** The middle of a recipe's row in the list, where a click selects it, or null when it is scrolled out of view (for a scenario's real click). */
@@ -41,6 +53,9 @@ public final class WorkshopScreen extends UcScreen {
         }
         return null;
     }
+    /** The batches button (x1, x2, ...) and how many batches it is set to (scripted-player runs press it with the real mouse). */
+    int[] batchButtonCentre() { return more == null || !more.active ? null : new int[] {more.getX() + more.getWidth() / 2, more.getY() + more.getHeight() / 2}; }
+    int batches() { return batches; }
     String selectedId() { return selected < view.rows().size() ? view.rows().get(selected).id() : ""; }
 
     @Override protected int accent() { return UcUi.LEGAL; }
@@ -102,9 +117,9 @@ public final class WorkshopScreen extends UcScreen {
         int sx = bodyX(), sy = bodyY(), sw = bodyW() - 104;
         UcUi.text(g, font, UcUi.fit(font, view.tierName() + ": " + view.batch() + " at a time, " + view.speedPercent() + "% speed", sw), sx, sy, UcUi.SOFT);
         if (!view.running().isEmpty()) {
-            float done = view.secondsTotal() == 0 ? 1f : 1f - view.secondsLeft() / (float) view.secondsTotal();
-            String left = view.secondsLeft() < 90 ? view.secondsLeft() + " s" : (view.secondsLeft() + 59) / 60 + " min";
-            UcUi.text(g, font, UcUi.fit(font, "At work: " + view.running() + (view.grade() > 0 ? " (" + Workshops.GRADES[view.grade()] + ")" : "") + ", " + left + " left", sw), sx, sy + 11, UcUi.AMBER);
+            float done = view.secondsTotal() == 0 ? 1f : 1f - secondsLeft() / (float) view.secondsTotal();
+            String left = secondsLeft() == 0 ? "finishing" : (secondsLeft() < 90 ? secondsLeft() + " s" : (secondsLeft() + 59) / 60 + " min") + " left";
+            UcUi.text(g, font, UcUi.fit(font, "At work: " + view.running() + (view.grade() > 0 ? " (" + Workshops.GRADES[view.grade()] + ")" : "") + ", " + left, sw), sx, sy + 11, UcUi.AMBER);
             UcUi.bar(g, sx, sy + 22, sw, 3, done, UcUi.AMBER);
         } else if (view.readyCount() > 0) {
             UcUi.text(g, font, UcUi.fit(font, "Ready: " + view.readyCount() + " " + item(view.readyItem()).getDescription().getString() + ". Take it.", sw), sx, sy + 11, UcUi.OK);

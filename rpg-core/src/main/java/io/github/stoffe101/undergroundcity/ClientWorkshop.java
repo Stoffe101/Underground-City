@@ -15,7 +15,8 @@ final class ClientWorkshop {
     static void view(WorkshopNetwork.View view) {
         last = view;
         Minecraft mc = Minecraft.getInstance();
+        boolean answer = System.currentTimeMillis() - WorkshopNetwork.refreshedAt < 1500;   // most likely the answer to a refresh, not a right click on a station
         if (mc.screen instanceof WorkshopScreen open && open.pos().equals(view.pos())) open.update(view);
-        else mc.setScreen(new WorkshopScreen(view));
+        else if (!answer) mc.setScreen(new WorkshopScreen(view));
     }
 }
