@@ -589,10 +589,14 @@ STOCK = {
     "shop:farmstand": [("minecraft:carrot", 2, 24, 48, 12, 24000, 16), ("minecraft:potato", 2, 24, 48, 12, 24000, 16),
                        ("minecraft:wheat", 2, 24, 48, 12, 24000, 16), ("minecraft:wheat_seeds", 1, 32, 64, 16, 24000, 32),
                        ("minecraft:pumpkin_seeds", 3, 8, 16, 4, 36000, 8), ("minecraft:melon_seeds", 3, 8, 16, 4, 36000, 8),
-                       ("minecraft:egg", 2, 12, 24, 6, 24000, 12), ("minecraft:hay_block", 15, 4, 8, 2, 36000, 4)],
+                       ("minecraft:egg", 2, 12, 24, 6, 24000, 12), ("minecraft:hay_block", 15, 4, 8, 2, 36000, 4),
+                       # berries, beet seed and cane: a Vintner's must and a Farmer's sugar had no source beyond the starter kit (the first-hour audit, D-175)
+                       ("minecraft:sweet_berries", 2, 16, 32, 8, 24000, 16), ("minecraft:beetroot_seeds", 1, 16, 32, 8, 24000, 16),
+                       ("minecraft:sugar_cane", 2, 12, 24, 6, 24000, 12)],
     "shop:salvage": [("minecraft:iron_nugget", 1, 36, 64, 12, 24000, 32), ("minecraft:chain", 6, 8, 16, 4, 36000, 8),
                      ("minecraft:iron_bars", 5, 12, 24, 6, 36000, 12), ("minecraft:copper_ingot", 8, 8, 16, 4, 36000, 8),
-                     ("underground_city:machined_parts", 20, 2, 4, 1, 72000, 2), ("underground_city:e_scrap", 5, 24, 48, 8, 24000, 16)],
+                     ("underground_city:machined_parts", 20, 2, 4, 1, 72000, 2), ("underground_city:e_scrap", 5, 24, 48, 8, 24000, 16),
+                     ("minecraft:quartz", 9, 6, 12, 3, 36000, 6)],   # stripped from scrapped switchgear: the road's quartz (D-175)
     "shop:dispatch": [("minecraft:barrel", 6, 6, 12, 3, 36000, 6), ("minecraft:chest", 8, 6, 12, 3, 36000, 6),
                       ("minecraft:lead", 8, 4, 8, 2, 36000, 2), ("minecraft:paper", 2, 16, 32, 8, 24000, 16)],
     "shop:motel_desk": [("minecraft:cookie", 2, 16, 32, 8, 24000, 16), ("minecraft:honey_bottle", 6, 6, 12, 3, 36000, 4),

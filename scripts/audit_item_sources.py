@@ -18,6 +18,10 @@ a work order's reward, or an ordinary vanilla item) or *luck* (a rolled loot tab
                 a recipe that ships with a pinned mod, a derivation, a livestock by-product). A route is checked: the line must exist and sell that item in a city.
                 The runtime half (every recipe of every pinned mod) is ProgressionAuditGameTests; the static half over the pinned jars is scripts/scan_pack_for_monster_drops.py.
 
+* NOT IN WORLD - (D-175) the same for base-game items the worlds Underground City makes do not supply (no villages, no taiga or lush caves on the
+                archipelago, no Nether in play): data/underground_city/progression/world_resources.json must give each a route (a city exchange line or a
+                shopkeeper's counter, a small finite shelf) or derive it from one. Workshop recipes and tier parts are checked as well as orders and recipes.
+
 Run ``python scripts/audit_item_sources.py`` for the report, ``--check`` to fail on any finding (CI), ``--json`` for machine output.
 Vanilla items (``minecraft:``) count as obtainable at level 1: the world supplies them. Mods other than Core are taken at their word only where a
 requirement names a gun (TaCZ crafts it from vanilla materials at the Gun Smith Table behind a blueprint, D-073).
@@ -172,6 +176,10 @@ def stock_lines() -> dict[str, dict]:
     return lines
 
 
+def world_catalogue() -> dict:
+    return json.loads((DATA / 'progression/world_resources.json').read_text())
+
+
 def ore_catalogue() -> dict:
     return json.loads((DATA / 'progression/ore_resources.json').read_text())
 
@@ -184,6 +192,11 @@ def monster_findings(orders: dict[str, dict], recipes: dict[str, dict]) -> list[
 def ore_findings(orders: dict[str, dict], recipes: dict[str, dict]) -> list[dict]:
     """D-120: the same check for the items that are, in the base game, mined from ore (a scarcity world has none)."""
     return catalogue_findings(ore_catalogue(), 'ORE ONLY', orders, recipes, 'an item that is only mined from ore')
+
+
+def world_findings(orders: dict[str, dict], recipes: dict[str, dict]) -> list[dict]:
+    """D-175: the same check for base-game items the worlds Underground City makes do not supply (no villages, no taiga or lush caves, no Nether)."""
+    return catalogue_findings(world_catalogue(), 'NOT IN WORLD', orders, recipes, 'an item the generated world does not supply')
 
 
 def catalogue_findings(catalogue: dict, only_kind: str, orders: dict[str, dict], recipes: dict[str, dict], what: str) -> list[dict]:
@@ -216,6 +229,15 @@ def catalogue_findings(catalogue: dict, only_kind: str, orders: dict[str, dict],
                     problem('BROKEN ROUTE', item, f"the resource site {site['id']} does not exist")
                 elif not any(vein['block'] == site['ore'] for vein in json.loads(site_file.read_text())['veins']):
                     problem('BROKEN ROUTE', item, f"the resource site {site['id']} has no vein of {site['ore']}")
+        elif kind == 'sold':
+            # a city exchange line or a shopkeeper's counter (D-126), in a city or at a roadside place: any finite shelf a player can walk to
+            for line_id in route['lines']:
+                line = lines.get(line_id)
+                if line is None:
+                    problem('BROKEN ROUTE', item, f'the supplier line {line_id} does not exist')
+                elif line['item'] != item or line['capacity'] < 1 or line['capacity'] * line['unit_price'] > 1200 or not any(
+                        o == 'city' or o.startswith('shop:') for o in line.get('outlets', ['city'])):
+                    problem('BROKEN ROUTE', item, f'{line_id} must sell {item} in a city exchange or over a counter from a small finite shelf: {line}')
         elif kind == 'derived':
             if route['from'] not in routed:
                 problem('BROKEN ROUTE', item, f"derived from {route['from']}, which has no route")
@@ -230,6 +252,16 @@ def catalogue_findings(catalogue: dict, only_kind: str, orders: dict[str, dict],
         for options in ingredients(recipe):
             if all(option in roots and option not in routed for option in options):
                 problem(only_kind, options[0], f'Core recipe {name} needs it and it has no route')
+    # the workshop stations' recipes and tier parts (D-163) are Core's demands too
+    for station in load_dir('workshops').values():
+        for rec in station['recipes']:
+            for item in rec['inputs']:
+                if item in roots and item not in routed:
+                    problem(only_kind, item, f"the {station['id']} recipe {rec.get('id', rec['output'])} needs it and it has no route")
+        for tier in station['tiers']:
+            for item in tier.get('upgrade', {}).get('parts', {}):
+                if item in roots and item not in routed:
+                    problem(only_kind, item, f"a {station['id']} upgrade needs it and it has no route")
     # the enabled backpack items declare what they need; each must have a route
     policy_file = DATA / 'backpack_policy/policy.json'
     if policy_file.is_file() and only_kind == 'MONSTER ONLY':
@@ -296,6 +328,7 @@ def audit() -> dict:
                                  'detail': f'first obtainable at career level {have}, the order needs level {order["level"]}'})
     findings += monster_findings(orders, recipes)
     findings += ore_findings(orders, recipes)
+    findings += world_findings(orders, recipes)
     return {'orders': len(orders), 'recipes': len(recipes), 'findings': findings, 'external': external,
             'items_with_a_deterministic_source': len(level), 'loot_only_items': sorted(i for i in loot_items if i not in level and i.startswith('underground_city:'))}
 

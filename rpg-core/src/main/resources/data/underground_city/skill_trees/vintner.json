@@ -18,7 +18,7 @@
       "branch": "legal",
       "title": "Cellar Craft",
       "description": "Tavern contracts, glow-berry wine and the cask; the vat makes a grade up.",
-      "cost": 2,
+      "cost": 1,
       "min_level": 3,
       "requires": [
         "vintner.fundamentals"

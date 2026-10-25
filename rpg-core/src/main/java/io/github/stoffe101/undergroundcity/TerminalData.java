@@ -36,9 +36,11 @@ public record TerminalData(String city, String career, int level, int xp, double
         this(city, career, level, xp, balance, economy, active, foreignVisits, region, jobs, offers, skillPoints, skills, contacts, laws, heat, lawSummary, journey, outlet, Thief.NONE);
     }
     /** {@code gun} is the first TaCZ gun the requirement accepts ("" otherwise): a bare TaCZ gun item has no model, so the icon needs its GunId (gunsmith run 6). */
-    public record Req(String item, int count, int held, String label, String gun) {
-        public Req(String item, int count, int held) { this(item, count, held, "", ""); }
-        public Req(String item, int count, int held, String label) { this(item, count, held, label, ""); }
+    /** One thing an order asks for; {@code where} says where it is sold or made while the player holds too few (D-175), or "". */
+    public record Req(String item, int count, int held, String label, String gun, String where) {
+        public Req(String item, int count, int held) { this(item, count, held, "", "", ""); }
+        public Req(String item, int count, int held, String label) { this(item, count, held, label, "", ""); }
+        public Req(String item, int count, int held, String label, String gun) { this(item, count, held, label, gun, ""); }
     }
     /** Legal/underground presentation of a contract: what it needs, who buys it, what else it pays. */
     public record Extra(boolean underground, String skill, boolean skillOk, String buyer, String buyerCity,
@@ -134,9 +136,11 @@ public record TerminalData(String city, String career, int level, int xp, double
         }
         List<Row> rows = jobs.stream().limit(wayside ? 0 : MAX_ROWS).map(job -> new Row(job.id(), job.title(), job.level(),
             SkillService.payout(citizen, job), job.xp(), ledger.available(job), acceptedOrder != null && job.id().equals(acceptedOrder.id()),
-            job.foreignVisits(), job.requirements().stream().map(req -> new Req(req.item().toString(), req.count(),
-                player.getInventory().items.stream().filter(stack -> job.matches(req, stack)).mapToInt(stack -> stack.getCount()).sum(), req.label(),
-                req.gunIds().isEmpty() ? "" : req.gunIds().get(0))).toList(),
+            job.foreignVisits(), job.requirements().stream().map(req -> {
+                int held = player.getInventory().items.stream().filter(stack -> job.matches(req, stack)).mapToInt(stack -> stack.getCount()).sum();
+                return new Req(req.item().toString(), req.count(), held, req.label(), req.gunIds().isEmpty() ? "" : req.gunIds().get(0),
+                    held >= req.count() ? "" : SupplySources.where(req.item().toString()));
+            }).toList(),
             extra(job, citizen, ledger, player))).toList();
         if (unavailable) {
             // Lets the player cancel an order whose accepted terms can no longer be loaded.
@@ -222,7 +226,7 @@ public record TerminalData(String city, String career, int level, int xp, double
             buf.writeVarInt(row.credits); buf.writeVarInt(row.xp); buf.writeVarInt(row.available);
             buf.writeBoolean(row.accepted); buf.writeVarInt(row.foreignVisits);
             buf.writeVarInt(row.reqs.size());
-            for (Req req : row.reqs) { buf.writeUtf(req.item, 128); buf.writeVarInt(req.count); buf.writeVarInt(req.held); buf.writeUtf(req.label, 40); buf.writeUtf(req.gun, 64); }
+            for (Req req : row.reqs) { buf.writeUtf(req.item, 128); buf.writeVarInt(req.count); buf.writeVarInt(req.held); buf.writeUtf(req.label, 40); buf.writeUtf(req.gun, 64); buf.writeUtf(req.where, 120); }
             Extra extra = row.extra;
             buf.writeBoolean(extra.underground); buf.writeUtf(extra.skill, 48); buf.writeBoolean(extra.skillOk);
             buf.writeUtf(extra.buyer, 48); buf.writeUtf(extra.buyerCity, 32); buf.writeVarInt(extra.minTrust); buf.writeVarInt(extra.trust);
@@ -308,7 +312,7 @@ public record TerminalData(String city, String career, int level, int xp, double
             int reqCount = buf.readVarInt();
             if (reqCount < 0 || reqCount > MAX_REQS) throw new IllegalArgumentException("Invalid requirement count");
             List<Req> reqs = new ArrayList<>();
-            for (int r = 0; r < reqCount; r++) reqs.add(new Req(buf.readUtf(128), buf.readVarInt(), buf.readVarInt(), buf.readUtf(40), buf.readUtf(64)));
+            for (int r = 0; r < reqCount; r++) reqs.add(new Req(buf.readUtf(128), buf.readVarInt(), buf.readVarInt(), buf.readUtf(40), buf.readUtf(64), buf.readUtf(120)));
             boolean underground = buf.readBoolean(); String skill = buf.readUtf(48); boolean skillOk = buf.readBoolean();
             String buyer = buf.readUtf(48), buyerCity = buf.readUtf(32); int minTrust = buf.readVarInt(), trust = buf.readVarInt();
             int rewardCount = buf.readVarInt();

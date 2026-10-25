@@ -1,0 +1,117 @@
+{
+  "schema_version": 1,
+  "decision": "D-175",
+  "summary": "Base-game items that the worlds Underground City makes do not supply: no villages (carrots, potatoes, beetroot), no taiga or lush caves on the archipelago (sweet berries, glow berries) and no Nether in play (quartz, and so comparators, observers and daylight detectors). Each root anything needs must be sold somewhere a player can walk to: a city exchange line or a shopkeeper's counter, from a small finite shelf. scripts/audit_item_sources.py enforces it; before this catalogue the audit took every minecraft: item as obtainable at level 1, and the first-hour audit of October 25 found berries, beetroot and quartz had no source at all.",
+  "routes_kinds": {
+    "sold": "sold by a finite, shared supplier line: a city exchange line or the counter of a shopkeeper (shop:<kind>, in a city or at a roadside place)",
+    "derived": "crafted from another root that has a route, by a base-game recipe"
+  },
+  "roots": {
+    "minecraft:carrot": {
+      "absent_because": "villages only",
+      "gameplay": "the Grading Table's produce crate, greenhouse wholesale",
+      "route": {
+        "kind": "sold",
+        "lines": [
+          "underground_city:shops/store_carrot_valewood",
+          "underground_city:roadside/farmstand_carrot"
+        ],
+        "why": "Valewood's general store and the Harrow farm stand; a carrot planted grows more."
+      }
+    },
+    "minecraft:potato": {
+      "absent_because": "villages only",
+      "gameplay": "the Grading Table's produce crate, greenhouse wholesale",
+      "route": {
+        "kind": "sold",
+        "lines": [
+          "underground_city:shops/store_potato_valewood",
+          "underground_city:roadside/farmstand_potato"
+        ],
+        "why": "Valewood's general store and the Harrow farm stand; a potato planted grows more."
+      }
+    },
+    "minecraft:beetroot_seeds": {
+      "absent_because": "villages and chests only",
+      "gameplay": "beetroot for the Mill's beet sugar and the Grading Table",
+      "route": {
+        "kind": "sold",
+        "lines": [
+          "underground_city:roadside/farmstand_beetroot_seeds"
+        ],
+        "why": "The Harrow farm stand sells beet seed by the handful."
+      }
+    },
+    "minecraft:beetroot": {
+      "absent_because": "villages only",
+      "gameplay": "the Mill's beet sugar, the Grading Table's beet crate",
+      "route": {
+        "kind": "derived",
+        "from": "minecraft:beetroot_seeds",
+        "why": "grown from the farm stand's seed"
+      }
+    },
+    "minecraft:sweet_berries": {
+      "absent_because": "taiga only, and the archipelago has none",
+      "gameplay": "berry wine at the Fermentation Vat, the Grading Table's fruit crate",
+      "route": {
+        "kind": "sold",
+        "lines": [
+          "underground_city:shops/store_berries_valewood",
+          "underground_city:roadside/farmstand_sweet_berries"
+        ],
+        "why": "Valewood's general store and the Harrow farm stand; a berry planted grows a bush."
+      }
+    },
+    "minecraft:glow_berries": {
+      "absent_because": "lush caves only, and the archipelago's terrain has none",
+      "gameplay": "glow wine at the Fermentation Vat",
+      "route": {
+        "kind": "sold",
+        "lines": [
+          "underground_city:shops/store_glow_valewood"
+        ],
+        "why": "Valewood's general store."
+      }
+    },
+    "minecraft:quartz": {
+      "absent_because": "the Nether, which is not part of play",
+      "gameplay": "comparators, observers and daylight detectors for five Technician orders",
+      "route": {
+        "kind": "sold",
+        "lines": [
+          "underground_city:materials/quartz_blackwater",
+          "underground_city:roadside/salvage_quartz"
+        ],
+        "why": "Blackwater's exchange and Kessler Salvage, small shelves."
+      }
+    },
+    "minecraft:comparator": {
+      "absent_because": "needs quartz",
+      "gameplay": "Technician orders",
+      "route": {
+        "kind": "derived",
+        "from": "minecraft:quartz",
+        "why": "the base-game recipe"
+      }
+    },
+    "minecraft:observer": {
+      "absent_because": "needs quartz",
+      "gameplay": "Technician orders",
+      "route": {
+        "kind": "derived",
+        "from": "minecraft:quartz",
+        "why": "the base-game recipe"
+      }
+    },
+    "minecraft:daylight_detector": {
+      "absent_because": "needs quartz",
+      "gameplay": "Technician orders",
+      "route": {
+        "kind": "derived",
+        "from": "minecraft:quartz",
+        "why": "the base-game recipe"
+      }
+    }
+  }
+}

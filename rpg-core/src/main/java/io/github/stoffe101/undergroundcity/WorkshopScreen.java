@@ -148,6 +148,8 @@ public final class WorkshopScreen extends UcScreen {
             boolean enough = p.have() >= p.need() * batches;
             UcUi.text(g, font, UcUi.fit(font, item(p.item()).getDescription().getString(), w - 52), x + 20, ly, UcUi.SOFT);
             UcUi.textRight(g, font, Math.min(p.have(), 999) + " / " + p.need() * batches, x + w, ly, enough ? UcUi.OK : UcUi.AMBER);
+            // where a missing part is sold or made (D-175): the first-hour audit found nothing ever said where a station's inputs come from
+            if (!enough && !p.where().isEmpty()) { UcUi.text(g, font, UcUi.fit(font, p.where(), w - 20), x + 20, ly + 10, UcUi.DIM); ly += 9; }
             ly += 18;
         }
         if (!r.allowed() && !r.reason().isEmpty()) UcUi.wrapped(g, font, r.reason(), x, ly + 2, w, UcUi.UNDERGROUND_TEXT, 2);

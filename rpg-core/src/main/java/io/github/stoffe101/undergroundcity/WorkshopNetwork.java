@@ -27,7 +27,10 @@ public final class WorkshopNetwork {
     private static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
         ResourceLocation.fromNamespaceAndPath(UndergroundCity.MOD_ID, "workshop"), () -> VERSION, VERSION::equals, VERSION::equals);
 
-    record Part(String item, int need, int have) {}
+    /** {@code where} says where the part is sold or made (D-175), or "". */
+    record Part(String item, int need, int have, String where) {
+        Part(String item, int need, int have) { this(item, need, have, ""); }
+    }
     record Row(String id, String title, String output, int count, int seconds, int tier, boolean allowed, String reason, boolean graded, boolean underground, String note, List<Part> parts) {}
     record View(BlockPos pos, String station, String title, String career, int tier, String tierName, int maxTier, int batch, int speedPercent, String nextName, String nextSkill, boolean nextSkillOk,
                 List<Part> nextParts, String running, int secondsLeft, int secondsTotal, int grade, int readyCount, String readyItem, String note, List<Row> rows) {}
@@ -70,12 +73,12 @@ public final class WorkshopNetwork {
         boolean trade = Premises.tradeAt(player.serverLevel(), pos, player.getUUID()) != null;   // D-169: one more batch, a quarter faster
         if (trade && note.isEmpty()) note = "Trade premises: one more batch at a time, a quarter faster.";
         List<Part> nextParts = new ArrayList<>();
-        if (next != null) for (var p : next.parts().entrySet()) nextParts.add(new Part(p.getKey().toString(), p.getValue(), WorkshopBlock.carried(player, p.getKey())));
+        if (next != null) for (var p : next.parts().entrySet()) nextParts.add(part(player, p.getKey(), p.getValue()));
         List<Row> rows = new ArrayList<>();
         for (Workshops.Recipe r : st.recipes()) {
             if (!r.mod().isEmpty() && !net.minecraftforge.fml.ModList.get().isLoaded(r.mod())) continue;
             List<Part> parts = new ArrayList<>();
-            for (var in : r.inputs().entrySet()) parts.add(new Part(in.getKey().toString(), in.getValue(), WorkshopBlock.carried(player, in.getKey())));
+            for (var in : r.inputs().entrySet()) parts.add(part(player, in.getKey(), in.getValue()));
             String why = WorkshopBlock.refusal(player, e, st, r, 1);
             boolean gated = e.tier < r.tier() || !r.skill().isEmpty() && !WorkshopBlock.has(c, r.skill());
             rows.add(new Row(r.id(), r.title(), r.output().toString(), r.count(), (int) (Premises.ticks(r, tier, trade) / 20), r.tier(), !gated, why == null ? "" : why, r.graded(), r.legality().equals("underground"), r.note(), parts));
@@ -89,17 +92,23 @@ public final class WorkshopNetwork {
             running == null ? "" : running.title() + " x" + e.batches, (int) (e.ticksLeft(now) / 20), (int) (e.duration / 20), e.grade, readyCount, readyItem, note, rows);
     }
 
+    /** A part with what the player carries of it and, while they carry too few, where it is sold or made. */
+    private static Part part(ServerPlayer player, net.minecraft.resources.ResourceLocation item, int need) {
+        int have = WorkshopBlock.carried(player, item);
+        return new Part(item.toString(), need, have, have >= need ? "" : SupplySources.where(item.toString()));
+    }
+
     // ------------------------------------------------------------------------------------------------ the wire
 
     private static void writeParts(List<Part> parts, FriendlyByteBuf b) {
         b.writeVarInt(parts.size());
-        for (Part p : parts) { b.writeUtf(p.item, 128); b.writeVarInt(p.need); b.writeVarInt(p.have); }
+        for (Part p : parts) { b.writeUtf(p.item, 128); b.writeVarInt(p.need); b.writeVarInt(p.have); b.writeUtf(p.where, 120); }
     }
 
     private static List<Part> readParts(FriendlyByteBuf b) {
         int n = Math.min(32, b.readVarInt());
         List<Part> out = new ArrayList<>();
-        for (int i = 0; i < n; i++) out.add(new Part(b.readUtf(128), b.readVarInt(), b.readVarInt()));
+        for (int i = 0; i < n; i++) out.add(new Part(b.readUtf(128), b.readVarInt(), b.readVarInt(), b.readUtf(120)));
         return out;
     }
 

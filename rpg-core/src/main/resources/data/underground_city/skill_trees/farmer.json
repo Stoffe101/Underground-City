@@ -18,7 +18,7 @@
       "title": "Greenhouse Management",
       "short_title": "Greenhouse Mgmt",
       "description": "Greenhouse and corner-store contracts; the Grading Table packs a grade up.",
-      "cost": 2,
+      "cost": 1,
       "min_level": 3,
       "requires": [
         "farmer.fundamentals"

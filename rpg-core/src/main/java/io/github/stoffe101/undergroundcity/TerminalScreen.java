@@ -374,6 +374,8 @@ public final class TerminalScreen extends UcScreen {
             return "";
         }
         if (data.active() != null) return "Finish or cancel your accepted order";
+        // a Crew contract part shows to everybody (so a solo player learns Crews exist) and says so before the click, not after (the first-hour audit)
+        if (!extra.rewards().isEmpty() && extra.rewards().get(0).startsWith("Crew: found or join")) return "A Crew contract: found or join a Crew first";
         if (!extra.skillOk()) return "Requires the skill " + extra.skill();
         if (data.level() < job.level()) return "Career level " + job.level() + " required";
         if (extra.minTrust() > extra.trust()) return extra.buyer() + " trusts you " + extra.trust() + "/" + extra.minTrust();
@@ -807,6 +809,8 @@ public final class TerminalScreen extends UcScreen {
         g.drawString(font, UcUi.fit(font, buyer, w - 40 - (showTrust ? font.width(trust) + 8 : 0)), tx + 16, ty, extra.underground() ? darkRed : darkTeal, false);
         if (showTrust) g.drawString(font, trust, x + w - 9 - font.width(trust), ty, UcUi.PAPER_DIM, false);
         ty += 16;
+        // where a missing good is sold or made (D-175), under its name, while the order has room for the line (two requirements or fewer)
+        boolean roomForWhere = job.reqs().size() <= 2;
         for (TerminalData.Req req : job.reqs()) {
             boolean enough = req.held() >= req.count();
             g.renderItem(icon(req), tx, ty - 3);
@@ -814,6 +818,7 @@ public final class TerminalScreen extends UcScreen {
             g.drawString(font, UcUi.fit(font, req.count() + " x " + name, w - 100), tx + 21, ty, UcUi.INK, false);
             String have = req.held() + "/" + req.count();
             g.drawString(font, have, x + w - 9 - font.width(have), ty, enough ? darkGreen : darkRed, false);
+            if (!enough && roomForWhere && !req.where().isEmpty()) { g.drawString(font, UcUi.fit(font, req.where(), w - 40), tx + 21, ty + 10, UcUi.PAPER_DIM, false); ty += 10; }
             UcUi.bar(g, tx + 21, ty + 10, w - 40, 3, req.count() == 0 ? 1f : Math.min(1f, (float) req.held() / req.count()), enough ? darkGreen : darkAmber);
             ty += 20;
         }
@@ -1029,7 +1034,7 @@ public final class TerminalScreen extends UcScreen {
             UcUi.icon(g, UcUi.Icon.INFO, cx + 8, ty - 4, UcUi.AMBER);
             UcUi.wrapped(g, font, data.counter() ? "The shelves behind this counter are empty for now. Stock comes back during active play."
                 : data.wayside() ? "This desk has nothing for sale right now."
-                : data.region().isEmpty() ? "This terminal is outside every city exchange. Use one inside Ironhaven, Valewood or Blackwater to see local goods."
+                : data.region().isEmpty() ? "This terminal is outside every city exchange. Every city has public terminals in its shops (the General Store, Hardware and Metals, the Corner Store), or break yours and carry it into town."
                 : "No regional stock is listed for this city.", cx + 28, ty, cw - 40, UcUi.SOFT, 4);
             return;
         }

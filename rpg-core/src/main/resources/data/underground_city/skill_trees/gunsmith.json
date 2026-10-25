@@ -16,8 +16,8 @@
       "id": "gunsmith.licensed_repairs",
       "branch": "legal",
       "title": "Licensed Repairs",
-      "description": "Sidearm and armoury kit contracts, a pistol blueprint, kits a grade up.",
-      "cost": 2,
+      "description": "Sidearm and armoury kit contracts, and kits a grade up.",
+      "cost": 1,
       "min_level": 3,
       "requires": [
         "gunsmith.fundamentals"
@@ -28,7 +28,7 @@
       "id": "gunsmith.dealer_licence",
       "branch": "legal",
       "title": "Arms Dealer Licence",
-      "description": "Licensed dealer: civilian firearms are legal to carry where permitted.",
+      "description": "Licensed dealer: any civilian gun is legal where permitted, not just yours.",
       "cost": 3,
       "min_level": 6,
       "requires": [

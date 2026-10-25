@@ -154,7 +154,8 @@ public final class UndergroundGameTests {
         rejected(() -> SkillService.learn(player, "farmer.controlled_crop_licence")); // needs restricted_cultivation
         check(!SkillService.has(player, "farmer.controlled_crop_licence"), "Prerequisite skipped");
         SkillService.learn(player, "farmer.greenhouse_management");
-        check(SkillService.has(player, "farmer.greenhouse_management") && SkillService.pointsAvailable(citizen(player)) == 0, "Legal skill not learned");
+        // the first legal node costs one point (D-175: Fundamentals and it together fit the two points of level 3), so one of level 4's three is left
+        check(SkillService.has(player, "farmer.greenhouse_management") && SkillService.pointsAvailable(citizen(player)) == 1, "Legal skill not learned");
         // Take the underground branch too: level up, buy it. Nothing about the legal skills changes.
         state.addCareerXp(player.getUUID(), 125 * 40); // level 8
         SkillService.learn(player, "farmer.restricted_cultivation");
@@ -1078,6 +1079,13 @@ public final class UndergroundGameTests {
             check(player.getInventory().countItem(core("firearm_parts_kit")) == 1 && player.getInventory().countItem(Items.IRON_INGOT) == 4, "One kit and four ingots were used");
             check(citizen(player).careerXp() == xp + GunsmithBuilds.XP_REGISTERED, "The build paid the Gunsmith's XP: " + xp + " -> " + citizen(player).careerXp());
             check("firearms_licensed".equals(ContrabandCatalog.INSTANCE.classify(gun)), "A registered pistol is a licensed firearm at a checkpoint: " + ContrabandCatalog.INSTANCE.classify(gun));
+            // D-175: Valewood asks a permit for licensed firearms; its maker carries it under its registration without the Arms Dealer Licence, anybody else does not
+            CityLaws.Law valewood = CityLaws.INSTANCE.find("valewood");
+            check(CheckpointService.violations(citizen(player), valewood, List.of(gun), player).isEmpty(), "The maker carries their registered pistol through a Valewood search");
+            FakePlayer other = FakePlayerFactory.get(helper.getLevel(), new GameProfile(UUID.randomUUID(), "uc_u_other_gunsmith"));
+            CitizenState.get(player.server).register(other.getUUID(), "valewood", "gunsmith");
+            check(CityLaws.PERMIT.equals(CheckpointService.violations(citizen(other), valewood, List.of(gun), other).get("firearms_licensed")),
+                "Somebody else's registered pistol still needs a permit in Valewood");
             // a second build takes the next number
             String first = tag.getString(GunsmithBuilds.SERIAL);
             player.getInventory().removeItem(gun);

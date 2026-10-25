@@ -90,7 +90,7 @@ public final class VisualCaptureHarness {
                     new WorkshopNetwork.Row("fasteners","Fasteners","underground_city:fasteners",8,14,1,true,"",false,false,"Six nuggets turned into eight bolts, nuts and rivets.",List.of(new WorkshopNetwork.Part("minecraft:iron_nugget",6,18))),
                     new WorkshopNetwork.Row("steel_bracket","Steel brackets","underground_city:steel_bracket",3,29,1,true,"",false,false,"Two ingots bent and drilled into three brackets.",List.of(new WorkshopNetwork.Part("minecraft:iron_ingot",2,7))),
                     new WorkshopNetwork.Row("barrel_hoops","Barrel hoops","underground_city:barrel_hoops",4,29,1,true,"",false,false,"Two ingots drawn into four hoops: a Vintner's vat and cask need them.",List.of(new WorkshopNetwork.Part("minecraft:iron_ingot",2,7))),
-                    new WorkshopNetwork.Row("springs","Coil springs","underground_city:springs",4,44,1,true,"",false,false,"An ingot wound and tempered into four springs.",List.of(new WorkshopNetwork.Part("minecraft:iron_ingot",1,7),new WorkshopNetwork.Part("minecraft:redstone",1,0))),
+                    new WorkshopNetwork.Row("springs","Coil springs","underground_city:springs",4,44,1,true,"",false,false,"An ingot wound and tempered into four springs.",List.of(new WorkshopNetwork.Part("minecraft:iron_ingot",1,7),new WorkshopNetwork.Part("minecraft:redstone",1,0,"Sold at Hardware and Metals, Ironhaven 6; Ironhaven exchange 6"))),
                     new WorkshopNetwork.Row("gear_set","Gear set","underground_city:gear_set",1,66,1,true,"",false,false,"Two iron and two copper cut into a gear set. The top tier of most stations needs one.",List.of(new WorkshopNetwork.Part("minecraft:iron_ingot",2,7),new WorkshopNetwork.Part("minecraft:copper_ingot",2,3))),
                     new WorkshopNetwork.Row("precision_parts","Precision machinery parts","underground_city:precision_machinery_parts",2,102,3,false,"Needs a tier 3 Machinist's Bench.",false,false,"Lathe work to tight tolerances, without a control board.",List.of(new WorkshopNetwork.Part("underground_city:machined_parts",2,0),new WorkshopNetwork.Part("underground_city:refined_alloy",1,0))),
                     new WorkshopNetwork.Row("unstamped_plate","Unstamped plate","underground_city:unstamped_plate",2,88,2,true,"",false,true,"Plate that appears on no register. Restricted components at a checkpoint.",List.of(new WorkshopNetwork.Part("underground_city:refined_alloy",1,1),new WorkshopNetwork.Part("minecraft:iron_ingot",2,7))));
@@ -348,7 +348,7 @@ public final class VisualCaptureHarness {
                 new TerminalData.Contact("valewood_coop","Valewood Hunting Co-op","valewood",false,"Buys licensed shotguns and sidearms from registered dealers.",0));
         List<TerminalData.Row> jobs=List.of(
             new TerminalData.Row("underground_city:greenhouse_wholesale","Greenhouse wholesale: carrots and potatoes",3,100,260,4,false,0,
-                List.of(new TerminalData.Req("minecraft:carrot",24,24),new TerminalData.Req("minecraft:potato",24,10)),
+                List.of(new TerminalData.Req("minecraft:carrot",24,24),new TerminalData.Req("minecraft:potato",24,10,"","","Sold at Harrow Farm Stand 2; General Store, Valewood 3")),
                 new TerminalData.Extra(false,"Greenhouse Management",true,"","",0,0,List.of())),
             new TerminalData.Row("underground_city:heirloom_seeds","Broker heirloom seed stock",5,150,330,2,false,0,
                 List.of(new TerminalData.Req("underground_city:rare_seeds",8,3)),

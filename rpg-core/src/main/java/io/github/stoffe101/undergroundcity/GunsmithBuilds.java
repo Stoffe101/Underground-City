@@ -170,6 +170,13 @@ public final class GunsmithBuilds {
             event.getToolTip().add(Component.literal("No serial number").withStyle(ChatFormatting.RED));
     }
 
+    /** True when the gun was built from a licensed kit and its serial is on this world's register in {@code holder}'s name (D-175: carried under its registration). */
+    static boolean registeredTo(MinecraftServer server, ItemStack stack, java.util.UUID holder) {
+        CompoundTag tag = stack.getTag();
+        if (tag == null || !REGISTERED.equals(tag.getString(PROVENANCE)) || tag.getString(SERIAL).isEmpty()) return false;
+        return holder.equals(Register.get(server).makerOf(tag.getString(SERIAL)));
+    }
+
     /** The provenance a gun carries ("registered", "unmarked", or "" for a gun nobody built from a kit). */
     public static String provenance(ItemStack stack) {
         CompoundTag tag = stack.getTag();
@@ -233,6 +240,7 @@ public final class GunsmithBuilds {
         private static final String NAME = "underground_city_firearms";
         private final Map<String, Integer> next = new HashMap<>();
         private final net.minecraft.nbt.ListTag entries = new net.minecraft.nbt.ListTag();
+        private Map<String, java.util.UUID> makers;   // serial to maker, read from the entries the first time it is asked
 
         static Register get(MinecraftServer server) {
             return server.overworld().getDataStorage().computeIfAbsent(Register::load, Register::new, NAME);
@@ -248,11 +256,24 @@ public final class GunsmithBuilds {
             entry.putString("gun", gun);
             entry.putLong("day", maker.serverLevel().getDayTime() / 24000L);
             entries.add(entry);
+            if (makers != null) makers.put(serial, maker.getUUID());
             setDirty();
             return serial;
         }
 
         int issued() { return entries.size(); }
+
+        /** Who a serial was issued to, or null for a serial this register never issued. */
+        java.util.UUID makerOf(String serial) {
+            if (makers == null) {
+                makers = new HashMap<>();
+                for (int i = 0; i < entries.size(); i++) {
+                    CompoundTag e = entries.getCompound(i);
+                    if (e.hasUUID("maker")) makers.put(e.getString("serial"), e.getUUID("maker"));
+                }
+            }
+            return makers.get(serial);
+        }
 
         static Register load(CompoundTag tag) {
             Register register = new Register();

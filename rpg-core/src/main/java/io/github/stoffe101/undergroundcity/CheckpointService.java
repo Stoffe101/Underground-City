@@ -103,11 +103,30 @@ public final class CheckpointService {
         return StolenGoods.is(stack) ? StolenGoods.CATEGORY : ContrabandCatalog.INSTANCE.classify(stack);
     }
 
+    static final String LICENSED_FIREARMS = "firearms_licensed";
+
+    /**
+     * The category a stack counts under for the person carrying it: as {@link #categoryOf}, except that a licensed firearm this person built and registered at a Gun Smith Table
+     * is carried under its registration (D-175) and counts as nothing, in every city. The first-hour audit found the legal sidearm order delivered in Valewood, which asks a permit
+     * for licensed firearms, while the Arms Dealer Licence comes four levels later: the Gunsmith's own legal gun was seized on the way to the legal buyer. A gun registered to
+     * somebody else, an unmarked gun and a restricted weapon count as before.
+     */
+    static String categoryFor(ServerPlayer holder, ItemStack stack) {
+        String category = categoryOf(stack);
+        if (holder != null && LICENSED_FIREARMS.equals(category) && GunsmithBuilds.registeredTo(holder.server, stack, holder.getUUID())) return null;
+        return category;
+    }
+
     /** What the traveller carries that this city's law forbids them (category to worst status). Pure inspection, no changes. */
     public static Map<String, String> violations(CitizenState.Citizen citizen, CityLaws.Law law, Iterable<ItemStack> stacks) {
+        return violations(citizen, law, stacks, null);
+    }
+
+    /** As above, for a known holder, whose own registered builds are carried under their registration. */
+    static Map<String, String> violations(CitizenState.Citizen citizen, CityLaws.Law law, Iterable<ItemStack> stacks, ServerPlayer holder) {
         Map<String, String> found = new LinkedHashMap<>();
         for (ItemStack stack : stacks) {
-            String category = categoryOf(stack);
+            String category = categoryFor(holder, stack);
             if (category == null) continue;
             // marked goods are prohibited in every city, whatever its law says about the item itself (D-122)
             String status = category.equals(StolenGoods.CATEGORY) ? CityLaws.PROHIBITED : law.status(category);
@@ -162,7 +181,7 @@ public final class CheckpointService {
         }
         List<CarriedStorage.Found> everything = new ArrayList<>(carried);
         everything.addAll(cargo);
-        Map<String, String> violations = violations(citizen, law, everything.stream().map(f -> f.stack).toList());
+        Map<String, String> violations = violations(citizen, law, everything.stream().map(f -> f.stack).toList(), player);
         if (violations.isEmpty()) {
             player.sendSystemMessage(Component.literal(actor(player, post) + " searches your bags" + (hold != null ? " and your " + vehicleName : "") + " and finds nothing illegal."));
             Notice.send(player, Notice.Kind.SEARCH, "Searched, nothing found", post.title() + ". You may go.");
@@ -173,7 +192,7 @@ public final class CheckpointService {
         List<CarriedStorage.Found> takenFromPerson = new ArrayList<>(), takenFromVehicle = new ArrayList<>();
         Map<String, Integer> whereCounts = new java.util.LinkedHashMap<>();
         for (CarriedStorage.Found found : everything) {
-            String category = categoryOf(found.stack);
+            String category = categoryFor(player, found.stack);
             if (category == null || !violations.containsKey(category)) continue;
             (cargo.contains(found) ? takenFromVehicle : takenFromPerson).add(found);
             whereCounts.merge(found.where, 1, Integer::sum);
@@ -224,11 +243,11 @@ public final class CheckpointService {
         Inventory after = new Inventory(player);
         after.load(player.getInventory().save(new ListTag()));
         List<CarriedStorage.Found> carried = CarriedStorage.scan(after);
-        Map<String, String> violations = violations(citizen, law, carried.stream().map(f -> f.stack).toList());
+        Map<String, String> violations = violations(citizen, law, carried.stream().map(f -> f.stack).toList(), player);
         List<CarriedStorage.Found> taken = new ArrayList<>();
         Map<String, Integer> whereCounts = new LinkedHashMap<>();
         for (CarriedStorage.Found found : carried) {
-            String category = categoryOf(found.stack);
+            String category = categoryFor(player, found.stack);
             if (category == null || !violations.containsKey(category)) continue;
             taken.add(found);
             whereCounts.merge(found.where, 1, Integer::sum);

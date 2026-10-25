@@ -97,6 +97,52 @@
       "why": "Blackwater's electronics wholesalers import redstone dust by the sack and sell it by the handful."
     },
     {
+      "id": "redstone_ironhaven",
+      "city": "ironhaven",
+      "item": "minecraft:redstone",
+      "outlets": [
+        "city",
+        "shop:hardware"
+      ],
+      "price": 6,
+      "initial": 16,
+      "capacity": 24,
+      "units_per_interval": 4,
+      "interval_minutes": 20,
+      "max_order": 16,
+      "why": "Dust swept from the foundries' ore floors, sold at the hardware desk: a Technician no longer has to cross to Blackwater for a first torch order (the first-hour audit)."
+    },
+    {
+      "id": "quartz_blackwater",
+      "city": "blackwater",
+      "item": "minecraft:quartz",
+      "outlets": [
+        "city"
+      ],
+      "price": 8,
+      "initial": 12,
+      "capacity": 16,
+      "units_per_interval": 3,
+      "interval_minutes": 30,
+      "max_order": 8,
+      "why": "Quartz from the dockside importers. No world here mines it, so comparators, observers and daylight detectors (five Technician orders) had no route at all until this line."
+    },
+    {
+      "id": "e_scrap_blackwater",
+      "city": "blackwater",
+      "item": "underground_city:e_scrap",
+      "outlets": [
+        "city"
+      ],
+      "price": 5,
+      "initial": 16,
+      "capacity": 24,
+      "units_per_interval": 4,
+      "interval_minutes": 20,
+      "max_order": 16,
+      "why": "Stripped boards and wiring from the dockside recyclers: the Electronics Bench's circuit boards need it, and before this line it came only from Kessler Salvage, which a world may not have built (the first-hour audit)."
+    },
+    {
       "id": "iron_ingot_blackwater",
       "city": "blackwater",
       "item": "minecraft:iron_ingot",

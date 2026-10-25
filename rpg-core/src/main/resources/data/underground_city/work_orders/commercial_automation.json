@@ -11,10 +11,10 @@
     },
     {
       "item": "minecraft:observer",
-      "count": 6
+      "count": 4
     }
   ],
-  "credits": 190,
+  "credits": 290,
   "xp": 340,
   "capacity": 2,
   "refill_ticks": 12000,

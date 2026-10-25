@@ -316,6 +316,7 @@ public final class UndergroundCity {
         } else {
             player.sendSystemMessage(Component.literal("Welcome back to " + profile.get().city +
                 " (" + profile.get().career + ", level " + profile.get().careerLevel() + ")."));
+            RegistrationService.teachRecipes(player);
         }
     }
 

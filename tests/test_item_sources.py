@@ -263,5 +263,37 @@ class OreRoutes(unittest.TestCase):
         self.assertGreaterEqual(diamond["unit_price"], 100)
 
 
+class WorldAbsentItems(unittest.TestCase):
+    """D-175: base-game items the generated worlds do not supply (no villages, no taiga or lush caves, no Nether) need a shelf a player can walk to."""
+
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp())
+        shutil.copytree(audit.DATA, self.tmp / "data")
+        self.real = audit.DATA
+        audit.DATA = self.tmp / "data"
+        self.addCleanup(lambda: (setattr(audit, "DATA", self.real), shutil.rmtree(self.tmp)))
+
+    def kinds(self):
+        return {(f["kind"], f["item"]) for f in audit.audit()["findings"]}
+
+    def test_the_first_hour_audits_missing_goods_are_all_sold_somewhere(self):
+        roots = audit.world_catalogue()["roots"]
+        for item in ("minecraft:sweet_berries", "minecraft:beetroot", "minecraft:quartz", "minecraft:comparator", "minecraft:potato", "minecraft:glow_berries"):
+            self.assertTrue(roots[item]["route"], item)
+        self.assertEqual([], [f for f in audit.audit()["findings"] if f["kind"] in ("NOT IN WORLD", "BROKEN ROUTE")])
+
+    def test_a_sold_route_whose_lines_are_gone_is_caught_and_so_are_the_goods_derived_from_it(self):
+        (audit.DATA / "regional_stock/materials/quartz_blackwater.json").unlink()
+        (audit.DATA / "regional_stock/roadside/salvage_quartz.json").unlink()
+        self.assertIn(("BROKEN ROUTE", "minecraft:quartz"), self.kinds())
+
+    def test_a_workshop_input_with_no_route_is_caught(self):
+        path = audit.DATA / "progression/world_resources.json"
+        data = json.loads(path.read_text())
+        data["roots"]["minecraft:sweet_berries"]["route"] = None
+        path.write_text(json.dumps(data))
+        self.assertIn(("NOT IN WORLD", "minecraft:sweet_berries"), self.kinds())
+
+
 if __name__ == "__main__":
     unittest.main()

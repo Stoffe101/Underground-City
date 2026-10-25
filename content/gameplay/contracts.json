@@ -568,16 +568,16 @@
       "requires_skill": "technician.municipal_repairs",
       "capacity": 4,
       "refill_ticks": 6000,
-      "credits": 160,
+      "credits": 210,
       "xp": 280,
       "requirements": [
         {
           "item": "minecraft:comparator",
-          "count": 4
+          "count": 2
         },
         {
           "item": "minecraft:repeater",
-          "count": 8
+          "count": 4
         }
       ]
     },
@@ -588,7 +588,7 @@
       "level": 5,
       "legality": "legal",
       "requires_skill": "technician.automation_install",
-      "credits": 190,
+      "credits": 290,
       "xp": 340,
       "requirements": [
         {
@@ -597,7 +597,7 @@
         },
         {
           "item": "minecraft:observer",
-          "count": 6
+          "count": 4
         }
       ],
       "rewards": [
@@ -885,7 +885,7 @@
     }
   ],
   "reference_values": {
-    "note": "Credit value of goods that the regional exchange does not price. Vanilla values sit near the starter shop (wheat sells at 1.5, bread buys at 5); iron ingot 7.7 is the unit used for TaCZ recipe costs. Guns use the cheapest recipe among the accepted GunIds. Harvest-only Core goods carry their operating cost per unit. Reward values bound what a contract can give besides credits (at most 90% of the credits).",
+    "note": "Credit value of goods that the regional exchange does not price. Vanilla values sit near the starter shop (wheat sells at 1.5, bread buys at 5); iron ingot 7.7 is the unit used for TaCZ recipe costs. Guns use the cheapest recipe among the accepted GunIds. Harvest-only Core goods carry their operating cost per unit. Reward values bound what a contract can give besides credits (at most 90% of the credits). Redstone parts (comparator, repeater, piston, observer) are valued at what their redstone, quartz and iron cost from the shelves (D-175: no world here mines quartz, and a scarcity world mines nothing).",
     "vanilla": {
       "minecraft:carrot": 1.5,
       "minecraft:potato": 1.5,
@@ -895,10 +895,10 @@
       "minecraft:stone_bricks": 0.8,
       "minecraft:iron_chestplate": 61.6,
       "minecraft:iron_helmet": 38.5,
-      "minecraft:comparator": 12,
-      "minecraft:repeater": 6,
-      "minecraft:piston": 8,
-      "minecraft:observer": 10
+      "minecraft:comparator": 26,
+      "minecraft:repeater": 18,
+      "minecraft:piston": 15,
+      "minecraft:observer": 20
     },
     "guns": {
       "tacz:cz75": 131,

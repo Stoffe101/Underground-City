@@ -40,6 +40,7 @@
     "minecraft:glass": 0.3,
     "minecraft:paper": 0.25,
     "minecraft:redstone": 0.35,
+    "minecraft:quartz": 0.3,
     "minecraft:bone_meal": 0.6,
     "minecraft:glass_bottle": 0.35,
     "minecraft:wheat_seeds": 0.1,
@@ -181,7 +182,7 @@
     "max_net_per_hour": 250
   },
   "scarcity": {
-    "note": "A new world made with the scarcity package (D-120) has no ore to mine: every unit of iron, copper, coal or redstone in what an order asks for comes off a city's finite shelf (bought) or, for the base metals, out of the regrowing quarry (D-123). ore_content is the ore-derived content of the vanilla goods the work orders ask for, from the base-game recipes; the mining time the default model counts for those units is taken out and replaced by the shelf price (and an exchange run) or by quarry_minutes_each. Provisional, like every hands-on minute.",
+    "note": "A new world made with the scarcity package (D-120) has no ore to mine: every unit of iron, copper, coal or redstone in what an order asks for comes off a city's finite shelf (bought) or, for the base metals, out of the regrowing quarry (D-123). ore_content is the ore-derived content of the vanilla goods the work orders ask for, from the base-game recipes; the mining time the default model counts for those units is taken out and replaced by the shelf price (and an exchange run) or by quarry_minutes_each. Provisional, like every hands-on minute. Nether quartz (comparators, observers, daylight detectors) is mined in no world here: it is counted as a shelf good in the scarcity model (D-175), while the ore-world model keeps its provisional hands-on minutes.",
     "ore_content": {
       "minecraft:iron_ingot": {
         "minecraft:iron_ingot": 1
@@ -221,13 +222,18 @@
         "minecraft:redstone": 3
       },
       "minecraft:comparator": {
-        "minecraft:redstone": 3
+        "minecraft:redstone": 3,
+        "minecraft:quartz": 1
       },
       "minecraft:observer": {
-        "minecraft:redstone": 2
+        "minecraft:redstone": 2,
+        "minecraft:quartz": 1
       },
       "minecraft:target": {
         "minecraft:redstone": 4
+      },
+      "minecraft:daylight_detector": {
+        "minecraft:quartz": 3
       }
     },
     "quarry_minutes_each": {

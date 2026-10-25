@@ -193,8 +193,9 @@ class AScarcityWorldAndTheFences(unittest.TestCase):
         original = em.ScarcityModel
 
         class NoSwitches(original):
+            # without its two level-1 orders (the switches and the signal lights; D-175 made the lights pay for their shelf redstone) a Technician has no first payout
             def _load_orders(self):
-                return [o for o in super()._load_orders() if o.id != "switches"]
+                return [o for o in super()._load_orders() if o.id not in ("switches", "torches")]
 
         em.ScarcityModel = NoSwitches
         try:

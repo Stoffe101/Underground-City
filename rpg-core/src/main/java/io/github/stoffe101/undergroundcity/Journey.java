@@ -37,7 +37,7 @@ public final class Journey {
         new Def("trade", "Buy something", "On TRADE, open the civilian shop for seeds and rations, or buy goods on the exchange. A purchase counts, a look does not.", "IMPORTS"),
         new Def("home", "Find a place to sleep", "Walk into the Row Flats or the Motel beside Founders Row, press K and open Home to rent a flat. The motel's first hours are free.", ""),
         new Def("skill", "Learn a skill", "Spend your first skill point on the SKILLS tab. Legal and underground branches are both open.", "SKILLS"),
-        new Def("travel", "Travel to a rival city", "Use a terminal inside another city. A road and a bridge link all three, about four minutes each way.", "BLACK_MARKET"),
+        new Def("travel", "Travel to a rival city", "Use a terminal inside another city: its shops have public ones. A road and a bridge link all three, about four minutes each way.", "BLACK_MARKET"),
         new Def("second", "Finish a second order", "A second delivery shows how employer demand refills as you play.", "CONTRACTS"));
 
     private static final Map<UUID, Integer> SENT = new HashMap<>();

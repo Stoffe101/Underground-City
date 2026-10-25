@@ -7,14 +7,14 @@
   "requirements": [
     {
       "item": "minecraft:comparator",
-      "count": 4
+      "count": 2
     },
     {
       "item": "minecraft:repeater",
-      "count": 8
+      "count": 4
     }
   ],
-  "credits": 160,
+  "credits": 210,
   "xp": 280,
   "capacity": 4,
   "refill_ticks": 6000,
