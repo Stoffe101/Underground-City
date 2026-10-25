@@ -354,11 +354,22 @@ final class StationSteps {
             final int[] had = {0};
             // a purchase greys every Buy button until the terminal's next snapshot; under a server stall the next click came first and was lost (farmer run 3)
             until("the Buy button for " + label + " is lit", () -> mc().screen instanceof TerminalScreen t && t.buyReady(line), 400);
+            final int[] clicks = {0}, since = {0};
             Playtest.queue("buy " + label + " (" + (i + 1) + "/" + n + ")", () -> {
                 had[0] = JourneyScenario.count(item);
+                clicks[0] = 1; since[0] = 0;
                 if (!(mc().screen instanceof TerminalScreen t) || !t.clickBuyOffer(line)) Playtest.fail("no active BUY 1 on " + line);
             });
-            until("bought " + label, () -> JourneyScenario.count(item) > had[0], 200);
+            // a click the server was too busy for comes back as a lit screen with nothing bought (farmer run 8); a person clicks again
+            Playtest.queue("bought " + label, () -> { }, () -> {
+                if (JourneyScenario.count(item) > had[0]) return true;
+                if (++since[0] > 30 && clicks[0] < 3 && mc().screen instanceof TerminalScreen t && t.buyReady(line)) {
+                    Playtest.log(tag() + " the click on Buy for " + label + " bought nothing; clicking again");
+                    clicks[0]++; since[0] = 0;
+                    t.clickBuyOffer(line);
+                }
+                return false;
+            }, 300);
             Playtest.wait("draw", 6);
         }
     }
