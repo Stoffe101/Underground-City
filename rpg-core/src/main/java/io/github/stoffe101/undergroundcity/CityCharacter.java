@@ -52,6 +52,8 @@ public final class CityCharacter extends SimpleJsonResourceReloadListener {
 
     private volatile Map<String, Character> characters = Map.of();
     private final Set<String> warned = java.util.concurrent.ConcurrentHashMap.newKeySet();
+    /** Characteristics events that had to ask Lost Cities directly because its information was not resolved at level load (expected to stay 0 in the overworld). */
+    static volatile long askedDirectly;
 
     private CityCharacter() { super(new Gson(), "city_character"); }
 
@@ -177,7 +179,9 @@ public final class CityCharacter extends SimpleJsonResourceReloadListener {
             if (character == null) return;
             WorldGenLevel world = (WorldGenLevel) getWorld.invoke(event);
             net.minecraft.server.level.ServerLevel level = world.getLevel();
-            Object information = getLostInfo.invoke(INSTANCE_API(), level);
+            // the information resolved when the level loaded: asking Lost Cities here, inside its own generation, can deadlock the worker (see LostCitiesLink.overworldInfo)
+            Object information = LostCitiesLink.overworldInfo(level);
+            if (information == null) { askedDirectly++; information = getLostInfo.invoke(INSTANCE_API(), level); }
             if (information == null) return;
             Object styles = getCityStyles.invoke(information);
             Object style = registryGet.invoke(styles, level, character.style);

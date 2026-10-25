@@ -94,6 +94,16 @@ public final class LostCitiesLink {
     /** Lost Cities' ILostCities implementation (null until it answered the interop request); for the listeners that call it by reflection. */
     static Object implementation() { return api; }
 
+    /**
+     * Lost Cities' information for the overworld, resolved on the server thread when the level loaded (null before that, for another level or another world). A listener on the
+     * generation workers uses this rather than asking Lost Cities: asking from inside Lost Cities' own generation takes its lifecycle lock a second time, and when the lifecycle
+     * has been marked dirty (Lost Cities does that when the player leaves a single-player world) the second call waits for a write lock its own thread's read lock blocks, so the
+     * worker never finishes and the server never stops (homes run 3, eighth pass).
+     */
+    static Object overworldInfo(ServerLevel level) {
+        return level.dimension() == Level.OVERWORLD && level.getSeed() == overworldSeed ? overworldInfo : null;
+    }
+
     /** The street height of a Lost Cities city level in this level (Lost Cities' own answer, not a constant of ours); -1 when the API is not ready. */
     public static int realHeight(ServerLevel level, int cityLevel) {
         Object implementation = api;
@@ -150,7 +160,7 @@ public final class LostCitiesLink {
 
     /** How many plans are recorded, and how questions were answered this session (for the street service's status and the arrival measurement). */
     public static String recordStatus() {
-        return "plans recorded " + RECORDED.size() + " (" + recordedOnWorkers + " on the generation workers this session), answered from the record " + recordedHits + ", asked of Lost Cities " + apiLookups + ", put off while it generated " + deferred + (recordingBroken || !RECORDING ? "; recording is off" : "");
+        return "plans recorded " + RECORDED.size() + " (" + recordedOnWorkers + " on the generation workers this session), answered from the record " + recordedHits + ", asked of Lost Cities " + apiLookups + ", put off while it generated " + deferred + ", the city character asked Lost Cities directly " + CityCharacter.askedDirectly + (recordingBroken || !RECORDING ? "; recording is off" : "");
     }
 
     private static synchronized void handles() throws ReflectiveOperationException {
