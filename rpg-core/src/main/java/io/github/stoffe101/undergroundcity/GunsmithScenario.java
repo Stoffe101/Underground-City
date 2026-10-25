@@ -245,7 +245,16 @@ final class GunsmithScenario {
             if (recipes != null) for (var e : recipes.entrySet()) if (e.getValue().contains(KIT_GLOCK)) type[0] = e.getKey();
             Playtest.log("GUNSMITH table tabs: " + (recipes == null ? "unreadable" : recipes.keySet()) + "; the kit recipe is under " + type[0]
                 + (recipes == null || type[0] == null ? "" : "; that tab lists " + recipes.get(type[0])));
-            if (type[0] == null) Playtest.fail("TaCZ's table screen does not list the kit recipe " + KIT_GLOCK);
+            if (type[0] == null) {
+                // where it went missing: the client's recipe book, the server's, the result's tab, and what the pistol tab shows instead
+                var client = mc().level.getRecipeManager();
+                long ours = client.getRecipes().stream().filter(r -> r.getId().getNamespace().equals(UndergroundCity.MOD_ID) && r.getId().getPath().startsWith("tacz/")).count();
+                Playtest.log("GUNSMITH diagnosis: the client knows " + ours + " of Core's table recipes; the kit Glock on the client " + describe(client.byKey(KIT_GLOCK).orElse(null))
+                    + "; on the server " + server(() -> describe(me().server.getRecipeManager().byKey(KIT_GLOCK).orElse(null)))
+                    + "; TaCZ's own Glock on the client " + describe(client.byKey(ResourceLocation.fromNamespaceAndPath("tacz", "gun/glock_17")).orElse(null))
+                    + "; the pistol tab lists " + (recipes == null ? "?" : recipes.get(ResourceLocation.fromNamespaceAndPath("tacz", "pistol"))));
+                Playtest.fail("TaCZ's table screen does not list the kit recipe " + KIT_GLOCK);
+            }
         });
         stopIfFailed("the kit recipe on the table's screen");
         pick("the tab", "TypeButton", () -> type[0] != null && type[0].equals(field(mc().screen, "selectedType")));
@@ -314,6 +323,19 @@ final class GunsmithScenario {
         } catch (ReflectiveOperationException e) {
             return null;
         }
+    }
+
+    /** A table recipe for the log: absent, or its type and the tab its result names (TaCZ's getResult().getGroup(), by reflection). */
+    private static String describe(net.minecraft.world.item.crafting.Recipe<?> recipe) {
+        if (recipe == null) return "absent";
+        String group;
+        try {
+            Object result = recipe.getClass().getMethod("getResult").invoke(recipe);
+            group = String.valueOf(result.getClass().getMethod("getGroup").invoke(result));
+        } catch (ReflectiveOperationException | RuntimeException e) {
+            group = "unreadable (" + e + ")";
+        }
+        return "present (" + recipe.getClass().getSimpleName() + ", tab " + group + ")";
     }
 
     private static ResourceLocation selectedRecipe() {
