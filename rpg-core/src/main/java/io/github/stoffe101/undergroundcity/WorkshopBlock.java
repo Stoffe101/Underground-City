@@ -175,7 +175,7 @@ final class WorkshopBlock extends HorizontalDirectionalBlock implements EntityBl
             Workshops.Station st = station();
             Workshops.Recipe done = st == null || recipe.isEmpty() ? null : st.recipe(recipe);
             if (done != null) readyXp += done.xp() * Math.max(1, batches);
-            if (getLevel() instanceof ServerLevel sl) readySince = LockService.clock(sl.getServer());
+            if (getLevel() instanceof ServerLevel sl) readySince = Math.max(1, LockService.clock(sl.getServer()));   // 0 means never finished
             if (!recipe.isEmpty()) { readyRecipe = recipe; readyBatches += batches; }
             recipe = ""; batches = 0; grade = 0; since = 0; duration = 0;
             inputs.clear();
@@ -345,7 +345,7 @@ final class WorkshopBlock extends HorizontalDirectionalBlock implements EntityBl
     /** True when {@code player} may take what is ready: it is theirs, nobody's (a station saved before D-180), a member of the maker's Crew's, or it has waited two hours of play. */
     static boolean mayTake(ServerPlayer player, Entity e) {
         if (e.readyBy == null || ownerOrCrew(player, e.readyBy)) return true;
-        return e.readySince > 0 && LockService.clock(player.server) - e.readySince >= ABANDONED_TICKS;
+        return e.readySince != 0 && LockService.clock(player.server) - e.readySince >= ABANDONED_TICKS;
     }
 
     /** True when {@code player} may take the station down: nothing of somebody else's is at work in it or waiting in it (breaking it hands over both, D-180). */
