@@ -178,10 +178,17 @@ final class FarmerScenario {
     static boolean clearAim(net.minecraft.server.level.ServerLevel lvl, BlockPos floor) {
         var eye = me().getEyePosition();
         // the very point the placing click aims at (JourneyScenario.use: the block's centre and 0.42 up), which must be met first and on its top (vintner run 2: a tree trunk beside the cell took the aim)
+        // with a margin: the client's eye is a little off the server's, and a line that misses a trunk by a hair on the server met it on the client (vintner run 3)
         var aim = net.minecraft.world.phys.Vec3.atCenterOf(floor).add(0, 0.42, 0);
-        var hit = lvl.clip(new net.minecraft.world.level.ClipContext(eye, aim.add(aim.subtract(eye).normalize().scale(0.6)), net.minecraft.world.level.ClipContext.Block.OUTLINE,
-            net.minecraft.world.level.ClipContext.Fluid.NONE, null));
-        return hit.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK && hit.getBlockPos().equals(floor) && hit.getDirection() == net.minecraft.core.Direction.UP && eye.distanceTo(aim) < 4.4;
+        if (eye.distanceTo(aim) >= 4.4) return false;
+        double[][] nudges = {{0, 0, 0}, {0.3, 0, 0}, {-0.3, 0, 0}, {0, 0, 0.3}, {0, 0, -0.3}, {0, 0.15, 0}, {0, -0.15, 0}};
+        for (double[] n : nudges) {
+            var from = eye.add(n[0], n[1], n[2]);
+            var hit = lvl.clip(new net.minecraft.world.level.ClipContext(from, aim.add(aim.subtract(from).normalize().scale(0.6)), net.minecraft.world.level.ClipContext.Block.OUTLINE,
+                net.minecraft.world.level.ClipContext.Fluid.NONE, null));
+            if (hit.getType() != net.minecraft.world.phys.HitResult.Type.BLOCK || !hit.getBlockPos().equals(floor) || hit.getDirection() != net.minecraft.core.Direction.UP) return false;
+        }
+        return true;
     }
 
     static void placeVanilla(StationSteps.Station spot, Item item, net.minecraft.world.level.block.Block block) {
