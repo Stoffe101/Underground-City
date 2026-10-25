@@ -240,6 +240,262 @@ final class GunsmithScenario {
         Playtest.queue("summary", ThiefScenario::summary);
     }
 
+    // ------------------------------------------------------------------------------------------------ the unmarked route (seventh pass)
+
+    static final ResourceLocation KIT_GLOCK_UNMARKED = ResourceLocation.fromNamespaceAndPath(UndergroundCity.MOD_ID, "tacz/glock_17_unmarked");
+    static final String DRAY_PARTS = "underground_city:dray_parts_run", DRAY_PISTOLS = "underground_city:dray_clean_pistols";
+
+    private static final class Unmarked {
+        volatile CityBuildings.Building yard, store;
+        volatile DoorWalk.Spot yardDoor, storeDoor;
+        volatile BlockPos storeTerminal;
+        volatile double walletBefore;
+    }
+    private static final Unmarked U = new Unmarked();
+
+    /**
+     * The Gunsmith's unmarked route through a real client ({@code -PucPlaytest=unmarked}, the {@code firearms} set): a prepared Gunsmith (level 8, 450 credits: logged) learns Fundamentals, Licensed
+     * Repairs and Unregistered Builds on the kit's own terminal, buys refined alloy, machined parts and iron on Ironhaven's exchange and springs, brackets and fasteners over the Builders' Yard's
+     * counter (a solo Gunsmith needs no Smith), crafts unstamped plate through the recipe book, fits the bench's second tier, makes a parts kit and two unmarked parts kits, builds two unmarked
+     * Glock 17s on TaCZ's own table (the list shows "Registered" and "Unmarked" and no plain iron recipe), checks they carry no serial and count as restricted at a checkpoint, saves and reopens
+     * with them, and in Blackwater does a parts run for Dray (his trust) and hands him the two pistols. Scripted, each logged: the level and credits, the clock, the travel between the cities, the
+     * start on open ground, a crafting table, and the blueprint read.
+     */
+    static void buildUnmarked() {
+        ThiefScenario.tag = "UNMARKED";
+        Playtest.keepScreens = true;
+        ThiefScenario.register(3, "the Gunsmith card", "1 a new citizen registers as a Gunsmith through the registration screen");
+        Playtest.queue("prepared (scripted)", () -> {
+            Playtest.command("gamerule doDaylightCycle false");
+            Playtest.command("time set 7000");
+            scripted("PREPARED: the Gunsmith's XP was raised to level 8 (6,125 XP) and 450 credits added; the clock set to 13:00 and stopped; a crafting table given");
+            server(() -> {
+                CitizenState state = CitizenState.get(me().server);
+                int need = ProgressionRules.xpAtLevel(8) - state.find(me().getUUID()).orElseThrow().careerXp();
+                if (need > 0) state.addCareerXp(me().getUUID(), need);
+                QShopEconomy.applyBalance(me(), QShopEconomy.balance(me()) + 450);
+                me().getInventory().add(new ItemStack(Items.CRAFTING_TABLE));
+                return null;
+            });
+        });
+        ThiefScenario.travel("to the middle of Ironhaven", () -> ThiefScenario.centre("ironhaven"), 6);
+        Playtest.queue("survival, and open ground nearby with room for a bench and a table", () -> {
+            Playtest.command("gamemode survival");
+            BlockPos[] found = server(() -> workshopGround(me().blockPosition(), 48));
+            if (found == null) { Playtest.fail("no open ground near the middle of Ironhaven with room for a bench and a two-block table"); return; }
+            F.stand = found[0]; F.bench = found[1]; F.table = found[2];
+            U.yard = server(() -> StationSteps.nearest("ih_warehouse", true));
+            if (U.yard != null) U.yardDoor = server(() -> ThiefScenario.streetDoor(level(), U.yard));
+            Playtest.log("UNMARKED stand at " + F.stand.toShortString() + ", yard " + (U.yard == null ? "none" : U.yard.chunkX() + "," + U.yard.chunkZ()));
+        });
+        stopIfFailed("open ground");
+        Playtest.queue("down to the open ground (scripted)", () -> {
+            scripted("the player was put on open ground in Ironhaven at " + F.stand.toShortString());
+            server(() -> { me().teleportTo(F.stand.getX() + 0.5, F.stand.getY(), F.stand.getZ() + 0.5); me().setDeltaMovement(Vec3.ZERO); return null; });
+        }, () -> mc().player.blockPosition().distManhattan(F.stand) <= 1, 400);
+        until("the ground has arrived", Scenarios::groundBelowPlayer, 2400);
+        Playtest.wait("settle", 20);
+        // the kit's terminal, on the cell beside the stand: the skills and the exchange
+        hold("the terminal", UndergroundCity.TERMINAL_ITEM.get());
+        Playtest.queue("where the terminal goes", () -> F.terminal = F.stand.south().east());
+        use("place the terminal with a right click on the ground", () -> F.terminal.below(), () -> server(() -> level().getBlockState(F.terminal).is(UndergroundCity.TERMINAL.get())), 600, true);
+        closeScreen("close anything the placing click opened");
+        use("open the terminal", () -> F.terminal, () -> mc().screen instanceof TerminalScreen, 600);
+        StationSteps.learn("gunsmith.fundamentals", "Gunsmith Fundamentals");
+        StationSteps.learn("gunsmith.licensed_repairs", "Licensed Repairs");
+        StationSteps.learn("gunsmith.unregistered_builds", "Unregistered Builds");
+        Playtest.queue("three skills", () -> {
+            CitizenState.Citizen c = ThiefScenario.citizen();
+            if (c == null || !c.skills().containsAll(java.util.Set.of("gunsmith.fundamentals", "gunsmith.licensed_repairs", "gunsmith.unregistered_builds"))) Playtest.fail("the skills were not learned");
+            else pass("2 Fundamentals, Licensed Repairs and Unregistered Builds learned with real clicks on the kit's terminal (5 of level 8's 7 points)");
+        });
+        click("TRADE", true);
+        Playtest.wait("draw", 10);
+        StationSteps.buy("refined alloy", "underground_city:refined_alloy", UndergroundCity.item("refined_alloy"), 2);
+        StationSteps.buy("machined parts", "underground_city:machined_parts", UndergroundCity.item("machined_parts"), 6);
+        StationSteps.buy("iron", "underground_city:materials/iron_ingot_ironhaven", Items.IRON_INGOT, 6);
+        Playtest.queue("bought on the exchange", () -> {
+            int alloy = count(UndergroundCity.item("refined_alloy")), parts = count(UndergroundCity.item("machined_parts")), iron = count(Items.IRON_INGOT);
+            Playtest.log("UNMARKED exchange: alloy " + alloy + ", machined parts " + parts + ", iron " + iron + ", wallet " + wallet());
+            if (alloy < 2 || parts < 6 || iron < 10) Playtest.fail("the exchange did not sell the alloy, the machined parts and the iron");
+            else pass("3 refined alloy, machined parts and iron bought on Ironhaven's exchange with real clicks");
+        });
+        closeScreen("close the terminal");
+        Playtest.queue("is the yard open", () -> { if (U.yard == null || U.yardDoor == null) Playtest.fail("no open Builders' Yard near the middle of Ironhaven"); });
+        stopIfFailed("an open yard");
+        StationSteps.toCounter("the Builders' Yard", () -> U.yard, () -> U.yardDoor);
+        StationSteps.buy("brackets", "underground_city:shops/yard_brackets_ironhaven", UndergroundCity.item("steel_bracket"), 5);
+        StationSteps.buy("springs", "underground_city:shops/yard_springs_ironhaven", UndergroundCity.item("springs"), 4);
+        StationSteps.buy("fasteners", "underground_city:shops/yard_fasteners_ironhaven", UndergroundCity.item("fasteners"), 4);
+        Playtest.queue("bought at the yard", () -> {
+            int brackets = count(UndergroundCity.item("steel_bracket")), springs = count(UndergroundCity.item("springs")), fasteners = count(UndergroundCity.item("fasteners"));
+            Playtest.log("UNMARKED yard: brackets " + brackets + ", springs " + springs + ", fasteners " + fasteners + ", wallet " + wallet());
+            if (brackets < 5 || springs < 4 || fasteners < 4) Playtest.fail("the yard did not sell the parts");
+            else pass("4 a solo Gunsmith buys springs, brackets and fasteners over the Builders' Yard's counter with real clicks: no Smith needed (where a Smith's sales land, as in the Smith run)");
+        });
+        shot("u1-yard");
+        closeScreen("close the counter");
+        ThiefScenario.walkOrTeleport("back to the open ground", () -> Vec3.atBottomCenterOf(F.stand), 0.8, 1500);
+        final StationSteps.Station craft = new StationSteps.Station("crafting_table");
+        FarmerScenario.placeVanilla(craft, Items.CRAFTING_TABLE, net.minecraft.world.level.block.Blocks.CRAFTING_TABLE);
+        StationSteps.craftWithBook(() -> craft.pos, UndergroundCity.item("unstamped_plate"), "5 unstamped plate crafted through the recipe book (two alloy, machined parts and an ingot make two)");
+        // the bench, its second tier, a parts kit and two unmarked kits
+        Item benchItem = UndergroundCity.WORKSHOP_ITEMS.get("gunsmith_bench").get();
+        hold("the Gunsmith's Bench", benchItem);
+        use("place the bench with a right click on the ground", () -> F.bench.below(), () -> server(() -> level().getBlockState(F.bench).getBlock() instanceof WorkshopBlock), 600, true);
+        closeScreen("close anything the placing click opened");
+        final StationSteps.Station bench = new StationSteps.Station("gunsmith_bench");
+        Playtest.queue("the bench", () -> bench.pos = F.bench);
+        StationSteps.open(bench, "fit the second tier");
+        StationSteps.logRecipes(bench);
+        StationSteps.fitTier(bench, 2, "6 Fit tier 2 (a real click) uses four brackets and two springs: the Vice and Jigs open the unmarked kit");
+        StationSteps.batch(bench, "firearm_parts_kit", "underground_city:firearm_parts_kit", 1, "7 a Firearm Parts Kit from the yard's springs, bracket and fasteners and the exchange's machined part");
+        StationSteps.batch(bench, "unmarked_parts_kit", "underground_city:unmarked_parts_kit", 1, "8 an Unmarked Parts Kit: a parts kit rebuilt around unstamped plate");
+        StationSteps.batch(bench, "unmarked_parts_kit", "underground_city:unmarked_parts_kit", 1, "9 a second Unmarked Parts Kit from the starter kit's parts kit");
+        closeScreen("close the bench");
+        Item tableItem = ForgeRegistries.ITEMS.getValue(ResourceLocation.fromNamespaceAndPath("tacz", "gun_smith_table"));
+        hold("the Gun Smith Table", tableItem);
+        use("place the table with a right click on the ground", () -> F.table.below(), GunsmithScenario::tableStands, 600, true);
+        closeScreen("close anything the placing click opened");
+        learnBlueprint();
+        stopIfFailed("the blueprint");
+        buildUnmarkedGun("the first unmarked pistol", "10");
+        buildUnmarkedGun("the second unmarked pistol", "11");
+        Playtest.queue("no serial, restricted", () -> {
+            List<String> marks = server(GunsmithScenario::unmarkedGuns);
+            String category = server(() -> {
+                for (ItemStack st : me().getInventory().items) if (GunsmithBuilds.UNMARKED.equals(GunsmithBuilds.provenance(st))) return ContrabandCatalog.INSTANCE.classify(st);
+                return null;
+            });
+            var verdict = server(() -> CheckpointService.violations(CitizenState.get(me().server).find(me().getUUID()).orElse(null), CityLaws.INSTANCE.find("blackwater"),
+                me().getInventory().items.stream().filter(st -> GunsmithBuilds.UNMARKED.equals(GunsmithBuilds.provenance(st))).toList(), me()));
+            Playtest.log("UNMARKED pistols " + marks + "; category " + category + "; a Blackwater search would find " + verdict);
+            if (marks.size() < 2 || !"firearms_restricted".equals(category) || verdict.isEmpty()) Playtest.fail("the unmarked pistols carry a serial, or a checkpoint would not take them");
+            else pass("12 two unmarked Glock 17s with no serial: restricted weapons at a checkpoint (a Blackwater search would find " + verdict + ")");
+        });
+        GunsmithScenario.reopenWithGuns();
+        // Blackwater: the corner store's public terminal, a parts run for Dray's trust, then the pistols
+        ThiefScenario.travel("to the middle of Blackwater", () -> ThiefScenario.centre("blackwater"), 6);
+        Playtest.queue("the corner store", () -> {
+            U.store = server(() -> StationSteps.nearest("bw_store", false));
+            if (U.store != null) { U.storeDoor = server(() -> ThiefScenario.streetDoor(level(), U.store)); U.storeTerminal = server(() -> StationSteps.terminalIn(U.store)); }
+            Playtest.log("UNMARKED corner store " + (U.store == null ? "none" : U.store.chunkX() + "," + U.store.chunkZ()) + ", terminal " + (U.storeTerminal == null ? "none" : U.storeTerminal.toShortString()));
+            if (U.storeTerminal == null) Playtest.fail("no corner store with a public terminal near the middle of Blackwater");
+        });
+        stopIfFailed("a public terminal in Blackwater");
+        Playtest.queue("start outside the corner store (scripted)", () -> { scripted("the player was put outside the corner store's door"); ThiefScenario.standAt(U.storeDoor); }, () -> mc().player.position().distanceTo(U.storeDoor.stand()) < 0.8, 200);
+        StationSteps.enter("the corner store", () -> U.storeDoor);
+        ThiefScenario.walkOrTeleport("walk to the public terminal", () -> StationSteps.standBeside(U.storeTerminal), 0.8, 900);
+        use("open the public terminal", () -> U.storeTerminal, () -> mc().screen instanceof TerminalScreen, 600);
+        click("TRADE", true);
+        Playtest.wait("draw", 10);
+        StationSteps.buy("optical components", "underground_city:optical_components", UndergroundCity.item("optical_components"), 2);
+        deliver("Dray's parts run", DRAY_PARTS, "13 Dray's parts run (four machined parts, two optical components) accepted and delivered at the corner store's public terminal: his trust 1");
+        Playtest.queue("Dray's trust", () -> {
+            int trust = server(() -> WorkOrderLedger.get(me().server).trust(me().getUUID(), "dray"));
+            Playtest.log("UNMARKED Dray's trust " + trust);
+            if (trust < 1) Playtest.fail("the parts run did not raise Dray's trust");
+        });
+        Playtest.queue("before the pistols", () -> U.walletBefore = wallet());
+        deliver("pistols with no numbers for Dray", DRAY_PISTOLS, "14 Dray's order for two pistols with no numbers accepted and delivered with real clicks");
+        Playtest.queue("paid for the pistols", () -> {
+            double paid = wallet() - U.walletBefore;
+            int left = server(GunsmithScenario::unmarkedGuns).size();
+            Playtest.log(String.format(Locale.ROOT, "UNMARKED Dray paid %.0f; unmarked pistols left %d; Dray's trust %d", paid, left, server(() -> WorkOrderLedger.get(me().server).trust(me().getUUID(), "dray"))));
+            if (paid < 1 || left != 0) Playtest.fail("Dray did not take and pay for the two pistols");
+        });
+        shot("u5-dray");
+        closeScreen("close the terminal");
+        Playtest.queue("summary", ThiefScenario::summary);
+    }
+
+    /** Accept and Deliver an order at the open terminal, with real clicks; passes with {@code passText} when the order is gone and something was paid. */
+    private static void deliver(String label, String order, String passText) {
+        click("Work", true);
+        Playtest.wait("draw", 12);
+        final int[] t = {0};
+        Playtest.queue("turn the wheel until " + label + " is in view", () -> { t[0] = 0; Playtest.focusWindow(); }, () -> {
+            if (!(mc().screen instanceof TerminalScreen screen)) return true;
+            int i = JourneyScenario.jobIndex(order);
+            if (i >= 0 && screen.jobCentre(i) != null) return true;
+            if (t[0]++ % 6 == 0) Playtest.click(5);
+            return t[0] > 180;
+        }, 200);
+        clickAt(label, () -> { int i = JourneyScenario.jobIndex(order); return i < 0 || !(mc().screen instanceof TerminalScreen s) ? null : s.jobCentre(i); });
+        final double[] before = {0};
+        Playtest.queue("before " + label, () -> before[0] = wallet());
+        click("Accept order", true);
+        until("accepted " + label, GunsmithScenario::orderTaken, 200);
+        click("Deliver", true);
+        until("delivered " + label, () -> !orderTaken(), 200);
+        Playtest.queue("paid for " + label, () -> {
+            double paid = wallet() - before[0];
+            Playtest.log("UNMARKED " + label + ": +" + Math.round(paid) + " credits");
+            if (orderTaken() || paid < 1) Playtest.fail(label + " was not delivered and paid");
+            else pass(passText + " (+" + Math.round(paid) + " credits)");
+        });
+    }
+
+    /** The table's list for a kit gun: the kit recipes ("Registered", "Unmarked") and not TaCZ's own iron recipe (D-177); then one unmarked build with real clicks. */
+    private static void buildUnmarkedGun(String label, String step) {
+        use("open the table (" + label + ")", () -> F.table, GunsmithScenario::tableOpen, 600);
+        Playtest.wait("draw", 20);
+        final ResourceLocation[] type = new ResourceLocation[1];
+        Playtest.queue("the table's list for the Glock 17", () -> {
+            if (!tableOpen()) { Playtest.fail("TaCZ's table screen did not open"); return; }
+            @SuppressWarnings("unchecked") Map<ResourceLocation, List<ResourceLocation>> recipes = (Map<ResourceLocation, List<ResourceLocation>>) field(mc().screen, "recipes");
+            type[0] = null;
+            List<ResourceLocation> glocks = new ArrayList<>();
+            if (recipes != null) for (var e : recipes.entrySet()) {
+                if (e.getValue().contains(KIT_GLOCK_UNMARKED)) type[0] = e.getKey();
+                for (ResourceLocation id : e.getValue()) if (id.getPath().contains("glock_17")) glocks.add(id);
+            }
+            Playtest.log("UNMARKED the table lists for the Glock 17: " + glocks + " (under " + type[0] + ")");
+            if (type[0] == null) { Playtest.fail("the table does not list the unmarked kit recipe"); return; }
+            if (glocks.contains(ResourceLocation.fromNamespaceAndPath("tacz", "gun/glock_17"))) Playtest.fail("TaCZ's own iron recipe for the Glock 17 is still on the list beside the kit recipes");
+            else if (step.equals("10")) pass("10a TaCZ's table lists the Glock 17 twice, as \"Registered\" and \"Unmarked\" kit recipes, and no longer TaCZ's iron recipe (three entries called \"Glock 17\" in gunsmith run 5)");
+        });
+        stopIfFailed("the unmarked recipe on the table");
+        pick("the tab", "TypeButton", () -> type[0] != null && type[0].equals(field(mc().screen, "selectedType")));
+        pick("the unmarked kit recipe", "ResultButton", () -> KIT_GLOCK_UNMARKED.equals(selectedRecipe()));
+        shot("u-" + step + "-table");
+        final int[] before = {0};
+        Playtest.queue("guns before", () -> before[0] = server(GunsmithScenario::unmarkedGuns).size());
+        clickAt("Craft", () -> {
+            if (!(mc().screen instanceof net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<?> s)) return null;
+            for (var child : s.children())
+                if (child instanceof net.minecraft.client.gui.components.ImageButton b && b.getWidth() == 48 && b.getHeight() == 18) return new int[]{b.getX() + 24, b.getY() + 9};
+            return null;
+        });
+        until("the pistol is in the inventory", () -> server(GunsmithScenario::unmarkedGuns).size() > before[0], 200);
+        Playtest.queue("built: " + label, () -> {
+            List<String> guns = server(GunsmithScenario::unmarkedGuns);
+            if (guns.size() <= before[0]) { Playtest.fail("Craft on the unmarked kit recipe left no unmarked pistol"); return; }
+            Playtest.log("UNMARKED built " + guns.get(guns.size() - 1) + "; unmarked kits now " + count(UndergroundCity.item("unmarked_parts_kit")) + ", iron " + count(Items.IRON_INGOT));
+            pass(step + " a real click on the tab, the unmarked kit recipe and Craft builds a Glock 17 with no serial: " + guns.get(guns.size() - 1));
+        });
+        closeScreen("close the table");
+    }
+
+    /** The unmarked guns carried, as "gun (provenance, serial or none, display name)" (server thread). */
+    private static List<String> unmarkedGuns() {
+        List<String> out = new ArrayList<>();
+        for (ItemStack stack : me().getInventory().items) {
+            CompoundTag tag = stack.getTag();
+            if (tag != null && GunsmithBuilds.UNMARKED.equals(tag.getString(GunsmithBuilds.PROVENANCE)))
+                out.add(tag.getString("GunId") + " (serial " + (tag.getString(GunsmithBuilds.SERIAL).isEmpty() ? "none" : tag.getString(GunsmithBuilds.SERIAL)) + ", named " + stack.getHoverName().getString() + ")");
+        }
+        return out;
+    }
+
+    /** Save, leave and reopen with the unmarked guns in the inventory: they come back with their provenance and still no serial. */
+    private static void reopenWithGuns() {
+        StationSteps.reconnect(() -> List.of(server(GunsmithScenario::unmarkedGuns), wallet()), (before, after) -> {
+            if (!before.equals(after)) Playtest.fail("the unmarked pistols or the wallet changed across the save and reopen");
+            else pass("12b saved, left and reopened: both pistols still unmarked, no serial gained, the wallet unchanged");
+        });
+    }
+
     /**
      * The kit's Glock 17 blueprint is read with a real right click (TaCZ Blueprints: the table shows only the guns a player has learned). Before it, Core must have said so: at
      * registration (gunsmith run 2 opened the table to an empty pistol tab, and nothing in the game had said why).

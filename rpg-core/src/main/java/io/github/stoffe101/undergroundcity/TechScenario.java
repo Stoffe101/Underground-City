@@ -104,6 +104,152 @@ final class TechScenario {
         Playtest.queue("summary", ThiefScenario::summary);
     }
 
+    /**
+     * The Technician's back channel (D-166) through a real client ({@code -PucPlaytest=backchannel}): a prepared Technician with Bypass Tooling and a Bypass Kit finds a quiet job on the computer's
+     * board at a tier III or IV building, tracks it, walks to the panel, crouches with the toolkit in hand and right-clicks it, and works the patch grid with real clicks. The building's alarm line
+     * is quiet for a while, the pay lands once, the kit is used up, the job leaves the board, and the record holds across a save and reopen. Fictional: an abstract tile puzzle, nothing of a real
+     * system. Scripted, each logged: the clock, the travel, the start at a street door, the level, the three skills and the Bypass Kit (seven levels of play and a purchase at the Den), the job at
+     * the chosen panel (the service posts one at tier III and up every few minutes), the computer set down, and the patch grid's answer (read from the server; every turn a real click).
+     */
+    static void buildQuiet() {
+        ThiefScenario.tag = "BACKCHANNEL";
+        Playtest.keepScreens = true;
+        ThiefScenario.register(4, "the Technician card", "1 a new citizen registers as a Technician through the registration screen");
+        Playtest.queue("the clock: 02:00 with the daylight cycle stopped", () -> {
+            Playtest.command("gamerule doDaylightCycle false");
+            Playtest.command("time set 20000");
+            scripted("the time of day was set to 02:00 and the daylight cycle stopped (quiet work is done when the street is empty)");
+        });
+        ThiefScenario.travel("to the middle of Valewood", () -> ThiefScenario.centre("valewood"), 4);
+        Playtest.queue("down to a street door (scripted)", () -> {
+            DoorWalk.Spot spot = server(() -> {
+                ServerLevel level = level();
+                BlockPos here = me().blockPosition();
+                for (int r = 0; r <= 5; r++) for (int dx = -r; dx <= r; dx++) for (int dz = -r; dz <= r; dz++) {
+                    if (Math.max(Math.abs(dx), Math.abs(dz)) != r) continue;
+                    int cx = (here.getX() >> 4) + dx, cz = (here.getZ() >> 4) + dz;
+                    if (!level.hasChunk(cx, cz)) continue;
+                    var b = CityBuildings.INSTANCE.ofChunk(level, cx, cz).orElse(null);
+                    if (b == null || !b.locked() || Thievery.tier(b) < 3) continue;
+                    DoorWalk.Spot found = ThiefScenario.streetDoor(level, b);
+                    if (found != null) return found;
+                }
+                return null;
+            });
+            if (spot == null) { Playtest.fail("no street door of a tier III or better building near the middle of Valewood"); return; }
+            scripted("the player was put on the street at " + spot.door().toShortString() + " in survival");
+            ThiefScenario.standAt(spot);
+        });
+        until("the ground", Scenarios::groundBelowPlayer, 400);
+        until("utility panels beside the street doors nearby", () -> server(() -> {
+            BlockPos here = me().blockPosition();
+            return TechService.systems(level().getServer()).panels.values().stream().filter(p -> p.pos() != null && p.pos().distSqr(here) < 64 * 64).count() >= 3;
+        }), 1200);
+        Playtest.queue("choose a tier III or IV panel", () -> {
+            F.panel = server(() -> {
+                BlockPos here = me().blockPosition();
+                TechService.Panel best = null;
+                for (TechService.Panel p : TechService.systems(level().getServer()).panels.values()) {
+                    if (p.pos() == null || p.tier() < 3 || p.tier() > 4 || p.pos().distSqr(here) > 64 * 64 || standFor(p) == null) continue;
+                    if (best == null || p.pos().distSqr(here) < best.pos().distSqr(here)) best = p;
+                }
+                return best;
+            });
+            if (F.panel == null) { Playtest.fail("no tier III or IV panel near the middle of Valewood"); return; }
+            Playtest.log("BACKCHANNEL panel: " + F.panel.label() + ", " + F.panel.address() + ", tier " + F.panel.tier() + " (" + F.panel.category() + ") at " + F.panel.pos().toShortString());
+        });
+        ThiefScenario.stopIfFailed("a panel");
+        Playtest.queue("prepared: a Technician with Bypass Tooling, a Bypass Kit and a quiet job (scripted)", () -> {
+            scripted("PREPARED: Technician level 7, Fundamentals, Municipal Repairs and Bypass Tooling, a Bypass Kit, and a quiet job at " + F.panel.address() + " were given");
+            server(() -> {
+                var server = mc().getSingleplayerServer();
+                var citizens = CitizenState.get(server);
+                CitizenState.Citizen c = citizens.find(me().getUUID()).orElseThrow();
+                int need = ProgressionRules.xpAtLevel(7);
+                if (c.careerXp() < need) citizens.addCareerXp(me().getUUID(), need - c.careerXp());
+                for (String skill : new String[] {"technician.fundamentals", "technician.municipal_repairs", TechWork.QUIET_SKILL}) citizens.unlockSkill(me().getUUID(), skill);
+                me().getInventory().add(new ItemStack(item("bypass_kit")));
+                TechService.Systems s = TechService.systems(server);
+                s.jobs.values().removeIf(j -> j.key() == F.panel.key());
+                TechService.newJob(s, "quiet", F.panel, TechService.quietFee(F.panel.tier()), TechService.quietXp(F.panel.tier()), LockService.clock(server));
+                return null;
+            });
+        });
+        trackFromComputer("the quiet job", () -> F.panel.address(), "quiet");
+        Playtest.queue("the board's quiet job", () -> {
+            var o = ClientNavigation.objectiveOr(null);
+            if (o == null || o.target() == null) Playtest.fail("the quiet job is not tracked");
+            else pass("2 the computer's board lists the quiet job at " + F.panel.address() + " for a Technician with Bypass Tooling and a Bypass Kit; Track points at the panel");
+        });
+        shot("q1-tracked");
+        Playtest.queue("where to stand", () -> F.stand = server(() -> standFor(F.panel)));
+        ThiefScenario.walkOrTeleport("walk to the panel", () -> F.stand == null ? mc().player.position() : F.stand, 0.8, 1500);
+        Playtest.queue("before the job", () -> {
+            F.balanceBefore = server(() -> QShopEconomy.balance(me()));
+            F.xpBefore = server(() -> CitizenState.get(me().server).find(me().getUUID()).map(CitizenState.Citizen::careerXp).orElse(0));
+            Playtest.keyDown("left.shift");
+        });
+        Playtest.wait("crouch", 10);
+        useBlock("the panel, crouched, with the toolkit", () -> F.panel.pos(), () -> mc().screen instanceof PatchScreen, item("repair_kit"));
+        Playtest.queue("stand up", () -> Playtest.keyUp("left.shift"));
+        Playtest.wait("draw", 10);
+        shot("q2-patch");
+        Playtest.queue("the grid's answer (read from the server)", () -> {
+            TechWork.Session ses = server(() -> TechWork.sessionOf(me().getUUID()));
+            if (ses == null || ses.patch == null || !"quiet".equals(ses.kind)) { Playtest.fail("no quiet session at the panel"); return; }
+            F.solution = ses.patch.solution.clone();
+            scripted("the patch grid's answer was read from the server; the turns were real clicks");
+            Playtest.log("BACKCHANNEL patch grid " + ses.patch.w + "x" + ses.patch.h + ", " + ses.patch.outputs.length + " devices");
+        });
+        final int[] t = {0};
+        Playtest.queue("turn the tiles with real clicks", () -> t[0] = 0, () -> {
+            if (!(mc().screen instanceof PatchScreen ps)) return true;
+            if (++t[0] % 10 != 5) return false;
+            TechNetwork.PatchView v = ps.view();
+            for (int i = 0; i < v.tiles().length; i++) {
+                if (v.tiles()[i] == F.solution[i]) continue;
+                int[] c = ps.cellCentre(i);
+                Playtest.clickGui(c[0], c[1]);
+                return false;
+            }
+            return false;
+        }, 2400);
+        Playtest.wait("the pay lands", 30);
+        Playtest.queue("the line is quiet", () -> {
+            long paid = Math.round(server(() -> QShopEconomy.balance(me())) - F.balanceBefore);
+            int xp = server(() -> CitizenState.get(me().server).find(me().getUUID()).map(CitizenState.Citizen::careerXp).orElse(0)) - F.xpBefore;
+            boolean quiet = server(() -> {
+                Long until = TechService.systems(level().getServer()).quieted.get(F.panel.key());
+                return until != null && LockService.clock(level().getServer()) < until;
+            });
+            boolean gone = server(() -> TechService.systems(level().getServer()).jobs.values().stream().noneMatch(j -> j.key() == F.panel.key() && j.kind().equals("quiet")));
+            int kits = count(item("bypass_kit"));
+            Playtest.log("BACKCHANNEL done: " + ClientTech.lastEnd + "; paid " + paid + ", XP +" + xp + ", quiet " + quiet + ", job gone " + gone + ", Bypass Kits left " + kits);
+            if (!ClientTech.lastDone || paid <= 0 || !quiet || !gone || kits != 0) Playtest.fail("the quiet job did not pay once, quieten the line, leave the board and use the kit");
+            else pass("3 the patch grid worked with real clicks quietens the building's alarm line for a while: +" + paid + " credits off the books, +" + xp + " XP, the Bypass Kit used, the job off the board");
+        });
+        shot("q3-done");
+        Playtest.queue("the same panel again", () -> F.balanceBefore = server(() -> QShopEconomy.balance(me())));
+        Playtest.queue("crouch again", () -> Playtest.keyDown("left.shift"));
+        Playtest.wait("crouch", 10);
+        useBlock("the panel again, crouched", () -> F.panel.pos(), () -> true, item("repair_kit"));
+        Playtest.wait("the server answers", 40);
+        Playtest.queue("nothing twice", () -> {
+            Playtest.keyUp("left.shift");
+            boolean session = server(() -> TechWork.sessionOf(me().getUUID()) != null);
+            long paid = Math.round(server(() -> QShopEconomy.balance(me())) - F.balanceBefore);
+            if (session || paid != 0 || mc().screen instanceof PatchScreen) Playtest.fail("the finished job could be worked or paid again");
+            else pass("4 the finished job cannot be started or paid a second time");
+        });
+        JourneyScenario.closeScreen("close anything open");
+        StationSteps.reconnect(() -> List.of(server(() -> QShopEconomy.balance(me())), server(() -> TechService.systems(level().getServer()).quieted.containsKey(F.panel.key())), server(() -> TechService.systems(level().getServer()).quiets)),
+            (before, after) -> {
+                if (!before.equals(after)) Playtest.fail("the back-channel record changed across the save and reopen");
+                else pass("5 saved, left and reopened: the wallet, the quiet line's record and the count of quiet jobs unchanged");
+            });
+        Playtest.queue("summary", ThiefScenario::summary);
+    }
+
     private static Item item(String id) { return TechWork.item(id); }   // the registry, so block items (the computer) are found too
     private static int count(Item item) { return mc().player.getInventory().countItem(item); }
 

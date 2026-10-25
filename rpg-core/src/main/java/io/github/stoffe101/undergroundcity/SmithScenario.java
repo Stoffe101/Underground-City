@@ -247,23 +247,7 @@ final class SmithScenario {
     private static TownspersonEntity foreman() { return keeperOf(F.hardware, F.hardwareDoor); }
 
     /** A cell of the public floor in sight of the keeper, two to four blocks from them. */
-    private static Vec3 beforeKeeper(CityBuildings.Building b, TownspersonEntity k) {
-        if (k == null) return null;
-        return server(() -> {
-            StaffZones.Zones z = StaffZones.of(level(), b);
-            BlockPos best = null;
-            double bestD = Double.MAX_VALUE;
-            for (long key : z.publicCells()) {
-                BlockPos c = BlockPos.of(key);
-                double d = c.distToCenterSqr(k.position());
-                if (d < 2.0 || d > 16.0 || d >= bestD) continue;
-                if (!level().clip(new net.minecraft.world.level.ClipContext(Vec3.atCenterOf(c).add(0, 1.1, 0), k.getEyePosition(), net.minecraft.world.level.ClipContext.Block.COLLIDER,
-                    net.minecraft.world.level.ClipContext.Fluid.NONE, k)).getType().equals(net.minecraft.world.phys.HitResult.Type.MISS)) continue;
-                best = c; bestD = d;
-            }
-            return best == null ? null : Vec3.atBottomCenterOf(best);
-        });
-    }
+    private static Vec3 beforeKeeper(CityBuildings.Building b, TownspersonEntity k) { return StationSteps.beforeKeeper(b, k); }
 
     // ------------------------------------------------------------------------------------------------ the bench
 
@@ -356,10 +340,7 @@ final class SmithScenario {
             if (wheel[0]++ % 6 == 0) Playtest.click(5);
             return wheel[0] > 90;
         }, 120);
-        JourneyScenario.clickAt("the " + recipe + " row", () -> mc().screen instanceof WorkshopScreen s ? s.rowCentre(recipe) : null);
-        Playtest.queue(recipe + " is selected", () -> {
-            if (!(mc().screen instanceof WorkshopScreen s) || !s.selectedId().equals(recipe)) Playtest.fail("a click on the row did not select " + recipe);
-        });
+        StationSteps.selectRow(recipe);
         Playtest.wait("select", 4);
         JourneyScenario.click("Start", true);
         until(recipe + " starts", () -> mc().screen instanceof WorkshopScreen s && !s.view().running().isEmpty(), 100);
@@ -369,7 +350,8 @@ final class SmithScenario {
             Playtest.log("SMITH started " + v.running() + ": " + v.secondsLeft() + " s left");
         });
         until(recipe + " is done", () -> server(() -> !level().getBlockState(F.bench).getValue(WorkshopBlock.WORKING)), 20 * 60 * 4);
-        Playtest.wait("the screen refreshes", 25);
+        // the open screen asks the station again once its countdown is up (smith run 1 found Take grey until the station was reopened)
+        until("the screen shows the batch ready", () -> mc().screen instanceof WorkshopScreen s && s.view().readyCount() > 0, 400);
         JourneyScenario.click("Take", true);
         until(recipe + " is taken", () -> JourneyScenario.count(out) >= before[0] + expect, 100);
         Playtest.queue(recipe + " taken", () -> {
@@ -425,26 +407,11 @@ final class SmithScenario {
     }
 
     private static void learn(String node, String title) {
-        JourneyScenario.click("SKILLS", true);
-        Playtest.wait("draw", 10);
-        JourneyScenario.clickAt("the " + title + " card", () -> mc().screen instanceof TerminalScreen t ? t.skillCentre(node) : null);
-        Playtest.wait("select", 6);
-        JourneyScenario.click("Unlock", true);
-        until(title + " learned", () -> server(() -> CitizenState.get(mc().getSingleplayerServer()).find(mc().player.getUUID()).map(c -> c.skills().contains(node)).orElse(false)), 200);
+        StationSteps.learn(node, title);
         shot("skill-" + node.substring(node.indexOf('.') + 1));
     }
 
-    private static void buy(String label, String line, Item item, int n) {
-        for (int i = 0; i < n; i++) {
-            final int[] had = {0};
-            Playtest.queue("buy " + label + " (" + (i + 1) + "/" + n + ")", () -> {
-                had[0] = JourneyScenario.count(item);
-                if (!(mc().screen instanceof TerminalScreen t) || !t.clickBuyOffer(line)) Playtest.fail("no active BUY 1 on " + line);
-            });
-            until("bought " + label, () -> JourneyScenario.count(item) > had[0], 200);
-            Playtest.wait("draw", 6);
-        }
-    }
+    private static void buy(String label, String line, Item item, int n) { StationSteps.buy(label, line, item, n); }
 
     // ------------------------------------------------------------------------------------------------ save and return
 

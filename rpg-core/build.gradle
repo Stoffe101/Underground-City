@@ -218,6 +218,8 @@ minecraft {
             }
             if (providers.gradleProperty('ucJourneyScenario').isPresent()) {
                 jvmArgs "-Duc.journey.scenario=${providers.gradleProperty('ucJourneyScenario').get()}"
+                // the two-player performance session (PerfSessionServer): its length, and where any long tick spent its time
+                if (providers.gradleProperty('ucJourneyScenario').get() == 'perf') jvmArgs '-Duc.tickSampler=true', "-Duc.perf.minutes=${providers.gradleProperty('ucPerfMinutes').orElse('30').get()}"
             }
             // the combined journey (D-091): survival goods, the wayside shelter and the interrupted purchase, optionally on a generated Lost Cities world instead of the flat fixture
             if (providers.gradleProperty('ucJourneySurvival').isPresent()) jvmArgs '-Duc.journey.survival=true'

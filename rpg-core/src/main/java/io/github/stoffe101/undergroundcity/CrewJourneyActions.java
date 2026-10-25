@@ -38,7 +38,11 @@ final class CrewJourneyActions {
         if (mc.player == null || ++ticks % 10 != 0) return;
         // Once every Crew step is done this script leaves the screen alone for good. Asking for the Crew screen again would race with the survival half of the combined journey: the server opens
         // the exchange terminal in the same tick that hands over the goods, and a late request for the Crew screen replaces it (seen in the hosted combined journey: the client waited in stage 0).
-        if (allStepsDone) return;
+        if (allStepsDone) {
+            // phase 2's last part (seventh pass): the Crew contract on the terminal the server opened, chosen and delivered with the screen's own buttons
+            if (PHASE == 2 && !SurvivalJourney.ON) contractTick(mc);
+            return;
+        }
         boolean founder = mc.getUser().getName().equals(CrewJourneyServer.FARMER);
         if (!(mc.screen instanceof CrewScreen screen)) {
             // the server opens the screen; if it was closed or never arrived, ask for it the way the K key does (not more than every 5 seconds)
@@ -187,6 +191,58 @@ final class CrewJourneyActions {
                 press(s, "withdraw");
                 return false;
             });
+    }
+
+    // ------------------------------------------------------------------------------------------------------------ the Crew contract (phase 2, seventh pass)
+
+    private static int contractStep, contractPhase, contractWait;
+    private static double balanceBeforeFill;
+    private static boolean contractDone;
+
+    /**
+     * The farmer delivers the canteen's flour and then has a supplier fill the cider part (nobody in the Crew makes cider; the part is on the founder's terminal because it is the Crew's); the
+     * smith delivers the fittings. Each delivery is: choose the part on the Work page, press Accept, wait for the server to accept it, press Deliver, wait for the server to settle it. Presses go
+     * through the screen's own click handler at the button's centre, as in phase 1; nothing is decided here.
+     */
+    private static void contractTick(Minecraft mc) {
+        if (contractDone || !(mc.screen instanceof TerminalScreen t)) return;
+        boolean founder = mc.getUser().getName().equals(CrewJourneyServer.FARMER);
+        if (++contractWait < 3) return;   // let the screen take the server's last answer in
+        contractWait = 0;
+        String part = founder ? (contractStep == 0 ? CrewJourneyServer.FLOUR : CrewJourneyServer.CIDER) : CrewJourneyServer.FITTINGS;
+        boolean fill = founder && contractStep == 1;
+        TerminalData data = t.data();
+        if (fill) {
+            if (contractPhase == 0) {
+                if (!t.selectJobById(part)) { say("the cider part is not on the founder's terminal yet"); return; }
+                balanceBeforeFill = data.balance();
+                if (t.clickSupplier()) { say("pressed Supplier on the cider part"); contractPhase = 1; }
+                else say("Supplier is not available on the cider part now; trying again");
+            } else if (data.balance() <= balanceBeforeFill - 1) {
+                say("the supplier filled the cider part: wallet " + (long) balanceBeforeFill + " -> " + (long) data.balance());
+                contractDone = true;
+            }
+            return;
+        }
+        switch (contractPhase) {
+            case 0 -> {
+                if (!t.selectJobById(part)) { say(part + " is not on the terminal"); return; }
+                if (t.primaryState().equals("Accept order") && t.clickPrimary()) { say("pressed Accept on " + part); contractPhase = 1; }
+                else say("Accept is not available on " + part + " (" + t.primaryState() + "); trying again");
+            }
+            case 1 -> {
+                if (data.active() == null) return;   // the server has not accepted it yet
+                t.selectJobById(part);
+                if (t.primaryState().equals("Deliver and collect") && t.clickPrimary()) { say("pressed Deliver on " + part); contractPhase = 2; }
+            }
+            case 2 -> {
+                if (data.active() != null) return;   // not settled yet
+                say("delivered " + part);
+                contractPhase = 0;
+                if (founder) contractStep++; else contractDone = true;
+            }
+            default -> { }
+        }
     }
 
     // ------------------------------------------------------------------------------------------------------------ helpers
