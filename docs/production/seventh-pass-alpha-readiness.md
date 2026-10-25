@@ -18,9 +18,25 @@ Branch `feature/world-playability-overhaul`, draft PR [#25](https://github.com/S
 
 ## Evidence
 
-**In progress.** This report is being written during the pass; the evidence table, what is not done and the bugs list are filled in as the client runs finish.
+Every run below is a scripted real client (one software-rendered Minecraft client in a virtual display, driven by synthetic keys and clicks) on a new furnished archipelago world. Every command, teleport and grant was logged as `SCRIPTED`. None of it is human playtesting.
+
+| Run | Level | Result |
+| --- | --- | --- |
+| Smith runs 1 to 7 (`-PucPlaytest=smith`) | L3 | run 7 `RESULT pass`, 13 steps, 9 logged shortcuts: the clock set to 13:00; one teleport to Ironhaven; the start on the street; the walker's fallbacks to a teleport near three doors and one terminal; Track B's level-4 XP and 60 credits. A new Smith registers, makes fasteners and brackets at the kit's bench with real clicks, sells the fasteners to the Builders' Yard, learns two skills, buys refined alloy, copper and redstone, makes springs and a gear set, fits the Drill Press and makes machined parts; saved, left and reopened with nothing lost. Runs 1 to 6 found five of the bugs below. |
+| Farmer runs 1 to 10 (`farmer`) | L3 | run 10 `RESULT pass`, 14 steps, 7 shortcuts (the clock, one teleport, the start, Track B's level-4 XP, credits and wheat, a hotbar move and two walker fallbacks of about a block). The kit's Mill grinds flour; two skills are learned; goods are bought over the General Store's counter; slabs and a Grading Table are crafted through the recipe book; a produce crate comes out Fine and the store buys it; the bakery buys the flour; save and reopen. |
+| Vintner runs 1 to 8 (`vintner`) | L3 | run 8 `RESULT pass`, 12 of 12 steps, 10 shortcuts. Four skills are learned at the corner store's terminal; the kit's vat ferments berry wine; an Oak Cask and a Pot Still are crafted through the recipe book; the cask ages wine and the still makes licensed grain spirit; the Blackwater club's bar buys both (+115 and +34 credits); save and reopen. Runs 5 to 7 found the recipe book's search limit, the club's evening closing (the scenario now runs at 13:00) and the countdown that fell behind. |
+| Premises runs 1 to 6 (`premises`) | L3 | run 6 `RESULT pass`, 8 of 8 steps, 4 shortcuts (one of them `/uc_prepare`, logged as PREPARED). The commercial workshop is rented on Find a home with a real click; the tenant walks in at its iron street door; the Machinist's Bench inside runs two batches at a time at 125% speed (D-169); the bulk order only trade premises may take is delivered at a terminal inside (+420 credits); save and reopen. Runs 1 to 5 found three bugs (Find a home's list, the Crew screen's packet, the tenant's iron door). |
+| Homes runs 1 to 3 (`homes`) | L3 | run 3: steps 1 to 6 passed. A loft is rented in Blackwater and a chest set down in it; a villa is bought in Valewood and an upgrade fitted; Move out returns the loft's 210-credit deposit and the chest stays the player's. Step 7 (save and reopen) **hung**: the integrated server never stopped. The eighth pass found why (a deadlock between Core's city listener and Lost Cities, fixed there) and reruns it. |
+| Unmarked firearm runs 1 and 2 (`unmarked`, the firearms set) | L3 | run 1 was cut off by a container restart (neither pass nor fail). Run 2 passed steps 1 to 12b: a Gunsmith learns Unregistered Builds; buys parts with no Smith; crafts unstamped plate; fits the Vice and Jigs; makes three unmarked kits; learns the Glock 17 from the blueprint. TaCZ's table lists it as "Registered" and "Unmarked" and no longer as TaCZ's iron recipe (D-177, now seen through a client). Two unmarked Glock 17s with no serial are built with real clicks; a Blackwater checkpoint would find them restricted; save and reopen keeps them unmarked. Step 13 (Dray's order at the corner store) failed: the scenario never switched the Work page to its Underground view. The run also exposed a real bug at the corner store (in the eighth pass's list). |
+| GameTests | L2 | 413 of 413 on the last seventh-pass commit (local run 133), and green in CI on every pushed commit. |
+| Python suite and repository check | L1 | 346 tests OK; `validate_repo.py` OK. |
 
 ## Not done, and why
+
+* **The 30-minute dedicated-server performance session** was not run: the machine was never free of client runs long enough. It is carried to the eighth pass.
+* **Four-viewport captures, the General Skills visual check, Xaero with two clients, the two-player raid, the city counter audit and the civic project's full lifecycle** were not reached. They are carried to the eighth pass.
+* **The back-channel job through a real client** was not run (GameTested only).
+* **The Windows scripts** were written and parse on Linux. They have not been run on Windows, and nothing here claims they work there.
 
 ## Bugs found and fixed in this pass
 
@@ -49,3 +65,5 @@ Each was found by a scripted client, a GameTest, CI or a code review in this pas
 The scripted clients themselves were made more robust where a person would simply try again (a lost key tap, a buy click that raced the screen's refresh, a hotbar tap that missed, a recipe search that stopped short of the book's last page); those are test changes, not game fixes, and each is noted in the run that needed it.
 
 ## Next
+
+The eighth pass ([eighth-pass-living-sandbox.md](eighth-pass-living-sandbox.md)) picks up every loose end above, starting with the homes run's hang and the unmarked run's last two steps.

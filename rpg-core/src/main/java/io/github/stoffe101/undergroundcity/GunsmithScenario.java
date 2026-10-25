@@ -413,6 +413,9 @@ final class GunsmithScenario {
     private static void deliver(String label, String order, String passText) {
         click("Work", true);
         Playtest.wait("draw", 12);
+        // Dray's orders are underground ones: the Work page lists one view at a time
+        click("Underground", true);
+        Playtest.wait("draw", 8);
         final int[] t = {0};
         Playtest.queue("turn the wheel until " + label + " is in view", () -> { t[0] = 0; Playtest.focusWindow(); }, () -> {
             if (!(mc().screen instanceof TerminalScreen screen)) return true;

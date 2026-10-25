@@ -127,7 +127,19 @@ final class HomeScenario {
             else pass("5 the owner fits an upgrade on the Home page (a real click on Fit): " + r.upgrades + " for " + Math.round(F.walletBefore - JourneyScenario.wallet()) + " credits");
         });
         shot("4-villa-upgrade");
-        // out of the loft: its row, Move out, Really?
+        JourneyScenario.closeScreen("close the Home page");
+        // out of the loft: a home is left from beside it (within 64 blocks), where its tenant can clear their things out, so back to Blackwater first (homes run 2 tried from Valewood)
+        ThiefScenario.travel("back to the middle of Blackwater", () -> ThiefScenario.centre("blackwater"), 6);
+        Playtest.queue("back at the loft block's street door (scripted)", () -> { scripted("the player was put back at the loft block's street door " + F.loftsDoor.door().toShortString()); ThiefScenario.standAt(F.loftsDoor); },
+            () -> mc().player.position().distanceTo(F.loftsDoor.stand()) < 0.8, 200);
+        Playtest.wait("settle", 30);
+        JourneyScenario.pressUntil("press K for the Crew and Home screen", "k", () -> mc().screen instanceof CrewScreen, 200);
+        Playtest.wait("draw", 10);
+        JourneyScenario.clickAt("the Home rail", () -> mc().screen instanceof CrewScreen s ? s.centreOf("rail_home") : null);
+        Playtest.wait("draw", 8);
+        JourneyScenario.clickAt("the Your homes tab", () -> mc().screen instanceof CrewScreen s ? s.centreOf("home_tab_0") : null);
+        Playtest.wait("draw", 8);
+        // its row, Move out, Really?
         JourneyScenario.clickAt("the loft's row", () -> mc().screen instanceof CrewScreen s ? s.homeRowCentre(F.loftId) : null);
         Playtest.wait("draw", 8);
         Playtest.queue("before moving out", () -> F.walletBefore = JourneyScenario.wallet());

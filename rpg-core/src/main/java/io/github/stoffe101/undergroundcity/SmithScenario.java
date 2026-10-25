@@ -31,13 +31,13 @@ import static io.github.stoffe101.undergroundcity.ThiefScenario.shot;
  *
  * <p><b>Track B, prepared:</b> the Smith's XP is raised to level 4 and 60 credits are added, as after an hour of orders (both logged as SCRIPTED); the rest is real clicks: Forge Fundamentals and
  * Structural Works learned on the terminal's Skills page, copper and redstone bought at the Hardware and Metals desk, refined alloy bought on the exchange at the workshop's public terminal,
- * springs and a gear set made at the bench, the Drill Press (tier 2) fitted from them, machined parts made on it (the part a Gunsmith's parts kit needs), and the world saved, left and opened
+ * springs and a gear set made at the bench, the Drill Press (tier 2) fitted from them, machined parts turned by hand on it (the part a Gunsmith's parts kit needs), and the world saved, left and opened
  * again with the bench's tier, the skills, the wallet and the goods unchanged.
  */
 final class SmithScenario {
     private SmithScenario() {}
 
-    private static final class Facts {
+    static final class Facts {
         CityBuildings.Building yard, hardware;
         DoorWalk.Spot yardDoor, hardwareDoor;
         BlockPos bench, publicTerminal;
@@ -45,7 +45,7 @@ final class SmithScenario {
         int shelfBefore;
     }
 
-    private static final Facts F = new Facts();
+    static final Facts F = new Facts();
     static final String FASTENER_LINE = UndergroundCity.MOD_ID + ":shops/yard_fasteners_ironhaven";
     static final String COPPER_LINE = UndergroundCity.MOD_ID + ":materials/copper_ingot_ironhaven";
     static final String REDSTONE_LINE = UndergroundCity.MOD_ID + ":materials/redstone_ironhaven";
@@ -177,7 +177,24 @@ final class SmithScenario {
             if (v == null || v.tier() != 2 || JourneyScenario.count(UndergroundCity.item("gear_set")) != 0) Playtest.fail("the Drill Press was not fitted from the gear set, brackets and springs");
             else pass("11 (B) Fit tier 2 (a real click) uses the gear set, two brackets and two springs: the Drill Press runs two batches at a time, a third faster");
         });
-        batch("machined_parts", "underground_city:machined_parts", 2, "12 (B) on the Drill Press, refined alloy and an ingot make two machined parts, the part every Firearm Parts Kit needs");
+        // machined parts are turned by hand to a drawing the first time (eighth pass, D-182): Turn, the passes with real clicks, and the bench keeps a jig for later batches
+        final int[] partsBefore = new int[1];
+        Playtest.queue("before turning", () -> partsBefore[0] = JourneyScenario.count(UndergroundCity.item("machined_parts")));
+        EngineerScenario.selectRow("machined_parts");
+        JourneyScenario.click("Turn", true);
+        until("the drawing opens", () -> mc().screen instanceof TurningScreen, 200);
+        Playtest.wait("draw", 12);
+        EngineerScenario.turnToStandard();
+        until("the parts are made", () -> JourneyScenario.count(UndergroundCity.item("machined_parts")) == partsBefore[0] + 2 && !(mc().screen instanceof TurningScreen), 200);
+        Playtest.queue("machined parts", () -> {
+            Integer jig = server(() -> level().getBlockEntity(F.bench) instanceof WorkshopBlock.Entity e ? e.jigs.get("machined_parts") : null);
+            int made = JourneyScenario.count(UndergroundCity.item("machined_parts")) - partsBefore[0];
+            Playtest.log("SMITH machined parts: " + made + " made, jig " + jig + "; " + ClientSmith.lastEnd);
+            if (made != 2 || jig == null) Playtest.fail("the machined parts were not turned, or the bench kept no jig");
+            else pass("12 (B) on the Drill Press, refined alloy and an ingot are turned by hand to the drawing (real clicks, the shop's standard): two machined parts, the part every Firearm Parts Kit needs, and the bench keeps a jig to run them as a batch");
+        });
+        JourneyScenario.closeScreen("close anything left open");
+        SmithScenario.openBench("the jig");
         shot("7-machined-parts");
         JourneyScenario.closeScreen("close the bench");
         reconnect();
@@ -187,7 +204,7 @@ final class SmithScenario {
     // ------------------------------------------------------------------------------------------------ places
 
     /** The nearest open building of a furnished type within twelve chunks of the player. */
-    private static CityBuildings.Building nearestOpen(String suffix) {
+    static CityBuildings.Building nearestOpen(String suffix) {
         ServerLevel level = level();
         BlockPos here = me().blockPosition();
         for (int r = 0; r <= 12; r++) for (int dx = -r; dx <= r; dx++) for (int dz = -r; dz <= r; dz++) {
@@ -201,7 +218,7 @@ final class SmithScenario {
     }
 
     /** The Operations Terminal block inside a building (the public one its plan carries, D-175). */
-    private static BlockPos terminalIn(CityBuildings.Building b) {
+    static BlockPos terminalIn(CityBuildings.Building b) {
         ServerLevel level = level();
         for (int y = b.streetY(); y < b.streetY() + 12; y++) for (int x = 0; x < 16; x++) for (int z = 0; z < 16; z++) {
             BlockPos p = new BlockPos((b.chunkX() << 4) + x, y, (b.chunkZ() << 4) + z);
@@ -210,7 +227,7 @@ final class SmithScenario {
         return null;
     }
 
-    private static Vec3 standBeside(BlockPos block) {
+    static Vec3 standBeside(BlockPos block) {
         if (block == null) return mc().player.position();
         return server(() -> {
             for (Direction d : Direction.Plane.HORIZONTAL) {
@@ -222,7 +239,7 @@ final class SmithScenario {
     }
 
     /** In at the street door like a customer: to the step, a right click on the door. */
-    private static void enterBuilding(String name, Supplier<DoorWalk.Spot> door) {
+    static void enterBuilding(String name, Supplier<DoorWalk.Spot> door) {
         ThiefScenario.walkOrTeleport("walk to the door of " + name, () -> door.get().stand(), 0.8, 1500);
         final int[] knock = {0};
         Playtest.queue("open the door of " + name, () -> { knock[0] = 0; Playtest.focusWindow(); }, () -> {
@@ -243,15 +260,15 @@ final class SmithScenario {
         });
     }
 
-    private static TownspersonEntity yardKeeper() { return keeperOf(F.yard, F.yardDoor); }
-    private static TownspersonEntity foreman() { return keeperOf(F.hardware, F.hardwareDoor); }
+    static TownspersonEntity yardKeeper() { return keeperOf(F.yard, F.yardDoor); }
+    static TownspersonEntity foreman() { return keeperOf(F.hardware, F.hardwareDoor); }
 
     /** A cell of the public floor in sight of the keeper, two to four blocks from them. */
     private static Vec3 beforeKeeper(CityBuildings.Building b, TownspersonEntity k) { return StationSteps.beforeKeeper(b, k); }
 
     // ------------------------------------------------------------------------------------------------ the bench
 
-    private static void placeBench() {
+    static void placeBench() {
         final Vec3[] stand = new Vec3[1];
         Playtest.queue("open ground near the yard to set the bench on", () -> {
             Object[] found = server(() -> {
@@ -311,7 +328,7 @@ final class SmithScenario {
         return level.getBlockState(c).isAir() && level.getBlockState(c.above()).isAir() && level.getBlockState(c.below()).isSolidRender(level, c.below());
     }
 
-    private static void openBench(String label) {
+    static void openBench(String label) {
         final int[] t = {0};
         Playtest.queue("right-click the bench: " + label, () -> { t[0] = 0; Playtest.focusWindow(); }, () -> {
             if (mc().screen instanceof WorkshopScreen) return true;

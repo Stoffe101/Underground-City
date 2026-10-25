@@ -30,6 +30,7 @@ final class Scenarios {
             case "civic" -> CivicScenario.build();
             case "workshop" -> WorkshopScenario.build();
             case "smith" -> SmithScenario.build();
+            case "engineer" -> EngineerScenario.build();
             case "farmer" -> FarmerScenario.build();
             case "vintner" -> VintnerScenario.build();
             case "backchannel" -> TechScenario.buildQuiet();
