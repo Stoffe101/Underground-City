@@ -467,6 +467,20 @@ public final class TerminalNetwork {
         CHANNEL.sendToServer(new WorkAction(pos.immutable(), action, id, nonce == null ? new UUID(0, 0) : nonce));
     }
 
+    private static final java.util.Map<ServerPlayer, Integer> DROPPED_AT = new java.util.WeakHashMap<>();
+
+    /**
+     * A terminal request dropped by {@link #requestSlot} still gets its screen sent back (at most twice a second, so a flood of clicks costs no more than two views a second): the client
+     * greys every button when it sends a request, and a request the server was too quick to take left the terminal greyed until it was closed and opened again (farmer run 8).
+     */
+    static void refreshAfterDrop(ServerPlayer player, BlockPos pos) {
+        int now = player.server.getTickCount();
+        Integer last = DROPPED_AT.get(player);
+        if (last != null && now - last < 10) return;
+        DROPPED_AT.put(player, now);
+        open(player, pos);
+    }
+
     static boolean requestSlot(ServerPlayer player) {
         int now = player.server.getTickCount();
         Integer previous = REQUEST_TIMES.get(player);

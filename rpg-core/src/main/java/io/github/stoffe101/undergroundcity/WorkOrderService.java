@@ -25,7 +25,7 @@ public final class WorkOrderService {
     interface Operation { void run(WorkOrderLedger ledger, CitizenState.Citizen citizen); }
 
     static void guarded(ServerPlayer player, BlockPos pos, Operation operation) {
-        if (!TerminalNetwork.requestSlot(player)) return;
+        if (!TerminalNetwork.requestSlot(player)) { TerminalNetwork.refreshAfterDrop(player, pos); return; }
         if (!TerminalNetwork.authorizedForExchange(player, pos)) {
             player.sendSystemMessage(Component.literal(ShopCounters.INSTANCE.all().isEmpty() ? "Register and use a nearby placed Operations Terminal."
                 : "Register and use a nearby placed Operations Terminal, or a shop counter while its shopkeeper is there."));

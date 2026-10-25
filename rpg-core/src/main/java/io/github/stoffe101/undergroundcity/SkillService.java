@@ -80,7 +80,7 @@ public final class SkillService {
 
     /** Terminal action: spends points on one node, then refreshes the terminal. */
     public static void unlock(ServerPlayer player, BlockPos pos, String nodeId) {
-        if (!TerminalNetwork.requestSlot(player)) return;
+        if (!TerminalNetwork.requestSlot(player)) { TerminalNetwork.refreshAfterDrop(player, pos); return; }
         if (!TerminalNetwork.authorizedForStarterShop(player, pos)) {   // skills are learned at a terminal, never at a shop counter
             player.sendSystemMessage(Component.literal("Register and use a nearby placed Operations Terminal."));
             return;
