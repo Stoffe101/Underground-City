@@ -180,7 +180,8 @@ public final class SmithWork {
         String jig = e.tier < 2 ? "" : better ? " The bench's jig is set at " + Workshops.GRADES[grade] + "." : " The bench's jig stays at " + Workshops.GRADES[had] + ".";
         String text = "Turned " + r.count() + " " + out.getDescription().getString() + " at " + Workshops.GRADES[grade] + ": " + turn.t.passes + (turn.t.passes == 1 ? " pass" : " passes")
             + " against a standard of " + turn.t.standard + (turn.t.sleeves > 0 ? ", " + turn.t.sleeves + (turn.t.sleeves == 1 ? " sleeve" : " sleeves") : "") + ". +" + xp + " XP." + jig;
-        Notice.send(player, Notice.Kind.DELIVERED, "Turned by hand", text);
+        Notice.send(player, Notice.Kind.DELIVERED, "Turned by hand", r.count() + " " + out.getDescription().getString() + " at " + Workshops.GRADES[grade] + ", " + turn.t.passes
+            + (turn.t.passes == 1 ? " pass" : " passes") + " (standard " + turn.t.standard + "). +" + xp + " XP.");
         LOGGER.info("[UC-SMITH] {} turned {} at {} ({} passes, standard {}, {} sleeves)", player.getGameProfile().getName(), r.id(), Workshops.GRADES[grade], turn.t.passes, turn.t.standard, turn.t.sleeves);
         SmithNetwork.sendEnd(player, true, text);
     }
@@ -330,7 +331,8 @@ public final class SmithWork {
         CitizenState.get(player.server).bumpJourney(player.getUUID(), "smith_repair");
         String effect = m.industrial() ? (shift > 0 ? " The works runs a catch-up shift: " + shift + " units on " + Casing.capitalise(m.city()) + "'s exchange." : " The works is back at it.") : " The shop is supplied again.";
         String text = Casing.capitalise(m.name()) + " running: +" + credits + " credits, +" + xp + " XP." + effect;
-        Notice.send(player, Notice.Kind.DELIVERED, "Machine repaired", Casing.capitalise(m.label()) + ", " + m.address() + ": " + text);
+        // the notice holds three short lines (engineer run 7's picture cut the longer one off); the whole sentence is in the chat
+        Notice.send(player, Notice.Kind.DELIVERED, "Machine repaired", Casing.capitalise(m.name()) + ", " + m.address() + ": +" + credits + " credits, +" + xp + " XP.");
         LOGGER.info("[UC-SMITH] repair by {} of the {} at {} for {} credits (catch-up {})", player.getGameProfile().getName(), m.name(), m.address(), credits, shift);
         SmithNetwork.sendEnd(player, true, text);
     }

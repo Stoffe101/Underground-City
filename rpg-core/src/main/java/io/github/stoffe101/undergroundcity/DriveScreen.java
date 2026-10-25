@@ -20,6 +20,8 @@ public final class DriveScreen extends UcScreen {
     private UcButton runB;
     private final List<UcButton> gearButtons = new ArrayList<>();
     private int tile, gx, gy;
+    /** Below a stage's tile: its two stepper rows and its idler button (tighter on a short screen). */
+    private int rowA = 16, rowB = 38, idlerOff = 60;
 
     DriveScreen(SmithNetwork.DriveView view) {
         super(Component.literal("Underground City | Drive"));
@@ -56,19 +58,24 @@ public final class DriveScreen extends UcScreen {
         layoutPanel(440, 250, 640, 330);
         int columns = v.parts().length + 2;
         tile = Math.max(30, Math.min(52, (bodyW() - 16) / columns));
-        gx = bodyX() + (bodyW() - columns * tile) / 2;
         gy = bodyY() + 40;
+        // the steppers and the idler must end above the note line: 1280x720 at GUI scale 3 (426 by 240) put the idlers over it (engineer run 7)
+        int room = bodyBottom() - 20 - gy;   // the well round the drive ends 18 above the body's foot, under the note line
+        rowA = 16; rowB = 38; idlerOff = 60;
+        if (tile - 4 + idlerOff + 14 > room) { rowA = 13; rowB = 31; idlerOff = 49; }
+        if (tile - 4 + idlerOff + 14 > room) tile = Math.max(30, room - idlerOff - 14 + 4);
+        gx = bodyX() + (bodyW() - columns * tile) / 2;
         // the gear steppers under each stage
         for (int i = 0; i < v.parts().length; i++) {
             if (v.parts()[i] != 2) continue;
             int stage = (i - 2) / 2;
             int[] r = rect(i);
-            int bx = r[0], by = r[1] + r[3] + 16;
+            int bx = r[0], by = r[1] + r[3] + rowA;
             gear(stage, true, true, bx, by, "+");
             gear(stage, true, false, bx + 11, by, "-");
-            gear(stage, false, true, bx, by + 22, "+");
-            gear(stage, false, false, bx + 11, by + 22, "-");
-            UcButton idler = add(new UcButton(bx - 2, by + 44, Math.max(26, tile - 2), 14, "idler", b -> SmithNetwork.move(SmithNetwork.IDLER, stage, 0, 0, 0)).kind(UcButton.Kind.CHIP)
+            gear(stage, false, true, bx, by + rowB - rowA, "+");
+            gear(stage, false, false, bx + 11, by + rowB - rowA, "-");
+            UcButton idler = add(new UcButton(bx - 2, r[1] + r[3] + idlerOff, Math.max(26, tile - 2), 14, "idler", b -> SmithNetwork.move(SmithNetwork.IDLER, stage, 0, 0, 0)).kind(UcButton.Kind.CHIP)
                 .tooltip("Fit or take out an idler gear:", "it keeps this stage's direction"));
             ids.put(idler, "idler_" + stage);
             gearButtons.add(idler);
@@ -116,7 +123,7 @@ public final class DriveScreen extends UcScreen {
 
     @Override protected void renderHeaderRight(GuiGraphics g, int right) {
         String tests = v.tests() + (v.tests() == 1 ? " run" : " runs");
-        UcUi.chip(g, font, tests, right - UcUi.displayWidth(font, tests) - 10, py + 9, v.tests() <= 1 ? UcUi.WARN : UcUi.AMBER, UcUi.Icon.CLOCK);
+        UcUi.chip(g, font, tests, right - UcUi.displayWidth(font, tests) - 30, py + 9, v.tests() <= 1 ? UcUi.WARN : UcUi.AMBER, UcUi.Icon.CLOCK);
     }
 
     @Override protected void renderBody(GuiGraphics g, int mouseX, int mouseY, float partial) {
@@ -151,9 +158,9 @@ public final class DriveScreen extends UcScreen {
             if (v.parts()[i] == 2) {
                 int stage = (i - 2) / 2;
                 boolean open = v.open()[stage];
-                int by = r[1] + r[3] + 4;
-                UcUi.text(g, font, "drive " + SmithPuzzles.TEETH[v.driver()[stage]], r[0] + 22, by + 13, open ? UcUi.TEXT : UcUi.FAINT);
-                UcUi.text(g, font, "driven " + SmithPuzzles.TEETH[v.driven()[stage]], r[0] + 22, by + 35, open ? UcUi.TEXT : UcUi.FAINT);
+                int bottom = r[1] + r[3], by = bottom + (rowA > 13 ? 4 : 3);
+                UcUi.text(g, font, "drive " + SmithPuzzles.TEETH[v.driver()[stage]], r[0] + 22, bottom + rowA + 1, open ? UcUi.TEXT : UcUi.FAINT);
+                UcUi.text(g, font, "driven " + SmithPuzzles.TEETH[v.driven()[stage]], r[0] + 22, bottom + rowB + 1, open ? UcUi.TEXT : UcUi.FAINT);
                 if (!open) UcUi.text(g, font, "geared right", r[0], by, UcUi.FAINT);
                 else UcUi.text(g, font, "open", r[0], by, UcUi.AMBER);
             }
@@ -165,7 +172,18 @@ public final class DriveScreen extends UcScreen {
         int s = tile - 4;
         g.fill(x - 1, y - 1, x + s + 1, y + s + 1, 0xff05080c);
         g.fill(x, y, x + s, y + s, fill);
-        UcUi.text(g, font, UcUi.fit(font, title, s - 2), x + s / 2 - Math.min(s - 2, font.width(title)) / 2, y + 4, UcUi.TEXT);
+        int tw = font.width(title);
+        if (tw > s - 2 && tw * 0.75f <= s - 2) {
+            // a name a little too long for its tile ("Tensioner" at 1280x720) is drawn smaller rather than cut
+            float k = (s - 2) / (float) tw;
+            g.pose().pushPose();
+            g.pose().translate(x + s / 2f - tw * k / 2f, y + 4 + (1 - k) * 4, 0);
+            g.pose().scale(k, k, 1f);
+            UcUi.text(g, font, title, 0, 0, UcUi.TEXT);
+            g.pose().popPose();
+        } else {
+            UcUi.text(g, font, UcUi.fit(font, title, s - 2), x + s / 2 - Math.min(s - 2, tw) / 2, y + 4, UcUi.TEXT);
+        }
         UcUi.text(g, font, UcUi.fit(font, sub, s - 2), x + s / 2 - Math.min(s - 2, font.width(sub)) / 2, y + s - 12, color);
     }
 }

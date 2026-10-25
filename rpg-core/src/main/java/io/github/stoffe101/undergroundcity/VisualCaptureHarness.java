@@ -588,7 +588,9 @@ public final class VisualCaptureHarness {
             mc.setScreen(lockCapture(capture.challenge));
         } else if(capture.challenge!=null && capture.challenge.startsWith("glance-")) {
             // the glance card at a street door (D-157) with its business hours (D-185), drawn by hand below over a bare screen: in the game it sits under the crosshair with no screen open
-            mc.setScreen(new net.minecraft.client.gui.screens.Screen(net.minecraft.network.chat.Component.literal("Glance cards")) {});
+            mc.setScreen(new net.minecraft.client.gui.screens.Screen(net.minecraft.network.chat.Component.literal("Glance cards")) {
+                @Override public void render(net.minecraft.client.gui.GuiGraphics g, int mouseX, int mouseY, float partial) { renderBackground(g); super.render(g, mouseX, mouseY, partial); }
+            });
         } else if(capture.challenge!=null && capture.challenge.startsWith("notices-")) {
             // the corner notices over a terminal: an order taken, a delivery paid with a level-up, a search at a checkpoint and a rare find
             TerminalScreen screen=new TerminalScreen(BlockPos.ZERO,fixture(2,8,true,true));

@@ -185,13 +185,14 @@ public final class ClientPlaces {
             subColour = p.status() == PropertyIntel.Status.OPEN ? UcUi.LEGAL : p.access() == 0 ? UcUi.OK : p.access() == 3 ? UcUi.DIM : UcUi.AMBER;
             String extra = p.layer() >= 0 ? "cased" : p.beenIn() ? "been in" : "[" + INSPECT.getTranslatedKeyMessage().getString().toUpperCase(Locale.ROOT) + "] case";
             // its hours (D-185): until when it is open, or when it opens
-            if (p.opensAt() >= 0) sub = p.status() == PropertyIntel.Status.OPEN ? String.format(Locale.ROOT, "Open until %02d:00", p.shutsAt()) : sub + String.format(Locale.ROOT, "  ·  opens %02d:00", p.opensAt());
-            sub = sub + "  ·  " + extra;
+            if (p.opensAt() >= 0) sub = p.status() == PropertyIntel.Status.OPEN ? String.format(Locale.ROOT, "Open until %02d:00", p.shutsAt()) : sub + String.format(Locale.ROOT, " · opens %02d:00", p.opensAt());
+            sub = sub + " · " + extra;
         } else if (p.opensAt() >= 0 && p.status() != PropertyIntel.Status.TO_LET && p.status() != PropertyIntel.Status.PLAYER_HOME) {
             sub = String.format(Locale.ROOT, "Open %02d:00 to %02d:00", p.opensAt(), p.shutsAt());
         }
         int w = Math.max(font.width(head), Math.max(font.width(line) + 50, font.width(sub))) + 14;
-        w = Math.min(w, 220);
+        // wide enough for a lock, its opening hour and the casing word on one line (the 1280x720 capture cut "[I] case" off at 220)
+        w = Math.min(w, 250);
         int h = sub.isEmpty() ? 26 : 37;
         int x = Math.max(4, Math.min(centre - w / 2, right - w));
         g.fill(x - 1, top - 1, x + w + 1, top + h + 1, 0xd005080c);

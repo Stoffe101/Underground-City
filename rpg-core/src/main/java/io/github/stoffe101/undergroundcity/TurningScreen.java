@@ -122,14 +122,15 @@ public final class TurningScreen extends UcScreen {
 
     @Override protected void renderHeaderRight(GuiGraphics g, int right) {
         String passes = v.passes() + " / " + v.standard();
-        UcUi.chip(g, font, passes, right - UcUi.displayWidth(font, passes) - 10, py + 9, v.passes() <= v.standard() ? UcUi.OK : v.passes() <= v.standard() + 2 ? UcUi.AMBER : UcUi.DIM, UcUi.Icon.GEAR);
+        // a chip is its text and 22 more (the padding and the icon): kept 8 inside the panel's edge (1280x720 captures: it stood over the edge)
+        UcUi.chip(g, font, passes, right - UcUi.displayWidth(font, passes) - 30, py + 9, v.passes() <= v.standard() ? UcUi.OK : v.passes() <= v.standard() + 2 ? UcUi.AMBER : UcUi.DIM, UcUi.Icon.GEAR);
     }
 
     @Override protected void renderBody(GuiGraphics g, int mouseX, int mouseY, float partial) {
         int x = bodyX(), w = bodyW();
         String head = "Passes " + v.passes() + ", the shop's standard " + v.standard() + ". Roughing up to " + v.rough() + " steps." + (v.sleeves() > 0 ? " Sleeves: " + v.sleeves() + "." : "");
         UcUi.text(g, font, UcUi.fit(font, head, w), x, bodyY(), UcUi.SOFT);
-        String help = selA < 0 ? "Click a section to start a stretch; Shift-click another to stretch it." : (finish ? "Finishing" : "Roughing") + " sections " + (selection()[0] + 1) + " to " + (selection()[1] + 1) + " at line " + line + ".";
+        String help = selA < 0 ? "Click a section to start a stretch; Shift-click another to stretch it." : (finish ? "Finishing" : "Roughing") + (selection()[0] == selection()[1] ? " section " + (selection()[0] + 1) : " sections " + (selection()[0] + 1) + " to " + (selection()[1] + 1)) + " at line " + line + ".";
         UcUi.text(g, font, UcUi.fit(font, help, w), x, bodyY() + 11, finish ? UcUi.LEGAL : UcUi.AMBER);
         UcUi.well(g, x, bodyY() + 22, w, bodyBottom() - bodyY() - 22 - 12);
         int n = v.target().length;
