@@ -189,6 +189,16 @@ final class JourneyScenario {
         }, 140);
     }
 
+    /** Presses {@code key} until {@code open} holds (a tap can be lost while a frame is drawn under load, premises run 2), once every 40 ticks, as a person presses again. */
+    static void pressUntil(String label, String key, java.util.function.BooleanSupplier open, int budget) {
+        final int[] t = {0};
+        Playtest.queue(label, () -> { t[0] = 0; Playtest.focusWindow(); }, () -> {
+            if (open.getAsBoolean()) return true;
+            if (t[0]++ % 40 == 0) Playtest.tap(key);
+            return false;
+        }, budget);
+    }
+
     /** Ends the run when something has failed that every later step depends on (a cascade of follow-on failures tells nothing new). */
     private static void stopIfFailed(String what) {
         Playtest.queue("stop if " + what + " failed", () -> { if (Playtest.failures.length() > 0) { Playtest.log("JOURNEY stopping: " + what + " failed, and the rest depends on it"); summary(); Playtest.finish(); } });
@@ -951,8 +961,7 @@ final class JourneyScenario {
         });
         walk("walk to the Row Motel", () -> F.motelDoor == null ? mc().player.position() : Vec3.atBottomCenterOf(F.motelDoor.south(2)), 1.5, 4000);
         shot("18-motel");
-        Playtest.queue("press K for the Crew and Home screen", () -> { Playtest.focusWindow(); Playtest.tap("k"); });
-        until("the Crew screen", () -> mc().screen instanceof CrewScreen, 200);
+        pressUntil("press K for the Crew and Home screen", "k", () -> mc().screen instanceof CrewScreen, 200);
         Playtest.wait("draw", 10);
         crewButton("rail_home");
         crewButton("home_tab_1");

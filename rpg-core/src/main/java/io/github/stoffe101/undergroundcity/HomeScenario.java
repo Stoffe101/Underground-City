@@ -188,8 +188,7 @@ final class HomeScenario {
 
     /** K, the Home rail, the Find a home tab. */
     private static void openFind() {
-        Playtest.queue("press K for the Crew and Home screen", () -> { Playtest.focusWindow(); Playtest.tap("k"); });
-        until("the screen", () -> mc().screen instanceof CrewScreen, 200);
+        JourneyScenario.pressUntil("press K for the Crew and Home screen", "k", () -> mc().screen instanceof CrewScreen, 200);
         Playtest.wait("draw", 10);
         JourneyScenario.clickAt("the Home rail", () -> mc().screen instanceof CrewScreen s ? s.centreOf("rail_home") : null);
         Playtest.wait("draw", 8);

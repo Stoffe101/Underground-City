@@ -429,9 +429,10 @@ final class StationSteps {
             int[] at = RecipeBookProbe.buttonFor(s, result);
             // one click fills one set; a second click before the grid shows the first fills two, and the Shift-click then makes both (farmer run 9 had too few planks left for its table)
             if (at != null) { if (t[0]++ % 60 == 0) Playtest.clickGui(at[0], at[1]); return false; }
+            // the arrow turns one page every 12 ticks until the last page (the book had 24 pages in vintner run 5, and a cap of 20 turns stopped on page 21)
             if (t[0]++ % 12 == 0 && !RecipeBookProbe.nextPage(s)) { Playtest.fail("the recipe book does not show " + result + " on any page"); return true; }
-            return t[0] > 240;
-        }, 400);
+            return t[0] > 12 * 60;
+        }, 12 * 60 + 40);
         Playtest.queue("the grid is filled", () -> {
             if (!(mc().screen instanceof net.minecraft.client.gui.screens.inventory.CraftingScreen s) || !s.getMenu().getSlot(0).getItem().is(result)) Playtest.fail("the recipe did not fill the grid with " + result);
         });

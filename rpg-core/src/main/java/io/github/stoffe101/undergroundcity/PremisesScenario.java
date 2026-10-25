@@ -75,8 +75,7 @@ final class PremisesScenario {
         Playtest.queue("start at the workshop's door (scripted)", () -> { scripted("the player was put at the workshop's street door " + F.door.door().toShortString()); ThiefScenario.standAt(F.door); },
             () -> mc().player.position().distanceTo(F.door.stand()) < 0.8, 200);
         Playtest.wait("settle", 30);
-        Playtest.queue("press K for the Crew and Home screen", () -> { Playtest.focusWindow(); Playtest.tap("k"); });
-        until("the screen", () -> mc().screen instanceof CrewScreen, 200);
+        JourneyScenario.pressUntil("press K for the Crew and Home screen", "k", () -> mc().screen instanceof CrewScreen, 200);
         Playtest.wait("draw", 10);
         JourneyScenario.clickAt("the Home rail", () -> mc().screen instanceof CrewScreen s ? s.centreOf("rail_home") : null);
         Playtest.wait("draw", 8);
