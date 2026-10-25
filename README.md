@@ -128,6 +128,19 @@ New, and tested by scripts, Forge GameTests, the Python suite, the economy model
 
 See [docs/production/sixth-pass-alpha.md](docs/production/sixth-pass-alpha.md).
 
+## October 25 seventh pass: first playable alpha readiness (scripted, not yet human-tested)
+
+New, and tested by scripts, Forge GameTests, the Python suite, the economy model and scripted real clients. **The current branch and its recent gameplay systems have not received human playtesting.**
+
+* **The first hour has no dead ends we could find (D-175):** goods nobody sold, a level-3 skill a level-3 player could not afford, missing recipe-book entries and a Gunsmith whose own registered pistol counted as unlicensed were each fixed where they start; stations and orders say where a missing part is sold or made.
+* **Every rung of the property ladder has a building (D-176):** the Blackwater lofts and the Valewood villa.
+* **Kit guns are named at TaCZ's table (D-177)** ("Registered Glock 17", "Unmarked Glock 17").
+* **Shops behave (D-178):** a camera in hours says *Staff only* first, cameras ignore the pavement, keepers stand behind their own counters, and counter staff spawn first.
+* **A batch is its maker's (D-180)**, a station's countdown runs on screen, Crew members see every part of a Crew contract, and the Skills page has a General tab.
+* **Owner tools:** `/uc_prepare` (D-179) and PowerShell scripts for a Windows workflow, which have **not** been run on Windows.
+
+Scripted real-client runs passed for the Smith, the Farmer, the Vintner and trade premises; the homes run hung at save-and-quit (fixed in the eighth pass) and the unmarked firearm run failed its last step. See [docs/production/seventh-pass-alpha-readiness.md](docs/production/seventh-pass-alpha-readiness.md).
+
 ## Ownership and license
 
 **Copyright © 2026 Stoffe101. All rights reserved.** See [LICENSE](LICENSE). The license governs **original Underground City material only**. Minecraft, third-party mods, map downloads, artworks, and their trademarks remain subject to their respective owners' terms. Public repository visibility does **not** mean the project is open source. This project is intended for private play, not for sale or public modpack publication.
