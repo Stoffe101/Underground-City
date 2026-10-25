@@ -417,13 +417,29 @@ final class StationSteps {
             if (!(mc().screen instanceof net.minecraft.client.gui.screens.inventory.CraftingScreen s) || !s.getMenu().getSlot(0).getItem().is(result)) Playtest.fail("the recipe did not fill the grid with " + result);
         });
         ThiefScenario.shot("recipe-book-" + net.minecraftforge.registries.ForgeRegistries.ITEMS.getKey(result).getPath());
-        JourneyScenario.clickAt("the result (Shift-click)", () -> {
-            if (!(mc().screen instanceof net.minecraft.client.gui.screens.inventory.CraftingScreen s)) return null;
-            var slot = s.getMenu().getSlot(0);
-            Playtest.keyDown("left.shift");
-            return new int[]{s.getGuiLeft() + slot.x + 8, s.getGuiTop() + slot.y + 8};
-        });
-        Playtest.queue("let go of Shift", () -> Playtest.keyUp("left.shift"));
+        // Shift-click the result into the inventory; under a loaded machine the Shift press can land after the click and leave the result on the pointer (farmer run 7), so a result
+        // on the pointer is put down in an empty slot, and a click that took nothing is made again, as a person would
+        final int[] c = {0};
+        Playtest.queue("take the result (Shift-click)", () -> c[0] = 0, () -> {
+            if (JourneyScenario.count(result) > had[0]) { Playtest.keyUp("left.shift"); return true; }
+            if (!(mc().screen instanceof net.minecraft.client.gui.screens.inventory.CraftingScreen s)) return true;
+            var menu = s.getMenu();
+            if (menu.getCarried().is(result)) {
+                if (c[0]++ % 20 == 0) for (int i = 10; i < menu.slots.size(); i++) {
+                    var slot = menu.getSlot(i);
+                    if (!slot.hasItem()) { Playtest.keyUp("left.shift"); Playtest.clickGui(s.getGuiLeft() + slot.x + 8, s.getGuiTop() + slot.y + 8); break; }
+                }
+                return false;
+            }
+            var out = menu.getSlot(0);
+            switch (c[0]++ % 40) {
+                case 0 -> Playtest.keyDown("left.shift");
+                case 6 -> Playtest.clickGui(s.getGuiLeft() + out.x + 8, s.getGuiTop() + out.y + 8);
+                case 14 -> Playtest.keyUp("left.shift");
+                default -> { }
+            }
+            return c[0] > 240;
+        }, 260);
         until("crafted", () -> JourneyScenario.count(result) > had[0], 200);
         Playtest.queue("crafted " + result, () -> {
             if (JourneyScenario.count(result) <= had[0]) Playtest.fail("nothing was crafted");
