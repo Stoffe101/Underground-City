@@ -71,6 +71,10 @@ final class PerfSessionClient {
         m.addProperty("worst_frame_ms", Math.round(f[f.length - 1] / 1e5) / 10.0);
         m.addProperty("over_100_ms", Arrays.stream(f).filter(v -> v > 100_000_000L).count());
         m.addProperty("over_250_ms", Arrays.stream(f).filter(v -> v > 250_000_000L).count());
+        // Xaero with two clients (eighth pass): what this player tracks, and how many waypoints of Core's Xaero shows (one at most, and never the other player's)
+        var tracked = ClientNavigation.current();
+        m.addProperty("tracking", tracked == null ? "" : tracked.title() + " at " + tracked.pos().toShortString());
+        m.addProperty("xaero_core_waypoints", XaeroWaypoints.ours());
         m.addProperty("x", Math.round(mc.player.getX()));
         m.addProperty("z", Math.round(mc.player.getZ()));
         MINUTES.add(m);

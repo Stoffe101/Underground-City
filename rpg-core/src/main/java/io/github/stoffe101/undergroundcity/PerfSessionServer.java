@@ -138,6 +138,31 @@ public final class PerfSessionServer {
         enter(current);
         System.out.println("[UC-PERF] SCRIPTED: segment " + s.name() + " begins: " + FARMER + " teleported to " + a.toShortString() + " (" + s.farmerCity() + "), " + SMITH + " to " + bb.toShortString()
             + " (" + s.smithCity() + "), the time set to " + s.dayTime() + "; " + segmentTicks / 1200.0 + " minutes");
+        trackPlaces(level, farmer, smith);
+    }
+
+    /**
+     * Each player tracks a different building near where they stand (PREPARED: put in their Places book and tracked by the server, as Track on the Places page does), so each client's Xaero
+     * minimap shows that player's waypoint and not the other's (eighth pass: Xaero with two clients; the clients write what they track and Core's waypoint count every minute).
+     */
+    private static void trackPlaces(ServerLevel level, ServerPlayer farmer, ServerPlayer smith) {
+        java.util.Set<Long> taken = new java.util.HashSet<>();
+        for (ServerPlayer p : List.of(farmer, smith)) {
+            CityBuildings.Building found = null;
+            int cx = p.chunkPosition().x, cz = p.chunkPosition().z;
+            for (int r = 1; r <= 4 && found == null; r++) for (int dx = -r; dx <= r && found == null; dx++) for (int dz = -r; dz <= r && found == null; dz++) {
+                if (Math.max(Math.abs(dx), Math.abs(dz)) != r || level.getChunkSource().getChunkNow(cx + dx, cz + dz) == null) continue;
+                CityBuildings.Building b = CityBuildings.INSTANCE.ofChunk(level, cx + dx, cz + dz).orElse(null);
+                if (b == null || taken.contains(b.key()) || b.security() == null) continue;
+                var door = TechService.streetDoor(level, b);
+                if (door.isEmpty()) continue;
+                PropertyIntel.book(level.getServer()).seen(p.getUUID(), b, door.get().lower(), CityHomes.address(level.getSeed(), b), CityBuildings.INSTANCE.category(b.security().id()),
+                    b.security().label(), LockService.clock(level.getServer()));
+                var d = Navigation.build(p, "place", Long.toString(b.key()));
+                if (d.isPresent()) { Navigation.track(p, d.get()); found = b; taken.add(b.key()); System.out.println("[UC-PERF] PREPARED: " + p.getGameProfile().getName() + " tracks " + d.get().title() + " at " + d.get().pos().toShortString()); }
+            }
+            if (found == null) System.out.println("[UC-PERF] no building with a street door near " + p.getGameProfile().getName() + " to track");
+        }
     }
 
     private static void enter(String name) {

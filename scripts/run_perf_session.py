@@ -118,6 +118,22 @@ def table(report: dict) -> str:
     return '\n'.join(lines)
 
 
+def waypoints(report: dict) -> dict:
+    """Xaero with two clients: what each player tracked minute by minute (each from their own Places book) and the most Core waypoints their minimap held; isolated means no tracked
+    destination of one player ever appeared in the other's client and neither minimap held more than one of Core's waypoints."""
+    seen = {role: set() for role in NAMES}
+    most = {role: -1 for role in NAMES}
+    for phase_report in report['phases']:
+        for role, client in phase_report.get('clients', {}).items():
+            for minute in client.get('minutes', []):
+                if minute.get('tracking'): seen[role].add(minute['tracking'])
+                most[role] = max(most[role], minute.get('xaero_core_waypoints', -1))
+    roles = list(NAMES)
+    shared = seen[roles[0]] & seen[roles[1]]
+    return {'tracked': {r: sorted(seen[r]) for r in roles}, 'most_core_waypoints': most, 'shared_destinations': sorted(shared),
+            'isolated': not shared and all(m <= 1 for m in most.values()) and all(seen[r] for r in roles)}
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--minutes', type=float, default=30.0, help='length of phase 1 (three equal segments)')
@@ -127,8 +143,10 @@ def main() -> int:
     for number in (1, 2):
         report['phases'].append(phase(number, modules, args.minutes))
         print(f'perf session phase {number} done', flush=True)
+    report['xaero_two_clients'] = waypoints(report)
     (OUTPUT / 'report.json').write_text(json.dumps(report, indent=1) + '\n')
     print(table(report))
+    print('xaero with two clients: ' + json.dumps(report['xaero_two_clients']))
     return 0
 
 
