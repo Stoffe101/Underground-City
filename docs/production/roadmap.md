@@ -82,10 +82,10 @@ The next milestone is not a feature count. It is met when **the owner and one fr
 | # | Criterion | Evidence needed | Where it stands (October 24) |
 | --- | --- | --- | --- |
 | 1 | A new player registers, chooses a city and a career, and in the first 30 minutes earns credits through legal work, buys something useful, and gains XP visibly, without a free skill or resource | L3, then L5 | L3: journey run 66 (28 steps with real input, 3 logged shortcuts, the road walked both ways); L5 none |
-| 2 | Each of the five careers has a solo loop from its starter kit to a level-10 contract with no dead end | L1 item-source audit + L3 per career | L1 holds; L3 for Farmer, Vintner, Technician and Gunsmith (to a level-4 contract, gunsmith run 6); Smith L2 past its first order |
-| 3 | Each career has an underground option on the same character | L2 + L3 for at least two | L3 for the Farmer (Cannabis grown, dried and policed, sixth pass) and any career's raid; back channel and unmarked builds L2 |
-| 4 | A home: rent a first place, upgrade it, move up at least two rungs, with no offline charge | L2 + L4 | L4 for the Row's lease and rent; 8 of 10 rungs physical |
-| 5 | A business: premises that make the work better, never idle income | L2 + L3 | L2 (D-169) |
+| 2 | Each of the five careers has a solo loop from its starter kit to a level-10 contract with no dead end | L1 item-source audit + L3 per career | L1 holds; L3 for Farmer (farmer run 10), Vintner (vintner run 8), Technician and Gunsmith (to a level-4 contract, gunsmith run 6); Smith L3 to the Drill Press (smith run 7) and the eighth pass's engineering (see its report); no career is L3 to a level-10 contract |
+| 3 | Each career has an underground option on the same character | L2 + L3 for at least two | L3 for the Farmer (Cannabis grown, dried and policed, sixth pass), the Gunsmith (unmarked run 3: unmarked pistols built on TaCZ's table and sold to Dray, eighth pass) and any career's raid; the back channel L2 |
+| 4 | A home: rent a first place, upgrade it, move up at least two rungs, with no offline charge | L2 + L4 | L4 for the Row's lease and rent; L3 for a loft rented, a villa bought and upgraded, moving out and a save and reopen (homes run 4, eighth pass); 8 of 10 rungs physical |
+| 5 | A business: premises that make the work better, never idle income | L2 + L3 | L3 (premises run 6, seventh pass: rented, walked into, two batches at once, the bulk order delivered) |
 | 6 | Two players cooperate on something neither does alone and the credit is fair | L4, then L5 | L4 server-driven Crew contract step (sixth pass); L5 none |
 | 7 | Crime has preparation, risk and consequence: a burglary, a fence, a witness, an arrest, one raid | L3 | L3 for burglary, fence, arrest and the raid (raid run 3) |
 | 8 | The world changes because of the players: one civic project with a persistent consequence | L2 + L3 | L3 (civic run 3: the stalls built and photographed); the restart is L2 |

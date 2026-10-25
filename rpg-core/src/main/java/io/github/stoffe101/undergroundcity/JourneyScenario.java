@@ -278,13 +278,14 @@ final class JourneyScenario {
     }
 
     /**
-     * The middle of the face of {@code b} turned to the player's eye, a hair inside it. Close up, the line to a block's centre can cross the block above it first (engineer run 3: a
-     * utility panel set over a drive housing took every click aimed at the housing's centre); a person looks at the face itself.
+     * A point on the side of {@code b} turned to the player, a little below its middle and a hair inside it. Close up, the line to a block's centre can cross the block above it first
+     * (engineer run 3: a utility panel set over a drive housing took every click aimed at the housing's centre); a person looks at the side itself. Never the top: standing close, the eye is
+     * as high above the block as it is away from it, and the top of a block under another is covered (engineer run 5).
      */
     static Vec3 nearFace(BlockPos b) {
         Vec3 c = Vec3.atCenterOf(b), d = mc().player.getEyePosition().subtract(c);
-        Direction face = Direction.getNearest(d.x, Math.abs(d.y) > Math.max(Math.abs(d.x), Math.abs(d.z)) ? d.y : 0, d.z);
-        return c.add(face.getStepX() * 0.49, face.getStepY() * 0.49, face.getStepZ() * 0.49);
+        Direction face = Direction.getNearest(d.x, 0, d.z);
+        return c.add(face.getStepX() * 0.49, -0.2, face.getStepZ() * 0.49);
     }
 
     static boolean aimedAt(BlockPos pos) {
