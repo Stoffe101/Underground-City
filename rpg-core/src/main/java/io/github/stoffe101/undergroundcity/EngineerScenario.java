@@ -334,7 +334,9 @@ final class EngineerScenario {
             boolean running = server(() -> level().getBlockState(E.machine.pos()).getValue(MachineBlock.RUNNING));
             boolean open = server(() -> MachineService.works(level().getServer()).breakdowns.containsKey(E.machine.key()));
             boolean well = server(() -> MachineService.runsWell(level().getServer(), E.machine.key()));
-            int fee = server(() -> SkillRules.payout(MachineService.fee(E.machine.tier()), false, SkillCatalog.INSTANCE.tree("smith"), ThiefScenario.citizen().skills()));
+            // the citizen is read first: ThiefScenario.citizen() is a server read itself, and one inside another waits on the server thread until it times out (engineer run 6)
+            var skills = c == null ? java.util.Set.<String>of() : c.skills();
+            int fee = server(() -> SkillRules.payout(MachineService.fee(E.machine.tier()), false, SkillCatalog.INSTANCE.tree("smith"), skills));
             Playtest.log("ENGINEER repaired: " + ClientSmith.lastEnd + " paid " + paid + " (fee " + fee + "), XP " + E.xpBefore + " -> " + xp + ", running " + running + ", call open " + open + ", runs well " + well + ", tracking " + ClientNavigation.current());
             if (!ClientSmith.lastDone || Math.abs(paid - fee) > 0.01 || xp <= E.xpBefore || !running || open || !well) Playtest.fail("the repair was not paid once with the machine running again");
             else pass("11 (B) the worn parts replaced and the open stages geared to the plate with real clicks; Run test: +" + Math.round(paid) + " credits once and +" + (xp - E.xpBefore)
