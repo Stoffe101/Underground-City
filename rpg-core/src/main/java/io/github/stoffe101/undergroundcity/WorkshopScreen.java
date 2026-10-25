@@ -23,7 +23,8 @@ public final class WorkshopScreen extends UcScreen {
     private int listX, listY, listW, listH;
     private static final int ROW = 22, STATUS = 34;
     /** When the shown view arrived (client ticks), so the batch's time left counts down on screen and the screen asks again once it is up. */
-    private int age, askIn;
+    private int askIn, sinceAsked;
+    private long receivedAt = System.currentTimeMillis();
 
     WorkshopScreen(WorkshopNetwork.View view) {
         super(Component.literal("Underground City | " + view.title()));
@@ -32,16 +33,18 @@ public final class WorkshopScreen extends UcScreen {
 
     BlockPos pos() { return view.pos(); }
     WorkshopNetwork.View view() { return view; }
-    void update(WorkshopNetwork.View next) { view = next; age = 0; if (selected >= view.rows().size()) selected = 0; batches = Math.min(batches, view.batch()); labels(); }
+    void update(WorkshopNetwork.View next) { view = next; receivedAt = System.currentTimeMillis(); sinceAsked = 0; if (selected >= view.rows().size()) selected = 0; batches = Math.min(batches, view.batch()); labels(); }
 
-    /** The batch's seconds left now: the server's figure less the time since it came (the batch runs on the active clock, which a client in the game is part of). */
-    private int secondsLeft() { return Math.max(0, view.secondsLeft() - age / 20); }
+    /** The batch's seconds left now: the server's figure less the real time since it came. The batch runs on the server's active clock, which never runs ahead of real time, so the countdown
+     *  reaches nought no later than the batch; counted in the screen's own ticks it fell behind whenever the client's frame rate dropped (vintner run 7). */
+    private int secondsLeft() { return (int) Math.max(0, view.secondsLeft() - (System.currentTimeMillis() - receivedAt) / 1000); }
 
     @Override public void tick() {
         super.tick();
-        age++;
-        // a batch whose time is up: ask the station again (every two seconds until it says the batch is done), so Take lights without closing and reopening it
-        if (!view.running().isEmpty() && secondsLeft() == 0 && --askIn <= 0) { WorkshopNetwork.refresh(view.pos()); askIn = 40; }
+        if (view.running().isEmpty()) return;
+        // a batch whose time is up: ask the station again (every two seconds until it says the batch is done), so Take lights without closing and reopening it; and every ten seconds while
+        // it runs, so a countdown that drifted (a paused game, a slow server) is put right
+        if ((secondsLeft() == 0 && --askIn <= 0) || ++sinceAsked >= 200) { WorkshopNetwork.refresh(view.pos()); askIn = 40; sinceAsked = 0; }
     }
     /** Scenario hook. */
     void select(String id) { for (int i = 0; i < view.rows().size(); i++) if (view.rows().get(i).id().equals(id)) selected = i; labels(); }

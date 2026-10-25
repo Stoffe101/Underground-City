@@ -329,6 +329,13 @@ public final class ResidenceGuard {
         if (act == Act.WORKSTATION && isContainer(touched) && r.insideInterior(dim, pos) && takeOutOnly(ledger, r, player.getUUID(), state)) act = Act.CONTAINER;
         // An ender chest is the player's own; sitting on a bed, reading a sign and the like are plain interactions.
         if (!allowed(ledger, r, player.getUUID(), dim, pos, act)) { deny(event, player, refusal(ledger, r, act)); return; }
+        // an iron door does not open by hand; where the home lets this person through, Core opens it as a click would a wooden one. The building's guard stands aside for a home's own door
+        // (BuildingGuard.protectedAt), so the commercial workshop's iron street door, inside its premises, stayed shut to the tenant who had just rented them (premises run 5, seventh pass)
+        if (act == Act.DOOR && state.getBlock() instanceof net.minecraft.world.level.block.DoorBlock) {
+            BlockPos lower = BuildingGuard.lowerOf(pos, state);
+            BuildingGuard.byHand(event, player, level, lower, level.getBlockState(lower));
+            return;
+        }
         if (act == Act.WORKSTATION && r.insideInterior(dim, pos)) {
             String need = facilityNeeded(state);
             if (need != null && !hasFacility(r, need)) deny(event, player, noFacility(r, need));
