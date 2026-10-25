@@ -22,7 +22,7 @@ import java.util.Map;
  * ownership are all decided by {@link CrewLedger} and {@link CrewService}.
  */
 public final class CrewNetwork {
-    private static final String VERSION = "1";
+    private static final String VERSION = "2";   // 2: a home's and a listing's kind may be 40 letters (seventh pass)
     private static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
         ResourceLocation.fromNamespaceAndPath(UndergroundCity.MOD_ID, "crew"), () -> VERSION, VERSION::equals, VERSION::equals);
     private static final Map<ServerPlayer, Integer> LAST_REQUEST = new WeakHashMap<>();

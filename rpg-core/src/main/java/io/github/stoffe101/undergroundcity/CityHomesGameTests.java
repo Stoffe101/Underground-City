@@ -129,4 +129,29 @@ public final class CityHomesGameTests {
             "the move-in costs are wrong");
         helper.succeed();
     }
+
+    /** Every property category reaches the Crew and Home screen as a home and as a listing: a limit of 16 letters on the kind kept the whole screen from opening near trade premises, a
+     *  comfortable apartment or the villa, and for anybody who held one (premises run 4, seventh pass); a string too long for its field is cut, never fatal. */
+    @GameTest(template = "empty")
+    public static void everyPropertyCategoryReachesTheCrewScreen(GameTestHelper helper) {
+        List<String> categories = PropertyCatalog.INSTANCE.categoriesInOrder();
+        check(categories.contains("comfortable_apartment") && categories.contains("commercial_workshop") && categories.contains("premium_residence"), "the catalogue's categories are " + categories);
+        java.util.List<CrewView.HomeRow> homes = new java.util.ArrayList<>();
+        java.util.List<CrewView.LeaseRow> nearby = new java.util.ArrayList<>();
+        for (String category : categories) {
+            if (homes.size() < CrewView.MAX_HOMES) homes.add(new CrewView.HomeRow("city:" + category, "Home", category, "You", "0 64 0", 0, false));
+            nearby.add(new CrewView.LeaseRow("city:" + category + ":to_let", "A".repeat(90), category, 100, false, 5,
+                new CrewView.Offer(true, true, 10, 20, 1, false, PropertyCatalog.INSTANCE.categoryTitle(category), "S".repeat(400), "", 4, 1, 100)));
+        }
+        CrewView sent = new CrewView(true, "", new UUID(0, 1), "Imogen", true, true, 0, 0, false, false, new UUID(0, 0), "", "", 0, "BANK", "BANK",
+            false, 0, 0, 0, 0, false, false, List.of(), List.of(), List.of(), List.of(), List.of(), homes, nearby, List.of(), CrewView.RulesRow.DEFAULT);
+        net.minecraft.network.FriendlyByteBuf buffer = new net.minecraft.network.FriendlyByteBuf(io.netty.buffer.Unpooled.buffer());
+        sent.write(buffer);
+        CrewView received = CrewView.read(buffer);
+        check(buffer.readableBytes() == 0, "trailing bytes in the Crew view");
+        check(received.homes().stream().map(CrewView.HomeRow::kind).toList().equals(homes.stream().map(CrewView.HomeRow::kind).toList()), "a home's kind changed on the wire");
+        check(received.nearby().stream().map(CrewView.LeaseRow::kind).toList().equals(nearby.stream().map(CrewView.LeaseRow::kind).limit(CrewView.MAX_NEARBY).toList()), "a listing's kind changed on the wire");
+        check(received.nearby().get(0).title().length() == 40 && received.nearby().get(0).offer().summary().length() == 200, "an overlong title or summary was not cut to its field");
+        helper.succeed();
+    }
 }

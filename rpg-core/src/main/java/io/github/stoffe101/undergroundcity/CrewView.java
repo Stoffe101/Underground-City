@@ -232,45 +232,51 @@ public record CrewView(boolean storageOk, String problem, UUID self, String self
 
     private static void writeUuid(FriendlyByteBuf b, UUID id) { b.writeUUID(id); }
 
+    /** The longest kind a home or a listing may carry: a property category's id ({@code comfortable_apartment} has 21 letters; a limit of 16 kept the whole screen from opening). */
+    static final int KIND = 40;
+
+    /** Writes {@code text} cut to {@code max} characters: one string too long for its field must never stop the whole view from reaching the screen (premises run 4, seventh pass). */
+    private static void put(FriendlyByteBuf b, String text, int max) { b.writeUtf(text == null ? "" : text.length() > max ? text.substring(0, max) : text, max); }
+
     public void write(FriendlyByteBuf b) {
-        b.writeBoolean(storageOk); b.writeUtf(problem, 200); b.writeUUID(self); b.writeUtf(selfName, 32);
+        b.writeBoolean(storageOk); put(b, problem, 200); b.writeUUID(self); put(b, selfName, 32);
         b.writeBoolean(citizen); b.writeBoolean(moneyReady); b.writeDouble(wallet); b.writeVarLong(owed); b.writeBoolean(starter);
-        b.writeBoolean(inCrew); b.writeUUID(crewId); b.writeUtf(crewName, 32); b.writeUtf(role, 16); b.writeVarInt(myPerms);
-        b.writeUtf(mode, 16); b.writeUtf(effectiveMode, 16); b.writeBoolean(consentSelf); b.writeVarInt(consentCount);
+        b.writeBoolean(inCrew); b.writeUUID(crewId); put(b, crewName, 32); put(b, role, 16); b.writeVarInt(myPerms);
+        put(b, mode, 16); put(b, effectiveMode, 16); b.writeBoolean(consentSelf); b.writeVarInt(consentCount);
         b.writeVarLong(bank); b.writeVarInt(managerPerms); b.writeVarInt(memberPerms); b.writeBoolean(canClaimLead); b.writeBoolean(disbandArmed);
         b.writeVarInt(members.size());
-        for (MemberRow m : members) { writeUuid(b, m.id()); b.writeUtf(m.name(), 32); b.writeUtf(m.role(), 16); b.writeUtf(m.career(), 16); b.writeVarInt(m.level()); b.writeBoolean(m.online()); b.writeUtf(m.seen(), 24); }
+        for (MemberRow m : members) { writeUuid(b, m.id()); put(b, m.name(), 32); put(b, m.role(), 16); put(b, m.career(), 16); b.writeVarInt(m.level()); b.writeBoolean(m.online()); put(b, m.seen(), 24); }
         writeInvites(b, incoming); writeInvites(b, outgoing);
         b.writeVarInt(candidates.size());
-        for (Candidate c : candidates) { b.writeUtf(c.name(), 32); b.writeUtf(c.career(), 16); }
+        for (Candidate c : candidates) { put(b, c.name(), 32); put(b, c.career(), 16); }
         b.writeVarInt(log.size());
-        for (LogRow l : log) { b.writeUtf(l.ago(), 24); b.writeUtf(l.who(), 32); b.writeUtf(l.kind(), 16); b.writeVarLong(l.amount()); b.writeUtf(l.note(), 80); }
+        for (LogRow l : log) { put(b, l.ago(), 24); put(b, l.who(), 32); put(b, l.kind(), 16); b.writeVarLong(l.amount()); put(b, l.note(), 80); }
         b.writeVarInt(homes.size());
         for (HomeRow h : homes) {
-            b.writeUtf(h.id(), 64); b.writeUtf(h.title(), 40); b.writeUtf(h.kind(), 16); b.writeUtf(h.owner(), 8); b.writeUtf(h.where(), 40); b.writeVarInt(h.mine()); b.writeBoolean(h.here());
+            put(b, h.id(), 64); put(b, h.title(), 40); put(b, h.kind(), KIND); put(b, h.owner(), 8); put(b, h.where(), 40); b.writeVarInt(h.mine()); b.writeBoolean(h.here());
             Tenancy t = h.tenancy();
-            b.writeUtf(t.tenure(), 8); b.writeUtf(t.standing(), 8); b.writeUtf(t.category(), 40); b.writeUtf(t.area(), 40); b.writeVarInt(t.charge()); b.writeVarInt(t.deposit());
+            put(b, t.tenure(), 8); put(b, t.standing(), 8); put(b, t.category(), 40); put(b, t.area(), 40); b.writeVarInt(t.charge()); b.writeVarInt(t.deposit());
             b.writeVarInt(t.minutes()); b.writeVarInt(t.prepaid()); b.writeVarInt(t.arrears()); b.writeVarInt(t.owed()); b.writeBoolean(t.autopay()); b.writeBoolean(t.manage()); b.writeBoolean(t.crewHome());
             b.writeVarInt(t.containers()); b.writeVarInt(t.maxContainers()); b.writeVarInt(t.claimsMine()); b.writeVarInt(t.claimsMax());
-            b.writeUtf(t.facilities(), 120); b.writeUtf(t.upgrades(), 120); b.writeUtf(t.residents(), 120); b.writeBoolean(t.legacy()); b.writeVarInt(t.refund());
+            put(b, t.facilities(), 120); put(b, t.upgrades(), 120); put(b, t.residents(), 120); b.writeBoolean(t.legacy()); b.writeVarInt(t.refund());
             b.writeVarInt(t.receipts().size());
-            for (String line : t.receipts()) b.writeUtf(line, 100);
+            for (String line : t.receipts()) put(b, line, 100);
         }
         b.writeVarInt(nearby.size());
         for (LeaseRow n : nearby) {
-            b.writeUtf(n.id(), 64); b.writeUtf(n.title(), 40); b.writeUtf(n.kind(), 16); b.writeVarInt(n.price()); b.writeBoolean(n.starter()); b.writeVarInt(n.distance());
+            put(b, n.id(), 64); put(b, n.title(), 40); put(b, n.kind(), KIND); b.writeVarInt(n.price()); b.writeBoolean(n.starter()); b.writeVarInt(n.distance());
             Offer o = n.offer();
             b.writeBoolean(o.canRent()); b.writeBoolean(o.canBuy()); b.writeVarInt(o.rent()); b.writeVarInt(o.deposit()); b.writeVarInt(o.upkeep()); b.writeBoolean(o.welcome());
-            b.writeUtf(o.category(), 40); b.writeUtf(o.summary(), 200); b.writeUtf(o.facilities(), 120); b.writeVarInt(o.containers()); b.writeVarInt(o.claims()); b.writeVarInt(o.factor());
+            put(b, o.category(), 40); put(b, o.summary(), 200); put(b, o.facilities(), 120); b.writeVarInt(o.containers()); b.writeVarInt(o.claims()); b.writeVarInt(o.factor());
         }
         b.writeVarInt(upgrades.size());
-        for (UpgradeRow u : upgrades) { b.writeUtf(u.id(), 32); b.writeUtf(u.title(), 32); b.writeVarInt(u.cost()); b.writeUtf(u.summary(), 200); }
+        for (UpgradeRow u : upgrades) { put(b, u.id(), 32); put(b, u.title(), 32); b.writeVarInt(u.cost()); put(b, u.summary(), 200); }
         b.writeVarInt(rules.cycleMinutes()); b.writeVarInt(rules.prepayMax()); b.writeVarInt(rules.grace()); b.writeVarInt(rules.notice()); b.writeVarInt(rules.sellBackPercent()); b.writeVarInt(rules.welcomeCycles());
     }
 
     private static void writeInvites(FriendlyByteBuf b, List<InviteRow> list) {
         b.writeVarInt(list.size());
-        for (InviteRow i : list) { b.writeUUID(i.id()); b.writeUtf(i.crew(), 32); b.writeUtf(i.who(), 32); b.writeUtf(i.ago(), 24); }
+        for (InviteRow i : list) { b.writeUUID(i.id()); put(b, i.crew(), 32); put(b, i.who(), 32); put(b, i.ago(), 24); }
     }
 
     private static List<InviteRow> readInvites(FriendlyByteBuf b) {
@@ -295,7 +301,7 @@ public record CrewView(boolean storageOk, String problem, UUID self, String self
         for (int i = 0, n = Math.min(b.readVarInt(), MAX_LOG); i < n; i++) log.add(new LogRow(b.readUtf(24), b.readUtf(32), b.readUtf(16), b.readVarLong(), b.readUtf(80)));
         List<HomeRow> homes = new ArrayList<>();
         for (int i = 0, n = Math.min(b.readVarInt(), MAX_HOMES); i < n; i++) {
-            String id = b.readUtf(64), title = b.readUtf(40), kind = b.readUtf(16), owner = b.readUtf(8), where = b.readUtf(40);
+            String id = b.readUtf(64), title = b.readUtf(40), kind = b.readUtf(KIND), owner = b.readUtf(8), where = b.readUtf(40);
             int mine = b.readVarInt();
             boolean here = b.readBoolean();
             String tenure = b.readUtf(8), standing = b.readUtf(8), category = b.readUtf(40), area = b.readUtf(40);
@@ -312,7 +318,7 @@ public record CrewView(boolean storageOk, String problem, UUID self, String self
         }
         List<LeaseRow> nearby = new ArrayList<>();
         for (int i = 0, n = Math.min(b.readVarInt(), MAX_NEARBY); i < n; i++) {
-            String id = b.readUtf(64), title = b.readUtf(40), kind = b.readUtf(16);
+            String id = b.readUtf(64), title = b.readUtf(40), kind = b.readUtf(KIND);
             int price = b.readVarInt();
             boolean starterFlag = b.readBoolean();
             int distance = b.readVarInt();
