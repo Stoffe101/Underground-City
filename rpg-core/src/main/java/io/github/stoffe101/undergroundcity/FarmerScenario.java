@@ -177,10 +177,11 @@ final class FarmerScenario {
     /** True when the line from the player's eye to the top of {@code floor} meets nothing before it (farmer run 4: the aim at the far side of the Mill hit the Mill). Server thread. */
     static boolean clearAim(net.minecraft.server.level.ServerLevel lvl, BlockPos floor) {
         var eye = me().getEyePosition();
-        var top = net.minecraft.world.phys.Vec3.atCenterOf(floor).add(0, 0.5, 0);
-        var hit = lvl.clip(new net.minecraft.world.level.ClipContext(eye, top.add(top.subtract(eye).normalize().scale(0.05)), net.minecraft.world.level.ClipContext.Block.OUTLINE,
+        // the very point the placing click aims at (JourneyScenario.use: the block's centre and 0.42 up), which must be met first and on its top (vintner run 2: a tree trunk beside the cell took the aim)
+        var aim = net.minecraft.world.phys.Vec3.atCenterOf(floor).add(0, 0.42, 0);
+        var hit = lvl.clip(new net.minecraft.world.level.ClipContext(eye, aim.add(aim.subtract(eye).normalize().scale(0.6)), net.minecraft.world.level.ClipContext.Block.OUTLINE,
             net.minecraft.world.level.ClipContext.Fluid.NONE, null));
-        return hit.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK && hit.getBlockPos().equals(floor) && eye.distanceTo(top) < 4.4;
+        return hit.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK && hit.getBlockPos().equals(floor) && hit.getDirection() == net.minecraft.core.Direction.UP && eye.distanceTo(aim) < 4.4;
     }
 
     static void placeVanilla(StationSteps.Station spot, Item item, net.minecraft.world.level.block.Block block) {
