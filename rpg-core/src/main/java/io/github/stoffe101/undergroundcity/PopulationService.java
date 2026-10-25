@@ -409,6 +409,12 @@ public final class PopulationService {
         if (wanted != null) {
             List<Candidate> doors = doorsNear(level, body.blockPosition(), 10, 44, wanted);
             if (kind.equals("shop")) doors.removeIf(c -> !BuildingGuard.openToPublic(level, c.building(), null) && level.random.nextInt(3) != 0);
+            // an evening out ends at a bar, a pub or a club that is serving (D-185): the crowd gathers where the doors are open, and only where none is does it fall back to the street's doors
+            if (kind.equals("venue")) {
+                List<Candidate> serving = new ArrayList<>();
+                for (Candidate c : doors) if (venue(c.building()) && ShopCounters.openNow(level, c.building())) serving.add(c);
+                if (!serving.isEmpty()) doors = serving;
+            }
             ServerPlayer near = nearest(players, body.blockPosition(), 64);
             if (near != null && doors.size() > 1 && level.random.nextInt(10) < TOWARDS_PLAYER) {
                 List<Candidate> inView = new ArrayList<>();
@@ -449,6 +455,14 @@ public final class PopulationService {
             return true;
         }
         return rest(body, w, now, 100 + level.random.nextInt(200));
+    }
+
+    /** True when a building is a place for an evening out: a pub, a bar, a club or a restaurant by its business hours' kind (D-185). */
+    static boolean venue(CityBuildings.Building b) {
+        BuildingSpots.Plan plan = BuildingSpots.INSTANCE.forType(b.type());
+        if (plan == null) return false;
+        String kind = BusinessHours.RULES.kindOf(plan.id(), plan.use());
+        return kind.equals("pub") || kind.equals("club") || kind.equals("restaurant");
     }
 
     /**

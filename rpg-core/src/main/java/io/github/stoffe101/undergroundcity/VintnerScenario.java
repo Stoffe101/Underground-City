@@ -19,7 +19,7 @@ import static io.github.stoffe101.undergroundcity.ThiefScenario.shot;
 
 /**
  * The Vintner's cellar and still through a real client (D-163, D-164; the seventh pass's Vintner stations), in Blackwater. A prepared track throughout, every prerequisite logged as SCRIPTED: a
- * Vintner at level 10 with 200 credits, the clock at 13:00 (the club's bar is staffed by day, 08:00 to 18:00, like every shop), the trip to Blackwater, a crafting table and the materials of an Oak Cask and a Pot Still (logs and slabs,
+ * Vintner at level 10 with 200 credits, the clock at 13:00 (the corner store is open by day) and at 20:00 for the sale (the club opens 18:00 to 03:00, D-185), the trip to Blackwater, a crafting table and the materials of an Oak Cask and a Pot Still (logs and slabs,
  * copper, bricks and a furnace), and six wheat for the spirit.
  *
  * <p>Everything else is real clicks: Vine and Cellar Fundamentals, Cellar Craft, Home Distilling and the Distiller's Licence learned at the corner store's public terminal; berry wine from the
@@ -46,8 +46,8 @@ final class VintnerScenario {
         Playtest.queue("prepared (scripted)", () -> {
             Playtest.command("gamerule doDaylightCycle false");
             Playtest.command("time set 7000");
-            // every shop's staff work 08:00 to 18:00, the club's bar too (HouseholdPlan.where; vintner run 6 looked for it at 20:00 and found it shut)
-            scripted("PREPARED: the Vintner's XP was raised to level 10 (10,125 XP) and 200 credits added; the clock set to 13:00 and stopped (the club's bar is staffed by day)");
+            // the corner store keeps a shop's hours (08:00 to 18:00); the club its own, 18:00 to 03:00 (D-185): the clock moves on to the evening before the sale
+            scripted("PREPARED: the Vintner's XP was raised to level 10 (10,125 XP) and 200 credits added; the clock set to 13:00 and stopped (the corner store is open by day)");
             server(() -> {
                 CitizenState state = CitizenState.get(mc().getSingleplayerServer());
                 int xp = state.find(me().getUUID()).map(CitizenState.Citizen::careerXp).orElse(0);
@@ -59,7 +59,7 @@ final class VintnerScenario {
         ThiefScenario.travel("to the middle of Blackwater", () -> ThiefScenario.centre("blackwater"), 6);
         Playtest.queue("the corner store and the club near the middle of Blackwater", () -> server(() -> {
             F.store = StationSteps.nearest("bw_store", false);
-            F.club = StationSteps.nearest("bw_club", true);
+            F.club = StationSteps.nearest("bw_club", false);
             if (F.store != null) F.storeDoor = ThiefScenario.streetDoor(level(), F.store);
             if (F.club != null) F.clubDoor = ThiefScenario.streetDoor(level(), F.club);
             Playtest.log("VINTNER store " + (F.store == null ? "none" : F.store.chunkX() + "," + F.store.chunkZ()) + ", open club " + (F.club == null ? "none" : F.club.chunkX() + "," + F.club.chunkZ()));
@@ -128,7 +128,12 @@ final class VintnerScenario {
         take(CASK, NS + "aged_wine", 2, "9 after fifteen minutes of play, Take hands over two bottles of aged wine");
         Playtest.queue("the grades", () -> Playtest.log("VINTNER aged wine " + StationSteps.grades(UndergroundCity.item("aged_wine")) + ", grain spirit " + StationSteps.grades(UndergroundCity.item("grain_spirit"))));
         shot("2-cask-and-still");
-        Playtest.queue("is the club open", () -> { if (F.club == null || F.clubDoor == null) Playtest.fail("no open club near the middle of Blackwater"); });
+        Playtest.queue("the evening: 20:00 (scripted)", () -> {
+            Playtest.command("time set 14000");
+            scripted("the clock was set to 20:00 and stopped: the club opens at 18:00 (D-185)");
+        });
+        until("the club's bar is staffed", () -> F.club != null && server(() -> ShopCounters.openNow(level(), F.club)), 1200);
+        Playtest.queue("is the club open", () -> { if (F.club == null || F.clubDoor == null || !server(() -> ShopCounters.openNow(level(), F.club))) Playtest.fail("no open club near the middle of Blackwater at 20:00"); });
         ThiefScenario.stopIfFailed("an open club");
         StationSteps.toCounter("the club's bar", () -> F.club, () -> F.clubDoor);
         StationSteps.sell(NS + "shops/bar_aged_blackwater", UndergroundCity.item("aged_wine"), 2 * 36, "10 the club's bar buys the aged wine (a real click on Sell)");

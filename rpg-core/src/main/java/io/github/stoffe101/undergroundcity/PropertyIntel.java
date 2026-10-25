@@ -65,7 +65,13 @@ public final class PropertyIntel {
      * What a glance at a street door tells. {@code access}: 0 the player could try the lock now, 1 it needs a Pro Pick Set (or the skill to work one), 2 it needs a Thief skill, 3 they carry
      * nothing to pick it with. {@code layer} is how much the player's last casing of the place told them (-1 never cased).
      */
-    public record Peek(BlockPos door, Status status, String category, String label, String address, String city, int tier, int access, int layer, boolean beenIn, boolean playerHomes) {}
+    public record Peek(BlockPos door, Status status, String category, String label, String address, String city, int tier, int access, int layer, boolean beenIn, boolean playerHomes,
+                       int opensAt, int shutsAt) {
+        /** A glance at a building that keeps no business hours. */
+        public Peek(BlockPos door, Status status, String category, String label, String address, String city, int tier, int access, int layer, boolean beenIn, boolean playerHomes) {
+            this(door, status, category, label, address, city, tier, access, layer, beenIn, playerHomes, -1, -1);
+        }
+    }
 
     /** How likely a break-in now is to be noticed, in words and as a fraction, with the reasons (the first few are shown). */
     public record Risk(double chance, String word, List<String> reasons) {}
@@ -102,16 +108,20 @@ public final class PropertyIntel {
         String label = security == null || security.label().isEmpty() ? "building" : security.label();
         String address = CityHomes.address(level.getSeed(), b);
         int tier = Thievery.tier(b);
-        if (tier <= 0 || !b.locked()) return Optional.of(new Peek(lower, Status.NOT_A_TARGET, category, label, address, b.city(), 0, 0, -1, false, false));
+        // a building whose people keep business hours (a shop, a bar, a club, a works) says them on the card (D-185)
+        BuildingSpots.Plan plan = BuildingSpots.INSTANCE.forType(b.type());
+        BusinessHours.Span hours = plan != null && (!plan.indexesOf("counter").isEmpty() || !plan.indexesOf("desk").isEmpty()) ? BusinessHours.of(plan) : null;
+        int opens = hours == null ? -1 : hours.from(), shuts = hours == null ? -1 : hours.to();
+        if (tier <= 0 || !b.locked()) return Optional.of(new Peek(lower, Status.NOT_A_TARGET, category, label, address, b.city(), 0, 0, -1, false, false, opens, shuts));
         boolean beenIn = Thievery.records(level.getServer()).seen(player.getUUID(), "entered", b.key());
         boolean playerHomes = CityHomes.heldUnits(level.getServer(), b) > 0;
-        if (CityHomes.holdsKey(player, b)) return Optional.of(new Peek(lower, Status.YOURS, category, label, address, b.city(), tier, 0, -1, beenIn, playerHomes));
+        if (CityHomes.holdsKey(player, b)) return Optional.of(new Peek(lower, Status.YOURS, category, label, address, b.city(), tier, 0, -1, beenIn, playerHomes, opens, shuts));
         Status status = BuildingGuard.openToPublic(level, b, null) ? Status.OPEN : Status.TARGET;
         int access = access(player, security);
         Book book = book(level.getServer());
         Entry known = book.get(player.getUUID(), b.key());
         book.seen(player.getUUID(), b, lower, address, category, label, LockService.clock(level.getServer()));
-        return Optional.of(new Peek(lower, status, category, label, address, b.city(), tier, access, known == null ? -1 : known.layer(), beenIn, playerHomes));
+        return Optional.of(new Peek(lower, status, category, label, address, b.city(), tier, access, known == null ? -1 : known.layer(), beenIn, playerHomes, opens, shuts));
     }
 
     /** Whether this player could try a class's street-door lock now (see {@link Peek#access}). */

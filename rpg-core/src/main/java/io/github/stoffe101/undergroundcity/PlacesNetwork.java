@@ -27,7 +27,7 @@ import java.util.function.Function;
  * the server answers a glance and sends the book. Every question is judged on the server: a glance is answered only for a door within reach, at most a few times a second.
  */
 public final class PlacesNetwork {
-    private static final String VERSION = "1";
+    private static final String VERSION = "2";   // 2: the glance carries the building's business hours (D-185)
     private static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
         ResourceLocation.fromNamespaceAndPath(UndergroundCity.MOD_ID, "places"), () -> VERSION, VERSION::equals, VERSION::equals);
 
@@ -95,11 +95,12 @@ public final class PlacesNetwork {
     private static void writePeek(PropertyIntel.Peek p, FriendlyByteBuf b) {
         b.writeBlockPos(p.door()); b.writeEnum(p.status()); b.writeUtf(p.category(), 24); b.writeUtf(p.label(), 40); b.writeUtf(p.address(), 48); b.writeUtf(p.city(), 24);
         b.writeVarInt(p.tier()); b.writeVarInt(p.access()); b.writeVarInt(p.layer() + 1); b.writeBoolean(p.beenIn()); b.writeBoolean(p.playerHomes());
+        b.writeVarInt(p.opensAt() + 1); b.writeVarInt(p.shutsAt() + 1);
     }
 
     private static PropertyIntel.Peek readPeek(FriendlyByteBuf b) {
         return new PropertyIntel.Peek(b.readBlockPos(), b.readEnum(PropertyIntel.Status.class), b.readUtf(24), b.readUtf(40), b.readUtf(48), b.readUtf(24),
-            Math.max(0, Math.min(6, b.readVarInt())), b.readVarInt(), b.readVarInt() - 1, b.readBoolean(), b.readBoolean());
+            Math.max(0, Math.min(6, b.readVarInt())), b.readVarInt(), b.readVarInt() - 1, b.readBoolean(), b.readBoolean(), Math.min(23, b.readVarInt() - 1), Math.min(23, b.readVarInt() - 1));
     }
 
     private static void writeAnswer(PeekAnswer m, FriendlyByteBuf b) {

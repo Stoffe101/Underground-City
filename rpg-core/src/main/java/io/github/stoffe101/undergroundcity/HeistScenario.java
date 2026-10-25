@@ -224,7 +224,7 @@ final class HeistScenario {
     }
 
     /**
-     * By day the club is a bar (a shop while its bartender is in, D-146) and from 21:00 a fence's back office (D-147): its door opens to anybody then, and nothing is searched or cracked
+     * From 18:00 to 03:00 the club is a bar (a shop while its bartender is in, D-146, its hours since D-185) and from 21:00 a fence's back office too (D-147): its door opens to anybody then, and nothing is searched or cracked
      * inside. The job is done in the hours between: the clock is moved an hour at a time from 03:00 until the club is shut to the public (scripted, logged).
      */
     private static void closedHour() {
