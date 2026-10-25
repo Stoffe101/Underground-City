@@ -88,6 +88,20 @@ Rules:
 * **Persistence:** standing encounters, travellers' road time and delivered letters are saved; after a restart a person of an encounter that is over is not let back into the world.
 * Operators and the scripted journey: `/uc_encounters status`, `/uc_encounters meet <player> <encounter>` (sets one up the road from the player at the first fitting spot), `/uc_encounters clear`.
 
+## Exploration finds (D-186)
+
+The personal half of the game's loot; the shared, finite half (burglary, safes, the cities' shelves) is unchanged.
+
+* **Where.** In a new archipelago world, the first time a player comes within 48 blocks of a built roadside place or wayside shelter, Core sets a **battered crate** (`exploration_find`) on its lot: an open cell under cover or against one or two walls, never in a doorway, picked the same way on every machine. One a pass, recorded in `underground_city_exploration_finds`. Older worlds get none.
+* **What.** A right click goes through it. Each player finds something in each crate **once**:
+  * the goods are rolled for that player from the site's kind (farm, diner, salvage and depot, ruin, motel, wayside), seeded by the world, the crate and the player, so asking again rolls the same and a second visit finds nothing more;
+  * they are handed straight to the player and never stored in the crate, so there is nothing in it to take from another player, duplicate or lose in a crash;
+  * they are a person's own, never marked stolen;
+  * a small rare extra is possible (one in eight at most).
+* **Crews.** Each member finds their own; a Crew does not share or split a find.
+* **The crate** cannot be broken and drops nothing.
+* Tables: `data/underground_city/exploration_finds/finds.json`. GameTests: `ExplorationFindGameTests`.
+
 ## What is not true yet
 
 * Nobody has stopped at a place or met an encounter with their own hands. The journey's stop at the diner and its courier are scripted (the courier is called with a command rather than waited for).

@@ -24,7 +24,7 @@ ROOT = HERE.parents[1]
 ASSETS = Path("rpg-core/src/main/resources/assets/underground_city")
 #: Folders (relative to the assets root) that the generators own completely: a committed file there that no generator draws is an orphan.
 OWNED = ("textures/gui", "textures/font", "font", "textures/entity/citizen")
-OWNED_FILES = {"textures/block": ("cannabis_", "terminal_", "secure_", "safe_", "ledger_", "scrap_", "utility_panel_", "machine_drive_", "computer_", "bench_", "rack_", "ws_"), "textures/item": ("",)}
+OWNED_FILES = {"textures/block": ("cannabis_", "terminal_", "secure_", "safe_", "ledger_", "scrap_", "utility_panel_", "machine_drive_", "find_", "computer_", "bench_", "rack_", "ws_"), "textures/item": ("",)}
 
 
 def write_everything() -> None:

@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "underground_city:block/exploration_find"
+  },
+  "facing=east": {
+   "model": "underground_city:block/exploration_find",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "underground_city:block/exploration_find",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "underground_city:block/exploration_find",
+   "y": 270
+  }
+ }
+}

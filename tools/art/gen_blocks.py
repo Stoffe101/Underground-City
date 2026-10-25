@@ -351,6 +351,61 @@ def machine_drive_side():
     return s
 
 
+# ------------------------------------------------------------------------------------------------ Battered crate (eighth pass, D-186: exploration finds)
+CRATE = ramp('#7b6243')
+
+
+def crate_planks(s, seed):
+    """Weathered horizontal planks with dark seams, nail heads and a grey bleach where rain got at them."""
+    rnd = random.Random(seed)
+    for y in range(16):
+        for x in range(16):
+            seam = y % 5 == 4
+            c = CRATE[0] if seam else CRATE[2] if (x * 7 + y * 3 + rnd.randint(0, 3)) % 9 else CRATE[1]
+            if not seam and rnd.random() < 0.08:
+                c = CRATE[3]
+            s.put(x, y, c)
+    for y in (1, 6, 11):
+        s.put(1, y, STEEL[3]); s.put(14, y, STEEL[3])
+    for x in range(16):
+        if rnd.random() < 0.35:
+            s.put(x, 0, rgb('#8d8a80'))
+    s.rect(0, 0, 0, 15, CRATE[0]); s.rect(15, 0, 15, 15, CRATE[0])
+
+
+@tex
+def find_front():
+    """The crate's front: planks, a cross brace, and a chalk mark somebody left (a circle with a tick: something here)."""
+    s = Sprite()
+    crate_planks(s, 31)
+    s.line(1, 1, 14, 14, CRATE[0]); s.line(1, 2, 13, 14, CRATE[3])
+    # the chalk mark in the upper right, clear of the brace: a ring, and a tick inside it
+    for (x, y) in ((10, 2), (11, 2), (12, 2), (13, 3), (13, 4), (13, 5), (12, 6), (11, 6), (10, 6), (9, 5), (9, 4), (9, 3)):
+        s.put(x, y, PAPER[4])
+    s.put(10, 4, PAPER[3]); s.put(11, 5, PAPER[3]); s.put(12, 4, PAPER[3]); s.put(12, 3, PAPER[3])
+    return s
+
+
+@tex
+def find_side():
+    s = Sprite()
+    crate_planks(s, 32)
+    return s
+
+
+@tex
+def find_top():
+    """The lid, with a frayed hessian sack thrown over half of it."""
+    s = Sprite()
+    crate_planks(s, 33)
+    sack = ramp('#a88e5f')
+    for y in range(2, 12):
+        for x in range(3, 13 - (y % 3 == 0)):
+            s.put(x, y, sack[2] if (x + y) % 3 else sack[1])
+    s.line(3, 2, 12, 2, sack[3]); s.line(3, 11, 11, 11, sack[0])
+    return s
+
+
 # ------------------------------------------------------------------------------------------------ Personal computer (D-158)
 PC_CASE = ramp('#c9c4b6')
 
@@ -597,6 +652,9 @@ def write_models():
         with open(os.path.join(MODELS, f'utility_panel_{light}.json'), 'w') as fh:
             json.dump({'parent': 'minecraft:block/orientable', 'textures': {'top': 'underground_city:block/utility_panel_side', 'front': f'underground_city:block/utility_panel_{light}',
                                                                             'side': 'underground_city:block/utility_panel_side'}}, fh, indent=1)
+    with open(os.path.join(MODELS, 'exploration_find.json'), 'w') as fh:
+        json.dump({'parent': 'minecraft:block/orientable', 'textures': {'top': 'underground_city:block/find_top', 'front': 'underground_city:block/find_front',
+                                                                        'side': 'underground_city:block/find_side'}}, fh, indent=1)
     for state in DRIVE_STATES:
         with open(os.path.join(MODELS, f'machine_drive_{state}.json'), 'w') as fh:
             json.dump({'parent': 'minecraft:block/orientable', 'textures': {'top': 'underground_city:block/machine_drive_side', 'front': f'underground_city:block/machine_drive_{state}',
@@ -618,7 +676,7 @@ def facing_states(name):
 def write_states():
     sd = os.path.join(ASSETS, 'blockstates')
     os.makedirs(sd, exist_ok=True)
-    for name in ('operations_terminal', 'secure_data_terminal', 'property_cache', 'public_ledger', 'personal_computer', 'electronics_bench'):
+    for name in ('operations_terminal', 'secure_data_terminal', 'property_cache', 'public_ledger', 'personal_computer', 'electronics_bench', 'exploration_find'):
         with open(os.path.join(sd, name + '.json'), 'w') as fh:
             json.dump(facing_states(name), fh, indent=1)
     with open(os.path.join(sd, 'utility_panel.json'), 'w') as fh:

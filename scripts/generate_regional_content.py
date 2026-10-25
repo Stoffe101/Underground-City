@@ -255,6 +255,7 @@ def build(data: dict, contracts: dict) -> dict[Path, bytes]:
         "item.underground_city.sealed_envelope": "Sealed Envelope",
         "block.underground_city.utility_panel": "Utility Panel",
         "block.underground_city.machine_drive": "Machine Drive Housing",
+        "block.underground_city.exploration_find": "Battered Crate",
         "item.underground_city.utility_panel": "Utility Panel",
         "block.underground_city.personal_computer": "Personal Computer",
         "item.underground_city.personal_computer": "Personal Computer",

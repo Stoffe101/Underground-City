@@ -83,6 +83,9 @@ public final class UndergroundCity {
     // the Smith's machinery (eighth pass): a building's drive housing, placed by Core beside the street doors of industrial buildings and the shops that run on a machine
     public static final RegistryObject<Block> MACHINE_DRIVE = BLOCKS.register("machine_drive",
         () -> new MachineBlock(BlockBehaviour.Properties.of().mapColor(net.minecraft.world.level.material.MapColor.METAL).strength(5.0f, 1200.0f).requiresCorrectToolForDrops().sound(net.minecraft.world.level.block.SoundType.METAL)));
+    // exploration finds (eighth pass, D-186): a battered crate Core sets into roadside places and wayside shelters; each player finds something in it once
+    public static final RegistryObject<Block> EXPLORATION_FIND = BLOCKS.register("exploration_find",
+        () -> new ExplorationFinds.FindBlock(BlockBehaviour.Properties.of().mapColor(net.minecraft.world.level.material.MapColor.WOOD).strength(-1.0f, 3600000.0f).noLootTable().sound(net.minecraft.world.level.block.SoundType.WOOD)));
     public static final RegistryObject<Block> PERSONAL_COMPUTER = BLOCKS.register("personal_computer",
         () -> new TechBlocks.Computer(BlockBehaviour.Properties.of().mapColor(net.minecraft.world.level.material.MapColor.SAND).strength(1.5f).noOcclusion().sound(net.minecraft.world.level.block.SoundType.METAL)));
     public static final RegistryObject<Item> PERSONAL_COMPUTER_ITEM = ITEMS.register("personal_computer", () -> new BlockItem(PERSONAL_COMPUTER.get(), new Item.Properties()));
@@ -218,6 +221,7 @@ public final class UndergroundCity {
         MinecraftForge.EVENT_BUS.register(new TechWork());
         MinecraftForge.EVENT_BUS.register(new MachineService());
         MinecraftForge.EVENT_BUS.register(new SmithWork());
+        MinecraftForge.EVENT_BUS.register(new ExplorationFinds.Service());
         MinecraftForge.EVENT_BUS.register(new StaffZones());
         MinecraftForge.EVENT_BUS.register(new ResourceSites());
         MinecraftForge.EVENT_BUS.register(new HouseholdService());
@@ -263,6 +267,8 @@ public final class UndergroundCity {
         event.addListener(TechDesigns.INSTANCE);
         event.addListener(Workshops.INSTANCE);
         event.addListener(MachineService.Loader.INSTANCE);
+        event.addListener(BusinessHours.Loader.INSTANCE);
+        event.addListener(ExplorationFinds.Loader.INSTANCE);
         event.addListener(SkillCatalog.Specializations.INSTANCE);
         event.addListener(PropertyCatalog.INSTANCE);
         event.addListener(ContrabandCatalog.INSTANCE);
