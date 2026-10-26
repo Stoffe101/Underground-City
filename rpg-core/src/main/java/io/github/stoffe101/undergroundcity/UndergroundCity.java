@@ -203,6 +203,7 @@ public final class UndergroundCity {
         MinecraftForge.EVENT_BUS.register(new OrderTracker());
         MinecraftForge.EVENT_BUS.register(new Journey());
         MinecraftForge.EVENT_BUS.register(new DevBootstrap());
+        MinecraftForge.EVENT_BUS.register(new CityArrival());   // a new citizen is moved, once, to the welcome of the city they chose (D-187)
         // the roads are planned in the background as the overworld loads, not on the server thread's first road chunk (a nine-second freeze mid-play)
         MinecraftForge.EVENT_BUS.addListener((net.minecraftforge.event.level.LevelEvent.Load event) -> {
             if (event.getLevel() instanceof net.minecraft.server.level.ServerLevel level) CorridorRoadFeature.prepare(level);
@@ -214,6 +215,8 @@ public final class UndergroundCity {
         MinecraftForge.EVENT_BUS.register(new BurglaryHarness());
         MinecraftForge.EVENT_BUS.register(new PopulationService());
         MinecraftForge.EVENT_BUS.register(new PoliceResponse());
+        MinecraftForge.EVENT_BUS.register(new CrimeWatch());
+        MinecraftForge.EVENT_BUS.register(new BurglaryDamage());   // what a burglar breaks, and the city putting it back (D-190)   // who sees an assault, a lock being worked, an intruder, a search or damage (D-189)
         MinecraftForge.EVENT_BUS.register(new PolicePatrols());
         MinecraftForge.EVENT_BUS.register(new PropertyIntel());
         MinecraftForge.EVENT_BUS.register(new TechService());
@@ -258,6 +261,8 @@ public final class UndergroundCity {
         event.addListener(WorkOrderCatalog.INSTANCE);
         event.addListener(RegionalCatalog.INSTANCE);
         event.addListener(CityRegions.INSTANCE);
+        event.addListener(CityArrival.Loader.INSTANCE);
+        event.addListener(BurglaryDamage.Loader.INSTANCE);
         event.addListener(CityCharacter.INSTANCE);
         event.addListener(ResourceSiteCatalog.INSTANCE);
         event.addListener(BuildingSpots.INSTANCE);
@@ -329,7 +334,7 @@ public final class UndergroundCity {
             ));
             RegistrationService.prompt(player);
         } else {
-            player.sendSystemMessage(Component.literal("Welcome back to " + profile.get().city +
+            player.sendSystemMessage(Component.literal("Welcome back to " + CityArrival.title(profile.get().city) +
                 " (" + profile.get().career + ", level " + profile.get().careerLevel() + ")."));
             RegistrationService.teachRecipes(player);
         }
@@ -447,6 +452,7 @@ public final class UndergroundCity {
             )
         );
         root.then(dev);
+        root.then(AdminCommands.branch());   // the operator's commands (D-191)
         event.getDispatcher().register(root);
     }
 }

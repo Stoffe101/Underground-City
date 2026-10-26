@@ -69,9 +69,26 @@ public final class BuildingGuard {
     @SubscribeEvent
     public void breakBlock(BlockEvent.BreakEvent event) {
         if (!(event.getPlayer() instanceof ServerPlayer player) || !(event.getLevel() instanceof ServerLevel level) || bypass(player)) return;
-        if (protectedAt(level, event.getPos()).isPresent()) {
+        Optional<CityBuildings.Building> found = protectedAt(level, event.getPos());
+        if (found.isPresent()) {
             event.setCanceled(true);
-            tell(player, REFUSAL);
+            // a thief who picked one of this building's locks may break what is inside it (D-190): broken by Core, with no drop, and put back later
+            long now = LockService.clock(level.getServer());
+            BurglaryDamage.Verdict verdict = BurglaryDamage.judge(player, level, found.get(), event.getPos(), now);
+            if (verdict == BurglaryDamage.Verdict.ALLOWED) {
+                boolean glass = BurglaryDamage.glass(event.getState());
+                BurglaryDamage.breakFor(player, level, found.get(), event.getPos(), now);
+                CrimeWatch.damaged(player, level, found.get(), event.getPos(), glass);
+                return;
+            }
+            tell(player, switch (verdict) {
+                case SHELL -> "That holds the building up. Furniture, windows and the inner walls give; the shell does not.";
+                case PROTECTED -> "That stays: doors, safes, containers and the building's systems cannot be broken.";
+                case FULL -> "The place is wrecked enough. Nothing more gives here.";
+                case HOME -> "Somebody lives here; their home is theirs.";
+                case NOT_BREAKABLE -> "That does not give.";
+                default -> REFUSAL;
+            });
         }
     }
 
@@ -201,6 +218,9 @@ public final class BuildingGuard {
         Optional<CityBuildings.Building> found = protectedAt(level, lower);
         if (found.isEmpty() || !found.get().locked()) return;
         BlockState lowerState = lower.equals(event.getPos()) ? state : level.getBlockState(lower);
+        // the own door of a flat or a room the building's household lives in (D-188): locked to everybody else whatever the hour, a lockpick opens it, from inside it always opens
+        int unitDoor = lowerState.getBlock() instanceof DoorBlock ? householdUnitDoor(level, found.get(), lower, lowerState) : -1;
+        if (unitDoor >= 0) { householdDoor(event, player, level, found.get(), lower, lowerState, unitDoor); return; }
         // a staff door of an open building (D-159): shut to the public side and locked like its street door, so a lockpick opens it; from behind it opens by hand
         if (lowerState.getBlock() instanceof DoorBlock && !CityHomes.holdsKey(player, found.get()) && StaffZones.staffDoorNow(level, found.get(), lower)
                 && StaffZones.onPublicSide(level, found.get(), lower, player.position())) {
@@ -273,6 +293,42 @@ public final class BuildingGuard {
         String profile = security.lockProfile();
         String label = security.label().isEmpty() ? "Door" : Character.toUpperCase(security.label().charAt(0)) + security.label().substring(1);
         String refusal = LockService.begin(player, level, new LockService.Target(LockService.Kind.DOOR, lower, profile, building.city(), security.id(), label, 1));
+        if (refusal != null) tell(player, refusal);
+    }
+
+    /**
+     * The unit of a furnished building whose own door this is, or -1 (D-188): an inside door on the edge (the one-block shell) of a flat or a room of a building with more than one, in a unit the
+     * building's household lives in. Such a door is locked to everybody but its household, as the street door is, at any hour and whether or not a shop below is open, so a key to the street
+     * door (a neighbour's) or an open shop never opens somebody's flat. A unit to let or held by a player is a registered home, which {@link ResidenceGuard} keeps; doors inside a flat are not
+     * on its edge and stay unlocked.
+     */
+    static int householdUnitDoor(ServerLevel level, CityBuildings.Building b, BlockPos lower, BlockState state) {
+        BuildingSpots.Plan plan = BuildingSpots.INSTANCE.forType(b.type());
+        if (plan == null || plan.units().size() < 2 || exterior(level, lower, state)) return -1;
+        int lx = lower.getX() - b.chunkX() * 16, ly = lower.getY() - b.streetY(), lz = lower.getZ() - b.chunkZ() * 16;
+        for (int i = 0; i < plan.units().size(); i++) {
+            BuildingSpots.Unit u = plan.units().get(i);
+            boolean shell = lx >= u.x0() - 1 && lx <= u.x1() + 1 && ly >= u.y0() - 1 && ly <= u.y1() + 1 && lz >= u.z0() - 1 && lz <= u.z1() + 1;
+            if (!shell || u.contains(lx, ly, lz) || CityHomes.toLet(level.getSeed(), b, i)) continue;
+            return i;
+        }
+        return -1;
+    }
+
+    /** A household's flat door: from inside, open; picked a moment ago or standing open, as any door; otherwise locked, and a lockpick starts on the building's lock. */
+    private static void householdDoor(PlayerInteractEvent.RightClickBlock event, ServerPlayer player, ServerLevel level, CityBuildings.Building b, BlockPos lower, BlockState lowerState, int unit) {
+        long now = LockService.clock(level.getServer());
+        BuildingSpots.Unit u = BuildingSpots.INSTANCE.forType(b.type()).units().get(unit);
+        BlockPos at = player.blockPosition();
+        boolean inside = u.contains(at.getX() - b.chunkX() * 16, at.getY() - b.streetY(), at.getZ() - b.chunkZ() * 16);
+        if (inside) PropertyLocks.get(level.getServer()).exitOpen(lower, now + EXIT_TICKS);
+        if (inside || PropertyLocks.get(level.getServer()).breached(lower, now) || lowerState.getValue(DoorBlock.OPEN)) { byHand(event, player, level, lower, lowerState); return; }
+        event.setCanceled(true);
+        event.setCancellationResult(InteractionResult.SUCCESS);
+        if (event.getHand() != InteractionHand.MAIN_HAND) return;
+        if (!LockService.isPick(player.getMainHandItem())) { tell(player, "Locked. Somebody lives here: " + u.title() + "."); return; }
+        var security = b.security();
+        String refusal = LockService.begin(player, level, new LockService.Target(LockService.Kind.DOOR, lower, security.lockProfile(), b.city(), security.id(), u.title() + " door", 1));
         if (refusal != null) tell(player, refusal);
     }
 

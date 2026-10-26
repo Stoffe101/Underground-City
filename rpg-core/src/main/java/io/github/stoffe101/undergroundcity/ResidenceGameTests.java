@@ -178,10 +178,10 @@ public final class ResidenceGameTests {
             near(base, founder, member, outsider, exMember);
             Residence r = flat(l, base, "test:guard", 10, -1);
             BlockPos inside = base.offset(2, 1, 2), wall = base.offset(-1, 1, 2), chest = base.offset(1, 0, 1);
-            // a showroom: look, don't touch
+            // a unit to let is locked (D-188): its door does not open for anybody (its listing is read from outside), and nothing in it is anybody's to use
             for (Act act : Act.values()) {
-                boolean expected = act == Act.DOOR || act == Act.OTHER;
-                check(ResidenceGuard.allowed(l, r, outsider.getUUID(), OVERWORLD, inside, act) == expected, "showroom " + act);
+                boolean expected = act == Act.OTHER;
+                check(ResidenceGuard.allowed(l, r, outsider.getUUID(), OVERWORLD, inside, act) == expected, "a unit to let, " + act);
             }
             Crew crew = l.create(founder.getUUID(), "uc_gf", "Guard Crew");
             for (ServerPlayer p : List.of(member, exMember)) l.accept(l.invite(founder.getUUID(), p.getUUID(), p.getGameProfile().getName(), "uc_gf").id(), p.getUUID(), p.getGameProfile().getName());
@@ -375,8 +375,8 @@ public final class ResidenceGameTests {
                 }
             }
 
-            // a showroom, then a personal tenancy of the flat (the deposit and the first hour), then the Crew renting the house from the bank
-            check(brokenBy(level, stranger, flatChest).isCanceled() && usedBy(level, stranger, flatChest).isCanceled() && !usedBy(level, stranger, flatDoor).isCanceled(), "an unleased flat: look, don't touch");
+            // a unit to let (locked, D-188), then a personal tenancy of the flat (the deposit and the first hour), then the Crew renting the house from the bank
+            check(brokenBy(level, stranger, flatChest).isCanceled() && usedBy(level, stranger, flatChest).isCanceled() && usedBy(level, stranger, flatDoor).isCanceled(), "an unleased flat: its door is locked and nothing in it opens");
             near(flat.min, tenant);
             var flatTerms = PropertyCatalog.INSTANCE.find(flat.id).orElseThrow();
             int flatCost = l.rentQuote(tenant.getUUID(), flat, flatTerms, PropertyCatalog.INSTANCE.rules()).total();

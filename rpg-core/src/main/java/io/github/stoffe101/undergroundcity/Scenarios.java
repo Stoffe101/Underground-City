@@ -13,6 +13,9 @@ final class Scenarios {
             case "input" -> input();
             case "register" -> register();
             case "arrival" -> arrival();
+            case "citystart" -> CityStartScenario.build();
+            case "wreck" -> WreckScenario.build();
+            case "police" -> PoliceScenario.build();
             case "doorwalk" -> doorwalk();
             case "burglary" -> BurglaryScenario.build();
             case "thief" -> ThiefScenario.build();

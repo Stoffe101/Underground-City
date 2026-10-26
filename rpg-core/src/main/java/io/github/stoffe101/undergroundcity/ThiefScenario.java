@@ -65,6 +65,9 @@ final class ThiefScenario {
 
     /** The street door of the house {@link #chooseHouse} chose (for the patrol scenario, which starts as this one does). */
     static DoorWalk.Spot door() { return F.door; }
+    /** The house itself and its searchable furniture (for the wreck scenario, which starts as this one does). */
+    static CityBuildings.Building house() { return F.house; }
+    static List<BlockPos> spots() { return F.spots; }
 
     /** Points the shared steps (prepare at the door, case, pick, search) at another building: the raid's bonded store ({@link RaidScenario}). */
     static void useBuilding(DoorWalk.Spot door, CityBuildings.Building building, List<BlockPos> furniture) {

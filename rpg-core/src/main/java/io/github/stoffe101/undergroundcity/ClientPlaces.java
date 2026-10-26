@@ -171,7 +171,7 @@ public final class ClientPlaces {
         switch (p.status()) {
             case YOURS -> { line = "Your home"; lineColour = UcUi.OK; accent = UcUi.OK; }
             case PLAYER_HOME -> { line = "A player's home"; lineColour = UcUi.SOFT; accent = UcUi.DIM; }
-            case TO_LET -> { line = "To let: see Home on a terminal"; lineColour = UcUi.SOFT; accent = UcUi.LEGAL; }
+            case TO_LET -> { line = "To let, locked: K, Home to lease"; lineColour = UcUi.SOFT; accent = UcUi.LEGAL; }
             case NOT_A_TARGET -> { line = "Public building"; lineColour = UcUi.DIM; accent = UcUi.FAINT; }
             default -> {
                 line = Thievery.tierWord(p.tier()) + "  " + PropertyIntel.roman(p.tier()) + " / VI";

@@ -62,6 +62,7 @@ public final class CloudJourneyClient {
         if(!ENABLED||event.phase!=TickEvent.Phase.END) return;
         if(!QShopEconomy.available()) throw new IllegalStateException("Journey requires installed Q Shop 1.8.4");
         if(PerfSessionServer.ENABLED) { PerfSessionClient.tick(Minecraft.getInstance()); return; }   // the two-player performance session: a walk, no screens
+        if(DuoSessionServer.ENABLED) { DuoSessionClient.tick(Minecraft.getInstance()); return; }   // the ninth pass's two-player session: the first-login screen, then the server drives
         if(CrewJourneyServer.ENABLED) {
             // the combined journey's backpack and exchange steps use the screen once this client's Crew steps are done (SurvivalJourneyActions)
             if(SurvivalJourneyActions.takesOver(Minecraft.getInstance())) SurvivalJourneyActions.tick(Minecraft.getInstance());

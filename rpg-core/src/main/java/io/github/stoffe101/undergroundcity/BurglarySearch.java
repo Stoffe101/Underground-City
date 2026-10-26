@@ -321,7 +321,7 @@ public final class BurglarySearch {
             caught++;
             player.sendSystemMessage(Component.literal("Somebody in the room saw you going through their things.").withStyle(ChatFormatting.RED));
             PoliceResponse.raise(player, level, building, a.pos(), false, false, true);
-        }
+        } else CrimeWatch.searched(player, level, building, a.pos());   // heard through a wall, or caught by a sensor (D-189)
         return got;
     }
 

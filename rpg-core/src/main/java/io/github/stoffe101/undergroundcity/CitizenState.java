@@ -42,6 +42,10 @@ public final class CitizenState extends SavedData {
                 String id = skills.getString(s);
                 if (id.matches("[a-z]+\\.[a-z_]{2,40}")) citizen.skills.add(id);
             }
+            // points an operator granted or took (D-191): kept apart from the points levels give, and absent in an older save
+            CompoundTag bonus = entry.getCompound("admin_points");
+            citizen.careerBonus = Math.max(-MAX_BONUS, Math.min(MAX_BONUS, bonus.getInt("career")));
+            citizen.thiefBonus = Math.max(-MAX_BONUS, Math.min(MAX_BONUS, bonus.getInt("thief")));
             CompoundTag journey = entry.getCompound("journey");
             for (String key : journey.getAllKeys()) {
                 if (key.matches("[a-z_]{2,24}") && citizen.journey.size() < 32) citizen.journey.put(key, Math.max(0, Math.min(9999, journey.getInt(key))));
@@ -135,6 +139,38 @@ public final class CitizenState extends SavedData {
         return true;
     }
 
+    /** How far an operator's points may move a citizen's earned points either way (D-191). */
+    public static final int MAX_BONUS = 100;
+
+    /** Sets the career XP outright (an operator's command, D-191): clamped to 0 and the maximum. Returns the new total. */
+    public int setCareerXp(UUID uuid, int value) {
+        Citizen citizen = citizens.get(uuid);
+        if (citizen == null) throw new IllegalArgumentException("Citizen not registered");
+        int clamped = Math.max(0, Math.min(ProgressionRules.MAX_XP, value));
+        citizen.careerXp.put(citizen.career, clamped);
+        setDirty();
+        return clamped;
+    }
+
+    /** Sets a general skill's XP (Thievery among them) outright: clamped to 0 and the maximum. Returns the new total. */
+    public int setGeneralXp(UUID uuid, String skill, int value) {
+        Citizen citizen = citizens.get(uuid);
+        if (citizen == null || !ProgressionRules.GENERAL_SKILLS.contains(skill)) throw new IllegalArgumentException("Unknown citizen or skill");
+        int clamped = Math.max(0, Math.min(ProgressionRules.MAX_XP, value));
+        citizen.generalXp.put(skill, clamped);
+        setDirty();
+        return clamped;
+    }
+
+    /** Sets an operator's career or Thief points (D-191), within {@link #MAX_BONUS} either way. */
+    public void setBonusPoints(UUID uuid, boolean thief, int value) {
+        Citizen citizen = citizens.get(uuid);
+        if (citizen == null) throw new IllegalArgumentException("Citizen not registered");
+        int clamped = Math.max(-MAX_BONUS, Math.min(MAX_BONUS, value));
+        if (thief) citizen.thiefBonus = clamped; else citizen.careerBonus = clamped;
+        setDirty();
+    }
+
     /** Restore a journaled reward after a crash without awarding it twice. */
     void restoreCareerXp(UUID uuid, int target) {
         Citizen citizen = citizens.get(uuid);
@@ -163,6 +199,12 @@ public final class CitizenState extends SavedData {
             CompoundTag journey = new CompoundTag();
             citizen.journey.forEach(journey::putInt);
             record.put("journey", journey);
+            if (citizen.careerBonus != 0 || citizen.thiefBonus != 0) {
+                CompoundTag bonus = new CompoundTag();
+                bonus.putInt("career", citizen.careerBonus);
+                bonus.putInt("thief", citizen.thiefBonus);
+                record.put("admin_points", bonus);
+            }
             entries.add(record);
         }
         root.put("citizens", entries);
@@ -182,6 +224,10 @@ public final class CitizenState extends SavedData {
         public final Map<String, Integer> generalXp = new HashMap<>();
         private final java.util.Set<String> skills = new java.util.TreeSet<>();
         private final Map<String, Integer> journey = new java.util.TreeMap<>();
+        /** Points an operator granted (or, below zero, took) on top of what levels give (D-191): separate from the levels, so no level or unlock requirement moves with them. */
+        private int careerBonus, thiefBonus;
+        public int careerBonus() { return careerBonus; }
+        public int thiefBonus() { return thiefBonus; }
 
         private Citizen(String city, String career) {
             this.city = city;

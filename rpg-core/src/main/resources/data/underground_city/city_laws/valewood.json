@@ -26,5 +26,13 @@
     "officers": 1,
     "every_seconds": 240,
     "beat_seconds": 150
+  },
+  "offences": {
+    "assault": {
+      "fine": 40
+    },
+    "break_in": {
+      "fine": 80
+    }
   }
 }

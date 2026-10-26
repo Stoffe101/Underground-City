@@ -934,16 +934,11 @@ public final class PopulationService {
 
     // ------------------------------------------------------------------------------------------------ crime
 
-    /** A blow to a civilian: they run, the striker's heat in that city rises, and that is all (no police respond yet, and the documents say so). */
+    /** A blow to a civilian: they run from the one who struck them. The crime itself (heat, witnesses, the police) is {@link CrimeWatch}'s (D-189). */
     @SubscribeEvent
     public void attacked(LivingAttackEvent event) {
         if (!(event.getEntity() instanceof TownspersonEntity body) || !(event.getSource().getEntity() instanceof ServerPlayer striker) || striker.isCreative()) return;
         body.setLastHurtByMob(striker);
-        if (!body.city().isEmpty()) {
-            try { WorkOrderLedger.get(striker.server).addHeat(striker.getUUID(), body.city(), HEAT_FOR_STRIKING); }
-            catch (RuntimeException error) { LOGGER.warn("Heat for striking a civilian could not be recorded: {}", error.toString()); }
-            Notice.send(striker, Notice.Kind.HEAT, "Heat rising in " + capitalise(body.city()), "Striking a civilian is a crime. Nobody is on the way, yet; people remember.");
-        }
     }
 
     static String capitalise(String id) { return id.isEmpty() ? id : id.substring(0, 1).toUpperCase(Locale.ROOT) + id.substring(1); }

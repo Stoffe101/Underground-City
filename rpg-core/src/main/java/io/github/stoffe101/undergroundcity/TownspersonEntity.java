@@ -28,7 +28,7 @@ import net.minecraft.world.level.Level;
 
 /**
  * One of a city's ambient people (D-108), or, for the minutes after a noticed break-in, a police officer sent by {@link PoliceResponse} (D-122; role "police"): a body for a {@link PopulationPlan.Person}. It is deliberately small. It walks a short leash around where it was put, looks at players who come
- * near, flees if it is struck, never opens a door (so it can never walk into a building that is locked) and is never saved: when nobody is near it is removed and the roster, which is
+ * near, flees if it is struck, never opens a door (so it can never walk into a building that is locked; an officer does, D-189) and is never saved: when nobody is near it is removed and the roster, which is
  * arithmetic, decides afresh who is out in the street the next time somebody comes. Who it is (name, face, trade) comes from the roster; this class only carries the identity, so that
  * speaking to the same person twice is speaking to the same person.
  */
@@ -88,6 +88,32 @@ public final class TownspersonEntity extends PathfinderMob {
         getAttribute(Attributes.MOVEMENT_SPEED).setBaseValue(0.3);
         getAttribute(Attributes.FOLLOW_RANGE).setBaseValue(48.0);
         clearRestriction();
+        // an officer goes through doors (D-189): a thief who stayed inside was never caught. Their paths may cross a closed door of any kind, and they open it as they reach it
+        if (getNavigation() instanceof GroundPathNavigation ground) { ground.setCanOpenDoors(true); ground.setCanPassDoors(true); }
+        setPathfindingMalus(net.minecraft.world.level.pathfinder.BlockPathTypes.DOOR_IRON_CLOSED, 0f);
+        setPathfindingMalus(net.minecraft.world.level.pathfinder.BlockPathTypes.DOOR_WOOD_CLOSED, 0f);
+    }
+
+    /**
+     * An officer opens the closed doors on the next steps of their path as they reach them, whatever the door (a wooden one, an iron street door), and marks each as opened on purpose for a
+     * few seconds so the building's door watch does not shut it in their face; the watch shuts it again afterwards. Nobody else's doors are touched.
+     */
+    private void openDoorsAhead() {
+        var path = getNavigation().getPath();
+        if (path == null || path.isDone()) return;
+        for (int i = path.getNextNodeIndex(); i < Math.min(path.getNodeCount(), path.getNextNodeIndex() + 2); i++) {
+            BlockPos node = path.getNodePos(i);
+            for (BlockPos cell : new BlockPos[]{node, node.above()}) {
+                var state = level().getBlockState(cell);
+                if (!(state.getBlock() instanceof net.minecraft.world.level.block.DoorBlock door) || state.getValue(net.minecraft.world.level.block.DoorBlock.OPEN)) continue;
+                if (distanceToSqr(cell.getX() + 0.5, cell.getY(), cell.getZ() + 0.5) > 2.6 * 2.6) continue;
+                BlockPos lower = state.getValue(net.minecraft.world.level.block.DoorBlock.HALF) == net.minecraft.world.level.block.state.properties.DoubleBlockHalf.UPPER ? cell.below() : cell;
+                var server = level().getServer();
+                if (server != null) PropertyLocks.get(server).exitOpen(lower, LockService.clock(server) + 80);
+                door.setOpen(this, level(), level().getBlockState(lower), lower, true);
+                return;
+            }
+        }
     }
 
     /**
@@ -149,6 +175,7 @@ public final class TownspersonEntity extends PathfinderMob {
     @Override public void tick() {
         super.tick();
         if (!level().isClientSide && leaving() && level().getGameTime() >= leaveAt) discard();
+        if (!level().isClientSide && police() && errand != null && tickCount % 2 == 0) openDoorsAhead();
     }
 
     /** Walks to the errand's place while there is one; stands and watches when there is none. */

@@ -22,6 +22,7 @@ import org.slf4j.Logger;
 
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -135,6 +136,13 @@ public final class LockService {
     /** True while the player has a lock in their hands; a session that has ended and not yet been swept away does not count. */
     public static boolean busy(UUID player) { Active active = ACTIVE.get(player); return active != null && active.session.active(); }
     public static int activeSessions() { return ACTIVE.size(); }
+
+    /** The locks of doors being worked now, by whom (the crime watch looks for passers-by who can see them, D-189). */
+    static List<Map.Entry<UUID, Target>> doorSessions() {
+        List<Map.Entry<UUID, Target>> out = new java.util.ArrayList<>();
+        for (Active a : ACTIVE.values()) if (a.target.kind() == Kind.DOOR && a.session.active()) out.add(Map.entry(a.player, a.target));
+        return out;
+    }
 
     /** Starts a pick. Returns the reason it cannot start, or {@code null} when the player now has a lock in their hands (the client has been told to show it). */
     public static String begin(ServerPlayer player, ServerLevel level, Target target) {
@@ -336,7 +344,7 @@ public final class LockService {
         wear(player, random, proSet);
         heat(server, player, target.city(), HEAT_OPENED);
         // the building's stash is decided once, the first time anybody gets in; the first time this thief gets in is worth Thief XP (D-143)
-        CityBuildings.INSTANCE.at(level, target.pos()).ifPresent(building -> { BuildingStash.furnish(level, building, target.pos(), now); Thievery.entered(player, building); });
+        CityBuildings.INSTANCE.at(level, target.pos()).ifPresent(building -> { BuildingStash.furnish(level, building, target.pos(), now); Thievery.entered(player, building); BurglaryDamage.grant(player, building, now); });
         MinecraftForge.EVENT_BUS.post(new BuildingBreachEvent(player.getUUID(), target.pos(), target.city(), target.securityClass(), BuildingBreachEvent.Outcome.OPENED, now, false, player).quiet(quiet));
         Notice.send(player, Notice.Kind.HEAT, quiet ? "Lock picked cleanly" : "Lock picked", quiet ? "The door is open for a moment. A clean pick is a quiet one." : "The door is open for a moment. Whoever lives here will notice.");
     }

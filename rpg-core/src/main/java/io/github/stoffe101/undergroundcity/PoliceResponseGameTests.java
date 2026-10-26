@@ -276,7 +276,8 @@ public final class PoliceResponseGameTests {
                 check(!officer.shouldBeSaved(), "an officer would be written to the world");
                 check(officer.isInvulnerableTo(s.level.damageSources().generic()), "an officer can be hurt by an ordinary blow");
                 check(officer.errandPlace() != null && officer.errandPlace().equals(s.door), "an officer was not sent to the door");
-                check(!officer.getNavigation().getNodeEvaluator().canOpenDoors(), "an officer may open a building's doors");
+                // an officer goes through doors (D-189: a thief who stayed inside was never caught); townspeople still never do
+                check(officer.getNavigation().getNodeEvaluator().canOpenDoors() && officer.getNavigation().getNodeEvaluator().canPassDoors(), "an officer cannot go through a building's doors");
             }
             check(PoliceResponse.status().contains("arrived 1"), "the status does not count the arrival: " + PoliceResponse.status());
         }

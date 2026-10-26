@@ -26,5 +26,24 @@
     "officers": 2,
     "every_seconds": 180,
     "beat_seconds": 150
+  },
+  "offences": {
+    "assault": {
+      "fine": 60,
+      "report_seconds": 20
+    },
+    "assault_officer": {
+      "fine": 150,
+      "heat": 5
+    },
+    "break_in": {
+      "fine": 100
+    },
+    "theft": {
+      "fine": 110
+    },
+    "criminal_damage": {
+      "fine": 70
+    }
   }
 }

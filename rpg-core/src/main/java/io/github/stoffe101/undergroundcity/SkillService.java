@@ -14,7 +14,8 @@ import java.util.Set;
 public final class SkillService {
     private SkillService() {}
 
-    public static int pointsEarned(CitizenState.Citizen citizen) { return SkillRules.pointsEarned(citizen.careerLevel()); }
+    /** The points a citizen has to spend on their career's tree: one a level above the first, and an operator's grant (D-191), never fewer than none. */
+    public static int pointsEarned(CitizenState.Citizen citizen) { return Math.max(0, SkillRules.pointsEarned(citizen.careerLevel()) + citizen.careerBonus()); }
 
     public static int pointsSpent(CitizenState.Citizen citizen) {
         return SkillRules.pointsSpent(SkillCatalog.INSTANCE.tree(citizen.career), citizen.skills());
@@ -23,7 +24,7 @@ public final class SkillService {
     public static int pointsAvailable(CitizenState.Citizen citizen) { return pointsEarned(citizen) - pointsSpent(citizen); }
 
     /** Thief points (D-143): earned by Thief levels, spent only on the Thief tree, never taken from the career's points. */
-    public static int thiefPointsEarned(CitizenState.Citizen citizen) { return SkillRules.thiefPointsEarned(citizen.thiefLevel()); }
+    public static int thiefPointsEarned(CitizenState.Citizen citizen) { return Math.max(0, SkillRules.thiefPointsEarned(citizen.thiefLevel()) + citizen.thiefBonus()); }
     public static int thiefPointsSpent(CitizenState.Citizen citizen) { return SkillRules.pointsSpent(SkillCatalog.INSTANCE.tree(SkillNode.THIEF), citizen.skills()); }
     public static int thiefPointsAvailable(CitizenState.Citizen citizen) { return thiefPointsEarned(citizen) - thiefPointsSpent(citizen); }
 
