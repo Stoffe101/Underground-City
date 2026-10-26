@@ -86,26 +86,31 @@ final class WreckScenario {
     /** Inside the house: a window, a piece of decoration and an inner wall the thief may break (the game's own judgement), and a block of the outer wall that must hold. */
     private static void chooseTargets() {
         Playtest.queue("what in the house may be broken (on the server)", () -> {
-            List<BlockPos> picked = server(() -> {
+            // the candidates of each kind are read on the server; where a person could stand to reach one is asked from here (standBeside reads the server itself)
+            List<List<BlockPos>> kinds = server(() -> {
                 ServerLevel level = level();
                 CityBuildings.Building b = ThiefScenario.house();
                 long now = LockService.clock(level.getServer());
-                BlockPos glass = null, decor = null, wall = null, shell = null;
+                List<List<BlockPos>> found = List.of(new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
                 for (int y = b.streetY(); y < b.streetY() + 12; y++) for (int x = 0; x < 16; x++) for (int z = 0; z < 16; z++) {
                     BlockPos p = new BlockPos((b.chunkX() << 4) + x, y, (b.chunkZ() << 4) + z);
                     BlockState s = level.getBlockState(p);
                     if (s.isAir()) continue;
                     BurglaryDamage.Verdict v = BurglaryDamage.judge(me(), level, b, p, now);
-                    if (v == BurglaryDamage.Verdict.ALLOWED && BurglaryDamage.glass(s) && glass == null && ThiefScenario.standBeside(p, b) != null) glass = p.immutable();
-                    else if (v == BurglaryDamage.Verdict.ALLOWED && s.is(BurglaryDamage.BREAKABLE) && decor == null && ThiefScenario.standBeside(p, b) != null) decor = p.immutable();
-                    else if (v == BurglaryDamage.Verdict.ALLOWED && s.is(BurglaryDamage.BREAKABLE_WALLS) && wall == null && ThiefScenario.standBeside(p, b) != null) wall = p.immutable();
-                    else if (v == BurglaryDamage.Verdict.SHELL && shell == null && y == b.streetY() + 2 && ThiefScenario.standBeside(p, b) != null) shell = p.immutable();
+                    int kind = v == BurglaryDamage.Verdict.ALLOWED && BurglaryDamage.glass(s) ? 0 : v == BurglaryDamage.Verdict.ALLOWED && s.is(BurglaryDamage.BREAKABLE) ? 1
+                        : v == BurglaryDamage.Verdict.ALLOWED && s.is(BurglaryDamage.BREAKABLE_WALLS) ? 2
+                        // the outer wall, whatever it is made of: a solid block beside the open air outside, at head height, that the judgement refuses
+                        : (v == BurglaryDamage.Verdict.SHELL || v == BurglaryDamage.Verdict.NOT_BREAKABLE) && y == b.streetY() + 2 && !BurglaryDamage.glass(s) && s.isCollisionShapeFullBlock(level, p)
+                          && BurglaryDamage.shell(level, b, p) ? 3 : -1;
+                    if (kind >= 0 && found.get(kind).size() < 40) found.get(kind).add(p.immutable());
                 }
-                F.shell = shell;
-                List<BlockPos> out = new ArrayList<>();
-                for (BlockPos p : new BlockPos[]{glass, decor, wall}) if (p != null) out.add(p);
-                return out;
+                return found;
             });
+            BlockPos[] chosen = new BlockPos[4];
+            for (int kind = 0; kind < 4; kind++) for (BlockPos p : kinds.get(kind)) if (ThiefScenario.standBeside(p, ThiefScenario.house()) != null) { chosen[kind] = p; break; }
+            F.shell = chosen[3];
+            List<BlockPos> picked = new ArrayList<>();
+            for (int kind = 0; kind < 3; kind++) if (chosen[kind] != null) picked.add(chosen[kind]);
             for (BlockPos p : picked) F.before.put(p, server(() -> level().getBlockState(p)));
             F.broken.addAll(picked);
             Playtest.log("WRECK targets: " + F.before + "; a shell block " + (F.shell == null ? "none found" : F.shell.toShortString() + " " + server(() -> level().getBlockState(F.shell))));

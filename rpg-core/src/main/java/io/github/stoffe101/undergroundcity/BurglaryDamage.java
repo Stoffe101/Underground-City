@@ -151,8 +151,10 @@ public final class BurglaryDamage {
         if (state.isAir()) return Verdict.NOT_BREAKABLE;
         if (protectedBlock(state, level.getBlockEntity(pos))) return Verdict.PROTECTED;
         if (glass(state)) return within(level, b, pos) ? Verdict.ALLOWED : Verdict.FULL;
-        if (state.is(BREAKABLE) || furniture(state)) return within(level, b, pos) ? Verdict.ALLOWED : Verdict.FULL;
-        if (state.is(BREAKABLE_WALLS)) {
+        // a furniture mod's whole cube (a marble block, a tiled wall, a crate) is building material as much as furniture: it is judged as a wall, so the shell holds
+        boolean furniture = furniture(state);
+        if (state.is(BREAKABLE) || furniture && !state.isCollisionShapeFullBlock(level, pos)) return within(level, b, pos) ? Verdict.ALLOWED : Verdict.FULL;
+        if (state.is(BREAKABLE_WALLS) || furniture) {
             if (shell(level, b, pos)) return Verdict.SHELL;
             return within(level, b, pos) ? Verdict.ALLOWED : Verdict.FULL;
         }
@@ -170,7 +172,7 @@ public final class BurglaryDamage {
 
     static boolean glass(BlockState state) { return state.is(Tags.Blocks.GLASS) || state.is(Tags.Blocks.GLASS_PANES) || state.is(BlockTags.IMPERMEABLE); }
 
-    /** A block of one of the furniture mods the rules name (a chair, a table, a lamp of that mod). */
+    /** A block of one of the furniture mods the rules name (a chair, a table, a lamp of that mod; a whole cube of it is judged as a wall). */
     static boolean furniture(BlockState state) {
         ResourceLocation id = ForgeRegistries.BLOCKS.getKey(state.getBlock());
         return id != null && RULES.furnitureNamespaces().contains(id.getNamespace());

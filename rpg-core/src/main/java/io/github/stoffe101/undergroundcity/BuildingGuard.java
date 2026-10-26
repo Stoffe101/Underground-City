@@ -289,6 +289,9 @@ public final class BuildingGuard {
         event.setCancellationResult(InteractionResult.SUCCESS);
         if (event.getHand() != InteractionHand.MAIN_HAND) return;
         CityBuildings.Building building = found.get();
+        // a vacant listing (D-188): its street door is locked like any other, and says how to lease it rather than how to break in
+        String listing = LockService.isPick(player.getMainHandItem()) ? null : CityHomes.listing(level, building);
+        if (listing != null) { tell(player, listing); return; }
         var security = building.security();
         String profile = security.lockProfile();
         String label = security.label().isEmpty() ? "Door" : Character.toUpperCase(security.label().charAt(0)) + security.label().substring(1);

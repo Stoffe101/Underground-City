@@ -19,7 +19,7 @@ class DevClientInputs(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
 
     def test_the_furnished_and_scarcity_packages_are_current(self):
-        for layout in ("furnished", "scarcity"):
+        for layout in ("furnished", "scarcity", "furniture"):
             result = subprocess.run([sys.executable, str(ROOT / "scripts/emit_dev_world_pack.py"), "--layout", layout, "--check"], capture_output=True, text=True)
             self.assertEqual(result.returncode, 0, f"{layout}: {result.stderr}")
 
@@ -48,7 +48,16 @@ class DevClientInputs(unittest.TestCase):
         # "legacy_travelers" holds only the retired Traveler's Backpack (D-092), for opening an old world once; it is never combined with "survival".
         # "performance_deferred" parks the two client performance mods that crash the ForgeGradle development client, and "citytweaks_deferred" parks Lost Cities Modern Tweaks, which breaks Lost Cities' chunk generation in our styles (D-113); no launch or workflow names either.
         # "securitycraft" is the SecurityCraft trial (D-140): opt-in only, never in the default pack, and nothing else rides in it.
-        self.assertEqual(sets, {"world", "firearms", "vehicles", "boats", "vintner", "farming", "qol", "survival", "legacy_travelers", "performance", "navigation", "performance_deferred", "citytweaks_deferred", "furnished", "securitycraft"})
+        # "furniture" is the furniture mods a private building pack names (D-192): opt-in, runtime-only, and no mod in it is Create or needs it
+        self.assertEqual(sets, {"world", "firearms", "vehicles", "boats", "vintner", "farming", "qol", "survival", "legacy_travelers", "performance", "navigation", "performance_deferred", "citytweaks_deferred", "furnished", "securitycraft", "furniture"})
+        furniture = {m["id"] for m in MANIFEST["mods"] if "furniture" in m["sets"]}
+        self.assertEqual(furniture, {"mapperbase", "embellishcraft", "pfm", "another_furniture", "buildersdelight", "simplylight", "cfm", "farmers_delight"})
+        self.assertFalse(any("create" in m["mod_id"] or "create" in m["requires"] for m in MANIFEST["mods"]))
+        # a CurseForge-only pin carries the author's CDN file and its hashes; Gradle and fetch_dev_pack.py verify them
+        for mod in MANIFEST["mods"]:
+            if mod["project_id"].startswith("curseforge:"):
+                self.assertTrue(mod["download_url"].startswith("https://mediafilez.forgecdn.net/files/") and mod["download_url"].endswith("/" + mod["filename"]), mod["id"])
+                self.assertEqual(len(mod["sha512"]), 128)
         self.assertEqual({m["mod_id"] for m in MANIFEST["mods"] if "securitycraft" in m["sets"]}, {"securitycraft"})
         self.assertTrue(all(m["sets"] == ["securitycraft"] for m in MANIFEST["mods"] if m["mod_id"] == "securitycraft"))
         self.assertEqual({m["mod_id"] for m in MANIFEST["mods"] if "performance_deferred" in m["sets"]}, {"entityculling", "immediatelyfast"})

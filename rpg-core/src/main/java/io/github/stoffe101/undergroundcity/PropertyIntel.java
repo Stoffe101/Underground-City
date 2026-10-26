@@ -92,6 +92,8 @@ public final class PropertyIntel {
         BlockState lowerState = lower.equals(pos) ? state : level.getBlockState(lower);
         if (!(lowerState.getBlock() instanceof DoorBlock)) return Optional.empty();
         Optional<CityBuildings.Building> found = CityBuildings.INSTANCE.at(level, lower);
+        // a building's units to let are registered when somebody comes to its door (D-127), a glance included: a vacant listing reads "To let" before anybody has tried its handle (D-188)
+        found.ifPresent(b -> CityHomes.ensureBuilding(level, b));
         // a registered home (a Row flat, a let house, a vacant listing) answers to its own guard: whose it is, never a target
         CrewLedger ledger = CrewService.ledger(level.getServer());
         CrewLedger.Residence residence = ledger == null || ledger.faulted() ? null : ledger.residenceAt(level.dimension().location().toString(), lower);

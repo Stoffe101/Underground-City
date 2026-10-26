@@ -129,6 +129,13 @@
       "description": "Notice plates stacked beside the terminal (drawn by hand for review, the game draws them in the screen corner): order accepted, delivered, contraband seized and a rare find, each with its icon, accent and words"
     },
     {
+      "id": "notices.ninth",
+      "expected_file": "uc-notices-ninth.png",
+      "owner": "underground_city",
+      "group": "notices",
+      "description": "The ninth pass's notice plates (D-187, D-189): the welcome in the chosen city, the police searching a scene and a building, and the police standing down after a logout, with the texts the server sends"
+    },
+    {
       "id": "civilian_shop.counter",
       "expected_file": "uc-civilian-shop-counter.png",
       "owner": "underground_city",

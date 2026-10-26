@@ -8,6 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
+import block_lookalikes  # noqa: E402
 import port_lostcities_pack as porter  # noqa: E402
 
 SCRIPT = ROOT / "scripts" / "port_lostcities_pack.py"
@@ -71,7 +72,7 @@ class PortTheFixture(unittest.TestCase):
                     "minecraft:chest": {"facing": ["north", "south", "east", "west"], "type": ["single"], "waterlogged": ["true", "false"]}}
         report = porter.port(self.source, self.dest, registry=registry)
         self.assertFalse(report["loadable"])
-        self.assertTrue(any("unknown block modernlife:oak_chair" in p for p in report["problems"]), report["problems"])
+        self.assertTrue(any("no block of the kept mod modernlife" in p for p in report["problems"]), report["problems"])
         registry["modernlife:oak_chair"] = {"facing": ["north", "south", "east", "west"]}
         self.assertTrue(porter.port(self.source, self.root / "again", registry=registry)["loadable"])
 
@@ -93,6 +94,34 @@ class PortTheFixture(unittest.TestCase):
         result = subprocess.run([sys.executable, str(SCRIPT), "port", str(self.source), str(self.dest), "--registry", str(registry)], capture_output=True, text=True)
         self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
         self.assertIn("must not be loaded", result.stdout)
+
+    def test_a_foreign_block_becomes_its_nearest_look_and_a_gone_block_of_a_kept_mod_its_sibling(self):
+        registry = {"minecraft:stone_bricks": {}, "minecraft:dirt_path": {}, "minecraft:polished_andesite": {}, "minecraft:cut_copper": {}, "minecraft:oak_planks": {},
+                    "minecraft:chest": {"facing": ["north", "south", "east", "west"], "type": ["single"], "waterlogged": ["true", "false"]},
+                    "minecraft:spruce_stairs": {"facing": ["north", "south", "east", "west"], "half": ["top", "bottom"], "shape": ["straight"], "waterlogged": ["true", "false"]},
+                    "minecraft:glass_pane": {}, "minecraft:barrel": {"facing": ["north", "up"], "open": ["true", "false"]},
+                    "modernlife:oak_chair": {"facing": ["north", "south", "east", "west"]}, "modernlife:birch_sofa": {"facing": ["north", "south", "east", "west"]}}
+        look = block_lookalikes.Lookalikes(registry=registry)
+        # a shape in its material: a fir stair of another mod is a spruce stair, facing and half kept, an unknown property dropped
+        self.assertEqual(look.resolve("othermod:fir_stairs", {"facing": "east", "half": "top", "colour": "red"}), ("minecraft:spruce_stairs[facing=east,half=top]", "shape"))
+        # a rule of the public table: a storage mod's drawer is a barrel, a loot mod's chest a chest
+        self.assertEqual(look.resolve("storagedrawers:oak_full_drawers_1", {"facing": "north"})[0], "minecraft:barrel[facing=north]")
+        self.assertEqual(look.resolve("lootr:lootr_chest", {"facing": "south"})[0], "minecraft:chest[facing=south]")
+        # a gone block of a kept mod: the same thing in another material
+        self.assertEqual(look.resolve("modernlife:granite_sofa", {"facing": "west"}, kept_namespace=True), ("modernlife:birch_sofa[facing=west]", "sibling"))
+        # nothing near: air, said
+        self.assertEqual(look.resolve("othermod:flux_capacitor"), ("minecraft:air", "air"))
+        # without a registry nothing is guessed beyond the rules
+        self.assertEqual(block_lookalikes.Lookalikes().resolve("othermod:fir_stairs"), ("minecraft:air", "air"))
+
+    def test_a_port_with_a_registry_reports_what_became_what(self):
+        registry = {"minecraft:stone_bricks": {}, "minecraft:dirt_path": {}, "minecraft:polished_andesite": {}, "minecraft:cut_copper": {}, "minecraft:oak_planks": {},
+                    "minecraft:chest": {"facing": ["north", "south", "east", "west"], "type": ["single"], "waterlogged": ["true", "false"]},
+                    "modernlife:oak_chair": {"facing": ["north", "south", "east", "west"]}}
+        report = porter.port(self.source, self.dest, registry=registry)
+        self.assertTrue(report["loadable"], report["problems"])
+        self.assertEqual(report["replaced_blocks"]["otherfurniture:fancy_chair"], "minecraft:air")
+        self.assertEqual(report["counts"]["to_air"], 1)
 
 
 if __name__ == "__main__":

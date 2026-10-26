@@ -223,7 +223,8 @@
    "role": "food variety, cooking pot, cutting board (the survival set's one kitchen)",
    "sets": [
     "survival",
-    "legacy_travelers"
+    "legacy_travelers",
+    "furniture"
    ],
    "notes": "Farmer's Delight 1.3.4 (2026-08-29, release). MIT; no mandatory dependency. Chosen as the kitchen so that the pack has one: it overlaps [Let's Do] Farm & Charm (stove, cooking pot, roaster), so the 'farming' set is not combined with it by default. Core's recipes and orders are unaffected. Also in the legacy_travelers set so that a world saved with the October 18 survival set (D-085) can be opened once with exactly that set; see docs/technical/backpack-migration.md."
   },
@@ -390,6 +391,118 @@
     "securitycraft"
    ],
    "notes": "SecurityCraft v1.10.2.1 for Minecraft 1.20.1 (2026-06-28, release; upstream's 'recommended' for 1.20.1). MIT (mods.toml and the repository LICENSE; no separate asset licence found). Requires Forge 47.3.30+ and nothing else; required on client and server; no world generation. EXPERIMENTAL TRIAL ONLY (D-140): an opt-in set that no default launch includes. Core owns every device it installs through one system owner, removes every SecurityCraft recipe while the set is loaded (devices come only from Core), refuses a player's placement of any SecurityCraft block, the use of any SecurityCraft item but the camera monitor, the manual and keycards, and every SecurityCraft creature or projectile (sentries, mines, the I.M.S., security boats), and ships the server config in content/integrations/securitycraft. See docs/technical/securitycraft-trial.md."
+  },
+  {
+   "id": "mapperbase",
+   "slug": "mapper-base",
+   "version_id": "peVfNJIN",
+   "mod_id": "mapperbase",
+   "role": "library EmbellishCraft requires (7 steel blocks)",
+   "sets": [
+    "furniture"
+   ],
+   "notes": "MIT. Mapper Base 1.20.1-6.0.0.0, the only 1.20.1 Forge build; no world generation, no creatures. FURNITURE SET (ninth pass, D-192): opt-in, runtime-only, never committed; used to load private furnished buildings that name these blocks and to evaluate the mods."
+  },
+  {
+   "id": "embellishcraft",
+   "slug": "embellishcraft",
+   "version_id": "FRmEdR2L",
+   "mod_id": "embellishcraft",
+   "role": "decorative blocks and furniture (stones, tiles, corrugated metal, fancy beds, chairs, tables, lamps)",
+   "sets": [
+    "furniture"
+   ],
+   "requires": [
+    "mapperbase"
+   ],
+   "notes": "MIT. EmbellishCraft 1.20.1-7.0.0.0, the only 1.20.1 Forge build; requires Mapper Base. The 1114 block names of the 1.18.2 build are unchanged. It adds six decorative stone blobs to every overworld biome with no config switch; Core's own data turns them off (data/embellishcraft/forge/biome_modifier, forge:none) so the no-natural-ore package stays true. FURNITURE SET (ninth pass, D-192): opt-in, runtime-only, never committed; used to load private furnished buildings that name these blocks and to evaluate the mods."
+  },
+  {
+   "id": "pfm",
+   "slug": "paladins-furniture",
+   "version_id": "v8Wncly5",
+   "mod_id": "pfm",
+   "role": "functional furniture (kitchens, bathrooms, beds, chairs, sofas, lamps, fridges, stoves)",
+   "sets": [
+    "furniture"
+   ],
+   "notes": "Code LGPL-3.0, assets PolyForm Shield: private use with pinned downloads, never redistributed. 1.20-v1.5.0-minecraftforge; no dependency. Most of its blocks and their data are generated when the game first starts, so its registry is read from a running game (CityProbe --registry). Stoves cook, fridges and drawers store, sinks hold water like a cauldron. FURNITURE SET (ninth pass, D-192): opt-in, runtime-only, never committed; used to load private furnished buildings that name these blocks and to evaluate the mods."
+  },
+  {
+   "id": "another_furniture",
+   "slug": "another-furniture",
+   "version_id": "S9tNKT5R",
+   "mod_id": "another_furniture",
+   "role": "vanilla-styled furniture (chairs, tables, benches, shelves, drawers, shutters, curtains, flower boxes)",
+   "sets": [
+    "furniture"
+   ],
+   "notes": "Code MIT, resources All Rights Reserved: private use with pinned downloads, never redistributed. 3.0.4. Its mods.toml names Create as OPTIONAL (mandatory=false), a compat hook that stays unused: Create is never installed (D-080). 11 blocks of the 1.18.2 build are gone (planter boxes, two wallpapers) and are mapped by the porter. FURNITURE SET (ninth pass, D-192): opt-in, runtime-only, never committed; used to load private furnished buildings that name these blocks and to evaluate the mods."
+  },
+  {
+   "id": "buildersdelight",
+   "slug": "builders-delight",
+   "version_id": "o5hPmXN6",
+   "mod_id": "buildersdelight",
+   "role": "decorative variants (eight styles per wood, stone and glass, chairs, tables, lanterns)",
+   "sets": [
+    "furniture"
+   ],
+   "notes": "All Rights Reserved: private use with pinned downloads only. Modrinth version 1.2.1, file BuildersDelight-1.20.1-v.1.3.jar; no dependency, no world generation. One 1.18.2 block (calcite_8) is gone. FURNITURE SET (ninth pass, D-192): opt-in, runtime-only, never committed; used to load private furnished buildings that name these blocks and to evaluate the mods."
+  },
+  {
+   "id": "simplylight",
+   "slug": "simply-light",
+   "mod_id": "simplylight",
+   "role": "plain architectural lights (illuminants, panels, edge lights, lamp posts)",
+   "sets": [
+    "furniture"
+   ],
+   "notes": "MIT. CurseForge only (the Modrinth project of that name is an unrelated Fabric mod). 1.20.1-1.4.6-build.50, the newest 1.20.1 Forge file; no dependency, no block entities. Same 40 block names as 1.18.2. FURNITURE SET (ninth pass, D-192): opt-in, runtime-only, never committed; used to load private furnished buildings that name these blocks and to evaluate the mods.",
+   "curseforge": {
+    "project_id": 300331,
+    "file_id": 4832944,
+    "name": "Simply Light",
+    "version_number": "1.20.1-1.4.6-build.50",
+    "published": "2023-11-01",
+    "filename": "simplylight-1.20.1-1.4.6-build.50.jar",
+    "size": 555625,
+    "sha1": "cfd851ffd2c3b451a96a19207dc6e084c1dfec73",
+    "sha512": "88ded2ae3e27851790c74c441df8e4a62b70edb50c6e4a11ab8770cff6eb7831b1c31bb007b87c96c67df1e9e134aa34701b62d5a1d6bd68512f374e805621e6",
+    "license": "MIT",
+    "side": {
+     "client": "required",
+     "server": "required"
+    },
+    "hash_source": "computed from the CurseForge CDN download on 2026-10-26; CurseForge's own metadata was not read (its API needs a key), so the hashes are this project's, not the author's"
+   }
+  },
+  {
+   "id": "cfm",
+   "slug": "mrcrayfish-furniture-mod",
+   "mod_id": "cfm",
+   "role": "MrCrayfish's legacy furniture (cabinets, counters, sofas, chairs, tables, blinds) under its old cfm namespace",
+   "sets": [
+    "furniture"
+   ],
+   "notes": "GPL-3.0. CurseForge only. 7.0.0-pre36 is a BETA from 2023-06-22 and the last file of the legacy project: unmaintained. It is kept because the private buildings name cfm blocks and MrCrayfish's maintained Refurbished Furniture uses another namespace. Its mail boxes and post box send items across the world past every checkpoint, so Core refuses their use while the set is loaded (FurnitureGuard). 28 stone furniture blocks of the 1.18.2 build are gone and are mapped by the porter. FURNITURE SET (ninth pass, D-192): opt-in, runtime-only, never committed; used to load private furnished buildings that name these blocks and to evaluate the mods.",
+   "curseforge": {
+    "project_id": 55438,
+    "file_id": 4602980,
+    "name": "MrCrayfish's Furniture Mod (Legacy)",
+    "version_number": "7.0.0-pre36",
+    "published": "2023-06-22",
+    "filename": "cfm-forge-1.20.1-7.0.0-pre36.jar",
+    "size": 2613393,
+    "sha1": "66d0ac56f3f6f1efbd6ed7b3cb4a48824d0585c0",
+    "sha512": "b642a26812347b86940d5afdb3e70559a4fd7bfb8e4a62985db740919363b94f99b6c0624717a7fad227b4f0ebf20c299d939cf9a7dd7c21fcaae4155929adac",
+    "license": "GPL-3.0",
+    "side": {
+     "client": "required",
+     "server": "required"
+    },
+    "hash_source": "computed from the CurseForge CDN download on 2026-10-26; CurseForge's own metadata was not read (its API needs a key), so the hashes are this project's, not the author's"
+   }
   }
  ],
  "external": [

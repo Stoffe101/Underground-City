@@ -4,5 +4,5 @@
   "restore_active_minutes": 30,
   "max_cells_per_building": 512,
   "max_buildings": 256,
-  "furniture_namespaces": ["modernlife", "another_furniture", "cfm", "pfm", "embellishcraft", "simplylight"]
+  "furniture_namespaces": ["modernlife", "another_furniture", "cfm", "pfm", "embellishcraft", "simplylight", "buildersdelight", "mapperbase"]
 }

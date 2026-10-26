@@ -1,0 +1,23 @@
+modLoader="lowcodefml"
+loaderVersion="[47,)"
+license="All Rights Reserved"
+
+[[mods]]
+modId="underground_city_furniture"
+version="0.1.0"
+displayName="Underground City: Quiet Furniture"
+description="Keeps the furniture mods decorative: their natural stone generation is switched off."
+
+[[dependencies.underground_city_furniture]]
+modId="underground_city"
+mandatory=true
+versionRange="[0.1.0,)"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.underground_city_furniture]]
+modId="embellishcraft"
+mandatory=false
+versionRange="*"
+ordering="AFTER"
+side="BOTH"

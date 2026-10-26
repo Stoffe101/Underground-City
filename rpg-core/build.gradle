@@ -66,7 +66,7 @@ if (!devPackSets.isEmpty()) {
         chosen[id] = mod
     }
     manifest.mods.findAll { mod -> mod.sets.any { devPackSets.contains(it) } }.each { include(it.id) }
-    if (chosen.isEmpty()) throw new GradleException('No dev-pack mods in sets ' + devPackSets + ' (known sets: world, firearms, vehicles, boats, vintner, farming, qol, survival, legacy_travelers, performance, navigation, citytweaks, furnished, scarcity, securitycraft)')
+    if (chosen.isEmpty()) throw new GradleException('No dev-pack mods in sets ' + devPackSets + ' (known sets: world, firearms, vehicles, boats, vintner, farming, qol, survival, legacy_travelers, performance, navigation, citytweaks, furnished, scarcity, securitycraft, furniture)')
     devPackMods = chosen.values().toList()
 }
 
@@ -273,6 +273,17 @@ repositories {
         metadataSources { artifact() }
         content { includeGroup 'com.qshop' }
     }
+    // CurseForge-only dev-pack mods (the furniture set's Simply Light and legacy MrCrayfish furniture): the author's file on CurseForge's CDN,
+    // addressed by its file id (files/<id without its last three digits>/<last three digits>/<file name>) and verified by verifyDevPack
+    // (not exclusive: ForgeGradle's remapped copy of such a jar keeps its numeric group and lives in ForgeGradle's own repository)
+    if (devPackMods.any { it.project_id.startsWith('curseforge:') }) {
+        ivy {
+            url = uri('https://mediafilez.forgecdn.net/files')
+            patternLayout { artifact '[organisation]/[module]/[revision].[ext]' }
+            metadataSources { artifact() }
+            content { includeGroupByRegex '\\d+' }
+        }
+    }
     if (screeningMod != null || worldCandidate != null) {
         maven {
             url = uri('https://cursemaven.com')
@@ -300,6 +311,10 @@ if (!devPackMods.isEmpty()) {
 configurations { qshopOriginal; devPackOriginal; devPackFolder }
 devPackMods.each { mod ->
     def coordinate = "maven.modrinth:${mod.slug}:${mod.version_id}"
+    if (mod.project_id.startsWith('curseforge:')) {
+        def file = mod.version_id.substring('curseforge-file:'.length())
+        coordinate = "${file.substring(0, file.length() - 3)}:${file.substring(file.length() - 3).toInteger()}:${mod.filename.replaceAll(/\.jar$/, '')}"
+    }
     dependencies.add('devPackOriginal', coordinate)
     if (mod.placement == 'mods_folder') {
         // Immersive Vehicles content packs are plain asset jars that the engine finds by scanning the game directory's
@@ -387,6 +402,14 @@ def prepareDevRun = tasks.register('prepareDevRun') {
                 def target = new File(runDir, entry.relativePath.pathString)
                 if (!target.exists()) { target.parentFile.mkdirs(); entry.file.withInputStream { input -> target.withOutputStream { it << input } } }
             }
+        }
+        if (devPackSets.contains('furniture')) {
+            // the furniture set's quiet package (D-192): the furniture mods' natural stone generation switched off, in its own low-code mod
+            def quiet = file('../content/generated/furniture-quiet/pack')
+            if (!quiet.isDirectory()) throw new GradleException('content/generated/furniture-quiet is missing; run python scripts/emit_dev_world_pack.py --layout furniture')
+            def quietJar = new File(modsDir, 'underground-city-furniture-quiet.jar')
+            ant.zip(destfile: quietJar, basedir: quiet, whenempty: 'fail', level: 9)
+            wanted << quietJar.name
         }
         if (devPackSets.contains('survival')) {
             // Sophisticated Backpacks' policy (D-092): server defaults for a NEW world and the Core item switches. Existing files are never overwritten.

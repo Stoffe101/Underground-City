@@ -31,6 +31,8 @@ LAYOUTS = {
     "furnished": (None, ROOT / "content/generated/world-furnished"),
     # a new world with no natural ore (D-120): one biome modifier in its own low-code mod, opt-in like the furnished cities
     "scarcity": (None, ROOT / "content/generated/world-scarcity"),
+    # the furniture set's quiet package (D-192): EmbellishCraft's natural stone switched off, staged with the furniture set
+    "furniture": (None, ROOT / "content/generated/furniture-quiet"),
 }
 
 
@@ -44,6 +46,9 @@ def expected(data: dict, layout: str = "legacy") -> dict[str, bytes]:
     if layout == "scarcity":
         import scarcity_content
         return {f"pack/{name}": content for name, content in scarcity_content.package().items()}
+    if layout == "furniture":
+        import furniture_content
+        return {f"pack/{name}": content for name, content in furniture_content.package().items()}
     files = {f"pack/{name}": content for name, content in render(data, layout).items()}
     files.update({f"game-config/{name}": text.encode("utf-8") for name, text in config_files(data, layout).items()})
     return files

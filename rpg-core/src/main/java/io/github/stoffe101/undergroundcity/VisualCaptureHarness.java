@@ -534,6 +534,7 @@ public final class VisualCaptureHarness {
         cases.add(new Case("uc-counter-pub-sells",TerminalScreen.Page.IMPORTS,pubCounter(140),0));
         cases.add(Case.ledger("uc-ledger"));
         cases.add(Case.notices("uc-notices"));
+        cases.add(new Case("uc-notices-ninth",null,null,0,false,null,"notices-ninth"));
         for(String pose:new String[]{"nocrew","nocrew-invited","unregistered","unavailable","members","members-member","money","money-consent","money-shared","money-shared-nospend","home","home-notice","home-owned","home-find","home-find-many","home-solo","rules-permissions","rules-mode","rules-mode-active","rules-disband"}) {
             cases.add(Case.crew("uc-crew-"+pose,pose));
         }
@@ -598,10 +599,18 @@ public final class VisualCaptureHarness {
             // The game draws toasts after the screen, which is after the event this harness grabs its frame in, and they time out; so the plates are
             // drawn by hand, stacked, at a fixed moment. (In the game itself at most two of these fit on screen at once and the others wait their turn.)
             noticeCaptures.clear();
-            noticeCaptures.add(new UcToast(Notice.Kind.ORDER,"Order accepted","Bake the canteen bread order"));
-            noticeCaptures.add(new UcToast(Notice.Kind.DELIVERED,"Delivered","Bake the canteen bread order: +38 credits, +180 XP"));
-            noticeCaptures.add(new UcToast(Notice.Kind.HEAT,"Contraband seized","1 stack taken, 40 credits fined. Heat 2 in Valewood."));
-            noticeCaptures.add(new UcToast(Notice.Kind.LOOT,"A rare find","Worth more than the rest. Take it and go."));
+            if(capture.challenge.equals("notices-ninth")) {
+                // the ninth pass's notices (D-187, D-189), with the texts the server sends
+                noticeCaptures.add(new UcToast(Notice.Kind.INFO,"Welcome to Valewood","You are at the General Store."));
+                noticeCaptures.add(new UcToast(Notice.Kind.WARN,"Police searching","Officers have reached the scene and are looking for you. Stay out of their sight."));
+                noticeCaptures.add(new UcToast(Notice.Kind.WARN,"Police searching","Officers have reached the building and are looking round it. Stay out of their sight."));
+                noticeCaptures.add(new UcToast(Notice.Kind.INFO,"The police stood down","They were after you in Valewood when you left. Your heat there is still up."));
+            } else {
+                noticeCaptures.add(new UcToast(Notice.Kind.ORDER,"Order accepted","Bake the canteen bread order"));
+                noticeCaptures.add(new UcToast(Notice.Kind.DELIVERED,"Delivered","Bake the canteen bread order: +38 credits, +180 XP"));
+                noticeCaptures.add(new UcToast(Notice.Kind.HEAT,"Contraband seized","1 stack taken, 40 credits fined. Heat 2 in Valewood."));
+                noticeCaptures.add(new UcToast(Notice.Kind.LOOT,"A rare find","Worth more than the rest. Take it and go."));
+            }
         } else if(capture.challenge!=null && capture.challenge.startsWith("ledger-")) {
             mc.setScreen(new LedgerScreen(ledgerFixture()));
         } else if(capture.challenge!=null && capture.challenge.startsWith("dialogue-")) {
@@ -651,6 +660,7 @@ public final class VisualCaptureHarness {
             new PropertyIntel.Peek(d,PropertyIntel.Status.TARGET,"commercial","club","2 Quay Street","blackwater",4,1,1,true,false,18,3),
             new PropertyIntel.Peek(d,PropertyIntel.Status.NOT_A_TARGET,"public","office","9 Market Square","valewood",0,3,-1,false,false,8,18),
             new PropertyIntel.Peek(d,PropertyIntel.Status.TO_LET,"apartment","row flat","5 Founders Row","ironhaven",1,0,-1,false,false),
+            new PropertyIntel.Peek(d,PropertyIntel.Status.TO_LET,"residential","home","35 Church Lane","valewood",0,0,-1,false,false),
             new PropertyIntel.Peek(d,PropertyIntel.Status.TARGET,"residential","house","27 Orchard Hill","valewood",3,2,-1,true,false));
     }
     @SubscribeEvent public static void tick(TickEvent.RenderTickEvent event) {

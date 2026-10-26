@@ -4,7 +4,7 @@
 The private content the owner may use (docs/legal/private-content.md, D-116) is a 1.18.2 server pack's Lost Cities data. This tool reads a private
 pack folder (outside every git checkout), writes a converted pack to another folder outside every checkout, and writes a report of what it did. It
 never reads or writes the repository's tracked files, never downloads anything, and refuses a source or destination inside a git work tree. It has
-only been run on an INVENTED fixture (``fixture``); no private content has been ported by it.
+been run on an invented fixture (``fixture``) in CI; private content is ported by it only outside any checkout, and its output never enters the repository.
 
     port_lostcities_pack.py fixture <dir>                         an invented 1.18.2-style pack (nobody's content) for tests and CI
     port_lostcities_pack.py port <source-pack> <dest-pack> [--registry REG.json] [--mapping MAP.json] [--keep-mod NS ...] [--force]
@@ -15,7 +15,11 @@ What a port does to every palette entry (``data/<ns>/lostcities/palettes/*.json`
 * Every ``create:`` block is replaced (the project does not use Create, D-080): by the mapping, else by ``CREATE_FALLBACKS`` (structural blocks
   become their nearest vanilla look, machinery becomes air), and counted.
 * A block of a mod that is not kept (``--keep-mod``; vanilla and the furniture mod this pack already installs, ``modernlife``, are kept by default) is
-  replaced by the mapping or by ``minecraft:air`` and listed, so a building never names a block the game does not have (which empties its chunk).
+  replaced by the mapping, else by its nearest look (``block_lookalikes.py``: the public rules of
+  ``content/integrations/private-import/block-lookalikes.json``, then its shape in its material when a registry is given), else by ``minecraft:air``,
+  and listed, so a building never names a block the game does not have (which empties its chunk).
+* With a registry, a block of a kept mod that 1.20.1 no longer has becomes its sibling of the same mod (another wood, colour or number) or its
+  nearest look, and a property 1.20.1 does not accept is dropped from the spec; both are listed.
 * Spawners and mob markers are removed (a spawner becomes air, a palette entry's ``mob`` is dropped): this game has no ordinary hostile creatures.
 * A palette entry's ``loot`` table (``lostcities:chests/...`` and the like) is dropped: loot is this game's own (docs/technical/item-source-audit.md);
   the chest stays, empty. ``--loot-map`` is deliberately not offered: a port must not invent rewards.
@@ -37,6 +41,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import block_lookalikes  # noqa: E402
 import private_pack_tool as packs  # noqa: E402
 import validate_city_blocks as blocks  # noqa: E402
 from citykit import LOST_CITIES_RESERVED  # noqa: E402
@@ -72,9 +77,13 @@ class Porter:
         self.mapping = dict(mapping or {})
         self.keep = set(DEFAULT_KEEP) | set(keep or set())
         self.registry = registry
+        self.look = block_lookalikes.Lookalikes(registry=registry)
         self.counts = {"palettes": 0, "entries": 0, "renamed": 0, "create_replaced": 0, "foreign_replaced": 0, "spawners_removed": 0,
-                       "mob_markers_removed": 0, "loot_dropped": 0, "files_copied": 0, "worldstyles_to_review": 0}
+                       "mob_markers_removed": 0, "loot_dropped": 0, "files_copied": 0, "worldstyles_to_review": 0,
+                       "kept_but_gone": 0, "properties_dropped": 0, "by_rule": 0, "by_sibling": 0, "by_shape": 0, "to_air": 0}
         self.foreign: dict[str, str] = {}      # replaced block id -> what it became
+        self.gone: dict[str, str] = {}         # a kept mod's block that 1.20.1 no longer has -> what it became
+        self.dropped: dict[str, list[str]] = {}   # block id -> properties of the 1.18.2 spec that the 1.20.1 block does not accept
         self.problems: list[str] = []
         self.style_chars: dict[str, list[str]] = {}   # palette -> Lost Cities style characters it gives a block of its own (a warning: see LOST_CITIES_RESERVED)
 
@@ -98,13 +107,35 @@ class Porter:
                     self.foreign[name] = fallback
                     return fallback
         if ns not in self.keep:
+            # the nearest look of a block the game has (content/integrations/private-import/block-lookalikes.json), else air, said in the report
             self.counts["foreign_replaced"] += 1
-            self.foreign[name] = "minecraft:air"
-            return "minecraft:air"
+            result, how = self.look.resolve(name, props)
+            self.counts["to_air" if how == "air" or result == "minecraft:air" else "by_" + how] += 1
+            self.foreign[name] = result.split("[", 1)[0]
+            return result
+        if self.registry is not None and name not in self.registry and any(k.startswith(ns + ":") for k in self.registry):
+            # a kept mod's block that 1.20.1 no longer has: its sibling of the same mod, else the nearest look
+            self.counts["kept_but_gone"] += 1
+            result, how = self.look.resolve(name, props, kept_namespace=True)
+            self.counts["to_air" if how == "air" or result == "minecraft:air" else "by_" + how] += 1
+            self.gone[name] = result.split("[", 1)[0]
+            return result
+        if self.registry is not None and name in self.registry and props:
+            have = self.registry[name]
+            bad = sorted(k for k, v in props.items() if k not in have or v not in have[k])
+            if bad:
+                # a property 1.20.1 renamed or dropped: the block keeps the rest, and the report lists what went
+                self.counts["properties_dropped"] += len(bad)
+                self.dropped.setdefault(name, sorted(set(self.dropped.get(name, [])) | set(bad)))
+                props = {k: v for k, v in props.items() if k not in bad}
         return name + ("[" + ",".join(f"{k}={v}" for k, v in props.items()) + "]" if props else "")
 
     def check(self, spec: str, where: str) -> None:
         if self.registry is None or spec == "minecraft:air":
+            return
+        ns = namespace(blocks.parse_spec(spec)[0]) if blocks.SPEC.match(spec) else ""
+        if ns and ns != "minecraft" and not any(k.startswith(ns + ":") for k in self.registry):
+            self.problems.append(f"{where}: the registry has no block of the kept mod {ns} at all: dump it with that namespace (CityProbe --registry --namespaces)")
             return
         for problem in blocks.problems_of(spec, self.registry):
             self.problems.append(f"{where}: {problem}")
@@ -166,7 +197,8 @@ class Porter:
         return self.report()
 
     def report(self) -> dict:
-        return {"schema_version": 1, "counts": self.counts, "replaced_blocks": dict(sorted(self.foreign.items())), "registry_checked": self.registry is not None,
+        return {"schema_version": 1, "counts": self.counts, "replaced_blocks": dict(sorted(self.foreign.items())), "kept_mod_blocks_gone": dict(sorted(self.gone.items())),
+                "properties_dropped": dict(sorted(self.dropped.items())), "registry_checked": self.registry is not None,
                 "problems": self.problems, "loadable": not self.problems,
                 "style_characters_redefined": dict(sorted(self.style_chars.items())),
                 "note": "Counts and block ids only; no content. A port with problems must not be loaded: fix the mapping and port again."}

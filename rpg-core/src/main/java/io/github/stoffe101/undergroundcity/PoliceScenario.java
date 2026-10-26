@@ -110,7 +110,11 @@ final class PoliceScenario {
             F.victim = (UUID) pick[0];
             BlockPos cell = (BlockPos) pick[1];
             scripted(label + ": the player was put beside " + pick[2] + " at " + cell.toShortString() + " (" + pick[3] + " other people in sight)");
-            mc().getSingleplayerServer().execute(() -> { me().teleportTo(cell.getX() + 0.5, cell.getY(), cell.getZ() + 0.5); me().setDeltaMovement(Vec3.ZERO); });
+            mc().getSingleplayerServer().execute(() -> {
+                me().setGameMode(net.minecraft.world.level.GameType.SURVIVAL);
+                me().teleportTo(cell.getX() + 0.5, cell.getY(), cell.getZ() + 0.5);
+                me().setDeltaMovement(Vec3.ZERO);
+            });
             found[0] = true;
             return true;
         }, 40 * tries + 40);
@@ -213,7 +217,7 @@ final class PoliceScenario {
             if (found == null) { Playtest.fail("no Valewood house with an armed alarm near the middle"); return; }
             F.house = (CityBuildings.Building) found[0];
             F.door = (DoorWalk.Spot) found[1];
-            ThiefScenario.useBuilding(F.door, F.house, ThiefScenario.furniture(level(), F.house, F.door.door()));
+            ThiefScenario.useBuilding(F.door, F.house, server(() -> ThiefScenario.furniture(level(), F.house, F.door.door())));
             scripted("the house was chosen by the script: its alarm is armed (the game's own hash)");
         });
         ThiefScenario.stopIfFailed("an alarmed house");
@@ -222,15 +226,19 @@ final class PoliceScenario {
         Playtest.queue("the alarm, or a quiet entry", () -> Playtest.log("POLICE after the pick: " + server(PoliceResponse::status) + "; " + server(CrimeWatch::status)));
         // a window: a glass-break alarm rings for certain in a house whose alarm is armed
         Playtest.queue("a window in reach from inside", () -> {
-            F.window = server(() -> {
+            // the windows are read on the server; where a person could stand to reach one is asked from here (standBeside reads the server itself)
+            List<BlockPos> windows = server(() -> {
                 ServerLevel level = level();
                 long now = LockService.clock(level.getServer());
+                List<BlockPos> found = new ArrayList<>();
                 for (int y = F.house.streetY(); y < F.house.streetY() + 6; y++) for (int x = 0; x < 16; x++) for (int z = 0; z < 16; z++) {
                     BlockPos p = new BlockPos((F.house.chunkX() << 4) + x, y, (F.house.chunkZ() << 4) + z);
-                    if (BurglaryDamage.glass(level.getBlockState(p)) && BurglaryDamage.judge(me(), level, F.house, p, now) == BurglaryDamage.Verdict.ALLOWED && ThiefScenario.standBeside(p, F.house) != null) return p;
+                    if (BurglaryDamage.glass(level.getBlockState(p)) && BurglaryDamage.judge(me(), level, F.house, p, now) == BurglaryDamage.Verdict.ALLOWED) found.add(p.immutable());
                 }
-                return null;
+                return found;
             });
+            F.window = null;
+            for (BlockPos p : windows) if (ThiefScenario.standBeside(p, F.house) != null) { F.window = p; break; }
             Playtest.log("POLICE window " + (F.window == null ? "none in reach" : F.window.toShortString()));
             if (F.window != null) {
                 BlockPos at = ThiefScenario.standBeside(F.window, F.house);

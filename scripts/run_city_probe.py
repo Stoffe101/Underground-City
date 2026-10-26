@@ -34,6 +34,7 @@ def main() -> int:
     parser.add_argument("--stack", default="", help="resource files to look up in every data pack, comma separated, e.g. underground_city:lostcities/citystyles/valewood.json (logs which packs carry each, lowest priority first)")
     parser.add_argument("--registry", type=Path, default=None, help="write every registered block of --namespaces with its block state properties to this json file (what a palette is validated against)")
     parser.add_argument("--namespaces", default="modernlife,minecraft")
+    parser.add_argument("--private", type=Path, default=None, help="a private content folder OUTSIDE the checkout (docs/technical/private-content-workflow.md): its packs are loaded for this probe; write --output and --dump outside the checkout too")
     parser.add_argument("--timeout", type=int, default=3000)
     args = parser.parse_args()
     run_name = f"run-cityprobe-{args.name}"
@@ -54,6 +55,8 @@ def main() -> int:
         command.append(f"-PucCpExtra={args.extra}")
     if args.registry:
         command += [f"-PucCpRegistry={args.registry.resolve()}", f"-PucCpNamespaces={args.namespaces}"]
+    if args.private:
+        command.append(f"-PucPrivateContent={args.private.resolve()}")
     if args.stack:
         command.append(f"-PucCpStack={args.stack}")
     if args.dump:

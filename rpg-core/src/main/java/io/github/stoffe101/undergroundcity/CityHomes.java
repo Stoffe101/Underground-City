@@ -160,6 +160,25 @@ public final class CityHomes {
         return registered;
     }
 
+    /**
+     * What a vacant listing's locked street door tells a passer-by (D-188), or null when nothing of the building is to let and free: "To let: 12 Mill Lane." for a house, "Flats to let at 12 Mill
+     * Lane." for a block with a free flat. Nobody is let in by it; the Home page leases the place.
+     */
+    static String listing(ServerLevel level, CityBuildings.Building b) {
+        BuildingSpots.Plan plan = BuildingSpots.INSTANCE.forType(b.type());
+        if (plan == null || plan.units().isEmpty()) return null;
+        CrewLedger ledger = CrewService.ledger(level.getServer());
+        int free = 0;
+        for (int i = 0; i < plan.units().size(); i++) {
+            if (!toLet(level.getSeed(), b, i)) continue;
+            CrewLedger.Residence r = ledger == null ? null : ledger.residence(id(b, plan.units().get(i)));
+            if (r == null || !r.owned()) free++;
+        }
+        if (free == 0) return null;
+        String where = address(level.getSeed(), b);
+        return (plan.units().size() > 1 ? "Flats to let at " + where : "To let: " + where) + ". Locked until you hold the lease: press K, Home, Find a home.";
+    }
+
     // ------------------------------------------------------------------------------------------------ keys
 
     /** How many units of this building a player or a Crew holds: their homes, which no burglary of the building reaches (D-157 says so at the door). */

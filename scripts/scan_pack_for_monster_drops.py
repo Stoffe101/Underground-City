@@ -36,6 +36,7 @@ ALLOWED = [
     ("lost-cities-modern-tweaks", "minecraft:rotten_flesh", "one entry of the basic food-shop chest loot table (spoiled food as set dressing); no recipe or order needs it"),
     ("farmers-delight", "minecraft:shulker_shell", "a loot-modifier file that lets shulkers drop shells; shulkers do not exist in the simulation world and nothing needs the shell"),
     ("farmers-delight", "minecraft:trident", "a cutting-board tool entry (a trident lying flat), not an ingredient"),
+    ("paladins-furniture", "minecraft:rotten_flesh", "one recipe that turns rotten flesh into leather (the furniture set, D-192); leather comes from cattle and suppliers, and nothing the game offers needs it"),
     ("security-craft", "minecraft:nether_star", "the codebreaker and the level-3 reinforcer; the experimental trial set removes every SecurityCraft recipe while it is loaded (D-140)"),
 ]
 POLICY = ROOT / "rpg-core/src/main/resources/data/underground_city/backpack_policy/policy.json"
