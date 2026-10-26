@@ -134,6 +134,8 @@ public final class PoliceResponseGameTests {
     public static void anArmedAlarmRaisesOneResponseAndAnotherNoiseOnlyBringsItSooner(GameTestHelper helper) {
         try (Scene s = new Scene(helper, "uc_pol_a", ALARMED)) {
             long now = LockService.clock(s.level.getServer());
+            // officers of a neighbouring test may stand within reach (the qshop smoke's layout, October 26): this dispatch must add none, all in this one tick
+            var before = new java.util.HashSet<>(s.officers());
             PoliceResponse.noticed(s.thief, opened(s.thief, s.door, now));
             check(PoliceResponse.dispatches() == 1, "an armed alarm raised " + PoliceResponse.dispatches() + " responses");
             var d = PoliceResponse.dispatchAt(0);
@@ -142,7 +144,7 @@ public final class PoliceResponseGameTests {
             long first = d.arriveAt;
             PoliceResponse.noticed(s.thief, new BuildingBreachEvent(s.thief.getUUID(), s.door, "valewood", "test_alarmed", BuildingBreachEvent.Outcome.SNAPPED, now + 100, true, s.thief));
             check(PoliceResponse.dispatches() == 1 && PoliceResponse.dispatchAt(0).arriveAt <= first, "a second noise raised a second response or delayed the first");
-            check(s.officers().isEmpty(), "officers were there before anybody could have arrived");
+            check(before.containsAll(s.officers()), "officers were there before anybody could have arrived");
         }
         helper.succeed();
     }
