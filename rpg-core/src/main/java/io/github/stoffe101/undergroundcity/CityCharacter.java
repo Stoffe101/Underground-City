@@ -54,6 +54,8 @@ public final class CityCharacter extends SimpleJsonResourceReloadListener {
     private final Set<String> warned = java.util.concurrent.ConcurrentHashMap.newKeySet();
     /** Characteristics events that had to ask Lost Cities directly because its information was not resolved at level load (expected to stay 0 in the overworld). */
     static volatile long askedDirectly;
+    /** Lots of a flattened multi-chunk building that Lost Cities' single-lot rule leaves empty: a railway, its station or a highway runs through them (counted for the probes). */
+    static volatile long flattenedLeftEmpty;
 
     private CityCharacter() { super(new Gson(), "city_character"); }
 
@@ -128,8 +130,11 @@ public final class CityCharacter extends SimpleJsonResourceReloadListener {
     // ------------------------------------------------------------------------------------------------ the hook into Lost Cities (reflection)
 
     private static Method getCharacteristics, getChunkX, getChunkZ, getWorld, getLostInfo, getBuildings, getCityStyles, registryGet;
-    private static Field cityStyleId, cityStyle, buildingTypeId, buildingType, multiBuilding, multiBuildingId, multiPos, isCity;
+    private static Field cityStyleId, cityStyle, buildingTypeId, buildingType, multiBuilding, multiBuildingId, multiPos, isCity, couldHaveBuilding, cityLevel, plannedRoadType;
     private static Object singlePos;
+    /** Lost Cities' own rule for a single-chunk lot ({@code BuildingInfo.checkBuildingPossibility}) and what it needs; null when this Lost Cities does not have them (the check is then skipped). */
+    private static Method singleLotRule, profileOf, dimensionInfo;
+    private static java.lang.reflect.Constructor<?> chunkCoord;
 
     /** Registers the listener on the Forge bus when Lost Cities is installed. Safe to call when it is not (it does nothing). */
     public static void register(IEventBus forgeBus) {
@@ -157,6 +162,22 @@ public final class CityCharacter extends SimpleJsonResourceReloadListener {
             multiPos = characteristics.getField("multiPos");
             singlePos = Class.forName("mcjty.lostcities.api.MultiPos").getField("SINGLE").get(null);
             isCity = characteristics.getField("isCity");
+            couldHaveBuilding = characteristics.getField("couldHaveBuilding");
+            cityLevel = characteristics.getField("cityLevel");
+            plannedRoadType = characteristics.getField("plannedRoadType");
+            try {
+                Class<?> buildingInfo = Class.forName("mcjty.lostcities.worldgen.lost.BuildingInfo");
+                Class<?> coord = Class.forName("mcjty.lostcities.varia.ChunkCoord"), dimension = Class.forName("mcjty.lostcities.worldgen.IDimensionInfo");
+                singleLotRule = buildingInfo.getDeclaredMethod("checkBuildingPossibility", coord, dimension, Class.forName("mcjty.lostcities.config.LostCityProfile"),
+                    Class.forName("mcjty.lostcities.api.MultiPos"), int.class, plannedRoadType.getType(), java.util.Random.class);
+                singleLotRule.setAccessible(true);
+                profileOf = buildingInfo.getMethod("getProfile", coord, dimension);
+                dimensionInfo = Class.forName("mcjty.lostcities.LostCitiesImp$LostCityInformation").getMethod("dimensionInfo");
+                chunkCoord = coord.getConstructor(net.minecraft.resources.ResourceKey.class, int.class, int.class);
+            } catch (ReflectiveOperationException | RuntimeException error) {
+                singleLotRule = null;
+                LOGGER.warn("[UC-CITY] Lost Cities' single-lot rule was not found; a flattened multi-chunk building keeps every lot ({})", error.toString());
+            }
             @SuppressWarnings({"unchecked", "rawtypes"})
             Class<net.minecraftforge.eventbus.api.Event> eventClass = (Class) event;
             forgeBus.addListener(EventPriority.NORMAL, false, eventClass, INSTANCE::onCharacteristics);
@@ -191,6 +212,14 @@ public final class CityCharacter extends SimpleJsonResourceReloadListener {
             if (multiBuilding.get(ch) != null) {
                 if (character.keepMultiBuildings) return;
                 multiBuilding.set(ch, null); multiBuildingId.set(ch, null); multiPos.set(ch, singlePos);
+                // Lost Cities builds every lot of a multi-chunk section whatever runs through it, and draws its railways after the building: as a single lot the chunk gets
+                // Lost Cities' own single-lot rule, so a station or a railway at street level, or a highway, is not drawn through a house (measured: a surface station's
+                // rails and iron bars through a private house in Valewood, October 26)
+                if (!singleLotAllowed(level, information, chunkX, chunkZ, ch)) {
+                    couldHaveBuilding.set(ch, false);
+                    flattenedLeftEmpty++;
+                    return;
+                }
             } else if (buildingType.get(ch) == null) {
                 return;   // a street, a park or an empty lot: Lost Cities' choice stays
             }
@@ -205,6 +234,22 @@ public final class CityCharacter extends SimpleJsonResourceReloadListener {
     }
 
     private static Object INSTANCE_API() { return LostCitiesLink.implementation(); }
+
+    /** Whether Lost Cities would build a single-chunk lot here (its building-chance roll taken as passed: the lot was already built as part of a multi-chunk building). */
+    private static boolean singleLotAllowed(net.minecraft.server.level.ServerLevel level, Object information, int chunkX, int chunkZ, Object ch) {
+        if (singleLotRule == null) return true;
+        try {
+            Object provider = dimensionInfo.invoke(information);
+            Object coord = chunkCoord.newInstance(level.dimension(), chunkX, chunkZ);
+            Object profile = profileOf.invoke(null, coord, provider);
+            java.util.Random passed = new java.util.Random() { @Override public float nextFloat() { return 0f; } };
+            return (Boolean) singleLotRule.invoke(null, coord, provider, profile, singlePos, cityLevel.getInt(ch), plannedRoadType.get(ch), passed);
+        } catch (ReflectiveOperationException | RuntimeException error) {
+            LOGGER.warn("[UC-CITY] Lost Cities' single-lot rule failed once; the lot is kept ({})", error.toString());
+            singleLotRule = null;
+            return true;
+        }
+    }
 
     private void warnOnce(String key, String message) {
         if (warned.add(key)) LOGGER.warn("[UC-CITY] {}", message);
