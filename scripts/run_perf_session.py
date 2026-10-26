@@ -119,19 +119,26 @@ def table(report: dict) -> str:
 
 
 def waypoints(report: dict) -> dict:
-    """Xaero with two clients: what each player tracked minute by minute (each from their own Places book) and the most Core waypoints their minimap held; isolated means no tracked
-    destination of one player ever appeared in the other's client and neither minimap held more than one of Core's waypoints."""
+    """Xaero with two clients: what each player tracked minute by minute (each from their own Places book) and the most Core waypoints their minimap held. Isolated means that in no
+    minute did both clients show the same destination, neither minimap ever held more than one of Core's waypoints, and both tracked something. (The same building tracked by each at
+    different times is not a leak: the first full session counted it as one.)"""
     seen = {role: set() for role in NAMES}
     most = {role: -1 for role in NAMES}
-    for phase_report in report['phases']:
+    together = []
+    for number, phase_report in enumerate(report['phases'], 1):
+        by_minute = {}
         for role, client in phase_report.get('clients', {}).items():
             for minute in client.get('minutes', []):
-                if minute.get('tracking'): seen[role].add(minute['tracking'])
+                if minute.get('tracking'):
+                    seen[role].add(minute['tracking'])
+                    by_minute.setdefault(minute.get('minute'), {})[role] = minute['tracking']
                 most[role] = max(most[role], minute.get('xaero_core_waypoints', -1))
+        for minute, shown in sorted(by_minute.items(), key=lambda kv: kv[0] or 0):
+            if len(shown) == len(NAMES) and len(set(shown.values())) == 1:
+                together.append(f'phase {number} minute {minute}: {next(iter(shown.values()))}')
     roles = list(NAMES)
-    shared = seen[roles[0]] & seen[roles[1]]
-    return {'tracked': {r: sorted(seen[r]) for r in roles}, 'most_core_waypoints': most, 'shared_destinations': sorted(shared),
-            'isolated': not shared and all(m <= 1 for m in most.values()) and all(seen[r] for r in roles)}
+    return {'tracked': {r: sorted(seen[r]) for r in roles}, 'most_core_waypoints': most, 'same_minute_same_destination': together,
+            'isolated': not together and all(0 <= m <= 1 for m in most.values()) and all(seen[r] for r in roles)}
 
 
 def main() -> int:

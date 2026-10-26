@@ -40,7 +40,7 @@ public final class PerfSessionServer {
     static final int PHASE = Integer.getInteger("uc.journey.phase", 1);
     static final double MINUTES = Double.parseDouble(System.getProperty("uc.perf.minutes", "30"));
     static final String FARMER = "UC_Farmer", SMITH = "UC_Smith";
-    private static final int ARRIVAL_TICKS = 200, SAMPLE_EVERY = 600, AFTER_RESTART_TICKS = 2400, RAID_TICKS = 1200;
+    private static final int ARRIVAL_TICKS = 200, SAMPLE_EVERY = 600, AFTER_RESTART_TICKS = 2400, RAID_TICKS = 1200, TRACK_TICKS = 600;
 
     private record Segment(String name, String farmerCity, String smithCity, long dayTime) {}
     private static final List<Segment> PLAN = List.of(
@@ -80,6 +80,8 @@ public final class PerfSessionServer {
             if (++sinceSample >= SAMPLE_EVERY) { sinceSample = 0; sample(server); }
             if (PHASE == 1) {
                 if (ticksInSegment == ARRIVAL_TICKS) enter(PLAN.get(index).name());
+                // half a minute in, when the chunks round each player have been sent: at the teleport itself none were loaded and nobody had anything to track (first full session)
+                if (ticksInSegment == TRACK_TICKS) trackPlaces(server.overworld(), farmer, smith);
                 // a minute in, once the chunks round the players have been generated and their plans recorded: the bonded store is taken in Ironhaven and delivered in Blackwater
                 if (ticksInSegment == RAID_TICKS && index == 0) raidTake(server, farmer, smith);
                 if (ticksInSegment == RAID_TICKS && PLAN.get(index).farmerCity().equals("blackwater")) raidDeliver(server, farmer, smith);
@@ -142,7 +144,6 @@ public final class PerfSessionServer {
         enter(current);
         System.out.println("[UC-PERF] SCRIPTED: segment " + s.name() + " begins: " + FARMER + " teleported to " + a.toShortString() + " (" + s.farmerCity() + "), " + SMITH + " to " + bb.toShortString()
             + " (" + s.smithCity() + "), the time set to " + s.dayTime() + "; " + segmentTicks / 1200.0 + " minutes");
-        trackPlaces(level, farmer, smith);
     }
 
     // ------------------------------------------------------------------------------------------------ the bonded store with two players (eighth pass)
