@@ -106,6 +106,7 @@ public final class CityProbe {
         report.addProperty("generator", level.getChunkSource().getGenerator().getClass().getName());
         report.addProperty("seconds", (System.nanoTime() - started) / 1_000_000_000L);
         report.addProperty("flattened_lots_left_empty", CityCharacter.flattenedLeftEmpty);
+        report.addProperty("railway_lots_left_empty", CityCharacter.railwayLotsLeftEmpty);
         JsonObject summary = new JsonObject();
         totals.forEach((key, counts) -> { JsonObject o = new JsonObject(); o.addProperty("chunks", counts[0]); o.addProperty("with_vegetation_on_structure", counts[1]); o.addProperty("with_tree_in_city", counts[2]); summary.add(key, o); });
         report.add("summary", summary);

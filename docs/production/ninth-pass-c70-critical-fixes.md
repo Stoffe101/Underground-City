@@ -167,7 +167,73 @@ The archive was validated and extracted outside the repository, and the original
 7. **A commercial building through a real client** (building run 8, `RESULT pass`, 4 steps). A restaurant: class storefront, tier 4, a shop plan with 39 spots, two workers. Its street door opened to a customer at noon. At midnight it was locked, and the real lock screen picked it for 100 Thief XP. Photographs were inspected privately.
 8. **A first choice was rejected.** It was an open-fronted restaurant with no street door. The wiring tool had guessed its kitchen door as the street door, so its doors stayed unlocked (runs 5 to 7). The tool no longer guesses, and the guard now takes a plan's street door when a canopy hides the sky.
 
-Not done: a burglary-damage or police run inside a C70 building, any wider use of the C70 buildings, and a comparison with the original 1.18.2 look. No existing Underground City building was replaced; the C70 buildings sit beside ours in one ring of one city of a private test world.
+At that point no Underground City building had been replaced: the C70 buildings stood beside ours in one ring of one city of a private test world. The owner then asked for C70's buildings first (below). Not done: a comparison with the original 1.18.2 look.
+
+### The owner's preference: C70 first (D-193)
+
+The owner's second message asked for C70's buildings instead of ours. That is now the private pack's selection, wired by `private_wiring.py`. Counts only are given here, as the buildings are private.
+
+| City | C70 share of the picks in its rings (centre, middle, edge) | Ours kept beside them |
+| --- | --- | --- |
+| Valewood | 55%, 75%, 89% | the General Store (arrival), the bakery, the villa |
+| Ironhaven | 75%, 75%, 67% | the flats, the workshop, the warehouse, the pub |
+| Blackwater | 78%, 74%, 67% | the Corner Store (arrival), the club, the apartments, the lofts |
+
+* Our generic houses and offices are left out.
+* 64 buildings are wired: 16 families with their rotations.
+* 36 of them are listed to let or buy.
+* Each building belongs to one city. A family that two cities use is split between them by its rotations.
+
+The wiring tool gained:
+* flats with a unit per storey that has a bed;
+* trade premises;
+* street doors under a canopy within the guard's covered step;
+* `public_weights`.
+
+Left out of the selection:
+* buildings with no door at all (two warehouses, a car factory, a lab, a bunker, a petrol station): the guard could not lock them;
+* the multi-chunk buildings.
+
+## 7. Overlaps and missing blocks (owner request)
+
+**Tool:** `scripts/building_audit.py`. It renders each generated building from its Lost Cities data for the floors the game chose, and compares it cell by cell with a `CityProbe` dump of the same chunk. It counts:
+* blocks missing;
+* blocks foreign to the building;
+* blocks above its roof.
+
+It is unit-tested on invented fixtures. Its reports give counts and block ids only, so they can be shared for a private pack.
+
+What it found, and what was done:
+
+| Finding | Where | Cause | Fix |
+| --- | --- | --- | --- |
+| Lost Cities draws its own retaining walls, streets, park ground, corridors and bridge supports around a building with the building's furniture | every private palette that took a style character: all ten characters, in 1,018 palettes | a building's palette is merged over the city style's in its chunk | the porter renames the style characters a private palette takes (993 parts renamed); a part that relies on the style's own meaning keeps it. Unit-tested |
+| A railway ramp through a house: rails, iron bars and a stone-brick bed across its ground floor, its walls gone | one Valewood chunk of 225 probed, a C70 house | Lost Cities lets a building share a chunk with a railway one storey below the street, and draws the railway after the building | Core leaves such a lot empty (a railway within a storey of the street). A multi-chunk building flattened into single lots also gets Lost Cities' own single-lot rule (surface stations, highways) |
+| Carpets on attic beams missing | most C70 houses (8 to 10 a house, 0.2% of their blocks); in 4 of 66 houses none are missing | not found. Lost Cities has no code that touches carpets; the support under them is there | **open** (known issue) |
+| Mushrooms on the paving round one General Store | one chunk | the game's own vegetation | none needed |
+
+Our own furnished buildings in the same Valewood probe: the bakery (14 copies) and the villa (3) match their data exactly; the General Store (13) has only the mushrooms outside.
+
+## 8. The islands generated ahead of play (D-194)
+
+`/uc admin pregen` and `-PucPregen=islands`. Details: [test-worlds.md](../technical/test-worlds.md). Islands mode is every city, then the rest of the islands' land, then the roads and bridges: 13,461 chunks with a 32-block margin.
+
+**Pregen run 1** (a real client, a new public world, `world,furnished,scarcity`):
+* It generated 10,073 chunks in about 36 minutes, at 4.8 to 6.9 chunks a second on four cores, with none let go unfinished.
+* The process was then killed by the system for memory. Two probe servers of mine were still running beside it, each holding 3.4 to 3.8 GB after its work was done.
+
+The run found two faults, both fixed:
+
+1. **"Failed to store chunk" (4 times).**
+   * A chunk was unloaded as soon as it was done, then loaded again a moment later as the next ring's neighbour.
+   * In 1.20.1 that load hands back the very data still waiting to be written, and the write then fails.
+   * One chunk could not be read afterwards and was generated again.
+   * Pre-generation now keeps a finished chunk loaded for half a minute (at most 384 at once).
+2. **A dedicated server that never left after `stop`.**
+   * Paladin's Furniture 1.5.0 starts a file writer whose loop never ends, on a thread that keeps the process open.
+   * That is why the probe servers held their memory.
+   * Core now names such threads in the log 20 seconds after a dedicated server has stopped and saved, and the process leaves. This never applies to a client leaving a world.
+   * Measured on the next probe: "1 thread(s) of other mods keep the process open: pool-10-thread-1 (com.unlikepaladin.pfm.runtime.PFMProvider...). Leaving." The build then finished normally.
 
 ## Runs in progress
 

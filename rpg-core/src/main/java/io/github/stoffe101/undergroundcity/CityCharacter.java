@@ -56,6 +56,8 @@ public final class CityCharacter extends SimpleJsonResourceReloadListener {
     static volatile long askedDirectly;
     /** Lots of a flattened multi-chunk building that Lost Cities' single-lot rule leaves empty: a railway, its station or a highway runs through them (counted for the probes). */
     static volatile long flattenedLeftEmpty;
+    /** Lots left empty because Lost Cities' railway reaches up into them: a ramp from the surface or a surface station (counted for the probes). */
+    static volatile long railwayLotsLeftEmpty;
     /** The chunks whose multi-chunk building was flattened into a single lot, for the probes (bounded). */
     static final java.util.Set<Long> FLATTENED = java.util.concurrent.ConcurrentHashMap.newKeySet();
 
@@ -220,8 +222,7 @@ public final class CityCharacter extends SimpleJsonResourceReloadListener {
                 multiBuilding.set(ch, null); multiBuildingId.set(ch, null); multiPos.set(ch, singlePos);
                 if (FLATTENED.size() < 65536) FLATTENED.add(net.minecraft.world.level.ChunkPos.asLong(chunkX, chunkZ));
                 // Lost Cities builds every lot of a multi-chunk section whatever runs through it, and draws its railways after the building: as a single lot the chunk gets
-                // Lost Cities' own single-lot rule, so a station or a railway at street level, or a highway, is not drawn through a house (measured: a surface station's
-                // rails and iron bars through a private house in Valewood, October 26)
+                // Lost Cities' own single-lot rule, so a surface station or a highway is not drawn through a house
                 if (!singleLotAllowed(level, information, chunkX, chunkZ, ch)) {
                     couldHaveBuilding.set(ch, false);
                     flattenedLeftEmpty++;
@@ -229,6 +230,13 @@ public final class CityCharacter extends SimpleJsonResourceReloadListener {
                 }
             } else if (buildingType.get(ch) == null) {
                 return;   // a street, a park or an empty lot: Lost Cities' choice stays
+            }
+            // Lost Cities lets a building share a chunk with a railway one storey below the street (a ramp going down from the surface) and draws the railway after the
+            // building, so the ramp cuts through its ground floor (measured: rails, iron bars and a stone-brick bed through a house in Valewood, October 26): such a lot stays empty
+            if (couldHaveBuilding.getBoolean(ch) && railwayReachesLot(level, information, chunkX, chunkZ, cityLevel.getInt(ch))) {
+                couldHaveBuilding.set(ch, false);
+                railwayLotsLeftEmpty++;
+                return;
             }
             ResourceLocation chosen = choose(character, placement.get().fraction, world.getSeed(), chunkX, chunkZ);
             Object building = registryGet.invoke(getBuildings.invoke(information), level, chosen);
@@ -253,6 +261,19 @@ public final class CityCharacter extends SimpleJsonResourceReloadListener {
             return railType.invoke(info) + "@" + railLevel.invoke(info);
         } catch (ReflectiveOperationException | RuntimeException error) {
             return "?";
+        }
+    }
+
+    /** Whether Lost Cities' railway in this chunk comes within a storey of its street: its parts would cut through a building's ground floor or cellar. */
+    private static boolean railwayReachesLot(net.minecraft.server.level.ServerLevel level, Object information, int chunkX, int chunkZ, int streetLevel) {
+        if (railChunkType == null) return false;
+        try {
+            Object provider = dimensionInfo.invoke(information);
+            Object coord = chunkCoord.newInstance(level.dimension(), chunkX, chunkZ);
+            Object info = railChunkType.invoke(null, coord, provider, profileOf.invoke(null, coord, provider));
+            return !"NONE".equals(String.valueOf(railType.invoke(info))) && (Integer) railLevel.invoke(info) >= streetLevel - 1;
+        } catch (ReflectiveOperationException | RuntimeException error) {
+            return false;
         }
     }
 
