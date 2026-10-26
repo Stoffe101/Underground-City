@@ -187,11 +187,11 @@ final class TechScenario {
         Playtest.queue("before the job", () -> {
             F.balanceBefore = server(() -> QShopEconomy.balance(me()));
             F.xpBefore = server(() -> CitizenState.get(me().server).find(me().getUUID()).map(CitizenState.Citizen::careerXp).orElse(0));
-            Playtest.keyDown("left.shift");
+            Playtest.keyDown("shift");
         });
         Playtest.wait("crouch", 10);
         useBlock("the panel, crouched, with the toolkit", () -> F.panel.pos(), () -> mc().screen instanceof PatchScreen, item("repair_kit"));
-        Playtest.queue("stand up", () -> Playtest.keyUp("left.shift"));
+        Playtest.queue("stand up", () -> Playtest.keyUp("shift"));
         Playtest.wait("draw", 10);
         shot("q2-patch");
         Playtest.queue("the grid's answer (read from the server)", () -> {
@@ -230,12 +230,12 @@ final class TechScenario {
         });
         shot("q3-done");
         Playtest.queue("the same panel again", () -> F.balanceBefore = server(() -> QShopEconomy.balance(me())));
-        Playtest.queue("crouch again", () -> Playtest.keyDown("left.shift"));
+        Playtest.queue("crouch again", () -> Playtest.keyDown("shift"));
         Playtest.wait("crouch", 10);
         useBlock("the panel again, crouched", () -> F.panel.pos(), () -> true, item("repair_kit"));
         Playtest.wait("the server answers", 40);
         Playtest.queue("nothing twice", () -> {
-            Playtest.keyUp("left.shift");
+            Playtest.keyUp("shift");
             boolean session = server(() -> TechWork.sessionOf(me().getUUID()) != null);
             long paid = Math.round(server(() -> QShopEconomy.balance(me())) - F.balanceBefore);
             if (session || paid != 0 || mc().screen instanceof PatchScreen) Playtest.fail("the finished job could be worked or paid again");
@@ -451,6 +451,7 @@ final class TechScenario {
     /** Right-clicks block {@code pos} with the hotbar slot that holds {@code tool} (none: whatever is in hand) until {@code open}. */
     private static void useBlock(String label, Supplier<BlockPos> pos, java.util.function.BooleanSupplier open, Item tool) {
         final int[] t = {0};
+        final boolean[] face = {false};
         Playtest.queue("right-click " + label, () -> {
             t[0] = 0;
             Playtest.focusWindow();
@@ -473,8 +474,17 @@ final class TechScenario {
             if (open.getAsBoolean()) return true;
             BlockPos at = pos.get();
             if (at == null) return true;
-            look(Vec3.atCenterOf(at));
+            // off the block after two seconds (crouched, the eye is lower and the panel sits at head height beside the door): its side, from then on, as in JourneyScenario.use
+            if (t[0] >= 40 && !aimedAt(at)) face[0] = true;
+            look(face[0] ? JourneyScenario.nearFace(at) : Vec3.atCenterOf(at));
             if (++t[0] % 24 == 12 && aimedAt(at)) Playtest.click(3);
+            if (t[0] % 100 == 99) {
+                var h = mc().hitResult;
+                String on = h instanceof net.minecraft.world.phys.BlockHitResult bh && h.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK
+                    ? mc().level.getBlockState(bh.getBlockPos()).getBlock().getDescriptionId() + " at " + bh.getBlockPos().toShortString() : String.valueOf(h == null ? "nothing" : h.getType());
+                Playtest.log("SCENARIO " + label + ": aiming at " + at.toShortString() + ", the crosshair is on " + on + ", crouching " + mc().player.isCrouching()
+                    + ", holding " + mc().player.getMainHandItem().getItem() + (mc().screen != null ? ", screen " + mc().screen.getClass().getSimpleName() : ""));
+            }
             return false;
         }, 400);
     }
