@@ -476,7 +476,20 @@ public final class PopulationService {
     static boolean inLine(ServerLevel level, ServerPlayer player, BlockPos feet) {
         Vec3 eye = player.getEyePosition(), head = Vec3.atBottomCenterOf(feet).add(0, 1.6, 0);
         if (eye.distanceToSqr(head) > 48 * 48) return false;
-        return level.clip(new ClipContext(eye, head, ClipContext.Block.VISUAL, ClipContext.Fluid.NONE, player)).getType() == HitResult.Type.MISS;
+        return rayLoaded(level, eye, head) && level.clip(new ClipContext(eye, head, ClipContext.Block.VISUAL, ClipContext.Fluid.NONE, player)).getType() == HitResult.Type.MISS;
+    }
+
+    /**
+     * Whether every chunk a sight line from {@code eye} to {@code head} crosses is loaded now. A ray into a chunk still to be generated made the server generate it on the spot (a 4.7 s
+     * tick on arriving in Ironhaven, the eighth pass's short performance session); a person cannot see into a chunk that does not exist yet either, so such a line counts as blocked.
+     */
+    static boolean rayLoaded(ServerLevel level, Vec3 eye, Vec3 head) {
+        double length = eye.distanceTo(head);
+        for (double t = 0; ; t += 8) {
+            Vec3 p = length < 1e-6 ? eye : eye.lerp(head, Math.min(1, t / length));
+            if (level.getChunkSource().getChunkNow(net.minecraft.util.Mth.floor(p.x) >> 4, net.minecraft.util.Mth.floor(p.z) >> 4) == null) return false;
+            if (t >= length) return true;
+        }
     }
 
     /**
@@ -757,6 +770,7 @@ public final class PopulationService {
             if (d > within) continue;
             if (d < 3) return true;
             if (p.getLookAngle().dot(to.scale(1 / d)) < 0.35) continue;   // behind them, or off to the side
+            if (!rayLoaded(level, eye, head)) continue;
             var hit = level.clip(new ClipContext(eye, head, ClipContext.Block.VISUAL, ClipContext.Fluid.NONE, p));
             if (hit.getType() == HitResult.Type.MISS) return true;
         }
