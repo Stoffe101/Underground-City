@@ -97,6 +97,40 @@ Officers chase a thief only while one of them can see them (32 blocks, line of s
 * A house **to let** (D-127) is a vacant listing: its door belongs to the home's own guard, and it is neither cased nor searched.
 * An **iron** street door (the club, the office, the warehouse, the workshop, the Ironhaven flats) opens by no hand; where the guard lets a person through one, Core opens or shuts it as a click would a wooden door (D-151). Before, a tenant of an Ironhaven flat could not get in, and a thief was shut in the club once its door closed.
 
+## Breaking things, and the city putting them back (D-190)
+
+**The permit.** Picking a lock gives the thief a permit for that building for 5 minutes of active play (`data/underground_city/burglary_damage/rules.json`).
+
+**What may be broken.** With the permit the thief may break:
+* furniture and decoration (`underground_city:burglary_breakable`, and the furniture mods' blocks that are not whole cubes);
+* windows;
+* light inner walls (`underground_city:burglary_breakable_walls`, and a furniture mod's whole cube).
+
+**What never breaks.** These hold whatever the permit:
+* the shell, meaning the floors and ceilings and any block beside the outside air (open sky, or open sky a few steps out under eaves);
+* doors, trapdoors and gates;
+* anything that holds items;
+* Core's blocks and anything tagged `underground_city:burglary_protected`;
+* a player's home.
+
+**How a break works.** A break drops nothing. A bed or a door takes its other half with it, and a torch goes with the wall it stood on. Every broken cell is recorded with its block entity: `underground_city_burglary_damage`, kept across restarts.
+
+**Putting it back.** After 30 minutes of active play (`restore_active_minutes`; an operator may change it with `-Duc.burglary.restoreMinutes=N`), the city puts the building back. The building must be loaded and unoccupied, though after twice the wait it is restored even if occupied. No chunk is loaded for it.
+
+When it restores a building:
+* it never overwrites a cell somebody has filled;
+* it never touches a player's home;
+* it shuts and relocks the building's picked doors.
+
+Nothing a thief carried away is copied, because nothing breaking a block dropped exists to be copied.
+
+**Who notices.** A broken window trips an armed alarm. Neighbours may hear damage, and officers on the beat may see it ([police response](police-response.md)).
+
+Evidence:
+* `BurglaryDamageGameTests`.
+* Wreck run 5 through a real client, 10 steps: a window, a bed and an inner wall broken; the outer wall held; the record kept across a save, quit and reopen; the house put back and its door relocked.
+* Wreck runs 2 and 3 broke a plank wall the game then took for an inner wall. It was the outer wall, under the eaves. That shell test is fixed.
+
 ## What it does not do
 
 * Nobody has played it. The real-client scenarios are scripts with logged shortcuts.

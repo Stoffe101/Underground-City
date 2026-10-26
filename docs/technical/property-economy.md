@@ -95,6 +95,10 @@ A move-out or a sale is **refused while the home still holds stored things** (co
 
 The shipped ladder is coherent; rent and purchase are different things; the motel welcome is free once per person; the city factor scales the price; **the clock runs only while a resident is online and once for two residents**; unpaid rent escalates to lapsed and **never takes a person's things**; a payment goes to what is owed first and is capped at the prepay limit; Crew-bank autopay is atomic and stops when the bank is short; wallet autopay uses the money protocol, including a crash; move-out returns the deposit less what is owed and **refuses while items remain**; sell-back never returns more than was paid; Crew homes follow the Crew's rules and nothing is confiscated; disbanding moves a tenancy with its debts and deposit; a schema-1 save migrates without a new charge; a tenancy and its clock **survive a restart**; a wallet rent **crash recovers to rented-or-free at three stages and both wallet outcomes, never both**; a trade skill cheapens upgrades and the receipt records what was paid; containers, facilities and water are enforced by the guard; and a **randomised run of 240 steps on four homes and three people with crashes injected, three seeds, checks after every step that the credits in wallets, the Crew bank, escrow and the sink are exactly what they were**.
 
+## Vacant listings are locked (D-188, ninth pass)
+
+A city home to let is a listing, not an open door. Its door stays locked to everybody until somebody holds the lease. The door, and the card under the crosshair, say "To let" and point to the Home page (K → Home → Find a home), where the listing is read and leased. Leasing gives the tenant, and their Crew by its permissions, the door without a pick. A lockpick remains the illicit way in. See [building protection](building-protection.md).
+
 ## Limits, said plainly
 
 * Two of the ten categories exist only as prices: the larger apartment and the premium residence. Six of the eight built ones need the furnished package (D-117) or a new archipelago world (the roadside places).

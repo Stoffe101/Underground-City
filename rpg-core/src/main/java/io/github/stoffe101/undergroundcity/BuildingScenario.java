@@ -88,14 +88,25 @@ final class BuildingScenario {
         Playtest.queue("click it", () -> Playtest.click(3));
         Playtest.wait("the answer", 20);
         ThiefScenario.shot("door");
-        Playtest.queue("the door stays shut", () -> {
+        Playtest.queue("the door stays shut (or, a shop in its hours, opens)", () -> {
             boolean open = server(() -> DoorWalk.doorOpen(level(), F.door));
+            boolean shop = server(() -> BuildingGuard.openToPublic(level(), F.building, null));
             String said = Playtest.heardSince(F.heardMark, "ock");
             String toLet = Playtest.heardSince(F.heardMark, "To let");
-            Playtest.log("BUILDING the street door: " + (open ? "OPEN" : "shut") + "; told " + (said != null ? said : toLet));
-            if (open) Playtest.fail("the building's street door opened for a stranger");
+            Playtest.log("BUILDING the street door: " + (open ? "OPEN" : "shut") + (shop ? " (open to the public now)" : "") + "; told " + (said != null ? said : toLet));
+            if (shop && !open) Playtest.fail("a shop's street door in its hours did not open");
+            else if (shop) pass("3 a shop's street door opens to a customer in its hours");
+            else if (open) Playtest.fail("the building's street door opened for a stranger");
             else pass("3 the street door stays shut to a stranger (\"" + (said != null ? said : toLet) + "\")");
         });
+        // a shop is tried again after closing: the night locks it, and a thief picks it
+        Playtest.queue("after closing, for a shop", () -> {
+            if (!server(() -> BuildingGuard.openToPublic(level(), F.building, null))) return;
+            Playtest.command("time set 18000");
+            scripted("the time was set to midnight: the shop is shut");
+            server(() -> { var st = level().getBlockState(F.door.door()); if (st.getBlock() instanceof net.minecraft.world.level.block.DoorBlock d && st.getValue(net.minecraft.world.level.block.DoorBlock.OPEN)) d.setOpen(null, level(), st, F.door.door(), false); return null; });
+        });
+        Playtest.wait("the keeper goes home", 200);
         ThiefScenario.prepareAtDoor();
         ThiefScenario.pickTheDoor();
         Playtest.queue("summary", ThiefScenario::summary);

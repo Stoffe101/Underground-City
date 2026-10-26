@@ -78,6 +78,18 @@ At 3440x1440 GUI 2 the bar is 680 device pixels wide inside a 3440-pixel window,
 
 **Not shown:** a person's hand on a mouse (the pointer in the scripted run moves along a smooth path), a real graphics card's frame rate (the run is software-rendered, where several ticks pass between frames), and the lock at 1920x1080 GUI 3 in this scenario (the static poses were captured at four viewports earlier).
 
+## Doors follow who has the right to them (D-188, ninth pass)
+
+The owner's playtest found two problems: an available rental let anybody in, and flats inside blocks stood open. Since D-188 the rules are these.
+
+* **A home to let is locked to everybody.** Its street door and its card say "To let" and how to lease it from the Home page. A glance at the door registers the listing, so the card is right before anybody has tried the handle.
+* **A lease, a Crew's permissions or ownership open it without a pick.** A lockpick works the lock as on any locked door.
+* **A household's own flat or room door in a block is locked to everybody else, at any hour.** It says "Locked. Somebody lives here: <flat>", a lockpick works it, and it always opens from inside.
+* **A shop's street door opens in its business hours and is locked outside them.** Staff doors stay locked to the public side. Daytime never makes a home public.
+* **A street door can be named by the plan.** If neither side of a door has sky within a covered step (a deep canopy or a furnished terrace), a building's plan may name its street door as its first `door` spot, whose facing is the way out (`BuildingGuard.planStreetDoor`). The furnished buildings' first door spots are their street doors already. The private wiring tool names one only when a ground-floor door has open sky on one side, and otherwise names none.
+
+Evidence: doors runs 2 and 3 through a real client (8 steps each), `ResidenceGameTests` and `BuildingSecurityGameTests`.
+
 ## What it does not do (read this before telling anyone it works)
 
 * **Police respond only to an observed break-in** (an armed alarm or a witness in sight; [alarms, witnesses, police and stolen goods](police-response.md), D-122). A break-in nobody observed raises heat and posts the event and nothing more. The response is tested headlessly with fake players and has not been seen in a real street; say "an alarm or a witness can bring officers", never "the police stop burglars".

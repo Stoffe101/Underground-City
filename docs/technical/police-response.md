@@ -92,6 +92,29 @@ A fence is a person of a furnished building's back office who keeps the night: f
 * **Crash-safe.** The sale is one prepared journal record (`WorkOrderLedger` kind SALE: the goods' removal, the credits, the fence's budget and the heat) written before anything changes and settled once on recovery.
 * **Not shown:** a person selling to a fence in a generated city at night; whether the rates feel worth the risk.
 
+## Witnessed crimes in the street (D-189, ninth pass)
+
+The owner's playtest found that striking a person in front of the police had no consequence. Since D-189 `CrimeWatch` notices the crimes below and reports them only through somebody who saw or heard them.
+
+| Crime | Who notices | What follows |
+| --- | --- | --- |
+| **Assault** on a townsperson, a resident, a shopkeeper or a district citizen | An officer on the beat who sees it. A passer-by in sight (20 blocks, line of sight). With nobody else about, the person struck reports it 60% of the time, later. | **First minor blow in an officer's sight:** a warning. **A second:** a pursuit. **A passer-by:** officers come after the city's report time. **The victim:** officers come after twice that. Blows in quick succession are one incident and one call. |
+| **Assault on an officer** | That officer | A pursuit at once (a serious offence) |
+| **A lock worked in sight** | A person in the street who can see the door | A share of the city's witness chance on each check |
+| **An intruder inside** | The household that lives there (by day 16 blocks, at night when close), or a shopkeeper after closing | A call |
+| **A search heard, or a sensor tripped** | The household at home; a wired building's motion sensor (more likely the better the building) | A call |
+| **Damage** ([burglary damage](thief-and-burglary.md#breaking-things-and-the-city-putting-them-back-d-190)) | An officer who sees it; an armed alarm (a broken window for certain); neighbours within 16 blocks | A call or a pursuit |
+
+How the response works:
+
+* **Offences are data:** each city's `offences` in its law file (`data/underground_city/city_laws/<city>.json`). Each has a charge, a fine, heat, a report time, and whether a first offence is only a warning. Ironhaven fines more and reports faster; Blackwater lets a first trespass off with a warning.
+* **Officers arrive from out of the player's sight.** They are dispatched to street cells the player cannot see, open the doors on their path, and arrest only the wanted person.
+* **The arrest** charges the offence, fines it from Q Shop's wallet, adds its heat and takes stolen and forbidden goods.
+* **Logging out while wanted** ends the response; on return the player gets the notice "The police stood down".
+* **Restrained feedback:** one chat line from the witness, and the notices "Police" and "Police searching".
+
+Evidence: `CrimeGameTests`, and police run 3 through a real client (8 steps; see [the ninth-pass report](../production/ninth-pass-c70-critical-fixes.md#3-policing-and-witnesses-d-189)).
+
 ## Alarm panels
 
 **D-128. Implemented; GameTested (`AlarmPanelGameTests`, 8 cases); not seen in a real client yet.**

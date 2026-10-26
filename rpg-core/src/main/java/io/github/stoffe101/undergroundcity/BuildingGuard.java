@@ -157,7 +157,29 @@ public final class BuildingGuard {
     /** True when the door's front or back side leads outside (the street, a roof): the side a visitor stands on. A door with both sides under a roof, well in, is an inside door. */
     static boolean exterior(ServerLevel level, BlockPos lower, BlockState state) {
         Direction facing = state.getValue(DoorBlock.FACING);
-        return leadsOut(level, lower, facing) || leadsOut(level, lower, facing.getOpposite());
+        return leadsOut(level, lower, facing) || leadsOut(level, lower, facing.getOpposite()) || planStreetDoor(level, lower).isPresent();
+    }
+
+    /**
+     * The side a building's plan says its street door opens onto, when this is that door (the plan's first {@code door} spot, its facing the way out), or empty. A door under a deep canopy or
+     * onto a furnished terrace has no sky within a covered step on either side: a private building's plan (D-192, measured on a ported restaurant whose every door the guard took for an inside
+     * door) names it instead.
+     */
+    static Optional<Direction> planStreetDoor(ServerLevel level, BlockPos lower) {
+        Optional<CityBuildings.Building> found = CityBuildings.INSTANCE.at(level, lower);
+        if (found.isEmpty()) return Optional.empty();
+        CityBuildings.Building b = found.get();
+        BuildingSpots.Plan plan = BuildingSpots.INSTANCE.forType(b.type());
+        if (plan == null) return Optional.empty();
+        for (BuildingSpots.Spot spot : plan.spots()) {
+            if (!spot.kind().equals("door")) continue;
+            if (b.chunkX() * 16 + spot.x() == lower.getX() && b.streetY() + spot.y() == lower.getY() && b.chunkZ() * 16 + spot.z() == lower.getZ()) {
+                Direction out = Direction.byName(spot.facing());
+                return out != null && out.getAxis().isHorizontal() ? Optional.of(out) : Optional.empty();
+            }
+            return Optional.empty();   // only the first door spot is the street door
+        }
+        return Optional.empty();
     }
 
     /** How far beyond a door a covered step may reach before the open sky: the eaves or a porch roof over a front door (D-150). */
@@ -198,6 +220,15 @@ public final class BuildingGuard {
         Direction facing = state.getValue(DoorBlock.FACING);
         boolean frontSky = leadsOut(level, lower, facing), backSky = leadsOut(level, lower, facing.getOpposite());
         if (frontSky && backSky) return true;
+        if (!frontSky && !backSky) {
+            // no sky on either side: the plan's street door says which way is out (planStreetDoor)
+            Optional<Direction> out = planStreetDoor(level, lower);
+            if (out.isEmpty()) return false;
+            Vec3 centre = Vec3.atCenterOf(lower);
+            // the leaf lies on the edge opposite the door's facing: the plane between the sides is measured from there, as in inFront
+            double plane = out.get() == facing ? -LEAF_PLANE : LEAF_PLANE;
+            return (at.x - centre.x) * out.get().getStepX() + (at.z - centre.z) * out.get().getStepZ() > plane;
+        }
         return inFront(lower, state, at) ? frontSky : backSky;
     }
 

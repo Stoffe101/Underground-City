@@ -131,10 +131,17 @@ final class WreckScenario {
             mc().getSingleplayerServer().execute(() -> { me().teleportTo(at.getX() + 0.5, at.getY(), at.getZ() + 0.5); me().setDeltaMovement(Vec3.ZERO); });
         }, () -> i >= F.broken.size() || stand[0] == null || mc().player.blockPosition().equals(stand[0]), 200);
         Playtest.wait("settle", 10);
-        Playtest.queue("an empty hand, then hold the attack button on thing " + (i + 1) + " until it breaks", () -> { t[0] = 0; Playtest.focusWindow(); Playtest.tap("8"); }, () -> {
+        final int[] all = {0};
+        Playtest.queue("an empty hand, then hold the attack button on thing " + (i + 1) + " until it breaks", () -> { t[0] = 0; all[0] = 0; Playtest.focusWindow(); Playtest.tap("8"); }, () -> {
             if (i >= F.broken.size() || stand[0] == null) return true;
             BlockPos b = F.broken.get(i);
             if (server(() -> level().getBlockState(b).isAir())) { Playtest.mouseButton(1, false); return true; }
+            if (++all[0] == 580) {
+                // about to give up: what the crosshair rests on, and what the game makes of breaking the block now
+                String verdict = server(() -> BurglaryDamage.judge(me(), level(), ThiefScenario.house(), b, LockService.clock(level().getServer())).name());
+                Playtest.log("WRECK thing " + (i + 1) + " still stands after " + all[0] + " ticks: the crosshair rests on " + mc().hitResult.getType()
+                    + (mc().hitResult instanceof BlockHitResult h ? " " + h.getBlockPos().toShortString() : "") + "; the game's verdict on breaking it now: " + verdict + "; last heard " + Playtest.heardSince(Math.max(0, Playtest.heardCount() - 1), ""));
+            }
             look(Vec3.atCenterOf(b));
             t[0]++;
             boolean onIt = mc().hitResult instanceof BlockHitResult hit && hit.getType() == HitResult.Type.BLOCK && hit.getBlockPos().equals(b);

@@ -336,8 +336,10 @@ final class ThiefScenario {
             Direction facing = state.getValue(DoorBlock.FACING);
             boolean front = BuildingGuard.leadsOut(level, pos, facing), back = BuildingGuard.leadsOut(level, pos, facing.getOpposite());
             doors.append(String.format(Locale.ROOT, " [%s facing %s, front leads out %s, back leads out %s, %s]", pos.toShortString(), facing, front, back, BuildingGuard.exterior(level, pos, state) ? "exterior (locked)" : "inside door (not locked)"));
-            if (best != null || !(front || back)) continue;
-            Direction out = front && !back ? facing : !front && back ? facing.getOpposite()
+            // a street door with no sky on either side (a deep canopy): the building's plan names its way out (BuildingGuard.planStreetDoor)
+            java.util.Optional<Direction> planned = front || back ? java.util.Optional.empty() : BuildingGuard.planStreetDoor(level, pos);
+            if (best != null || !(front || back || planned.isPresent())) continue;
+            Direction out = planned.isPresent() ? planned.get() : front && !back ? facing : !front && back ? facing.getOpposite()
                 : (pos.relative(facing).distSqr(new BlockPos(b.chunkX() * 16 + 8, y, b.chunkZ() * 16 + 8)) > pos.relative(facing.getOpposite()).distSqr(new BlockPos(b.chunkX() * 16 + 8, y, b.chunkZ() * 16 + 8)) ? facing : facing.getOpposite());
             boolean clear = true;
             for (int k = 1; k <= 2 && clear; k++) {

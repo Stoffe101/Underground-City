@@ -67,17 +67,24 @@ UI fixed after reading the run's photographs: the "Police searching" notice for 
 
 ## 4. Burglary damage and restoration (D-190)
 
-**Implemented, and verified through a real client:** wreck run 2, `RESULT pass`, 9 steps.
+**Implemented, and verified through a real client:** wreck run 5, `RESULT pass`, 10 steps.
 
-* A new citizen picked a Valewood house's deadbolt on the real lock screen. Nobody saw it, and nobody called the police.
-* They broke a glass pane, a bed and a dark oak plank inner wall with real held clicks. Each was gone, nothing dropped, and 4 cells were recorded: the bed is two.
-* They searched a piece of furniture.
+* A new citizen picked a Valewood house's deadbolt on the real lock screen.
+* They broke a glass pane, a bed and a birch-plank inner wall with real held clicks. Each was gone, nothing dropped, and 4 cells were recorded: the bed is two.
+* A held attack on the outer wall left it standing.
+* They searched a piece of furniture and carried 1 stolen unit.
 * The world was saved, quit and reopened. The record of 4 cells was still there.
-* After the wait (shortened to one minute with `-PucPtRestoreminutes=1`; the game's own wait is 30 minutes of play), the house was put back. All 4 cells were exactly as before, the door was shut, and the loot carried was unchanged.
+* After the wait (shortened to one minute with `-PucPtRestoreminutes=1`; the game's own wait is 30 minutes of play), the city put back all 4 cells exactly. It shut and relocked the picked door ("1 door(s) shut and locked again"). The loot carried was unchanged.
 
-Fixed during the pass: the scenario's search for things to break called the server from the server thread, deadlocking for 20 seconds (wreck run 1). The police scenario had the same nested call.
+Faults the earlier runs found, all fixed:
 
-Not yet shown through a client: the outer wall holding. Run 2 found no wall block in reach; the search is widened.
+| Run | Fault | Fix |
+| --- | --- | --- |
+| 1 | The scenario called the server from the server thread and deadlocked for 20 s. The police scenario had the same nested call. | Both now make the call outside the server thread |
+| 2 and 3 | A dark-oak plank wall was broken as an "inner wall". It was the outer wall under the eaves: the shell test asked for open sky right beside the wall | Air outside a wall now counts as outside when open sky is a few steps further out (a GameTest covers it) |
+| 3 | The picked door stood open after the house was put back | A building put back now has its picked doors shut and relocked (a GameTest covers it) |
+
+Run 4 failed once to break the upstairs bed and did not do so again. That step now logs, before it gives up, what the crosshair rests on and the game's verdict.
 
 ## 5. Operator commands (D-191)
 
@@ -125,7 +132,42 @@ Not yet shown through a client: the outer wall holding. Run 2 found no wall bloc
   * adds the building to a city's ring;
   * adds its security class and its listing.
 
-The private buildings' port, generation, screenshots and integration: see "Runs in progress".
+### The owner's private buildings (C70), tested in the cloud
+
+The archive was validated and extracted outside the repository, and the original is kept untouched. Everything below was produced and kept in private folders: the ported pack, the selections, the registry dump, the probes and the photographs. None of it is committed, uploaded or shown on a public page.
+
+1. **The registry.** A disposable dedicated server booted the furniture set with Core, Lost Cities and the furnished cities. First start took 106 s. It dumped the real registry: 6,105 blocks, of which Paladin's Furniture has 1,809, EmbellishCraft 1,114 and Builder's Delight 903.
+2. **The port**, from 1.18.2 to 1.20.1. All 1,174 palettes and 30,373 entries were checked against that registry, and the report says loadable.
+
+   | Block | Count |
+   | --- | --- |
+   | Create blocks replaced by their look or by air | 3,063 |
+   | Blocks of mods not loaded, total | 6,817 |
+   | of those, a rule's look-alike | 3,416 |
+   | of those, their shape in their material | 2,764 |
+   | of those, air (machinery, cables, cars, rocks, bodies) | 806 |
+   | Blocks a kept mod dropped by 1.20.1, given a sibling or a look | 373 |
+
+   Also removed: 1 spawner, 27 creature markers and 1,339 loot tables. The chests stay, empty.
+3. **Two faults found in a generated world, and fixed in the porter:**
+   * The pack's world style named another mod's biomes and stopped the world from loading at all. World styles are now left out; ours chooses the cities.
+   * The houses generated as a bare ground storey: the 1.18.2 floor counts never reach Lost Cities 7's roof parts. All 218 buildings' floors are now explicit, and 150 were raised. The next probe showed the roof.
+4. **Wiring, inside the private pack** (`private_wiring.py`). One house was put in Valewood's middle ring, then one restaurant in its centre, with:
+   * plans derived from their own parts;
+   * a security class;
+   * the house's listing;
+   * the restaurant's counter, selling the pub's goods.
+5. **A city probe in a new disposable world.** The private pack loaded (2,594 files), and its Valewood building file sat above the furnished package's. Seven copies of the house generated in 121 Valewood chunks, with no Lost Cities error.
+6. **The house through a real client** (building runs 3 and 4, `RESULT pass`, 4 steps each). The game knows it:
+   * class house, tier 3, locked;
+   * a plan with 14 spots and one home;
+   * a household of two.
+
+   Its street door stayed locked to a stranger ("Locked. A lockpick would open it."). The real lock screen picked it for 75 Thief XP. In run 3 a resident at home saw the stranger and called the police. Photographs of the outside, from above and of every floor were inspected privately: the house is whole, with its pitched roof, its garden and its furnished rooms.
+7. **A commercial building through a real client** (building run 8, `RESULT pass`, 4 steps). A restaurant: class storefront, tier 4, a shop plan with 39 spots, two workers. Its street door opened to a customer at noon. At midnight it was locked, and the real lock screen picked it for 100 Thief XP. Photographs were inspected privately.
+8. **A first choice was rejected.** It was an open-fronted restaurant with no street door. The wiring tool had guessed its kitchen door as the street door, so its doors stayed unlocked (runs 5 to 7). The tool no longer guesses, and the guard now takes a plan's street door when a canopy hides the sky.
+
+Not done: a burglary-damage or police run inside a C70 building, any wider use of the C70 buildings, and a comparison with the original 1.18.2 look. No existing Underground City building was replaced; the C70 buildings sit beside ours in one ring of one city of a private test world.
 
 ## Runs in progress
 

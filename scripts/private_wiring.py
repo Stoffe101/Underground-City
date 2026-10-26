@@ -145,15 +145,28 @@ def plan(pack: Pack, building_id: str, city: str, use: str, title: str = "") -> 
     street = [s for s in doors if s["y"] < FLOOR and any((s["x"] + k * step[s["facing"]][0], s["z"] + k * step[s["facing"]][1]) not in roofed for k in (1, -1))]
     if not street:
         # under an awning or a porch both sides of a door are roofed: the ground-floor door nearest the edge of the plot is then taken, and the report says so
-        ground = [s for s in doors if s["y"] < FLOOR]
-        if ground:
-            street = [min(ground, key=lambda d: min(d["x"], 15 - d["x"], d["z"], 15 - d["z"]))]
-            missing.append("street door guessed: no ground-floor door has open sky on one side")
-        else:
-            missing.append("no street door on the ground floor")
+        # no guess: the guard locks a plan's first door as the street door (BuildingGuard.planStreetDoor), and a guessed one was a kitchen door in an open-fronted
+        # restaurant (measured). The plan then names no door at all and the guard keeps to its own sky rule for this building's doors
+        spots[:] = [sp for sp in spots if sp["kind"] != "door"]
+        missing.append("no street door: no ground-floor door has open sky on one side, so the plan names none")
     beds = [s for s in spots if s["kind"] == "bed"]
     if use in ("house", "flats") and not beds:
         missing.append("no bed")
+    if street:
+        # the street door's facing is the way out (BuildingGuard.planStreetDoor reads it): the side that reaches unroofed ground soonest, else the nearer edge of the plot
+        d = street[0]
+        opposite = {"north": "south", "south": "north", "east": "west", "west": "east"}
+        def reach(side: str) -> tuple[int, int]:
+            dx, dz = step[side]
+            for k in range(1, 16):
+                x, z = d["x"] + k * dx, d["z"] + k * dz
+                if not (0 <= x <= 15 and 0 <= z <= 15) or (x, z) not in roofed:
+                    return k, 0
+            return 16, 0
+        sides = [d["facing"], opposite[d["facing"]]]
+        edge = {"north": d["z"], "south": 15 - d["z"], "west": d["x"], "east": 15 - d["x"]}
+        d["facing"] = min(sides, key=lambda side: (reach(side)[0], edge[side]))
+        d["note"] = "street door (the way out is its facing)"
     ordered = street[:1] + [s for s in spots if s is not (street[0] if street else None)]
     doc = {"schema_version": 1, "id": building_id.split(":", 1)[1], "city": city, "use": use,
            "floors": {"min": int(building.get("minfloors", 1)), "max": int(building.get("maxfloors", building.get("minfloors", 1)))},
