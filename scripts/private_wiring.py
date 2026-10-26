@@ -8,7 +8,8 @@ rule and a city listing. This tool writes those, generically, from a selection f
 
     {"schema_version": 1, "buildings": [
        {"id": "<ns>:<building>", "city": "valewood", "zone": 1, "weight": 2, "use": "house", "class": "house", "title": "House",
-        "listing": {"share_percent": 30, "category": "small_house", "rent": 60, "deposit": 120, "buy_price": 3200, "upkeep": 10}}]}
+        "listing": {"share_percent": 30, "category": "small_house", "rent": 60, "deposit": 120, "buy_price": 3200, "upkeep": 10}}],
+     "public_weights": {"underground_city:vw_house_a": 0}}
 
     private_wiring.py plan <ported pack> <ns>:<building>             what the plan of one building would be (counts only)
     private_wiring.py wire <ported pack> <selection.json> [--public <generated furnished pack>]
@@ -19,7 +20,8 @@ What ``wire`` writes into the ported pack, never into the repository:
   beds, stoves, seats, counters) with one unit (the inside of the building) for a house. The parts are rendered as Lost Cities would for the
   smallest number of floors; a spot's block is found through the part's own palette, its reference palette and the building's.
 * ``data/underground_city/city_character/<city>.json``: the public furnished city's file (``content/generated/world-furnished``) with the chosen
-  buildings added to the chosen ring. A private pack sits above the furnished package, so its file replaces the public one for that city.
+  buildings added to the chosen ring, and the public buildings at the weights ``public_weights`` gives (0 leaves one out). A private pack sits
+  above the furnished package, so its file replaces the public one for that city.
 * ``data/underground_city/building_security/<pack id>.json``: a rule per chosen building that names its security class (classes merge).
 * ``data/underground_city/properties/<pack id>.json``: city listings for buildings the selection lets.
 * ``data/underground_city/shop_counters/<pack id>-<building>.json``: for a shop with a ``counter`` (an outlet of the game's and a title), its keeper
@@ -41,6 +43,7 @@ import private_pack_tool as packs  # noqa: E402
 ROOT = Path(__file__).resolve().parents[1]
 PUBLIC = ROOT / "content/generated/world-furnished/pack"
 FLOOR = 6
+COVERED_STEP = 3   # BuildingGuard.COVERED_STEP
 SPEC = re.compile(r"^(?P<name>[a-z0-9_.-]+:[a-z0-9_./-]+)(?:\[(?P<props>[^\]]*)\])?$")
 # what a block is for a household, by words in its id (furniture mods name their blocks plainly)
 KINDS = [("bed", re.compile(r"_bed$|:bed$|fancy_bed")), ("stove", re.compile(r"furnace|smoker|stove|oven|cooking_pot|range_hood|microwave")),
@@ -139,10 +142,29 @@ def plan(pack: Pack, building_id: str, city: str, use: str, title: str = "") -> 
     top_y = max([y for x, y, z in cells if (x, z) in roofed] or [1])
     # the inside of the building: the roofed footprint one block in from its outer walls, from the first floor up to under the roof
     box = [min(xs) + 1, 1, min(zs) + 1, max(xs) - 1, max(1, top_y - 1), max(zs) - 1]
-    # the street door: a ground-floor door with open sky on one side of it
+    # the street door: a ground-floor door with open sky on one side of it, else one whose open floor reaches the sky within the guard's covered step
+    # (BuildingGuard.COVERED_STEP: the eaves, a porch or a canopy over an entrance), nearest the sky first
     step = {"north": (0, -1), "south": (0, 1), "east": (1, 0), "west": (-1, 0)}
     doors = [s for s in spots if s["kind"] == "door"]
-    street = [s for s in doors if s["y"] < FLOOR and any((s["x"] + k * step[s["facing"]][0], s["z"] + k * step[s["facing"]][1]) not in roofed for k in (1, -1))]
+    solid = set(cells)
+
+    def to_sky(s: dict) -> int:
+        best = COVERED_STEP + 1
+        for sign in (1, -1):
+            dx, dz = step[s["facing"]][0] * sign, step[s["facing"]][1] * sign
+            for k in range(1, COVERED_STEP + 1):
+                x, z = s["x"] + k * dx, s["z"] + k * dz
+                if (x, z) not in roofed or not (0 <= x <= 15 and 0 <= z <= 15):
+                    best = min(best, k)
+                    break
+                if k > 1 and any((x - dx, s["y"] + dy, z - dz) in solid for dy in (0, 1)):
+                    break   # a wall or furniture in the way: the guard's search ends there too
+        return best
+
+    ground = [s for s in doors if s["y"] < FLOOR]
+    street = sorted([s for s in ground if to_sky(s) <= COVERED_STEP], key=to_sky)
+    if street and to_sky(street[0]) > 1:
+        missing.append(f"street door under a covered step ({to_sky(street[0])} blocks to the sky)")
     if not street:
         # under an awning or a porch both sides of a door are roofed: the ground-floor door nearest the edge of the plot is then taken, and the report says so
         # no guess: the guard locks a plan's first door as the street door (BuildingGuard.planStreetDoor), and a guessed one was a kitchen door in an open-fronted
@@ -173,6 +195,15 @@ def plan(pack: Pack, building_id: str, city: str, use: str, title: str = "") -> 
            "spots": ordered[:48], "notes": "Derived by scripts/private_wiring.py from the building's own parts (private pack)."}
     if use == "house":
         doc["units"] = [{"id": "house", "title": title or "House", "box": box}]
+    elif use in ("workshop", "warehouse"):
+        doc["units"] = [{"id": "premises", "title": title or use.capitalize(), "box": box}]
+    elif use == "flats":
+        # a flat per storey that has a bed, the storey's roofed box from its floor to under its ceiling (HouseholdPlan houses a household per unit)
+        storeys = sorted({b["y"] // FLOOR for b in spots if b["kind"] == "bed"})
+        doc["units"] = [{"id": f"flat_{n}", "title": f"Flat {n}", "box": [box[0], f * FLOOR + 1, box[2], box[3], f * FLOOR + FLOOR - 2, box[5]]}
+                        for n, f in enumerate(storeys, start=1)]
+        if not storeys:
+            missing.append("no flat: no storey has a bed")
     return doc, missing
 
 
@@ -183,10 +214,18 @@ def wire(pack_root: Path, selection: dict, public: Path) -> dict:
     pack = Pack(pack_root)
     report = {"buildings": {}, "cities": {}, "listings": 0}
     rules, listings, by_city = [], [], {}
+    first: dict[str, dict] = {}
     for chosen in selection["buildings"]:
         bid, city, use = chosen["id"], chosen["city"], chosen["use"]
         if use not in USES:
             raise SystemExit(f"{bid}: unknown use {use}")
+        if bid in first:
+            # the same building in another ring of its city: one more pick there, and the plan, rule, counter and listing of its first entry
+            if first[bid]["city"] != city:
+                raise SystemExit(f"{bid} is chosen for {first[bid]['city']} and {city}: a building belongs to one city (its counter serves one city, it has one listing)")
+            by_city.setdefault(city, []).append(chosen)
+            continue
+        first[bid] = chosen
         doc, missing = plan(pack, bid, city, use, chosen.get("title", ""))
         ns, path = bid.split(":", 1)
         target = pack_root / "data" / ns / "city_buildings" / f"{path}.json"
@@ -210,16 +249,29 @@ def wire(pack_root: Path, selection: dict, public: Path) -> dict:
                              "facilities": chosen["listing"].get("facilities", ["bed", "storage", "plumbing"]),
                              "summary": chosen["listing"].get("summary", "A furnished home.")})
         by_city.setdefault(city, []).append(chosen)
-    for city, chosen in by_city.items():
+    # the public buildings a selection keeps, and how often: {"<ns>:<building>": weight}, 0 to leave one out of every ring of its city (the owner prefers
+    # the private buildings, D-193); the public buildings it does not name keep their weights
+    public_weights = {k: float(v) for k, v in selection.get("public_weights", {}).items()}
+    for city in sorted(set(by_city) | set(selection.get("cities", []))):
+        chosen = by_city.get(city, [])
         source = public / "data/underground_city/city_character" / f"{city}.json"
         character = json.loads(source.read_text(encoding="utf-8"))
+        for zone in character["zones"]:
+            kept = []
+            for pick in zone["buildings"]:
+                weight = public_weights.get(pick["id"], pick["weight"])
+                if weight > 0:
+                    kept.append({**pick, "weight": weight})
+            zone["buildings"] = kept
         for c in chosen:
             zone = character["zones"][min(int(c.get("zone", 0)), len(character["zones"]) - 1)]
             zone["buildings"].append({"id": c["id"], "weight": c.get("weight", 1)})
         out = pack_root / "data/underground_city/city_character" / f"{city}.json"
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(json.dumps(character, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-        report["cities"][city] = len(chosen)
+        if any(not zone["buildings"] for zone in character["zones"]):
+            raise SystemExit(f"{city}: a ring has no building left (public_weights left out every public building and the selection adds none there)")
+        report["cities"][city] = {"chosen": len(chosen), "rings": [{"picks": len(z["buildings"]), "private_share": round(sum(b["weight"] for b in z["buildings"] if not b["id"].startswith("underground_city:")) / sum(b["weight"] for b in z["buildings"]), 2)} for z in character["zones"]]}
     if rules:
         out = pack_root / "data/underground_city/building_security" / f"{pack_id}.json"
         out.parent.mkdir(parents=True, exist_ok=True)

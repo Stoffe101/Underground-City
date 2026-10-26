@@ -80,6 +80,16 @@ public final class IslandField implements DensityFunction {
 
     @Override public int hashCode() { return hash; }
 
+    IslandPlan plan() { return plan; }
+
+    /** The island plan a world's terrain is made from, or empty for a world without one (the legacy layout, a vanilla world). */
+    static java.util.Optional<IslandPlan> of(net.minecraft.server.level.ServerLevel level) {
+        if (!(level.getChunkSource().getGenerator() instanceof net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator noise)) return java.util.Optional.empty();
+        IslandPlan[] found = {null};
+        noise.generatorSettings().value().noiseRouter().continents().mapAll(f -> { if (found[0] == null && f instanceof IslandField i) found[0] = i.plan; return f; });
+        return java.util.Optional.ofNullable(found[0]);
+    }
+
     @Override public double compute(FunctionContext context) {
         double base = input == null ? 0.0 : input.compute(context);
         return evaluate(channel, plan, base, context.blockX(), context.blockZ());

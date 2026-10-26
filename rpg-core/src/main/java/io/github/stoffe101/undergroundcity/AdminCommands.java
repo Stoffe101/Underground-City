@@ -72,6 +72,15 @@ public final class AdminCommands {
                     .then(Commands.literal("set").then(Commands.argument("amount", IntegerArgumentType.integer(0, ProgressionRules.MAX_XP)).executes(ctx -> generalXp(ctx, true))))))));
         admin.then(Commands.literal("relocate").then(player().then(Commands.argument("city", StringArgumentType.word())
             .suggests((ctx, b) -> SharedSuggestionProvider.suggest(new TreeSet<>(ProgressionRules.CITIES), b)).executes(AdminCommands::relocate))));
+        // the cities generated ahead of play, for test and preparation worlds (ChunkPregen)
+        admin.then(Commands.literal("pregen")
+            .then(Commands.literal("status").executes(ctx -> ok(ctx, ChunkPregen.status(ctx.getSource().getServer()))))
+            .then(Commands.literal("stop").executes(ctx -> ok(ctx, ChunkPregen.stop(ctx.getSource().getServer()))))
+            .then(Commands.literal("start").executes(ctx -> ok(ctx, ChunkPregen.start(ctx.getSource().getServer(), "islands", 32)))
+                .then(Commands.argument("scope", StringArgumentType.word()).suggests((ctx, b) -> SharedSuggestionProvider.suggest(ChunkPregen.scopes(), b))
+                    .executes(ctx -> ok(ctx, ChunkPregen.start(ctx.getSource().getServer(), StringArgumentType.getString(ctx, "scope"), 32)))
+                    .then(Commands.argument("margin", IntegerArgumentType.integer(0, ChunkPregen.MAX_MARGIN))
+                        .executes(ctx -> ok(ctx, ChunkPregen.start(ctx.getSource().getServer(), StringArgumentType.getString(ctx, "scope"), IntegerArgumentType.getInteger(ctx, "margin"))))))));
         admin.then(Commands.literal("audit").executes(ctx -> audit(ctx, 10)).then(Commands.argument("count", IntegerArgumentType.integer(1, Audit.KEEP)).executes(ctx -> audit(ctx, IntegerArgumentType.getInteger(ctx, "count")))));
         return admin;
     }
