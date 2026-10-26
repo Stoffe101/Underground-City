@@ -43,7 +43,8 @@ class PortTheFixture(unittest.TestCase):
         porter.port(self.source, self.dest)
         part = json.loads((self.dest / "data/fixturecity/lostcities/parts/fixture_house_ground.json").read_text(encoding="utf-8"))
         original = json.loads((self.source / "data/fixturecity/lostcities/parts/fixture_house_ground.json").read_text(encoding="utf-8"))
-        self.assertEqual(part["slices"], original["slices"])
+        renamed = str.maketrans(json.loads((self.dest / porter.REPORT).read_text(encoding="utf-8"))["style_characters_renamed_to"])
+        self.assertEqual(part["slices"], [[row.translate(renamed) for row in layer] for layer in original["slices"]])
         self.assertEqual(part["palette"][0]["block"], "minecraft:air", "an inline palette of a part is ported too")
         manifest = json.loads((self.dest / "uc-private-pack.json").read_text(encoding="utf-8"))
         self.assertTrue(manifest["private_only"])
@@ -56,10 +57,18 @@ class PortTheFixture(unittest.TestCase):
         self.assertNotIn("slices", report)
         self.assertNotIn("##", report)
 
-    def test_a_palette_that_takes_a_lost_cities_style_character_is_named(self):
-        # the fixture's ground part gives "x" (a park's raised ground and a corridor roof in Lost Cities' style) a block of its own
+    def test_a_style_character_a_palette_takes_is_renamed_and_one_left_to_the_style_is_kept(self):
+        # the fixture's ground part gives "x" (a park's raised ground and a corridor roof in Lost Cities' style) a block of its own and uses it, and uses "y"
+        # (a retaining wall) without defining it: Lost Cities would draw its walls round the building with the part's "x" block, and the part's "y" is the style's
         result = porter.port(self.source, self.dest)
-        self.assertEqual(result["style_characters_redefined"], {"parts/fixture_house_ground.json": ["x"]})
+        new = result["style_characters_renamed_to"]["x"]
+        self.assertNotIn(new, "ywSbBx+Z9v ")
+        self.assertEqual(set(result["style_characters_renamed_to"]), {"x"}, "only the style characters a palette takes are renamed")
+        part = json.loads((self.dest / "data/fixturecity/lostcities/parts/fixture_house_ground.json").read_text(encoding="utf-8"))
+        self.assertEqual(part["slices"][3], [new + "y", "  "])
+        self.assertEqual([e["char"] for e in part["palette"]], [new])
+        self.assertEqual(result["style_characters_redefined"], {}, "nothing is left to warn about")
+        self.assertEqual(result["counts"]["parts_with_style_characters_renamed"], 1)
         self.assertTrue(result["loadable"])
 
     def test_a_mapping_decides_before_the_fallbacks(self):

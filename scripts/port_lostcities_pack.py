@@ -46,7 +46,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import block_lookalikes  # noqa: E402
 import private_pack_tool as packs  # noqa: E402
 import validate_city_blocks as blocks  # noqa: E402
-from citykit import LOST_CITIES_RESERVED  # noqa: E402
+from citykit import CHAR_POOL, LOST_CITIES_RESERVED  # noqa: E402
 
 REPORT = "uc-port-report.json"
 PACK_FORMAT_1201 = 15
@@ -84,12 +84,13 @@ class Porter:
         self.counts = {"palettes": 0, "entries": 0, "renamed": 0, "create_replaced": 0, "foreign_replaced": 0, "spawners_removed": 0,
                        "mob_markers_removed": 0, "loot_dropped": 0, "files_copied": 0, "worldstyles_to_review": 0, "worldstyles_left_out": 0,
                        "kept_but_gone": 0, "properties_dropped": 0, "by_rule": 0, "by_sibling": 0, "by_shape": 0, "to_air": 0,
-                       "floors_made_explicit": 0, "floors_raised": 0}
+                       "floors_made_explicit": 0, "floors_raised": 0, "style_characters_renamed": 0, "parts_with_style_characters_renamed": 0}
         self.foreign: dict[str, str] = {}      # replaced block id -> what it became
         self.gone: dict[str, str] = {}         # a kept mod's block that 1.20.1 no longer has -> what it became
         self.dropped: dict[str, list[str]] = {}   # block id -> properties of the 1.18.2 spec that the 1.20.1 block does not accept
         self.problems: list[str] = []
         self.style_chars: dict[str, list[str]] = {}   # palette -> Lost Cities style characters it gives a block of its own (a warning: see LOST_CITIES_RESERVED)
+        self.char_map: dict[str, str] = {}             # a style character a pack's palette took -> the free character it became (rename_style_characters)
 
     # ------------------------------------------------------------------------------------------------ one block spec
 
@@ -224,13 +225,88 @@ class Porter:
                 continue
             shutil.copyfile(path, target)
             self.counts["files_copied"] += 1
+        self.rename_style_characters(dest)
         return self.report()
+
+    def rename_style_characters(self, dest: Path) -> None:
+        """Give every Lost Cities style character a pack's palette takes (``LOST_CITIES_RESERVED``) a free character instead, in that palette and in the
+        slices of every part that reads it. Lost Cities merges a building's palettes over the city style's in the building's chunk and draws its own
+        retaining walls, streets, park ground, corridors and bridge supports there with those characters: a ported palette that took one redrew them with
+        its furniture (measured on our own buildings, October 23; the owner's pack took them in 1,000 palettes). A part that uses the character without
+        any palette of the pack defining it means the style's block, and keeps it."""
+        docs: dict[Path, dict] = {}
+        for path in sorted(dest.rglob("*.json")):
+            parts = path.relative_to(dest).parts
+            if "lostcities" in parts and parts.index("lostcities") + 1 < len(parts):
+                kind = parts[parts.index("lostcities") + 1]
+                if kind in ("palettes", "parts", "buildings"):
+                    docs[path] = json.loads(path.read_text(encoding="utf-8"))
+
+        def rid(path: Path) -> str:
+            parts = path.relative_to(dest).parts
+            i = parts.index("lostcities")
+            return parts[1] + ":" + "/".join(parts[i + 2:])[:-len(".json")]
+
+        def kind_of(path: Path) -> str:
+            parts = path.relative_to(dest).parts
+            return parts[parts.index("lostcities") + 1]
+
+        def chars(entries) -> set[str]:
+            return {str(e.get("char", "")) for e in entries or [] if isinstance(e, dict)}
+
+        palettes = {rid(p): chars(d.get("palette")) for p, d in docs.items() if kind_of(p) == "palettes" and isinstance(d, dict)}
+        defined_by_part: dict[str, set[str]] = {}
+        for p, d in docs.items():
+            if kind_of(p) == "parts" and isinstance(d, dict):
+                defined_by_part[rid(p)] = chars(d.get("palette")) | palettes.get(d.get("refpalette") or "", set())
+        for p, d in docs.items():
+            if kind_of(p) == "buildings" and isinstance(d, dict):
+                own = chars(d.get("palette")) | palettes.get(d.get("refpalette") or "", set())
+                for ref in d.get("parts", []):
+                    if isinstance(ref, dict) and ref.get("part") in defined_by_part:
+                        defined_by_part[ref["part"]] |= own
+        taken = set().union(*palettes.values(), *defined_by_part.values()) if palettes or defined_by_part else set()
+        for d in docs.values():
+            for layer in (d.get("slices") or []) if isinstance(d, dict) else []:
+                for row in layer:
+                    taken |= set(row)
+        wanted = sorted(set(LOST_CITIES_RESERVED) & (set().union(*palettes.values(), *defined_by_part.values()) if palettes or defined_by_part else set()))
+        free = [c for c in CHAR_POOL if c not in taken]
+        if len(free) < len(wanted):
+            self.problems.append(f"no free character left for the style characters {''.join(wanted)}: they are left as they are")
+            return
+        self.char_map = dict(zip(wanted, free))
+        if not self.char_map:
+            return
+        for p, d in docs.items():
+            changed = False
+            if isinstance(d.get("palette"), list):
+                for e in d["palette"]:
+                    if isinstance(e, dict) and str(e.get("char", "")) in self.char_map:
+                        e["char"] = self.char_map[str(e["char"])]
+                        changed = True
+                if changed:
+                    self.counts["style_characters_renamed"] += 1
+            if kind_of(p) == "parts" and isinstance(d.get("slices"), list):
+                mine = {c: n for c, n in self.char_map.items() if c in defined_by_part.get(rid(p), set())}
+                if mine:
+                    table = str.maketrans(mine)
+                    slices = [[row.translate(table) for row in layer] for layer in d["slices"]]
+                    if slices != d["slices"]:
+                        d["slices"] = slices
+                        self.counts["parts_with_style_characters_renamed"] += 1
+                        changed = True
+            if changed:
+                p.write_text(json.dumps(d, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        # what is left to warn about: none, unless a style's own palette (kept as it is) takes them
+        self.style_chars = {k: v for k, v in self.style_chars.items() if not set(v) <= set(self.char_map)}
 
     def report(self) -> dict:
         return {"schema_version": 1, "counts": self.counts, "replaced_blocks": dict(sorted(self.foreign.items())), "kept_mod_blocks_gone": dict(sorted(self.gone.items())),
                 "properties_dropped": dict(sorted(self.dropped.items())), "registry_checked": self.registry is not None,
                 "problems": self.problems, "loadable": not self.problems,
                 "style_characters_redefined": dict(sorted(self.style_chars.items())),
+                "style_characters_renamed_to": dict(sorted(self.char_map.items())),
                 "note": "Counts and block ids only; no content. A port with problems must not be loaded: fix the mapping and port again."}
 
 
@@ -278,7 +354,7 @@ def fixture(root: Path) -> Path:
         {"char": "t", "block": "modernlife:oak_chair[facing=south]"},
     ]}, indent=2), encoding="utf-8")
     (lc / "parts" / "fixture_house_ground.json").write_text(json.dumps({"xsize": 2, "zsize": 2, "refpalette": "fixturecity:fixture_house",
-        "slices": [["##", "##"], ["Mc", "Cf"], ["rs", "tp"], ["  ", "  "], ["  ", "  "], ["##", "##"]],
+        "slices": [["##", "##"], ["Mc", "Cf"], ["rs", "tp"], ["xy", "  "], ["  ", "  "], ["##", "##"]],
         "palette": [{"char": "x", "block": "create:cogwheel"}]}, indent=2), encoding="utf-8")
     (lc / "buildings" / "fixture_house.json").write_text(json.dumps({"minfloors": 1, "maxfloors": 1, "refpalette": "fixturecity:fixture_house",
         "parts": [{"top": False, "ground": True, "part": "fixturecity:fixture_house_ground"}]}, indent=2), encoding="utf-8")
