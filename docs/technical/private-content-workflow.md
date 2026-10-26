@@ -1,6 +1,6 @@
 # Private content: how to use it, where it lives, how it is checked
 
-Status (October 21, 2026): **the infrastructure is implemented and tested with invented fixtures; no private content has been loaded, ported or tested.** Policy and permission: [private-content.md](../legal/private-content.md) (D-116).
+Status (October 26, 2026, ninth pass): **the owner's private pack has been ported, wired into Valewood and generated in a disposable world in the cloud.** It was never committed, uploaded or shown on a public page. Public CI still runs only the invented fixtures. Policy and permission: [private-content.md](../legal/private-content.md) (D-116). Results: [the ninth-pass report](../production/ninth-pass-c70-critical-fixes.md).
 
 ## The idea in one paragraph
 
@@ -69,7 +69,7 @@ Said exactly, so the record is honest. The public repository that holds the refe
 
 ## The porter
 
-**D-131. Implemented; unit-tested on an invented fixture only (`tests/test_port_lostcities_pack.py`, 7 cases); no private content has been ported.**
+**D-131, D-192. Implemented. Unit-tested on invented fixtures (`tests/test_port_lostcities_pack.py`, 10 cases). The owner's pack was ported with it in the ninth pass (above).**
 
 `python scripts/port_lostcities_pack.py port <private pack> <new folder> [--registry block-registry.json] [--mapping map.json] [--keep-mod NS]` reads a private pack (outside every checkout, with a `private_only` manifest) and writes a converted pack beside it with its own manifest (`<id>-port`), a 1.20.1 `pack.mcmeta` and `uc-port-report.json` (counts and block ids only). Every palette entry (the palette files and the inline palettes of parts) is converted: 1.18.2 ids that changed are renamed; every `create:` block is replaced (structural blocks by their nearest vanilla look, machinery by air; a mapping file decides first); a block of a mod that is not kept is replaced by air and listed; spawners become air and `mob` markers and `loot` tables are dropped (the chest stays, empty). With `--registry` (dumped by a real 1.20.1 game: `CityProbe --registry`) every resulting block is checked and a port with problems is marked **not loadable** (exit code 1). Slices, buildings, multibuildings and city styles are copied unchanged; world styles are copied and counted for a person to review. `python scripts/port_lostcities_pack.py fixture <dir>` makes the invented test pack.
 
@@ -79,6 +79,41 @@ Said exactly, so the record is honest. The public repository that holds the refe
 2. The list of furniture or decoration mods its palettes name, with their versions (the porter's report lists every namespace it had to replace). For each one the owner wants kept: a licence check and a pinned runtime-only download ([dev-pack.md](dev-pack.md)), then `--keep-mod <namespace>`; otherwise a mapping file of replacements.
 3. `private_pack_tool.py init` a pack folder for the original, `port_lostcities_pack.py port` into a second folder, then a registry dump from a game with the kept mods and a second `port --registry` until the report says loadable.
 4. A **new world** with the ported pack loaded (`UC_PRIVATE_CONTENT_DIR`), a city probe and photographs that stay private. Wiring a ported building into a city (a `city_character` rule naming its building ids) is the owner's choice and is done in the private pack, not here.
+
+## The tested workflow (ninth pass, D-192)
+
+1. **Validate the archive and extract it outside the checkout.** Check its paths and integrity first, and keep the original untouched in its own folder.
+2. **Dump the real registry.** Boot a disposable dedicated server with the furniture set:
+
+   ```text
+   python scripts/run_city_probe.py --name reg --sets world,furnished,furniture --registry <out>/registry.json --namespaces minecraft,modernlife,underground_city,embellishcraft,mapperbase,pfm,another_furniture,simplylight,buildersdelight,cfm,farmersdelight --output <out>/probe.json --radius 1 --cities valewood
+   ```
+3. **Port:**
+
+   ```text
+   python scripts/port_lostcities_pack.py port <original> <port> --registry <out>/registry.json --keep-mod embellishcraft --keep-mod mapperbase --keep-mod pfm --keep-mod another_furniture --keep-mod simplylight --keep-mod buildersdelight --keep-mod cfm --keep-mod farmersdelight
+   ```
+
+   The report must say `loadable: true`. What the port does:
+   * A block of a mod that is not loaded becomes its nearest look (`block_lookalikes.py`, the public rules in `content/integrations/private-import/block-lookalikes.json`), else air, and is listed.
+   * A block that a kept mod dropped by 1.20.1 becomes its sibling in the same mod.
+   * A property the mod renamed is renamed; one 1.20.1 does not accept is dropped and listed.
+   * **World styles are left out.** Lost Cities 7 loads them as a registry, and the 1.18.2 one named another mod's biomes, so the first private probe could not load its world at all.
+4. **Wire.** Write a selection file beside the pack. It names each building, its city, its ring, its use, its security class, an optional listing and an optional shop counter. Then run `python scripts/private_wiring.py wire <port> <selection.json>`. This writes, inside the private pack:
+   * the building's plan (doors, beds, stoves, seats, counters and a home's box, read from its own parts);
+   * the city's building choice (the public file plus the chosen buildings);
+   * a security rule, a listing and a counter.
+
+   `plan` shows one building's plan without writing anything.
+5. **Generate in a new disposable world:** `python scripts/run_city_probe.py ... --sets world,furnished,furniture --private <folder holding only the port>`. The log shows:
+   * the pack loading;
+   * the resource stack (the private city file above the furnished package's);
+   * how many of the chosen buildings generated.
+6. **Walk it through a real client:** `-PucPlaytest=building -PucPtBuilding=<namespace:building> -PucPtCity=<city> -PucPrivateContent=<folder> -PucPack=...,furniture`. This:
+   * finds the nearest generated copy;
+   * logs what the game makes of it;
+   * photographs it outside and on every floor, keeping the frames in the run folder (private);
+   * tries its street door and picks its lock on the real screen.
 
 ## What porting will involve (from the format and the research brief)
 

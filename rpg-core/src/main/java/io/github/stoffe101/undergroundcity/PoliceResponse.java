@@ -350,7 +350,7 @@ public final class PoliceResponse {
             d.windowEnds = now + d.windowSeconds * 20L;
             // a word that they are here and searching, once: what a person would hear (sirens, a car door), not where they are
             if (player.level() == level && player.distanceToSqr(d.door.getX() + 0.5, d.door.getY(), d.door.getZ() + 0.5) <= ESCAPE_RANGE * ESCAPE_RANGE)
-                Notice.send(player, Notice.Kind.WARN, "Police searching", d.burglary ? "Officers have reached the building and are looking round it. Stay out of their sight." : "Officers have reached the scene and are looking for you. Stay out of their sight.");
+                Notice.send(player, Notice.Kind.WARN, "Police searching", d.burglary ? "Officers are at the building, looking round it. Keep out of their sight." : "Officers are at the scene, looking for you. Keep out of their sight.");
             LOGGER.info("[UC-POLICE] {} officer(s) arrived for {} in {} ({}), {} blocks from the offender", d.officers.size(), d.offence.id(), d.city, d.why, Math.round(Math.sqrt(player.distanceToSqr(d.door.getX() + 0.5, d.door.getY(), d.door.getZ() + 0.5))));
             return false;
         }

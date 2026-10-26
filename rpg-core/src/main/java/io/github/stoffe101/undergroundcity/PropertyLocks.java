@@ -97,6 +97,24 @@ public final class PropertyLocks extends SavedData {
         setDirty();
     }
 
+    /** Doors of chunk {@code chunkX, chunkZ} the sweep is still looking after (picked or opened from inside, not shut again yet). */
+    public List<BlockPos> unsettledIn(int chunkX, int chunkZ) {
+        List<BlockPos> out = new ArrayList<>();
+        for (var entry : doors.entrySet()) {
+            BlockPos pos = BlockPos.of(entry.getKey());
+            if (!entry.getValue().closed() && pos.getX() >> 4 == chunkX && pos.getZ() >> 4 == chunkZ) out.add(pos);
+        }
+        return out;
+    }
+
+    /** The door is shut and locked again now, whatever window a pick or somebody leaving had left it (a building put back after a burglary, D-190). */
+    public void relock(BlockPos pos, long now) {
+        Door d = doors.get(pos.asLong());
+        if (d == null) return;
+        doors.put(pos.asLong(), new Door(Math.min(d.breachedUntil(), now), d.jammedUntil(), true, d.breaches(), now));
+        setDirty();
+    }
+
     public int remembered() { return doors.size(); }
 
     /** Forgets doors with nothing left to say, then, if still over the cap, the oldest ones. */

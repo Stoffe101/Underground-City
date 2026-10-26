@@ -44,6 +44,7 @@ class Lookalikes:
         self.registry = registry
         self.rules = [(re.compile(r["match"]), r["to"]) for r in self.data["rules"]]
         self.keep = set(self.data["keep_properties"])
+        self.renames = {ns: rules for ns, rules in self.data.get("property_renames", {}).items() if not ns.startswith("_")}
         self.wood_syn = self.data["wood_synonyms"]
         self.stone_syn = self.data["stone_synonyms"]
 
@@ -72,12 +73,25 @@ class Lookalikes:
     def known(self, name: str) -> bool:
         return self.registry is None and name.startswith("minecraft:") or self.registry is not None and name in self.registry
 
+    def renamed(self, ns: str, props: dict[str, str]) -> dict[str, str]:
+        """The properties under the names (and values) a mod gave them in 1.20.1."""
+        rules = self.renames.get(ns)
+        if not rules:
+            return props
+        out = {}
+        for key, value in props.items():
+            rule = rules.get(key)
+            out[rule["to"] if rule else key] = rule.get("values", {}).get(value, value) if rule else value
+        return out
+
     def with_props(self, name: str, props: dict[str, str]) -> str:
         """``name`` with the source's properties it has and accepts (a facing, a half, a slab type...)."""
         if self.registry is None or name not in self.registry:
             return name
         have = self.registry[name]
-        kept = {k: v for k, v in props.items() if k in self.keep and k in have and v in have[k]}
+        props = self.renamed(name.split(":", 1)[0], props)
+        keep = self.keep | {rule["to"] for rules in self.renames.values() for rule in rules.values()}
+        kept = {k: v for k, v in props.items() if k in keep and k in have and v in have[k]}
         if "persistent" in have and "persistent" not in kept:
             kept["persistent"] = "true"   # leaves in a building never decay
         return name + ("[" + ",".join(f"{k}={v}" for k, v in sorted(kept.items())) + "]" if kept else "")

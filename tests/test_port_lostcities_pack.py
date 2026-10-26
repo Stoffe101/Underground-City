@@ -35,7 +35,7 @@ class PortTheFixture(unittest.TestCase):
             self.assertNotIn(gone, text, f"{gone} survived the port")
         c = report["counts"]
         self.assertEqual((c["create_replaced"], c["spawners_removed"], c["mob_markers_removed"], c["loot_dropped"], c["foreign_replaced"], c["renamed"]), (4, 1, 1, 1, 1, 1))
-        self.assertEqual(c["worldstyles_to_review"], 1)
+        self.assertEqual((c["worldstyles_left_out"], c["worldstyles_to_review"]), (1, 0), "a world style is left out unless asked for")
         self.assertIn("modernlife:oak_chair[facing=south]", text, "a block of a kept mod must be kept, properties and all")
         self.assertIn("minecraft:dirt_path", text)
 

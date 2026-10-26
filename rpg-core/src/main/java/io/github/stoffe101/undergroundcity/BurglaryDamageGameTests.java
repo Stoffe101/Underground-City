@@ -66,6 +66,13 @@ public final class BurglaryDamageGameTests {
             check(BurglaryDamage.judge(thief, h.level, h.building, h.in(2, -1, 2), now) == BurglaryDamage.Verdict.SHELL || BurglaryDamage.judge(thief, h.level, h.building, h.in(2, -1, 2), now) == BurglaryDamage.Verdict.NOT_BREAKABLE,
                 "the floor gives way to a thief");
             check(BurglaryDamage.judge(thief, h.level, h.building, h.in(0, 1, 4), now) == BurglaryDamage.Verdict.NOT_BREAKABLE, "the stone of the walls gives way");
+            // a plank of the outer wall under eaves: no sky straight over the air outside it, but a step further out (wreck run 3 found such walls not counted as shell)
+            h.level.setBlock(h.in(0, 1, 1), Blocks.OAK_PLANKS.defaultBlockState(), 2);
+            h.level.setBlock(h.in(-1, 4, 1), Blocks.STONE.defaultBlockState(), 2);
+            h.level.setBlock(h.in(-2, 4, 1), Blocks.STONE.defaultBlockState(), 2);
+            check(BurglaryDamage.judge(thief, h.level, h.building, h.in(0, 1, 1), now) == BurglaryDamage.Verdict.SHELL, "a plank of the outer wall under the eaves is not part of the shell");
+            h.level.setBlock(h.in(-1, 4, 1), Blocks.AIR.defaultBlockState(), 2);
+            h.level.setBlock(h.in(-2, 4, 1), Blocks.AIR.defaultBlockState(), 2);
             check(BurglaryDamage.judge(thief, h.level, h.building, h.doorLower, now) == BurglaryDamage.Verdict.PROTECTED, "the door can be broken");
             check(BurglaryDamage.judge(thief, h.level, h.building, h.in(5, 0, 1), now) == BurglaryDamage.Verdict.PROTECTED, "a chest can be broken (its contents would spill)");
             // the permit is for this building alone, and for a while
@@ -103,6 +110,10 @@ public final class BurglaryDamageGameTests {
             check(loaded.records.get(h.building.key()) != null && loaded.records.get(h.building.key()).cells.size() == 5, "the record did not survive a save");
             // somebody fills one of the cells meanwhile: it is left as it is
             h.level.setBlock(h.in(2, 0, 2), Blocks.STONE.defaultBlockState(), 2);
+            // the thief picked the street door and left it standing open
+            PropertyLocks.get(h.level.getServer()).breach(h.doorLower, now + 1_000_000);
+            BlockState doorState = h.level.getBlockState(h.doorLower);
+            ((net.minecraft.world.level.block.DoorBlock) doorState.getBlock()).setOpen(null, h.level, doorState, h.doorLower, true);
             long wait = BurglaryDamage.RULES.restoreMinutes() * 60L * 20L;
             BurglaryDamage.fixClockForTest(now + wait - 20);
             check(BurglaryDamage.restoreDue(h.level.getServer()) == 0 && h.level.getBlockState(h.in(4, 1, 4)).isAir(), "the building was put back before the wait was over");
@@ -111,6 +122,8 @@ public final class BurglaryDamageGameTests {
             check(h.level.getBlockState(h.in(4, 1, 4)).equals(wall) && h.level.getBlockState(h.in(4, 2, 4)).equals(torch) && h.level.getBlockState(h.in(0, 2, 3)).getBlock() == pane.getBlock(),
                 "the wall, the torch on it or the window was not put back as it was");
             check(h.level.getBlockState(h.in(2, 0, 2)).is(Blocks.STONE), "a cell somebody filled was overwritten");
+            check(!h.level.getBlockState(h.doorLower).getValue(net.minecraft.world.level.block.DoorBlock.OPEN) && !PropertyLocks.get(h.level.getServer()).breached(h.doorLower, now + wait),
+                "the picked street door was left open, or unlocked, in the building put back");
             check(h.level.getBlockEntity(h.in(2, 0, 4)) instanceof SignBlockEntity sign && sign.getFrontText().getMessage(0, false).getString().equals("Home sweet home"), "the sign came back without its words");
             check(!BurglaryDamage.store(h.level.getServer()).records.containsKey(h.building.key()), "the record was kept after the building was put back (it would be put back again)");
             check(h.level.getEntitiesOfClass(ItemEntity.class, new AABB(h.in(0, 0, 0)).inflate(12)).isEmpty(), "putting back dropped an item");

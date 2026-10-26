@@ -602,8 +602,8 @@ public final class VisualCaptureHarness {
             if(capture.challenge.equals("notices-ninth")) {
                 // the ninth pass's notices (D-187, D-189), with the texts the server sends
                 noticeCaptures.add(new UcToast(Notice.Kind.INFO,"Welcome to Valewood","You are at the General Store."));
-                noticeCaptures.add(new UcToast(Notice.Kind.WARN,"Police searching","Officers have reached the scene and are looking for you. Stay out of their sight."));
-                noticeCaptures.add(new UcToast(Notice.Kind.WARN,"Police searching","Officers have reached the building and are looking round it. Stay out of their sight."));
+                noticeCaptures.add(new UcToast(Notice.Kind.WARN,"Police searching","Officers are at the scene, looking for you. Keep out of their sight."));
+                noticeCaptures.add(new UcToast(Notice.Kind.WARN,"Police searching","Officers are at the building, looking round it. Keep out of their sight."));
                 noticeCaptures.add(new UcToast(Notice.Kind.INFO,"The police stood down","They were after you in Valewood when you left. Your heat there is still up."));
             } else {
                 noticeCaptures.add(new UcToast(Notice.Kind.ORDER,"Order accepted","Bake the canteen bread order"));

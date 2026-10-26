@@ -27,8 +27,10 @@ What a port does to every palette entry (``data/<ns>/lostcities/palettes/*.json`
   ``validate_city_blocks.py`` checks the furnished cities, and problems are listed (a port with problems is still written, and the report says
   it must not be loaded).
 
-Everything else (parts' slices, buildings, multibuildings, citystyles) is copied unchanged; worldstyles are copied and flagged for a person to
-review (their format changed between Lost Cities 5 and 7). The report (``uc-port-report.json`` in the destination) holds counts and block ids, never
+Parts' slices, multibuildings and citystyles are copied unchanged. A building's floors are made explicit for Lost Cities 7 (``overrideFloors``) and
+raised when its middle parts (a roof, an upper storey) would otherwise never be built. World styles are left out unless ``--keep-worldstyles``
+(then copied and flagged for a person to review): Lost Cities 7 loads them as a registry, and one that names a biome of a mod that is not loaded
+stops the world from loading; the game's own world style chooses the cities. The report (``uc-port-report.json`` in the destination) holds counts and block ids, never
 the content itself.
 """
 from __future__ import annotations
@@ -73,14 +75,16 @@ def namespace(spec: str) -> str:
 
 
 class Porter:
-    def __init__(self, mapping: dict[str, str] | None = None, keep: set[str] | None = None, registry: dict | None = None):
+    def __init__(self, mapping: dict[str, str] | None = None, keep: set[str] | None = None, registry: dict | None = None, keep_worldstyles: bool = False):
+        self.keep_worldstyles = keep_worldstyles
         self.mapping = dict(mapping or {})
         self.keep = set(DEFAULT_KEEP) | set(keep or set())
         self.registry = registry
         self.look = block_lookalikes.Lookalikes(registry=registry)
         self.counts = {"palettes": 0, "entries": 0, "renamed": 0, "create_replaced": 0, "foreign_replaced": 0, "spawners_removed": 0,
-                       "mob_markers_removed": 0, "loot_dropped": 0, "files_copied": 0, "worldstyles_to_review": 0,
-                       "kept_but_gone": 0, "properties_dropped": 0, "by_rule": 0, "by_sibling": 0, "by_shape": 0, "to_air": 0}
+                       "mob_markers_removed": 0, "loot_dropped": 0, "files_copied": 0, "worldstyles_to_review": 0, "worldstyles_left_out": 0,
+                       "kept_but_gone": 0, "properties_dropped": 0, "by_rule": 0, "by_sibling": 0, "by_shape": 0, "to_air": 0,
+                       "floors_made_explicit": 0, "floors_raised": 0}
         self.foreign: dict[str, str] = {}      # replaced block id -> what it became
         self.gone: dict[str, str] = {}         # a kept mod's block that 1.20.1 no longer has -> what it became
         self.dropped: dict[str, list[str]] = {}   # block id -> properties of the 1.18.2 spec that the 1.20.1 block does not accept
@@ -121,6 +125,7 @@ class Porter:
             self.gone[name] = result.split("[", 1)[0]
             return result
         if self.registry is not None and name in self.registry and props:
+            props = self.look.renamed(ns, props)   # a property the mod renamed by 1.20.1 (block-lookalikes.json, property_renames)
             have = self.registry[name]
             bad = sorted(k for k, v in props.items() if k not in have or v not in have[k])
             if bad:
@@ -172,6 +177,22 @@ class Porter:
             self.style_chars[where] = taken
         return [self.entry(e, f"{where} '{e.get('char', '?')}'") for e in entries]
 
+    def floors(self, building: dict) -> None:
+        """A building's floors for Lost Cities 7. A 1.18.2 building leaves its floor count to the city style unless it says otherwise, and Lost Cities 7 builds
+        storeys 0 to ``floors`` with the top part last: a building whose middle parts (its roof, its upper storeys) need more floors than it asks for was
+        generated as a bare ground storey (measured in a probe: no block above the street storey). Its own floors are made explicit, and raised until every
+        middle part is used."""
+        middle = [p for p in building["parts"] if isinstance(p, dict) and not p.get("cellar") and not p.get("ground") and not p.get("top")]
+        if "overrideFloors" not in building:
+            building["overrideFloors"] = True
+            self.counts["floors_made_explicit"] += 1
+        if middle:
+            needed = max(int(p.get("floor", 1)) for p in middle) + 1
+            if int(building.get("maxfloors", building.get("minfloors", 1))) < needed:
+                building["minfloors"] = max(int(building.get("minfloors", 1)), needed)
+                building["maxfloors"] = max(int(building.get("maxfloors", 1)), needed)
+                self.counts["floors_raised"] += 1
+
     # ------------------------------------------------------------------------------------------------ a whole pack
 
     def port(self, source: Path, dest: Path) -> dict:
@@ -186,8 +207,17 @@ class Porter:
                 doc = json.loads(path.read_text(encoding="utf-8"))
                 kind = parts[parts.index("lostcities") + 1] if parts.index("lostcities") + 1 < len(parts) else ""
                 where = "/".join(parts[parts.index("lostcities") + 1:])
+                if kind == "worldstyles" and not self.keep_worldstyles:
+                    # a world style decides a whole world's layout, and Lost Cities 7 loads it as a registry: one that names a biome of a mod that is not
+                    # loaded stops the world from loading at all (measured: a 1.18.2 world style naming another mod's biomes). The game's own world style
+                    # chooses the cities; a pack's buildings reach them through city_character (private_wiring.py)
+                    target.unlink(missing_ok=True)
+                    self.counts["worldstyles_left_out"] += 1
+                    continue
                 if isinstance(doc, dict) and isinstance(doc.get("palette"), list):
                     doc["palette"] = self.palette(doc["palette"], where)
+                if kind == "buildings" and isinstance(doc, dict) and isinstance(doc.get("parts"), list):
+                    self.floors(doc)
                 if kind == "worldstyles":
                     self.counts["worldstyles_to_review"] += 1
                 target.write_text(json.dumps(doc, indent=2, sort_keys=True) + "\n", encoding="utf-8")
@@ -204,7 +234,7 @@ class Porter:
                 "note": "Counts and block ids only; no content. A port with problems must not be loaded: fix the mapping and port again."}
 
 
-def port(source: Path, dest: Path, mapping: dict | None = None, keep: set[str] | None = None, registry: dict | None = None, force: bool = False) -> dict:
+def port(source: Path, dest: Path, mapping: dict | None = None, keep: set[str] | None = None, registry: dict | None = None, force: bool = False, keep_worldstyles: bool = False) -> dict:
     for path in (source, dest):
         packs.refuse_in_repo(path)
     manifest_path = source / packs.MANIFEST
@@ -218,7 +248,7 @@ def port(source: Path, dest: Path, mapping: dict | None = None, keep: set[str] |
             raise SystemExit(f"{dest} is not empty (use --force to replace it)")
         shutil.rmtree(dest)
     dest.mkdir(parents=True, exist_ok=True)
-    porter = Porter(mapping, keep, registry)
+    porter = Porter(mapping, keep, registry, keep_worldstyles)
     result = porter.port(source, dest)
     ported = dict(manifest, id=(manifest["id"] + "-port")[:64], title=manifest.get("title", manifest["id"]) + " (ported to 1.20.1)",
                   ported_from={"id": manifest["id"], "minecraft": manifest.get("minecraft", "1.18.2")})
@@ -268,13 +298,14 @@ def main(argv: list[str]) -> int:
     p.add_argument("--mapping", type=Path, help="a JSON object of old block id (or full spec) -> new block spec")
     p.add_argument("--keep-mod", action="append", default=[], help="a namespace whose blocks the game has (repeatable)")
     p.add_argument("--force", action="store_true")
+    p.add_argument("--keep-worldstyles", action="store_true", help="copy the pack's world styles too (left out by default: see Porter.port)")
     args = parser.parse_args(argv)
     if args.command == "fixture":
         print(f"invented fixture at {fixture(args.dir)}")
         return 0
     mapping = json.loads(args.mapping.read_text(encoding="utf-8")) if args.mapping else None
     registry = json.loads(args.registry.read_text(encoding="utf-8")) if args.registry else None
-    result = port(args.source, args.dest, mapping, set(args.keep_mod), registry, args.force)
+    result = port(args.source, args.dest, mapping, set(args.keep_mod), registry, args.force, args.keep_worldstyles)
     print(json.dumps(result["counts"], indent=2))
     if result["problems"]:
         print(f"{len(result['problems'])} problems: this port must not be loaded (see {args.dest / REPORT})")

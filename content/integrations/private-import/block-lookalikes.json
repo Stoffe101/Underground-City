@@ -1,125 +1,575 @@
 {
   "schema_version": 1,
   "purpose": "What a block of a mod this game does not load becomes when a private 1.18.2 Lost Cities pack is ported (scripts/port_lostcities_pack.py, scripts/block_lookalikes.py): the nearest look of a block the game has, so a building keeps its walls, floors, windows and furniture instead of holes. It names only public mods' block ids and naming patterns, never anybody's buildings. Rules are tried in order; the first whose pattern matches the whole block id and whose result the real registry has wins. A result may use the pattern's groups (\\1) and the derived names {material} (the block's wood, stone, metal or colour read from its id) and {shape} (stairs, slab, wall, fence, ...). 'air' is said on purpose and counted; anything no rule reaches falls to the shape rules, then to air, and is listed in the port report.",
-  "keep_properties": ["facing", "half", "type", "axis", "shape", "open", "hinge", "powered", "waterlogged", "north", "south", "east", "west", "up", "lit", "rotation", "attached", "face", "hanging", "persistent", "distance", "part", "occupied", "in_wall"],
+  "keep_properties": [
+    "facing",
+    "half",
+    "type",
+    "axis",
+    "shape",
+    "open",
+    "hinge",
+    "powered",
+    "waterlogged",
+    "north",
+    "south",
+    "east",
+    "west",
+    "up",
+    "lit",
+    "rotation",
+    "attached",
+    "face",
+    "hanging",
+    "persistent",
+    "distance",
+    "part",
+    "occupied",
+    "in_wall"
+  ],
   "wood_synonyms": {
-    "fir": "spruce", "pine": "spruce", "redwood": "spruce", "treated_wood": "spruce", "treated": "spruce", "walnut": "dark_oak", "ebony": "dark_oak", "ancient": "dark_oak",
-    "mahogany": "jungle", "palm": "jungle", "teak": "jungle", "willow": "oak", "dead": "oak", "maple": "oak", "azalea": "oak", "elder": "oak", "magic": "birch", "empyreal": "birch", "aspen": "birch",
-    "jacaranda": "cherry", "blossom": "cherry", "pink_blossom": "cherry", "umbran": "warped", "hellbark": "crimson"
+    "fir": "spruce",
+    "pine": "spruce",
+    "redwood": "spruce",
+    "treated_wood": "spruce",
+    "treated": "spruce",
+    "walnut": "dark_oak",
+    "ebony": "dark_oak",
+    "ancient": "dark_oak",
+    "mahogany": "jungle",
+    "palm": "jungle",
+    "teak": "jungle",
+    "willow": "oak",
+    "dead": "oak",
+    "maple": "oak",
+    "azalea": "oak",
+    "elder": "oak",
+    "magic": "birch",
+    "empyreal": "birch",
+    "aspen": "birch",
+    "jacaranda": "cherry",
+    "blossom": "cherry",
+    "pink_blossom": "cherry",
+    "umbran": "warped",
+    "hellbark": "crimson"
   },
   "stone_synonyms": {
-    "limestone": "smooth_sandstone", "marble": "quartz", "jasper": "red_sandstone", "shale": "deepslate", "slate": "deepslate", "myalite": "purpur", "soul_sandstone": "sandstone",
-    "basalt": "polished_basalt", "gneiss": "andesite", "larvikite": "polished_deepslate", "jade": "prismarine", "scoria": "blackstone", "dripstone": "dripstone", "cobbled_deepslate": "cobbled_deepslate",
-    "concrete": "light_gray_concrete", "asphalt": "black_concrete", "steel": "iron", "aluminum": "iron", "alu": "iron", "lead": "iron", "metal": "iron", "brass": "cut_copper", "zinc": "iron"
+    "limestone": "smooth_sandstone",
+    "marble": "quartz",
+    "jasper": "red_sandstone",
+    "shale": "deepslate",
+    "slate": "deepslate",
+    "myalite": "purpur",
+    "soul_sandstone": "sandstone",
+    "basalt": "polished_basalt",
+    "gneiss": "andesite",
+    "larvikite": "polished_deepslate",
+    "jade": "prismarine",
+    "scoria": "blackstone",
+    "dripstone": "dripstone",
+    "cobbled_deepslate": "cobbled_deepslate",
+    "concrete": "light_gray_concrete",
+    "asphalt": "black_concrete",
+    "steel": "iron",
+    "aluminum": "iron",
+    "alu": "iron",
+    "lead": "iron",
+    "metal": "iron",
+    "brass": "cut_copper",
+    "zinc": "iron"
   },
   "rules": [
-    {"match": "lootr:lootr_(chest|barrel|trapped_chest|shulker)", "to": "minecraft:\\1"},
-    {"match": "lootr:lootr_inventory", "to": "minecraft:chest"},
-    {"match": "storagedrawers:.*", "to": "minecraft:barrel"},
-    {"match": "comforts:(sleeping_bag|hammock)_([a-z_]+)", "to": "minecraft:\\2_carpet"},
-    {"match": "alexsmobs:bison_carpet", "to": "minecraft:brown_carpet"},
-    {"match": "trashcans:.*", "to": "minecraft:composter"},
-    {"match": "thirst:.*", "to": "minecraft:cauldron"},
-    {"match": "cold_sweat:(boiler|hearth)", "to": "minecraft:furnace"},
-    {"match": "cold_sweat:icebox", "to": "minecraft:barrel"},
-    {"match": "cold_sweat:.*", "to": "air"},
-    {"match": "securitycraft:reinforced_([a-z_]+)", "to": "minecraft:\\1"},
-    {"match": "securitycraft:keypad_door", "to": "minecraft:iron_door"},
-    {"match": "securitycraft:.*", "to": "air"},
-    {"match": "tac:.*", "to": "minecraft:smithing_table"},
-    {"match": "clickmachine:.*", "to": "minecraft:dispenser"},
-    {"match": "immersiveposts:.*", "to": "minecraft:iron_bars"},
-    {"match": "pipez:.*", "to": "air"},
-    {"match": "car:.*", "to": "air"},
-    {"match": "rocks:.*", "to": "air"},
-    {"match": "ag_day_counter:.*", "to": "air"},
-    {"match": "refinedstorage:.*cable.*", "to": "air"},
-    {"match": "refinedstorage:.*", "to": "minecraft:iron_block"},
-    {"match": "immersiveengineering:treated_wood_[a-z]+_?(stairs|slab)?", "to": "minecraft:spruce_planks"},
-    {"match": "immersiveengineering:treated_fence", "to": "minecraft:spruce_fence"},
-    {"match": "immersiveengineering:(treated_post|wooden_post)", "to": "minecraft:spruce_fence"},
-    {"match": "immersiveengineering:(steel|alu)_(fence|post|wallmount)", "to": "minecraft:iron_bars"},
-    {"match": "immersiveengineering:(steel|alu)_scaffolding.*", "to": "minecraft:iron_bars"},
-    {"match": "immersiveengineering:sheetmetal_colored_([a-z_]+)", "to": "minecraft:\\1_concrete"},
-    {"match": "immersiveengineering:(slab_)?sheetmetal_.*", "to": "minecraft:iron_block"},
-    {"match": "immersiveengineering:(slab_)?(steel|storage_steel|storage_aluminum|storage_lead|storage_nickel|storage_silver|storage_uranium|storage_constantan|storage_electrum)", "to": "minecraft:iron_block"},
-    {"match": "immersiveengineering:(slab_|stairs_)?concrete(_tile|_leaded|_sheet|_quarter|_three_quarter)?", "to": "minecraft:light_gray_concrete"},
-    {"match": "immersiveengineering:(slab_|stairs_)?(clinker_brick|slag_brick|coke_brick|blastbrick|blastbrick_reinforced|alloybrick)(_quoin|_sill)?", "to": "minecraft:bricks"},
-    {"match": "immersiveengineering:(electric_)?lantern", "to": "minecraft:lantern"},
-    {"match": "immersiveengineering:floodlight", "to": "minecraft:redstone_lamp"},
-    {"match": "immersiveengineering:(fluid_pipe|.*wire.*|.*connector.*|.*relay.*|.*transformer.*|.*capacitor.*|.*generator.*|conveyor_.*|.*cable.*)", "to": "air"},
-    {"match": "immersiveengineering:.*(crate|barrel)", "to": "minecraft:barrel"},
-    {"match": "immersiveengineering:.*", "to": "minecraft:iron_block"},
-    {"match": "immersivepetroleum:.*", "to": "minecraft:iron_block"},
-    {"match": "quark:framed_glass(_pane)?", "to": "minecraft:glass\\1"},
-    {"match": "quark:([a-z_]+)_framed_glass(_pane)?", "to": "minecraft:\\1_stained_glass\\2"},
-    {"match": "quark:([a-z_]+)_shingles(_stairs|_slab|_vertical_slab)?", "to": "minecraft:\\1_terracotta"},
-    {"match": "quark:shingles(_stairs|_slab|_vertical_slab)?", "to": "minecraft:terracotta"},
-    {"match": "quark:([a-z_]+)_stained_planks(_stairs|_slab)?", "to": "minecraft:oak_planks"},
-    {"match": "quark:paper_lantern(_sakura)?", "to": "minecraft:lantern"},
-    {"match": "quark:([a-z_]+)_hedge", "to": "minecraft:oak_leaves"},
-    {"match": "quark:([a-z_]+)_ladder", "to": "minecraft:ladder"},
-    {"match": "quark:([a-z_]+)_chest", "to": "minecraft:chest"},
-    {"match": "quark:([a-z_]+)_trapped_chest", "to": "minecraft:trapped_chest"},
-    {"match": "quark:([a-z_]+)_bookshelf", "to": "minecraft:bookshelf"},
-    {"match": "quark:(stripped_)?([a-z_]+)_post", "to": "minecraft:{material}_fence"},
-    {"match": "quark:(iron|gold)_rod|quark:rope", "to": "minecraft:chain"},
-    {"match": "quark:grate", "to": "minecraft:iron_bars"},
-    {"match": "quark:.*(lamp|lantern)", "to": "minecraft:lantern"},
-    {"match": "quark:(thatch|.*_thatch)(_stairs|_slab)?", "to": "minecraft:hay_block"},
-    {"match": "quark:.*crate", "to": "minecraft:barrel"},
-    {"match": "quark:(dirty|clear)_glass(_pane)?", "to": "minecraft:glass\\2"},
-    {"match": "quark:.*item_frame", "to": "air"},
-    {"match": "createdeco:.*_(window|window_pane)", "to": "minecraft:glass_pane"},
-    {"match": "createdeco:.*_door", "to": "minecraft:iron_door"},
-    {"match": "createdeco:.*_trapdoor", "to": "minecraft:iron_trapdoor"},
-    {"match": "createdeco:.*_bars(_overlay)?", "to": "minecraft:iron_bars"},
-    {"match": "createdeco:.*(lamp|lantern)", "to": "minecraft:lantern"},
-    {"match": "createdeco:.*catwalk.*", "to": "minecraft:iron_trapdoor"},
-    {"match": "createdeco:.*(sheet_metal|_sheet)", "to": "minecraft:iron_block"},
-    {"match": "createdeco:.*(ladder)", "to": "minecraft:ladder"},
-    {"match": "createdeco:.*(support|hull|facade|beam|mesh_fence)", "to": "minecraft:iron_bars"},
-    {"match": "createdeco:(.*)_bricks(_stairs|_slab|_wall)?", "to": "minecraft:{material}_bricks"},
-    {"match": "createdeco:.*", "to": "minecraft:stone_bricks"},
-    {"match": "create(addition|bigcannons|_central_kitchen)?:.*", "to": "air"},
-    {"match": "railways:.*", "to": "air"},
-    {"match": "biomesoplenty:([a-z_]+)_leaves", "to": "minecraft:{material}_leaves"},
-    {"match": "biomesoplenty:(mud|mud_bricks|mud_brick_stairs|mud_brick_slab|mud_brick_wall|packed_mud)", "to": "minecraft:\\1"},
-    {"match": "biomesoplenty:.*(flower|tulip|lily|rose|daisy|lavender|orchid|violet|bloom|clover)", "to": "minecraft:poppy"},
-    {"match": "biomesoplenty:.*(grass|sprout|bush|shrub|reed|cattail|barley|sprout|moss)", "to": "minecraft:grass"},
-    {"match": "biomesoplenty:.*sapling", "to": "minecraft:oak_sapling"},
-    {"match": "apocalypsenow:.*(barricade|barrier|fence).*", "to": "minecraft:oak_fence"},
-    {"match": "apocalypsenow:.*(barrel|crate|box).*", "to": "minecraft:barrel"},
-    {"match": "zombie_extreme:.*(barricade|barrier|fence).*", "to": "minecraft:oak_fence"},
-    {"match": "zombie_extreme:.*(barrel|crate|box|trash|bag).*", "to": "minecraft:barrel"},
-    {"match": "(apocalypsenow|zombie_extreme):.*(blood|corpse|body|bone|zombie|skull).*", "to": "air"}
+    {
+      "match": "farmersdelight:basket",
+      "to": "minecraft:barrel"
+    },
+    {
+      "match": "another_furniture:([a-z_]+)_planter_box",
+      "to": "another_furniture:\\1_flower_box"
+    },
+    {
+      "match": "quark:([a-z_]+)_stool",
+      "to": "another_furniture:\\1_stool"
+    },
+    {
+      "match": "biomesoplenty:(smooth_)?(black|white|orange)_sandstone(_stairs|_slab|_wall)?",
+      "to": "minecraft:\\1sandstone\\3"
+    },
+    {
+      "match": "lootr:lootr_(chest|barrel|trapped_chest|shulker)",
+      "to": "minecraft:\\1"
+    },
+    {
+      "match": "lootr:lootr_inventory",
+      "to": "minecraft:chest"
+    },
+    {
+      "match": "storagedrawers:.*",
+      "to": "minecraft:barrel"
+    },
+    {
+      "match": "comforts:(sleeping_bag|hammock)_([a-z_]+)",
+      "to": "minecraft:\\2_carpet"
+    },
+    {
+      "match": "alexsmobs:bison_carpet",
+      "to": "minecraft:brown_carpet"
+    },
+    {
+      "match": "trashcans:.*",
+      "to": "minecraft:composter"
+    },
+    {
+      "match": "thirst:.*",
+      "to": "minecraft:cauldron"
+    },
+    {
+      "match": "cold_sweat:(boiler|hearth)(_bottom|_top)?",
+      "to": "minecraft:furnace"
+    },
+    {
+      "match": "cold_sweat:icebox",
+      "to": "minecraft:barrel"
+    },
+    {
+      "match": "cold_sweat:.*",
+      "to": "air"
+    },
+    {
+      "match": "securitycraft:reinforced_([a-z_]+)",
+      "to": "minecraft:\\1"
+    },
+    {
+      "match": "securitycraft:keypad_door",
+      "to": "minecraft:iron_door"
+    },
+    {
+      "match": "securitycraft:.*",
+      "to": "air"
+    },
+    {
+      "match": "tac:.*",
+      "to": "minecraft:smithing_table"
+    },
+    {
+      "match": "clickmachine:.*",
+      "to": "minecraft:dispenser"
+    },
+    {
+      "match": "immersiveposts:.*",
+      "to": "minecraft:iron_bars"
+    },
+    {
+      "match": "pipez:.*",
+      "to": "air"
+    },
+    {
+      "match": "car:.*",
+      "to": "air"
+    },
+    {
+      "match": "rocks:.*",
+      "to": "air"
+    },
+    {
+      "match": "ag_day_counter:.*",
+      "to": "air"
+    },
+    {
+      "match": "refinedstorage:.*cable.*",
+      "to": "air"
+    },
+    {
+      "match": "refinedstorage:.*",
+      "to": "minecraft:iron_block"
+    },
+    {
+      "match": "immersiveengineering:treated_wood_[a-z]+_?(stairs|slab)?",
+      "to": "minecraft:spruce_planks"
+    },
+    {
+      "match": "immersiveengineering:treated_fence",
+      "to": "minecraft:spruce_fence"
+    },
+    {
+      "match": "immersiveengineering:(treated_post|wooden_post)",
+      "to": "minecraft:spruce_fence"
+    },
+    {
+      "match": "immersiveengineering:(steel|alu)_(fence|post|wallmount)",
+      "to": "minecraft:iron_bars"
+    },
+    {
+      "match": "immersiveengineering:(steel|alu)_scaffolding.*",
+      "to": "minecraft:iron_bars"
+    },
+    {
+      "match": "immersiveengineering:sheetmetal_colored_([a-z_]+)",
+      "to": "minecraft:\\1_concrete"
+    },
+    {
+      "match": "immersiveengineering:(slab_)?sheetmetal_.*",
+      "to": "minecraft:iron_block"
+    },
+    {
+      "match": "immersiveengineering:(slab_)?(steel|storage_steel|storage_aluminum|storage_lead|storage_nickel|storage_silver|storage_uranium|storage_constantan|storage_electrum)",
+      "to": "minecraft:iron_block"
+    },
+    {
+      "match": "immersiveengineering:(slab_|stairs_)?concrete(_tile|_leaded|_sheet|_quarter|_three_quarter)?",
+      "to": "minecraft:light_gray_concrete"
+    },
+    {
+      "match": "immersiveengineering:(slab_|stairs_)?(clinker_brick|slag_brick|coke_brick|blastbrick|blastbrick_reinforced|alloybrick)(_quoin|_sill)?",
+      "to": "minecraft:bricks"
+    },
+    {
+      "match": "immersiveengineering:(electric_)?lantern",
+      "to": "minecraft:lantern"
+    },
+    {
+      "match": "immersiveengineering:floodlight",
+      "to": "minecraft:redstone_lamp"
+    },
+    {
+      "match": "immersiveengineering:(fluid_pipe|.*wire.*|.*connector.*|.*relay.*|.*transformer.*|.*capacitor.*|.*generator.*|conveyor_.*|.*cable.*)",
+      "to": "air"
+    },
+    {
+      "match": "immersiveengineering:.*(crate|barrel)",
+      "to": "minecraft:barrel"
+    },
+    {
+      "match": "immersiveengineering:.*",
+      "to": "minecraft:iron_block"
+    },
+    {
+      "match": "immersivepetroleum:.*",
+      "to": "minecraft:iron_block"
+    },
+    {
+      "match": "quark:framed_glass(_pane)?",
+      "to": "minecraft:glass\\1"
+    },
+    {
+      "match": "quark:([a-z_]+)_framed_glass(_pane)?",
+      "to": "minecraft:\\1_stained_glass\\2"
+    },
+    {
+      "match": "quark:([a-z_]+)_shingles(_stairs|_slab|_vertical_slab)?",
+      "to": "minecraft:\\1_terracotta"
+    },
+    {
+      "match": "quark:shingles(_stairs|_slab|_vertical_slab)?",
+      "to": "minecraft:terracotta"
+    },
+    {
+      "match": "quark:([a-z_]+)_stained_planks(_stairs|_slab)?",
+      "to": "minecraft:oak_planks"
+    },
+    {
+      "match": "quark:paper_lantern(_sakura)?",
+      "to": "minecraft:lantern"
+    },
+    {
+      "match": "quark:([a-z_]+)_hedge",
+      "to": "minecraft:oak_leaves"
+    },
+    {
+      "match": "quark:([a-z_]+)_ladder",
+      "to": "minecraft:ladder"
+    },
+    {
+      "match": "quark:([a-z_]+)_chest",
+      "to": "minecraft:chest"
+    },
+    {
+      "match": "quark:([a-z_]+)_trapped_chest",
+      "to": "minecraft:trapped_chest"
+    },
+    {
+      "match": "quark:([a-z_]+)_bookshelf",
+      "to": "minecraft:bookshelf"
+    },
+    {
+      "match": "quark:(stripped_)?([a-z_]+)_post",
+      "to": "minecraft:{material}_fence"
+    },
+    {
+      "match": "quark:(iron|gold)_rod|quark:rope",
+      "to": "minecraft:chain"
+    },
+    {
+      "match": "quark:grate",
+      "to": "minecraft:iron_bars"
+    },
+    {
+      "match": "quark:.*(lamp|lantern)",
+      "to": "minecraft:lantern"
+    },
+    {
+      "match": "quark:(thatch|.*_thatch)(_stairs|_slab)?",
+      "to": "minecraft:hay_block"
+    },
+    {
+      "match": "quark:.*crate",
+      "to": "minecraft:barrel"
+    },
+    {
+      "match": "quark:(dirty|clear)_glass(_pane)?",
+      "to": "minecraft:glass\\2"
+    },
+    {
+      "match": "quark:.*item_frame",
+      "to": "air"
+    },
+    {
+      "match": "createdeco:.*_(window|window_pane)",
+      "to": "minecraft:glass_pane"
+    },
+    {
+      "match": "createdeco:.*_door",
+      "to": "minecraft:iron_door"
+    },
+    {
+      "match": "createdeco:.*_trapdoor",
+      "to": "minecraft:iron_trapdoor"
+    },
+    {
+      "match": "createdeco:.*_bars(_overlay)?",
+      "to": "minecraft:iron_bars"
+    },
+    {
+      "match": "createdeco:.*(lamp|lantern)",
+      "to": "minecraft:lantern"
+    },
+    {
+      "match": "createdeco:.*catwalk.*",
+      "to": "minecraft:iron_trapdoor"
+    },
+    {
+      "match": "createdeco:.*(sheet_metal|_sheet)",
+      "to": "minecraft:iron_block"
+    },
+    {
+      "match": "createdeco:.*(ladder)",
+      "to": "minecraft:ladder"
+    },
+    {
+      "match": "createdeco:.*(support|hull|facade|beam|mesh_fence)",
+      "to": "minecraft:iron_bars"
+    },
+    {
+      "match": "createdeco:(.*)_bricks(_stairs|_slab|_wall)?",
+      "to": "minecraft:{material}_bricks"
+    },
+    {
+      "match": "createdeco:.*",
+      "to": "minecraft:stone_bricks"
+    },
+    {
+      "match": "create(addition|bigcannons|_central_kitchen)?:.*",
+      "to": "air"
+    },
+    {
+      "match": "railways:.*",
+      "to": "air"
+    },
+    {
+      "match": "biomesoplenty:([a-z_]+)_leaves",
+      "to": "minecraft:{material}_leaves"
+    },
+    {
+      "match": "biomesoplenty:(mud|mud_bricks|mud_brick_stairs|mud_brick_slab|mud_brick_wall|packed_mud)",
+      "to": "minecraft:\\1"
+    },
+    {
+      "match": "biomesoplenty:.*(flower|tulip|lily|rose|daisy|lavender|orchid|violet|bloom|clover)",
+      "to": "minecraft:poppy"
+    },
+    {
+      "match": "biomesoplenty:.*(grass|sprout|bush|shrub|reed|cattail|barley|sprout|moss)",
+      "to": "minecraft:grass"
+    },
+    {
+      "match": "biomesoplenty:.*sapling",
+      "to": "minecraft:oak_sapling"
+    },
+    {
+      "match": "apocalypsenow:.*(barricade|barrier|fence).*",
+      "to": "minecraft:oak_fence"
+    },
+    {
+      "match": "apocalypsenow:.*(barrel|crate|box).*",
+      "to": "minecraft:barrel"
+    },
+    {
+      "match": "zombie_extreme:.*(barricade|barrier|fence).*",
+      "to": "minecraft:oak_fence"
+    },
+    {
+      "match": "zombie_extreme:.*(barrel|crate|box|trash|bag).*",
+      "to": "minecraft:barrel"
+    },
+    {
+      "match": "(apocalypsenow|zombie_extreme):.*(blood|corpse|body|bone|zombie|skull).*",
+      "to": "air"
+    }
   ],
-  "shapes": ["vertical_slab", "pressure_plate", "fence_gate", "trapdoor", "stairs", "slab", "wall", "fence", "door", "button", "pane", "carpet", "leaves", "log", "wood", "planks", "bricks", "tiles", "pillar", "lantern", "sign", "ladder", "glass", "block"],
+  "shapes": [
+    "vertical_slab",
+    "pressure_plate",
+    "fence_gate",
+    "trapdoor",
+    "stairs",
+    "slab",
+    "wall",
+    "fence",
+    "door",
+    "button",
+    "pane",
+    "carpet",
+    "leaves",
+    "log",
+    "wood",
+    "planks",
+    "bricks",
+    "tiles",
+    "pillar",
+    "lantern",
+    "sign",
+    "ladder",
+    "glass",
+    "block"
+  ],
   "shape_fallbacks": {
-    "vertical_slab": ["{material}_planks", "{material}", "{material}_block", "stone"],
-    "stairs": ["{material}_stairs", "{material}_brick_stairs", "stone_brick_stairs"],
-    "slab": ["{material}_slab", "{material}_brick_slab", "stone_brick_slab"],
-    "wall": ["{material}_wall", "{material}_brick_wall", "stone_brick_wall"],
-    "fence": ["{material}_fence", "oak_fence"],
-    "fence_gate": ["{material}_fence_gate", "oak_fence_gate"],
-    "door": ["{material}_door", "oak_door"],
-    "trapdoor": ["{material}_trapdoor", "oak_trapdoor"],
-    "button": ["{material}_button", "stone_button"],
-    "pressure_plate": ["{material}_pressure_plate", "stone_pressure_plate"],
-    "pane": ["{material}_stained_glass_pane", "glass_pane"],
-    "glass": ["{material}_stained_glass", "glass"],
-    "carpet": ["{material}_carpet", "white_carpet"],
-    "leaves": ["{material}_leaves", "oak_leaves"],
-    "log": ["{material}_log", "oak_log"],
-    "wood": ["{material}_wood", "{material}_planks", "oak_planks"],
-    "planks": ["{material}_planks", "oak_planks"],
-    "bricks": ["{material}_bricks", "stone_bricks"],
-    "tiles": ["{material}_tiles", "{material}_bricks", "stone_bricks"],
-    "pillar": ["{material}_pillar", "quartz_pillar"],
-    "lantern": ["lantern"],
-    "sign": ["{material}_sign", "oak_sign"],
-    "ladder": ["ladder"],
-    "block": ["{material}_block", "{material}", "stone"],
-    "": ["{material}", "{material}_planks", "{material}_block"]
+    "vertical_slab": [
+      "{material}_planks",
+      "{material}",
+      "{material}_block",
+      "stone"
+    ],
+    "stairs": [
+      "{material}_stairs",
+      "{material}_brick_stairs",
+      "stone_brick_stairs"
+    ],
+    "slab": [
+      "{material}_slab",
+      "{material}_brick_slab",
+      "stone_brick_slab"
+    ],
+    "wall": [
+      "{material}_wall",
+      "{material}_brick_wall",
+      "stone_brick_wall"
+    ],
+    "fence": [
+      "{material}_fence",
+      "oak_fence"
+    ],
+    "fence_gate": [
+      "{material}_fence_gate",
+      "oak_fence_gate"
+    ],
+    "door": [
+      "{material}_door",
+      "oak_door"
+    ],
+    "trapdoor": [
+      "{material}_trapdoor",
+      "oak_trapdoor"
+    ],
+    "button": [
+      "{material}_button",
+      "stone_button"
+    ],
+    "pressure_plate": [
+      "{material}_pressure_plate",
+      "stone_pressure_plate"
+    ],
+    "pane": [
+      "{material}_stained_glass_pane",
+      "glass_pane"
+    ],
+    "glass": [
+      "{material}_stained_glass",
+      "glass"
+    ],
+    "carpet": [
+      "{material}_carpet",
+      "white_carpet"
+    ],
+    "leaves": [
+      "{material}_leaves",
+      "oak_leaves"
+    ],
+    "log": [
+      "{material}_log",
+      "oak_log"
+    ],
+    "wood": [
+      "{material}_wood",
+      "{material}_planks",
+      "oak_planks"
+    ],
+    "planks": [
+      "{material}_planks",
+      "oak_planks"
+    ],
+    "bricks": [
+      "{material}_bricks",
+      "stone_bricks"
+    ],
+    "tiles": [
+      "{material}_tiles",
+      "{material}_bricks",
+      "stone_bricks"
+    ],
+    "pillar": [
+      "{material}_pillar",
+      "quartz_pillar"
+    ],
+    "lantern": [
+      "lantern"
+    ],
+    "sign": [
+      "{material}_sign",
+      "oak_sign"
+    ],
+    "ladder": [
+      "ladder"
+    ],
+    "block": [
+      "{material}_block",
+      "{material}",
+      "stone"
+    ],
+    "": [
+      "{material}",
+      "{material}_planks",
+      "{material}_block"
+    ]
+  },
+  "property_renames": {
+    "_note": "A property a mod renamed between 1.18.2 and 1.20.1, read from both versions' registries: the 1.18.2 name and, where its values changed, the new value for each old one.",
+    "another_furniture": {
+      "type": {
+        "to": "horizontal"
+      },
+      "type_1": {
+        "to": "horizontal_1"
+      },
+      "type_2": {
+        "to": "horizontal_2"
+      },
+      "top": {
+        "to": "vertical",
+        "values": {
+          "true": "up",
+          "false": "down"
+        }
+      }
+    }
   }
 }

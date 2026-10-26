@@ -179,11 +179,21 @@ public final class BurglaryDamage {
     }
 
     /** Part of the building's shell: next to the open air outside (a cell with the sky over it), or on the level of a floor or a ceiling (every six blocks from the street). */
+    /** How far out from a wall the open sky is looked for (the depth of the deepest eaves or porch the furnished buildings have, and then some). */
+    static final int EAVES = 4;
+
     static boolean shell(ServerLevel level, CityBuildings.Building b, BlockPos pos) {
         if (Math.floorMod(pos.getY() - b.streetY(), CityBuildings.FLOOR) == 0) return true;
         for (Direction side : Direction.values()) {
             BlockPos n = pos.relative(side);
-            if (level.getBlockState(n).isAir() && BuildingGuard.exposed(level, n)) return true;
+            if (!level.getBlockState(n).isAir()) continue;
+            if (BuildingGuard.exposed(level, n)) return true;
+            // under the eaves of a roof or a porch the air outside a wall has no sky straight over it: a few steps further out, it has (a wall measured in wreck run 3)
+            if (side.getAxis().isHorizontal()) for (int k = 1; k <= EAVES; k++) {
+                BlockPos out = n.relative(side, k);
+                if (!level.getBlockState(out).isAir()) break;
+                if (BuildingGuard.exposed(level, out)) return true;
+            }
         }
         return false;
     }
@@ -195,7 +205,7 @@ public final class BurglaryDamage {
 
     // ------------------------------------------------------------------------------------------------ breaking
 
-    static long breaks, dependents, restoredCells, restoredBuildings, skippedFilled, skippedHomes;
+    static long breaks, dependents, restoredCells, restoredBuildings, skippedFilled, skippedHomes, relockedDoors;
 
     /**
      * Breaks the block (and the other half of a bed, a door or a tall plant, and whatever stood on it and cannot stand without it), records each first-time cell, drops nothing. Returns how many
@@ -396,6 +406,15 @@ public final class BurglaryDamage {
             }
             put++;
         }
+        // its doors are shut and locked again: a door the thief picked, or left by, is not left standing open in a building the city has put back
+        PropertyLocks locks = PropertyLocks.get(level.getServer());
+        long now = LockService.clock(level.getServer());
+        for (BlockPos door : locks.unsettledIn(r.chunkX, r.chunkZ)) {
+            BlockState state = level.getBlockState(door);
+            if (state.getBlock() instanceof DoorBlock d && state.getValue(DoorBlock.OPEN)) d.setOpen(null, level, state, door, false);
+            locks.relock(door, now);
+            relockedDoors++;
+        }
         restoredCells += put;
         restoredBuildings++;
         LOGGER.info("[UC-BURGLARY] put back {} of {} broken cells in a building of {} at chunk {} {}", put, r.cells.size(), r.city, r.chunkX, r.chunkZ);
@@ -409,6 +428,6 @@ public final class BurglaryDamage {
         int cells = 0;
         for (Record r : store.records.values()) cells += r.cells.size();
         return "burglary damage: " + store.records.size() + " building(s) waiting with " + cells + " cell(s); broken " + breaks + " (" + dependents + " that stood on them); put back " + restoredCells + " cell(s) in "
-            + restoredBuildings + " building(s), skipped " + skippedFilled + " filled and " + skippedHomes + " in homes";
+            + restoredBuildings + " building(s) with " + relockedDoors + " door(s) shut and locked again, skipped " + skippedFilled + " filled and " + skippedHomes + " in homes";
     }
 }

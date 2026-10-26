@@ -22,6 +22,8 @@ What ``wire`` writes into the ported pack, never into the repository:
   buildings added to the chosen ring. A private pack sits above the furnished package, so its file replaces the public one for that city.
 * ``data/underground_city/building_security/<pack id>.json``: a rule per chosen building that names its security class (classes merge).
 * ``data/underground_city/properties/<pack id>.json``: city listings for buildings the selection lets.
+* ``data/underground_city/shop_counters/<pack id>-<building>.json``: for a shop with a ``counter`` (an outlet of the game's and a title), its keeper
+  sells that outlet's goods over the building's first counter.
 
 The report printed holds counts and ids only. Nothing is guessed silently: a building without a street door or a bed is listed.
 """
@@ -121,20 +123,20 @@ def plan(pack: Pack, building_id: str, city: str, use: str, title: str = "") -> 
                         spots.append({"kind": "door", "x": x, "y": y0 + dy, "z": z, "facing": props.get("facing", "north")})
                         continue
                     for kind, pattern in KINDS:
+                        # a home's kitchen counter is no shop counter: a counter spot is where a worker serves (HouseholdPlan), so a home has none
+                        if kind == "counter" and use in ("house", "flats"):
+                            continue
                         if pattern.search(name) and (kind != "bed" or props.get("part", "head") == "head"):
                             spots.append({"kind": kind, "x": x, "y": y0 + dy, "z": z, "facing": props.get("facing", "north")})
                             break
     missing = []
     if not cells:
         missing.append("no blocks")
-    # under a roof: a column with a block above head height (a garden, a yard and a fence are not); the house is the roofed part of the plot
-    roof: dict[tuple[int, int], int] = {}
-    for x, y, z in cells:
-        if y >= 4:
-            roof[(x, z)] = max(roof.get((x, z), 0), y)
-    roofed = set(roof)
+    # under a roof: a column with the ground storey's ceiling over it (its top two layers; a garden, a yard, a fence and the eaves of a roof above are not);
+    # the house is the roofed part of the plot, as high as the highest block over it
+    roofed = {(x, z) for x, y, z in cells if FLOOR - 2 <= y < FLOOR}
     xs, zs = [c[0] for c in roofed] or [0], [c[1] for c in roofed] or [0]
-    top_y = max(roof.values()) if roof else 1
+    top_y = max([y for x, y, z in cells if (x, z) in roofed] or [1])
     # the inside of the building: the roofed footprint one block in from its outer walls, from the first floor up to under the roof
     box = [min(xs) + 1, 1, min(zs) + 1, max(xs) - 1, max(1, top_y - 1), max(zs) - 1]
     # the street door: a ground-floor door with open sky on one side of it
@@ -142,7 +144,13 @@ def plan(pack: Pack, building_id: str, city: str, use: str, title: str = "") -> 
     doors = [s for s in spots if s["kind"] == "door"]
     street = [s for s in doors if s["y"] < FLOOR and any((s["x"] + k * step[s["facing"]][0], s["z"] + k * step[s["facing"]][1]) not in roofed for k in (1, -1))]
     if not street:
-        missing.append("no street door on the ground floor")
+        # under an awning or a porch both sides of a door are roofed: the ground-floor door nearest the edge of the plot is then taken, and the report says so
+        ground = [s for s in doors if s["y"] < FLOOR]
+        if ground:
+            street = [min(ground, key=lambda d: min(d["x"], 15 - d["x"], d["z"], 15 - d["z"]))]
+            missing.append("street door guessed: no ground-floor door has open sky on one side")
+        else:
+            missing.append("no street door on the ground floor")
     beds = [s for s in spots if s["kind"] == "bed"]
     if use in ("house", "flats") and not beds:
         missing.append("no bed")
@@ -177,6 +185,12 @@ def wire(pack_root: Path, selection: dict, public: Path) -> dict:
         report["buildings"][bid] = {"spots": kinds, "units": len(doc.get("units", [])), "missing": missing}
         if chosen.get("class"):
             rules.append({"type_prefix": bid, "class": chosen["class"], "priority": 20})
+        if chosen.get("counter"):
+            # a shop's keeper sells the goods of one of the game's outlets over the building's first counter (data/underground_city/shop_counters)
+            c = chosen["counter"]
+            out = pack_root / "data/underground_city/shop_counters" / f"{pack_id}-{path}.json"
+            out.parent.mkdir(parents=True, exist_ok=True)
+            out.write_text(json.dumps({"schema_version": 1, "outlet": c["outlet"], "building": bid, "spot": c.get("spot", "counter"), "city": city, "title": c["title"]}, indent=2) + "\n", encoding="utf-8")
         if chosen.get("listing"):
             listings.append({"building": bid, **chosen["listing"], "area": city.capitalize(), "tenures": chosen["listing"].get("tenures", ["rent", "buy"]),
                              "max_containers": chosen["listing"].get("max_containers", 6), "private_claims": chosen["listing"].get("private_claims", 2),

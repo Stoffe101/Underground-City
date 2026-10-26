@@ -39,22 +39,31 @@ Bugs these runs found and fixed:
 | The house to let, after a lease | Opens for its tenant |
 | A household's own flat door in an Ironhaven block of flats, clicked from the stairwell | Stays shut. "Locked. Somebody lives here: Flat 1." |
 
-Run 2 clicked the flat door in spectator mode, which a travel step had left on. Run 3 forces survival mode and checks the mode at every click. Its result is recorded under "Runs in progress" below.
+Run 2 clicked the flat door in spectator mode, which a travel step had left on. **Doors run 3**, which forces survival mode and checks the mode at every click, passed all 8 steps again.
 
 ## 3. Policing and witnesses (D-189)
 
-**Implemented. GameTested. A real client heard a witness report.**
+**Fixed, and verified through a real client:** police run 3, `RESULT pass`, 8 steps.
 
-* `CrimeGameTests` covers:
-  * a passer-by who reports once, however many blows follow, after the city's report time;
-  * a victim who reports alone;
-  * a patrol's warning, then a pursuit;
-  * striking an officer;
-  * officers who start out of the player's sight;
-  * a motion sensor;
-  * a neighbour who hears damage.
-* Wreck run 2: a picked lock with nobody in sight called nobody. A window broken inside the house was heard by a neighbour, and the police were called.
-* The assault, alarmed-burglary, pursuit and arrest scenario is `-PucPlaytest=police`. Its result is recorded under "Runs in progress".
+| Step | What happened |
+| --- | --- |
+| `/uc admin credits` from the client | 200 credits added through Q Shop and audited |
+| A blow in sight of five passers-by (13:00, Valewood) | "Somebody saw you strike Fenn Greenhill and runs off to call the police." Officers were dispatched for the city's report time of 25 s and walked in. The citizen, standing still, was arrested for assault and fined Valewood's 40 credits (wallet 200 → 160, heat 4) |
+| A blow nobody else saw (23:30, the person struck alone) | The victim went to the police themselves, later (50 s, twice the city's time). Officers arrived and arrested the citizen again (heat 8) |
+| A quiet pick of an alarmed house's deadbolt, nobody in sight | Nobody called the police |
+| A window broken inside that house | The armed alarm called the police (a broken window trips it for certain) |
+| Back on the street | An officer arrived and arrested the citizen for break-in (fined 80) before the scripted run away began |
+
+Not shown through a client in this pass:
+* an escape;
+* a patrol officer's warning for a first minor offence;
+* a logout while wanted.
+
+`CrimeGameTests` and `PoliceResponseGameTests` cover these.
+
+Runs 1 and 2 found two faults, both in the scenario: the player had been left in spectator mode high above the street, and at night it picked a person indoors who could not be struck. Both are fixed, and every strike now logs whether it landed.
+
+UI fixed after reading the run's photographs: the "Police searching" notice for a building was cut off at 1280×720 and is shorter now.
 
 ## 4. Burglary damage and restoration (D-190)
 

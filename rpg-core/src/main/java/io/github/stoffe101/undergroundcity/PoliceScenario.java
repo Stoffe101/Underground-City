@@ -67,7 +67,17 @@ final class PoliceScenario {
             else pass("2 /uc admin credits from a real client added 200 credits through Q Shop and wrote the audit record");
         });
         ThiefScenario.travel("to the middle of Valewood", () -> ThiefScenario.centre("valewood"), 4);
-        Playtest.wait("people come out", 200);
+        Playtest.queue("down to the street", () -> {
+            BlockPos at = server(() -> CityArrival.safeStand(level(), BlockPos.containing(me().getX(), 72, me().getZ()), 16, 12, 40).orElse(null));
+            if (at == null) { Playtest.fail("no street ground near Valewood's middle"); return; }
+            scripted("the player was set down on the street at " + at.toShortString() + " in survival mode");
+            mc().getSingleplayerServer().execute(() -> {
+                me().setGameMode(net.minecraft.world.level.GameType.SURVIVAL);
+                me().teleportTo(at.getX() + 0.5, at.getY(), at.getZ() + 0.5);
+                me().setDeltaMovement(Vec3.ZERO);
+            });
+        });
+        Playtest.wait("people come out", 300);
         assaultInSight();
         ThiefScenario.stopIfFailed("the assault");
         arrested();
@@ -81,7 +91,9 @@ final class PoliceScenario {
     /** A person in the street with somebody else close enough to see a blow given beside them; the cell beside them to stand in. Server thread. */
     private static Object[] victimWithWitness(boolean wantWitness) {
         ServerLevel level = level();
-        for (TownspersonEntity v : level.getEntitiesOfClass(TownspersonEntity.class, me().getBoundingBox().inflate(48), p -> p.isAlive() && !p.police())) {
+        AABB around = new AABB(me().getX() - 48, level.getMinBuildHeight(), me().getZ() - 48, me().getX() + 48, level.getMaxBuildHeight(), me().getZ() + 48);
+        // a person out in the street (under the open sky), as a passer-by is: a resident indoors at night is behind walls the player cannot strike through
+        for (TownspersonEntity v : level.getEntitiesOfClass(TownspersonEntity.class, around, p -> p.isAlive() && !p.police() && CityArrival.standable(level, p.blockPosition()))) {
             for (Direction d : Direction.Plane.HORIZONTAL) {
                 BlockPos cell = v.blockPosition().relative(d);
                 if (!CityArrival.standable(level, cell)) continue;
@@ -123,11 +135,12 @@ final class PoliceScenario {
         Playtest.queue(label + ": an empty hand, look at them and strike with the left button", () -> { k[0] = 0; F.heardMark = Playtest.heardCount(); Playtest.focusWindow(); Playtest.tap("8"); }, () -> {
             if (F.victim == null) return true;
             var target = mc().level.getEntities(mc().player, mc().player.getBoundingBox().inflate(6), e -> e.getUUID().equals(F.victim));
-            if (target.isEmpty()) return ++k[0] > 100;
+            if (target.isEmpty()) { if (++k[0] > 100) Playtest.log("POLICE " + label + ": the person is not in reach any more"); return k[0] > 100; }
             look(target.get(0).getEyePosition().subtract(0, 0.5, 0));
             k[0]++;
             boolean onIt = mc().hitResult instanceof EntityHitResult hit && hit.getEntity().getUUID().equals(F.victim);
-            if (onIt && k[0] > 4) { Playtest.pressLeft(); return true; }
+            if (onIt && k[0] > 4) { Playtest.pressLeft(); Playtest.log("POLICE " + label + ": struck with the crosshair on them after " + k[0] + " ticks"); return true; }
+            if (k[0] > 100) Playtest.log("POLICE " + label + ": the crosshair never rested on them (it rests on " + mc().hitResult.getType() + ")");
             return k[0] > 100;
         }, 140);
         Playtest.wait("the notice", 20);
