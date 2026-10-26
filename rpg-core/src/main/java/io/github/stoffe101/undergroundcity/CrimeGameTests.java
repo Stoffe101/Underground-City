@@ -38,6 +38,8 @@ public final class CrimeGameTests {
                 level.setBlock(centre.offset(dx, -1, dz), Blocks.STONE.defaultBlockState(), 2);
                 for (int dy = 0; dy <= 5; dy++) level.setBlock(centre.offset(dx, dy, dz), Blocks.AIR.defaultBlockState(), 2);
             }
+            // people and officers an earlier batch left at this grid slot would see (or warn) instead of this test's own people (a CI layout, October 26): each crime test is a batch of its own
+            for (TownspersonEntity t : level.getEntitiesOfClass(TownspersonEntity.class, new AABB(centre).inflate(64))) t.discard();
             striker = player(helper, name, "farmer");
             striker.setGameMode(GameType.SURVIVAL);
             striker.setPos(centre.getX() + 0.5, centre.getY(), centre.getZ() + 0.5);
@@ -168,6 +170,7 @@ public final class CrimeGameTests {
             }
             TownspersonEntity victim = s.person(1, 0, 5), passerBy = s.person(4, 4, 6);
             CrimeWatch.assault(s.striker, s.level, victim, "valewood", false);
+            check(PoliceResponse.dispatches() == 1, "the witnessed assault raised no response: " + CrimeWatch.status() + "; " + PoliceResponse.status());
             PoliceResponse.Dispatch d = PoliceResponse.dispatchAt(0);
             d.arriveAt = LockService.clock(s.level.getServer());
             PoliceResponse.pass(s.level.getServer());
