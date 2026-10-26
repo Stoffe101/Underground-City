@@ -26,6 +26,17 @@ import static io.github.stoffe101.undergroundcity.CrewGameTests.player;
 public final class CrimeGameTests {
 
     /** An open stone floor high above the test grid with clear air round it (so lines of sight do not depend on the neighbouring tests), a striker, and the police and the watch reset. */
+    /**
+     * Runs a scene's checks a few ticks after its people were added, then closes the street: an entity added in the tick it is asked about was, under a loaded CI runner, not yet found by
+     * the lookups the police use (October 26: an officer standing in plain sight was not seen, and a passer-by was not counted, in two runs out of many).
+     */
+    private static void settled(GameTestHelper helper, Street s, Runnable checks) {
+        helper.runAfterDelay(3, () -> {
+            try { checks.run(); helper.succeed(); }
+            finally { s.close(); }
+        });
+    }
+
     private static final class Street implements AutoCloseable {
         final ServerLevel level;
         final BlockPos centre;
@@ -120,21 +131,23 @@ public final class CrimeGameTests {
 
     @GameTest(template = "empty", batch = "uc_crime_c", timeoutTicks = 200)
     public static void anOfficerWhoSeesAFirstBlowWarnsAndPursuesTheNext(GameTestHelper helper) {
-        try (Street s = new Street(helper, "uc_crime_c")) {
-            TownspersonEntity victim = s.person(1, 0, 4);
-            TownspersonEntity officer = s.officer(5, 2);
+        Street s = new Street(helper, "uc_crime_c");
+        TownspersonEntity victim = s.person(1, 0, 4);
+        TownspersonEntity officer = s.officer(5, 2);
+        settled(helper, s, () -> {
             PolicePatrols.Patrol patrol = new PolicePatrols.Patrol("valewood", s.level.dimension(), List.of(s.centre.offset(5, 0, 2)), LockService.clock(s.level.getServer()) + 6000);
             patrol.officers.add(officer.getUUID());
             patrol.next.add(0);
             PolicePatrols.putForTest(patrol);
+            String sees = "officer found " + (s.level.getEntity(officer.getUUID()) == officer) + ", alive " + officer.isAlive() + ", " + String.format(java.util.Locale.ROOT, "%.1f", officer.distanceTo(s.striker))
+                + " blocks, line of sight " + officer.hasLineOfSight(s.striker);
             CrimeWatch.assault(s.striker, s.level, victim, "valewood", false);
-            check(PoliceResponse.dispatches() == 0 && CrimeWatch.warnings == 1, "an officer who saw a first blow did not give a warning: dispatches " + PoliceResponse.dispatches() + ", warnings " + CrimeWatch.warnings);
+            check(PoliceResponse.dispatches() == 0 && CrimeWatch.warnings == 1, "an officer who saw a first blow did not give a warning: dispatches " + PoliceResponse.dispatches() + ", warnings " + CrimeWatch.warnings + " (" + sees + ")");
             CrimeWatch.assault(s.striker, s.level, victim, "valewood", false);   // the next blow, in front of the same officer
             check(PoliceResponse.dispatches() == 1, "the blow after a warning was not pursued");
             PoliceResponse.Dispatch d = PoliceResponse.dispatchAt(0);
             check(d.arrived && d.officers.contains(officer.getUUID()) && d.offence.id().equals(CityLaws.ASSAULT), "the officer who saw it is not pursuing for assault");
-        }
-        helper.succeed();
+        });
     }
 
     @GameTest(template = "empty", batch = "uc_crime_d", timeoutTicks = 200)
@@ -160,7 +173,9 @@ public final class CrimeGameTests {
 
     @GameTest(template = "empty", batch = "uc_crime_e", timeoutTicks = 200)
     public static void officersComeFromOpenGroundWhereNoStreetIsFoundAndOutOfTheOffendersSight(GameTestHelper helper) {
-        try (Street s = new Street(helper, "uc_crime_e")) {
+        Street s = new Street(helper, "uc_crime_e");
+        TownspersonEntity victim = s.person(1, 0, 5), passerBy = s.person(4, 4, 6);
+        settled(helper, s, () -> {
             PoliceResponse.spots = (lvl, chunk, random, players) -> Optional.empty();   // no street of the street population anywhere near
             List<BlockPos> spots = PoliceResponse.fallbackSpots(s.level, s.striker, s.centre);
             check(!spots.isEmpty(), "no open ground was found round the scene");
@@ -168,7 +183,6 @@ public final class CrimeGameTests {
                 check(CityArrival.standable(s.level, p), "an officer would arrive on ground nobody can stand on: " + p.toShortString());
                 check(s.striker.distanceToSqr(p.getX() + 0.5, p.getY(), p.getZ() + 0.5) >= 14 * 14, "an officer would arrive beside the offender");
             }
-            TownspersonEntity victim = s.person(1, 0, 5), passerBy = s.person(4, 4, 6);
             CrimeWatch.assault(s.striker, s.level, victim, "valewood", false);
             check(PoliceResponse.dispatches() == 1, "the witnessed assault raised no response: " + CrimeWatch.status() + "; " + PoliceResponse.status());
             PoliceResponse.Dispatch d = PoliceResponse.dispatchAt(0);
@@ -176,8 +190,7 @@ public final class CrimeGameTests {
             PoliceResponse.pass(s.level.getServer());
             check(d.arrived && !d.officers.isEmpty(), "with no street spot the reported assault brought no officers: " + PoliceResponse.status());
             passerBy.discard();
-        }
-        helper.succeed();
+        });
     }
 
     @GameTest(template = "empty", batch = "uc_crime_f", timeoutTicks = 200)
