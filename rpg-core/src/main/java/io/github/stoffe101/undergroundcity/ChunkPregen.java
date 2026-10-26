@@ -27,8 +27,9 @@ import java.util.Map;
  * preparation worlds; a world already played in can use it too, as it only generates chunks that do not exist yet (an existing chunk is loaded and let go again).
  *
  * <p>An operator starts it ({@code /uc admin pregen start [islands|all|<city>] [margin]}, permission level 2; "all" is the cities' circles only), or a development launch does
- * ({@code -PucPregen=islands}, which starts it once on a world that has not had it). A dozen chunks are asked for at a time with a ticket; a finished chunk keeps it for
- * half a minute (at most a few hundred do), as the next ring needs it as a neighbour, and nothing stays loaded once it is done. Progress is saved in the world ({@code underground_city_pregen}), so a stop or a restart carries on where it was.
+ * ({@code -PucPregen=islands}, which starts it once on a world that has not had it). A dozen chunks are asked for at a time with a ticket, a tile of the map at a time (see
+ * {@link #TILE}); a finished chunk keeps its ticket for a few seconds, and nothing stays loaded once it is done. Progress is saved in the world ({@code underground_city_pregen}), so a
+ * stop or a restart carries on where it was.
  */
 public final class ChunkPregen {
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -39,27 +40,40 @@ public final class ChunkPregen {
     static final int PATIENCE = 20 * 60;
     static final int MAX_MARGIN = 256;
     /**
-     * A finished chunk keeps its ticket this long, and at most {@link #LINGER_MAX} of them are kept: the next ring's chunks need it as a neighbour, and unloading it at once only to load it
+     * A finished chunk keeps its ticket this long, and at most {@link #LINGER_MAX} of them are kept: the next row's chunks need it as a neighbour, and unloading it at once only to load it
      * again a moment later meets a race in the game's chunk storage (1.20.1's {@code IOWorker.loadAsync} hands back the very tag still waiting to be written, so the chunk read from it
      * shares that tag while the write is in progress). Pregen run 1 met it four times in about 10,000 chunks ("Failed to store chunk", ConcurrentModificationException, one chunk
-     * unreadable afterwards and generated again).
+     * unreadable afterwards and generated again). Few are kept: every ticket keeps the neighbours Lost Cities needs loaded round it, eleven chunks each way, and in run 4 384 of
+     * them, scattered round the rings of the old order, held some 24,000 chunks in memory until the server ran out of it.
      */
-    static final int LINGER_TICKS = 20 * 30, LINGER_MAX = 384;
+    static final int LINGER_TICKS = 20 * 10, LINGER_MAX = 64;
+    /**
+     * The plan goes a tile of TILE by TILE chunks at a time, nearest the centre first within it, the tiles ring by ring round the centre and round each ring in turn: what is asked for at
+     * once and what lingers lie together, and a chunk let go is not needed again until the next ring comes past. Pregen run 4 asked for chunks in order of distance alone, which
+     * puts the next chunk anywhere round the ring.
+     */
+    static final int TILE = 8;
+    /** Lost Cities' plans of the chunks done are let go every so many chunks ({@link LostCitiesLink#forgetPlans}). */
+    static final int FORGET_EVERY = 500;
+
+    /** The order of the plan: 2 is {@link #sweep}'s (1, saved without it, was by distance alone). A plan saved in another order starts again from the beginning. */
+    static final int ORDER = 2;
 
     /** What is being generated, saved with the world. */
     static final class Store extends SavedData {
         static final String NAME = "underground_city_pregen";
         String scope = "";
-        int margin, next, total, done, skipped;
+        int order = ORDER, margin, next, total, done, skipped;
         boolean running, finished;
         static Store load(CompoundTag tag) {
             Store s = new Store();
+            s.order = tag.contains("order") ? tag.getInt("order") : 1;
             s.scope = tag.getString("scope"); s.margin = tag.getInt("margin"); s.next = tag.getInt("next"); s.total = tag.getInt("total");
             s.done = tag.getInt("done"); s.skipped = tag.getInt("skipped"); s.running = tag.getBoolean("running"); s.finished = tag.getBoolean("finished");
             return s;
         }
         @Override public CompoundTag save(CompoundTag tag) {
-            tag.putString("scope", scope); tag.putInt("margin", margin); tag.putInt("next", next); tag.putInt("total", total);
+            tag.putInt("order", order); tag.putString("scope", scope); tag.putInt("margin", margin); tag.putInt("next", next); tag.putInt("total", total);
             tag.putInt("done", done); tag.putInt("skipped", skipped); tag.putBoolean("running", running); tag.putBoolean("finished", finished);
             return tag;
         }
@@ -74,11 +88,12 @@ public final class ChunkPregen {
     /** Finished chunks still holding their ticket, oldest first: chunk key to the tick it finished. */
     private static final Map<Long, Integer> LINGER = new LinkedHashMap<>();
     private static long startedAt;
-    private static int doneAtStart, lastLogged, waitedForRoads;
+    private static int doneAtStart, lastLogged, waitedForRoads, lastForgot;
 
     /**
      * The chunks of {@code scope} with {@code margin} blocks round them: "islands" is every city's circle, then the rest of the islands' land (where the world has an island plan) and the
-     * roads' bridges once they are planned; "all" is every city's circle; a city's id is that city's circle. Each city's chunks come nearest its centre first.
+     * roads' bridges once they are planned; "all" is every city's circle; a city's id is that city's circle. Each city's chunks come nearest its centre first, a tile at a time
+     * ({@link #sweep}); the rest of the land a tile at a time round the city it is nearest.
      */
     static List<ChunkPos> chunks(ServerLevel level, String scope, int margin) {
         List<ChunkPos> out = new ArrayList<>();
@@ -90,8 +105,7 @@ public final class ChunkPregen {
             for (int dx = -reach; dx <= reach; dx++) for (int dz = -reach; dz <= reach; dz++) {
                 if (dx * dx + dz * dz <= reach * reach) city.add(new ChunkPos(r.centerChunkX() + dx, r.centerChunkZ() + dz));
             }
-            city.sort(Comparator.comparingInt(c -> (c.x - r.centerChunkX()) * (c.x - r.centerChunkX()) + (c.z - r.centerChunkZ()) * (c.z - r.centerChunkZ())));
-            for (ChunkPos c : city) if (seen.add(c.toLong())) out.add(c);
+            for (ChunkPos c : sweep(city, r.centerChunkX(), r.centerChunkZ())) if (seen.add(c.toLong())) out.add(c);
         }
         if (scope.equals("islands")) {
             IslandField.of(level).ifPresent(plan -> {
@@ -112,8 +126,13 @@ public final class ChunkPregen {
                     for (double[] at : new double[][]{{8, 8}, {0, 0}, {15, 0}, {0, 15}, {15, 15}}) best = Math.max(best, plan.distanceToShore(bx + at[0], bz + at[1]));
                     if (best > -margin && !seen.contains(ChunkPos.asLong(cx, cz))) land.add(new ChunkPos(cx, cz));
                 }
-                land.sort(Comparator.comparingDouble(c -> nearestCity(c)));
-                for (ChunkPos c : land) if (seen.add(c.toLong())) out.add(c);
+                List<CityRegions.Region> regions = CityRegions.INSTANCE.all();
+                if (regions.isEmpty()) return;
+                Map<Integer, List<ChunkPos>> byCity = new java.util.TreeMap<>();
+                for (ChunkPos c : land) byCity.computeIfAbsent(nearestCity(regions, c), k -> new ArrayList<>()).add(c);
+                byCity.forEach((i, near) -> {
+                    for (ChunkPos c : sweep(near, regions.get(i).centerChunkX(), regions.get(i).centerChunkZ())) if (seen.add(c.toLong())) out.add(c);
+                });
             });
         }
         return out;
@@ -136,10 +155,32 @@ public final class ChunkPregen {
         return out;
     }
 
-    private static double nearestCity(ChunkPos c) {
-        double best = Double.MAX_VALUE;
-        for (CityRegions.Region r : CityRegions.INSTANCE.all()) best = Math.min(best, Math.hypot(c.x - r.centerChunkX(), c.z - r.centerChunkZ()));
+    /** The index of the city whose centre is nearest {@code c}. */
+    private static int nearestCity(List<CityRegions.Region> regions, ChunkPos c) {
+        int best = 0;
+        double bestDistance = Double.MAX_VALUE;
+        for (int i = 0; i < regions.size(); i++) {
+            double d = Math.hypot(c.x - regions.get(i).centerChunkX(), c.z - regions.get(i).centerChunkZ());
+            if (d < bestDistance) { bestDistance = d; best = i; }
+        }
         return best;
+    }
+
+    /**
+     * {@code chunks} in the order they are generated round a centre: by tile ({@link #TILE} chunks square, the centre in the middle of tile 0,0), the tiles by square ring and round
+     * the ring from the east, and within a tile nearest the centre first. One tile follows its neighbour, so the chunks in flight and lingering are a tile or two together.
+     */
+    static List<ChunkPos> sweep(List<ChunkPos> chunks, int centreX, int centreZ) {
+        List<ChunkPos> out = new ArrayList<>(chunks);
+        int half = TILE / 2;
+        out.sort(Comparator.<ChunkPos>comparingInt(c -> Math.max(Math.abs(Math.floorDiv(c.x - centreX + half, TILE)), Math.abs(Math.floorDiv(c.z - centreZ + half, TILE))))
+            .thenComparingDouble(c -> {
+                double a = Math.atan2(Math.floorDiv(c.z - centreZ + half, TILE), Math.floorDiv(c.x - centreX + half, TILE));
+                return a < 0 ? a + 2 * Math.PI : a;
+            })
+            .thenComparingInt(c -> (c.x - centreX) * (c.x - centreX) + (c.z - centreZ) * (c.z - centreZ))
+            .thenComparingLong(ChunkPos::toLong));
+        return out;
     }
 
     static List<String> scopes() {
@@ -157,11 +198,11 @@ public final class ChunkPregen {
         if (next.isEmpty()) return "No city chunks to generate (this world has no city regions).";
         stopFlight(server);
         Store store = store(server);
-        store.scope = s; store.margin = m; store.next = 0; store.total = next.size(); store.done = 0; store.skipped = 0; store.running = true; store.finished = false;
+        store.order = ORDER; store.scope = s; store.margin = m; store.next = 0; store.total = next.size(); store.done = 0; store.skipped = 0; store.running = true; store.finished = false;
         store.setDirty();
         plan = next;
         roadsPending = s.equals("islands");
-        startedAt = System.nanoTime(); doneAtStart = 0; lastLogged = 0;
+        startedAt = System.nanoTime(); doneAtStart = 0; lastLogged = 0; lastForgot = 0;
         LOGGER.info("[UC-PREGEN] generating {} chunks of {} with a margin of {} blocks, {} at a time", next.size(), s, m, IN_FLIGHT);
         String what = s.equals("islands") ? "the islands (every city first, then the rest of the land; the roads' bridges are added once they are planned)" : s.equals("all") ? "every city" : s;
         return "Generating " + next.size() + " chunks of " + what + ", and " + m + " blocks round. /uc admin pregen status shows how far it is.";
@@ -212,8 +253,13 @@ public final class ChunkPregen {
             plan = new ArrayList<>(chunks(server.overworld(), store.scope, store.margin));
             roadsPending = store.scope.equals("islands");
             store.total = plan.size();
+            if (store.order != ORDER) {
+                LOGGER.info("[UC-PREGEN] the saved plan is in an older order: starting it again (the chunks already made load at once)");
+                store.order = ORDER; store.next = 0; store.done = 0; store.skipped = 0;
+            }
             store.next = Math.min(store.next, plan.size());
-            startedAt = System.nanoTime(); doneAtStart = store.done;
+            store.setDirty();
+            startedAt = System.nanoTime(); doneAtStart = store.done; lastForgot = store.done;
             LOGGER.info("[UC-PREGEN] carrying on: {} of {} chunks of {}", store.done, store.total, store.scope);
             return;
         }
@@ -258,6 +304,7 @@ public final class ChunkPregen {
             FLIGHT.put(c.toLong(), 0);
         }
         if (store.done + store.skipped >= lastLogged + 250) { lastLogged = store.done + store.skipped; LOGGER.info("[UC-PREGEN] {}", status(server)); }
+        if (store.done >= lastForgot + FORGET_EVERY) { lastForgot = store.done; LostCitiesLink.forgetPlans(); }
         if (store.next >= plan.size() && FLIGHT.isEmpty() && (!roadsPending || server.getTickCount() % 200 == 0 && waitedForRoads++ > 30)) {
             release(level, server.getTickCount(), true);
             store.running = false; store.finished = true; store.setDirty();

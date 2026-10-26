@@ -115,7 +115,9 @@ D-107 said Founders Row would be built at the arrival landing of a new archipela
 
 (The "before" column is two surveys: the vegetation figures are the first, the chunk counts the second, taken after the vegetation fix and before the structure exclusion.)
 
-The two chunks with a tree are one `building4` chunk and one `center11` chunk; the cause was not traced. "No trees or vegetation on buildings or roads" is **nearly** true, not true. Not measured: a ring of chunks at the edge of each city after the climate change (the probe above samples six chunks around each centre).
+The two chunks with a tree are one `building4` chunk and one `center11` chunk; the cause was not traced. "No trees or vegetation on buildings or roads" is **nearly** true, not true.
+
+**Lakes (ninth pass, D-195).** The game's lakes are placed after Lost Cities' buildings. A probe found a surface lava lake dug into a house's garden in Valewood: lava in place of the paving, and the fence and a terrace above it gone. On this terrain, a lake whose 16 by 16 square touches the same ring (a city's circle plus 160 blocks) is not placed (`LakeFeatureMixin`). The next probe of the same seed had no lava and no block missing in 68 building chunks. Not measured: a ring of chunks at the edge of each city after the climate change (the probe above samples six chunks around each centre).
 
 ### Roads and bridges (block by block)
 

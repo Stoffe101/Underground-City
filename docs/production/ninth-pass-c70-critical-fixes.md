@@ -209,10 +209,19 @@ What it found, and what was done:
 | --- | --- | --- | --- |
 | Lost Cities draws its own retaining walls, streets, park ground, corridors and bridge supports around a building with the building's furniture | every private palette that took a style character: all ten characters, in 1,018 palettes | a building's palette is merged over the city style's in its chunk | the porter renames the style characters a private palette takes (993 parts renamed); a part that relies on the style's own meaning keeps it. Unit-tested |
 | A railway ramp through a house: rails, iron bars and a stone-brick bed across its ground floor, its walls gone | one Valewood chunk of 225 probed, a C70 house | Lost Cities lets a building share a chunk with a railway one storey below the street, and draws the railway after the building | Core leaves such a lot empty (a railway within a storey of the street). A multi-chunk building flattened into single lots also gets Lost Cities' own single-lot rule (surface stations, highways). Verified by the next probe of the same world seed: that lot is empty, the ramp runs in the open, and that house's family audits clean apart from the carpets below |
-| Carpets on attic beams missing | most C70 houses (8 to 10 a house, 0.2% of their blocks); in 4 of 66 houses none are missing | not found. Lost Cities has no code that touches carpets; the support under them is there | **open** (known issue) |
-| Mushrooms on the paving round one General Store | one chunk | the game's own vegetation | none needed |
+| Carpets on attic beams missing, and flower boxes, a toilet-paper holder | most C70 houses: 374 of their 430 carpets, 32 flower boxes, 4 holders (410 of the 434 blocks missing in 68 building chunks) | Lost Cities' chunk writer keeps the blocks it writes in a cache and puts them into the chunk at the end. Each block it places updates its four neighbours' shapes, but asks the chunk itself, which does not hold the cached beam under a carpet yet. The carpet sees air below and becomes air (`ChunkDriver.correct` and `updateAdjacent`, read from the 7.5.5 jar) | Core keeps a block Lost Cities placed when that update would turn it into air; any other change of shape stands (D-195). Verified by the next probe of the same seed: all 430 carpets stand |
+| A lava lake in a house's garden: lava in place of the paving, the fence, a terrace's steps and glass above it gone | one Valewood house (the other 24 missing blocks) | the game's lakes are placed after Lost Cities' buildings, and a lake digs its bowl wherever its spot falls; lava beside a wooden house is also a fire | on the archipelago, no lake touching a city's ring is placed (D-195). Verified by the next probe of the same seed: no lava, and the garden as its data says |
+| Mushrooms on paving and roofs | 10 round the General Stores, 13 on C70 roofs, in 98 building chunks | the game's own vegetation, placed after the buildings | none (cosmetic; known issue) |
 
-Our own furnished buildings in the same Valewood probe: the bakery (14 copies) and the villa (3) match their data exactly; the General Store (13) has only the mushrooms outside.
+**Before and after, the same 225 Valewood chunks of one seed with the C70-first pack** (`building_audit.py`; every building chunk, its cells compared with its data):
+
+| Probe | Building chunks | Cells compared | Missing | Foreign | Of the foreign |
+| --- | --- | --- | --- | --- | --- |
+| r5d (railway fix only) | 68 C70 | 308,583 | 434 | 386 | grass, tall grass and flowers in gardens; 13 mushrooms |
+| r5e (+ blocks Lost Cities placed are kept) | 68 C70 | 308,583 | 24 | 389 | the same |
+| r5f (+ no lakes in a city) | 68 C70, plus 30 of ours | 308,583 (C70) | **0** | 386 | the same |
+
+Our own furnished buildings in probe r5f: the bakery (14 copies), the General Store (13) and the villa (3) have no block missing; the stores have the mushrooms outside. A probe is a measurement of one seed's Valewood, not of every chunk of every city. Blackwater and Ironhaven are covered by the photo tour of the pre-generated world (below), not yet by an audit.
 
 ## 8. The islands generated ahead of play (D-194)
 
@@ -234,6 +243,25 @@ The run found two faults, both fixed:
    * That is why the probe servers held their memory.
    * Core now names such threads in the log 20 seconds after a dedicated server has stopped and saved, and the process leaves. This never applies to a client leaving a world.
    * Measured on the next probe: "1 thread(s) of other mods keep the process open: pool-10-thread-1 (com.unlikepaladin.pfm.runtime.PFMProvider...). Leaving." The build then finished normally.
+
+**Pregen run 4** (a real client, a new private world with the C70-first pack, `world,furnished,scarcity,furniture`, a 4 GB heap):
+* It ran out of Java memory at 10,770 of 13,461 chunks.
+* Resumed from its saved progress (run 4b), it finished: 13,461 chunks, none let go unfinished, no failed chunk write. The rest took 713 s; the first 10,000 chunks were read from disk.
+* The world is kept outside the repository as the template for the private runs below. It is never committed.
+
+Class histograms of run 4b showed the live heap growing from 1.9 GB to 2.8 GB in three minutes. That is the third fault:
+
+3. **Memory held by the generation itself.**
+   * **The lingering chunks.** Each ticket keeps loaded the neighbours Lost Cities needs round it, eleven chunks each way. The old order, by distance alone, puts the next chunk anywhere round its ring. So the 384 lingering chunks were scattered, and together they held about 24,000 chunks in memory: 580,000 chunk sections and 1.7 million scheduled ticks.
+   * **Lost Cities' building information.** Once a chunk's record has been asked for its four neighbours, it keeps them. Entries that expire from Lost Cities' cache therefore stay reachable through the entries that have not.
+     * After 13,000 chunks there were 102,264 records, each with its own palette map: about 330 MB.
+     * Lost Cities lets go of them only when the server stops.
+     * The same happens in ordinary play, more slowly. It is listed under the known issues.
+   * **Fix.**
+     * The plan goes a tile of 8 by 8 chunks at a time, nearest the centre first. The tiles go ring by ring, and round each ring in turn, so what is loaded at once lies together.
+     * A finished chunk lingers for 10 seconds, and at most 64 do.
+     * Lost Cities' plans are let go every 500 chunks, as Lost Cities itself does when a server stops; it works them out again, the same, when asked.
+     * A plan saved in the old order starts again from the beginning (the chunks already made load at once).
 
 ## 9. The new screens at the owner's sizes
 

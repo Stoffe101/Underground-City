@@ -8,7 +8,9 @@
     "InventoryInteractionHelperMixin",
     "FeedingUpgradeWrapperMixin",
     "GroundPathNavigationMixin",
-    "ChunkGeneratorStructuresMixin"
+    "ChunkGeneratorStructuresMixin",
+    "LostCitiesChunkDriverMixin",
+    "LakeFeatureMixin"
   ],
   "client": [
     "ToastComponentMixin",

@@ -21,19 +21,25 @@ public final class PregenGameTests {
     private static void check(boolean condition, String message) { if (!condition) throw new GameTestAssertException(message); }
 
     @GameTest(template = "empty", batch = "uc_pregen")
-    public static void aCityIsPlannedFromItsCentreOutwardAndOnlyItsCircle(GameTestHelper helper) {
+    public static void aCityIsPlannedFromItsCentreOutwardATileAtATimeAndOnlyItsCircle(GameTestHelper helper) {
         CityRegions.Region vale = CityRegions.INSTANCE.all().stream().filter(r -> r.id().equals("valewood")).findFirst().orElseThrow(() -> new GameTestAssertException("no Valewood region"));
         List<ChunkPos> plan = ChunkPregen.chunks(helper.getLevel(), "valewood", 0);
         check(!plan.isEmpty(), "Valewood has no chunks to generate");
         check(plan.get(0).x == vale.centerChunkX() && plan.get(0).z == vale.centerChunkZ(), "the first chunk is not Valewood's centre but " + plan.get(0));
-        int reach = (Math.max(vale.radius(), vale.cityRadius()) + 15) / 16;
-        long last = -1;
+        int reach = (Math.max(vale.radius(), vale.cityRadius()) + 15) / 16, half = ChunkPregen.TILE / 2;
+        int lastRing = 0, longSteps = 0;
+        ChunkPos before = null;
         for (ChunkPos c : plan) {
             long d = (long) (c.x - vale.centerChunkX()) * (c.x - vale.centerChunkX()) + (long) (c.z - vale.centerChunkZ()) * (c.z - vale.centerChunkZ());
             check(d <= (long) reach * reach, c + " lies outside Valewood's circle");
-            check(d >= last, "the plan goes back towards the centre at " + c);
-            last = d;
+            // a tile at a time, ring by ring: the ring of tiles never goes back towards the centre, and the next chunk is near the last one (what is loaded at once lies together)
+            int ring = Math.max(Math.abs(Math.floorDiv(c.x - vale.centerChunkX() + half, ChunkPregen.TILE)), Math.abs(Math.floorDiv(c.z - vale.centerChunkZ() + half, ChunkPregen.TILE)));
+            check(ring >= lastRing, "the plan goes back towards the centre at " + c);
+            if (before != null && Math.max(Math.abs(c.x - before.x), Math.abs(c.z - before.z)) > 2 * ChunkPregen.TILE) longSteps++;
+            lastRing = ring;
+            before = c;
         }
+        check(longSteps <= 8, "the plan jumps across the city " + longSteps + " times (a tile at a time keeps the chunks loaded at once together)");
         check(new HashSet<>(plan).size() == plan.size(), "a chunk is planned twice");
         check(ChunkPregen.chunks(helper.getLevel(), "valewood", 64).size() > plan.size(), "a margin adds no chunks");
         helper.succeed();

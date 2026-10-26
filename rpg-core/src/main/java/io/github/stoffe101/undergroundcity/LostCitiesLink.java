@@ -91,6 +91,24 @@ public final class LostCitiesLink {
 
     public static boolean ready() { return api != null; }
 
+    /**
+     * Lets go of what Lost Cities keeps about the chunks it has planned, as Lost Cities itself does when a server stops; it works the plans out again, the same, when asked. Its
+     * per-chunk building information remembers its four neighbours once asked for them, so the entries of its timed cache that expire stay reachable through the ones that do not,
+     * and the whole of a generated area stays in memory (ninth pass, measured during pre-generation: 102,264 of them, with a palette map each, about 330 MB after 13,000 chunks).
+     * Only {@link ChunkPregen} calls this, between its batches.
+     */
+    static void forgetPlans() {
+        if (forgetBroken || !ModList.get().isLoaded("lostcities")) return;
+        try {
+            Class.forName("mcjty.lostcities.worldgen.lost.BuildingInfo").getMethod("cleanCache").invoke(null);
+        } catch (ReflectiveOperationException | RuntimeException error) {
+            forgetBroken = true;
+            LOGGER.warn("[UC-CITY] Lost Cities' plan cache could not be cleared, so a long pre-generation needs more memory ({})", error.toString());
+        }
+    }
+
+    private static boolean forgetBroken;
+
     /** Lost Cities' ILostCities implementation (null until it answered the interop request); for the listeners that call it by reflection. */
     static Object implementation() { return api; }
 

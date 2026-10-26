@@ -21,10 +21,12 @@ Other scopes:
 A world without an island plan (the legacy layout) gets its cities only.
 
 How it works:
-* About a dozen chunks are asked for at a time. Each is let go as soon as it is complete, so nothing stays loaded.
+* About a dozen chunks are asked for at a time, a tile of 8 by 8 chunks at a time. The tiles go ring by ring round the city, and round each ring in turn, so the chunks loaded at once lie together.
+* A finished chunk is kept loaded for 10 seconds (at most 64 are), as the next row needs it as a neighbour. Then it is let go, so nothing stays loaded.
+* Every 500 chunks, Lost Cities' plans of the chunks already done are let go, as Lost Cities itself does when a server stops. Without this they fill the memory (pregen run 4).
 * A chunk that does not complete within a minute is let go and counted as "let go unfinished". It is then generated when somebody comes near.
 * Only chunks that do not exist yet are generated. An existing chunk is loaded and let go.
-* Progress is saved in the world (`underground_city_pregen`). A stop, a crash or a restart carries on where it was.
+* Progress is saved in the world (`underground_city_pregen`). A stop, a crash or a restart carries on where it was. A plan saved by an older version in another order starts again from the beginning; the chunks already made load at once.
 
 ## How to use it
 
@@ -55,4 +57,4 @@ A template is a disposable test world. It is never the owner's world, and the ow
 
 ## Measured
 
-See the ninth-pass record, [ninth-pass-c70-critical-fixes.md](../production/ninth-pass-c70-critical-fixes.md), section 7.
+See the ninth-pass record, [ninth-pass-c70-critical-fixes.md](../production/ninth-pass-c70-critical-fixes.md), section 8.
