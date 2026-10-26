@@ -2,6 +2,7 @@ package io.github.stoffe101.undergroundcity;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTest;
+import net.minecraft.gametest.framework.GameTestAssertException;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -25,22 +26,26 @@ import static io.github.stoffe101.undergroundcity.CrewGameTests.player;
 @PrefixGameTestTemplate(false)
 public final class CrimeGameTests {
 
-    /** An open stone floor high above the test grid with clear air round it (so lines of sight do not depend on the neighbouring tests), a striker, and the police and the watch reset. */
     /**
-     * Runs a scene's checks a few ticks after its people were added, then closes the street: an entity added in the tick it is asked about was, under a loaded CI runner, not yet found by
-     * the lookups the police use (October 26: an officer standing in plain sight was not seen, and a passer-by was not counted, in two runs out of many).
+     * Runs a scene's checks once its chunks are loaded for entities, then closes the street. The street lies beside its one-block test structure, so on some runners' grids its people stood in
+     * a chunk loaded only at the border, where an entity is not found by the lookups the police use (October 26: an officer in plain sight was not seen, and a passer-by was not counted).
+     * The street forces its chunks; the checks wait a few ticks for that to take effect. A failed check is the test's failure (a plain assertion error here would stop the server).
      */
     private static void settled(GameTestHelper helper, Street s, Runnable checks) {
-        helper.runAfterDelay(3, () -> {
-            try { checks.run(); helper.succeed(); }
+        helper.runAfterDelay(5, () -> {
+            try { checks.run(); }
+            catch (AssertionError failed) { throw new GameTestAssertException(failed.getMessage()); }
             finally { s.close(); }
+            helper.succeed();
         });
     }
 
+    /** An open stone floor high above the test grid with clear air round it (so lines of sight do not depend on the neighbouring tests), its chunks forced, a striker, and the police and the watch reset. */
     private static final class Street implements AutoCloseable {
         final ServerLevel level;
         final BlockPos centre;
         final ServerPlayer striker;
+        final List<net.minecraft.world.level.ChunkPos> forced = new java.util.ArrayList<>();
         Street(GameTestHelper helper, String name) {
             level = helper.getLevel();
             BlockPos base = helper.absolutePos(new BlockPos(2, 2, 2));
@@ -48,6 +53,9 @@ public final class CrimeGameTests {
             for (int dx = -24; dx <= 24; dx++) for (int dz = -24; dz <= 24; dz++) {
                 level.setBlock(centre.offset(dx, -1, dz), Blocks.STONE.defaultBlockState(), 2);
                 for (int dy = 0; dy <= 5; dy++) level.setBlock(centre.offset(dx, dy, dz), Blocks.AIR.defaultBlockState(), 2);
+            }
+            for (int cx = (centre.getX() - 24) >> 4; cx <= (centre.getX() + 24) >> 4; cx++) for (int cz = (centre.getZ() - 24) >> 4; cz <= (centre.getZ() + 24) >> 4; cz++) {
+                if (level.setChunkForced(cx, cz, true)) forced.add(new net.minecraft.world.level.ChunkPos(cx, cz));
             }
             // people and officers an earlier batch left at this grid slot would see (or warn) instead of this test's own people (a CI layout, October 26): each crime test is a batch of its own
             for (TownspersonEntity t : level.getEntitiesOfClass(TownspersonEntity.class, new AABB(centre).inflate(64))) t.discard();
@@ -80,6 +88,8 @@ public final class CrimeGameTests {
         }
         @Override public void close() {
             for (TownspersonEntity t : level.getEntitiesOfClass(TownspersonEntity.class, new AABB(centre).inflate(48))) t.discard();
+            for (net.minecraft.world.level.ChunkPos c : forced) level.setChunkForced(c.x, c.z, false);
+            forced.clear();
             PoliceResponse.resetForTest();
             CrimeWatch.resetForTest();
             PolicePatrols.resetForTest();
