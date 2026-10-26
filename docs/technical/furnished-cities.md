@@ -21,7 +21,7 @@ The first playtest: the three cities looked alike (one generic Lost Cities set),
 | Valewood | `vw_cottage` | 1 | cottage | 4 | the outer two rings |
 | Valewood | `vw_shop` (awning, counter, a flat above) | 2 | storefront | 5 | the centre, a few in the middle ring |
 | Ironhaven | `ih_flats` (a three-storey brick tenement, a corridor and a flat each side on every floor, six flats) | 3 | flat block | 9 | centre and middle |
-| Ironhaven | `ih_workshop` (bench, anvil, stove, mezzanine desk) | 2 | workshop | 7 | all rings |
+| Ironhaven | `ih_workshop` (bench, anvil, stove, the hardware counter at the shop floor's work table; eighth pass: the desk was in the mezzanine office, out of a customer's reach) | 2 | workshop | 7 | all rings |
 | Ironhaven | `ih_warehouse` | 1 | warehouse | 5 | mostly the outskirts |
 | Blackwater | `bw_apartments` (four storeys, eight flats, concrete and glass) | 4 | flat tower | 11 | middle and outer |
 | Blackwater | `bw_office` (reception, three floors of desks) | 3 | office | 7 | the centre |

@@ -50,10 +50,10 @@
     {
       "facing": "south",
       "kind": "desk",
-      "note": "office desk",
-      "x": 3,
-      "y": 7,
-      "z": 3
+      "note": "the hardware counter at the work table",
+      "x": 7,
+      "y": 1,
+      "z": 8
     },
     {
       "facing": "north",

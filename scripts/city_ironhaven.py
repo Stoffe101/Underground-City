@@ -144,7 +144,7 @@ def workshop() -> Building:
     chimney(t, 12, 3, 4)
     b.spots += [Spot("door", 7, 1, Z1, "south", "bay door"), Spot("door", 7, 1, Z0, "north", "bay door"),
                 Spot("bench", 2, 1, 5, "east", "workbench"), Spot("anvil", 2, 1, 7, "east"), Spot("stove", 13, 1, 8, "west", "furnace"),
-                Spot("desk", 3, 7, 3, "south", "office desk"), Spot("stash", 12, 1, 13, "north", "tool chests")]
+                Spot("desk", 7, 1, 8, "south", "the hardware counter at the work table"), Spot("stash", 12, 1, 13, "north", "tool chests")]
     b.units.append(k.Unit("premises", "Workshop", (X0 + 1, 1, Z0 + 1, X1 - 1, 10, Z1 - 1)))
     return b
 
