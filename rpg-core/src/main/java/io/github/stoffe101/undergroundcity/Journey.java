@@ -48,7 +48,8 @@ public final class Journey {
     static boolean done(CitizenState.Citizen citizen, WorkOrderLedger ledger, UUID uuid, String id) {
         return switch (id) {
             case "registered" -> true;
-            case "employer" -> citizen.journey("employer") > 0;
+            // accepting an order is what meeting an employer was for: a citizen who started at a city's public terminal has done it (D-187)
+            case "employer" -> citizen.journey("employer") > 0 || citizen.journey("accepted") > 0 || ledger.player(uuid).hasUUID("order");
             case "accept" -> citizen.journey("accepted") > 0 || ledger.player(uuid).hasUUID("order");
             case "deliver" -> citizen.journey("deliveries") > 0 || citizen.careerXp() > 0;
             case "skill" -> !citizen.skills().isEmpty();
@@ -85,16 +86,29 @@ public final class Journey {
             if (def.id().equals("registered") || done(citizen.get(), ledger, player.getUUID(), def.id())) continue;
             BlockPos target = null;
             String name = "";
+            String title = def.title(), hint = def.hint();
             if (def.id().equals("employer") || (def.id().equals("accept") && citizen.get().journey("employer") == 0)) {
                 Villager employer = find(level, "employer", citizen.get().career);
-                if (employer != null) { target = employer.blockPosition(); name = employer.getName().getString(); }
+                boolean rowInHomeCity = employer != null && citizen.get().city.equals(CityRegions.INSTANCE.cityAt(level, employer.blockPosition()).orElse(""));
+                if (employer != null && rowInHomeCity) { target = employer.blockPosition(); name = employer.getName().getString(); }
+                else if (def.id().equals("employer")) {
+                    // a citizen who arrived in a city without the employers' district: the city's public terminal is where the work is (D-187)
+                    var site = CityArrival.site(player.server, citizen.get().city).orElse(null);
+                    title = FIND_WORK;
+                    if (site != null && site.door() != null && site.kind().startsWith("building:")) {
+                        target = site.door(); name = site.label();
+                        hint = "Open WORK on the public terminal in " + site.label() + ", or set down the one in your welcome pack. Employers also sit in Founders Row.";
+                    } else hint = "Set down the Operations Terminal from your welcome pack (outside a building) and open WORK. Employers also sit in Founders Row.";
+                }
             }
+            if (def.id().equals("home") && !"ironhaven".equals(citizen.get().city))
+                hint = "Press K, open Home, then Find a home: homes to let in " + capitalize(citizen.get().city) + " show their deposit and rent. The Row Motel's first hours are free.";
             if (def.id().equals("travel")) {
                 String here = CityRegions.INSTANCE.cityAt(level, player.blockPosition()).orElse("");
                 RoadOut out = roadOut(roads(level), here, citizen.get().city, player.getX(), player.getZ());
                 if (out != null) { target = BlockPos.containing(out.x(), player.getY(), out.z()); name = "Road to " + capitalize(out.to()); }
             }
-            return new Objective(def.title(), def.hint(), def.page(), target, name);
+            return new Objective(title, hint, def.page(), target, name);
         }
         return goal(player, citizen.get());
     }
@@ -208,8 +222,12 @@ public final class Journey {
         }
     }
 
+    /** The employer step's title for a citizen who starts in a city without the employers' district. */
+    static final String FIND_WORK = "Find work";
+
     /** The step's place in the checklist; a goal (what comes after it) is past the end of it. */
     private static int indexOf(String title) {
+        if (FIND_WORK.equals(title)) return 1;
         for (int i = 0; i < STEPS.size(); i++) if (STEPS.get(i).title().equals(title)) return i;
         return STEPS.size();
     }

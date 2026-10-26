@@ -218,16 +218,20 @@ public final class TerminalNetwork {
     private record DialogueChoice(int entityId, String choice) {}
     private record CloseDialogue() {}
 
+    /** A text cut to at most {@code max} characters (with an ellipsis), so a packet never refuses it. */
+    static String clip(String text, int max) { return text == null ? "" : text.length() <= max ? text : text.substring(0, max - 1) + "\u2026"; }
+
     private static void registerObjective() {
         CHANNEL.registerMessage(12, ObjectivePacket.class,
             (packet, buffer) -> {
                 var o = packet.objective;
                 buffer.writeBoolean(o != null);
                 if (o == null) return;
-                buffer.writeUtf(o.title(), 48); buffer.writeUtf(o.hint(), 160); buffer.writeUtf(o.page(), 16);
+                // clipped to what the packet carries: a longer step (a city's welcome hint, ninth pass) once stopped the server with an encoder error
+                buffer.writeUtf(clip(o.title(), 48), 48); buffer.writeUtf(clip(o.hint(), 160), 160); buffer.writeUtf(clip(o.page(), 16), 16);
                 buffer.writeBoolean(o.target() != null);
                 if (o.target() != null) buffer.writeBlockPos(o.target());
-                buffer.writeUtf(o.targetName(), 48);
+                buffer.writeUtf(clip(o.targetName(), 48), 48);
             },
             buffer -> {
                 if (!buffer.readBoolean()) return new ObjectivePacket(null);

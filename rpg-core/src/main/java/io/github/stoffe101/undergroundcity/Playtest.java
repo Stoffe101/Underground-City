@@ -54,6 +54,8 @@ public final class Playtest {
 
     /** While false, any screen that opens (the first-login registration screen, above all) is closed so the scenario can move and aim; scenarios that look at screens set it once the world is settled. */
     static volatile boolean keepScreens;
+    /** A scenario that kills the player on purpose (to see where they respawn) says so; any other death still fails the run. */
+    static volatile boolean deathExpected;
 
     static boolean enabled() { return SCENARIO != null && !SCENARIO.isBlank(); }
     static void log(String line) { System.out.println("[UC-PLAYTEST] " + line); }
@@ -206,7 +208,7 @@ public final class Playtest {
         if (System.nanoTime() - started > LIMIT_NANOS) { fail("timed out in step " + (current == null ? "(none)" : current.name())); finish(); return; }
         if (mc.player == null || mc.level == null || mc.getSingleplayerServer() == null) return;
         // no scenario expects the player to die; a dead player loads no chunks, so every later step would only wait out its budget (journey run 53 drowned and waited ten minutes)
-        if (mc.player.isDeadOrDying()) {
+        if (mc.player.isDeadOrDying() && !deathExpected) {
             var cause = mc.player.getLastDamageSource();
             fail("the player died" + (cause == null ? "" : " (" + cause.getMsgId() + ")") + " at " + mc.player.blockPosition().toShortString() + " in step " + (current == null ? "(none)" : current.name()));
             finish();

@@ -21,6 +21,8 @@ public final class RegistrationService {
         if (!ProgressionRules.validCity(cityId) || !ProgressionRules.validCareer(careerId)) return Outcome.INVALID;
         CitizenState state = CitizenState.get(player.server);
         if (!state.register(player.getUUID(), cityId, careerId)) return Outcome.ALREADY_REGISTERED;
+        // the move to the chosen city is written down with the record, before the pack: it happens once, even after a crash (D-187)
+        CityArrival.schedule(player, cityId);
         int given = StarterKits.INSTANCE.grant(player, careerId);
         teachRecipes(player);
         player.sendSystemMessage(Component.literal("You are a citizen of " + (cityId.isEmpty() ? "" : Character.toUpperCase(cityId.charAt(0)) + cityId.substring(1)) + ", working as a " + Dialogue.careerTitle(careerId).toLowerCase(Locale.ROOT)
