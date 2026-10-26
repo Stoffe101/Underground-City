@@ -45,6 +45,7 @@ The docs here distinguish **confirmed product direction**, **design proposals**,
 - [Progression without monsters: where the drops come from (D-095)](technical/monster-resources.md)
 - [Lost Cities and long server ticks (D-096)](technical/lost-cities-stalls.md)
 - [First-start and restart stability of the pack (D-097)](technical/first-start-stability.md)
+- [The two-player performance session (alpha criterion 9; eighth pass)](technical/performance-session.md)
 - [Opening an old world that holds Traveler's Backpack items](technical/backpack-migration.md)
 - [The economy model: net profit, timelines, exploit checks (D-098)](technical/economy-model.md)
 - [The property economy: rent, ownership, upkeep, storage and upgrades (D-099)](technical/property-economy.md)

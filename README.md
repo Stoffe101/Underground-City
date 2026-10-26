@@ -141,6 +141,20 @@ New, and tested by scripts, Forge GameTests, the Python suite, the economy model
 
 Scripted real-client runs passed for the Smith, the Farmer, the Vintner and trade premises; the homes run hung at save-and-quit (fixed in the eighth pass) and the unmarked firearm run failed its last step. See [docs/production/seventh-pass-alpha-readiness.md](docs/production/seventh-pass-alpha-readiness.md).
 
+## October 25 to 26 eighth pass: the living sandbox alpha (scripted, not yet human-tested)
+
+New, and tested by scripts, Forge GameTests, the Python suite, the economy model and scripted real clients. **The current branch and its recent gameplay systems have not received human playtesting**, and the alpha is not complete until a person has played it.
+
+* **The Smith is an engineer (D-182).** Precision parts are turned by hand to a drawing the first time (graded against the true minimum of passes; a section cut too far can be sleeved); the bench keeps a jig of the best grade and repeats it in batches; the cities' works and four shops run on machines that break down in a city somebody is in, and the Smith strips the drive, replaces worn parts and gears it to its plate for a one-time fee. A works standing idle stops its city's metal lines; a shop on a stopped machine charges more. Four new skills, assemblies other trades use (the Farmer's Geared Crank, depot and works orders), and every part also sold by a supplier. One scripted real client passed all 13 steps (engineer run 7), with a deliberate mistake, a sleeve, a cancel, a refused test run and a save and reopen.
+* **Batches inside property are never anybody else's (D-184)**; outside, a batch is held on its maker's own play time, then is salvage and the maker is told.
+* **Business hours by kind (D-185):** shops 08 to 18, cafes 07 to 20, restaurants 11 to 23, pubs 12 to 02, clubs 18 to 03, industrial suppliers 07 to 19; the glance card at a street door says when a place is open, and the bonded store raid still finds the warehouse shut at 04:00.
+* **Exploration finds (D-186):** a battered crate at each roadside place and shelter gives each player their own find once (finds runs 1 and 2 through a real client); burglary loot stays shared and finite.
+* **Leaving a single-player world can no longer hang the game (D-183)**, found by the homes run's save and reopen; homes run 4 then passed all seven steps.
+* **The unmarked firearm run passed end to end** (unmarked run 3): unmarked pistols built on TaCZ's own table, restricted at a checkpoint, kept unmarked across a save, and sold to Dray.
+* **Two players on the bonded store** are GameTested and ran server-driven with two real clients connected in the performance session.
+
+See [docs/production/eighth-pass-living-sandbox.md](docs/production/eighth-pass-living-sandbox.md).
+
 ## Ownership and license
 
 **Copyright © 2026 Stoffe101. All rights reserved.** See [LICENSE](LICENSE). The license governs **original Underground City material only**. Minecraft, third-party mods, map downloads, artworks, and their trademarks remain subject to their respective owners' terms. Public repository visibility does **not** mean the project is open source. This project is intended for private play, not for sale or public modpack publication.

@@ -52,6 +52,9 @@ Every client run below is one scripted real client (software-rendered in a virtu
 | The turning screen's numbers ran over its note line at 1280x720 | engineer client run 1 | the numbers are kept inside the drawing's well |
 | A Technician's utility panel and a Smith's drive housing could be set one above the other beside a street door, so a person aiming at the housing from close by took the panel | engineer client runs 3 to 5 | each takes the side of the door the other has left free when the wall allows (one above the other only where only one side will take either) |
 | A find's notice ran the place's line into the list and was cut off after three lines; the repeat-visit line was wider than a 1280x720 screen | finds client run 1's picture | the place's line and the full list go to the chat, the notice lists what was kept, and the repeat line is short |
+| **The two-player performance session could not run at all**: the older cloud-journey fixture runs whenever a journey phase is set and stood aside only for the Crew journey, so on the performance server it refused the folder and stopped the server four minutes in | the first attempt at the 30-minute session (it had never been started before this pass) | the fixture stands aside for the performance session too |
+| The drive screen's idler buttons lay over its note line at 1280x720 with GUI scale 3 (Minecraft's automatic scale there), and a part name too long for its tile was cut | engineer client run 7's own pictures | a tighter layout when the panel is short, and a long name drawn smaller rather than cut (recaptured at that scale) |
+| The glance card cut its casing word off once it carried a shop's opening hour; the turning and drive screens' header chips stood over the panel's edge; the repair and turning notices ran past three lines | the four-viewport captures | the card is wider and its separators tighter, the chips are placed by their real width, and the notices list only the result (the whole sentence stays in the chat) |
 
 ## Not done, and why
 
@@ -66,4 +69,9 @@ Every client run below is one scripted real client (software-rendered in a virtu
 
 ## Next
 
-In progress.
+1. **A person plays.** Sessions A, B and C of the playtest guide's section 6i, Session B on the authenticated, allowlisted server pack. Nothing in the numbers should be tuned before then.
+2. **Two clients through the bonded store together** (one picks while the other loops the cameras), and an extended two-player co-op scenario on a dedicated server with a disconnect and a restart.
+3. **A combined Smith and Technician job** at a works (the drive and the panel at once, distinct roles) and the Technician's residential and security-install variety.
+4. **Workshops as businesses:** a Smith's industrial premises with a loading area and commission board, built on trade premises (D-169) and the jigs of D-182.
+5. **Visible nightlife beyond the hours:** lit storefronts, night contracts and a measured night street.
+6. **An organic (Track A) run past the first hour,** and the back-channel job through a real client.
