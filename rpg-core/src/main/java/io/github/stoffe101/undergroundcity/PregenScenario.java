@@ -21,9 +21,15 @@ final class PregenScenario {
         Playtest.queue("a still spectator at the world's spawn", () -> { Playtest.command("gamemode spectator"); scripted("the player is a still spectator at the spawn (nobody plays in this run)"); });
         Playtest.wait("the world settles", 100);
         long[] began = {0};
-        Playtest.queue("start generating " + scope, () -> {
+        Playtest.queue("start generating " + scope + " (or carry on)", () -> {
             began[0] = System.nanoTime();
-            Playtest.log("PREGEN " + server(() -> ChunkPregen.start(mc().getSingleplayerServer(), scope, margin)));
+            // a world this run already started carries on by itself (ChunkPregen resumes when the server starts); a new start would go back to the first chunk
+            String said = server(() -> {
+                var store = ChunkPregen.store(mc().getSingleplayerServer());
+                if ((store.running || store.finished) && store.scope.equals(scope)) return "carrying on: " + ChunkPregen.status(mc().getSingleplayerServer());
+                return ChunkPregen.start(mc().getSingleplayerServer(), scope, margin);
+            });
+            Playtest.log("PREGEN " + said);
         });
         int[] tick = {0};
         Playtest.queue("until it has finished", () -> { }, () -> {
