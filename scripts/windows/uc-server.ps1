@@ -10,6 +10,11 @@
     name a client types: use it only on your own PC or a home network with people you trust, never behind a port forward.
 
     Stop the server by typing  stop  in its window; that saves the world. Start it again with the same command to test a restart.
+
+    -Pregen generates the three islands (every city first, then the rest of the land and the roads' bridges) once, in the background, on the first start of a world: about 13,500
+    chunks, roughly 40 minutes on four cores. Walking and travelling later read them from disk. Progress: /uc admin pregen status in the console; a stop carries on at the next start.
+.EXAMPLE
+    .\scripts\windows\uc-server.ps1 -Sets furnished,scarcity -World UC-Alpha-2 -LanOfflineMode -Pregen
 .EXAMPLE
     .\scripts\windows\uc-server.ps1 -Sets furnished,scarcity -World UC-Alpha-1 -LanOfflineMode -AcceptEula
 .EXAMPLE
@@ -21,6 +26,7 @@ param(
     [switch] $LanOfflineMode,
     [switch] $AcceptEula,
     [switch] $NoBackup,
+    [switch] $Pregen,
     [string] $RunDir = 'run-dev'
 )
 . (Join-Path $PSScriptRoot 'uc-common.ps1')
@@ -60,6 +66,7 @@ if (-not $NoBackup -and (Test-Path (Join-Path $run $levelName))) { Backup-UcRunD
 $arguments = @('runServer')
 if ($chosen.Count -gt 0) { $arguments += "-PucExtraSets=$($chosen -join ',')" }
 if ($RunDir -ne 'run-dev') { $arguments += "-PucRunDir=$RunDir" }
+if ($Pregen) { $arguments += '-PucPregen=islands'; Write-Host 'The islands are generated in the background once (about 40 minutes); /uc admin pregen status shows how far.' }
 if ($AcceptEula) { $arguments += '-PucAcceptEula=true'; Write-Host 'You accept the Minecraft EULA (https://aka.ms/MinecraftEULA) by passing -AcceptEula.' }
 Write-Host "Starting: gradlew.bat $($arguments -join ' ')"
 Push-Location $script:UcRoot

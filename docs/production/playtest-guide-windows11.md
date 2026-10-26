@@ -77,9 +77,9 @@ The commands in this guide are wrapped in a few PowerShell scripts, so that a se
 | Script | What it does |
 | --- | --- |
 | `uc-update.ps1` | fetches the playtest branch and fast-forwards to it; refuses when you have local changes; prints the commit both players must share |
-| `uc-server.ps1 -Sets furnished,scarcity -World UC-S2 [-LanOfflineMode] [-AcceptEula]` | backs up the game folder, then starts the dev server; a new `-World` name makes a new world beside the old one (never replacing it). Offline mode must be asked for on every start, and only for a home network |
+| `uc-server.ps1 -Sets furnished,scarcity -World UC-S2 [-LanOfflineMode] [-AcceptEula] [-Pregen]` | backs up the game folder, then starts the dev server; a new `-World` name makes a new world beside the old one (never replacing it). Offline mode must be asked for on every start, and only for a home network. `-Pregen` generates the three islands once in the background ([test worlds](../technical/test-worlds.md); about 13,500 chunks) |
 | `uc-client.ps1 -Name Alice -Sets furnished,scarcity [-Join] [-Xaero] [-World UC-S1]` | starts a client: `-Join` for a server, otherwise single player; `-Xaero` adds Xaero's Minimap and World Map (client only) |
-| `uc-new-world.ps1 -Name Alice -World UC-S1` | a single-player client in a NEW world with the furnished cities and scarcity; refuses a name that exists |
+| `uc-new-world.ps1 -Name Alice -World UC-S1 [-Pregen]` | a single-player client in a NEW world with the furnished cities and scarcity; refuses a name that exists. `-Pregen` generates the islands in it once, in the background |
 | `uc-second-copy.ps1` | copies the repository to `..\Underground-City-P2` for a second player on the same PC |
 | `uc-backup.ps1` | copies `rpg-core\run-dev` (worlds, saves, configs) to `backups\run-dev-<date-time>`; stop the server and clients first |
 | `uc-logs.ps1` | packs the logs, crash reports and screenshots (never a world) into `reports\uc-report-<date-time>.zip` for a bug report |

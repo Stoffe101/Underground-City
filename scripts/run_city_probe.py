@@ -35,6 +35,7 @@ def main() -> int:
     parser.add_argument("--registry", type=Path, default=None, help="write every registered block of --namespaces with its block state properties to this json file (what a palette is validated against)")
     parser.add_argument("--namespaces", default="modernlife,minecraft")
     parser.add_argument("--private", type=Path, default=None, help="a private content folder OUTSIDE the checkout (docs/technical/private-content-workflow.md): its packs are loaded for this probe; write --output and --dump outside the checkout too")
+    parser.add_argument("--world", type=Path, default=None, help="a world folder to COPY in as the probe's world (a pre-generated test world, test-worlds.md): its chunks are read, not generated; the folder itself is never opened")
     parser.add_argument("--timeout", type=int, default=3000)
     args = parser.parse_args()
     run_name = f"run-cityprobe-{args.name}"
@@ -43,6 +44,12 @@ def main() -> int:
         print(f"{run_dir} already exists; a generation test needs a fresh disposable world", file=sys.stderr)
         return 2
     run_dir.mkdir(parents=True)
+    if args.world:
+        if not (args.world / "level.dat").is_file():
+            print(f"{args.world} has no level.dat", file=sys.stderr)
+            return 2
+        import shutil
+        shutil.copytree(args.world, run_dir / "world", ignore=shutil.ignore_patterns("session.lock"))
     preset = "underground_city:archipelago" if args.layout == "archipelago" else "minecraft:normal"
     (run_dir / "eula.txt").write_text("eula=true\n", encoding="utf-8")
     (run_dir / "server.properties").write_text("\n".join([

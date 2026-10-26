@@ -11,10 +11,11 @@ param(
     [Parameter(Mandatory = $true)] [string] $World,
     [string[]] $Sets = @('furnished', 'scarcity'),
     [switch] $Xaero,
+    [switch] $Pregen,
     [string] $RunDir = 'run-dev'
 )
 . (Join-Path $PSScriptRoot 'uc-common.ps1')
 $saves = Join-Path (Get-UcRunDir $RunDir) (Join-Path 'saves' $World)
 if (Test-Path $saves) { throw "A world called $World already exists ($saves). Pick another name; nothing was changed." }
 $client = Join-Path $PSScriptRoot 'uc-client.ps1'
-& $client -Name $Name -Sets $Sets -World $World -RunDir $RunDir -Xaero:$Xaero
+& $client -Name $Name -Sets $Sets -World $World -RunDir $RunDir -Xaero:$Xaero -Pregen:$Pregen

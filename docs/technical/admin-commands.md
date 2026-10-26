@@ -39,6 +39,8 @@ No person has typed these commands yet.
 | `/uc admin general <player> <skill> xp add <n>` / `xp set <n>` | Changes one general skill's XP (`trading`, `social`, `thievery`, ...) | An unknown skill is refused with the list of skills. Thievery follows the Thief rules |
 | `/uc admin relocate <player> <city>` | Moves a registered player to that city's arrival welcome ([city-arrival.md](city-arrival.md)), using the same search and safety checks as a new citizen's arrival | Never changes citizenship and never registers anybody. Refused (nobody moved) if no safe ground is found |
 | `/uc admin audit [count]` | The last changes made with these commands (default 10, at most 200) | Read-only |
+| `/uc admin pregen start [scope] [margin]` | Generates chunks ahead of play, in the background, a dozen at a time ([test-worlds.md](test-worlds.md)). `islands` (the default) is every city, then the rest of the islands' land, then the roads and bridges; `all` is the cities' circles only; a city's id is that city's circle | `margin` is 0 to 256 blocks round each area (default 32). Only chunks that do not exist yet are generated; nothing stays loaded. Not written to the audit, as it changes no player |
+| `/uc admin pregen status` / `pregen stop` | How far it is (chunks done, in progress, per second, any let go unfinished) / stops it. A stop or a restart carries on at the next `start` or server start | Read-only / stops only the generation |
 
 The older developer commands still work as before, and nothing else replaces them:
 

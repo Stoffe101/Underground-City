@@ -22,13 +22,13 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * The cities' chunks generated ahead of play (owner request, ninth pass): every chunk of every city's circle (or one city's), and a margin round it, generated once and saved, so that walking or
- * travelling there later reads the world from disk instead of waiting for Lost Cities to build it. It is meant for test and preparation worlds; a world already played in can use it too, as it
- * only generates chunks that do not exist yet (an existing chunk is loaded and let go again).
+ * The islands generated ahead of play (owner request, ninth pass): every city's circle first, then the rest of the islands' land, then the roads and their bridges over the straits, each with a
+ * margin round it, generated once and saved, so that walking or travelling there later reads the world from disk instead of waiting for Lost Cities to build it. It is meant for test and
+ * preparation worlds; a world already played in can use it too, as it only generates chunks that do not exist yet (an existing chunk is loaded and let go again).
  *
- * <p>An operator starts it ({@code /uc admin pregen start [all|<city>] [margin]}, permission level 2), or a development launch does ({@code -PucPregen=all}, which starts it once on a world
- * that has not had it). A few chunks are asked for at a time with a short-lived ticket, each let go as soon as it is complete; nothing stays loaded. Progress is saved in the world
- * ({@code underground_city_pregen}), so a stop or a restart carries on where it was.
+ * <p>An operator starts it ({@code /uc admin pregen start [islands|all|<city>] [margin]}, permission level 2; "all" is the cities' circles only), or a development launch does
+ * ({@code -PucPregen=islands}, which starts it once on a world that has not had it). A few chunks are asked for at a time with a short-lived ticket, each let go as soon as it is complete;
+ * nothing stays loaded. Progress is saved in the world ({@code underground_city_pregen}), so a stop or a restart carries on where it was.
  */
 public final class ChunkPregen {
     private static final Logger LOGGER = LogUtils.getLogger();

@@ -89,6 +89,18 @@ class Behaviour(unittest.TestCase):
             self.assertNotEqual(0, result.returncode, bad)
             self.assertIsNone(args, bad)
 
+    def test_pregen_asks_gradle_for_the_islands_and_a_joining_client_cannot(self):
+        result, args = self.run_script("uc-server.ps1", "-Sets", "furnished", "-World", "UC-P1", "-LanOfflineMode", "-Pregen")
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        self.assertEqual(["runServer", "-PucExtraSets=furnished", "-PucPregen=islands"], args)
+        result, args = self.run_script("uc-new-world.ps1", "-Name", "Alice", "-World", "UC-P2", "-Pregen")
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        self.assertEqual(["runClient", "-PucUsername=Alice", "-PucExtraSets=furnished,scarcity", "-PucDevWorldName=UC-P2", "-PucPregen=islands"], args)
+        result, args = self.run_script("uc-client.ps1", "-Name", "Alice", "-Join", "-Pregen")
+        self.assertNotEqual(0, result.returncode)
+        self.assertIsNone(args)
+        self.assertIn("ucPregen", GRADLE, "build.gradle must know the flag the scripts pass")
+
     def test_a_new_world_never_replaces_one(self):
         (self.repo / "rpg-core" / "run-dev" / "saves" / "UC-S1").mkdir(parents=True)
         result, args = self.run_script("uc-new-world.ps1", "-Name", "Alice", "-World", "UC-S1")

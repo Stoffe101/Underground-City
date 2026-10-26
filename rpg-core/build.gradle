@@ -85,7 +85,7 @@ minecraft {
             if (providers.gradleProperty('ucAcceptLegacyBackpackLoss').orNull == 'true') property 'uc.acceptLegacyBackpackLoss', 'true'
             // Privately licensed content (docs/legal/private-content.md) is loaded from a folder OUTSIDE the checkout: -PucPrivateContent=<folder> or the UC_PRIVATE_CONTENT_DIR environment variable.
             if (providers.gradleProperty('ucPrivateContent').isPresent()) property 'uc.private.content', providers.gradleProperty('ucPrivateContent').get()
-            // the cities generated ahead of play once in a world (ChunkPregen): -PucPregen=all (or a city's id); -PucPregenMargin=<blocks>
+            // the islands generated ahead of play once in a world (ChunkPregen): -PucPregen=islands (or all for the cities only, or a city's id); -PucPregenMargin=<blocks>
             if (providers.gradleProperty('ucPregen').isPresent()) property 'uc.pregen', providers.gradleProperty('ucPregen').get()
             if (providers.gradleProperty('ucPregenMargin').isPresent()) property 'uc.pregen.margin', providers.gradleProperty('ucPregenMargin').get()
             if (!devPackMods.isEmpty()) {

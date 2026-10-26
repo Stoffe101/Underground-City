@@ -29,6 +29,8 @@ final class DuoSessionClient {
         if (mc.player == null || mc.level == null) return;
         ticks++;
         String name = mc.getUser().getName();
+        // what the client sees, now and then: the first run of this session never reached the screen branch and said nothing (October 26)
+        if (ticks == 1 || ticks % 200 == 0) System.out.println("[UC-DUO] client " + name + " tick " + ticks + ": screen " + (mc.screen == null ? "none" : mc.screen.getClass().getSimpleName()) + ", clicks so far " + registrationStep);
         if (mc.screen instanceof RegistrationScreen screen) {
             if (ticks % 30 != 0) return;
             int city = name.equals(DuoSessionServer.VALE) ? 1 : 2, career = name.equals(DuoSessionServer.VALE) ? 0 : 2;
