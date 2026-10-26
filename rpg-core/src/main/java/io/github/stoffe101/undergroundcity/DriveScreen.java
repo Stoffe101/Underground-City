@@ -60,7 +60,7 @@ public final class DriveScreen extends UcScreen {
         tile = Math.max(30, Math.min(52, (bodyW() - 16) / columns));
         gy = bodyY() + 40;
         // the steppers and the idler must end above the note line: 1280x720 at GUI scale 3 (426 by 240) put the idlers over it (engineer run 7)
-        int room = bodyBottom() - 20 - gy;   // the well round the drive ends 18 above the body's foot, under the note line
+        int room = bodyBottom() - 20 - gy;   // the well round the drive ends 14 above the body's foot, over the note line
         rowA = 16; rowB = 38; idlerOff = 60;
         if (tile - 4 + idlerOff + 14 > room) { rowA = 13; rowB = 31; idlerOff = 49; }
         if (tile - 4 + idlerOff + 14 > room) tile = Math.max(30, room - idlerOff - 14 + 4);
@@ -134,7 +134,7 @@ public final class DriveScreen extends UcScreen {
         String out = "Output now: " + v.output() + " rpm " + (v.outClockwise() ? "clockwise" : "anticlockwise");
         UcUi.text(g, font, UcUi.fit(font, out, w), x, bodyY() + 11, speedOk && dirOk ? UcUi.OK : UcUi.WARN);
         UcUi.text(g, font, UcUi.fit(font, "Uses: " + (v.needs().isEmpty() ? "nothing" : v.needs()), w), x, bodyY() + 22, UcUi.DIM);
-        UcUi.well(g, x, gy - 6, w, bodyBottom() - gy - 6 - 12);
+        UcUi.well(g, x, gy - 6, w, bodyBottom() - gy - 8);   // down to just above the note line, round the idlers too
         int mid = gy + (tile - 4) / 2;
         // the shaft running through the drive
         g.fill(gx + 4, mid - 1, gx + (v.parts().length + 2) * tile - 4, mid + 1, 0xff4a5f73);
