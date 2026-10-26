@@ -27,8 +27,8 @@ import java.util.Map;
  * preparation worlds; a world already played in can use it too, as it only generates chunks that do not exist yet (an existing chunk is loaded and let go again).
  *
  * <p>An operator starts it ({@code /uc admin pregen start [islands|all|<city>] [margin]}, permission level 2; "all" is the cities' circles only), or a development launch does
- * ({@code -PucPregen=islands}, which starts it once on a world that has not had it). A few chunks are asked for at a time with a short-lived ticket, each let go as soon as it is complete;
- * nothing stays loaded. Progress is saved in the world ({@code underground_city_pregen}), so a stop or a restart carries on where it was.
+ * ({@code -PucPregen=islands}, which starts it once on a world that has not had it). A dozen chunks are asked for at a time with a ticket; a finished chunk keeps it for
+ * half a minute (at most a few hundred do), as the next ring needs it as a neighbour, and nothing stays loaded once it is done. Progress is saved in the world ({@code underground_city_pregen}), so a stop or a restart carries on where it was.
  */
 public final class ChunkPregen {
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -38,6 +38,13 @@ public final class ChunkPregen {
     /** A chunk not complete after this many ticks is let go and counted as skipped (it is generated when somebody comes near). */
     static final int PATIENCE = 20 * 60;
     static final int MAX_MARGIN = 256;
+    /**
+     * A finished chunk keeps its ticket this long, and at most {@link #LINGER_MAX} of them are kept: the next ring's chunks need it as a neighbour, and unloading it at once only to load it
+     * again a moment later meets a race in the game's chunk storage (1.20.1's {@code IOWorker.loadAsync} hands back the very tag still waiting to be written, so the chunk read from it
+     * shares that tag while the write is in progress). Pregen run 1 met it four times in about 10,000 chunks ("Failed to store chunk", ConcurrentModificationException, one chunk
+     * unreadable afterwards and generated again).
+     */
+    static final int LINGER_TICKS = 20 * 30, LINGER_MAX = 384;
 
     /** What is being generated, saved with the world. */
     static final class Store extends SavedData {
@@ -64,6 +71,8 @@ public final class ChunkPregen {
     /** The roads' chunks are added to the end of the list once the roads are planned (in a new world, a little after it opens). */
     private static boolean roadsPending;
     private static final Map<Long, Integer> FLIGHT = new LinkedHashMap<>();
+    /** Finished chunks still holding their ticket, oldest first: chunk key to the tick it finished. */
+    private static final Map<Long, Integer> LINGER = new LinkedHashMap<>();
     private static long startedAt;
     private static int doneAtStart, lastLogged, waitedForRoads;
 
@@ -178,7 +187,20 @@ public final class ChunkPregen {
     private static void stopFlight(MinecraftServer server) {
         ServerLevel level = server.overworld();
         for (long key : FLIGHT.keySet()) { ChunkPos c = new ChunkPos(key); level.getChunkSource().removeRegionTicket(TICKET, c, 0, c); }
+        for (long key : LINGER.keySet()) { ChunkPos c = new ChunkPos(key); level.getChunkSource().removeRegionTicket(TICKET, c, 0, c); }
         FLIGHT.clear();
+        LINGER.clear();
+    }
+
+    /** Lets go of the finished chunks that have lingered long enough, or the oldest when too many linger; all of them at the end. */
+    private static void release(ServerLevel level, int now, boolean all) {
+        for (Iterator<Map.Entry<Long, Integer>> it = LINGER.entrySet().iterator(); it.hasNext(); ) {
+            Map.Entry<Long, Integer> e = it.next();
+            if (!all && now - e.getValue() < LINGER_TICKS && LINGER.size() <= LINGER_MAX) break;
+            ChunkPos c = new ChunkPos(e.getKey());
+            level.getChunkSource().removeRegionTicket(TICKET, c, 0, c);
+            it.remove();
+        }
     }
 
     @SubscribeEvent
@@ -200,7 +222,7 @@ public final class ChunkPregen {
     }
 
     @SubscribeEvent
-    public void stopping(ServerStoppingEvent event) { FLIGHT.clear(); plan = List.of(); roadsPending = false; }
+    public void stopping(ServerStoppingEvent event) { FLIGHT.clear(); LINGER.clear(); plan = List.of(); roadsPending = false; }
 
     @SubscribeEvent
     public void tick(TickEvent.ServerTickEvent event) {
@@ -223,12 +245,13 @@ public final class ChunkPregen {
             ChunkPos c = new ChunkPos(e.getKey());
             boolean complete = level.getChunkSource().getChunkNow(c.x, c.z) != null;
             if (complete || e.getValue() >= PATIENCE) {
-                level.getChunkSource().removeRegionTicket(TICKET, c, 0, c);
                 it.remove();
-                if (complete) store.done++; else store.skipped++;
+                if (complete) { store.done++; LINGER.put(c.toLong(), server.getTickCount()); }
+                else { store.skipped++; level.getChunkSource().removeRegionTicket(TICKET, c, 0, c); }
                 store.setDirty();
             } else e.setValue(e.getValue() + 1);
         }
+        release(level, server.getTickCount(), false);
         while (FLIGHT.size() < IN_FLIGHT && store.next < plan.size()) {
             ChunkPos c = plan.get(store.next++);
             level.getChunkSource().addRegionTicket(TICKET, c, 0, c);
@@ -236,6 +259,7 @@ public final class ChunkPregen {
         }
         if (store.done + store.skipped >= lastLogged + 250) { lastLogged = store.done + store.skipped; LOGGER.info("[UC-PREGEN] {}", status(server)); }
         if (store.next >= plan.size() && FLIGHT.isEmpty() && (!roadsPending || server.getTickCount() % 200 == 0 && waitedForRoads++ > 30)) {
+            release(level, server.getTickCount(), true);
             store.running = false; store.finished = true; store.setDirty();
             LOGGER.info("[UC-PREGEN] finished: {} chunks generated or loaded, {} let go unfinished, in {} s", store.done, store.skipped, (int) ((System.nanoTime() - startedAt) / 1e9));
         }

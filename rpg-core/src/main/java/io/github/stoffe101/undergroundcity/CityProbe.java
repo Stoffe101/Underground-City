@@ -162,6 +162,8 @@ public final class CityProbe {
         out.addProperty("planned_city_before_generation", planned);
         out.addProperty("city", sample.city()); out.addProperty("type", type); out.addProperty("building", sample.buildingId()); out.addProperty("style", sample.style());
         out.addProperty("floors", sample.floors()); out.addProperty("cellars", sample.cellars()); out.addProperty("city_level", sample.cityLevel());
+        out.addProperty("rail", CityCharacter.railAt(level, cx, cz));
+        out.addProperty("flattened_multi", CityCharacter.FLATTENED.contains(ChunkPos.asLong(cx, cz)));
         int minY = level.getMinBuildHeight(), maxY = level.getMaxBuildHeight();
         int topSolid = minY, bottomBuilt = maxY, doors = 0, glass = 0, containers = 0, onStructure = 0, trees = 0;
         Map<String, Integer> counts = new TreeMap<>();

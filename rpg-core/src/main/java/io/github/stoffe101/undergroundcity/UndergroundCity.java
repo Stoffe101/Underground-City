@@ -219,6 +219,7 @@ public final class UndergroundCity {
         MinecraftForge.EVENT_BUS.register(new BurglaryDamage());   // what a burglar breaks, and the city putting it back (D-190)
         MinecraftForge.EVENT_BUS.register(new FurnitureGuard());   // the furniture set's mail boxes deliver nothing (D-192)
         MinecraftForge.EVENT_BUS.register(new ChunkPregen());   // the cities generated ahead of play (/uc admin pregen, -PucPregen)
+        MinecraftForge.EVENT_BUS.register(new ShutdownWatch());   // a stopped dedicated server leaves even when another mod's thread would keep it open
         MinecraftForge.EVENT_BUS.register(new PolicePatrols());
         MinecraftForge.EVENT_BUS.register(new PropertyIntel());
         MinecraftForge.EVENT_BUS.register(new TechService());

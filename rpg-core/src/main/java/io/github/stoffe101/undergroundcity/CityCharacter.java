@@ -56,6 +56,8 @@ public final class CityCharacter extends SimpleJsonResourceReloadListener {
     static volatile long askedDirectly;
     /** Lots of a flattened multi-chunk building that Lost Cities' single-lot rule leaves empty: a railway, its station or a highway runs through them (counted for the probes). */
     static volatile long flattenedLeftEmpty;
+    /** The chunks whose multi-chunk building was flattened into a single lot, for the probes (bounded). */
+    static final java.util.Set<Long> FLATTENED = java.util.concurrent.ConcurrentHashMap.newKeySet();
 
     private CityCharacter() { super(new Gson(), "city_character"); }
 
@@ -133,7 +135,7 @@ public final class CityCharacter extends SimpleJsonResourceReloadListener {
     private static Field cityStyleId, cityStyle, buildingTypeId, buildingType, multiBuilding, multiBuildingId, multiPos, isCity, couldHaveBuilding, cityLevel, plannedRoadType;
     private static Object singlePos;
     /** Lost Cities' own rule for a single-chunk lot ({@code BuildingInfo.checkBuildingPossibility}) and what it needs; null when this Lost Cities does not have them (the check is then skipped). */
-    private static Method singleLotRule, profileOf, dimensionInfo;
+    private static Method singleLotRule, profileOf, dimensionInfo, railChunkType, railType, railLevel;
     private static java.lang.reflect.Constructor<?> chunkCoord;
 
     /** Registers the listener on the Forge bus when Lost Cities is installed. Safe to call when it is not (it does nothing). */
@@ -174,6 +176,10 @@ public final class CityCharacter extends SimpleJsonResourceReloadListener {
                 profileOf = buildingInfo.getMethod("getProfile", coord, dimension);
                 dimensionInfo = Class.forName("mcjty.lostcities.LostCitiesImp$LostCityInformation").getMethod("dimensionInfo");
                 chunkCoord = coord.getConstructor(net.minecraft.resources.ResourceKey.class, int.class, int.class);
+                Class<?> railway = Class.forName("mcjty.lostcities.worldgen.lost.Railway"), railInfo = Class.forName("mcjty.lostcities.worldgen.lost.Railway$RailChunkInfo");
+                railChunkType = railway.getMethod("getRailChunkType", coord, dimension, Class.forName("mcjty.lostcities.config.LostCityProfile"));
+                railType = railInfo.getMethod("getType");
+                railLevel = railInfo.getMethod("getLevel");
             } catch (ReflectiveOperationException | RuntimeException error) {
                 singleLotRule = null;
                 LOGGER.warn("[UC-CITY] Lost Cities' single-lot rule was not found; a flattened multi-chunk building keeps every lot ({})", error.toString());
@@ -212,6 +218,7 @@ public final class CityCharacter extends SimpleJsonResourceReloadListener {
             if (multiBuilding.get(ch) != null) {
                 if (character.keepMultiBuildings) return;
                 multiBuilding.set(ch, null); multiBuildingId.set(ch, null); multiPos.set(ch, singlePos);
+                if (FLATTENED.size() < 65536) FLATTENED.add(net.minecraft.world.level.ChunkPos.asLong(chunkX, chunkZ));
                 // Lost Cities builds every lot of a multi-chunk section whatever runs through it, and draws its railways after the building: as a single lot the chunk gets
                 // Lost Cities' own single-lot rule, so a station or a railway at street level, or a highway, is not drawn through a house (measured: a surface station's
                 // rails and iron bars through a private house in Valewood, October 26)
@@ -234,6 +241,20 @@ public final class CityCharacter extends SimpleJsonResourceReloadListener {
     }
 
     private static Object INSTANCE_API() { return LostCitiesLink.implementation(); }
+
+    /** Lost Cities' railway in a chunk ("TYPE@level", "NONE@..." for none), for the probes; empty when it cannot be asked. */
+    static String railAt(net.minecraft.server.level.ServerLevel level, int chunkX, int chunkZ) {
+        Object information = LostCitiesLink.overworldInfo(level);
+        if (railChunkType == null || information == null) return "";
+        try {
+            Object provider = dimensionInfo.invoke(information);
+            Object coord = chunkCoord.newInstance(level.dimension(), chunkX, chunkZ);
+            Object info = railChunkType.invoke(null, coord, provider, profileOf.invoke(null, coord, provider));
+            return railType.invoke(info) + "@" + railLevel.invoke(info);
+        } catch (ReflectiveOperationException | RuntimeException error) {
+            return "?";
+        }
+    }
 
     /** Whether Lost Cities would build a single-chunk lot here (its building-chance roll taken as passed: the lot was already built as part of a multi-chunk building). */
     private static boolean singleLotAllowed(net.minecraft.server.level.ServerLevel level, Object information, int chunkX, int chunkZ, Object ch) {
