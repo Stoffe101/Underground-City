@@ -234,4 +234,37 @@ public final class TechGameTests {
         check(TechWork.assemble(tech, "circuit_boards").startsWith("Missing parts"), "the bench made boards from nothing");
         helper.succeed();
     }
+
+    /**
+     * A crouched right click with the toolkit reaches a utility panel (the back channel, D-166). Vanilla skips a block's own click when a player sneaks with an item in hand; the event
+     * now allows it for the toolkit on a panel only: not standing, not with another item, not on another block (back-channel client run 3, eighth pass).
+     */
+    @GameTest(template = "empty")
+    public static void aCrouchedToolkitClickReachesAUtilityPanelAndNothingElse(GameTestHelper helper) {
+        var level = helper.getLevel();
+        BlockPos panel = helper.absolutePos(new BlockPos(1, 2, 1)), stone = helper.absolutePos(new BlockPos(3, 2, 1));
+        level.setBlock(panel, UndergroundCity.UTILITY_PANEL.get().defaultBlockState(), 3);
+        level.setBlock(stone, net.minecraft.world.level.block.Blocks.STONE.defaultBlockState(), 3);
+        FakePlayer p = FakePlayerFactory.get(level, new GameProfile(UUID.randomUUID(), "uc_sneak_tech"));
+        java.util.function.BiFunction<BlockPos, ItemStack, net.minecraftforge.eventbus.api.Event.Result> click = (pos, held) -> {
+            p.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, held);
+            var hit = new net.minecraft.world.phys.BlockHitResult(net.minecraft.world.phys.Vec3.atCenterOf(pos), net.minecraft.core.Direction.NORTH, pos, false);
+            var event = new net.minecraftforge.event.entity.player.PlayerInteractEvent.RightClickBlock(p, net.minecraft.world.InteractionHand.MAIN_HAND, pos, hit);
+            net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(event);
+            return event.getUseBlock();
+        };
+        try {
+            p.setShiftKeyDown(true);
+            check(click.apply(panel, new ItemStack(TechWork.item("repair_kit"))) == net.minecraftforge.eventbus.api.Event.Result.ALLOW, "a crouched toolkit click does not reach the panel");
+            check(click.apply(panel, new ItemStack(Items.STICK)) != net.minecraftforge.eventbus.api.Event.Result.ALLOW, "a crouched click with another item was let through to the panel");
+            check(click.apply(stone, new ItemStack(TechWork.item("repair_kit"))) != net.minecraftforge.eventbus.api.Event.Result.ALLOW, "a crouched toolkit click was let through to another block");
+            p.setShiftKeyDown(false);
+            check(click.apply(panel, new ItemStack(TechWork.item("repair_kit"))) != net.minecraftforge.eventbus.api.Event.Result.ALLOW, "a standing click was changed (it reaches the panel already)");
+        } finally {
+            p.setShiftKeyDown(false);
+            level.setBlock(panel, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(), 3);
+            level.setBlock(stone, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(), 3);
+        }
+        helper.succeed();
+    }
 }

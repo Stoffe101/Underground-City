@@ -71,6 +71,20 @@ public final class TechWork {
 
     static Item item(String id) { return ForgeRegistries.ITEMS.getValue(ResourceLocation.fromNamespaceAndPath(UndergroundCity.MOD_ID, id)); }
 
+    /**
+     * A crouched right click with a Technician's toolkit on a utility panel reaches the panel. Vanilla skips a block's own click when the player sneaks with an item in hand, so the
+     * back-channel job, started crouched with the toolkit (D-166), could never be started in play: the GameTests called the panel's code directly (back-channel client run 3, eighth pass).
+     * Registered on the Forge bus; both sides, so the client sends the click the server will act on.
+     */
+    static final class SneakUse {
+        @net.minecraftforge.eventbus.api.SubscribeEvent
+        public void use(net.minecraftforge.event.entity.player.PlayerInteractEvent.RightClickBlock event) {
+            if (!event.getEntity().isSecondaryUseActive() || !event.getItemStack().is(item("repair_kit"))) return;
+            if (!(event.getLevel().getBlockState(event.getPos()).getBlock() instanceof TechBlocks.UtilityPanel)) return;
+            event.setUseBlock(net.minecraftforge.eventbus.api.Event.Result.ALLOW);
+        }
+    }
+
     /** A right click on a utility panel. */
     static void usePanel(ServerPlayer player, ServerLevel level, BlockPos pos) {
         TechService.Systems s = TechService.systems(level.getServer());

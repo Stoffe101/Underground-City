@@ -222,6 +222,7 @@ public final class UndergroundCity {
         MinecraftForge.EVENT_BUS.register(new MachineService());
         MinecraftForge.EVENT_BUS.register(new SmithWork());
         MinecraftForge.EVENT_BUS.register(new ExplorationFinds.Service());
+        MinecraftForge.EVENT_BUS.register(new TechWork.SneakUse());   // a crouched toolkit click reaches a utility panel (the back channel, D-166)
         MinecraftForge.EVENT_BUS.register(new StaffZones());
         MinecraftForge.EVENT_BUS.register(new ResourceSites());
         MinecraftForge.EVENT_BUS.register(new HouseholdService());
