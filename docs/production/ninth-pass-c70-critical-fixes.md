@@ -235,6 +235,17 @@ The run found two faults, both fixed:
    * Core now names such threads in the log 20 seconds after a dedicated server has stopped and saved, and the process leaves. This never applies to a client leaving a world.
    * Measured on the next probe: "1 thread(s) of other mods keep the process open: pool-10-thread-1 (com.unlikepaladin.pfm.runtime.PFMProvider...). Leaving." The build then finished normally.
 
+## 9. The new screens at the owner's sizes
+
+The ninth pass's notices and the glance cards were captured by the capture harness at 1920x1080 with GUI scale 3 and at 3440x1440 with GUI scale 2 (the owner's screen), and looked at.
+
+The notices were Welcome, two "Police searching" variants and "The police stood down". The glance cards included the new "To let, locked: K, Home to lease".
+
+Results:
+* No text is cut and nothing leaves its panel.
+* At 1080p GUI 3, four notices stacked at once (the worst case) partly cover the right edge of the Operations screen. That screen is not a timed one, which the notices are allowed to cover.
+* At 3440x1440 GUI 2 they sit clear of it.
+
 ## Runs in progress
 
 This section lists only runs that have finished, with their result. A run that has only started is not recorded here.
