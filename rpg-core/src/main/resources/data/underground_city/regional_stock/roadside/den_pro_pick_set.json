@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "city": "blackwater",
+  "item": "underground_city:pro_pick_set",
+  "unit_price": 180,
+  "initial": 1,
+  "capacity": 1,
+  "units_per_interval": 1,
+  "interval_ticks": 96000,
+  "max_order": 1,
+  "outlets": [
+    "shop:den"
+  ]
+}

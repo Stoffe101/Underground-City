@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "city": "ironhaven",
+  "item": "underground_city:apple_cider",
+  "unit_price": 18,
+  "initial": 4,
+  "capacity": 12,
+  "units_per_interval": 1,
+  "interval_ticks": 72000,
+  "max_order": 4,
+  "outlets": [
+    "shop:pub"
+  ],
+  "supply": {
+    "pays": 12,
+    "xp": 5,
+    "career": "vintner"
+  }
+}

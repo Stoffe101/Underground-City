@@ -178,10 +178,10 @@ public final class ResidenceGameTests {
             near(base, founder, member, outsider, exMember);
             Residence r = flat(l, base, "test:guard", 10, -1);
             BlockPos inside = base.offset(2, 1, 2), wall = base.offset(-1, 1, 2), chest = base.offset(1, 0, 1);
-            // a showroom: look, don't touch
+            // a unit to let is locked (D-188): its door does not open for anybody (its listing is read from outside), and nothing in it is anybody's to use
             for (Act act : Act.values()) {
-                boolean expected = act == Act.DOOR || act == Act.OTHER;
-                check(ResidenceGuard.allowed(l, r, outsider.getUUID(), OVERWORLD, inside, act) == expected, "showroom " + act);
+                boolean expected = act == Act.OTHER;
+                check(ResidenceGuard.allowed(l, r, outsider.getUUID(), OVERWORLD, inside, act) == expected, "a unit to let, " + act);
             }
             Crew crew = l.create(founder.getUUID(), "uc_gf", "Guard Crew");
             for (ServerPlayer p : List.of(member, exMember)) l.accept(l.invite(founder.getUUID(), p.getUUID(), p.getGameProfile().getName(), "uc_gf").id(), p.getUUID(), p.getGameProfile().getName());
@@ -318,6 +318,31 @@ public final class ResidenceGameTests {
         return event;
     }
 
+    /** An iron door of a home opens for those the home lets through, and for nobody else: the commercial workshop's iron street door lies inside its premises, where the building's guard
+     *  stands aside, and its tenant could not get in (premises run 5, seventh pass). */
+    @GameTest(template = "empty")
+    public static void aHomesIronDoorOpensForItsTenantAndNobodyElse(GameTestHelper helper) throws Exception {
+        try (CrewGameTests.Rig rig = new CrewGameTests.Rig(helper)) {
+            CrewLedger l = rig.ledger;
+            ServerPlayer tenant = player(helper, "uc_it", "smith"), stranger = player(helper, "uc_is", "farmer");
+            rig.wallet.balances.put(tenant.getUUID(), 500d);
+            BlockPos base = helper.absolutePos(new BlockPos(0, 2, 0));
+            near(base, tenant, stranger);
+            flat(l, base, "test:ironworks", 100, -1);
+            ServerLevel level = helper.getLevel();
+            BlockPos door = base.offset(2, 1, -1);   // in the home's front wall (its shell)
+            level.setBlockAndUpdate(door, Blocks.IRON_DOOR.defaultBlockState());
+            level.setBlockAndUpdate(door.above(), Blocks.IRON_DOOR.defaultBlockState().setValue(net.minecraft.world.level.block.DoorBlock.HALF, net.minecraft.world.level.block.state.properties.DoubleBlockHalf.UPPER));
+            CrewService.lease(tenant, id(), "test:ironworks", false, false);
+            check(usedBy(level, stranger, door).isCanceled() && !level.getBlockState(door).getValue(net.minecraft.world.level.block.DoorBlock.OPEN), "a stranger opened the tenant's iron door");
+            usedBy(level, tenant, door.above());
+            check(level.getBlockState(door).getValue(net.minecraft.world.level.block.DoorBlock.OPEN), "the tenant's click did not open their home's iron door");
+            usedBy(level, tenant, door);
+            check(!level.getBlockState(door).getValue(net.minecraft.world.level.block.DoorBlock.OPEN), "the tenant's second click did not shut it");
+        }
+        helper.succeed();
+    }
+
     /** The real Row Flats, built into the sky of the test world: their homes register, lease, and are guarded block by block; the lease is what keeps the district from being undone. */
     @GameTest(template = "empty", batch = "uc_district", timeoutTicks = 400)
     public static void rowFlatsAreRealHomesThatCanBeLeasedGuardedAndNotUndoneFromUnderTheirTenants(GameTestHelper helper) throws Exception {
@@ -350,8 +375,8 @@ public final class ResidenceGameTests {
                 }
             }
 
-            // a showroom, then a personal tenancy of the flat (the deposit and the first hour), then the Crew renting the house from the bank
-            check(brokenBy(level, stranger, flatChest).isCanceled() && usedBy(level, stranger, flatChest).isCanceled() && !usedBy(level, stranger, flatDoor).isCanceled(), "an unleased flat: look, don't touch");
+            // a unit to let (locked, D-188), then a personal tenancy of the flat (the deposit and the first hour), then the Crew renting the house from the bank
+            check(brokenBy(level, stranger, flatChest).isCanceled() && usedBy(level, stranger, flatChest).isCanceled() && usedBy(level, stranger, flatDoor).isCanceled(), "an unleased flat: its door is locked and nothing in it opens");
             near(flat.min, tenant);
             var flatTerms = PropertyCatalog.INSTANCE.find(flat.id).orElseThrow();
             int flatCost = l.rentQuote(tenant.getUUID(), flat, flatTerms, PropertyCatalog.INSTANCE.rules()).total();

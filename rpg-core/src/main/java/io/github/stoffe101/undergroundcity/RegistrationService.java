@@ -21,9 +21,30 @@ public final class RegistrationService {
         if (!ProgressionRules.validCity(cityId) || !ProgressionRules.validCareer(careerId)) return Outcome.INVALID;
         CitizenState state = CitizenState.get(player.server);
         if (!state.register(player.getUUID(), cityId, careerId)) return Outcome.ALREADY_REGISTERED;
+        // the move to the chosen city is written down with the record, before the pack: it happens once, even after a crash (D-187)
+        CityArrival.schedule(player, cityId);
         int given = StarterKits.INSTANCE.grant(player, careerId);
-        player.sendSystemMessage(Component.literal("Registered with " + cityId + " as " + careerId + ". Welcome pack: " + given + " items, including an Operations Terminal."));
+        teachRecipes(player);
+        player.sendSystemMessage(Component.literal("You are a citizen of " + (cityId.isEmpty() ? "" : Character.toUpperCase(cityId.charAt(0)) + cityId.substring(1)) + ", working as a " + Dialogue.careerTitle(careerId).toLowerCase(Locale.ROOT)
+            + ". Welcome pack: " + given + " items, including an Operations Terminal."));
+        String blueprint = BlueprintGate.unread(player);
+        if (blueprint != null) {
+            player.sendSystemMessage(Component.literal("Your pack holds a " + blueprint + ": right-click it to learn the gun. The Gun Smith Table shows only the guns you have learned."));
+            Notice.send(player, Notice.Kind.INFO, "Read your blueprint", "Right-click the " + blueprint + " to learn it before you use the Gun Smith Table.");
+        }
         return Outcome.REGISTERED;
+    }
+
+    /**
+     * Puts Core's own crafting recipes in the player's recipe book (D-175): the workshop stations, the Electronics Bench, the Drying Rack, the lockpick and the rest. The first-hour audit found
+     * a Farmer could not learn how to make a Grading Table or a Vintner an Oak Cask without JEI, which is an opt-in set. Idempotent: the book unlocks only what it does not hold, so this runs
+     * at registration and again at every login of a citizen (a world from before this change catches up once). Returns how many were new.
+     */
+    static int teachRecipes(ServerPlayer player) {
+        java.util.List<net.minecraft.world.item.crafting.Recipe<?>> core = new java.util.ArrayList<>();
+        for (var recipe : player.server.getRecipeManager().getAllRecipesFor(net.minecraft.world.item.crafting.RecipeType.CRAFTING))
+            if (recipe.getId().getNamespace().equals(UndergroundCity.MOD_ID)) core.add(recipe);
+        return player.awardRecipes(core);
     }
 
     public static boolean registered(ServerPlayer player) {

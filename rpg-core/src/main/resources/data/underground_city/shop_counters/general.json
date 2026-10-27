@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "outlet": "shop:general",
+  "building": "underground_city:vw_shop",
+  "spot": "counter",
+  "city": "valewood",
+  "title": "General Store"
+}

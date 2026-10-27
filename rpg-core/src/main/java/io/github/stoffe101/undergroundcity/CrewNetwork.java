@@ -22,7 +22,7 @@ import java.util.Map;
  * ownership are all decided by {@link CrewLedger} and {@link CrewService}.
  */
 public final class CrewNetwork {
-    private static final String VERSION = "1";
+    private static final String VERSION = "2";   // 2: a home's and a listing's kind may be 40 letters (seventh pass)
     private static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
         ResourceLocation.fromNamespaceAndPath(UndergroundCity.MOD_ID, "crew"), () -> VERSION, VERSION::equals, VERSION::equals);
     private static final Map<ServerPlayer, Integer> LAST_REQUEST = new WeakHashMap<>();
@@ -55,7 +55,9 @@ public final class CrewNetwork {
                 NetworkEvent.Context context = supplier.get();
                 context.enqueueWork(() -> {
                     ServerPlayer player = context.getSender();
-                    if (player != null && slot(player)) sendView(player, packet.open);
+                    // the work queue keeps an exception to itself, so the screen would simply never open; it is written to the log instead
+                    try { if (player != null && slot(player)) sendView(player, packet.open); }
+                    catch (RuntimeException error) { org.slf4j.LoggerFactory.getLogger(CrewNetwork.class).error("[UC] the Crew view for {} could not be built", player.getGameProfile().getName(), error); }
                 });
                 context.setPacketHandled(true);
             }, Optional.of(NetworkDirection.PLAY_TO_SERVER));
@@ -73,7 +75,8 @@ public final class CrewNetwork {
                 NetworkEvent.Context context = supplier.get();
                 context.enqueueWork(() -> {
                     ServerPlayer player = context.getSender();
-                    if (player != null && slot(player)) CrewActions.perform(player, packet);
+                    try { if (player != null && slot(player)) CrewActions.perform(player, packet); }
+                    catch (RuntimeException error) { org.slf4j.LoggerFactory.getLogger(CrewNetwork.class).error("[UC] the Crew request {} from {} failed", packet.op, player.getGameProfile().getName(), error); }
                 });
                 context.setPacketHandled(true);
             }, Optional.of(NetworkDirection.PLAY_TO_SERVER));

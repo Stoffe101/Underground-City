@@ -25,6 +25,11 @@ public final class DialogueScreen extends UcScreen {
     private final List<Choice> choices;
     private final boolean qa;
 
+    /** The id of the entity this conversation is with (a scripted playtest checks it spoke to the person it meant to). */
+    int entityId() { return entityId; }
+    /** What the person said (for the scripted scenarios). */
+    String text() { return text; }
+
     DialogueScreen(int entityId, String name, String subtitle, String city, String text, List<Choice> choices, boolean qa) {
         super(Component.literal("Underground City | " + name));
         this.entityId = entityId; this.name = name; this.subtitle = subtitle; this.city = city; this.text = text; this.choices = choices; this.qa = qa;
@@ -66,6 +71,9 @@ public final class DialogueScreen extends UcScreen {
 
     private boolean released;
 
+    /** A new screen for the same person replaces this one: the conversation goes on, so closing this one is not its end. */
+    void continued() { released = true; }
+
     private final java.util.List<UcButton> choiceButtons = new java.util.ArrayList<>();
 
     /** The centre of the n-th answer in GUI coordinates (scripted-player runs click it with the real mouse). */
@@ -73,6 +81,9 @@ public final class DialogueScreen extends UcScreen {
         UcButton button = choiceButtons.get(index);
         return new int[]{button.getX() + button.getWidth() / 2, button.getY() + button.getHeight() / 2};
     }
+
+    /** The label of the n-th answer, or null past the last (scripted-player runs read it the way a person reads the screen). */
+    String choiceLabel(int index) { return index < 0 || index >= choiceButtons.size() ? null : choiceButtons.get(index).getMessage().getString(); }
 
     private void pick(Choice choice) {
         if (Playtest.enabled()) Playtest.log("dialogue pick '" + choice.id() + "'");

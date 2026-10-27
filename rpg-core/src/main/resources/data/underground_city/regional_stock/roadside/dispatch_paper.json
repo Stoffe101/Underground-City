@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "city": "blackwater",
+  "item": "minecraft:paper",
+  "unit_price": 2,
+  "initial": 16,
+  "capacity": 32,
+  "units_per_interval": 8,
+  "interval_ticks": 24000,
+  "max_order": 16,
+  "outlets": [
+    "shop:dispatch"
+  ]
+}

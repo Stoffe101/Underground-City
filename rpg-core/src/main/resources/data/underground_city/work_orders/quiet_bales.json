@@ -1,12 +1,12 @@
 {
   "schema_version": 3,
-  "title": "Quiet bale delivery",
+  "title": "Quiet cannabis delivery",
   "career": "farmer",
   "level": 9,
   "foreign_visits": 0,
   "requirements": [
     {
-      "item": "underground_city:sable_leaf_bale",
+      "item": "underground_city:cannabis_flower",
       "count": 6
     }
   ],

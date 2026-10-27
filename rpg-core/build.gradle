@@ -26,7 +26,7 @@ java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 // GitHub release), are SHA-512/SHA-256 verified against content/modpacks/dev-pack.json, and are never committed.
 // ---------------------------------------------------------------------------------------------------------------
 def harnessFlags = ['ucPack', 'ucEconomyTest', 'ucScreeningMod', 'ucWorldCandidate', 'ucWorldTour', 'ucJourneyClient',
-                    'ucVisualCapture', 'ucWorldSurvey', 'ucSeedScan', 'ucJourneyPhase', 'ucJourneyScenario', 'ucJourneySurvival', 'ucJourneyWorld', 'ucPerfProbe', 'ucStallProbe']
+                    'ucVisualCapture', 'ucWorldSurvey', 'ucSeedScan', 'ucJourneyPhase', 'ucJourneyScenario', 'ucJourneySurvival', 'ucJourneyWorld', 'ucPerfProbe', 'ucStallProbe', 'ucTerrainMap', 'ucCityProbe', 'ucOreAudit', 'ucRoadCheck', 'ucBurglary', 'ucPhotoTour']
 def requestedTasks = gradle.startParameter.taskNames.collect { it.tokenize(':').last() }
 def userLaunch = requestedTasks.any { it in ['runClient', 'runServer'] } &&
         !harnessFlags.any { providers.gradleProperty(it).isPresent() }
@@ -36,11 +36,22 @@ def extraSets = providers.gradleProperty('ucExtraSets').orElse('').get().trim()
 def packSelection = explicitPack != null ? (explicitPack == 'none' ? '' : explicitPack)
         : (userLaunch ? 'world,firearms,vehicles,boats' + (extraSets.isEmpty() ? '' : ',' + extraSets) : '')
 def devPackSets = packSelection.split(',').collect { it.trim() }.findAll { !it.isEmpty() }
+def devPackSetsForFurnished = { p -> devPackSets.contains('furnished') }
 def devWorldWanted = userLaunch || providers.gradleProperty('ucDevWorld').orNull == 'true'
 def autoWorld = devWorldWanted && providers.gradleProperty('ucAutoWorld').orNull != 'false' && !providers.gradleProperty('ucPlaytest').isPresent()
 def economyRuntime = providers.gradleProperty('ucEconomyTest').orNull == 'true' || userLaunch
 def runDirName = providers.gradleProperty('ucRunDir').orElse(userLaunch ? 'run-dev' : 'run').get()
-def devWorldName = 'UC-Dev-5908'
+// Two world layouts exist (D-104) and a launch carries exactly one of them (WorldLayout refuses a mismatch): a plain runClient or runServer starts the ARCHIPELAGO
+// (the world type "Underground City: Archipelago", dev world UC-Archipelago); -PucWorldLayout=legacy starts the original seed-5908 triangle and its saved dev world UC-Dev-5908
+// exactly as before, and every scripted run (playtest, launch smoke, CI harness) keeps the legacy layout unless it asks otherwise.
+def interactiveLaunch = userLaunch && !providers.gradleProperty('ucPlaytest').isPresent() && !providers.gradleProperty('ucLaunchSmoke').isPresent()
+def worldLayout = providers.gradleProperty('ucWorldLayout').orElse(interactiveLaunch ? 'archipelago' : 'legacy').get()
+if (!(worldLayout in ['legacy', 'archipelago'])) throw new GradleException('ucWorldLayout must be legacy or archipelago')
+def worldPackName = worldLayout == 'archipelago' ? 'world-archipelago' : 'world-prototype'
+// -PucDevWorldName=<name> opens or makes a different dev world (a new world for the furnished cities, say) beside the existing one, which is never touched
+def devWorldName = providers.gradleProperty('ucDevWorldName').orElse(worldLayout == 'archipelago' ? 'UC-Archipelago' : 'UC-Dev-5908').get()
+// The furnished cities (D-117) are original buildings furnished with Modern Life; they change how new chunks generate, so they exist only for the archipelago layout and only when asked for (-PucExtraSets=furnished)
+if (devPackSetsForFurnished(providers)) { if (worldLayout != 'archipelago') throw new GradleException('The furnished set belongs to the archipelago layout (-PucWorldLayout=archipelago)') }
 
 def devPackMods = []
 if (!devPackSets.isEmpty()) {
@@ -55,7 +66,7 @@ if (!devPackSets.isEmpty()) {
         chosen[id] = mod
     }
     manifest.mods.findAll { mod -> mod.sets.any { devPackSets.contains(it) } }.each { include(it.id) }
-    if (chosen.isEmpty()) throw new GradleException('No dev-pack mods in sets ' + devPackSets + ' (known sets: world, firearms, vehicles, boats, vintner, farming, qol, survival, legacy_travelers)')
+    if (chosen.isEmpty()) throw new GradleException('No dev-pack mods in sets ' + devPackSets + ' (known sets: world, firearms, vehicles, boats, vintner, farming, qol, survival, legacy_travelers, performance, navigation, citytweaks, furnished, scarcity, securitycraft, furniture)')
     devPackMods = chosen.values().toList()
 }
 
@@ -72,6 +83,11 @@ minecraft {
             // D-103: Core refuses to load a world that holds Traveler's Backpack data without the mod. -PucAcceptLegacyBackpackLoss=true is the deliberate way past it
             // for a development launch (Core copies the world to uc-backups/ first); nothing sets it by default.
             if (providers.gradleProperty('ucAcceptLegacyBackpackLoss').orNull == 'true') property 'uc.acceptLegacyBackpackLoss', 'true'
+            // Privately licensed content (docs/legal/private-content.md) is loaded from a folder OUTSIDE the checkout: -PucPrivateContent=<folder> or the UC_PRIVATE_CONTENT_DIR environment variable.
+            if (providers.gradleProperty('ucPrivateContent').isPresent()) property 'uc.private.content', providers.gradleProperty('ucPrivateContent').get()
+            // the islands generated ahead of play once in a world (ChunkPregen): -PucPregen=islands (or all for the cities only, or a city's id); -PucPregenMargin=<blocks>
+            if (providers.gradleProperty('ucPregen').isPresent()) property 'uc.pregen', providers.gradleProperty('ucPregen').get()
+            if (providers.gradleProperty('ucPregenMargin').isPresent()) property 'uc.pregen.margin', providers.gradleProperty('ucPregenMargin').get()
             if (!devPackMods.isEmpty()) {
                 // Dev-pack mods such as TaCZ are mixin mods whose refmaps use SRG names; this development environment
                 // runs with the official names, so Mixin must remap the refmaps (the documented ForgeGradle 6 recipe).
@@ -91,6 +107,7 @@ minecraft {
             if (userLaunch) {
                 jvmArgs '-Xmx4G'
                 if (autoWorld) jvmArgs "-Duc.devWorld=${devWorldName}", '-Duc.devBootstrap=true'
+                if (autoWorld && worldLayout == 'archipelago') jvmArgs '-Duc.devPreset=underground_city:archipelago'
                 // Two developers testing together need different offline names (the default profile is "Dev").
                 if (providers.gradleProperty('ucUsername').isPresent()) args '--username', providers.gradleProperty('ucUsername').get()
             }
@@ -101,7 +118,17 @@ minecraft {
                 project.properties.each { name, value ->
                     if (name.startsWith('ucPt') && name.length() > 4) jvmArgs "-Duc.playtest.${name.substring(4).toLowerCase()}=${value}"
                 }
-                args '--width', '1280', '--height', '720'
+                if (providers.gradleProperty('ucLockLatency').isPresent()) jvmArgs "-Duc.lock.latency=${providers.gradleProperty('ucLockLatency').get()}"
+                args '--width', providers.gradleProperty('ucPtWidth').orElse('1280').get(), '--height', providers.gradleProperty('ucPtHeight').orElse('720').get()
+                if (worldLayout == 'archipelago') jvmArgs '-Duc.devPreset=underground_city:archipelago'
+                // a new player in an existing playtest world (a scripted journey run again without generating a new world): -PucUsername=<name>
+                if (providers.gradleProperty('ucUsername').isPresent()) args '--username', providers.gradleProperty('ucUsername').get()
+            }
+            if (providers.gradleProperty('ucPhotoTour').isPresent()) {
+                // a spectator camera flies to each viewpoint of a shot list (PhotoTour) in the world the development launcher creates; frames land in <run dir>/screenshots
+                jvmArgs "-Duc.photoTour=${providers.gradleProperty('ucPhotoTour').get()}", "-Duc.devWorld=${providers.gradleProperty('ucPhotoWorld').orElse(devWorldName).get()}", '-XX:ActiveProcessorCount=2', "-Xmx${providers.gradleProperty('ucClientHeap').orElse('3G').get()}"
+                if (worldLayout == 'archipelago') jvmArgs '-Duc.devPreset=underground_city:archipelago'
+                args '--username', 'UC_Photographer', '--width', providers.gradleProperty('ucPhotoWidth').orElse('1920').get(), '--height', providers.gradleProperty('ucPhotoHeight').orElse('1080').get()
             }
             if (providers.gradleProperty('ucLaunchSmoke').orNull == 'true') {
                 // CI / verification: join the dev world, report facts, take a screenshot, quit.
@@ -128,6 +155,7 @@ minecraft {
                 def screenWidth = providers.gradleProperty('ucVisualWidth').orElse('1920').get()
                 def screenHeight = providers.gradleProperty('ucVisualHeight').orElse('1080').get()
                 jvmArgs '-Duc.visualCapture=true', "-Duc.visualCapture.scale=${scale}"
+                if (providers.gradleProperty('ucVisualOnly').isPresent()) jvmArgs "-Duc.visualCapture.only=${providers.gradleProperty('ucVisualOnly').get()}"
                 args '--width', screenWidth, '--height', screenHeight
             }
         }
@@ -140,6 +168,40 @@ minecraft {
             if (providers.gradleProperty('ucPerfProbe').orNull == 'true') {
                 // a dedicated server that measures the cost of a tick with and without Founders Row (PerfProbe.java), then stops
                 jvmArgs '-Duc.perfProbe=true', '-Xmx2G'
+            }
+            if (providers.gradleProperty('ucTerrainMap').isPresent()) {
+                // samples the world's own chunk generator and biome source on a grid and writes a CSV (TerrainMapHarness); -PucTmX0=-900 -PucTmX1=2500 -PucTmZ0 -PucTmZ1 -PucTmStep=16
+                jvmArgs "-Duc.terrainMap=${providers.gradleProperty('ucTerrainMap').get()}", "-Xmx${providers.gradleProperty('ucServerHeap').orElse('3G').get()}", '-Duc.layoutGuard=off' // a disposable survey server, no package: WorldLayout would otherwise refuse the archipelago terrain without its cities
+                project.properties.each { name, value ->
+                    if (name.startsWith('ucTm') && name.length() > 4) jvmArgs "-Duc.terrainMap.${name.substring(4).toLowerCase()}=${value}"
+                    // calibration knobs of the archipelago terrain (IslandField); only a survey sets them
+                    if (name.startsWith('ucIsland') && name.length() > 8) jvmArgs "-Duc.island.${name.substring(8, 9).toLowerCase()}${name.substring(9)}=${value}"
+                }
+            }
+            if (providers.gradleProperty('ucCityProbe').isPresent()) {
+                // generates the chunks around each city and reports the real vegetation, doors, glass and containers (CityProbe); -PucCpRadius=6 -PucCpCities=ironhaven,valewood -PucCpExtra=x:z,x:z
+                jvmArgs "-Duc.cityProbe=${providers.gradleProperty('ucCityProbe').get()}", "-Xmx${providers.gradleProperty('ucServerHeap').orElse('3G').get()}"
+                project.properties.each { name, value ->
+                    if (name.startsWith('ucCp') && name.length() > 4) jvmArgs "-Duc.cityProbe.${name.substring(4).toLowerCase()}=${value}"
+                }
+            }
+            if (providers.gradleProperty('ucOreAudit').isPresent()) {
+                // generates chunks around each city and in the countryside and counts every ore block by kind (OreAudit); -PucOaRadius=4 -PucOaSpread=260
+                jvmArgs "-Duc.oreAudit=${providers.gradleProperty('ucOreAudit').get()}", "-Xmx${providers.gradleProperty('ucServerHeap').orElse('3G').get()}"
+                project.properties.each { name, value ->
+                    if (name.startsWith('ucOa') && name.length() > 4) jvmArgs "-Duc.oreAudit.${name.substring(4).toLowerCase()}=${value}"
+                }
+            }
+            if (providers.gradleProperty('ucRoadCheck').isPresent()) {
+                // reads the real blocks along every generated corridor road and bridge of the layout the game carries (RoadCheck); the world is a disposable dedicated server
+                jvmArgs "-Duc.roadCheck=${providers.gradleProperty('ucRoadCheck').get()}", "-Xmx${providers.gradleProperty('ucServerHeap').orElse('3G').get()}"
+            }
+            if (providers.gradleProperty('ucBurglary').isPresent()) {
+                // the building guard and the lock proved on one real generated apartment block (BurglaryHarness); -PucBgPhase=a|b -PucBgState=<file>
+                jvmArgs "-Duc.burglary=${providers.gradleProperty('ucBurglary').get()}", "-Xmx${providers.gradleProperty('ucServerHeap').orElse('3G').get()}"
+                project.properties.each { name, value ->
+                    if (name.startsWith('ucBg') && name.length() > 4) jvmArgs "-Duc.burglary.${name.substring(4).toLowerCase()}=${value}"
+                }
             }
             if (providers.gradleProperty('ucStallProbe').orNull == 'true') {
                 // reproduces and measures the long server ticks after bulk chunk generation on a Lost Cities world (StallProbe.java); -PucStallRadius=8 -PucStallMode=bulk|paced -PucStallCenter=0,0 -PucStallSettle=1200
@@ -159,6 +221,8 @@ minecraft {
             }
             if (providers.gradleProperty('ucJourneyScenario').isPresent()) {
                 jvmArgs "-Duc.journey.scenario=${providers.gradleProperty('ucJourneyScenario').get()}"
+                // the two-player performance session (PerfSessionServer): its length, and where any long tick spent its time
+                if (providers.gradleProperty('ucJourneyScenario').get() == 'perf') jvmArgs '-Duc.tickSampler=true', "-Duc.perf.minutes=${providers.gradleProperty('ucPerfMinutes').orElse('30').get()}"
             }
             // the combined journey (D-091): survival goods, the wayside shelter and the interrupted purchase, optionally on a generated Lost Cities world instead of the flat fixture
             if (providers.gradleProperty('ucJourneySurvival').isPresent()) jvmArgs '-Duc.journey.survival=true'
@@ -212,6 +276,17 @@ repositories {
         metadataSources { artifact() }
         content { includeGroup 'com.qshop' }
     }
+    // CurseForge-only dev-pack mods (the furniture set's Simply Light and legacy MrCrayfish furniture): the author's file on CurseForge's CDN,
+    // addressed by its file id (files/<id without its last three digits>/<last three digits>/<file name>) and verified by verifyDevPack
+    // (not exclusive: ForgeGradle's remapped copy of such a jar keeps its numeric group and lives in ForgeGradle's own repository)
+    if (devPackMods.any { it.project_id.startsWith('curseforge:') }) {
+        ivy {
+            url = uri('https://mediafilez.forgecdn.net/files')
+            patternLayout { artifact '[organisation]/[module]/[revision].[ext]' }
+            metadataSources { artifact() }
+            content { includeGroupByRegex '\\d+' }
+        }
+    }
     if (screeningMod != null || worldCandidate != null) {
         maven {
             url = uri('https://cursemaven.com')
@@ -239,6 +314,10 @@ if (!devPackMods.isEmpty()) {
 configurations { qshopOriginal; devPackOriginal; devPackFolder }
 devPackMods.each { mod ->
     def coordinate = "maven.modrinth:${mod.slug}:${mod.version_id}"
+    if (mod.project_id.startsWith('curseforge:')) {
+        def file = mod.version_id.substring('curseforge-file:'.length())
+        coordinate = "${file.substring(0, file.length() - 3)}:${file.substring(file.length() - 3).toInteger()}:${mod.filename.replaceAll(/\.jar$/, '')}"
+    }
     dependencies.add('devPackOriginal', coordinate)
     if (mod.placement == 'mods_folder') {
         // Immersive Vehicles content packs are plain asset jars that the engine finds by scanning the game directory's
@@ -298,25 +377,56 @@ def prepareDevRun = tasks.register('prepareDevRun') {
             wanted << jar.name
         }
         if (devWorldWanted && devPackSets.contains('world')) {
-            def pack = file('../content/generated/world-prototype/pack')
-            def runConfig = file('../content/generated/world-prototype/game-config')
+            def pack = file("../content/generated/${worldPackName}/pack")
+            def runConfig = file("../content/generated/${worldPackName}/game-config")
             if (!pack.isDirectory() || !runConfig.isDirectory()) {
-                throw new GradleException('content/generated/world-prototype is missing; run python scripts/emit_dev_world_pack.py')
+                throw new GradleException("content/generated/${worldPackName} is missing; run python scripts/emit_dev_world_pack.py --layout ${worldLayout}")
             }
-            def worldJar = new File(modsDir, 'underground-city-world-prototype.jar')
+            def worldJar = new File(modsDir, worldLayout == 'archipelago' ? 'underground-city-world-archipelago.jar' : 'underground-city-world-prototype.jar')
             ant.zip(destfile: worldJar, basedir: pack, whenempty: 'fail', level: 9)
             wanted << worldJar.name
+            if (devPackSets.contains('scarcity')) {
+                // a new world with no natural ore (D-120): one biome modifier in its own low-code mod, opt-in, and refused by GenerationPackGuard for any world that already holds chunks
+                def scarcity = file('../content/generated/world-scarcity/pack')
+                if (!scarcity.isDirectory()) throw new GradleException('content/generated/world-scarcity is missing; run python scripts/emit_dev_world_pack.py --layout scarcity')
+                def scarcityJar = new File(modsDir, 'underground-city-scarcity.jar')
+                ant.zip(destfile: scarcityJar, basedir: scarcity, whenempty: 'fail', level: 9)
+                wanted << scarcityJar.name
+            }
+            if (devPackSets.contains('furnished')) {
+                def furnished = file('../content/generated/world-furnished/pack')
+                if (!furnished.isDirectory()) throw new GradleException('content/generated/world-furnished is missing; run python scripts/emit_dev_world_pack.py --layout furnished')
+                def furnishedJar = new File(modsDir, 'underground-city-furnished-cities.jar')
+                ant.zip(destfile: furnishedJar, basedir: furnished, whenempty: 'fail', level: 9)
+                wanted << furnishedJar.name
+            }
             fileTree(runConfig).visit { entry ->
                 if (entry.isDirectory()) return
                 def target = new File(runDir, entry.relativePath.pathString)
                 if (!target.exists()) { target.parentFile.mkdirs(); entry.file.withInputStream { input -> target.withOutputStream { it << input } } }
             }
         }
+        if (devPackSets.contains('furniture')) {
+            // the furniture set's quiet package (D-192): the furniture mods' natural stone generation switched off, in its own low-code mod
+            def quiet = file('../content/generated/furniture-quiet/pack')
+            if (!quiet.isDirectory()) throw new GradleException('content/generated/furniture-quiet is missing; run python scripts/emit_dev_world_pack.py --layout furniture')
+            def quietJar = new File(modsDir, 'underground-city-furniture-quiet.jar')
+            ant.zip(destfile: quietJar, basedir: quiet, whenempty: 'fail', level: 9)
+            wanted << quietJar.name
+        }
         if (devPackSets.contains('survival')) {
             // Sophisticated Backpacks' policy (D-092): server defaults for a NEW world and the Core item switches. Existing files are never overwritten.
             def survivalConfig = file('../content/generated/survival-config')
             if (!survivalConfig.isDirectory()) throw new GradleException('content/generated/survival-config is missing; run python scripts/generate_backpack_config.py')
             fileTree(survivalConfig).visit { entry ->
+                if (entry.isDirectory()) return
+                def target = new File(runDir, entry.relativePath.pathString)
+                if (!target.exists()) { target.parentFile.mkdirs(); entry.file.withInputStream { input -> target.withOutputStream { it << input } } }
+            }
+        }
+        if (devPackSets.contains('securitycraft')) {
+            // The SecurityCraft trial (D-140): its server defaults for a NEW world and its client settings. Existing files are never overwritten.
+            fileTree(file('../content/integrations/securitycraft/config')).visit { entry ->
                 if (entry.isDirectory()) return
                 def target = new File(runDir, entry.relativePath.pathString)
                 if (!target.exists()) { target.parentFile.mkdirs(); entry.file.withInputStream { input -> target.withOutputStream { it << input } } }
@@ -332,8 +442,11 @@ def prepareDevRun = tasks.register('prepareDevRun') {
         def serverProperties = new File(runDir, 'server.properties')
         if (devWorldWanted && !serverProperties.exists()) {
             // Dedicated dev server: the same seed as the client's dev world. online-mode stays at its default (true).
-            serverProperties.text = ['level-seed=5908', 'motd=Underground City development server', 'view-distance=8',
-                                     'simulation-distance=6', 'difficulty=normal', 'gamemode=survival'].join('\n') + '\n'
+            // A new archipelago server needs its world type (WorldLayout refuses to start an ordinary world with the archipelago package, D-104); the legacy layout keeps the ordinary one.
+            def properties = ['level-seed=5908', 'motd=Underground City development server', 'view-distance=8',
+                              'simulation-distance=6', 'difficulty=normal', 'gamemode=survival']
+            if (worldLayout == 'archipelago') properties.add(0, 'level-type=underground_city:archipelago')
+            serverProperties.text = properties.join('\n') + '\n'
         }
         def eula = new File(runDir, 'eula.txt')
         if (providers.gradleProperty('ucAcceptEula').orNull == 'true' && !eula.exists()) {

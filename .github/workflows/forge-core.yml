@@ -45,11 +45,26 @@ jobs:
         run: |
           gradle -p rpg-core runGameTestServer --no-daemon --stacktrace
           # A Forge GameTest server that fails to start (a broken datapack, a registry error) still exits 0, so the result line is the evidence.
-          grep -E "All [0-9]+ required tests passed" rpg-core/run/logs/latest.log
+          # the whole run's log: Forge rolls latest.log over at midnight, so a job that runs past 00:00 UTC has its first part in an archive (scripts/ci_run_log.py)
+          log=$(python3 scripts/ci_run_log.py rpg-core/run/logs)
+          grep -E "All [0-9]+ required tests passed" "$log"
+      - name: GameTests with a SYNTHETIC private pack in a folder outside the checkout (the private-content loader; invented content only, D-116)
+        run: |
+          python scripts/private_pack_tool.py fixture "$RUNNER_TEMP/uc-private"
+          gradle -p rpg-core runGameTestServer -PucPrivateContent="$RUNNER_TEMP/uc-private" -PucRunDir=run-private --no-daemon --stacktrace
+          log=$(python3 scripts/ci_run_log.py rpg-core/run-private/logs)
+          grep -E "All [0-9]+ required tests passed" "$log"
+          grep -E "\[UC-PRIVATE\] pack 'uc_private_fixture'" "$log"
       - name: Print which tests failed (a failing GameTest makes the server exit 1; the reason is in the log)
         if: failure()
         run: |
-          grep -E 'failed!|required tests|GAME TESTS COMPLETE|Exception caught|Crash report' rpg-core/run/logs/latest.log | head -n 40 || true
+          # both GameTest runs: the plain one and the one with the synthetic private pack
+          for run in run run-private; do
+            [ -d "rpg-core/$run/logs" ] || continue
+            echo "== $run"
+            log=$(python3 scripts/ci_run_log.py "rpg-core/$run/logs") || log="rpg-core/$run/logs/latest.log"
+            grep -E 'failed!|required tests|GAME TESTS COMPLETE|Exception caught|Crash report' "$log" | head -n 40 || true
+          done
       - name: Inspect generated files
         run: |
           ls -lah rpg-core/build/libs

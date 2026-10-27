@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "id": "valewood_pit",
+  "title": "Valewood hillside pit",
+  "district": "valewood_pit",
+  "interval_minutes": 25,
+  "note": "Mined seams grow back after interval_minutes of ACTIVE play time (never while nobody is online), unless somebody stands in the cell; a cell somebody built in is never overwritten. Gold, diamond, redstone and lapis are deliberately not here.",
+  "veins": [
+    {
+      "at": [
+        1,
+        -2,
+        4
+      ],
+      "block": "minecraft:iron_ore"
+    },
+    {
+      "at": [
+        10,
+        -3,
+        6
+      ],
+      "block": "minecraft:iron_ore"
+    },
+    {
+      "at": [
+        3,
+        -4,
+        6
+      ],
+      "block": "minecraft:iron_ore"
+    },
+    {
+      "at": [
+        8,
+        -5,
+        5
+      ],
+      "block": "minecraft:iron_ore"
+    },
+    {
+      "at": [
+        11,
+        -2,
+        8
+      ],
+      "block": "minecraft:copper_ore"
+    },
+    {
+      "at": [
+        2,
+        -3,
+        8
+      ],
+      "block": "minecraft:copper_ore"
+    },
+    {
+      "at": [
+        9,
+        -4,
+        4
+      ],
+      "block": "minecraft:copper_ore"
+    },
+    {
+      "at": [
+        1,
+        -2,
+        9
+      ],
+      "block": "minecraft:coal_ore"
+    },
+    {
+      "at": [
+        10,
+        -3,
+        3
+      ],
+      "block": "minecraft:coal_ore"
+    },
+    {
+      "at": [
+        4,
+        -5,
+        7
+      ],
+      "block": "minecraft:coal_ore"
+    }
+  ]
+}

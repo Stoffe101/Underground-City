@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "outlet": "shop:den",
+  "building": "roadside:cannery_den",
+  "spot": "counter",
+  "city": "blackwater",
+  "title": "The Den"
+}

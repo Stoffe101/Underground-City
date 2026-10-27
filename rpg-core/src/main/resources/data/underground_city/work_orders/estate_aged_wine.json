@@ -1,0 +1,19 @@
+{
+  "schema_version": 3,
+  "title": "Aged wine for an estate dinner",
+  "career": "vintner",
+  "level": 6,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "underground_city:aged_wine",
+      "count": 4
+    }
+  ],
+  "credits": 230,
+  "xp": 440,
+  "capacity": 2,
+  "refill_ticks": 12000,
+  "legality": "legal",
+  "requires_skill": "vintner.estate_vintages"
+}

@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "city": "valewood",
+  "item": "minecraft:torch",
+  "unit_price": 1,
+  "initial": 24,
+  "capacity": 32,
+  "units_per_interval": 8,
+  "interval_ticks": 24000,
+  "max_order": 16,
+  "outlets": [
+    "shop:general"
+  ]
+}

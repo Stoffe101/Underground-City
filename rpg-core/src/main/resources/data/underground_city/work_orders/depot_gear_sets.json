@@ -1,0 +1,23 @@
+{
+  "schema_version": 3,
+  "title": "Gear sets for the Northgate depot",
+  "career": "smith",
+  "level": 6,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "underground_city:gear_set",
+      "count": 3
+    },
+    {
+      "item": "underground_city:springs",
+      "count": 8
+    }
+  ],
+  "credits": 160,
+  "xp": 360,
+  "capacity": 2,
+  "refill_ticks": 12000,
+  "legality": "legal",
+  "requires_skill": "smith.precision_machining"
+}

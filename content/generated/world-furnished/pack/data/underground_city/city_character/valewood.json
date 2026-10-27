@@ -1,0 +1,79 @@
+{
+  "city": "valewood",
+  "keep_multi_buildings": false,
+  "schema_version": 1,
+  "style": "underground_city:valewood",
+  "zones": [
+    {
+      "buildings": [
+        {
+          "id": "underground_city:vw_shop",
+          "weight": 3
+        },
+        {
+          "id": "underground_city:vw_bakery",
+          "weight": 2
+        },
+        {
+          "id": "underground_city:vw_house_a",
+          "weight": 1
+        },
+        {
+          "id": "underground_city:vw_house_b",
+          "weight": 1
+        }
+      ],
+      "within": 0.3
+    },
+    {
+      "buildings": [
+        {
+          "id": "underground_city:vw_house_a",
+          "weight": 3
+        },
+        {
+          "id": "underground_city:vw_house_b",
+          "weight": 3
+        },
+        {
+          "id": "underground_city:vw_cottage",
+          "weight": 2
+        },
+        {
+          "id": "underground_city:vw_shop",
+          "weight": 1
+        },
+        {
+          "id": "underground_city:vw_bakery",
+          "weight": 1
+        },
+        {
+          "id": "underground_city:vw_villa",
+          "weight": 1
+        }
+      ],
+      "within": 0.7
+    },
+    {
+      "buildings": [
+        {
+          "id": "underground_city:vw_cottage",
+          "weight": 4
+        },
+        {
+          "id": "underground_city:vw_house_a",
+          "weight": 2
+        },
+        {
+          "id": "underground_city:vw_house_b",
+          "weight": 2
+        },
+        {
+          "id": "underground_city:vw_villa",
+          "weight": 1
+        }
+      ],
+      "within": 1.0
+    }
+  ]
+}

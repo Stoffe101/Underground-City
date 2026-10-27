@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "city": "ironhaven",
+  "item": "minecraft:iron_nugget",
+  "unit_price": 1,
+  "initial": 36,
+  "capacity": 64,
+  "units_per_interval": 12,
+  "interval_ticks": 24000,
+  "max_order": 32,
+  "outlets": [
+    "shop:salvage"
+  ]
+}

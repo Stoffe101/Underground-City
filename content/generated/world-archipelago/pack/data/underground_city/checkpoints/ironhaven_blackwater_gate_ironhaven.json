@@ -1,0 +1,11 @@
+{
+  "dimension": "minecraft:overworld",
+  "jurisdiction": "ironhaven",
+  "radius": 48,
+  "risk": "high",
+  "route": "ironhaven_blackwater",
+  "schema_version": 1,
+  "title": "Ironhaven gate on the Blackwater road",
+  "x": 169,
+  "z": 374
+}

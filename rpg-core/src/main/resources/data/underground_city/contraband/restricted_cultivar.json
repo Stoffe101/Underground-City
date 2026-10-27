@@ -4,10 +4,13 @@
   "title": "Controlled crops",
   "entries": [
     {
-      "item": "underground_city:sable_leaf_bale"
+      "item": "underground_city:cannabis_flower"
     },
     {
-      "item": "underground_city:sable_cutting"
+      "item": "underground_city:cannabis_seeds"
+    },
+    {
+      "item": "underground_city:dried_cannabis"
     }
   ]
 }

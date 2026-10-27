@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "city": "blackwater",
+  "item": "minecraft:torch",
+  "unit_price": 1,
+  "initial": 32,
+  "capacity": 48,
+  "units_per_interval": 8,
+  "interval_ticks": 24000,
+  "max_order": 16,
+  "outlets": [
+    "shop:store"
+  ]
+}

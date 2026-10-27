@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "pins": 5,
+  "spools": 2,
+  "requires_tool": "pro_pick_set",
+  "tolerance": 0.052,
+  "hold_ticks": 12,
+  "strain_limit": 100,
+  "strain_per_tick": 3.8,
+  "ease_per_tick": 1.6,
+  "time_limit_ticks": 1000,
+  "feel_noise": 0.3,
+  "tremor": 0.01,
+  "lockout_ticks": 4800,
+  "alarm_chance": 0.65
+}

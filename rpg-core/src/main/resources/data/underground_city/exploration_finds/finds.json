@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "note": "Exploration finds (eighth pass, D-186): what each player finds, once, in the battered crate Core sets into each roadside place (by the place's kind) and wayside shelter. Rolled per player, handed straight to them, never stored in the crate and never marked stolen. Entries: [item, weight, least, most]. Kept small: a reward for going out to look, not a second economy.",
+  "kinds": {
+    "farm": {"rolls": [2, 3], "text": "Under a sack in the old crate:", "rare": "minecraft:golden_carrot", "rare_chance": 0.12,
+      "entries": [["minecraft:wheat_seeds", 4, 4, 10], ["minecraft:beetroot_seeds", 3, 3, 8], ["minecraft:pumpkin_seeds", 2, 2, 4], ["minecraft:melon_seeds", 2, 2, 4],
+                  ["minecraft:sweet_berries", 3, 3, 8], ["minecraft:bread", 3, 1, 3], ["minecraft:string", 2, 2, 5], ["minecraft:leather", 1, 1, 2]]},
+    "service": {"rolls": [2, 3], "text": "At the bottom of the diner's old supply crate:", "rare": "minecraft:cake", "rare_chance": 0.1,
+      "entries": [["minecraft:bread", 4, 1, 3], ["minecraft:baked_potato", 3, 2, 4], ["minecraft:apple", 3, 2, 4], ["minecraft:glass_bottle", 3, 2, 4],
+                  ["minecraft:sugar", 2, 2, 5], ["minecraft:paper", 2, 2, 6], ["minecraft:torch", 2, 4, 8]]},
+    "industry": {"rolls": [2, 3], "text": "Left in a crate behind the sheds:", "rare": "underground_city:field_repair_set", "rare_chance": 0.12,
+      "entries": [["minecraft:iron_nugget", 5, 4, 12], ["minecraft:copper_ingot", 3, 1, 3], ["underground_city:fasteners", 4, 4, 10], ["underground_city:springs", 2, 1, 3],
+                  ["underground_city:bearing_set", 1, 1, 1], ["underground_city:e_scrap", 3, 2, 6], ["minecraft:chain", 2, 1, 3]]},
+    "ruin": {"rolls": [2, 3], "text": "In a rotten crate in the ruin:", "rare": "underground_city:lockpick", "rare_chance": 0.1,
+      "entries": [["minecraft:iron_nugget", 4, 3, 9], ["underground_city:e_scrap", 4, 3, 8], ["minecraft:copper_ingot", 2, 1, 2], ["minecraft:string", 2, 2, 5],
+                  ["minecraft:glass_bottle", 2, 1, 3], ["minecraft:redstone", 2, 2, 5], ["minecraft:book", 1, 1, 1]]},
+    "lodging": {"rolls": [2, 3], "text": "In a crate the motel never cleared out:", "rare": "minecraft:name_tag", "rare_chance": 0.08,
+      "entries": [["minecraft:bread", 3, 1, 3], ["minecraft:apple", 3, 2, 4], ["minecraft:candle", 2, 1, 3], ["minecraft:paper", 2, 3, 8], ["minecraft:white_wool", 2, 1, 3],
+                  ["minecraft:torch", 2, 3, 6], ["minecraft:book", 1, 1, 2]]},
+    "wayside": {"rolls": [1, 2], "text": "Somebody left a crate at the shelter:", "rare": "minecraft:spyglass", "rare_chance": 0.06,
+      "entries": [["minecraft:bread", 4, 1, 2], ["minecraft:apple", 3, 1, 3], ["minecraft:torch", 3, 3, 6], ["minecraft:string", 2, 1, 4], ["minecraft:iron_nugget", 2, 2, 6]]}
+  }
+}

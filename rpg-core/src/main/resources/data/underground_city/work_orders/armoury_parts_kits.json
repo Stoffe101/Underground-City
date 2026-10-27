@@ -1,0 +1,19 @@
+{
+  "schema_version": 3,
+  "title": "Parts kits for the city armoury",
+  "career": "gunsmith",
+  "level": 3,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "underground_city:firearm_parts_kit",
+      "count": 2
+    }
+  ],
+  "credits": 210,
+  "xp": 380,
+  "capacity": 2,
+  "refill_ticks": 12000,
+  "legality": "legal",
+  "requires_skill": "gunsmith.licensed_repairs"
+}

@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "city": "blackwater",
+  "item": "minecraft:diamond",
+  "unit_price": 150,
+  "initial": 2,
+  "capacity": 4,
+  "units_per_interval": 1,
+  "interval_ticks": 144000,
+  "max_order": 2,
+  "outlets": [
+    "city"
+  ]
+}

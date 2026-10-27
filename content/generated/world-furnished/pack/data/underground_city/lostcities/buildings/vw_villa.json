@@ -1,0 +1,33 @@
+{
+  "allowDoors": false,
+  "allowFillers": false,
+  "filler": "6",
+  "maxcellars": 0,
+  "maxfloors": 2,
+  "mincellars": 0,
+  "minfloors": 2,
+  "overrideFloors": true,
+  "parts": [
+    {
+      "cellar": false,
+      "ground": true,
+      "part": "underground_city:vw_villa_ground",
+      "top": false
+    },
+    {
+      "cellar": false,
+      "floor": 1,
+      "ground": false,
+      "part": "underground_city:vw_villa_floor",
+      "top": false
+    },
+    {
+      "cellar": false,
+      "ground": false,
+      "part": "underground_city:vw_villa_top",
+      "top": true
+    }
+  ],
+  "refpalette": "underground_city:vw_villa",
+  "rubble": "6"
+}

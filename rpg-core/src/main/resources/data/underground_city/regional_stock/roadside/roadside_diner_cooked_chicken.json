@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "city": "valewood",
+  "item": "minecraft:cooked_chicken",
+  "unit_price": 10,
+  "initial": 8,
+  "capacity": 12,
+  "units_per_interval": 3,
+  "interval_ticks": 24000,
+  "max_order": 4,
+  "outlets": [
+    "shop:roadside_diner"
+  ]
+}

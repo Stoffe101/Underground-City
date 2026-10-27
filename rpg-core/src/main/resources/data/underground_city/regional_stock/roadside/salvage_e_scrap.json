@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "city": "ironhaven",
+  "item": "underground_city:e_scrap",
+  "unit_price": 5,
+  "initial": 24,
+  "capacity": 48,
+  "units_per_interval": 8,
+  "interval_ticks": 24000,
+  "max_order": 16,
+  "outlets": [
+    "shop:salvage"
+  ]
+}

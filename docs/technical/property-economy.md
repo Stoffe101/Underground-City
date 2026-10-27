@@ -6,22 +6,24 @@
 
 You can **rent** a home for a small price per active hour or **buy** it. A rented home needs a deposit and is paid in advance in hours; an owned one has a small upkeep and can be improved. The motel is the cheap first step (the first two hours are the city's welcome gift, once per person); a flat is the first real home; the Row House has a workshop. Unpaid rent never costs you your things: it costs you the comforts of the home, in four clear steps, and paying it all back restores them at once. You can pay by hand from your own wallet, let a Crew pay from its bank, or switch on automatic payment. Everything is done at the home's own terminal on the **Home** page of the Crew screen, which also works for a player with no Crew.
 
+**The list on Find a home (D-136)** puts what you can move into now first: the free welcome rooms, then the least cash on the day you move in (deposit and first hour, or the price of a home that can only be bought), then the nearest. It holds up to sixteen homes within 64 blocks: the homes of the building the player stands at or in (within 12 blocks) first, then the ones a new player can most easily take; the page count and arrows sit at the right end of the tab row. (Until October 25 it held eight, and premises, the lofts or the villa in a street of cheaper flats never reached it: premises run 1.)
+
 ## What exists (data in `data/underground_city/properties/ladder.json`, one datapack file)
 
 | Category (tier) | Rent / h | Purchase | Built? | Listed homes |
 | --- | --- | --- | --- | --- |
 | Motel room (1) | 10 | rent only | **yes** | Row Motel rooms 1 to 4 (2 containers, 1 private) |
 | Small apartment (2) | 40 | 2,000 | **yes** | Row Flats 1 and 2 (5 containers, 2 private, bed, crafting, furnace, terminal) |
-| Comfortable apartment (3) | 55 | 3,000 | no | none |
-| Larger apartment (4) | 70 | 4,200 | no | none |
-| Small house (5) | 85 | 5,400 | no | none |
+| Comfortable apartment (3) | 55 | 3,000 | **yes** (furnished cities) | city listings: a comfortable apartment in a furnished tower or tenement |
+| Larger apartment (4) | 70 | 4,200 | **yes** (furnished cities) | the Blackwater lofts (D-176): one loft a floor of a three-storey block, 12 containers, 3 private |
+| Small house (5) | 85 | 5,400 | **yes** (furnished cities) | city listings: three house types in the furnished cities |
 | House with workshop (6) | 100 | 7,000 | **yes** | the Row House (10 containers, 3 private, adds the workshop) |
-| Farmhouse (7) | 115 | 8,500 | no | none |
-| Commercial workshop (8) | 135 | 10,500 | no | none |
-| Warehouse or production facility (9) | 170 | 14,000 | no | none |
-| Premium residence (10) | 260 | 28,000 | no | none |
+| Farmhouse (7) | 115 | 8,500 | **yes** | Harrow Farmhouse, a roadside place (D-138) |
+| Commercial workshop (8) | 135 | 10,500 | **yes** (furnished cities) | Ironhaven's workshop, **trade premises** (D-169) |
+| Warehouse or production facility (9) | 170 | 14,000 | **yes** (furnished cities) | Ironhaven's warehouse, **trade premises** (D-169) |
+| Premium residence (10) | 260 | 25,000 | **yes** (furnished cities) | the Valewood villa (D-176): three bedrooms, a study and a workroom with a garden door, 28 containers, 6 private, the workshop facility |
 
-Ten categories are *priced*; **three have a building**. The model can say whether the ladder is sensible; it cannot make the missing buildings exist. Adding one is a district JSON (`scripts/generate_district.py`) and a line in `ladder.json`. The model's invariants (monotonic ladder, purchase at least 20 and at most 100 rents, deposit two rents, no single sale buys a home outright) are checked on the whole table, built or not.
+Ten categories are *priced* and **all ten have a building** in a new furnished archipelago world (October 25: the lofts and the villa of D-176; eight on October 24, three before the city homes of D-127 and the roadside places of D-138). The villa's purchase came down from 28,000 to 25,000 so that it stays within a hundred rents, the model's own ceiling. The city listings exist only with the furnished package; a world without it has the Row's three categories and the roadside motel and farmhouse. The model can say whether the ladder is sensible; it cannot make the missing buildings exist. Adding one is a district JSON (`scripts/generate_district.py`) and a line in `ladder.json`. The model's invariants (monotonic ladder, purchase at least 20 and at most 100 rents, deposit two rents, no single sale buys a home outright) are checked on the whole table, built or not.
 
 | Rule | Value |
 | --- | --- |
@@ -33,6 +35,23 @@ Ten categories are *priced*; **three have a building**. The model can say whethe
 | City price factor | Ironhaven 1.15, Blackwater 1.00, Valewood 0.90, applied at signing by the city circle that contains the home (a home outside every circle, like the Row, costs the listed price). It moves the price only, never what a home allows |
 | Welcome | 2 free motel cycles, once per person, recorded in the ledger |
 | Upgrades (owners only) | Locking racks 260 (3 more containers, 1 more private), Workshop fit-out 600 (heavy workstations), Running water 320 (water may be placed; lava never) |
+
+## Homes in the furnished cities (D-127)
+
+**Implemented; GameTested (`CityHomesGameTests`, 3 cases); nobody has rented one in a real client.**
+
+The furnished cities' buildings carry units (a tenement's flats, a house, a workshop's or warehouse's premises), and `ladder.json` has **city templates** that tie a kind of building to a category and a share that is to let:
+
+| Building | Category | To let | Rent / h | Purchase |
+| --- | --- | --- | --- | --- |
+| Ironhaven tenement flats | Small apartment | 34% | 40 | 2,000 |
+| Blackwater apartment block flats | Comfortable apartment | 25% | 55 | 3,000 |
+| Valewood cottage | Small house | 40% | 85 | 5,400 |
+| Valewood houses (two plans) | Small house | 30% | 85 | 5,400 |
+| Ironhaven workshop premises | Commercial workshop | 20% | 135 | 10,500 |
+| Ironhaven warehouse premises | Warehouse or production facility | 15% | 170 | 14,000 |
+
+Which units are to let is a pure function of the world seed, the building and the unit, so both players see the same street. A unit becomes an ordinary registered home (`city:<type>:<chunk>:<unit>`, titled with an address such as "Flat 3, 12 Rivet Lane") the first time it matters: when a player near it opens the Home page, or touches its building's door. From then on it is rented, bought, billed in active household time, guarded and moved out of exactly like the Row's homes; the city price factor applies as for any home in a city circle. A tenant of a flat holds a key to the building's street door; a house's own door is its door. Nobody of the household lives in a unit that is to let, and no stash is placed in one. Seven of the ten categories now have at least one building (motel room, small and comfortable apartment, small house, house with workshop, commercial workshop, warehouse); larger apartment, farmhouse and premium residence still have none. The economy model checks the templates like the Row's listings (premises are modelled as Crew-paid, at twice the mean household income).
 
 ## Time: rent runs on active household time (D-012, D-099)
 
@@ -76,9 +95,13 @@ A move-out or a sale is **refused while the home still holds stored things** (co
 
 The shipped ladder is coherent; rent and purchase are different things; the motel welcome is free once per person; the city factor scales the price; **the clock runs only while a resident is online and once for two residents**; unpaid rent escalates to lapsed and **never takes a person's things**; a payment goes to what is owed first and is capped at the prepay limit; Crew-bank autopay is atomic and stops when the bank is short; wallet autopay uses the money protocol, including a crash; move-out returns the deposit less what is owed and **refuses while items remain**; sell-back never returns more than was paid; Crew homes follow the Crew's rules and nothing is confiscated; disbanding moves a tenancy with its debts and deposit; a schema-1 save migrates without a new charge; a tenancy and its clock **survive a restart**; a wallet rent **crash recovers to rented-or-free at three stages and both wallet outcomes, never both**; a trade skill cheapens upgrades and the receipt records what was paid; containers, facilities and water are enforced by the guard; and a **randomised run of 240 steps on four homes and three people with crashes injected, three seeds, checks after every step that the credits in wallets, the Crew bank, escrow and the sink are exactly what they were**.
 
+## Vacant listings are locked (D-188, ninth pass)
+
+A city home to let is a listing, not an open door. Its door stays locked to everybody until somebody holds the lease. The door, and the card under the crosshair, say "To let" and point to the Home page (K → Home → Find a home), where the listing is read and leased. Leasing gives the tenant, and their Crew by its permissions, the door without a pick. A lockpick remains the illicit way in. See [building protection](building-protection.md).
+
 ## Limits, said plainly
 
-* Seven of the ten categories exist only as prices. There is no premium residence, no warehouse and no farmhouse yet.
+* Two of the ten categories exist only as prices: the larger apartment and the premium residence. Six of the eight built ones need the furnished package (D-117) or a new archipelago world (the roadside places).
 * Under the household policy the Vintner alone does not rent the house inside 400 hours (its rent would be over a quarter of its income). That is a weak Vintner mid-game, not a property rule.
 * The Home page was photographed at three resolutions by the scripted client and read by me; no person has used it. Its two-click confirmation for Move out and Sell back is untested on a real mouse.
 * `ResidenceGuard` does not see fire spread from outside, lightning, fluid dispensers or vehicles of other mods (recorded in D-090 and unchanged).

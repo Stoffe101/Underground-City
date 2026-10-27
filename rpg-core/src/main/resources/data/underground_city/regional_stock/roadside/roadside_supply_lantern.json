@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "city": "ironhaven",
+  "item": "minecraft:lantern",
+  "unit_price": 14,
+  "initial": 4,
+  "capacity": 8,
+  "units_per_interval": 2,
+  "interval_ticks": 36000,
+  "max_order": 2,
+  "outlets": [
+    "shop:roadside_supply"
+  ]
+}

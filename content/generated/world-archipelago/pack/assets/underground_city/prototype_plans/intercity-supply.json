@@ -1,0 +1,361 @@
+{
+  "career_milestones": [
+    {
+      "career": "farmer",
+      "id": "farmer_greenhouse_2",
+      "legitimate_paths": [
+        "regional_trade",
+        "courier_contract",
+        "npc_purchase"
+      ],
+      "requires": [
+        {
+          "commodity": "machined_parts",
+          "origin": "ironhaven"
+        },
+        {
+          "commodity": "rare_seeds",
+          "origin": "valewood"
+        }
+      ],
+      "risky_paths": [
+        "black_market"
+      ],
+      "tier": 2,
+      "unlock": "advanced_irrigation",
+      "visit_requirement": "personally_visit_at_least_one_required_foreign_city"
+    },
+    {
+      "career": "farmer",
+      "id": "farmer_bio_lab_3",
+      "legitimate_paths": [
+        "licensed_convoy",
+        "regional_contracts"
+      ],
+      "requires": [
+        {
+          "commodity": "agro_catalyst",
+          "origin": "valewood"
+        },
+        {
+          "commodity": "control_circuits",
+          "origin": "blackwater"
+        },
+        {
+          "commodity": "machined_parts",
+          "origin": "ironhaven"
+        }
+      ],
+      "risky_paths": [
+        "theft",
+        "smuggling"
+      ],
+      "tier": 3,
+      "unlock": "precision_agronomy",
+      "visit_requirement": "personally_visit_all_three_cities"
+    },
+    {
+      "career": "vintner",
+      "id": "vintner_cellar_2",
+      "legitimate_paths": [
+        "regional_trade",
+        "courier_contract",
+        "npc_purchase"
+      ],
+      "requires": [
+        {
+          "commodity": "refined_alloy",
+          "origin": "ironhaven"
+        },
+        {
+          "commodity": "biopolymer",
+          "origin": "valewood"
+        }
+      ],
+      "risky_paths": [
+        "black_market"
+      ],
+      "tier": 2,
+      "unlock": "temperature_controlled_cellar",
+      "visit_requirement": "personally_visit_at_least_one_required_foreign_city"
+    },
+    {
+      "career": "vintner",
+      "id": "vintner_distillery_3",
+      "legitimate_paths": [
+        "licensed_convoy",
+        "regional_contracts"
+      ],
+      "requires": [
+        {
+          "commodity": "refined_alloy",
+          "origin": "ironhaven"
+        },
+        {
+          "commodity": "biopolymer",
+          "origin": "valewood"
+        },
+        {
+          "commodity": "control_circuits",
+          "origin": "blackwater"
+        }
+      ],
+      "risky_paths": [
+        "theft",
+        "smuggling"
+      ],
+      "tier": 3,
+      "unlock": "column_still_distillery",
+      "visit_requirement": "personally_visit_all_three_cities"
+    },
+    {
+      "career": "smith",
+      "id": "smith_cnc_2",
+      "legitimate_paths": [
+        "supplier_contract",
+        "npc_purchase"
+      ],
+      "requires": [
+        {
+          "commodity": "refined_alloy",
+          "origin": "ironhaven"
+        },
+        {
+          "commodity": "control_circuits",
+          "origin": "blackwater"
+        }
+      ],
+      "risky_paths": [
+        "industrial_robbery"
+      ],
+      "tier": 2,
+      "unlock": "precision_machining",
+      "visit_requirement": "personally_visit_at_least_one_required_foreign_city"
+    },
+    {
+      "career": "smith",
+      "id": "smith_composites_3",
+      "legitimate_paths": [
+        "regional_trade",
+        "faction_reputation"
+      ],
+      "requires": [
+        {
+          "commodity": "refined_alloy",
+          "origin": "ironhaven"
+        },
+        {
+          "commodity": "biopolymer",
+          "origin": "valewood"
+        },
+        {
+          "commodity": "control_circuits",
+          "origin": "blackwater"
+        }
+      ],
+      "risky_paths": [
+        "contraband"
+      ],
+      "tier": 3,
+      "unlock": "composite_equipment",
+      "visit_requirement": "personally_visit_all_three_cities"
+    },
+    {
+      "career": "gunsmith",
+      "id": "gunsmith_component_2",
+      "legitimate_paths": [
+        "licensed_supplier",
+        "courier_contract"
+      ],
+      "requires": [
+        {
+          "commodity": "machined_parts",
+          "origin": "ironhaven"
+        },
+        {
+          "commodity": "optical_components",
+          "origin": "blackwater"
+        }
+      ],
+      "risky_paths": [
+        "smuggling",
+        "burglary"
+      ],
+      "tier": 2,
+      "unlock": "advanced_mechanisms",
+      "visit_requirement": "personally_visit_at_least_one_required_foreign_city"
+    },
+    {
+      "career": "gunsmith",
+      "id": "gunsmith_research_3",
+      "legitimate_paths": [
+        "research_exchange",
+        "neutral_broker"
+      ],
+      "requires": [
+        {
+          "commodity": "refined_alloy",
+          "origin": "ironhaven"
+        },
+        {
+          "commodity": "biopolymer",
+          "origin": "valewood"
+        },
+        {
+          "commodity": "encrypted_design",
+          "origin": "blackwater"
+        }
+      ],
+      "risky_paths": [
+        "military_cache",
+        "theft"
+      ],
+      "tier": 3,
+      "unlock": "specialized_weapon_research",
+      "visit_requirement": "personally_visit_all_three_cities"
+    },
+    {
+      "career": "technician",
+      "id": "technician_network_2",
+      "legitimate_paths": [
+        "licensed_jobs",
+        "merchant_trade"
+      ],
+      "requires": [
+        {
+          "commodity": "control_circuits",
+          "origin": "blackwater"
+        },
+        {
+          "commodity": "machined_parts",
+          "origin": "ironhaven"
+        }
+      ],
+      "risky_paths": [
+        "smuggling"
+      ],
+      "tier": 2,
+      "unlock": "municipal_automation",
+      "visit_requirement": "personally_visit_at_least_one_required_foreign_city"
+    },
+    {
+      "career": "technician",
+      "id": "technician_security_3",
+      "legitimate_paths": [
+        "city_service_contracts",
+        "neutral_trade_hub"
+      ],
+      "requires": [
+        {
+          "commodity": "control_circuits",
+          "origin": "blackwater"
+        },
+        {
+          "commodity": "refined_alloy",
+          "origin": "ironhaven"
+        },
+        {
+          "commodity": "agro_catalyst",
+          "origin": "valewood"
+        }
+      ],
+      "risky_paths": [
+        "industrial_espionage"
+      ],
+      "tier": 3,
+      "unlock": "advanced_environmental_security",
+      "visit_requirement": "personally_visit_all_three_cities"
+    }
+  ],
+  "city_specialties": [
+    {
+      "city": "ironhaven",
+      "exports": [
+        "refined_alloy",
+        "machined_parts",
+        "security_fabric"
+      ],
+      "identity": "advanced_metalworking"
+    },
+    {
+      "city": "valewood",
+      "exports": [
+        "rare_seeds",
+        "biopolymer",
+        "agro_catalyst"
+      ],
+      "identity": "agricultural_biotech"
+    },
+    {
+      "city": "blackwater",
+      "exports": [
+        "control_circuits",
+        "encrypted_design",
+        "optical_components"
+      ],
+      "identity": "electronics_and_data"
+    }
+  ],
+  "items_are_logical_not_minecraft_registries": true,
+  "location_reward_templates": [
+    {
+      "city": "ironhaven",
+      "commodity_pool": [
+        "refined_alloy",
+        "machined_parts",
+        "security_fabric"
+      ],
+      "legal_method": "manufacturing_order_or_authorized_supplier",
+      "location_types": [
+        "factories",
+        "machine_shops",
+        "military_warehouses"
+      ],
+      "risk_method": "factory_break_in_or_military_salvage"
+    },
+    {
+      "city": "valewood",
+      "commodity_pool": [
+        "rare_seeds",
+        "biopolymer",
+        "agro_catalyst"
+      ],
+      "legal_method": "agricultural_contract_or_farm_purchase",
+      "location_types": [
+        "greenhouses",
+        "vineyards",
+        "agri_laboratories"
+      ],
+      "risk_method": "restricted_greenhouse_intrusion"
+    },
+    {
+      "city": "blackwater",
+      "commodity_pool": [
+        "control_circuits",
+        "encrypted_design",
+        "optical_components"
+      ],
+      "legal_method": "certified_vendor_or_research_contract",
+      "location_types": [
+        "electronics_malls",
+        "tech_laboratories",
+        "data_vaults"
+      ],
+      "risk_method": "industrial_espionage_or_high_risk_loot"
+    }
+  ],
+  "policy": {
+    "advanced_tiers_require_multiple_cities": true,
+    "all_essential_inputs_have_nonviolent_routes": true,
+    "defeat_does_not_permanently_destroy_rare_research": true,
+    "legal_market_access_exists_during_war_but_requires_permit_or_escort": true,
+    "no_city_borders_are_absolute_player_softlocks": true,
+    "no_requirement_for_absent_third_player": true,
+    "remote_resale_does_not_satisfy_first_discovery": true,
+    "require_all_three_city_visits_for_tier_3": true,
+    "require_physical_non_home_city_visit_for_tier_2": true,
+    "tier_1_resources_available_in_home_city": true
+  },
+  "prototype_only": true,
+  "schema_version": 1
+}

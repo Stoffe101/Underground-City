@@ -32,7 +32,7 @@ import java.util.UUID;
 /**
  * One shared physical household inventory (both players see the same items). Stock is topped up
  * lazily when opened, one policy-sized step per active interval, into EMPTY slots only. Opening a
- * locked safe costs lockpicks, raises resident vigilance and posts a PropertyForcedEntryEvent.
+ * locked safe is a lockpicking game on the server (a snapped pick costs a lockpick), raises resident vigilance and posts a PropertyForcedEntryEvent.
  */
 public final class PropertyCacheBlockEntity extends RandomizableContainerBlockEntity implements WorldlyContainer {
     public static final int SLOTS = 9;
@@ -48,6 +48,9 @@ public final class PropertyCacheBlockEntity extends RandomizableContainerBlockEn
     /** True once somebody has opened this safe after registration placed an exceptional find: the "something special" cue is spent. */
     private boolean revealed;
     private UUID lastIntruder;
+    /** The lock of a safe placed in a city building (D-144: a wall safe or a vault safe in a wealthy place), "" for the policy's; and the building's tier (0 when not in one). */
+    private String lock = "";
+    private int tier;
 
     public PropertyCacheBlockEntity(BlockPos pos, BlockState state) {
         super(UndergroundCity.PROPERTY_CACHE_ENTITY.get(), pos, state);
@@ -62,6 +65,12 @@ public final class PropertyCacheBlockEntity extends RandomizableContainerBlockEn
     public long last() { return last; }
     public boolean forcedAt(long now) { return now < forcedUntil; }
     public UUID lastIntruder() { return lastIntruder; }
+    public int tier() { return tier; }
+    /** The safe's kind in a burglar's words, by its lock. */
+    public String label() { return switch (lock) { case "wall_safe" -> "Wall safe"; case "vault_safe" -> "Vault safe"; default -> "Household safe"; }; }
+
+    /** A safe in a city building takes the building's lock and tier (D-144). */
+    public void fitFor(int tier, String lockProfile) { this.tier = Math.max(0, Math.min(6, tier)); this.lock = lockProfile == null ? "" : lockProfile; setChanged(); }
     public int stock() {
         int count = 0;
         for (ItemStack stack : items) if (!stack.isEmpty()) count++;
@@ -136,32 +145,37 @@ public final class PropertyCacheBlockEntity extends RandomizableContainerBlockEn
         return -1;
     }
 
+    /** What a click on the safe does: open it, refuse with a reason, or start a lockpick on it. */
+    public record Entry(Kind kind, String text, String profile, int picksNeeded) {
+        public enum Kind { OPEN, REFUSED, PICK }
+        static Entry refused(String text) { return new Entry(Kind.REFUSED, text, "", 0); }
+    }
+
     /**
-     * Server-side access decision. Returns null when the safe may open now, otherwise the refusal text.
-     * Forced entry consumes lockpicks exactly once per forced window.
+     * Server-side access decision, taken before anything is spent. A safe that was forced recently stays open for its window ({@link #FORCED_WINDOW_TICKS}), to whoever comes next as well;
+     * a closed one is picked by the player on the lockpicking screen ({@link LockService}), which needs the policy's number of lockpicks in the inventory and costs one when the pick snaps.
      */
-    public String access(ServerLevel level, ServerPlayer player, long now) {
+    public Entry entry(ServerLevel level, ServerPlayer player, long now) {
         PropertyPolicy active = PropertyPolicies.INSTANCE.find(policy);
-        if (active == null) return registered() ? "This safe's profile is unavailable." : "This safe is not part of a property yet. Ask an operator to register it.";
-        if (CitizenState.get(player.server).find(player.getUUID()).isEmpty()) return "Register as a citizen first.";
+        if (active == null) return Entry.refused(registered() ? "This safe's profile is unavailable." : "This safe is not part of a property yet. Ask an operator to register it.");
+        if (CitizenState.get(player.server).find(player.getUUID()).isEmpty()) return Entry.refused("Register as a citizen first.");
         restock(level, now);
-        if (forcedAt(now)) { cue(level, player, false); return null; }
-        int have = player.getInventory().countItem(UndergroundCity.item("lockpick"));
-        if (have < active.lockpicks()) return "Locked. Forcing this safe needs " + active.lockpicks() + " lockpick" + (active.lockpicks() == 1 ? "" : "s") + ".";
-        int remaining = active.lockpicks();
-        for (ItemStack stack : player.getInventory().items) {
-            if (remaining > 0 && stack.is(UndergroundCity.item("lockpick"))) {
-                int take = Math.min(remaining, stack.getCount());
-                stack.shrink(take); remaining -= take;
-            }
-        }
+        String profile = lock.isEmpty() ? active.lockProfile() : lock;
+        if (forcedAt(now)) { cue(level, player, false); return new Entry(Entry.Kind.OPEN, "", profile, 0); }
+        return new Entry(Entry.Kind.PICK, "", profile, active.lockpicks());
+    }
+
+    /** The lock gave way: the safe stays open for its window, its residents grow more watchful and the break-in is posted for witness and evidence systems. */
+    public void forcedOpenBy(ServerLevel level, ServerPlayer player, long now) {
         forcedUntil = now + FORCED_WINDOW_TICKS;
         vigilance = Math.min(PropertyRestock.MAX_VIGILANCE, vigilance + 1);
         vigilanceAnchor = now; breakins++; lastIntruder = player.getUUID();
+        // what is in the safe when its lock gives way is stolen goods for whoever carries it out (D-122); stock that arrives later is not marked until the next forcing
+        String city = CityRegions.INSTANCE.cityAt(level, worldPosition).orElse("");
+        for (ItemStack stack : items) StolenGoods.mark(stack, city, player.getUUID());
         setChanged();
         MinecraftForge.EVENT_BUS.post(new PropertyForcedEntryEvent(player.getUUID(), worldPosition, policy, vigilance, now));
         cue(level, player, true);
-        return null;
     }
 
     /**
@@ -172,7 +186,7 @@ public final class PropertyCacheBlockEntity extends RandomizableContainerBlockEn
         if (forced) {
             level.playSound(null, worldPosition, net.minecraft.sounds.SoundEvents.IRON_TRAPDOOR_OPEN, net.minecraft.sounds.SoundSource.BLOCKS, 0.9f, 0.6f);
             level.sendParticles(net.minecraft.core.particles.ParticleTypes.CRIT, worldPosition.getX() + 0.5, worldPosition.getY() + 1.0, worldPosition.getZ() + 0.5, 8, 0.25, 0.1, 0.25, 0.1);
-            Notice.send(player, Notice.Kind.WARN, "Lock forced", "The residents grow more watchful. Do not stay long.");
+            Notice.send(player, Notice.Kind.WARN, "Lock forced", "The residents are on alert. Whatever you take is marked as stolen.");
         }
         if (exceptional && !revealed) {
             revealed = true;
@@ -184,8 +198,26 @@ public final class PropertyCacheBlockEntity extends RandomizableContainerBlockEn
     }
 
     // ------------------------------------------------------------------ container
-    @Override protected Component getDefaultName() { return Component.translatable("container.underground_city.property_cache"); }
-    @Override protected AbstractContainerMenu createMenu(int id, Inventory inventory) { return new ChestMenu(net.minecraft.world.inventory.MenuType.GENERIC_9x1, id, inventory, this, 1); }
+    /** The screen's title names the safe it is (the club's wall safe opened as a "Household Safe" in the advanced burglary run). */
+    @Override protected Component getDefaultName() {
+        return Component.translatable(switch (lock) { case "wall_safe" -> "container.underground_city.wall_safe"; case "vault_safe" -> "container.underground_city.vault_safe"; default -> "container.underground_city.property_cache"; });
+    }
+    @Override protected AbstractContainerMenu createMenu(int id, Inventory inventory) {
+        ChestMenu menu = new ChestMenu(net.minecraft.world.inventory.MenuType.GENERIC_9x1, id, inventory, this, 1);
+        // A safe is somebody else's store, not the burglar's: things can be taken out, never put in (D-125). Otherwise a player could put their own goods into a forced safe and have them marked
+        // stolen the next time it is forced, and turn anything into fence money. The server's slots refuse a placement; the client's ordinary chest screen is corrected by the server.
+        for (int i = 0; i < SLOTS; i++) {
+            net.minecraft.world.inventory.Slot old = menu.slots.get(i);
+            net.minecraft.world.inventory.Slot takeOnly = new net.minecraft.world.inventory.Slot(this, old.getContainerSlot(), old.x, old.y) {
+                @Override public boolean mayPlace(ItemStack stack) { return false; }
+            };
+            takeOnly.index = i;
+            menu.slots.set(i, takeOnly);
+        }
+        return menu;
+    }
+    /** Nothing is ever put into a safe from outside (hoppers already cannot; this covers anything that asks). */
+    @Override public boolean canPlaceItem(int slot, ItemStack stack) { return false; }
     @Override protected NonNullList<ItemStack> getItems() { return items; }
     @Override protected void setItems(NonNullList<ItemStack> replacement) { items = replacement; }
     @Override public int getContainerSize() { return SLOTS; }
@@ -206,6 +238,8 @@ public final class PropertyCacheBlockEntity extends RandomizableContainerBlockEn
         tag.putLong("forced_until", forcedUntil); tag.putInt("vigilance", vigilance); tag.putInt("generation", generation);
         tag.putInt("breakins", breakins); tag.putBoolean("exceptional", exceptional); tag.putBoolean("revealed", revealed);
         if (lastIntruder != null) tag.putUUID("last_intruder", lastIntruder);
+        if (!lock.isEmpty()) tag.putString("lock", lock);
+        if (tier > 0) tag.putInt("tier", tier);
     }
 
     @Override public void load(CompoundTag tag) {
@@ -217,5 +251,6 @@ public final class PropertyCacheBlockEntity extends RandomizableContainerBlockEn
         vigilance = Math.max(0, Math.min(PropertyRestock.MAX_VIGILANCE, tag.getInt("vigilance")));
         generation = Math.max(0, tag.getInt("generation")); breakins = Math.max(0, tag.getInt("breakins")); exceptional = tag.getBoolean("exceptional"); revealed = tag.getBoolean("revealed");
         lastIntruder = tag.hasUUID("last_intruder") ? tag.getUUID("last_intruder") : null;
+        lock = tag.getString("lock"); tier = Math.max(0, Math.min(6, tag.getInt("tier")));
     }
 }

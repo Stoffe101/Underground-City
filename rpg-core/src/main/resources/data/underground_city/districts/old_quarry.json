@@ -1,0 +1,274 @@
+{
+  "schema_version": 1,
+  "id": "old_quarry",
+  "title": "Old quarry",
+  "note": "A stepped open-cast pit with seams of iron, coal and copper in its treads; mined seams grow back in active play time (resource_sites/ironhaven_quarry.json). Origin is the north-west corner, extending east and south; the rim is level with the ground.",
+  "size": [
+    19,
+    8,
+    19
+  ],
+  "ops": [
+    {
+      "op": "fill",
+      "from": [
+        0,
+        -8,
+        0
+      ],
+      "to": [
+        18,
+        -2,
+        18
+      ],
+      "block": "minecraft:stone"
+    },
+    {
+      "op": "fill",
+      "from": [
+        0,
+        -1,
+        0
+      ],
+      "to": [
+        18,
+        -1,
+        18
+      ],
+      "block": "minecraft:coarse_dirt"
+    },
+    {
+      "op": "fill",
+      "from": [
+        0,
+        0,
+        0
+      ],
+      "to": [
+        18,
+        7,
+        18
+      ],
+      "block": "minecraft:air"
+    },
+    {
+      "op": "fill",
+      "from": [
+        1,
+        -1,
+        1
+      ],
+      "to": [
+        17,
+        -1,
+        17
+      ],
+      "block": "minecraft:air"
+    },
+    {
+      "op": "fill",
+      "from": [
+        2,
+        -2,
+        2
+      ],
+      "to": [
+        16,
+        -1,
+        16
+      ],
+      "block": "minecraft:air"
+    },
+    {
+      "op": "fill",
+      "from": [
+        3,
+        -3,
+        3
+      ],
+      "to": [
+        15,
+        -1,
+        15
+      ],
+      "block": "minecraft:air"
+    },
+    {
+      "op": "fill",
+      "from": [
+        4,
+        -4,
+        4
+      ],
+      "to": [
+        14,
+        -1,
+        14
+      ],
+      "block": "minecraft:air"
+    },
+    {
+      "op": "fill",
+      "from": [
+        5,
+        -5,
+        5
+      ],
+      "to": [
+        13,
+        -1,
+        13
+      ],
+      "block": "minecraft:air"
+    },
+    {
+      "op": "fill",
+      "from": [
+        6,
+        -6,
+        6
+      ],
+      "to": [
+        12,
+        -1,
+        12
+      ],
+      "block": "minecraft:air"
+    },
+    {
+      "op": "block",
+      "at": [
+        2,
+        -3,
+        6
+      ],
+      "block": "minecraft:iron_ore"
+    },
+    {
+      "op": "block",
+      "at": [
+        15,
+        -4,
+        10
+      ],
+      "block": "minecraft:iron_ore"
+    },
+    {
+      "op": "block",
+      "at": [
+        4,
+        -5,
+        12
+      ],
+      "block": "minecraft:iron_ore"
+    },
+    {
+      "op": "block",
+      "at": [
+        13,
+        -6,
+        5
+      ],
+      "block": "minecraft:iron_ore"
+    },
+    {
+      "op": "block",
+      "at": [
+        3,
+        -4,
+        4
+      ],
+      "block": "minecraft:iron_ore"
+    },
+    {
+      "op": "block",
+      "at": [
+        14,
+        -5,
+        8
+      ],
+      "block": "minecraft:iron_ore"
+    },
+    {
+      "op": "block",
+      "at": [
+        1,
+        -2,
+        9
+      ],
+      "block": "minecraft:coal_ore"
+    },
+    {
+      "op": "block",
+      "at": [
+        17,
+        -2,
+        9
+      ],
+      "block": "minecraft:coal_ore"
+    },
+    {
+      "op": "block",
+      "at": [
+        16,
+        -3,
+        12
+      ],
+      "block": "minecraft:coal_ore"
+    },
+    {
+      "op": "block",
+      "at": [
+        5,
+        -6,
+        9
+      ],
+      "block": "minecraft:coal_ore"
+    },
+    {
+      "op": "block",
+      "at": [
+        3,
+        -4,
+        14
+      ],
+      "block": "minecraft:coal_ore"
+    },
+    {
+      "op": "block",
+      "at": [
+        4,
+        -5,
+        6
+      ],
+      "block": "minecraft:copper_ore"
+    },
+    {
+      "op": "block",
+      "at": [
+        13,
+        -6,
+        11
+      ],
+      "block": "minecraft:copper_ore"
+    },
+    {
+      "op": "block",
+      "at": [
+        2,
+        -3,
+        14
+      ],
+      "block": "minecraft:copper_ore"
+    },
+    {
+      "op": "block",
+      "at": [
+        9,
+        0,
+        0
+      ],
+      "block": "minecraft:spruce_sign[rotation=0]"
+    }
+  ]
+}

@@ -1,0 +1,201 @@
+{
+  "schema_version": 1,
+  "id": "hot_goods",
+  "title": "Goods off a lorry",
+  "kind": "underground",
+  "roads": [
+    "ironhaven_blackwater",
+    "valewood_blackwater"
+  ],
+  "weight": 3,
+  "note": "D-139. An underground offer: goods marked as stolen in another city, cheap. A fence pays more for them than they cost; a checkpoint search can find them, and the hand-off can be seen.",
+  "notice": "A van is parked at the verge, its back doors open.",
+  "people": [
+    {
+      "name": "Dez Calloway",
+      "profession": "none"
+    },
+    {
+      "name": "Rook Hennessy",
+      "profession": "none"
+    }
+  ],
+  "openings": [
+    "Fell off a lorry, these did. Watches, a laptop, nice things. Thirty-five credits, the lot, and you never saw me.",
+    "Looking for a bargain? Everything in the back, thirty-five credits. Where it came from is not a question I answer."
+  ],
+  "props": [
+    {
+      "at": [
+        -2,
+        1,
+        0
+      ],
+      "block": "minecraft:black_concrete"
+    },
+    {
+      "at": [
+        -2,
+        1,
+        1
+      ],
+      "block": "minecraft:white_concrete"
+    },
+    {
+      "at": [
+        -2,
+        2,
+        0
+      ],
+      "block": "minecraft:black_concrete"
+    },
+    {
+      "at": [
+        -2,
+        2,
+        1
+      ],
+      "block": "minecraft:white_concrete"
+    },
+    {
+      "at": [
+        -1,
+        1,
+        0
+      ],
+      "block": "minecraft:white_concrete"
+    },
+    {
+      "at": [
+        -1,
+        1,
+        1
+      ],
+      "block": "minecraft:white_concrete"
+    },
+    {
+      "at": [
+        -1,
+        2,
+        0
+      ],
+      "block": "minecraft:white_concrete"
+    },
+    {
+      "at": [
+        -1,
+        2,
+        1
+      ],
+      "block": "minecraft:white_concrete"
+    },
+    {
+      "at": [
+        0,
+        1,
+        0
+      ],
+      "block": "minecraft:white_concrete"
+    },
+    {
+      "at": [
+        0,
+        1,
+        1
+      ],
+      "block": "minecraft:white_concrete"
+    },
+    {
+      "at": [
+        0,
+        2,
+        0
+      ],
+      "block": "minecraft:white_concrete"
+    },
+    {
+      "at": [
+        0,
+        2,
+        1
+      ],
+      "block": "minecraft:white_concrete"
+    },
+    {
+      "at": [
+        1,
+        1,
+        0
+      ],
+      "block": "minecraft:black_concrete"
+    },
+    {
+      "at": [
+        1,
+        1,
+        1
+      ],
+      "block": "minecraft:white_concrete"
+    },
+    {
+      "at": [
+        1,
+        2,
+        0
+      ],
+      "block": "minecraft:black_concrete"
+    },
+    {
+      "at": [
+        1,
+        2,
+        1
+      ],
+      "block": "minecraft:white_concrete"
+    },
+    {
+      "at": [
+        2,
+        1,
+        0
+      ],
+      "block": "minecraft:stripped_spruce_wood"
+    },
+    {
+      "at": [
+        2,
+        2,
+        0
+      ],
+      "block": "minecraft:stripped_spruce_wood"
+    },
+    {
+      "at": [
+        3,
+        1,
+        0
+      ],
+      "block": "minecraft:spruce_trapdoor"
+    }
+  ],
+  "choices": [
+    {
+      "id": "buy",
+      "label": "Buy the lot (35 credits)",
+      "cost": 35,
+      "gives": {
+        "loot": "underground_city:roadside/hot_goods",
+        "stolen": true
+      },
+      "heat": 2,
+      "heat_chance": 0.2,
+      "reply": "Pleasure. You didn't get those from me, and you didn't see the van."
+    },
+    {
+      "id": "ask",
+      "label": "Where would I sell things like that?",
+      "reply": "Not to a shop. Every city has somebody who buys at night, and they say there's a cellar under the old cannery on the frontier road.",
+      "resolves": false
+    }
+  ]
+}

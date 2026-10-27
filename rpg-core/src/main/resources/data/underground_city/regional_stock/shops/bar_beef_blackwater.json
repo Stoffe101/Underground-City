@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "city": "blackwater",
+  "item": "minecraft:cooked_beef",
+  "unit_price": 7,
+  "initial": 12,
+  "capacity": 16,
+  "units_per_interval": 4,
+  "interval_ticks": 24000,
+  "max_order": 8,
+  "outlets": [
+    "shop:bar"
+  ]
+}

@@ -32,7 +32,7 @@ In PowerShell:
 ```
 git clone https://github.com/Stoffe101/Underground-City.git
 cd Underground-City
-git checkout feature/economy-property-progression
+git checkout feature/world-playability-overhaul
 .\gradlew.bat runServer -PucAcceptEula=true
 ```
 
@@ -69,6 +69,22 @@ This is the supported launch for anything beyond the two of you at one desk. It 
 **What your account means.** Everything the game keeps about you is attached to your account's UUID: citizenship and career, credits, work orders, Crew membership and role, the Crew's bank, homes and private containers. Renaming your Minecraft account keeps all of it. Another player cannot act as you, take your wallet or your Crew's bank, or open your private chest by typing your name.
 
 **Moving from the developer launch.** There is **no tool that moves a world played in offline mode to real accounts**, and nothing converts identities silently. On an authenticated server a person who played offline is a stranger: no citizenship, no Crew, no wallet, no homes. The server warns at start and `/uc_identity` lists the offline-derived identities it found. Start the authenticated world **fresh**; keep the developer world on your own network if you want to keep it.
+
+## 3c. The scripts (PowerShell, in `scripts\windows`)
+
+The commands in this guide are wrapped in a few PowerShell scripts, so that a session needs no typing of gradle flags. They run in the repository folder and never touch your normal Minecraft. If PowerShell refuses to run them ("running scripts is disabled"), allow scripts for this window only: `Set-ExecutionPolicy -Scope Process Bypass`.
+
+| Script | What it does |
+| --- | --- |
+| `uc-update.ps1` | fetches the playtest branch and fast-forwards to it; refuses when you have local changes; prints the commit both players must share |
+| `uc-server.ps1 -Sets furnished,scarcity -World UC-S2 [-LanOfflineMode] [-AcceptEula] [-Pregen]` | backs up the game folder, then starts the dev server; a new `-World` name makes a new world beside the old one (never replacing it). Offline mode must be asked for on every start, and only for a home network. `-Pregen` generates the three islands once in the background ([test worlds](../technical/test-worlds.md); about 13,500 chunks) |
+| `uc-client.ps1 -Name Alice -Sets furnished,scarcity [-Join] [-Xaero] [-World UC-S1]` | starts a client: `-Join` for a server, otherwise single player; `-Xaero` adds Xaero's Minimap and World Map (client only) |
+| `uc-new-world.ps1 -Name Alice -World UC-S1 [-Pregen]` | a single-player client in a NEW world with the furnished cities and scarcity; refuses a name that exists. `-Pregen` generates the islands in it once, in the background |
+| `uc-second-copy.ps1` | copies the repository to `..\Underground-City-P2` for a second player on the same PC |
+| `uc-backup.ps1` | copies `rpg-core\run-dev` (worlds, saves, configs) to `backups\run-dev-<date-time>`; stop the server and clients first |
+| `uc-logs.ps1` | packs the logs, crash reports and screenshots (never a world) into `reports\uc-report-<date-time>.zip` for a bug report |
+
+**Tested in the cloud:** PowerShell 7 parsed all of them, and a test (`tests/test_windows_scripts.py`) ran the server, client, new-world and logs scripts against a stand-in for gradle: the commands they build, the server settings they write, and their refusals (an unknown set, a bad name, an existing world, offline mode not asked for). **Not tested:** Windows PowerShell 5.1 on a real Windows 11 machine, `robocopy` (the backup and the second copy), and the real gradle launches through them. Run `uc-backup.ps1` once by hand and look at the folder it made before you trust it.
 
 ## 4. Start the clients
 
@@ -123,7 +139,7 @@ Things that deserve a careful look: does anything feel unfair or confusing; are 
 
 **Built and tested in the cloud (not by a person):** registration, the terminal, work orders, the regional exchange, the Public Ledger, skill trees, checkpoints and searches, firearms crafting with blueprints (with the firearms set), Founders Row, the Row Flats, Crews with a bank, shared homes and a server-side guard, the road waymarkers and wayside shelters. Two scripted clients have played the Crew steps above against a dedicated server that was then **killed without a stop sequence and restarted** (see the sprint report for the exact result).
 
-**Not built, so do not look for it:** Crew contracts, burglary, raids, police patrols, populated daily routines, vehicle fuel, vehicle repair or insurance, boat customs, per-player loot, a medical item, a tax on property, a buyer-to-buyer property market, seven of the ten property categories (only the motel, the flat and the house with a workshop have a building). Evicting a tenant by force does not exist: unpaid rent only withdraws comforts (section 6d). **The home guard** now stops pistons, hoppers, fluids, fire, mobs, item frames, armor stands and modded containers at a leased home's walls (section 6b); it does not stop fire that spreads in from outside, lightning, or mods that move blocks with their own code. **Q Shop's own shop screens always spend your own wallet, even when the Crew shares finances**; only the Underground City exchange (the Operations Terminal in a city, the provisions desk in a wayside shelter) can use the Crew bank, and only for a member who holds the *Spend* right.
+**Not built, so do not look for it (October 25):** vehicle fuel, vehicle repair or insurance, boat customs, a harbour, per-player loot beyond the roadside crates (D-186), a medical item, any tax, a buyer-to-buyer property market, factions or gang wars and story quests. All ten property categories now have a building (the Blackwater lofts and the Valewood villa were added on October 25, D-176). Crew contracts, burglary, one raid, police patrols and daily routines **do** exist now (sections 6e to 6i). Evicting a tenant by force does not exist: unpaid rent only withdraws comforts (section 6d). **The home guard** now stops pistons, hoppers, fluids, fire, mobs, item frames, armor stands and modded containers at a leased home's walls (section 6b); it does not stop fire that spreads in from outside, lightning, or mods that move blocks with their own code. **Q Shop's own shop screens always spend your own wallet, even when the Crew shares finances**; only the Underground City exchange (the Operations Terminal in a city, the provisions desk in a wayside shelter) can use the Crew bank, and only for a member who holds the *Spend* right.
 
 **Survival set** (`-PucExtraSets=survival`, opt-in): backpack, thirst, clean and dirty water, canteens and flasks, the kitchen and sleeping bags. The goods are **for sale** (section 6b), finite and shared like every other supplier line, and the cloud has driven the mods' own code for each mechanic. Nothing in the default pack depends on it.
 
@@ -192,6 +208,183 @@ Things to write down: did the pack feel like a convenience or like a trap; was 7
 
 Things to write down: was rent a pleasant pressure or an annoyance; was the motel's welcome enough to understand it; did *LAPSED* feel fair or frightening; did you ever not know who paid; did a skill's effect feel real or like a number; did the checkpoint ever take something that was legal.
 
+## 6e. Furnished cities, burglary, police, quarry and residents (about 45 minutes, a NEW world only)
+
+**Written for the October 21 pass (D-117 to D-124). Everything below passed as GameTests, a scripted client or photographs in the cloud; no person has done any of it, no furnished building has been walked through by a person, and the numbers (alarm odds, police times, quarry yield) are first guesses.** The furnished and scarcity packages change how *new chunks* generate, so they need a **new world with its own name**. The game refuses to start an existing world with different packages (`uc_generation_packs.json`), so an old world cannot be altered by mistake, but make a backup of `run-dev` first anyway (section 2) and use a different `-PucDevWorldName`.
+
+Start (Windows spelling; the extra sets are the furnished cities with their Modern Life furniture, and the world with no natural ore):
+
+```text
+.\gradlew.bat runClient -PucWorldLayout=archipelago -PucPack=world,furnished,scarcity -PucDevWorldName=UC-Living-Test
+```
+
+(For two players, start the dedicated server with the same `-PucPack` and the same world, as in section 3, and both clients with the same sets.)
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Arrive, register, walk to Valewood (a bridge away from the landing) and along its streets by day | houses of two storeys with fenced gardens, a shop with a striped awning, cottages; different from Ironhaven's brick tenements and workshops and Blackwater's concrete apartments, offices and club. Note anything that looks empty, floating or wrong |
+| 2 | Look through a house window; stand at its door | furniture inside, lit lamps; a locked door (two thirds of the buildings are sealed). Nobody is inside by day unless a resident is at home |
+| 3 | Return to the same house **at night** (let the day pass, or use `/time set 18000`) and look through the window | a resident beside a bed, if one is home tonight (not every night). Speak to a resident you can reach: a line about their evening |
+| 4 | In **survival**, with 5 lockpicks, pick the front door of a house or a flat block (**read the lock screen**: press where the needle feels *close*, hold until the pin sets) | the lock opens; the notice says *Lock picked cleanly* if your pick never strained far, *Lock picked* if it did |
+| 5 | Try buildings until you hear a **bell** and see *An alarm went off* (or: *Something in here is wired to an alarm. Your pick was clean and it did not hear you*) | the bell rings at the door for twenty seconds; the notice says the police have been called |
+| 6 | Find the stash (a safe, if the building has one), pick it, take something | the item has a red line *Stolen goods (Valewood)* |
+| 7 | Leave and stand in the street. Count the time since the alarm | officers (named "Officer ...", in a guard's outfit) come from a street nearby: about two minutes after the alarm in a flat block, less in a tower, an office or a club. They say "Police! Stay where you are." |
+| 8 | Stand still: let an officer reach you | an arrest: the stolen item is gone, honest goods stay, a fine (up to your wallet), heat rises by 3 in that city. *Heat* shows on the status display |
+| 9 | Repeat, but **run** (sprint) away from the officers, or hide out of sight for two to three minutes | *You got away* / *The police have gone*; nothing is taken |
+| 10 | Repeat, but go in **at night** and again **by day while people are in the street** | by day, a passer-by or a resident may *see you* and call the police without any alarm; at night in the street, fewer do |
+| 11 | Log out while officers are on the way, log back in | nothing is pending: **nobody is punished for being away** |
+| 12 | Walk east from the landing about 150 blocks to **the old quarry** (a stepped pit with a sign). Mine an iron, a coal and a copper seam with a pickaxe; smelt them | ore and ingots. Come back after **20 minutes of play** (not 20 minutes away): the seams you mined have grown back. `/uc_site status` (operator) shows how many are waiting |
+| 13 | Buy raw materials from the shelves (the Operations Terminal's trade page: iron, coal, copper, redstone, lapis, gold, diamond), then try to buy more than the shelf holds | prices from 2 credits (charcoal) to 150 (a diamond); the shelf is small and refills slowly; it is shared with every player |
+| 14 | Dig anywhere in the countryside for ore | none: the new world has no natural ore (caves, stone and everything else are normal) |
+
+Operator commands that help: `/uc_police status`, `/uc_household status`, `/uc_site status`, `/uc_population status`. Do not use an old world for any of this.
+
+Things to write down: was the lock screen readable; did a quiet pick feel like a skill; was the alarm a surprise or fair; was two minutes too long or too short; did the officers look like police and arrive from somewhere believable; did being arrested feel fair, annoying or ignorable; did anything look empty, floating or broken in the furnished houses; did a resident look like they lived there; was the quarry worth the walk; did the shelves make you feel you could not get iron.
+
+## 6f. The first hour, shops, homes in the cities, fences and alarm panels (about 60 minutes, a NEW world only)
+
+**Written for the October 22 to 23 pass (D-125 to D-137).** A script played most of the first hour through a real client (the sprint report, [gameplay-completion-pass.md](gameplay-completion-pass.md), lists every step and which parts were set up by commands); **no person has done any of it**. The first hour is the most important thing to try: the script cannot tell whether it is clear, slow, confusing or fun.
+
+Start exactly as in 6e (a new world with the furnished cities and no natural ore):
+
+```text
+.\gradlew.bat runClient -PucWorldLayout=archipelago -PucPack=world,furnished,scarcity -PucDevWorldName=UC-First-Hour
+```
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Arrive, register (any city, **Smith** to follow the script), and follow the arrow on the side display | the employer's office in Founders Row; the side display and the arrow stay clear of notices (they slide in below or beside the display; while a terminal or a shop covers their corner they wait and appear when it closes) |
+| 2 | Speak to the employer, open the orders, try the iron-tools order, then accept the stone-tools one | the iron order is greyed (level); the stone order is accepted and shows on the display |
+| 3 | Chop a tree, walk east to **the old quarry** (a stepped pit), mine cobblestone from its walls | logs and cobblestone; the quarry's seams grow back after 20 minutes of play |
+| 4 | Craft planks, a crafting table, sticks and three stone pickaxes; deliver them at the employer | 24 credits and career XP |
+| 5 | On the terminal's TRADE page open the civilian shop and buy rations; try something you cannot afford | bread for 20 credits; the unaffordable click changes nothing |
+| 6 | Press **K**, open HOME, then **Find a home** | the free motel rooms are listed **first** (the city's welcome: two free hours); rent one, walk into it, put something in its barrel |
+| 7 | Spend the skill point on the SKILLS page; save and quit, reopen | everything is as you left it, no second registration |
+| 8 | After the second order's step says **Travel to a rival city**, follow its arrow ("Road to Valewood" or "Road to Blackwater") through Ironhaven to the road, up the ramp onto it, and across the bridge | the road is about 720 blocks from the landing, through Ironhaven's blocks (**time it: how long, and was the way obvious?**); about four minutes on the road; at each end a cut ramp joins the road to the city; Valewood's houses have gardens and porches |
+| 9 | In a furnished **shop, pub, corner store or bakery**, speak to the person behind the counter | their shop's goods on the Trade page, from a small shelf shared with that city's shops of the kind |
+| 10 | Between 08:00 and 08:40 (game time) watch a shop's street door; between 17:00 and 17:40 a house's or a tenement's | the shopkeeper walks up the street and in (and out again after 18:00); residents come home from five o'clock, each at their own minute |
+| 11 | Ask for **Find a home** inside Ironhaven's tenements, the pub, the bakery or the corner store | flats and rooms to let on the Row's terms; a home is never emptied of your things for not paying |
+| 12 | (Technician with **Bypass Tooling** and a **Bypass Kit**) pick the street door of a tenement or a shop with a strained pick; a panel by the door beeps. Right-click it, watch the signal, key it back with 1 to 4 | the panel's light goes blue: nobody is called for ten minutes. Key it wrongly on purpose in another building: the alarm rings and heat rises |
+| 13 | After 21:00 take a stolen item to **The Yard** (Ironhaven's warehouse office) or **The Back Room** (Blackwater's club office) | the fence's screen: 45 or 50 percent of the item's honest price, less for goods stolen in its own city; a short budget says on each row what it can pay now |
+
+Operator commands that help: `/uc_police status`, `/uc_household status`, `/uc_site status`, `/time set 18000`. Do not use an old world.
+
+Also look, wherever a building stands higher than the ground beside it, at its retaining wall: it should be the city's stone bricks (before October 23 such walls were sofas, beds or bookshelves).
+
+Things to write down: where you were lost in the first ten minutes; whether the arrow and the side display were enough; whether the walk from the landing to the road was obvious; whether the shopkeepers and the people walking in and out made the streets feel alive; whether the alarm panel was readable and fair; whether the fence's prices felt worth the risk.
+
+## 6g. The roads: roadside places, encounters, the road ends, and (optional) the SecurityCraft trial (about 45 minutes, a NEW world only)
+
+**Written for the October 23 second pass (D-138 to D-141).** A script walked the Ironhaven-Valewood road through a real client, took a courier's letter (set up by an operator command), ate at the Crossroads Diner and was paid for the letter in Valewood ([living-world-roadside.md](living-world-roadside.md)); **no person has done any of it**.
+
+Start a new world as in 6f (`-PucWorldLayout=archipelago -PucPack=world,furnished,scarcity`). The places and encounters exist only in a world started this way.
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Walk out of Ironhaven onto the Valewood road and keep walking | a farm with a stand and a farmhouse (Harrow Farm) beside the first stretch of land, later the Crossroads Diner with a forecourt; each built the first time you come near (a short hitch is possible then) |
+| 2 | Step off at the diner and speak to Dot Mallory, the cook | hot food over the counter at the city's prices or a little more; nothing is free |
+| 3 | Keep travelling the roads for a while (five minutes of road travel or so earns an encounter) | sooner or later, beside the road ahead: a stranded driver, a courier with a letter, goods off a lorry (only on the two roads to Blackwater) or a spilled load. Walk past one: nothing happens. Talk to one: it says what it wants |
+| 4 | Take a courier's letter to the city it names and hand it in at a terminal or a shopkeeper's counter there | its fee, once; a second copy is worth nothing |
+| 5 | Walk off each road end into its city, especially the two ends at Blackwater | a ramp from the road up or down to the city's ground; no step higher than one block |
+| 6 | Visit Kessler Salvage (Ironhaven-Blackwater road) and break a scrap heap; come back an hour of play later | nuggets, sometimes copper or a part; the heaps grow back while you play, never while you are away |
+| 7 | Rent a Saltmarsh Motel room or ask about Harrow Farm's farmhouse (Find a home near them) | the rooms and the farmhouse on the usual terms |
+| 8 | Optional, a separate new world started with `-PucPack=world,furnished,scarcity,securitycraft`: an operator looks at a city building's street door and runs `/uc_security install` (it prints the door's code) | a keypad door, a laser, a siren, a camera and a light. As a stranger, type the code: you are in, but it counts as a break-in. Walk across the laser: the siren and the police. `/uc_security keyholder <you>`: then nothing rings |
+
+Things to write down: whether the places look like they belong; whether stopping was worth it; whether encounters came too often, too rarely or at bad moments; whether the SecurityCraft devices feel like part of this game.
+
+## 6h. Becoming a thief: casing, locks, searching rooms, fences and the Thief page (about 45 minutes, a NEW world only)
+
+**Written for the October 23 to 24 third pass (D-142 to D-156).** Scripts played one new burglar through a real client, from casing a Valewood house to learning the first Thief skill (Thief run 12, `RESULT pass`; the report lists its 22 shortcuts), an advanced burglary of the Blackwater club (heist runs 8 and 10), an officer on the beat catching a thief at a lock (patrol runs 2 and 6) and a depot manifest delivered (freight run 5); **no person has done any of it**. The Thief track is every career's: play it as a Farmer, a Smith or anyone.
+
+Start a new world as in 6f (`-PucWorldLayout=archipelago -PucPack=world,furnished,scarcity`). Lockpicks are crafted (two iron nuggets and a stick make two) or bought in the Old Cannery's den on the Valewood-Blackwater road, which also sells a Pro Pick Set now and then.
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Press **K** and open the **Thief** page | Thief level 1, no Thief points, the tree in three columns (Locks, Stealth, Fencing) with Casing at the top; career points are separate |
+| 2 | By day in Valewood, crouch with an empty hand and right-click a house's street door | the casing card: how well off the place is (six pips: Comfortable for a house), the lock (a deadbolt) and what you could read with Casing. A house **to let** shows nothing: it is a vacant listing, not a target |
+| 3 | Pick the door (lockpicks in hand, right-click) | the lock screen; three pins. A notice: +75 Thief XP for the first time inside a comfortable house. Heat rises in the city |
+| 4 | Right-click the furniture: night stands, kitchen cupboards and drawers, the fridge, bookshelves, the bin | a short bar and "Found in the …": room-fitting finds, marked stolen. Try the same piece again: "Somebody has been through this already" (it refills after four hours of play). A resident in the room may see you |
+| 5 | Try a **shop** in its hours: walk in by the street door; try to search its furniture | the door opens for a customer; the search is refused while the place is open |
+| 6 | After 21:00 take the goods to the Blackwater club (**The Back Room**) or Ironhaven's warehouse (**The Yard**) | the club's iron door opens for somebody carrying stolen goods (no pick); upstairs in the back office the fence's screen pays half of what the goods are worth; paper and bread are not bought |
+| 7 | Open the Thief page again | Thief level 2 after one house and one sale (80 XP); spend the point on **Casing** and case a house again: now the alarm, the cameras and who is in |
+| 8 | In Blackwater's apartment tower, the club or Ironhaven's warehouse, look above the street door inside | a camera. Walk in front of it in a building that is not open: "A camera has you", and the police are called |
+| 9 | Let an officer see you, then run and break their line of sight (round a corner, through a door) and keep going | the officers go to where they last saw you and search round it; out of their sight for 30 seconds and 20 blocks away: "You got away", and Thief XP |
+| 10 | Rent a flat in an Ironhaven tenement (Find a home) and go in and out by its iron street door | the iron door opens for you (and nobody else); the building's camera ignores you |
+| 11 | Stand in a Valewood street for about two minutes and watch | an officer walks a beat near you (a name over their head) and goes again after two to three minutes; Ironhaven sends two, more often; Blackwater one, less often (D-155) |
+| 12 | Start to pick a house's door while that officer can see you (do this on purpose once) | the lock is put away at once (no pick lost), "… is on the beat and saw you at the lock", and the officer comes for you: stand still and you are arrested "for trying to break in"; run and break their line of sight and you can still get away |
+| 13 | Pick a door with an officer near but round a corner | a notice, "Footsteps": an officer on the beat is close and cannot see you yet |
+| 14 | By day, try the Blackwater club's back-office safe while the club is open as a bar | refused: nobody cracks a safe in a building while it is open. At night, with Safecracking and a Pro Pick Set, it opens on the lock screen |
+| 15 | On the Ironhaven-Blackwater road, at the Northgate Freight Depot, go into the office and ask Mara Quint "Any freight going out?" | a sealed manifest for another city with its fee on it; asked again, "Deliver that one first"; a terminal or counter in that city pays it once (D-156) |
+
+Things to write down: whether casing told you what you needed before you broke in; whether the lock felt like skill or luck; whether a house's finds felt worth the risk and the walk to a fence; whether the police felt fair (could you see why they found or lost you? did you notice the officer on the beat in time?); whether the first Thief point came at a good moment.
+
+## 6i. Three sessions for the alpha (a NEW world each time)
+
+**Written for the October 25 seventh pass (D-175 to D-179) and brought up to date for the eighth (D-182 to D-186: the Smith's turning and machinery, batches inside and outside homes, business hours, roadside crates).** The cloud drove each career's trade, trade premises, homes, the back channel, an unmarked gun and the Smith's engineering through scripted clients, and a Crew contract with two scripted clients on a dedicated server (`seventh-pass-alpha-readiness.md` and `eighth-pass-living-sandbox.md` say which runs passed and list every shortcut). **The current branch and its recent gameplay systems have not received human playtesting.** These three sessions are what the alpha milestone is waiting for (criterion 12 in `roadmap.md`).
+
+Two kinds of play, never mixed up in a report:
+
+* **Track A, organic:** no commands, no teleports, no time skips, no operator rights. You start with what registration gives you. Sessions 1 and 2 are Track A.
+* **Track B, prepared:** an operator sets the character up with `/uc_prepare` (career or Thief level, credits, a named kit). Every use is written in chat and in the server log as `PREPARED (Track B)`, so a screenshot or a log shows which kind of play it was. Session 3 is Track B.
+
+Use the furnished cities and the scarcity package (`-Sets furnished,scarcity`, the default of `uc-new-world.ps1`). Xaero's Minimap is optional (`-Xaero`): with it, a tracked destination is also a waypoint on the minimap.
+
+### Session 1: the first hour on your own (30 to 60 minutes, Track A, each player alone)
+
+Start: `.\scripts\windows\uc-new-world.ps1 -Name <you> -World UC-S1-<you>` (each player on their own PC or copy).
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Register: a home city, then a career (Farmer, Vintner, Smith, Gunsmith or Technician) | your career's kit: a station (Mill, Fermentation Vat, Machinist's Bench, Gunsmith's Bench) or the Technician's toolkit and computer, and its recipes already in the recipe book |
+| 2 | Right-click a public **Operations Terminal** (one stands inside Valewood's General Store, Ironhaven's workshop and Blackwater's corner store) and read the **Journey** tab | what to do first, in order; the **Work** tab lists orders your level can take |
+| 3 | Set your station down outside a building and make your first batch (Start, wait, **Take**) | the time left counts down on the screen and **Take** lights by itself when the batch is done; a part you lack says where it is sold (a shop, the exchange or another trade) |
+| 4 | Buy what you lack from a shopkeeper: walk in by day, right-click the person behind the counter, **What do you sell?** | the shop's own shelf; buying greys the buttons for a moment, then they light again. Stepping into a back room makes the household (or a camera) say *Staff only*; leave and nothing happens |
+| 5 | Sell or deliver what you made (a shop that buys it, or a work order) | credits in your wallet, career XP; your first skill point by about level 2 |
+| 6 | Learn a skill on the **Skills** tab (the **General** tab shows Trading and Social, earned by playing) | the node's effect is written on its card; a level 3 legal node costs one point |
+| 7 | Rent the cheapest home you can (press **K**, **Home**, **Find a home**) | the deposit and the hourly rent are stated before you agree; rent is charged only while somebody of the household is online |
+| 8 | Optional: case a shabby house at night and try a lock | it is your choice; police chase only what they see |
+| 9 | **If you are a Smith:** on the Machinist's Bench pick the drive shaft and press **Turn** | a drawing: click a section (Shift- or right-click another to stretch it), pick Roughing or Finishing, set the line with + and -, **Cut**. Rough to one step above each line, then finish. A section cut too far turns red: **Sleeve** it (a nugget). Close takes nothing. Fewer passes, better grade; the bench keeps a jig |
+| 10 | **If you are a Smith in a city:** wait for a **Service call** notice (one every 10 to 16 minutes of play) | right-click in the air with the Engineer's Toolkit for the list, **Track** the call, right-click the machine's drive housing beside its street door with the toolkit, replace the red parts, gear the open stage to the plate, **Run test**. Paid once; the machine runs again |
+
+Write down: the first moment you did not know what to do; whether your career felt like a trade or a menu; whether you ever felt stuck for money or for a part.
+
+### Session 2: a co-op sandbox (60 to 120 minutes, Track A, two players, a dedicated server)
+
+Start, with real accounts (the recommended way, and the only one for a server anybody reaches from outside your home): the authenticated server pack of section 3b, `online-mode=true` and a white-list of your two names, with the furnished and scarcity sets on server and clients alike. Two developer clients at home instead: the host runs `.\scripts\windows\uc-server.ps1 -Sets furnished,scarcity -World UC-S2 -LanOfflineMode -AcceptEula` (offline mode: on your own home network only, never port-forwarded or otherwise reachable from the internet; section 3 explains why), and each player `.\scripts\windows\uc-client.ps1 -Name <you> -Sets furnished,scarcity -Join` (the second player from a second copy, `uc-second-copy.ps1`). Pick **different careers**, for example Farmer and Smith.
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Make a Crew (K, **Crew**) and invite the other player | both on the roster, each with their own wallet and career; the Crew bank is optional |
+| 2 | Play your own careers for twenty minutes | separate orders, separate stations; neither of you is ever charged while away |
+| 3 | Open **Work** in Ironhaven: the **Crew** line for the depot canteen contract | its parts listed per career; your part shows **Deliver**, the other trade's part says it is theirs or that you may **Supplier** it |
+| 4 | Each delivers their part; one of you presses **Supplier** on the part nobody makes | each paid at once; the supplier's price is stated first and comes out of the asker's wallet; when the last part lands both get an equal share of the bonus, once |
+| 5 | One player disconnects in the middle and comes back | nothing lost or paid twice; a share earned while offline arrives at the next login |
+| 6 | Valewood: contribute to *Reopen the Valewood market* | after the fifth contribution two stalls stand in the street and residents talk about them |
+| 7 | Rent a home together or a commercial workshop (trade premises) and set a station in it | a station in trade premises runs one more batch a quarter faster; three bulk orders accept you |
+| 8 | Stop the server (`stop`), start it again with the same command, both rejoin | homes, stations, the Crew, wallets and orders exactly as they were |
+| 9 | Walk a road between two cities and look round each roadside place and shelter for a **battered crate** | each of you finds something in it once (different things); going back finds nothing more |
+| 10 | Go out at 20:00: the Blackwater club opens 18:00 to 03:00, the Ironhaven pub 12:00 to 02:00, shops 08:00 to 18:00 | the glance card at a street door says the hours; the street round an open bar is busier at night |
+| 11 | One of you starts a batch at a station inside your home, the other at a station outside on the street, and both log off | inside a home a batch is never anybody else's; outside it waits for two hours of its maker's own play, then anybody may take it and the maker is told who did |
+
+Write down: did the Crew contract feel like working together; was the split fair; did one of you wait on the other; was anything confusing about who owns what.
+
+### Session 3: prepared advanced play (about 60 minutes, Track B)
+
+Start a new world as in session 1 (single player has commands on) or use the session 2 server with `op <name>` typed into the server window. Then, for the player who tries each part:
+
+| Part | Setup (logged as PREPARED) | Then, without commands |
+| --- | --- | --- |
+| Trade premises and a bulk order (Smith) | `/uc_prepare level @s 5`, `/uc_prepare credits @s 1000`, `/uc_prepare kit @s smith_crate` | rent Ironhaven's commercial workshop on the Home page, walk in with the key, set the Machinist's Bench down inside, make two batches at a time, learn Forge Fundamentals and deliver *Fittings by the crate* at the workshop's terminal |
+| A registered and an unmarked gun (Gunsmith, firearms set) | `/uc_prepare level @s 8`, `/uc_prepare credits @s 450`, `/uc_prepare kit @s gunsmith` | learn Unregistered Builds, buy parts, make an unmarked parts kit at the bench and build the Glock 17 at TaCZ's table; the gun has no serial and a checkpoint treats it as restricted |
+| The back channel (Technician) | `/uc_prepare level @s 7`, `/uc_prepare kit @s technician` | learn Bypass Tooling, take a quiet job on the computer, track it, crouch and use the toolkit on the building's utility panel and solve the grid; its cameras are looped for a while and the kit is used up |
+| The bonded store (Thief) | `/uc_prepare thief @s 8`, `/uc_prepare kit @s thief` | learn Professional Tools, take Kessler's job in Blackwater, track it, case and open the store after 03:00, find the seized shipment and deliver it |
+| A villa and its upgrade | `/uc_prepare credits @s 26000` | buy the Valewood villa on **Find a home** and fit an upgrade on **Your homes** |
+| A machine beyond a new Smith (Smith) | `/uc_prepare level @s 8`, `/uc_prepare credits @s 400` | learn Millwright on the Skills page, wait for (or find on the toolkit's list) a tier III or IV call, buy the parts at the Builders' Yard if you lack them, and repair it: two gear stages, a fourth test run |
+
+Write down for each part: did it feel prepared for, dangerous or rewarding; what was unclear; what would you have done next.
+
+**The question that matters most, after every session: Would you voluntarily keep playing, and what would you want to do next?**
+
 ## 7. Logs, screenshots and bug reports
 
 * Server log: `rpg-core\run-dev\logs\latest.log` (authenticated pack: `build\server-pack\server\logs\latest.log`); crash reports: `rpg-core\run-dev\crash-reports\`.
@@ -200,10 +393,11 @@ Things to write down: was rent a pleasant pressure or an annoyance; was the mote
 * Please report (GitHub issue or message): what you did, what you expected, what happened, the time, both players' names, and attach the two `latest.log` files and screenshots. Do **not** attach the world folder unless asked; it is large.
 * If a transfer ever looks wrong: do not keep playing in that world. Stop the server, back the whole `run-dev` up, and report.
 
-## 8. After the session (five questions)
+## 8. After the session (six questions)
 
-1. Did the first ten minutes tell you what to do? What was the first moment you did not know?
-2. Did the Crew screen explain itself? Which button did you not understand?
-3. Did you want a shared bank, or would you rather keep your own money? Why?
-4. Did a shared home feel like it was yours, or like a menu?
-5. What would you do next in this world if you could? (This is the most useful answer.)
+1. **Would you voluntarily keep playing, and what would you want to do next?** (This is the most useful answer.)
+2. Did the first ten minutes tell you what to do? What was the first moment you did not know?
+3. Did your career feel like a trade, with choices, or like a list of orders?
+4. Did the Crew screen explain itself? Which button did you not understand?
+5. Did a home or the premises feel like yours, or like a menu?
+6. Was anything unfair: a price, a camera, the police, a refusal you did not understand?

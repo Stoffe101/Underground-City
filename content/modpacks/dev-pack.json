@@ -104,9 +104,10 @@
       "sha512": "e0a5c184c1f033f51138291f7a7fe7c81b5bade48459aadd41fd98e84fb2de130a9b05d04a1388d08c13fe6b5f880d7b88635d1a57240839f73e5caff98c2d16",
       "license": "LicenseRef-All-Rights-Reserved",
       "mod_id": "modernlife",
-      "role": "motorboat with a 27-slot persistent hold and fuel",
+      "role": "motorboat with a 27-slot persistent hold and fuel; furniture, appliances and fixtures for the furnished cities",
       "sets": [
-        "boats"
+        "boats",
+        "furnished"
       ],
       "requires": [],
       "placement": "classpath",
@@ -512,7 +513,8 @@
       "role": "food variety, cooking pot, cutting board (the survival set's one kitchen)",
       "sets": [
         "survival",
-        "legacy_travelers"
+        "legacy_travelers",
+        "furniture"
       ],
       "requires": [],
       "placement": "classpath",
@@ -552,6 +554,578 @@
       "source_url": "https://modrinth.com/mod/comforts/version/gBDsc134",
       "distribution": "download from the author's page; never commit the binary",
       "notes": "Comforts 6.4.0+1.20.1 (2024-07-05, release). LGPL-3.0-or-later; no mandatory dependency. Matches D-079: resting is never an automatic change of respawn. Also in the legacy_travelers set so that a world saved with the October 18 survival set (D-085) can be opened once with exactly that set; see docs/technical/backpack-migration.md."
+    },
+    {
+      "id": "xaero_minimap",
+      "name": "Xaero's Minimap",
+      "slug": "xaeros-minimap",
+      "project_id": "1bokaNcj",
+      "version_id": "dB6E0CY9",
+      "version_number": "forge-1.20.1-26.6.0",
+      "published": "2026-10-05",
+      "filename": "xaerominimap-forge-1.20.1-26.6.0.jar",
+      "size": 2196194,
+      "sha1": "ee73886f2f5f27bf28cffa7cc8f2b9b4540df2aa",
+      "sha512": "9c566a2b9537c37b438a38a060cc251187e6643e96522466c50c90c7fa747a4e4edc3a5fff0f31fb042e1eeefd047df2a57d1bbe6a3d741837cef8cdb6426a25",
+      "license": "LicenseRef-All-Rights-Reserved",
+      "mod_id": "xaerominimap",
+      "role": "navigation: a minimap in the corner of the screen (client only; the server may carry it)",
+      "sets": [
+        "navigation"
+      ],
+      "requires": [],
+      "placement": "classpath",
+      "side": {
+        "client": "required",
+        "server": "optional"
+      },
+      "source_url": "https://modrinth.com/mod/xaeros-minimap/version/dB6E0CY9",
+      "distribution": "download from the author's page; never commit the binary",
+      "notes": "Xaero's Minimap 26.6.0 (2026-10-05, release). All Rights Reserved; the author's own download only, never committed or redistributed. Client required, server optional. Pairs with Xaero's World Map; do not add a second minimap (the persistent Underground City HUD is placed on the opposite edge of the screen). Optional compat hook for Open Parties and Claims is not installed."
+    },
+    {
+      "id": "xaero_worldmap",
+      "name": "Xaero's World Map",
+      "slug": "xaeros-world-map",
+      "project_id": "NcUtCpym",
+      "version_id": "KtEupJvB",
+      "version_number": "forge-1.20.1-1.47.0",
+      "published": "2026-10-05",
+      "filename": "xaeroworldmap-forge-1.20.1-1.47.0.jar",
+      "size": 1429424,
+      "sha1": "6715c1d3758a3805589d82c41dc581537fe185cd",
+      "sha512": "a8c775ad1645cd3dc922072955fff65f7874bd6a1c99e6a61d370e7a9a5880e450ba61dafa6c719ad8f719fcff3b17ec6124b7f47288009547b4b136d81e5657",
+      "license": "LicenseRef-All-Rights-Reserved",
+      "mod_id": "xaeroworldmap",
+      "role": "navigation: a full-screen world map that records explored terrain",
+      "sets": [
+        "navigation"
+      ],
+      "requires": [
+        "xaero_minimap"
+      ],
+      "placement": "classpath",
+      "side": {
+        "client": "required",
+        "server": "optional"
+      },
+      "source_url": "https://modrinth.com/mod/xaeros-world-map/version/KtEupJvB",
+      "distribution": "download from the author's page; never commit the binary",
+      "notes": "Xaero's World Map 1.47.0 (2026-10-05, release). All Rights Reserved; the author's own download only. Pairs with Xaero's Minimap."
+    },
+    {
+      "id": "embeddium",
+      "name": "Embeddium",
+      "slug": "embeddium",
+      "project_id": "sk9rgfiA",
+      "version_id": "UTbfe5d1",
+      "version_number": "0.3.31+mc1.20.1",
+      "published": "2024-08-31",
+      "filename": "embeddium-0.3.31+mc1.20.1.jar",
+      "size": 1320675,
+      "sha1": "bb2fa8f3e493af16af9160d049f96c614a1faf2f",
+      "sha512": "ffbf2da4685260a4d5c14c621708bd20722563f084f042d3dfb0a7b87f048e39299648c854a93939129da0d23a15a91ec628560d601e76074b08e275f6e132e9",
+      "license": "LGPL-3.0-only",
+      "mod_id": "embeddium",
+      "role": "rendering: the Forge-side Sodium alternative (chunk meshing and rendering performance); client only",
+      "sets": [
+        "performance"
+      ],
+      "requires": [],
+      "placement": "classpath",
+      "side": {
+        "client": "required",
+        "server": "unsupported"
+      },
+      "source_url": "https://modrinth.com/mod/embeddium/version/UTbfe5d1",
+      "distribution": "download from the author's page; never commit the binary",
+      "notes": "Embeddium 0.3.31+mc1.20.1 (the last 1.20.1 release). LGPL-3.0. Client only. Incompatible with Rubidium and TexTrue's Embeddium Options (neither is installed). The only renderer replacement in the pack."
+    },
+    {
+      "id": "modernfix",
+      "name": "ModernFix",
+      "slug": "modernfix",
+      "project_id": "nmDcB62a",
+      "version_id": "bDP3S7Vh",
+      "version_number": "5.27.88+mc1.20.1",
+      "published": "2026-10-11",
+      "filename": "modernfix-forge-5.27.88+mc1.20.1.jar",
+      "size": 1009661,
+      "sha1": "c550424a1a5435dfc838672e1df61289717cb2cc",
+      "sha512": "f972dcf51fbe55568e11746f2cb39cfc9f477e3b6068f77e2e058b21bc8d3d9138f10744de0609842d65d75f439c4ef09fb19274a9480fad0bb57c1f61cfef3e",
+      "license": "LGPL-3.0-only",
+      "mod_id": "modernfix",
+      "role": "performance: faster start-up and lower memory on the client and the dedicated server",
+      "sets": [
+        "performance"
+      ],
+      "requires": [],
+      "placement": "classpath",
+      "side": {
+        "client": "optional",
+        "server": "optional"
+      },
+      "source_url": "https://modrinth.com/mod/modernfix/version/bDP3S7Vh",
+      "distribution": "download from the author's page; never commit the binary",
+      "notes": "ModernFix 5.27.88+mc1.20.1 (2026-10-11, release; 5.27.89 is a day old and not adopted). LGPL-3.0. Client and server."
+    },
+    {
+      "id": "ferritecore",
+      "name": "FerriteCore",
+      "slug": "ferrite-core",
+      "project_id": "uXXizFIs",
+      "version_id": "DG5Fn9Sz",
+      "version_number": "6.0.1",
+      "published": "2023-10-22",
+      "filename": "ferritecore-6.0.1-forge.jar",
+      "size": 123034,
+      "sha1": "417fb6ce8f52abf40bd9d0390371790f9576f8ba",
+      "sha512": "a1960a7c03dc32d4ccaccaf28afdd9b078758bbd62d15a91d4039a83fa9397a098e89b69591f6bd5190254d9ee97e502504154b9aec764adb8c65f000b75ba2c",
+      "license": "MIT",
+      "mod_id": "ferritecore",
+      "role": "performance: lower memory use (block state and model deduplication)",
+      "sets": [
+        "performance"
+      ],
+      "requires": [],
+      "placement": "classpath",
+      "side": {
+        "client": "optional",
+        "server": "optional"
+      },
+      "source_url": "https://modrinth.com/mod/ferrite-core/version/DG5Fn9Sz",
+      "distribution": "download from the author's page; never commit the binary",
+      "notes": "FerriteCore 6.0.1 (the 1.20.1 Forge release). MIT. Client and server."
+    },
+    {
+      "id": "entityculling",
+      "name": "Entity Culling",
+      "slug": "entityculling",
+      "project_id": "NNAgCjsB",
+      "version_id": "HUUJcFnt",
+      "version_number": "1.11.3",
+      "published": "2026-10-08",
+      "filename": "entityculling-forge-1.11.3-mc1.20.1.jar",
+      "size": 1515076,
+      "sha1": "d3c513e88ef9f5cdd7e27d17d923d4dca69c6d55",
+      "sha512": "be5be53897ae7403a202e4b0b094701bcc4ecdb94afcf2ea144cd07d9a4553a1fc6a88917732a72c477d01c33583162cffb9c4a19d259089deb018878eec1da8",
+      "license": "LicenseRef-tr7zw-Protective-License",
+      "mod_id": "entityculling",
+      "role": "rendering: skips entities and block entities the player cannot see (matters for a populated city) (DEFERRED, D-113: see notes)",
+      "sets": [
+        "performance_deferred"
+      ],
+      "requires": [],
+      "placement": "classpath",
+      "side": {
+        "client": "required",
+        "server": "unsupported"
+      },
+      "source_url": "https://modrinth.com/mod/entityculling/version/HUUJcFnt",
+      "distribution": "download from the author's page; never commit the binary",
+      "notes": "DEFERRED (D-113): crashes the development-environment client at load (its bundled TRansition library is a nested jar that ForgeGradle does not remap, NoSuchMethodError Minecraft.m_91087_). Untested in a production-style client, which this project cannot launch yet. Not in any default set."
+    },
+    {
+      "id": "immediatelyfast",
+      "name": "ImmediatelyFast",
+      "slug": "immediatelyfast",
+      "project_id": "5ZwdcRci",
+      "version_id": "rvsLEEZU",
+      "version_number": "1.5.5+1.20.4-forge",
+      "published": "2026-06-30",
+      "filename": "ImmediatelyFast-Forge-1.5.5+1.20.4.jar",
+      "size": 532063,
+      "sha1": "9eacd407b7dea636d375dc47335d92f616484ea2",
+      "sha512": "8fab0605880f6b3875dc6d9d7bc8d69612a3e61a0bfc5adeac3240248715042f04885a09bc4d29383ab809cfc536dff84c6150af56ebd8f08128a1c42909c323",
+      "license": "LGPL-3.0-or-later",
+      "mod_id": "immediatelyfast",
+      "role": "rendering: faster immediate-mode drawing (GUI text, HUD, entities); client only (DEFERRED, D-113: see notes)",
+      "sets": [
+        "performance_deferred"
+      ],
+      "requires": [],
+      "placement": "classpath",
+      "side": {
+        "client": "required",
+        "server": "unsupported"
+      },
+      "source_url": "https://modrinth.com/mod/immediatelyfast/version/rvsLEEZU",
+      "distribution": "download from the author's page; never commit the binary",
+      "notes": "DEFERRED (D-113): 1.5.5 is a 1.20.4-labelled build; its hud_batching mixin could not find GuiGraphics.fillIntoBuffer's target and aborted the development-environment client (MixinTransformerError). Untested in a production-style client. Not in any default set."
+    },
+    {
+      "id": "searchables",
+      "name": "Searchables",
+      "slug": "searchables",
+      "project_id": "fuuu3xnx",
+      "version_id": "PM9yAW1G",
+      "version_number": "1.0.3",
+      "published": "2024-04-23",
+      "filename": "Searchables-forge-1.20.1-1.0.3.jar",
+      "size": 77732,
+      "sha1": "5b976f6e76ec74cdef21865e31f56bcb11558db7",
+      "sha512": "185617d6d446f3d4ef6c7d5c6ee4e2fb731a89f7495157313b21292ec6b8e3dbcc10c0379ab49ecb2d0c64d0a78df74750d7f7336d5e6c43516a7c92f278c0a2",
+      "license": "MIT",
+      "mod_id": "searchables",
+      "role": "library required by Controlling",
+      "sets": [
+        "qol"
+      ],
+      "requires": [],
+      "placement": "classpath",
+      "side": {
+        "client": "required",
+        "server": "unsupported"
+      },
+      "source_url": "https://modrinth.com/mod/searchables/version/PM9yAW1G",
+      "distribution": "download from the author's page; never commit the binary",
+      "notes": "Searchables 1.0.3. MIT. Client only."
+    },
+    {
+      "id": "controlling",
+      "name": "Controlling",
+      "slug": "controlling",
+      "project_id": "xv94TkTM",
+      "version_id": "LH6Bi6Am",
+      "version_number": "12.0.2",
+      "published": "2023-07-16",
+      "filename": "Controlling-forge-1.20.1-12.0.2.jar",
+      "size": 115280,
+      "sha1": "6195a3d1464f8fb641d7e165163aea1a857ce08e",
+      "sha512": "3945bf3f6d843957f13584dfc70bede253d1e48f0dcb96f647fbcc6fcd3d1748a0dd9c6ca5c882e07a41f98eb84057934f51e43ab6023ed0a19695de2e6fe9f5",
+      "license": "MIT",
+      "mod_id": "controlling",
+      "role": "quality of life: a searchable, conflict-highlighting key bindings screen (the pack adds a dozen keys)",
+      "sets": [
+        "qol"
+      ],
+      "requires": [
+        "searchables"
+      ],
+      "placement": "classpath",
+      "side": {
+        "client": "required",
+        "server": "unsupported"
+      },
+      "source_url": "https://modrinth.com/mod/controlling/version/LH6Bi6Am",
+      "distribution": "download from the author's page; never commit the binary",
+      "notes": "Controlling 12.0.2. MIT. Client only."
+    },
+    {
+      "id": "appleskin",
+      "name": "AppleSkin",
+      "slug": "appleskin",
+      "project_id": "EsAfCjCV",
+      "version_id": "XdXDExVF",
+      "version_number": "2.5.1+mc1.20.1",
+      "published": "2023-09-27",
+      "filename": "appleskin-forge-mc1.20.1-2.5.1.jar",
+      "size": 47428,
+      "sha1": "81919356f84eab14258db98924b66c3c38e372b1",
+      "sha512": "3176f928fb6c60d27f5edb610ca4ab0236175404eebf32797a1ec6cdd794bb294a260231579578536d03571377e43c6181adc75d8dd2c0733f17fce4f7e636b9",
+      "license": "Unlicense",
+      "mod_id": "appleskin",
+      "role": "quality of life: shows what food will restore on the hunger bar (works with the survival set's thirst bar)",
+      "sets": [
+        "qol"
+      ],
+      "requires": [],
+      "placement": "classpath",
+      "side": {
+        "client": "optional",
+        "server": "optional"
+      },
+      "source_url": "https://modrinth.com/mod/appleskin/version/XdXDExVF",
+      "distribution": "download from the author's page; never commit the binary",
+      "notes": "AppleSkin 2.5.1+mc1.20.1. Unlicense. Client required for the overlay; the server may carry it."
+    },
+    {
+      "id": "mousetweaks",
+      "name": "Mouse Tweaks",
+      "slug": "mouse-tweaks",
+      "project_id": "aC3cM3Vq",
+      "version_id": "7JVXOe3K",
+      "version_number": "1.20.1-2.25.1-forge",
+      "published": "2024-05-12",
+      "filename": "MouseTweaks-forge-mc1.20.1-2.25.1.jar",
+      "size": 76237,
+      "sha1": "d751153e722a4e014691c83f39f5b07c6ec5333c",
+      "sha512": "a3bb0272c0a1a3be9250dfee030bb8f86217fa6a32bd534be8c940fdd8c466c800c2df85874877983ced36ecfc28c8ced6c0d42107c1ab621385b4be9a7c65eb",
+      "license": "BSD-3-Clause",
+      "mod_id": "mousetweaks",
+      "role": "quality of life: drag and scroll item moving in inventories (the pack's stock-and-shelf screens are inventory heavy)",
+      "sets": [
+        "qol"
+      ],
+      "requires": [],
+      "placement": "classpath",
+      "side": {
+        "client": "required",
+        "server": "unsupported"
+      },
+      "source_url": "https://modrinth.com/mod/mouse-tweaks/version/7JVXOe3K",
+      "distribution": "download from the author's page; never commit the binary",
+      "notes": "Mouse Tweaks 2.25.1. BSD-3-Clause. Client only."
+    },
+    {
+      "id": "lostcities_modern_tweaks",
+      "name": "Lost Cities Modern Tweaks",
+      "slug": "lost-cities-modern-tweaks",
+      "project_id": "HdIQwHGq",
+      "version_id": "BWJEXXxe",
+      "version_number": "1.1.2",
+      "published": "2026-09-13",
+      "filename": "lostcities-modern-tweaks-v1.1.2.jar",
+      "size": 336497,
+      "sha1": "3b697329f838c64d0c8715c6992abb7925188576",
+      "sha512": "51efe8c23e718dfa8909842501e72059a06dbcd9a47f2c2d75a554b9dc8d43595b606fa81ce4deec2c0cbf46978a5bd2f12f79afca92de4da342bc9c8facd3a5",
+      "license": "MIT",
+      "mod_id": "lostcities_modern_tweaks",
+      "role": "world: street furniture, new building designs and palettes, more roofs and parks, a factory multi-building (a datapack packaged as a mod; vanilla blocks only) (REJECTED for now, D-113: see notes)",
+      "sets": [
+        "citytweaks_deferred"
+      ],
+      "requires": [
+        "lostcities"
+      ],
+      "placement": "classpath",
+      "side": {
+        "client": "optional",
+        "server": "required"
+      },
+      "source_url": "https://modrinth.com/mod/lost-cities-modern-tweaks/version/BWJEXXxe",
+      "distribution": "download from the author's page; never commit the binary",
+      "notes": "Lost Cities Modern Tweaks 1.1.2 (2026-09-13). MIT. REJECTED for now (D-113): on a fresh archipelago world it made Lost Cities log 'Error generating chunk' (a NullPointerException in ChunkDriver.correct) for 249 of the 507 city chunks probed, against none without it (scripts/run_city_probe.py --sets world,citytweaks). Probable cause, read from the jar and not proven: its global 'hanging_root' stuff draws the palette character ' which only its own styles define, and our three styles do not. It is pinned only so that its exact release is on record; no launch, test or workflow names the set."
+    },
+    {
+      "id": "securitycraft",
+      "name": "SecurityCraft",
+      "slug": "security-craft",
+      "project_id": "v8jzRtAt",
+      "version_id": "PhNy7dJx",
+      "version_number": "v1.10.2.1",
+      "published": "2026-06-28",
+      "filename": "[1.20.1] SecurityCraft v1.10.2.1.jar",
+      "size": 4995865,
+      "sha1": "6184ca6af68a0a4e8ca4dd28a542b5d1a6c2e3ab",
+      "sha512": "587aa59ec4cdada8537d91c6353526f189aff9ece4df2d29cd5b1f0942c099713b319c0890016f2b75218aab243ec5a45f411f97c5df0f5b383b521883096208",
+      "license": "MIT",
+      "mod_id": "securitycraft",
+      "role": "security devices (keypad doors, lasers, alarms, cameras) under Core's authority: an experimental trial set (D-140)",
+      "sets": [
+        "securitycraft"
+      ],
+      "requires": [],
+      "placement": "classpath",
+      "side": {
+        "client": "required",
+        "server": "required"
+      },
+      "source_url": "https://modrinth.com/mod/security-craft/version/PhNy7dJx",
+      "distribution": "download from the author's page; never commit the binary",
+      "notes": "SecurityCraft v1.10.2.1 for Minecraft 1.20.1 (2026-06-28, release; upstream's 'recommended' for 1.20.1). MIT (mods.toml and the repository LICENSE; no separate asset licence found). Requires Forge 47.3.30+ and nothing else; required on client and server; no world generation. EXPERIMENTAL TRIAL ONLY (D-140): an opt-in set that no default launch includes. Core owns every device it installs through one system owner, removes every SecurityCraft recipe while the set is loaded (devices come only from Core), refuses a player's placement of any SecurityCraft block, the use of any SecurityCraft item but the camera monitor, the manual and keycards, and every SecurityCraft creature or projectile (sentries, mines, the I.M.S., security boats), and ships the server config in content/integrations/securitycraft. See docs/technical/securitycraft-trial.md."
+    },
+    {
+      "id": "mapperbase",
+      "name": "Mapper Base",
+      "slug": "mapper-base",
+      "project_id": "IAUIloQw",
+      "version_id": "peVfNJIN",
+      "version_number": "1.20.1-6.0.0.0",
+      "published": "2025-04-26",
+      "filename": "mapperbase-1.20.1-6.0.0.0.jar",
+      "size": 166269,
+      "sha1": "28261acfd87bb7f1fb6ee8f8f003e32f72b7b646",
+      "sha512": "58e1d1d50385075c39f7a8d98524121efd244a480ee5cd9a77bba6dcbfad1235f05b7bce92f2f36039975321bba27147f19221a7725e489b792f065bdb4a95bb",
+      "license": "MIT",
+      "mod_id": "mapperbase",
+      "role": "library EmbellishCraft requires (7 steel blocks)",
+      "sets": [
+        "furniture"
+      ],
+      "requires": [],
+      "placement": "classpath",
+      "side": {
+        "client": "required",
+        "server": "required"
+      },
+      "source_url": "https://modrinth.com/mod/mapper-base/version/peVfNJIN",
+      "distribution": "download from the author's page; never commit the binary",
+      "notes": "MIT. Mapper Base 1.20.1-6.0.0.0, the only 1.20.1 Forge build; no world generation, no creatures. FURNITURE SET (ninth pass, D-192): opt-in, runtime-only, never committed; used to load private furnished buildings that name these blocks and to evaluate the mods."
+    },
+    {
+      "id": "embellishcraft",
+      "name": "EmbellishCraft",
+      "slug": "embellishcraft",
+      "project_id": "OYTC1n5i",
+      "version_id": "FRmEdR2L",
+      "version_number": "1.20.1-7.0.0.0",
+      "published": "2025-04-26",
+      "filename": "embellishcraft-1.20.1-7.0.0.0.jar",
+      "size": 5220125,
+      "sha1": "2d3ec70b9b2f94536e2354c08be5424c8a49c494",
+      "sha512": "d3d30055521ff3856a248d73afb2aea5302d70b793447341aef7bdbe96d71b72082fba6344f2a7ec7657528f4b866385d829a284d5bacd2084117a2d66609d84",
+      "license": "MIT",
+      "mod_id": "embellishcraft",
+      "role": "decorative blocks and furniture (stones, tiles, corrugated metal, fancy beds, chairs, tables, lamps)",
+      "sets": [
+        "furniture"
+      ],
+      "requires": [
+        "mapperbase"
+      ],
+      "placement": "classpath",
+      "side": {
+        "client": "required",
+        "server": "required"
+      },
+      "source_url": "https://modrinth.com/mod/embellishcraft/version/FRmEdR2L",
+      "distribution": "download from the author's page; never commit the binary",
+      "notes": "MIT. EmbellishCraft 1.20.1-7.0.0.0, the only 1.20.1 Forge build; requires Mapper Base. The 1114 block names of the 1.18.2 build are unchanged. It adds six decorative stone blobs to every overworld biome with no config switch; Core's own data turns them off (data/embellishcraft/forge/biome_modifier, forge:none) so the no-natural-ore package stays true. FURNITURE SET (ninth pass, D-192): opt-in, runtime-only, never committed; used to load private furnished buildings that name these blocks and to evaluate the mods."
+    },
+    {
+      "id": "pfm",
+      "name": "Paladin's Furniture Mod",
+      "slug": "paladins-furniture",
+      "project_id": "SISz7Qd3",
+      "version_id": "v8Wncly5",
+      "version_number": "1.20-v1.5.0-minecraftforge",
+      "published": "2026-08-10",
+      "filename": "paladin-furniture-mod-1.5.0-forge-mc1.20.1.jar",
+      "size": 6261408,
+      "sha1": "dd0a7003a40c390c793de08f05b0e99a0c3f2a6e",
+      "sha512": "3364ea28da88da4c3cb891bd0317f8e2e121f5cdc5361e9801ebe582eaec6b7a2fc6cdf98d41600d87ce3031cadc1ce66817169d987879f2f1b046dab1d786bf",
+      "license": "LicenseRef-GNU-LGPL-3-Code-Polyform-Shield-Assets",
+      "mod_id": "pfm",
+      "role": "functional furniture (kitchens, bathrooms, beds, chairs, sofas, lamps, fridges, stoves)",
+      "sets": [
+        "furniture"
+      ],
+      "requires": [],
+      "placement": "classpath",
+      "side": {
+        "client": "required",
+        "server": "required"
+      },
+      "source_url": "https://modrinth.com/mod/paladins-furniture/version/v8Wncly5",
+      "distribution": "download from the author's page; never commit the binary",
+      "notes": "Code LGPL-3.0, assets PolyForm Shield: private use with pinned downloads, never redistributed. 1.20-v1.5.0-minecraftforge; no dependency. Most of its blocks and their data are generated when the game first starts, so its registry is read from a running game (CityProbe --registry). Stoves cook, fridges and drawers store, sinks hold water like a cauldron. FURNITURE SET (ninth pass, D-192): opt-in, runtime-only, never committed; used to load private furnished buildings that name these blocks and to evaluate the mods."
+    },
+    {
+      "id": "another_furniture",
+      "name": "Another Furniture",
+      "slug": "another-furniture",
+      "project_id": "ulloLmqG",
+      "version_id": "S9tNKT5R",
+      "version_number": "3.0.4",
+      "published": "2025-10-21",
+      "filename": "another_furniture-forge-1.20.1-3.0.4.jar",
+      "size": 2463633,
+      "sha1": "bffc5f4d6ae0a906222990c9d0fa8a632b2aa8ed",
+      "sha512": "c57011a7e078cdb05ca05123d2ca3d01b1f3baca3555c067150e23d75268bb250b45a780da1488a49c08c46f6ed38e883f6cd47981babffe43b5f501984f1afc",
+      "license": "LicenseRef-Custom",
+      "mod_id": "another_furniture",
+      "role": "vanilla-styled furniture (chairs, tables, benches, shelves, drawers, shutters, curtains, flower boxes)",
+      "sets": [
+        "furniture"
+      ],
+      "requires": [],
+      "placement": "classpath",
+      "side": {
+        "client": "required",
+        "server": "required"
+      },
+      "source_url": "https://modrinth.com/mod/another-furniture/version/S9tNKT5R",
+      "distribution": "download from the author's page; never commit the binary",
+      "notes": "Code MIT, resources All Rights Reserved: private use with pinned downloads, never redistributed. 3.0.4. Its mods.toml names Create as OPTIONAL (mandatory=false), a compat hook that stays unused: Create is never installed (D-080). 11 blocks of the 1.18.2 build are gone (planter boxes, two wallpapers) and are mapped by the porter. FURNITURE SET (ninth pass, D-192): opt-in, runtime-only, never committed; used to load private furnished buildings that name these blocks and to evaluate the mods."
+    },
+    {
+      "id": "buildersdelight",
+      "name": "Builder's Delight",
+      "slug": "builders-delight",
+      "project_id": "CAASGC7r",
+      "version_id": "o5hPmXN6",
+      "version_number": "1.2.1",
+      "published": "2024-03-31",
+      "filename": "BuildersDelight-1.20.1-v.1.3.jar",
+      "size": 4580734,
+      "sha1": "ad9053d0711da8157f6dbe2cc7083f17fe7aa831",
+      "sha512": "1f2864674e4781ee73842f4e76b638ea9fca3646327ce23e963083298181fe3414a5f3a7c4669c6af2085a955065001c58d2e5979fc1579f6bb27801abc3a3fb",
+      "license": "LicenseRef-All-Rights-Reserved",
+      "mod_id": "buildersdelight",
+      "role": "decorative variants (eight styles per wood, stone and glass, chairs, tables, lanterns)",
+      "sets": [
+        "furniture"
+      ],
+      "requires": [],
+      "placement": "classpath",
+      "side": {
+        "client": "required",
+        "server": "required"
+      },
+      "source_url": "https://modrinth.com/mod/builders-delight/version/o5hPmXN6",
+      "distribution": "download from the author's page; never commit the binary",
+      "notes": "All Rights Reserved: private use with pinned downloads only. Modrinth version 1.2.1, file BuildersDelight-1.20.1-v.1.3.jar; no dependency, no world generation. One 1.18.2 block (calcite_8) is gone. FURNITURE SET (ninth pass, D-192): opt-in, runtime-only, never committed; used to load private furnished buildings that name these blocks and to evaluate the mods."
+    },
+    {
+      "id": "simplylight",
+      "name": "Simply Light",
+      "slug": "simply-light",
+      "project_id": "curseforge:300331",
+      "version_id": "curseforge-file:4832944",
+      "version_number": "1.20.1-1.4.6-build.50",
+      "published": "2023-11-01",
+      "filename": "simplylight-1.20.1-1.4.6-build.50.jar",
+      "size": 555625,
+      "sha1": "cfd851ffd2c3b451a96a19207dc6e084c1dfec73",
+      "sha512": "88ded2ae3e27851790c74c441df8e4a62b70edb50c6e4a11ab8770cff6eb7831b1c31bb007b87c96c67df1e9e134aa34701b62d5a1d6bd68512f374e805621e6",
+      "license": "MIT",
+      "mod_id": "simplylight",
+      "role": "plain architectural lights (illuminants, panels, edge lights, lamp posts)",
+      "sets": [
+        "furniture"
+      ],
+      "requires": [],
+      "placement": "classpath",
+      "side": {
+        "client": "required",
+        "server": "required"
+      },
+      "source_url": "https://www.curseforge.com/minecraft/mc-mods/simply-light/files/4832944",
+      "download_url": "https://mediafilez.forgecdn.net/files/4832/944/simplylight-1.20.1-1.4.6-build.50.jar",
+      "hash_source": "computed from the CurseForge CDN download on 2026-10-26; CurseForge's own metadata was not read (its API needs a key), so the hashes are this project's, not the author's",
+      "distribution": "download from the author's page; never commit the binary",
+      "notes": "MIT. CurseForge only (the Modrinth project of that name is an unrelated Fabric mod). 1.20.1-1.4.6-build.50, the newest 1.20.1 Forge file; no dependency, no block entities. Same 40 block names as 1.18.2. FURNITURE SET (ninth pass, D-192): opt-in, runtime-only, never committed; used to load private furnished buildings that name these blocks and to evaluate the mods."
+    },
+    {
+      "id": "cfm",
+      "name": "MrCrayfish's Furniture Mod (Legacy)",
+      "slug": "mrcrayfish-furniture-mod",
+      "project_id": "curseforge:55438",
+      "version_id": "curseforge-file:4602980",
+      "version_number": "7.0.0-pre36",
+      "published": "2023-06-22",
+      "filename": "cfm-forge-1.20.1-7.0.0-pre36.jar",
+      "size": 2613393,
+      "sha1": "66d0ac56f3f6f1efbd6ed7b3cb4a48824d0585c0",
+      "sha512": "b642a26812347b86940d5afdb3e70559a4fd7bfb8e4a62985db740919363b94f99b6c0624717a7fad227b4f0ebf20c299d939cf9a7dd7c21fcaae4155929adac",
+      "license": "GPL-3.0",
+      "mod_id": "cfm",
+      "role": "MrCrayfish's legacy furniture (cabinets, counters, sofas, chairs, tables, blinds) under its old cfm namespace",
+      "sets": [
+        "furniture"
+      ],
+      "requires": [],
+      "placement": "classpath",
+      "side": {
+        "client": "required",
+        "server": "required"
+      },
+      "source_url": "https://www.curseforge.com/minecraft/mc-mods/mrcrayfish-furniture-mod/files/4602980",
+      "download_url": "https://mediafilez.forgecdn.net/files/4602/980/cfm-forge-1.20.1-7.0.0-pre36.jar",
+      "hash_source": "computed from the CurseForge CDN download on 2026-10-26; CurseForge's own metadata was not read (its API needs a key), so the hashes are this project's, not the author's",
+      "distribution": "download from the author's page; never commit the binary",
+      "notes": "GPL-3.0. CurseForge only. 7.0.0-pre36 is a BETA from 2023-06-22 and the last file of the legacy project: unmaintained. It is kept because the private buildings name cfm blocks and MrCrayfish's maintained Refurbished Furniture uses another namespace. Its mail boxes and post box send items across the world past every checkpoint, so Core refuses their use while the set is loaded (FurnitureGuard). 28 stone furniture blocks of the 1.18.2 build are gone and are mapped by the porter. FURNITURE SET (ninth pass, D-192): opt-in, runtime-only, never committed; used to load private furnished buildings that name these blocks and to evaluate the mods."
     }
   ],
   "external": [

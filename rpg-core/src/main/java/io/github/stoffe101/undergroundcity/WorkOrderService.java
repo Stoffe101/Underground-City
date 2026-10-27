@@ -25,9 +25,10 @@ public final class WorkOrderService {
     interface Operation { void run(WorkOrderLedger ledger, CitizenState.Citizen citizen); }
 
     static void guarded(ServerPlayer player, BlockPos pos, Operation operation) {
-        if (!TerminalNetwork.requestSlot(player)) return;
-        if (!TerminalNetwork.authorizedForStarterShop(player, pos)) {
-            player.sendSystemMessage(Component.literal("Register and use a nearby placed Operations Terminal."));
+        if (!TerminalNetwork.requestSlot(player)) { TerminalNetwork.refreshAfterDrop(player, pos); return; }
+        if (!TerminalNetwork.authorizedForExchange(player, pos)) {
+            player.sendSystemMessage(Component.literal(ShopCounters.INSTANCE.all().isEmpty() ? "Register and use a nearby placed Operations Terminal."
+                : "Register and use a nearby placed Operations Terminal, or a shop counter while its shopkeeper is there."));
             return;
         }
         try {
@@ -51,8 +52,10 @@ public final class WorkOrderService {
 
     public static void action(ServerPlayer player, BlockPos pos, int action, String id, UUID nonce) {
         guarded(player, pos, (ledger, citizen) -> {
-            if (Exchanges.at(player.level(), pos).map(Exchanges.Exchange::wayside).orElse(false)) {
-                throw new IllegalStateException("Orders are posted in the cities. This desk only sells supplies."); // a wayside desk is a shop, not an office
+            var exchange = Exchanges.at(player.level(), pos);
+            if (exchange.map(Exchanges.Exchange::shopOnly).orElse(false)) {
+                // a wayside desk and a shop counter are shops, not offices
+                throw new IllegalStateException(exchange.get().counter() ? "This is a shop counter. Orders are taken at an Operations Terminal." : "Orders are posted in the cities. This desk only sells supplies.");
             }
             switch (action) {
                 case 0 -> accept(player, ledger, citizen, id);
@@ -61,6 +64,7 @@ public final class WorkOrderService {
                     ledger.cancel(player.getUUID(), nonce);
                     player.sendSystemMessage(Component.literal("Order cancelled. Employer demand returned."));
                 }
+                case 3 -> CrewContracts.fillOrder(player, ledger, id);   // a supplier fills a Crew contract part (D-170)
                 default -> throw new IllegalStateException("Unknown work-order action");
             }
         });
@@ -69,7 +73,7 @@ public final class WorkOrderService {
     /** Career, level and rival-city visit gates for accepting a catalog order. */
     static void accept(ServerPlayer player, WorkOrderLedger ledger, CitizenState.Citizen citizen, String id) {
         WorkOrder order = WorkOrderCatalog.INSTANCE.find(id);
-        if (order == null || !order.career().equals(citizen.career)) {
+        if (order == null || !order.openTo(citizen.career)) {
             throw new IllegalStateException("This order belongs to another profession");
         }
         if (citizen.careerLevel() < order.level()) throw new IllegalStateException("Career level " + order.level() + " required");
@@ -84,14 +88,24 @@ public final class WorkOrderService {
             SkillNode needed = SkillCatalog.INSTANCE.find(terms.requiresSkill());
             throw new IllegalStateException("Requires the skill " + (needed == null ? terms.requiresSkill() : needed.title()));
         }
+        String crewRefusal = CrewContracts.refusal(player.server, ledger, player.getUUID(), terms.crewPart());
+        if (crewRefusal != null) throw new IllegalStateException(crewRefusal);
+        String civicRefusal = CivicProjects.refusal(ledger, terms);
+        if (civicRefusal != null) throw new IllegalStateException(civicRefusal);
+        String raidRefusal = Raids.refusal(player, terms);
+        if (raidRefusal != null) throw new IllegalStateException(raidRefusal);
+        if (!terms.requiresFacility().isEmpty() && !Premises.holds(player.server, player.getUUID(), terms.requiresFacility())) {
+            throw new IllegalStateException("A bulk order: it needs trade premises you work in (a commercial workshop or a warehouse, rented or bought on the Home page).");
+        }
         if (terms.minTrust() > 0) {
-            int trust = ledger.trust(player.getUUID(), terms.buyer());
+            int trust = GeneralSkills.effectiveTrust(citizen, ledger, player.getUUID(), terms.buyer());   // a legal buyer counts one step more for Social 3 (D-174)
             BuyerCatalog.Buyer buyer = BuyerCatalog.INSTANCE.find(terms.buyer());
             if (trust < terms.minTrust()) {
                 throw new IllegalStateException((buyer == null ? terms.buyer() : buyer.title()) + " does not trust you with this yet (" + trust + "/" + terms.minTrust() + "). Finish smaller contracts for them first.");
             }
         }
-        ledger.accept(player.getUUID(), order);
+        UUID nonce = ledger.accept(player.getUUID(), order);
+        Raids.opened(player, ledger, order, nonce);   // a raid's job names its target (D-173)
         CitizenState.get(player.server).markJourney(player.getUUID(), "accepted");
         net.minecraft.network.chat.MutableComponent message = Component.literal("Accepted: " + order.title() + ". Deliver ");
         boolean first = true;
@@ -125,7 +139,7 @@ public final class WorkOrderService {
     static void complete(ServerPlayer player, WorkOrderLedger ledger, UUID nonce, BlockPos terminal) {
         WorkOrder order = ledger.checkActive(player.getUUID(), nonce);
         CitizenState.Citizen citizen = CitizenState.get(player.server).find(player.getUUID()).orElseThrow();
-        if (!order.career().equals(citizen.career)) throw new IllegalStateException("Profession changed");
+        if (!order.openTo(citizen.career)) throw new IllegalStateException("Profession changed");
         WorkOrder.Terms terms = order.terms();
         BuyerCatalog.Buyer buyer = null;
         if (!terms.buyer().isEmpty()) {
@@ -140,12 +154,15 @@ public final class WorkOrderService {
         Inventory after = new Inventory(player);
         after.load(player.getInventory().save(new ListTag()));
         java.util.List<String> missing = new java.util.ArrayList<>();
+        double gradeWeight = 0;   // the price weight of every unit taken (Standard 1.0, Fine 1.25, Reserve 1.6; D-163)
+        int units = 0;
         for (WorkOrder.Requirement requirement : order.requirements()) {
             int needed = requirement.count();
             for (int slot = 0; slot < after.items.size() && needed > 0; slot++) {
                 ItemStack stack = after.items.get(slot);
                 if (order.matches(requirement, stack)) {
                     int take = Math.min(needed, stack.getCount());
+                    gradeWeight += take * Workshops.GRADE_PRICE[Workshops.grade(stack)]; units += take;
                     stack.shrink(take); needed -= take;
                 }
             }
@@ -158,12 +175,14 @@ public final class WorkOrderService {
             after.add(stack);
             if (!stack.isEmpty()) throw new IllegalStateException("Not enough inventory space for the reward items. Free some slots and deliver again.");
         }
-        final int credits = SkillService.payout(citizen, order);   // the order's snapshot plus the career's contract-rate skills, fixed here and journaled below
+        final int skilled = SkillService.payout(citizen, order);   // the order's snapshot plus the career's contract-rate skills
+        final int credits = gradedPayout(skilled, gradeWeight, units);   // and the grade of what was delivered, fixed here and journaled below
         double target = QShopEconomy.balance(player) + credits;
         if (target > 1_000_000_000) throw new IllegalStateException("Wallet limit reached");
         int xpTarget = ProgressionRules.totalXp(citizen.careerXp(), order.xp());
         final int levelBefore = citizen.careerLevel();
         java.util.Map<String, Integer> trustAfter = java.util.Map.of(), heatAfter = java.util.Map.of();
+        final int trustBefore = buyer == null ? 0 : ledger.trust(player.getUUID(), buyer.id());
         boolean witnessed = false;
         if (buyer != null) {
             if (terms.trustGain() > 0) trustAfter = java.util.Map.of(buyer.id(), Math.min(BuyerCatalog.MAX_TRUST, ledger.trust(player.getUUID(), buyer.id()) + terms.trustGain()));
@@ -175,12 +194,23 @@ public final class WorkOrderService {
                 if (witnessed) heatAfter = java.util.Map.of(buyer.city(), ledger.heatAfter(player.getUUID(), buyer.city(), 1));
             }
         }
-        ledger.prepare(player.getUUID(), nonce, after.save(new ListTag()), target, xpTarget, trustAfter, heatAfter);
+        // a Crew contract part (D-170): refused before anything is taken when the Crew already has it, else recorded against the Crew by this settlement
+        String crewRefusal = CrewContracts.refusal(player.server, ledger, player.getUUID(), terms.crewPart());
+        if (crewRefusal != null) throw new IllegalStateException(crewRefusal + " Cancel the order to free it.");
+        CompoundTag crewRecord = CrewContracts.deliveryRecord(player.server, player.getUUID(), terms.crewPart());
+        // a civic contribution (D-171): refused once the project is finished, else counted by this settlement
+        String civicRefusal = CivicProjects.refusal(ledger, terms);
+        if (civicRefusal != null) throw new IllegalStateException(civicRefusal + " Cancel the order to free it.");
+        CivicProjects.deliveryRecord(terms, crewRecord);
+        ledger.prepare(player.getUUID(), nonce, after.save(new ListTag()), target, xpTarget, trustAfter, heatAfter, crewRecord);
         recover(player, ledger);
+        if (crewRecord.hasUUID("crew")) CrewContracts.afterSettlement(player.server, ledger, crewRecord.getUUID("crew"), CrewContracts.split(terms.crewPart())[0]);
+        if (!terms.civic().isEmpty()) CivicProjects.afterSettlement(player.server, ledger, terms.civic());
         CrewService.sweepIncome(player, credits, nonce); // fully shared finances only; never changes the settlement above
         CitizenState.get(player.server).bumpJourney(player.getUUID(), "deliveries");
+        String extra = (skilled > order.credits() ? " + " + (skilled - order.credits()) + " for your skills" : "") + (credits > skilled ? " + " + (credits - skilled) + " for the grade" : "");
         player.sendSystemMessage(Component.literal("Delivered " + order.title() + ": +" + credits
-            + " credits" + (credits > order.credits() ? " (" + order.credits() + " + " + (credits - order.credits()) + " for your skills)" : "") + ", +" + order.xp() + " career XP. Level " + citizen.careerLevel() + "."));
+            + " credits" + (extra.isEmpty() ? "" : " (" + order.credits() + extra + ")") + ", +" + order.xp() + " career XP. Level " + citizen.careerLevel() + "."));
         Notice.send(player, Notice.Kind.DELIVERED, "Delivered", order.title() + ": +" + credits + " credits, +" + order.xp() + " XP");
         if (citizen.careerLevel() > levelBefore) Notice.send(player, Notice.Kind.SKILL, "Level " + citizen.careerLevel(), TerminalScreenText.capitalize(citizen.career) + " level up. A skill point is waiting.");
         if (!terms.rewards().isEmpty()) {
@@ -191,6 +221,13 @@ public final class WorkOrderService {
         if (witnessed) Notice.send(player, Notice.Kind.HEAT, "Seen at the hand-off", "The " + TerminalScreenText.capitalize(buyer.city()) + " guard will search you more closely for a while.");
         if (buyer != null && terms.trustGain() > 0) player.sendSystemMessage(Component.literal(buyer.title() + " trusts you a little more (" + ledger.trust(player.getUUID(), buyer.id()) + "/" + BuyerCatalog.MAX_TRUST + ")."));
         if (witnessed) player.sendSystemMessage(Component.literal("Someone noticed the hand-off. The " + TerminalScreenText.capitalize(buyer.city()) + " guard will search you more closely for a while."));
+        GeneralSkills.delivered(player, order, credits, buyer != null && ledger.trust(player.getUUID(), buyer.id()) > trustBefore);   // Trading and Social (D-174), after the settlement
+    }
+
+    /** The credits for a delivery whose {@code units} weighed {@code gradeWeight} in all: Standard goods pay the order's credits, Fine and Reserve goods pay more in proportion (D-163). */
+    static int gradedPayout(int credits, double gradeWeight, int units) {
+        if (units <= 0 || gradeWeight <= units) return credits;
+        return (int) Math.round(credits * Math.min(Workshops.GRADE_PRICE[2], gradeWeight / units));
     }
 
     /** Prepared absolute targets are replayed BEFORE any post-login interaction. */

@@ -84,7 +84,7 @@
     },
     {
       "id": "licensed_cultivar_supply",
-      "title": "Licensed controlled-crop supply",
+      "title": "Licensed cannabis supply",
       "career": "farmer",
       "level": 10,
       "legality": "legal",
@@ -94,14 +94,14 @@
       "xp": 400,
       "requirements": [
         {
-          "item": "underground_city:sable_leaf_bale",
+          "item": "underground_city:cannabis_flower",
           "count": 6
         }
       ]
     },
     {
       "id": "quiet_bales",
-      "title": "Quiet bale delivery",
+      "title": "Quiet cannabis delivery",
       "career": "farmer",
       "level": 9,
       "legality": "underground",
@@ -114,7 +114,7 @@
       "xp": 380,
       "requirements": [
         {
-          "item": "underground_city:sable_leaf_bale",
+          "item": "underground_city:cannabis_flower",
           "count": 6
         }
       ],
@@ -136,17 +136,55 @@
       "xp": 600,
       "requirements": [
         {
-          "item": "underground_city:sable_leaf_bale",
+          "item": "underground_city:cannabis_flower",
           "count": 12
         }
       ],
       "rewards": [
         {
-          "item": "underground_city:sable_cutting",
+          "item": "underground_city:cannabis_seeds",
           "count": 2
         }
       ],
       "origin": "valewood"
+    },
+    {
+      "id": "dried_for_marrow",
+      "title": "Dried cannabis for Marrow",
+      "career": "farmer",
+      "level": 10,
+      "legality": "underground",
+      "requires_skill": "farmer.underground_trade",
+      "buyer": "marrow",
+      "trust_gain": 1,
+      "capacity": 2,
+      "refill_ticks": 18000,
+      "credits": 380,
+      "xp": 420,
+      "requirements": [
+        {
+          "item": "underground_city:dried_cannabis",
+          "count": 4
+        }
+      ],
+      "origin": "valewood"
+    },
+    {
+      "id": "licensed_dried_supply",
+      "title": "Licensed dried cannabis",
+      "career": "farmer",
+      "level": 11,
+      "legality": "legal",
+      "requires_skill": "farmer.controlled_crop_licence",
+      "buyer": "blackwater_dispensary",
+      "credits": 360,
+      "xp": 440,
+      "requirements": [
+        {
+          "item": "underground_city:dried_cannabis",
+          "count": 4
+        }
+      ]
     },
     {
       "id": "tavern_table_wine",
@@ -530,16 +568,16 @@
       "requires_skill": "technician.municipal_repairs",
       "capacity": 4,
       "refill_ticks": 6000,
-      "credits": 160,
+      "credits": 210,
       "xp": 280,
       "requirements": [
         {
           "item": "minecraft:comparator",
-          "count": 4
+          "count": 2
         },
         {
           "item": "minecraft:repeater",
-          "count": 8
+          "count": 4
         }
       ]
     },
@@ -550,7 +588,7 @@
       "level": 5,
       "legality": "legal",
       "requires_skill": "technician.automation_install",
-      "credits": 190,
+      "credits": 290,
       "xp": 340,
       "requirements": [
         {
@@ -559,7 +597,7 @@
         },
         {
           "item": "minecraft:observer",
-          "count": 6
+          "count": 4
         }
       ],
       "rewards": [
@@ -617,10 +655,237 @@
         }
       ],
       "origin": "blackwater"
+    },
+    {
+      "id": "bakery_flour",
+      "title": "Flour for the Valewood bakery",
+      "career": "farmer",
+      "level": 2,
+      "legality": "legal",
+      "requires_skill": "farmer.fundamentals",
+      "capacity": 3,
+      "refill_ticks": 6000,
+      "credits": 80,
+      "xp": 220,
+      "requirements": [
+        {
+          "item": "underground_city:flour",
+          "count": 16
+        }
+      ]
+    },
+    {
+      "id": "market_produce",
+      "title": "Produce crates for the corner stores",
+      "career": "farmer",
+      "level": 3,
+      "legality": "legal",
+      "requires_skill": "farmer.greenhouse_management",
+      "capacity": 3,
+      "refill_ticks": 9000,
+      "credits": 200,
+      "xp": 340,
+      "requirements": [
+        {
+          "item": "underground_city:produce_crate",
+          "count": 3
+        },
+        {
+          "item": "underground_city:fruit_crate",
+          "count": 2
+        }
+      ]
+    },
+    {
+      "id": "pub_berry_wine",
+      "title": "Berry wine for the pub",
+      "career": "vintner",
+      "level": 2,
+      "legality": "legal",
+      "requires_skill": "vintner.fundamentals",
+      "capacity": 3,
+      "refill_ticks": 9000,
+      "credits": 120,
+      "xp": 260,
+      "requirements": [
+        {
+          "item": "underground_city:berry_wine",
+          "count": 6
+        }
+      ]
+    },
+    {
+      "id": "tavern_cider",
+      "title": "Cider on tap",
+      "career": "vintner",
+      "level": 3,
+      "legality": "legal",
+      "requires_skill": "vintner.cellar_craft",
+      "capacity": 3,
+      "refill_ticks": 9000,
+      "credits": 135,
+      "xp": 300,
+      "requirements": [
+        {
+          "item": "underground_city:apple_cider",
+          "count": 8
+        }
+      ]
+    },
+    {
+      "id": "estate_aged_wine",
+      "title": "Aged wine for an estate dinner",
+      "career": "vintner",
+      "level": 6,
+      "legality": "legal",
+      "requires_skill": "vintner.estate_vintages",
+      "credits": 230,
+      "xp": 440,
+      "requirements": [
+        {
+          "item": "underground_city:aged_wine",
+          "count": 4
+        }
+      ]
+    },
+    {
+      "id": "licensed_grain_spirit",
+      "title": "Licensed grain spirit for the taproom",
+      "career": "vintner",
+      "level": 10,
+      "legality": "legal",
+      "requires_skill": "vintner.distillers_licence",
+      "buyer": "blackwater_taproom",
+      "credits": 150,
+      "xp": 420,
+      "requirements": [
+        {
+          "item": "underground_city:grain_spirit",
+          "count": 6
+        }
+      ]
+    },
+    {
+      "id": "quiet_moonshine",
+      "title": "Moonshine for the back bar",
+      "career": "vintner",
+      "level": 7,
+      "legality": "underground",
+      "requires_skill": "vintner.still_craft",
+      "buyer": "ironhaven_backbar",
+      "trust_gain": 1,
+      "capacity": 2,
+      "refill_ticks": 18000,
+      "credits": 200,
+      "xp": 340,
+      "requirements": [
+        {
+          "item": "underground_city:moonshine",
+          "count": 6
+        }
+      ],
+      "origin": "valewood"
+    },
+    {
+      "id": "yard_fasteners",
+      "title": "Fasteners and brackets for the builders' yard",
+      "career": "smith",
+      "level": 2,
+      "legality": "legal",
+      "requires_skill": "smith.fundamentals",
+      "capacity": 3,
+      "refill_ticks": 6000,
+      "credits": 140,
+      "xp": 240,
+      "requirements": [
+        {
+          "item": "underground_city:fasteners",
+          "count": 32
+        },
+        {
+          "item": "underground_city:steel_bracket",
+          "count": 6
+        }
+      ]
+    },
+    {
+      "id": "cooperage_hoops",
+      "title": "Hoops for the Valewood cooperage",
+      "career": "smith",
+      "level": 3,
+      "legality": "legal",
+      "requires_skill": "smith.structural_works",
+      "capacity": 3,
+      "refill_ticks": 9000,
+      "credits": 80,
+      "xp": 220,
+      "requirements": [
+        {
+          "item": "underground_city:barrel_hoops",
+          "count": 12
+        }
+      ]
+    },
+    {
+      "id": "depot_gear_sets",
+      "title": "Gear sets for the Northgate depot",
+      "career": "smith",
+      "level": 6,
+      "legality": "legal",
+      "requires_skill": "smith.precision_machining",
+      "credits": 160,
+      "xp": 360,
+      "requirements": [
+        {
+          "item": "underground_city:gear_set",
+          "count": 3
+        },
+        {
+          "item": "underground_city:springs",
+          "count": 8
+        }
+      ]
+    },
+    {
+      "id": "armoury_parts_kits",
+      "title": "Parts kits for the city armoury",
+      "career": "gunsmith",
+      "level": 3,
+      "legality": "legal",
+      "requires_skill": "gunsmith.licensed_repairs",
+      "credits": 210,
+      "xp": 380,
+      "requirements": [
+        {
+          "item": "underground_city:firearm_parts_kit",
+          "count": 2
+        }
+      ]
+    },
+    {
+      "id": "unmarked_kits",
+      "title": "Unmarked kits for Dray",
+      "career": "gunsmith",
+      "level": 8,
+      "legality": "underground",
+      "requires_skill": "gunsmith.unregistered_builds",
+      "buyer": "dray",
+      "trust_gain": 1,
+      "capacity": 1,
+      "refill_ticks": 24000,
+      "credits": 400,
+      "xp": 420,
+      "requirements": [
+        {
+          "item": "underground_city:unmarked_parts_kit",
+          "count": 2
+        }
+      ],
+      "origin": "valewood"
     }
   ],
   "reference_values": {
-    "note": "Credit value of goods that the regional exchange does not price. Vanilla values sit near the starter shop (wheat sells at 1.5, bread buys at 5); iron ingot 7.7 is the unit used for TaCZ recipe costs. Guns use the cheapest recipe among the accepted GunIds. Harvest-only Core goods carry their operating cost per unit. Reward values bound what a contract can give besides credits (at most 90% of the credits).",
+    "note": "Credit value of goods that the regional exchange does not price. Vanilla values sit near the starter shop (wheat sells at 1.5, bread buys at 5); iron ingot 7.7 is the unit used for TaCZ recipe costs. Guns use the cheapest recipe among the accepted GunIds. Harvest-only Core goods carry their operating cost per unit. Reward values bound what a contract can give besides credits (at most 90% of the credits). Redstone parts (comparator, repeater, piston, observer) are valued at what their redstone, quartz and iron cost from the shelves (D-175: no world here mines quartz, and a scarcity world mines nothing).",
     "vanilla": {
       "minecraft:carrot": 1.5,
       "minecraft:potato": 1.5,
@@ -630,10 +895,10 @@
       "minecraft:stone_bricks": 0.8,
       "minecraft:iron_chestplate": 61.6,
       "minecraft:iron_helmet": 38.5,
-      "minecraft:comparator": 12,
-      "minecraft:repeater": 6,
-      "minecraft:piston": 8,
-      "minecraft:observer": 10
+      "minecraft:comparator": 26,
+      "minecraft:repeater": 18,
+      "minecraft:piston": 15,
+      "minecraft:observer": 20
     },
     "guns": {
       "tacz:cz75": 131,
@@ -645,10 +910,12 @@
       "tacz:uzi": 246,
       "tacz:hk_mp5a5": 285,
       "tacz:ak47": 315,
-      "tacz:m4a1": 313
+      "tacz:m4a1": 313,
+      "tacz:p320": 385
     },
     "harvest_units": {
-      "underground_city:sable_leaf_bale": 18,
+      "underground_city:cannabis_flower": 18,
+      "underground_city:dried_cannabis": 44,
       "underground_city:data_ledger": 130
     },
     "rewards": {
@@ -656,7 +923,7 @@
       "underground_city:prototype_alloy_ingot": 84,
       "underground_city:circuit_prototype": 96,
       "underground_city:optics_schematic": 102,
-      "underground_city:sable_cutting": 22.5,
+      "underground_city:cannabis_seeds": 22.5,
       "taczblueprints:blueprint_shotgun": 150,
       "taczblueprints:blueprint_smg": 150,
       "taczblueprints:blueprint_rifle": 200
@@ -667,6 +934,24 @@
       "vinery:cherry_wine": 18,
       "vinery:apple_cider": 11,
       "kaleidoscope_tavern:vodka": 12
+    },
+    "workshop_units": {
+      "note": "Operating cost per unit of goods made only at a workshop station (D-163): the inputs at reference value plus the station's time, so contract margins are judged like any other.",
+      "underground_city:flour": 3,
+      "underground_city:produce_crate": 24,
+      "underground_city:fruit_crate": 24,
+      "underground_city:berry_wine": 12,
+      "underground_city:apple_cider": 10,
+      "underground_city:aged_wine": 30,
+      "underground_city:grain_spirit": 14,
+      "underground_city:moonshine": 16,
+      "underground_city:fasteners": 1.5,
+      "underground_city:steel_bracket": 6,
+      "underground_city:barrel_hoops": 4,
+      "underground_city:springs": 3,
+      "underground_city:gear_set": 22,
+      "underground_city:firearm_parts_kit": 60,
+      "underground_city:unmarked_parts_kit": 95
     }
   }
 }

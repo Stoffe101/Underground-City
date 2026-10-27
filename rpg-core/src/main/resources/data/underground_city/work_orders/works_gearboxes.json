@@ -1,0 +1,19 @@
+{
+  "schema_version": 3,
+  "title": "Gearboxes for the Ironhaven works",
+  "career": "smith",
+  "level": 6,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "underground_city:gearbox",
+      "count": 2
+    }
+  ],
+  "credits": 250,
+  "xp": 560,
+  "capacity": 1,
+  "refill_ticks": 24000,
+  "legality": "legal",
+  "requires_skill": "smith.structural_works"
+}

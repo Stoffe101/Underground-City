@@ -1,21 +1,36 @@
 # Product backlog (pre-issue triage)
 
+## Now: the First Fully Playable Sandbox Alpha (October 24, 2026)
+
+The milestone and its twelve exit criteria are in the [roadmap](roadmap.md#milestone-first-fully-playable-sandbox-alpha). The open items, most useful first:
+
+- [ ] **A person plays** two sessions of two hours on a new alpha world (playtest guide, questionnaire in section 8). Nothing replaces this.
+- [ ] Two clients on a dedicated server for 30 minutes in one city, with the tick measured (criterion 9), and a two-client burglary with one partner carrying no evidence (WP8's own proof).
+- [ ] A real client through the Smith's and Gunsmith's stations and a kit-built TaCZ firearm delivered to the armoury (criterion 2).
+- [ ] An owner decision on a tax (P4's missing exit criterion) and on per-player loot (P6's).
+- [ ] A second general skill earned in play and consumed by a system (WP2).
+- [ ] The larger apartment and the premium residence as buildings (8 of 10 rungs stand).
+- [ ] Fuel, repair and a car dealer, or an owner decision that vehicles stay a priced plan for the alpha (WP11).
+- [ ] A medical item (WP9).
+
+The sections below are older triage, kept with their checkmarks corrected on October 24.
+
 ## Now: P0
 
-- [ ] Run exact-version compatibility checks for the candidate mods, starting from a minimal Forge dedicated server.
-- [ ] Choose a legal/feasible world-generation versus map-adaptation prototype.
-- [ ] Record licensing and download provenance before using third-party assets.
-- [ ] Confirm architecture constraints: persistence, server authority, multiplayer state, and mod APIs.
+- [x] Run exact-version compatibility checks for the candidate mods, starting from a minimal Forge dedicated server. (Done: hash-pinned `content/modpacks/dev-pack.json`, `scripts/run_prod_boot_check.py`.)
+- [x] Choose a legal/feasible world-generation versus map-adaptation prototype. (In practice Lost Cities with the archipelago, D-104, and the furnished package, D-117; D-008 itself is still "needs spike".)
+- [x] Record licensing and download provenance before using third-party assets. (`docs/legal/asset-register.csv`.)
+- [x] Confirm architecture constraints: persistence, server authority, multiplayer state, and mod APIs. (`docs/technical/architecture.md`.)
 - [ ] Decide first-district visual targets and performance acceptance budgets.
 
 ## Next: P1–P3
 
-- [ ] Reproducible install/manifest with checksums (no bundled unlicensed JARs).
-- [ ] Custom mod scaffold, smoke-boot CI, co-op dedicated-server test.
-- [ ] First-login UI, player registration, city selection and profession selection.
-- [ ] Career XP/skill tree and one general skill, versioned save data.
+- [x] Reproducible install/manifest with checksums (no bundled unlicensed JARs). (SHA-512 pins and `make_server_pack.py`.)
+- [x] Custom mod scaffold, smoke-boot CI, co-op dedicated-server test. (Core, `forge-core.yml`, `dev-client-smoke.yml`, the two-client journeys.)
+- [x] First-login UI, player registration, city selection and profession selection. (D-058.)
+- [x] Career XP/skill tree and one general skill, versioned save data. (Trees D-050, D-098; the Thief track D-143.)
 - [x] A safe travel route: three inter-city roads with bridges (a close triangle) generate into new chunks of a fresh seed-5908 world (cloud-measured; every road continuous, bridges over real water; see [three-city notes](../technical/three-city-prototype.md)). Nobody has walked, driven or sailed them yet.
-- [ ] Small district/world import, one workshop and one farm.
+- [x] Small district/world import, one workshop and one farm. (Founders Row, the furnished buildings (opt-in), Harrow Farm, the workshop stations.)
 - [ ] Gate houses at the road checkpoints (the zones exist as data; the buildings and guard NPCs do not), patrol/NPC presence and a vehicle-mod fit test on the roads; boat customs for the water routes. Waymarkers (D-078) and wayside shelters with a road warden (D-079) are built.
 
 ## Sprint 2026-10-15 follow-ups (by priority)

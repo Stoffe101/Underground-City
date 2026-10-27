@@ -1,0 +1,22 @@
+{
+  "schema_version": 3,
+  "title": "Lift the seized shipment from the Ironhaven bonded store",
+  "career": "any",
+  "level": 1,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "underground_city:seized_shipment",
+      "count": 1
+    }
+  ],
+  "credits": 700,
+  "xp": 520,
+  "capacity": 1,
+  "refill_ticks": 36000,
+  "legality": "underground",
+  "requires_skill": "thief.pro_tools",
+  "buyer": "kessler",
+  "trust_gain": 1,
+  "raid": "bonded_store"
+}

@@ -1,0 +1,206 @@
+{
+  "schema_version": 1,
+  "status": "implemented_as_data",
+  "disclaimer": "Source of the raw materials that the regional exchange sells in the cities (D-120). A new world has no natural ore (the scarcity package); these finite, shared, slowly refilling shelves, salvage and one regenerating resource site are where iron, coal, copper, redstone, lapis, gold and diamonds come from. Run scripts/generate_survival_supply.py to regenerate rpg-core/src/main/resources/data/underground_city/regional_stock/materials. Prices are credits per item; a full shelf is worth at most 1200 credits.",
+  "lines": [
+    {
+      "id": "iron_ingot_ironhaven",
+      "city": "ironhaven",
+      "item": "minecraft:iron_ingot",
+      "outlets": [
+        "city",
+        "shop:hardware"
+      ],
+      "price": 9,
+      "initial": 24,
+      "capacity": 32,
+      "units_per_interval": 4,
+      "interval_minutes": 20,
+      "max_order": 16,
+      "why": "Ironhaven's foundries sell what they can spare from their own furnaces: the cheapest iron in the region, a small shelf that refills in a steady trickle."
+    },
+    {
+      "id": "coal_ironhaven",
+      "city": "ironhaven",
+      "item": "minecraft:coal",
+      "outlets": [
+        "city",
+        "shop:hardware"
+      ],
+      "price": 3,
+      "initial": 32,
+      "capacity": 48,
+      "units_per_interval": 8,
+      "interval_minutes": 20,
+      "max_order": 24,
+      "why": "Furnace coal from the foundries' own stocks, a few credits a lump."
+    },
+    {
+      "id": "copper_ingot_ironhaven",
+      "city": "ironhaven",
+      "item": "minecraft:copper_ingot",
+      "outlets": [
+        "city",
+        "shop:hardware"
+      ],
+      "price": 7,
+      "initial": 16,
+      "capacity": 24,
+      "units_per_interval": 4,
+      "interval_minutes": 30,
+      "max_order": 16,
+      "why": "Cable and fitting copper from Ironhaven's rolling mills; the second backpack tier is eight ingots round a basic pack."
+    },
+    {
+      "id": "charcoal_valewood",
+      "city": "valewood",
+      "item": "minecraft:charcoal",
+      "outlets": [
+        "city"
+      ],
+      "price": 2,
+      "initial": 24,
+      "capacity": 32,
+      "units_per_interval": 6,
+      "interval_minutes": 20,
+      "max_order": 16,
+      "why": "Valewood's charcoal burners supply the region's kilns and smithies with a fuel that needs no mine."
+    },
+    {
+      "id": "iron_ingot_valewood",
+      "city": "valewood",
+      "item": "minecraft:iron_ingot",
+      "outlets": [
+        "city"
+      ],
+      "price": 12,
+      "initial": 8,
+      "capacity": 12,
+      "units_per_interval": 1,
+      "interval_minutes": 30,
+      "max_order": 6,
+      "why": "Valewood buys its iron in from Ironhaven and sells it on at a premium, a few ingots at a time, so that a Valewood household need not travel for a hinge or a hoe."
+    },
+    {
+      "id": "redstone_blackwater",
+      "city": "blackwater",
+      "item": "minecraft:redstone",
+      "outlets": [
+        "city"
+      ],
+      "price": 6,
+      "initial": 20,
+      "capacity": 32,
+      "units_per_interval": 4,
+      "interval_minutes": 20,
+      "max_order": 16,
+      "why": "Blackwater's electronics wholesalers import redstone dust by the sack and sell it by the handful."
+    },
+    {
+      "id": "redstone_ironhaven",
+      "city": "ironhaven",
+      "item": "minecraft:redstone",
+      "outlets": [
+        "city",
+        "shop:hardware"
+      ],
+      "price": 6,
+      "initial": 16,
+      "capacity": 24,
+      "units_per_interval": 4,
+      "interval_minutes": 20,
+      "max_order": 16,
+      "why": "Dust swept from the foundries' ore floors, sold at the hardware desk: a Technician no longer has to cross to Blackwater for a first torch order (the first-hour audit)."
+    },
+    {
+      "id": "quartz_blackwater",
+      "city": "blackwater",
+      "item": "minecraft:quartz",
+      "outlets": [
+        "city"
+      ],
+      "price": 8,
+      "initial": 12,
+      "capacity": 16,
+      "units_per_interval": 3,
+      "interval_minutes": 30,
+      "max_order": 8,
+      "why": "Quartz from the dockside importers. No world here mines it, so comparators, observers and daylight detectors (five Technician orders) had no route at all until this line."
+    },
+    {
+      "id": "e_scrap_blackwater",
+      "city": "blackwater",
+      "item": "underground_city:e_scrap",
+      "outlets": [
+        "city"
+      ],
+      "price": 5,
+      "initial": 16,
+      "capacity": 24,
+      "units_per_interval": 4,
+      "interval_minutes": 20,
+      "max_order": 16,
+      "why": "Stripped boards and wiring from the dockside recyclers: the Electronics Bench's circuit boards need it, and before this line it came only from Kessler Salvage, which a world may not have built (the first-hour audit)."
+    },
+    {
+      "id": "iron_ingot_blackwater",
+      "city": "blackwater",
+      "item": "minecraft:iron_ingot",
+      "outlets": [
+        "city"
+      ],
+      "price": 11,
+      "initial": 10,
+      "capacity": 16,
+      "units_per_interval": 2,
+      "interval_minutes": 30,
+      "max_order": 8,
+      "why": "Imported through the harbour from Ironhaven, so dearer than at the source."
+    },
+    {
+      "id": "lapis_blackwater",
+      "city": "blackwater",
+      "item": "minecraft:lapis_lazuli",
+      "outlets": [
+        "city"
+      ],
+      "price": 11,
+      "initial": 8,
+      "capacity": 16,
+      "units_per_interval": 2,
+      "interval_minutes": 40,
+      "max_order": 8,
+      "why": "Dye and optics stock that the harbour's importers hold for the glassworks."
+    },
+    {
+      "id": "gold_ingot_blackwater",
+      "city": "blackwater",
+      "item": "minecraft:gold_ingot",
+      "outlets": [
+        "city"
+      ],
+      "price": 38,
+      "initial": 6,
+      "capacity": 10,
+      "units_per_interval": 1,
+      "interval_minutes": 45,
+      "max_order": 4,
+      "why": "The harbour's bullion dealers sell a few bars at a time; gold is a fitting for the finest work, not a stockpile."
+    },
+    {
+      "id": "diamond_blackwater",
+      "city": "blackwater",
+      "item": "minecraft:diamond",
+      "outlets": [
+        "city"
+      ],
+      "price": 150,
+      "initial": 2,
+      "capacity": 4,
+      "units_per_interval": 1,
+      "interval_minutes": 120,
+      "max_order": 2,
+      "why": "One gem every two active hours from the harbour's jewellers: the fifth backpack tier is a long-term purchase, not an afternoon's."
+    }
+  ]
+}

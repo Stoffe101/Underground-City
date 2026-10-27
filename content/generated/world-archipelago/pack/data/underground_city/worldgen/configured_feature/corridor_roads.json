@@ -1,0 +1,103 @@
+{
+  "config": {
+    "cities": [
+      {
+        "id": "ironhaven",
+        "radius": 330.0,
+        "x": 8.0,
+        "z": 8.0
+      },
+      {
+        "id": "valewood",
+        "radius": 240.0,
+        "x": 1608.0,
+        "z": 232.0
+      },
+      {
+        "id": "blackwater",
+        "radius": 300.0,
+        "x": 648.0,
+        "z": 1464.0
+      }
+    ],
+    "routes": [
+      {
+        "id": "ironhaven_valewood",
+        "waypoints": [
+          [
+            323,
+            52
+          ],
+          [
+            588,
+            89
+          ],
+          [
+            853,
+            126
+          ],
+          [
+            1117,
+            163
+          ],
+          [
+            1382,
+            200
+          ]
+        ]
+      },
+      {
+        "id": "ironhaven_blackwater",
+        "waypoints": [
+          [
+            136,
+            299
+          ],
+          [
+            235,
+            524
+          ],
+          [
+            334,
+            750
+          ],
+          [
+            433,
+            975
+          ],
+          [
+            532,
+            1200
+          ]
+        ]
+      },
+      {
+        "id": "valewood_blackwater",
+        "waypoints": [
+          [
+            1468,
+            412
+          ],
+          [
+            1307,
+            618
+          ],
+          [
+            1146,
+            824
+          ],
+          [
+            986,
+            1031
+          ],
+          [
+            825,
+            1237
+          ]
+        ]
+      }
+    ],
+    "width": 7
+  },
+  "type": "underground_city:corridor_roads"
+}

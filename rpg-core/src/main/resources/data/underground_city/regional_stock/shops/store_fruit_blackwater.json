@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "city": "blackwater",
+  "item": "underground_city:fruit_crate",
+  "unit_price": 40,
+  "initial": 2,
+  "capacity": 6,
+  "units_per_interval": 1,
+  "interval_ticks": 108000,
+  "max_order": 2,
+  "outlets": [
+    "shop:store"
+  ],
+  "supply": {
+    "pays": 26,
+    "xp": 8,
+    "career": "farmer"
+  }
+}

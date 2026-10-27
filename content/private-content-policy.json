@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "purpose": "What may never be tracked, committed, uploaded as a CI artifact or named by a script in this public repository: the privately licensed city-building content the owner was given permission to use in a private modpack (docs/legal/private-content.md). scripts/check_private_content.py enforces this on the working tree, on a commit range and on history.",
+  "private_namespaces": ["c70cities", "deceasedcraft"],
+  "private_source_markers": ["tqlxquanz", "TqLxQuanZ"],
+  "forbidden_path_patterns": [
+    "private-content/*",
+    "private_content/*",
+    ".private/*",
+    "*/c70cities/*",
+    "c70cities/*",
+    "*.ucprivate",
+    "*.ucprivate.zip",
+    "*/kubejs/data/c70cities/*"
+  ],
+  "required_gitignore_patterns": ["/private-content/", "/.private/", "*.ucprivate", "*.ucprivate.zip"],
+  "text_scan_suffixes": [".json", ".mcmeta", ".toml", ".cfg", ".properties", ".js", ".zs", ".mcfunction", ".yml", ".yaml", ".py", ".gradle", ".java", ".sh", ".ps1", ".bat", ".xml"],
+  "allowlist": [
+    "content/private-content-policy.json",
+    "scripts/check_private_content.py",
+    "scripts/private_pack_tool.py",
+    "tests/test_private_content_guard.py",
+    ".githooks/pre-commit",
+    ".githooks/pre-push"
+  ],
+  "workflow_artifact_forbidden_words": ["private-content", "private_content", "UC_PRIVATE", ".ucprivate"]
+}

@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "city": "blackwater",
+  "item": "minecraft:pumpkin_pie",
+  "unit_price": 6,
+  "initial": 8,
+  "capacity": 12,
+  "units_per_interval": 2,
+  "interval_ticks": 24000,
+  "max_order": 4,
+  "outlets": [
+    "shop:bar"
+  ]
+}

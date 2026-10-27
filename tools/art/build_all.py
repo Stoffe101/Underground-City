@@ -4,7 +4,7 @@
     python tools/art/build_all.py            write the files into rpg-core/src/main/resources/assets/underground_city
     python tools/art/build_all.py --check    draw them into a scratch copy and fail when a committed file differs
 
-The generators in this folder are the source of truth for the item sprites, the Sable Leaf plant (textures and block models), the terminal,
+The generators in this folder are the source of truth for the item sprites, the cannabis plant (textures and block models), the terminal,
 secured terminal, household safe and public ledger (textures, block models and blockstates), the GUI chrome, icons, skylines and the display
 font. Everything is drawn from character maps and primitive shapes; no third-party pixel is read. PNGs are compared by decoded pixels
 (encoder output varies), everything else byte for byte. Needs Pillow only.
@@ -23,21 +23,23 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 ASSETS = Path("rpg-core/src/main/resources/assets/underground_city")
 #: Folders (relative to the assets root) that the generators own completely: a committed file there that no generator draws is an orphan.
-OWNED = ("textures/gui", "textures/font", "font")
-OWNED_FILES = {"textures/block": ("sable_", "terminal_", "secure_", "safe_", "ledger_"), "textures/item": ("",)}
+OWNED = ("textures/gui", "textures/font", "font", "textures/entity/citizen")
+OWNED_FILES = {"textures/block": ("cannabis_", "terminal_", "secure_", "safe_", "ledger_", "scrap_", "utility_panel_", "machine_drive_", "find_", "computer_", "bench_", "rack_", "ws_"), "textures/item": ("",)}
 
 
 def write_everything() -> None:
     sys.path.insert(0, str(HERE))
-    import gen_items, gen_blocks, gen_chrome, gen_icons, gen_font, gen_crop, gen_scenes
+    import gen_items, gen_blocks, gen_chrome, gen_icons, gen_font, gen_crop, gen_scenes, gen_citizens, gen_workshops
     gen_items.save_all()
     gen_blocks.build()
+    gen_workshops.build()
     gen_chrome.build()
     gen_icons.build()
     gen_font.build()
     gen_crop.write_textures()
     gen_crop.write_models()
     gen_scenes.build()
+    gen_citizens.build()
 
 
 def same(a: Path, b: Path) -> bool:

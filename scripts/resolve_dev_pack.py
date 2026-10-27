@@ -34,7 +34,41 @@ def get(path: str) -> object:
         return json.load(response)
 
 
+def curseforge_entry(pin: dict) -> dict:
+    """A CurseForge-only pin (``curseforge`` holds its metadata): written as recorded, since CurseForge's API needs a key this tool does not have."""
+    cf = pin["curseforge"]
+    file_id = str(cf["file_id"])
+    return {
+        "id": pin["id"],
+        "name": cf["name"],
+        "slug": pin["slug"],
+        "project_id": f"curseforge:{cf['project_id']}",
+        "version_id": f"curseforge-file:{file_id}",
+        "version_number": cf["version_number"],
+        "published": cf["published"],
+        "filename": cf["filename"],
+        "size": cf["size"],
+        "sha1": cf["sha1"],
+        "sha512": cf["sha512"],
+        "license": cf["license"],
+        "mod_id": pin["mod_id"],
+        "role": pin["role"],
+        "sets": pin["sets"],
+        "requires": pin.get("requires", []),
+        "placement": pin.get("placement", "classpath"),
+        "side": cf["side"],
+        "source_url": f"https://www.curseforge.com/minecraft/mc-mods/{pin['slug']}/files/{file_id}",
+        # the author's CurseForge CDN file; Gradle and fetch_dev_pack.py read it from here and verify size and SHA-512
+        "download_url": f"https://mediafilez.forgecdn.net/files/{file_id[:-3]}/{int(file_id[-3:])}/{cf['filename']}",
+        "hash_source": cf["hash_source"],
+        "distribution": pin.get("distribution", "download from the author's page; never commit the binary"),
+        "notes": pin.get("notes", ""),
+    }
+
+
 def resolve_entry(pin: dict) -> dict:
+    if "curseforge" in pin:
+        return curseforge_entry(pin)
     version = get(f"/version/{pin['version_id']}")
     project = get(f"/project/{version['project_id']}")
     if project["slug"] != pin["slug"]:

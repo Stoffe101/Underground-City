@@ -24,10 +24,10 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
 /**
- * The fictional Sable Leaf plant (the Farmer's controlled crop). It is a real crop block with real costs:
+ * The cannabis plant (the Farmer's controlled crop). It is a real crop block with real costs:
  * it only grows in bright light (a grow lamp or sunlight), and each of its three growth steps needs one dose
  * of Cultivation Nutrient applied by hand (a regional-exchange product), so a harvest is never free. Bone meal
- * does nothing. It yields Sable Leaf Bales, which the city laws treat as controlled goods.
+ * does nothing. It yields Cannabis Flower, which the city laws treat as controlled goods.
  */
 public final class RestrictedCropBlock extends CropBlock {
     public static final IntegerProperty AGE = BlockStateProperties.AGE_3;
@@ -46,37 +46,44 @@ public final class RestrictedCropBlock extends CropBlock {
 
     @Override public IntegerProperty getAgeProperty() { return AGE; }
     @Override public int getMaxAge() { return 3; }
-    @Override protected ItemLike getBaseSeedId() { return UndergroundCity.item("sable_cutting"); }
+    @Override protected ItemLike getBaseSeedId() { return UndergroundCity.item("cannabis_seeds"); }
     @Override protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) { builder.add(AGE, NOURISHED); }
     @Override public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) { return SHAPES[state.getValue(AGE)]; }
     @Override public boolean isValidBonemealTarget(net.minecraft.world.level.LevelReader level, BlockPos pos, BlockState state, boolean client) { return false; }
 
     @Override
     public void randomTick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
+        if (CannabisLaw.look(level, pos)) return;   // grown in public view and seen by an officer on the beat (D-160)
         if (!state.getValue(NOURISHED) || level.getRawBrightness(pos, 0) < LIGHT_NEEDED) return;
         if (random.nextInt(GROWTH_ODDS) != 0) return;
         int age = getAge(state);
         if (age < getMaxAge()) level.setBlock(pos, state.setValue(AGE, age + 1).setValue(NOURISHED, false), 2);
     }
 
-    /** The loot table pays 2 or 3 bales; a grafting skill adds this share of the average harvest on top, as whole bales plus a chance of one more. */
-    static final double AVERAGE_BALES = 2.5;
+    @Override
+    public void onRemove(BlockState state, Level level, BlockPos pos, BlockState next, boolean moved) {
+        if (!next.is(this) && level instanceof ServerLevel server) CannabisLaw.forget(server, pos);
+        super.onRemove(state, level, pos, next, moved);
+    }
 
-    /** Extra bales for one mature harvest at the given yield percent. {@code roll} is a uniform [0,1) number; the function is pure so the odds can be pinned in a test. */
-    static int extraBales(int yieldPercent, double roll) {
+    /** The loot table pays 2 or 3 flower; a grafting skill adds this share of the average harvest on top, as whole flower plus a chance of one more. */
+    static final double AVERAGE_FLOWER = 2.5;
+
+    /** Extra flower for one mature harvest at the given yield percent. {@code roll} is a uniform [0,1) number; the function is pure so the odds can be pinned in a test. */
+    static int extraFlower(int yieldPercent, double roll) {
         if (yieldPercent <= 0) return 0;
-        double expected = AVERAGE_BALES * yieldPercent / 100.0;
+        double expected = AVERAGE_FLOWER * yieldPercent / 100.0;
         int whole = (int) expected;
         return whole + (roll < expected - whole ? 1 : 0);
     }
 
-    /** A player harvesting a mature plant gets the loot table plus the extra bales their grafting skills earn. Pistons, water and creative mode earn nothing extra. */
+    /** A player harvesting a mature plant gets the loot table plus the extra flower their grafting skills earn. Pistons, water and creative mode earn nothing extra. */
     @Override
     public void playerDestroy(Level level, Player player, BlockPos pos, BlockState state, @javax.annotation.Nullable BlockEntity blockEntity, ItemStack tool) {
         super.playerDestroy(level, player, pos, state, blockEntity, tool);
         if (level.isClientSide || !(player instanceof ServerPlayer serverPlayer) || !isMaxAge(state)) return;
-        int extra = extraBales(SkillService.yieldPercent(serverPlayer), level.getRandom().nextDouble());
-        if (extra > 0) popResource(level, pos, new ItemStack(UndergroundCity.item("sable_leaf_bale"), extra));
+        int extra = extraFlower(SkillService.yieldPercent(serverPlayer), level.getRandom().nextDouble());
+        if (extra > 0) popResource(level, pos, new ItemStack(UndergroundCity.item("cannabis_flower"), extra));
     }
 
     /** Right-click with Cultivation Nutrient: feeds the next growth step. */

@@ -39,7 +39,7 @@ def validate(data: dict) -> None:
     if len(all_ids) != len(commodity_ids) + len(product_ids) + len(tool_ids) + len(data.get("specials", [])):
         raise SystemExit("Duplicate item IDs in regional content")
     for x in data.get("specials", []):
-        if x["kind"] not in ("seed", "product", "tool", "rare") or x["city"] not in CITIES:
+        if x["kind"] not in ("seed", "product", "tool", "rare", "durable") or x["city"] not in CITIES:
             raise SystemExit(f"Invalid special item {x['id']}")
         for key, count in x.get("inputs", {}).items():
             if ":" not in key and key not in commodity_ids:
@@ -88,6 +88,8 @@ def validate(data: dict) -> None:
 
 
 SECURITY_LOCKPICKS = {"low": 1, "medium": 2, "high": 3, "faction": 4}
+# the lockpicking game a safe of each security level plays (data/underground_city/lock_profiles): more pins, a tighter sweet spot, a harsher snap
+SECURITY_LOCK_PROFILE = {"low": "deadbolt", "medium": "safe", "high": "commercial", "faction": "high_security"}
 
 
 def load_property() -> tuple[dict, dict]:
@@ -101,6 +103,10 @@ def load_property() -> tuple[dict, dict]:
                 and policy["security"] in SECURITY_LOCKPICKS and policy["items_per_interval"] >= 1):
             raise SystemExit(f"Invalid property policy {policy['id']}")
     return policies, loot
+
+
+#: The workshop stations (D-163), in the order UndergroundCity.WORKSHOPS registers them.
+WORKSHOP_STATIONS = ("grading_table", "mill", "fermentation_vat", "oak_cask", "pot_still", "machinist_bench", "gunsmith_bench")
 
 
 def lootable_item_ids(data: dict) -> set[str]:
@@ -129,6 +135,7 @@ def unit_costs(data: dict, contracts: dict) -> dict[str, float]:
             total = sum(prices[f"{NAMESPACE}:{k}"] * n for k, n in p["inputs"].items() if ":" not in k)
             costs[f"{NAMESPACE}:{p['id']}"] = total / p["count"]
     costs.update(refs["harvest_units"])
+    costs.update({k: v for k, v in refs.get("workshop_units", {}).items() if k != "note"})   # goods made only at a workshop station (D-163)
     costs.update(refs["vanilla"])
     costs.update(refs.get("mods", {}))   # third-party goods a contract names (Vinery wine, Tadacko's spirits)
     return costs
@@ -235,10 +242,41 @@ def build(data: dict, contracts: dict) -> dict[Path, bytes]:
         "block.underground_city.property_cache": "Household Safe",
         "item.underground_city.property_cache": "Household Safe",
         "container.underground_city.property_cache": "Household Safe",
+        "container.underground_city.wall_safe": "Wall Safe",
+        "container.underground_city.vault_safe": "Vault Safe",
         "block.underground_city.secure_data_terminal": "Secured Data Terminal",
         "item.underground_city.secure_data_terminal": "Secured Data Terminal",
+        "block.underground_city.alarm_panel": "Alarm Panel",
+        "item.underground_city.alarm_panel": "Alarm Panel",
         "block.underground_city.public_ledger": "Public Ledger",
         "item.underground_city.public_ledger": "Public Ledger",
+        "block.underground_city.scrap_heap": "Scrap Heap",
+        "item.underground_city.scrap_heap": "Scrap Heap",
+        "item.underground_city.sealed_envelope": "Sealed Envelope",
+        "block.underground_city.utility_panel": "Utility Panel",
+        "block.underground_city.machine_drive": "Machine Drive Housing",
+        "block.underground_city.exploration_find": "Battered Crate",
+        "item.underground_city.utility_panel": "Utility Panel",
+        "block.underground_city.personal_computer": "Personal Computer",
+        "item.underground_city.personal_computer": "Personal Computer",
+        "block.underground_city.electronics_bench": "Electronics Bench",
+        "item.underground_city.electronics_bench": "Electronics Bench",
+        "block.underground_city.drying_rack": "Drying Rack",
+        "item.underground_city.drying_rack": "Drying Rack",
+        "block.underground_city.grading_table": "Grading Table",
+        "item.underground_city.grading_table": "Grading Table",
+        "block.underground_city.mill": "Mill",
+        "item.underground_city.mill": "Mill",
+        "block.underground_city.fermentation_vat": "Fermentation Vat",
+        "item.underground_city.fermentation_vat": "Fermentation Vat",
+        "block.underground_city.oak_cask": "Oak Cask",
+        "item.underground_city.oak_cask": "Oak Cask",
+        "block.underground_city.pot_still": "Pot Still",
+        "item.underground_city.pot_still": "Pot Still",
+        "block.underground_city.machinist_bench": "Machinist's Bench",
+        "item.underground_city.machinist_bench": "Machinist's Bench",
+        "block.underground_city.gunsmith_bench": "Gunsmith's Bench",
+        "item.underground_city.gunsmith_bench": "Gunsmith's Bench",
     }
 
     def emit_item(entry, kind, stack):
@@ -276,7 +314,7 @@ def build(data: dict, contracts: dict) -> dict[Path, bytes]:
             "type": "minecraft:crafting_shapeless", "category": "equipment", "group": f"{NAMESPACE}_tools",
             "ingredients": ingredients, "result": {"item": f"{NAMESPACE}:{t['id']}", "count": t["count"]}}).encode()
     for x in data.get("specials", []):
-        emit_item(x, x["kind"], 16 if x["kind"] in ("rare", "tool") else 64)
+        emit_item(x, x["kind"], 1 if x["kind"] == "durable" else 16 if x["kind"] in ("rare", "tool") else 64)
         if x.get("inputs"):
             ingredients = []
             for key, count in x["inputs"].items():
@@ -311,23 +349,31 @@ def build(data: dict, contracts: dict) -> dict[Path, bytes]:
         if c.get("rewards"):
             document["rewards"] = [{k: v for k, v in r.items()} for r in c["rewards"]]
         files[Path(f"rpg-core/src/main/resources/data/{NAMESPACE}/work_orders/{c['id']}.json")] = jdump(document).encode()
-    crop = f"{NAMESPACE}:sable_leaf_crop"
+    crop = f"{NAMESPACE}:cannabis_plant"
     variants = {}
     # the plant's textures, models and blockstate come from tools/art (gen_crop.py)
     mature = {"condition": "minecraft:block_state_property", "block": crop, "properties": {"age": "3"}}
-    files[Path(f"rpg-core/src/main/resources/data/{NAMESPACE}/loot_tables/blocks/sable_leaf_crop.json")] = jdump({
-        "type": "minecraft:block", "random_sequence": f"{NAMESPACE}:blocks/sable_leaf_crop",
+    files[Path(f"rpg-core/src/main/resources/data/{NAMESPACE}/loot_tables/blocks/cannabis_plant.json")] = jdump({
+        "type": "minecraft:block", "random_sequence": f"{NAMESPACE}:blocks/cannabis_plant",
         "pools": [
             {"rolls": 1, "entries": [{"type": "minecraft:alternatives", "children": [
-                {"type": "minecraft:item", "name": f"{NAMESPACE}:sable_leaf_bale", "conditions": [mature],
+                {"type": "minecraft:item", "name": f"{NAMESPACE}:cannabis_flower", "conditions": [mature],
                  "functions": [{"function": "minecraft:set_count", "count": {"type": "minecraft:uniform", "min": 2, "max": 3}}]},
-                {"type": "minecraft:item", "name": f"{NAMESPACE}:sable_cutting"}]}]},
+                {"type": "minecraft:item", "name": f"{NAMESPACE}:cannabis_seeds"}]}]},
             {"rolls": 1, "conditions": [mature, {"condition": "minecraft:random_chance", "chance": 0.4}],
-             "entries": [{"type": "minecraft:item", "name": f"{NAMESPACE}:sable_cutting"}]}]}).encode()
-    lang["block.underground_city.sable_leaf_crop"] = "Sable Leaf Plant"
+             "entries": [{"type": "minecraft:item", "name": f"{NAMESPACE}:cannabis_seeds"}]}]}).encode()
+    lang["block.underground_city.cannabis_plant"] = "Cannabis Plant"
     lang["key.underground_city.tracker"] = "Show or hide the active order"
+    lang["key.underground_city.inspect"] = "Case the door you look at"
+    lang["key.underground_city.places"] = "Places you know"
+    lang["key.underground_city.hud"] = "Show or hide the status display"
+    lang["key.underground_city.hud_settings"] = "Open the status display settings"
+    lang["generator.underground_city.archipelago"] = "Underground City: Archipelago"   # the world type list at world creation (D-104)
     lang["key.underground_city.crew"] = "Open the Crew screen"
     lang["key.categories.underground_city"] = "Underground City"
+    # the names of Core's kit recipes on TaCZ's Gun Smith Table, around TaCZ's own gun name (D-168, gunsmith run 5)
+    lang["underground_city.gun.registered"] = "Registered %s"
+    lang["underground_city.gun.unmarked"] = "Unmarked %s"
     corridors = json.loads(CORRIDORS.read_text(encoding="utf-8"))
     for route in corridors["routes"]:
         for gate in route["checkpoints"]:
@@ -351,6 +397,7 @@ def build(data: dict, contracts: dict) -> dict[Path, bytes]:
             "schema_version": 1, "capacity": policy["capacity"], "initial_stock": policy["initial_stock"],
             "interval_ticks": policy["interval_minutes"] * 1200, "items_per_interval": policy["items_per_interval"],
             "lockpicks": SECURITY_LOCKPICKS[policy["security"]],
+            "lock_profile": SECURITY_LOCK_PROFILE[policy["security"]],
             "loot_table": f"{NAMESPACE}:property/{policy['id']}"}).encode()
     for name, entries in loot["tables"].items():
         pool = []
@@ -367,8 +414,27 @@ def build(data: dict, contracts: dict) -> dict[Path, bytes]:
         {"parent": f"{NAMESPACE}:block/property_cache"}).encode()
     files[Path(f"rpg-core/src/main/resources/assets/{NAMESPACE}/models/item/secure_data_terminal.json")] = jdump(
         {"parent": f"{NAMESPACE}:block/secure_data_terminal"}).encode()
+    files[Path(f"rpg-core/src/main/resources/assets/{NAMESPACE}/models/item/alarm_panel.json")] = jdump(
+        {"parent": f"{NAMESPACE}:block/alarm_panel_armed"}).encode()
     files[Path(f"rpg-core/src/main/resources/assets/{NAMESPACE}/models/item/public_ledger.json")] = jdump(
         {"parent": f"{NAMESPACE}:block/public_ledger"}).encode()
+    # a salvage yard's scrap heap (D-138) and a courier's sealed letter (D-139): registered in Java, drawn by tools/art
+    files[Path(f"rpg-core/src/main/resources/assets/{NAMESPACE}/models/item/scrap_heap.json")] = jdump(
+        {"parent": f"{NAMESPACE}:block/scrap_heap"}).encode()
+    # the Technician's blocks (D-158): a building's utility panel, the personal computer and the electronics bench, drawn by tools/art; the computer and the bench drop themselves
+    files[Path(f"rpg-core/src/main/resources/assets/{NAMESPACE}/models/item/utility_panel.json")] = jdump({"parent": f"{NAMESPACE}:block/utility_panel_ok"}).encode()
+    files[Path(f"rpg-core/src/main/resources/assets/{NAMESPACE}/models/item/personal_computer.json")] = jdump({"parent": f"{NAMESPACE}:block/personal_computer"}).encode()
+    files[Path(f"rpg-core/src/main/resources/assets/{NAMESPACE}/models/item/electronics_bench.json")] = jdump({"parent": f"{NAMESPACE}:block/electronics_bench"}).encode()
+    files[Path(f"rpg-core/src/main/resources/assets/{NAMESPACE}/models/item/drying_rack.json")] = jdump({"parent": f"{NAMESPACE}:block/drying_rack_drying"}).encode()
+    for dropped in ("personal_computer", "electronics_bench", "drying_rack"):
+        files[Path(f"rpg-core/src/main/resources/data/{NAMESPACE}/loot_tables/blocks/{dropped}.json")] = jdump({"type": "minecraft:block", "pools": [{"rolls": 1,
+            "entries": [{"type": "minecraft:item", "name": f"{NAMESPACE}:{dropped}"}], "conditions": [{"condition": "minecraft:survives_explosion"}]}]}).encode()
+    # the trades' workshop stations (D-163): drawn in three tiers by tools/art/gen_workshops.py; a station drops itself, at its tier, and what is in it from code, so its loot table is empty
+    for station in WORKSHOP_STATIONS:
+        files[Path(f"rpg-core/src/main/resources/assets/{NAMESPACE}/models/item/{station}.json")] = jdump({"parent": f"{NAMESPACE}:block/{station}_1"}).encode()
+        files[Path(f"rpg-core/src/main/resources/data/{NAMESPACE}/loot_tables/blocks/{station}.json")] = jdump({"type": "minecraft:block", "pools": []}).encode()
+    files[Path(f"rpg-core/src/main/resources/assets/{NAMESPACE}/models/item/sealed_envelope.json")] = jdump(
+        {"parent": "minecraft:item/generated", "textures": {"layer0": f"{NAMESPACE}:item/sealed_envelope"}}).encode()
     blueprint = json.loads((ROOT / "content/region-blueprints/cities.json").read_text(encoding="utf-8"))
     for city in blueprint["cities"]:
         files[Path(f"rpg-core/src/main/resources/data/{NAMESPACE}/regions/{city['id']}.json")] = jdump({

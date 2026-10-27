@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "city": "valewood",
+  "item": "minecraft:cake",
+  "unit_price": 24,
+  "initial": 2,
+  "capacity": 3,
+  "units_per_interval": 1,
+  "interval_ticks": 48000,
+  "max_order": 1,
+  "outlets": [
+    "shop:bakery"
+  ]
+}

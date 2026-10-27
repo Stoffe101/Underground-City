@@ -10,7 +10,11 @@ public final class ProgressionRules {
     public static final int MAX_XP = 2_000_000;
     public static final Set<String> CITIES = Set.of("valewood", "ironhaven", "blackwater");
     public static final Set<String> CAREERS = Set.of("farmer", "vintner", "smith", "gunsmith", "technician");
-    public static final Set<String> GENERAL_SKILLS = Set.of("driving", "fitness", "shooting", "trading", "social");
+    /** The general skill every career can raise: thievery, with its own level, points and tree (D-143). Kept in the general XP record, so a save before it simply has none. */
+    public static final String THIEVERY = "thievery";
+    public static final Set<String> GENERAL_SKILLS = Set.of("driving", "fitness", "shooting", "trading", "social", THIEVERY);
+    /** The Thief track's top level and its XP curve: level n begins at 90 x (n - 1)^2 (level 2 at 90, 5 at 1,440, 10 at 7,290, 25 at 51,840). */
+    public static final int THIEF_MAX_LEVEL = 25, THIEF_XP_STEP = 80;   // level 2 after one house and one sale (90 left a weak haul short: the Thief scenario made 98 to 127)
 
     private ProgressionRules() {}
 
@@ -44,6 +48,18 @@ public final class ProgressionRules {
         if (level >= 30) return 1f;
         int from = xpAtLevel(level), to = xpAtLevel(level + 1);
         return Math.max(0f, Math.min(1f, (xp - from) / (float) Math.max(1, to - from)));
+    }
+
+    /** The Thief level of a thievery XP total (1 to {@link #THIEF_MAX_LEVEL}). */
+    public static int thiefLevelForXp(int xp) {
+        if (xp < 0) throw new IllegalArgumentException("Negative XP");
+        return Math.min(THIEF_MAX_LEVEL, 1 + (int) Math.floor(Math.sqrt(xp / (double) THIEF_XP_STEP)));
+    }
+
+    /** The thievery XP at which a Thief level begins. */
+    public static int thiefXpAtLevel(int level) {
+        int n = Math.max(1, Math.min(THIEF_MAX_LEVEL, level)) - 1;
+        return THIEF_XP_STEP * n * n;
     }
 
     /** Early provisional 30-level curve. Rebalance against actual contracts. */

@@ -159,7 +159,7 @@ public final class WaysideShelterGameTests {
             for (BlockPos at : BlockPos.betweenClosed(lo, hi)) level.setBlock(at, Blocks.AIR.defaultBlockState(), 2);
             for (int cx = lo.getX() >> 4; cx <= hi.getX() >> 4; cx++) for (int cz = lo.getZ() >> 4; cz <= hi.getZ() >> 4; cz++) level.setChunkForced(cx, cz, false);
         };
-        UndergroundGameTests.whenEntitiesTick(helper, level, List.of(lo, hi, new BlockPos(ox, y, oz)), 40, () -> {
+        UndergroundGameTests.whenEntitiesTick(helper, level, everyChunk(lo, hi, y), 40, () -> {
             try {
                 for (int dx = -25; dx <= 25; dx++) for (int dz = -15; dz <= 15; dz++) {
                     BlockPos column = new BlockPos(ox + dx, y, oz + dz);
@@ -203,7 +203,7 @@ public final class WaysideShelterGameTests {
     private static List<CityRegions.Region> realCities = List.of();
     private static List<CheckpointCatalog.Checkpoint> realZones = List.of();
 
-    private static synchronized void emptyTheWorldData() {
+    static synchronized void emptyTheWorldData() {
         if (emptied++ == 0) {
             realCities = CityRegions.INSTANCE.all();
             realZones = CheckpointCatalog.INSTANCE.all();
@@ -212,11 +212,21 @@ public final class WaysideShelterGameTests {
         CheckpointCatalog.INSTANCE.replaceForTest(List.of());
     }
 
-    private static synchronized void restoreTheWorldData() {
+    static synchronized void restoreTheWorldData() {
         if (--emptied == 0) {
             CityRegions.INSTANCE.replaceForTest(realCities);
             CheckpointCatalog.INSTANCE.replaceForTest(realZones);
         }
+    }
+
+    /**
+     * The middle of every chunk a test forced, to wait on before it reads the ground: the site search counts a column in a chunk that is not loaded yet as reserved, so a lot over a chunk
+     * still loading was refused (CI, October 24: the best lot was missing from the list while four probe points were ready).
+     */
+    static List<BlockPos> everyChunk(BlockPos lo, BlockPos hi, int y) {
+        List<BlockPos> out = new java.util.ArrayList<>();
+        for (int cx = lo.getX() >> 4; cx <= hi.getX() >> 4; cx++) for (int cz = lo.getZ() >> 4; cz <= hi.getZ() >> 4; cz++) out.add(new BlockPos(cx * 16 + 8, y, cz * 16 + 8));
+        return out;
     }
 
     private static void buildOneKind(GameTestHelper helper, int kind) {
@@ -239,7 +249,7 @@ public final class WaysideShelterGameTests {
             for (int cx = lo.getX() >> 4; cx <= hi.getX() >> 4; cx++) for (int cz = lo.getZ() >> 4; cz <= hi.getZ() >> 4; cz++) level.setChunkForced(cx, cz, false);
             restoreTheWorldData();
         };
-        List<BlockPos> probes = List.of(lo, hi, new BlockPos(ox, y, oz - 18), new BlockPos(ox, y, oz));
+        List<BlockPos> probes = everyChunk(lo, hi, y);
         UndergroundGameTests.whenEntitiesTick(helper, level, probes, 40, () -> {
             BlockPos origin;
             try {
@@ -329,7 +339,7 @@ public final class WaysideShelterGameTests {
             for (int cx = lo.getX() >> 4; cx <= hi.getX() >> 4; cx++) for (int cz = lo.getZ() >> 4; cz <= hi.getZ() >> 4; cz++) level.setChunkForced(cx, cz, false);
             restoreTheWorldData();
         };
-        List<BlockPos> probes = List.of(lo, hi, new BlockPos(ox, y, oz - 18), new BlockPos(ox, y, oz));
+        List<BlockPos> probes = everyChunk(lo, hi, y);
         UndergroundGameTests.whenEntitiesTick(helper, level, probes, 40, () -> {
             PlacedSites state = new PlacedSites();
             BlockPos origin;

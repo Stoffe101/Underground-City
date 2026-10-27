@@ -20,15 +20,13 @@ final class QShopJourneyActions {
                 screen.showPage(TerminalScreen.Page.IMPORTS);
                 screen.clickShop();stage++;
             }
-        } else if(mc.screen instanceof com.qshop.client.ShopScreen screen) {
-            int left=(screen.width-302)/2+52,top=(screen.height-200)/2;
-            if(stage==3 || stage==5) {
-                int entry=stage==3?0:5;
-                clickShop(screen,left+11+16+entry*33,top+40+15);stage++;
-            } else if(stage==4 || stage==6) {
-                int dialogX=left+50,dialogY=top+45;
-                clickShop(screen,dialogX+41,dialogY+121);stage++;
-                System.out.println("[UC-JOURNEY] clicked provider confirmation stage="+stage);
+        } else if(mc.screen instanceof CivilianShopScreen screen) {
+            // Core's civilian counter stands in front of the provider's screen for Core's own shops (CivilianShopHook); a press sends the provider's own trade request and the server
+            // carries it out. The counter buys at once (no confirmation dialog), and the refreshed shop arrives as a new screen, so each step waits for the next one-second tick.
+            if(stage==3) {
+                if(screen.clickEntry(0)) { stage=5; System.out.println("[UC-JOURNEY] pressed the civilian counter's first Buy stage="+stage); }
+            } else if(stage==5) {
+                if(screen.clickEntry(5)) { stage=7; System.out.println("[UC-JOURNEY] pressed the civilian counter's delivery stage="+stage); }
             }
         }
         // The fixture server reopens the terminal after the provider trades; buy one regional item with a real click.

@@ -25,15 +25,15 @@ import java.util.Set;
 public final class DistrictCatalog extends SimpleJsonResourceReloadListener {
     private static final Logger LOGGER = LogUtils.getLogger();
     public static final DistrictCatalog INSTANCE = new DistrictCatalog();
-    static final Set<String> OPS = Set.of("fill", "block", "terminal", "safe", "secure_terminal", "ledger", "sign", "clerk", "npc", "residence");
-    static final Set<String> ROLES = Set.of("registrar", "employer", "resident", "guard", "vendor", "instructor", "warden");
+    static final Set<String> OPS = Set.of("fill", "block", "terminal", "safe", "secure_terminal", "ledger", "sign", "clerk", "npc", "residence", "loot");
+    static final Set<String> ROLES = Set.of("registrar", "employer", "resident", "guard", "vendor", "instructor", "warden", "shopkeeper");
     static final int MAX_NPCS = 20, MAX_LINES = 8, MAX_LINE = 180;
-    /** Hard bound so a bad datapack cannot ask the server to rewrite an unbounded volume. */
-    static final int MAX_EXTENT = 64, MAX_VOLUME = 64_000, MAX_OPS = 1_000;
+    /** Hard bound so a bad datapack cannot ask the server to rewrite an unbounded volume (a generated roadside place runs to a few thousand operations; the volume is the real bound). */
+    static final int MAX_EXTENT = 64, MAX_VOLUME = 64_000, MAX_OPS = 4_000;
 
     /** {@code a} and {@code b} are relative corners (min/max already ordered); {@code text} is a block state, policy or terminal ref. */
-    public record Op(String kind, BlockPos a, BlockPos b, String text, String facing, BlockPos reference, Npc npc, String requiresMod, Sign sign, Home home) {
-        public Op(String kind, BlockPos a, BlockPos b, String text, String facing, BlockPos reference) { this(kind, a, b, text, facing, reference, null, "", null, null); }
+    public record Op(String kind, BlockPos a, BlockPos b, String text, String facing, BlockPos reference, Npc npc, String requiresMod, Sign sign, Home home, String loot) {
+        public Op(String kind, BlockPos a, BlockPos b, String text, String facing, BlockPos reference) { this(kind, a, b, text, facing, reference, null, "", null, null, ""); }
         /** True when this operation applies in the current mod set (an operation naming an absent mod is skipped, not an error). */
         public boolean applies() { return requiresMod.isEmpty() || net.minecraftforge.fml.ModList.get().isLoaded(requiresMod); }
     }
@@ -41,9 +41,18 @@ public final class DistrictCatalog extends SimpleJsonResourceReloadListener {
     public record Home(String id, String title, String kind, int price, int starterPrice) {}
     /** The words on a sign: up to four short lines, a dye colour and whether the text glows. */
     public record Sign(List<String> lines, String color, boolean glow) {}
-    /** A named citizen of the district: role, villager profession (look and workstation), the career an employer represents and the lines they say. */
-    public record Npc(String role, String name, String profession, String career, List<String> lines) {}
-    public record District(String id, String title, List<Op> ops, BlockPos min, BlockPos max, boolean repeatable) {
+    /**
+     * A named citizen of the district: role, villager profession (look and workstation), the career an employer represents and the lines they say. A shopkeeper names the shop they keep
+     * ({@code shop}, the {@code building} key of a {@code shop_counters} entry, for a roadside place {@code roadside:<place>}).
+     */
+    public record Npc(String role, String name, String profession, String career, List<String> lines, String shop) {
+        public Npc(String role, String name, String profession, String career, List<String> lines) { this(role, name, profession, career, lines, ""); }
+    }
+    /**
+     * {@code homePrefix} names the district's homes in the Crew ledger and the property ladder ({@code <prefix>:<home id>}); it is the district's id unless the file says otherwise, so that the four
+     * pre-rotated variants of one roadside place, of which a world only ever builds one, share the same home ids and the same listings.
+     */
+    public record District(String id, String title, List<Op> ops, BlockPos min, BlockPos max, boolean repeatable, String homePrefix) {
         public int volume() { return (max.getX() - min.getX() + 1) * (max.getY() - min.getY() + 1) * (max.getZ() - min.getZ() + 1); }
         /** The citizens in file order. A citizen's index here is how a placed villager remembers which entry is theirs. */
         public List<Op> npcOps() { return ops.stream().filter(op -> op.npc() != null).toList(); }
@@ -87,7 +96,7 @@ public final class DistrictCatalog extends SimpleJsonResourceReloadListener {
                 b = new BlockPos(Math.max(from.getX(), to.getX()), Math.max(from.getY(), to.getY()), Math.max(from.getZ(), to.getZ()));
             } else { a = b = pos(op.getAsJsonArray("at")); }
             String text = switch (kind) {
-                case "fill", "block", "sign" -> op.get("block").getAsString();
+                case "fill", "block", "sign", "loot" -> op.get("block").getAsString();
                 case "safe" -> op.get("policy").getAsString();
                 default -> "";
             };
@@ -97,7 +106,12 @@ public final class DistrictCatalog extends SimpleJsonResourceReloadListener {
             Npc npc = kind.equals("npc") ? parseNpc(id, op) : null;
             Sign sign = kind.equals("sign") ? parseSign(id, op) : null;
             Home home = kind.equals("residence") ? parseHome(id, op) : null;
-            ops.add(new Op(kind, a, b, text, facing, reference, npc, op.has("requires_mod") ? op.get("requires_mod").getAsString() : "", sign, home));
+            String loot = "";
+            if (kind.equals("loot")) {
+                loot = op.get("table").getAsString();
+                if (!loot.matches("[a-z0-9_.-]+:[a-z0-9_./-]+")) throw new IllegalArgumentException("District " + id + ": bad loot table " + loot);
+            }
+            ops.add(new Op(kind, a, b, text, facing, reference, npc, op.has("requires_mod") ? op.get("requires_mod").getAsString() : "", sign, home, loot));
             for (BlockPos corner : reference == null ? new BlockPos[]{a, b} : new BlockPos[]{a, b, reference}) {
                 lo[0] = Math.min(lo[0], corner.getX()); lo[1] = Math.min(lo[1], corner.getY()); lo[2] = Math.min(lo[2], corner.getZ());
                 hi[0] = Math.max(hi[0], corner.getX()); hi[1] = Math.max(hi[1], corner.getY()); hi[2] = Math.max(hi[2], corner.getZ());
@@ -110,8 +124,10 @@ public final class DistrictCatalog extends SimpleJsonResourceReloadListener {
         if (repeatable && ops.stream().anyMatch(op -> op.home() != null)) throw new IllegalArgumentException("District " + id + ": a repeatable district cannot hold leasable homes");
         java.util.Set<String> homeIds = new java.util.HashSet<>();
         for (Op op : ops) if (op.home() != null && !homeIds.add(op.home().id())) throw new IllegalArgumentException("District " + id + ": duplicate home id " + op.home().id());
+        String homePrefix = json.has("home_prefix") ? json.get("home_prefix").getAsString() : id;
+        if (!homePrefix.matches("[a-z0-9_]{3,48}")) throw new IllegalArgumentException("District " + id + ": bad home_prefix " + homePrefix);
         District district = new District(id, json.has("title") ? json.get("title").getAsString() : id, List.copyOf(ops), min, max,
-            json.has("repeatable") && json.get("repeatable").getAsBoolean());
+            json.has("repeatable") && json.get("repeatable").getAsBoolean(), homePrefix);
         if (max.getX() - min.getX() >= MAX_EXTENT || max.getY() - min.getY() >= MAX_EXTENT || max.getZ() - min.getZ() >= MAX_EXTENT || district.volume() > MAX_VOLUME) {
             throw new IllegalArgumentException("District " + id + " is larger than the safe build limit");
         }
@@ -157,7 +173,9 @@ public final class DistrictCatalog extends SimpleJsonResourceReloadListener {
             lines.add(text);
         }
         if (lines.size() > MAX_LINES) throw new IllegalArgumentException("District " + district + ": too many lines for " + name);
-        return new Npc(role, name, op.has("profession") ? op.get("profession").getAsString() : "none", career, List.copyOf(lines));
+        String shop = op.has("shop") ? op.get("shop").getAsString() : "";
+        if (role.equals("shopkeeper") && !shop.matches("[a-z0-9_]+:[a-z0-9_/]+")) throw new IllegalArgumentException("District " + district + ": a shopkeeper needs the shop they keep");
+        return new Npc(role, name, op.has("profession") ? op.get("profession").getAsString() : "none", career, List.copyOf(lines), shop);
     }
 
     private static BlockPos pos(JsonArray array) {

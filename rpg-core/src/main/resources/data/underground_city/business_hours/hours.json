@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "note": "Business hours by kind of business (eighth pass, D-185): the hours the people who work a building are at their posts, so its door, public floor, counter and cameras follow them. [from, to) in whole hours; from > to crosses midnight. A fence keeps its own hours (21 to 3) whatever the building's.",
+  "kinds": {
+    "shop": [8, 18],
+    "cafe": [7, 20],
+    "restaurant": [11, 23],
+    "pub": [12, 2],
+    "club": [18, 3],
+    "industrial": [7, 19],
+    "office": [8, 18]
+  },
+  "buildings": {
+    "underground_city:vw_bakery": "cafe"
+  },
+  "uses": {
+    "shop": "shop",
+    "cafe": "cafe",
+    "restaurant": "restaurant",
+    "pub": "pub",
+    "bar": "pub",
+    "club": "club",
+    "warehouse": "industrial",
+    "workshop": "industrial",
+    "office": "office"
+  },
+  "fallback": "shop"
+}

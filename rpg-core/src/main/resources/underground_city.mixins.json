@@ -7,7 +7,14 @@
     "GunSmithTableMenuMixin",
     "InventoryInteractionHelperMixin",
     "FeedingUpgradeWrapperMixin",
-    "GroundPathNavigationMixin"
+    "GroundPathNavigationMixin",
+    "ChunkGeneratorStructuresMixin",
+    "LostCitiesChunkDriverMixin",
+    "LakeFeatureMixin"
+  ],
+  "client": [
+    "ToastComponentMixin",
+    "GunSmithTableScreenMixin"
   ],
   "injectors": {
     "defaultRequire": 0

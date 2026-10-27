@@ -174,6 +174,8 @@ def phase(number: int, clients: list[tuple[Path,str]]) -> dict:
         if abrupt: result.update(result_extra)
         if number==1: PHASE1.update(result)
         if SCENARIO=='crew': result['clients']=check_crew_clients(number,clients)
+        # the Crew contract step (D-170) runs in phase 2 without shared finances; its report must be there, not merely the phase's pass
+        if SCENARIO=='crew' and number==2 and not SURVIVAL and 'crew_contract' not in result: raise RuntimeError('The Crew journey passed phase 2 without the Crew contract step')
         if SCENARIO=='crew' and SURVIVAL: result['smith_backpack_screens']=check_survival_clients(number)
         result['logins']=login_report(number)
         result['server_first_start_retries']=server_retries

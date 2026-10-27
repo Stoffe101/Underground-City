@@ -87,6 +87,28 @@ public final class RegistrationGameTests {
         helper.succeed();
     }
 
+    /** Gunsmith run 2: the table showed an empty pistol tab because the kit's blueprint had not been read, and nothing said so. The blueprint counts as unread until its gun is learned. */
+    @GameTest(template = "empty")
+    public static void aNewGunsmithIsToldToReadTheKitsBlueprintAndALearnedGunReachesTheTable(GameTestHelper helper) throws Exception {
+        if (!net.minecraftforge.fml.ModList.get().isLoaded("taczblueprints")) { helper.succeed(); return; }
+        FakePlayer player = fresh(helper, "uc_register_bp");
+        check(RegistrationService.choose(player, "ironhaven", "gunsmith") == RegistrationService.Outcome.REGISTERED, "Registration must succeed");
+        String unread = BlueprintGate.unread(player);
+        check(unread != null, "The kit's Glock 17 blueprint must count as unread right after registration");
+        Object capability = player.getCapability((net.minecraftforge.common.capabilities.Capability<?>) Class.forName("com.raiiiden.taczblueprints.capability.GunUnlocksProvider")
+            .getField("UNLOCKS").get(null)).resolve().orElse(null);
+        if (capability != null) {
+            capability.getClass().getMethod("unlockGun", String.class).invoke(capability, "tacz:glock_17");
+            check(BlueprintGate.unread(player) == null, "Once the Glock 17 is learned, its blueprint must no longer count as unread");
+            // gunsmith run 4: the addon's table screen looks for tacz:gun/glock_17, which its blueprint never records
+            check(BlueprintGate.learnBothSpellings(player) == 1, "The learned Glock 17 must be recorded once under the table's spelling");
+            @SuppressWarnings("unchecked") java.util.Set<String> learned = (java.util.Set<String>) capability.getClass().getMethod("getUnlockedGuns").invoke(capability);
+            check(learned.contains("tacz:gun/glock_17") && learned.contains("tacz:glock_17"), "Both spellings of the Glock 17 must be learned: " + learned);
+            check(BlueprintGate.learnBothSpellings(player) == 0, "Reconciling again must add nothing");
+        }
+        helper.succeed();
+    }
+
     @GameTest(template = "empty")
     public static void aFullInventoryDropsThePackInsteadOfLosingIt(GameTestHelper helper) {
         FakePlayer player = fresh(helper, "uc_register_c");

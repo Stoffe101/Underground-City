@@ -1,0 +1,11 @@
+{
+  "center_chunk": [
+    0,
+    0
+  ],
+  "city_radius_blocks": 330,
+  "dimension": "minecraft:overworld",
+  "id": "ironhaven",
+  "radius_blocks": 500,
+  "schema_version": 1
+}

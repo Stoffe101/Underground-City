@@ -1,0 +1,20 @@
+{
+  "schema_version": 3,
+  "title": "Bulk flour for the Ironhaven works canteen",
+  "career": "farmer",
+  "level": 4,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "underground_city:flour",
+      "count": 64
+    }
+  ],
+  "credits": 400,
+  "xp": 600,
+  "capacity": 1,
+  "refill_ticks": 24000,
+  "legality": "legal",
+  "requires_skill": "farmer.fundamentals",
+  "requires_facility": "trade"
+}

@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "city": "valewood",
+  "buildings": ["underground_city:vw_shop"],
+  "label": "the General Store",
+  "hint": "Its public Operations Terminal (inside) lists work for your trade; your welcome pack also holds a terminal of your own. Press K for your home and your journey.",
+  "search_chunks": 14
+}

@@ -1,0 +1,11 @@
+{
+  "dimension": "minecraft:overworld",
+  "jurisdiction": "valewood",
+  "radius": 48,
+  "risk": "inspection",
+  "route": "valewood_blackwater",
+  "schema_version": 1,
+  "title": "Valewood gate on the Blackwater road",
+  "x": 1417,
+  "z": 477
+}

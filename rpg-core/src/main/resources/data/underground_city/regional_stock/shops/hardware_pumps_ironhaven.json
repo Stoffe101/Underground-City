@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "city": "ironhaven",
+  "item": "underground_city:pump_assembly",
+  "unit_price": 320,
+  "initial": 1,
+  "capacity": 1,
+  "units_per_interval": 1,
+  "interval_ticks": 216000,
+  "max_order": 1,
+  "outlets": [
+    "shop:hardware"
+  ],
+  "supply": {
+    "pays": 210,
+    "xp": 40,
+    "career": "smith"
+  }
+}

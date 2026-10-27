@@ -1,0 +1,103 @@
+{
+  "schema_version": 1,
+  "id": "fermentation_vat",
+  "career": "vintner",
+  "title": "Fermentation Vat",
+  "note": "Ferments fruit and sugar into wine and cider over minutes of play. A hooped vat runs more at once; a cooled one makes better wine.",
+  "tiers": [
+    {
+      "tier": 1,
+      "name": "Open Vat",
+      "batch": 1,
+      "speed": 1.0
+    },
+    {
+      "tier": 2,
+      "name": "Iron Hoops and Tap",
+      "batch": 2,
+      "speed": 1.35,
+      "upgrade": {
+        "parts": {
+          "underground_city:barrel_hoops": 4,
+          "underground_city:fasteners": 4
+        }
+      }
+    },
+    {
+      "tier": 3,
+      "name": "Cooling Jacket",
+      "batch": 4,
+      "speed": 1.75,
+      "upgrade": {
+        "parts": {
+          "underground_city:gear_set": 1,
+          "underground_city:barrel_hoops": 4,
+          "minecraft:copper_ingot": 4
+        },
+        "skill": "vintner.cellar_fitout"
+      }
+    }
+  ],
+  "recipes": [
+    {
+      "id": "berry_wine",
+      "title": "Berry wine",
+      "inputs": {
+        "minecraft:sweet_berries": 8,
+        "minecraft:sugar": 2,
+        "minecraft:glass_bottle": 3
+      },
+      "output": "underground_city:berry_wine",
+      "count": 3,
+      "seconds": 360,
+      "xp": 40,
+      "grading": {
+        "tier3": 1,
+        "skills": {
+          "vintner.cellar_craft": 1
+        }
+      },
+      "note": "Eight punnets of berries and two sugar make three bottles. Cellar Craft and a cooled vat lift the grade."
+    },
+    {
+      "id": "apple_cider",
+      "title": "Apple cider",
+      "inputs": {
+        "minecraft:apple": 6,
+        "minecraft:sugar": 1,
+        "minecraft:glass_bottle": 3
+      },
+      "output": "underground_city:apple_cider",
+      "count": 3,
+      "seconds": 300,
+      "xp": 35,
+      "grading": {
+        "tier3": 1,
+        "skills": {
+          "vintner.cellar_craft": 1
+        }
+      },
+      "note": "Six apples and a sugar make three bottles."
+    },
+    {
+      "id": "glow_wine",
+      "title": "Glow-berry wine",
+      "inputs": {
+        "minecraft:glow_berries": 8,
+        "minecraft:sugar": 2,
+        "minecraft:glass_bottle": 3
+      },
+      "output": "underground_city:berry_wine",
+      "count": 4,
+      "seconds": 420,
+      "xp": 50,
+      "tier": 2,
+      "skill": "vintner.cellar_craft",
+      "grading": {
+        "base": 1,
+        "tier3": 1
+      },
+      "note": "Cave glow berries make a lighter wine that never comes out below Fine."
+    }
+  ]
+}

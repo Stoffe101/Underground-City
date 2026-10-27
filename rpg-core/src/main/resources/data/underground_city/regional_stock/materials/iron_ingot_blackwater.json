@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "city": "blackwater",
+  "item": "minecraft:iron_ingot",
+  "unit_price": 11,
+  "initial": 10,
+  "capacity": 16,
+  "units_per_interval": 2,
+  "interval_ticks": 36000,
+  "max_order": 8,
+  "outlets": [
+    "city"
+  ]
+}

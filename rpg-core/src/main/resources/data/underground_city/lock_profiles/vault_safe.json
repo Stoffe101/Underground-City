@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "pins": 6,
+  "spools": 2,
+  "requires_skill": "thief.safecracking",
+  "requires_tool": "pro_pick_set",
+  "tolerance": 0.055,
+  "hold_ticks": 12,
+  "strain_limit": 100,
+  "strain_per_tick": 3.8,
+  "ease_per_tick": 1.6,
+  "time_limit_ticks": 1300,
+  "feel_noise": 0.3,
+  "tremor": 0.01,
+  "lockout_ticks": 6000,
+  "alarm_chance": 0.7
+}

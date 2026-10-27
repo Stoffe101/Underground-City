@@ -1,0 +1,19 @@
+{
+  "schema_version": 3,
+  "title": "Hoops for the Valewood cooperage",
+  "career": "smith",
+  "level": 3,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "underground_city:barrel_hoops",
+      "count": 12
+    }
+  ],
+  "credits": 80,
+  "xp": 220,
+  "capacity": 3,
+  "refill_ticks": 9000,
+  "legality": "legal",
+  "requires_skill": "smith.structural_works"
+}

@@ -52,9 +52,23 @@ public final class PropertyCacheBlock extends BaseEntityBlock {
             serverPlayer.sendSystemMessage(Component.literal("Property storage is unavailable until the server is restarted."));
             return InteractionResult.CONSUME;
         }
-        String refusal = cache.access(serverLevel, serverPlayer, WorkOrderLedger.get(serverPlayer.server).clock());
-        if (refusal != null) {
-            serverPlayer.sendSystemMessage(Component.literal(refusal));
+        long now = WorkOrderLedger.get(serverPlayer.server).clock();
+        PropertyCacheBlockEntity.Entry entry = cache.entry(serverLevel, serverPlayer, now);
+        if (entry.kind() == PropertyCacheBlockEntity.Entry.Kind.REFUSED) {
+            serverPlayer.sendSystemMessage(Component.literal(entry.text()));
+            return InteractionResult.CONSUME;
+        }
+        if (entry.kind() == PropertyCacheBlockEntity.Entry.Kind.PICK) {
+            // nobody cracks a safe out on the public floor of a building while it is open (D-147); one in a staff-only room is reached past a staff door, as locked as the street door (D-159),
+            // so by day the club's back-office safe still asks for the Pro Pick Set (found writing the advanced burglary scenario)
+            var building = CityBuildings.INSTANCE.at(serverLevel, pos);
+            if (building.isPresent() && BuildingGuard.openToPublic(serverLevel, building.get(), null) && StaffZones.onPublicFloor(serverLevel, building.get(), pos)) {
+                serverPlayer.sendSystemMessage(Component.literal(StaffZones.ON_THE_FLOOR));
+                return InteractionResult.CONSUME;
+            }
+            var city = CityRegions.INSTANCE.nearest(serverLevel, pos).orElse("");
+            String refusal = LockService.begin(serverPlayer, serverLevel, new LockService.Target(LockService.Kind.SAFE, pos.immutable(), entry.profile(), city, "safe", cache.label(), entry.picksNeeded()));
+            if (refusal != null) serverPlayer.sendSystemMessage(Component.literal(refusal));
             return InteractionResult.CONSUME;
         }
         serverPlayer.openMenu(cache);

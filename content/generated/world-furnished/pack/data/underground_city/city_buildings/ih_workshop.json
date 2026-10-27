@@ -1,0 +1,90 @@
+{
+  "city": "ironhaven",
+  "floors": {
+    "max": 2,
+    "min": 2
+  },
+  "id": "ih_workshop",
+  "notes": "A high-bay workshop: tools and furnaces below, an office mezzanine above the north half.",
+  "schema_version": 1,
+  "spots": [
+    {
+      "facing": "south",
+      "kind": "door",
+      "note": "bay door",
+      "x": 7,
+      "y": 1,
+      "z": 14
+    },
+    {
+      "facing": "north",
+      "kind": "door",
+      "note": "bay door",
+      "x": 7,
+      "y": 1,
+      "z": 2
+    },
+    {
+      "facing": "east",
+      "kind": "bench",
+      "note": "workbench",
+      "x": 2,
+      "y": 1,
+      "z": 5
+    },
+    {
+      "facing": "east",
+      "kind": "anvil",
+      "x": 2,
+      "y": 1,
+      "z": 7
+    },
+    {
+      "facing": "west",
+      "kind": "stove",
+      "note": "furnace",
+      "x": 13,
+      "y": 1,
+      "z": 8
+    },
+    {
+      "facing": "south",
+      "kind": "desk",
+      "note": "the hardware counter at the work table",
+      "x": 7,
+      "y": 1,
+      "z": 8
+    },
+    {
+      "facing": "north",
+      "kind": "stash",
+      "note": "tool chests",
+      "x": 12,
+      "y": 1,
+      "z": 13
+    },
+    {
+      "facing": "north",
+      "kind": "alarm",
+      "note": "alarm panel by the bay door",
+      "x": 6,
+      "y": 2,
+      "z": 13
+    }
+  ],
+  "units": [
+    {
+      "box": [
+        2,
+        1,
+        3,
+        13,
+        10,
+        13
+      ],
+      "id": "premises",
+      "title": "Workshop"
+    }
+  ],
+  "use": "workshop"
+}

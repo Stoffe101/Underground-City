@@ -57,6 +57,25 @@ class SkillTreeTextTest(unittest.TestCase):
                 self.assertIsNone(re.search(r"\d+\s*(%|points)", text), f"{node['id']} restates an effect in its description: {text!r}")
 
 
+EFFECT_CHARS = 40   # one line beside the detail panel's button at its narrowest (1280x720, GUI scale 2): longer lines were cut off on the real client (Thief run 11)
+SPECIALIZATIONS = TREES.parent / "specialization_trees"
+
+
+class ThiefTreeTextTest(unittest.TestCase):
+    """The Thief tree (D-143) writes its effect line by hand; it and the description must fit the same panel as the career trees'."""
+
+    def test_the_thief_tree_fits_the_detail_panel(self):
+        import re
+        trees = sorted(SPECIALIZATIONS.glob("*.json"))
+        self.assertTrue(trees, "no specialization tree found")
+        for path in trees:
+            for node in json.loads(path.read_text(encoding="utf-8"))["nodes"]:
+                self.assertLessEqual(len(node["description"]), DESCRIPTION_CHARS, f"{node['id']} is cut off on the detail panel: {node['description']!r}")
+                self.assertIsNone(re.search(r"\d+\s*(%|points)", node["description"]), f"{node['id']} restates an effect in its description")
+                self.assertTrue(node.get("effect"), f"{node['id']} has no effect line")
+                self.assertLessEqual(len(node["effect"]), EFFECT_CHARS, f"{node['id']}'s effect line is cut off: {node['effect']!r}")
+
+
 class SkillTreeLayoutTest(unittest.TestCase):
     def test_every_tree_fits_the_scrolling_page(self):
         for path in sorted(TREES.glob("*.json")):

@@ -1,0 +1,19 @@
+{
+  "schema_version": 3,
+  "title": "Crew contract: cider for the depot canteen",
+  "career": "vintner",
+  "level": 2,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "underground_city:apple_cider",
+      "count": 6
+    }
+  ],
+  "credits": 120,
+  "xp": 280,
+  "capacity": 2,
+  "refill_ticks": 12000,
+  "legality": "legal",
+  "crew_part": "underground_city:depot_canteen/cider"
+}

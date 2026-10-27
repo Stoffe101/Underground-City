@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "city": "valewood",
+  "item": "minecraft:map",
+  "unit_price": 8,
+  "initial": 3,
+  "capacity": 6,
+  "units_per_interval": 1,
+  "interval_ticks": 36000,
+  "max_order": 2,
+  "outlets": [
+    "shop:motel_desk"
+  ]
+}

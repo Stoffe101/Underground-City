@@ -61,8 +61,8 @@ import java.util.UUID;
 
 /**
  * Keeps a leased home to its tenants: who may break or place blocks inside, open its doors, its containers and its workstations. Server
- * side only (a client's own prediction is never trusted). A unit nobody holds is a showroom: anyone may walk in and look, nobody may build
- * in it or open anything. The one-block shell around every home (its walls, floor and ceiling) belongs to the city, so a tenant cannot
+ * side only (a client's own prediction is never trusted). A unit nobody holds is locked (D-188; until then it was a walk-in showroom): its listing is
+ * read on the Home page from outside, leasing it opens its door to its tenant, and nobody may build in it or open anything. The one-block shell around every home (its walls, floor and ceiling) belongs to the city, so a tenant cannot
  * open a neighbour's wall. Creative-mode players are never held back (an operator in survival is).
  *
  * <p>Beyond the player's own block actions (D-090) the guard also closes the practical ways round them: pistons moving blocks across a home's
@@ -144,7 +144,8 @@ public final class ResidenceGuard {
 
     public static boolean allowed(CrewLedger ledger, Residence r, UUID player, String dimension, BlockPos pos, Act act) {
         if (act == Act.EXPLODE) return false;
-        if (!r.owned() || r.reservedBy != null) return act == Act.DOOR || act == Act.OTHER; // a showroom: look, don't touch
+        // a unit nobody holds is locked (D-188): its listing is read on the Home page from outside, and leasing it is what opens the door; nobody builds or opens anything in it
+        if (!r.owned() || r.reservedBy != null) return act == Act.OTHER;
         boolean interior = r.insideInterior(dimension, pos);
         if (!interior && (act == Act.BREAK || act == Act.PLACE)) return false; // the shell is the city's
         Rights rights = rights(ledger, r, player);
@@ -228,7 +229,9 @@ public final class ResidenceGuard {
 
     /** The words for a refusal. */
     public static String refusal(CrewLedger ledger, Residence r, Act act) {
-        if (!r.owned() || r.reservedBy != null) return "This home is for lease. You can look around; open the Crew screen (K) beside it to lease it.";
+        if (!r.owned() || r.reservedBy != null) return act == Act.DOOR
+            ? "To let: " + r.title + ". The door stays locked until you hold the lease: press K, open Home and choose Find a home to read the listing and lease it from here."
+            : "This home is to let and nobody's yet: nothing in it is yours to use. Press K, open Home and choose Find a home to lease it.";
         String owner = r.ownerType == OwnerType.PLAYER ? "a private home" : "a Crew home";
         Crew crew = r.ownerType == OwnerType.CREW ? ledger.crew(r.owner) : null;
         if (crew != null) owner = "the home of " + crew.name;
@@ -327,8 +330,24 @@ public final class ResidenceGuard {
         var touched = level.getBlockEntity(pos);
         Act act = classify(state, touched);
         if (act == Act.WORKSTATION && isContainer(touched) && r.insideInterior(dim, pos) && takeOutOnly(ledger, r, player.getUUID(), state)) act = Act.CONTAINER;
+        // A unit to let: its door is locked to everybody (D-188), except to let out whoever is inside it and to shut it when it stands open; a lease opens it to its tenant.
+        if (act == Act.DOOR && (!r.owned() || r.reservedBy != null) && state.getBlock() instanceof net.minecraft.world.level.block.DoorBlock) {
+            BlockPos lower = BuildingGuard.lowerOf(pos, state);
+            BlockState lowerState = level.getBlockState(lower);
+            boolean open = lowerState.hasProperty(net.minecraft.world.level.block.DoorBlock.OPEN) && lowerState.getValue(net.minecraft.world.level.block.DoorBlock.OPEN);
+            if (open || r.insideInterior(dim, player.blockPosition())) { BuildingGuard.byHand(event, player, level, lower, lowerState); return; }
+            deny(event, player, refusal(ledger, r, Act.DOOR));
+            return;
+        }
         // An ender chest is the player's own; sitting on a bed, reading a sign and the like are plain interactions.
         if (!allowed(ledger, r, player.getUUID(), dim, pos, act)) { deny(event, player, refusal(ledger, r, act)); return; }
+        // an iron door does not open by hand; where the home lets this person through, Core opens it as a click would a wooden one. The building's guard stands aside for a home's own door
+        // (BuildingGuard.protectedAt), so the commercial workshop's iron street door, inside its premises, stayed shut to the tenant who had just rented them (premises run 5, seventh pass)
+        if (act == Act.DOOR && state.getBlock() instanceof net.minecraft.world.level.block.DoorBlock) {
+            BlockPos lower = BuildingGuard.lowerOf(pos, state);
+            BuildingGuard.byHand(event, player, level, lower, level.getBlockState(lower));
+            return;
+        }
         if (act == Act.WORKSTATION && r.insideInterior(dim, pos)) {
             String need = facilityNeeded(state);
             if (need != null && !hasFacility(r, need)) deny(event, player, noFacility(r, need));

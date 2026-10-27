@@ -28,7 +28,7 @@ public final class RegistrationScreen extends UcScreen {
             "Smiths, engineers, arms makers", "Strict gates, goods searched", "Valewood, Blackwater: about 4 min"),
         new City("valewood", "VALEWOOD", UcUi.VALEWOOD, "A green low-rise town of farms, vineyards and a busy market square.",
             "Farmers, vintners, traders", "Modest patrols, arms licensed", "Ironhaven, Blackwater: about 4 min"),
-        new City("blackwater", "BLACKWATER", UcUi.BLACKWATER, "Glass towers, a working harbour and nightlife on the water.",
+        new City("blackwater", "BLACKWATER", UcUi.BLACKWATER, "Glass towers, old quays and nightlife by the water.",
             "Technicians, shippers, brokers", "Uneven enforcement", "Ironhaven, Valewood: about 4 min"));
     private static final List<Career> CAREERS = List.of(
         new Career("farmer", "FARMER", UcUi.Icon.FARMER, 0xff86c45a, "Crops and greenhouses", "Restricted cultivation"),
@@ -105,6 +105,15 @@ public final class RegistrationScreen extends UcScreen {
     int[] cardCentre(int index) { int[] b = cardBounds(index); return new int[]{b[0] + b[2] / 2, b[1] + b[3] / 2}; }
     int[] confirmCentre() { return new int[]{confirm.getX() + confirm.getWidth() / 2, confirm.getY() + confirm.getHeight() / 2}; }
     int step() { return step; }
+
+    /**
+     * A new player's first login brings toasts with it (a recipe notice, and the advancements that Immersive Vehicles grants by itself) which stand in the top right corner over the
+     * third city's card for several seconds, before anything has been chosen. While this screen is open they are dropped; the advancements themselves are still recorded.
+     */
+    @Override public void tick() {
+        super.tick();
+        Minecraft.getInstance().getToasts().clear();
+    }
 
     // ---------------------------------------------------------------- behaviour
     private int cardCount() { return step == 0 ? CITIES.size() : CAREERS.size(); }
@@ -198,7 +207,7 @@ public final class RegistrationScreen extends UcScreen {
 
     private void renderCities(GuiGraphics g, int mouseX, int mouseY) {
         if (introHeight() > 0) {
-            UcUi.wrapped(g, font, "Three rival cities, four trades, two ways to earn: legal work and the underground. Choose where your story starts. Nothing here locks you in.",
+            UcUi.wrapped(g, font, "Three rival cities, five trades, two ways to earn: legal work and the underground. Choose where your story starts. Nothing here locks you in.",
                 bodyX(), bodyY() + 2, bodyW(), UcUi.SOFT, 3);
         }
         int hover = hovered(mouseX, mouseY);

@@ -1,0 +1,77 @@
+{
+  "city": "blackwater",
+  "floors": {
+    "max": 2,
+    "min": 2
+  },
+  "id": "bw_club",
+  "notes": "A club: dance floor, bar and DJ booth below, a VIP lounge and a hidden back office above.",
+  "schema_version": 1,
+  "spots": [
+    {
+      "facing": "south",
+      "kind": "door",
+      "note": "front door",
+      "x": 7,
+      "y": 1,
+      "z": 14
+    },
+    {
+      "facing": "north",
+      "kind": "door",
+      "note": "back door",
+      "x": 7,
+      "y": 1,
+      "z": 1
+    },
+    {
+      "facing": "west",
+      "kind": "counter",
+      "note": "bar",
+      "x": 12,
+      "y": 1,
+      "z": 8
+    },
+    {
+      "facing": "west",
+      "kind": "desk",
+      "note": "back office desk",
+      "x": 12,
+      "y": 7,
+      "z": 12
+    },
+    {
+      "facing": "west",
+      "kind": "stash",
+      "note": "back office",
+      "x": 13,
+      "y": 7,
+      "z": 12
+    },
+    {
+      "facing": "north",
+      "kind": "seat",
+      "note": "booth",
+      "x": 3,
+      "y": 1,
+      "z": 12
+    },
+    {
+      "facing": "west",
+      "kind": "fence",
+      "note": "after hours the back office buys stolen goods (D-125)",
+      "x": 12,
+      "y": 7,
+      "z": 12
+    },
+    {
+      "facing": "north",
+      "kind": "alarm",
+      "note": "alarm panel by the front door",
+      "x": 6,
+      "y": 2,
+      "z": 13
+    }
+  ],
+  "use": "club"
+}

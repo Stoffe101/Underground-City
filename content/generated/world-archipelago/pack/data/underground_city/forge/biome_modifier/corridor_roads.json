@@ -1,0 +1,6 @@
+{
+  "biomes": "#minecraft:is_overworld",
+  "features": "underground_city:corridor_roads",
+  "step": "top_layer_modification",
+  "type": "forge:add_features"
+}

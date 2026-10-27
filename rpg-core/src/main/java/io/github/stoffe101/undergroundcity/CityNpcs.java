@@ -42,14 +42,18 @@ public final class CityNpcs {
      * Roles that stay where they were put: a wayside warden has no village bell or bed to be drawn back to, so left alone a vanilla villager strolls off down
      * the road. The tether is a leash on random walking (not a wall) and a mob does not save it, so it is written in the citizen's tag and restored when they load.
      */
-    static final java.util.Set<String> TETHERED = java.util.Set.of("warden");
+    static final java.util.Set<String> TETHERED = java.util.Set.of("warden", "shopkeeper", "guard");
     static final int TETHER_RADIUS = 6;
+    /** A shopkeeper keeps to the few blocks behind their counter: a counter is open only while its keeper stands within three blocks of the spot it was opened at ({@link ShopCounters}). */
+    static final int SHOPKEEPER_TETHER = 1;
+
+    static int tether(String role) { return role.equals("shopkeeper") ? SHOPKEEPER_TETHER : TETHER_RADIUS; }
 
     @SubscribeEvent
     public void joined(net.minecraftforge.event.entity.EntityJoinLevelEvent event) {
         if (event.getLevel().isClientSide() || !(event.getEntity() instanceof Villager villager) || !isCityNpc(villager)) return;
         CompoundTag tag = villager.getPersistentData().getCompound(TAG);
-        if (tag.contains("home", Tag.TAG_LONG)) villager.restrictTo(BlockPos.of(tag.getLong("home")), TETHER_RADIUS);
+        if (tag.contains("home", Tag.TAG_LONG)) villager.restrictTo(BlockPos.of(tag.getLong("home")), tag.contains("tether", Tag.TAG_INT) ? tag.getInt("tether") : TETHER_RADIUS);
     }
 
     /** Places one citizen. The floor must be solid with two clear blocks above, exactly as for the supply clerk. */
@@ -72,7 +76,7 @@ public final class CityNpcs {
         tag.putString("district", districtId);
         tag.putInt("index", index);
         if (terminal != null) tag.putLong("terminal", terminal.asLong());
-        if (TETHERED.contains(npc.role())) { tag.putLong("home", position.asLong()); villager.restrictTo(position, TETHER_RADIUS); }
+        if (TETHERED.contains(npc.role())) { tag.putLong("home", position.asLong()); tag.putInt("tether", tether(npc.role())); villager.restrictTo(position, tether(npc.role())); }
         villager.getPersistentData().put(TAG, tag);
         villager.moveTo(position.getX() + .5, position.getY(), position.getZ() + .5, 0, 0);
         if (!level.addFreshEntity(villager)) throw new IllegalStateException("Spawn of " + npc.name() + " was rejected");
@@ -86,6 +90,13 @@ public final class CityNpcs {
     }
 
     static boolean isCityNpc(Villager villager) { return villager.getPersistentData().contains(TAG, Tag.TAG_COMPOUND); }
+
+    /** True for a person of a roadside place or a wayside stop: they live on the road, in no city. */
+    static boolean onTheRoad(Villager villager) {
+        if (!isCityNpc(villager)) return false;
+        String district = villager.getPersistentData().getCompound(TAG).getString("district");
+        return WaysideShelters.KINDS.contains(district) || RoadsidePlaces.isPlaceDistrict(district);
+    }
 
     static Optional<DistrictCatalog.Npc> definition(Villager villager) {
         if (!isCityNpc(villager)) return Optional.empty();
@@ -151,6 +162,7 @@ public final class CityNpcs {
             case "guard" -> "Papers in order, " + playerName + "?";
             case "instructor" -> "Welcome back to the line, " + playerName + ".";
             case "warden" -> "Still on the road, " + playerName + "?";
+            case "shopkeeper" -> "Back again, " + playerName + "? The usual?";
             default -> "Good to see you again, " + playerName + ".";
         };
     }

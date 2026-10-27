@@ -12,6 +12,44 @@ final class Scenarios {
         switch (scenario) {
             case "input" -> input();
             case "register" -> register();
+            case "arrival" -> arrival();
+            case "citystart" -> CityStartScenario.build();
+            case "wreck" -> WreckScenario.build();
+            case "police" -> PoliceScenario.build();
+            case "doors" -> DoorsScenario.build();
+            case "building" -> BuildingScenario.build();
+            case "pregen" -> PregenScenario.build();
+            case "doorwalk" -> doorwalk();
+            case "burglary" -> BurglaryScenario.build();
+            case "thief" -> ThiefScenario.build();
+            case "heist" -> HeistScenario.build();
+            case "cannabis" -> CannabisScenario.build();
+            case "cannabislaw" -> CannabisScenario.buildLaw();
+            case "patrol" -> PatrolScenario.build();
+            case "freight" -> FreightScenario.build();
+            case "places" -> PlacesScenario.build();
+            case "tech" -> TechScenario.build();
+            case "organic" -> OrganicScenario.build();
+            case "crowd" -> CrowdScenario.build();
+            case "hitch" -> HitchScenario.build();
+            case "raid" -> RaidScenario.build();
+            case "civic" -> CivicScenario.build();
+            case "workshop" -> WorkshopScenario.build();
+            case "smith" -> SmithScenario.build();
+            case "engineer" -> EngineerScenario.build();
+            case "farmer" -> FarmerScenario.build();
+            case "vintner" -> VintnerScenario.build();
+            case "backchannel" -> TechScenario.buildQuiet();
+            case "finds" -> FindScenario.build();
+            case "unmarked" -> GunsmithScenario.buildUnmarked();
+            case "homes" -> HomeScenario.build();
+            case "premises" -> PremisesScenario.build();
+            case "gunsmith" -> GunsmithScenario.build();
+            case "sccamera" -> CameraMeasureScenario.build();
+            case "alarm" -> AlarmScenario.build();
+            case "security" -> SecurityScenario.build();
+            case "journey" -> JourneyScenario.build();
+            case "lockjitter" -> lockjitter();
             case "walk" -> walk();
             case "row" -> row();
             case "posts" -> posts();
@@ -74,6 +112,459 @@ final class Scenarios {
     }
 
     /**
+     * The first minutes of a brand-new archipelago world through real input (D-107, D-109, D-111): where the player arrives, the first-login registration by mouse, the welcome pack, the
+     * status display in a real world beside the other mods' screen furniture (the minimap, the survival bars), the next step of the first hours after registering, a walk up the Row's lane with
+     * the keys, and a minute in an Ironhaven street (who comes out, what the passes cost). What the harness does that a player does not: it creates the world, sets the game mode (a command, so
+     * that the survival bars are on screen) and moves the player to the street. It is a scripted client in a software-rendered virtual display, not a person.
+     */
+    private static void arrival() {
+        Playtest.keepScreens = true;
+        Playtest.queue("the client has the ground under the player", () -> { }, Scenarios::groundBelowPlayer, 1200);
+        Playtest.queue("the player arrived on dry, open ground near the landing and Founders Row", Scenarios::checkArrival);
+        Playtest.queue("the first-login registration screen opens by itself", () -> { }, () -> Minecraft.getInstance().screen instanceof RegistrationScreen, 900);
+        Playtest.wait("let the screen render", 20);
+        Playtest.queue("screenshot of the first screen", () -> Playtest.screenshotNextFrame("uc-arrival-register-1"));
+        Playtest.wait("frame", 8);
+        Playtest.queue("click the first city", () -> {
+            Playtest.focusWindow();
+            int[] at = ((RegistrationScreen) Minecraft.getInstance().screen).cardCentre(0);
+            Playtest.clickGui(at[0], at[1]);
+        }, () -> ((RegistrationScreen) Minecraft.getInstance().screen).step() == 1, 100);
+        Playtest.queue("click the first profession", () -> {
+            int[] at = ((RegistrationScreen) Minecraft.getInstance().screen).cardCentre(0);
+            Playtest.clickGui(at[0], at[1]);
+        }, () -> ((RegistrationScreen) Minecraft.getInstance().screen).step() == 2, 100);
+        Playtest.wait("settle", 10);
+        Playtest.queue("click CONFIRM", () -> {
+            int[] at = ((RegistrationScreen) Minecraft.getInstance().screen).confirmCentre();
+            Playtest.clickGui(at[0], at[1]);
+        }, () -> !(Minecraft.getInstance().screen instanceof RegistrationScreen), 200);
+        Playtest.queue("the server created the citizen and the welcome pack arrived", () -> {
+            var mc = Minecraft.getInstance();
+            var citizen = CitizenState.get(mc.getSingleplayerServer()).find(mc.player.getUUID());
+            if (citizen.isEmpty()) { Playtest.fail("the server has no citizen record after the click path"); return; }
+            Playtest.log("citizen " + citizen.get().city + "/" + citizen.get().career);
+            boolean terminal = false;
+            for (var stack : mc.player.getInventory().items) if (stack.is(UndergroundCity.TERMINAL_ITEM.get())) terminal = true;
+            if (!terminal) Playtest.fail("the welcome pack did not arrive");
+            expectStep("after registering", "Meet your employer");
+        });
+        Playtest.queue("survival mode, as a player would be", () -> Playtest.command("gamemode survival"));
+        Playtest.queue("the status display has the citizen's state", () -> { }, () -> ClientHud.state().registered(), 400);
+        Playtest.queue("the status display's own words, as the client holds them", () -> {
+            var state = ClientHud.state();
+            Playtest.log("status: place '" + state.place() + "' kind " + state.placeKind() + ", home city " + state.homeCity() + ", trade " + state.career() + " level " + state.level() + ", credits " + state.credits());
+        });
+        Playtest.wait("let the display and the world draw", 40);
+        Playtest.queue("screenshot of the status display in the real world", () -> Playtest.screenshotNextFrame("uc-arrival-hud-1"));
+        Playtest.wait("frame", 8);
+
+        // the walk from the arrival to the registrar by the Row's gate, with the keys, in survival. The player arrives at the foot of the Row's lane: the route goes up the lane first and only
+        // then across to the registrar (a straight line would walk into the buildings beside the lane). The heading is set on the client each tick; the keys do the moving.
+        final Vec3[] gate = new Vec3[1], from = new Vec3[1];
+        final int[] ticks = {0};
+        Playtest.queue("walk from the arrival to the registrar with the keys", () -> {
+            var mc = Minecraft.getInstance();
+            var registrar = citizen(null, citizenIndex("registrar", null));
+            if (registrar == null) { Playtest.fail("the registrar is not in the world"); return; }
+            gate[0] = registrar.position();
+            from[0] = mc.player.position();
+            Playtest.log("walking " + String.format(java.util.Locale.ROOT, "%.1f", Math.hypot(gate[0].x - from[0].x, gate[0].z - from[0].z)) + " blocks, from " + mc.player.blockPosition().toShortString() + " to the registrar at " + registrar.blockPosition().toShortString());
+            Playtest.focusWindow();
+            Playtest.keyDown("w");
+            Playtest.keyDown("ctrl");
+        }, () -> {
+            var mc = Minecraft.getInstance();
+            if (gate[0] == null) return true;
+            var me = mc.player;
+            double distance = Math.hypot(gate[0].x - me.getX(), gate[0].z - me.getZ());
+            // up the lane (the arrival's own x) until level with the registrar, then across
+            double aimX = Math.abs(gate[0].z - me.getZ()) > 3.0 ? from[0].x : gate[0].x, aimZ = gate[0].z;
+            me.setYRot((float) Math.toDegrees(Math.atan2(-(aimX - me.getX()), aimZ - me.getZ())));
+            me.setXRot(0);
+            ticks[0]++;
+            if (ticks[0] % 100 == 0) Playtest.log("walking: at " + me.blockPosition().toShortString() + ", " + String.format(java.util.Locale.ROOT, "%.1f", distance) + " blocks from the registrar, on ground " + me.onGround() + ", horizontal collision " + me.horizontalCollision);
+            if (ticks[0] == 500) Playtest.screenshotNextFrame("uc-arrival-walk-stuck");
+            if (distance < 6.5) { Playtest.log("reached the lane beside the registrar after " + ticks[0] + " ticks (" + String.format(java.util.Locale.ROOT, "%.0f", ticks[0] / 20.0) + " s), " + me.blockPosition().toShortString()); return true; }
+            return false;
+        }, 1600);
+        Playtest.queue("stop walking", () -> { Playtest.keyUp("ctrl"); Playtest.keyUp("w"); });
+        Playtest.queue("the walk ended at the gate", () -> {
+            var mc = Minecraft.getInstance();
+            if (gate[0] == null) return;
+            double distance = Math.hypot(gate[0].x - mc.player.getX(), gate[0].z - mc.player.getZ());
+            if (distance >= 6.5) Playtest.fail("the walk from the arrival did not reach the registrar by the gate (" + String.format(java.util.Locale.ROOT, "%.1f", distance) + " blocks left after " + ticks[0] / 20 + " s)");
+        });
+        Playtest.wait("settle", 20);
+        Playtest.queue("screenshot at the gate", () -> Playtest.screenshotNextFrame("uc-arrival-gate"));
+        Playtest.wait("frame", 8);
+
+        // the city's people: stand in a street of Ironhaven for a minute of play and count who came out, and what the passes cost
+        Playtest.queue("stand in an Ironhaven street", () -> Playtest.command("tp @s 8 72 40 0 4"));
+        Playtest.wait("a minute of play for the people to come out", 1200);
+        Playtest.queue("who is about, and what the passes cost", () -> {
+            var mc = Minecraft.getInstance();
+            var box = mc.player.getBoundingBox().inflate(64);
+            int about = level().getEntitiesOfClass(TownspersonEntity.class, box).size();
+            Playtest.log("people within 64 blocks of the player: " + about);
+            Playtest.log("population: " + PopulationService.status(mc.getSingleplayerServer()));
+        });
+        Playtest.queue("screenshot of the street", () -> Playtest.screenshotNextFrame("uc-arrival-street"));
+        Playtest.wait("frame", 8);
+        Playtest.queue("turn to the nearest person, if anybody is about", () -> {
+            var mc = Minecraft.getInstance();
+            TownspersonEntity nearest = null;
+            for (TownspersonEntity person : level().getEntitiesOfClass(TownspersonEntity.class, mc.player.getBoundingBox().inflate(64))) {
+                if (nearest == null || person.distanceToSqr(mc.player) < nearest.distanceToSqr(mc.player)) nearest = person;
+            }
+            if (nearest == null) { Playtest.log("nobody to look at"); return; }
+            Playtest.log("the nearest person is " + nearest.getName().getString() + " (" + nearest.role() + "), " + String.format(java.util.Locale.ROOT, "%.0f", Math.sqrt(nearest.distanceToSqr(mc.player))) + " blocks away");
+            standLooking(mc.player.position(), nearest.position().add(0, nearest.getBbHeight() * 0.85, 0));
+        });
+        Playtest.wait("settle", 20);
+        Playtest.queue("screenshot of a person in the street", () -> Playtest.screenshotNextFrame("uc-arrival-person"));
+        Playtest.wait("frame", 8);
+    }
+
+    /**
+     * The survival bypass of the first human playtest, through real input: in survival, hold W toward a locked door of a generated building and right-click it while walking, with and without
+     * lockpicks, for a door that faces the street and one that faces the room. The player must end up outside, the door shut, and (with picks) in front of the lock screen.
+     */
+    private static void doorwalk() {
+        Playtest.keepScreens = true;
+        Playtest.queue("the client has the ground under the player", () -> { }, Scenarios::groundBelowPlayer, 1200);
+        Playtest.queue("the first-login registration screen opens by itself", () -> { }, () -> Minecraft.getInstance().screen instanceof RegistrationScreen, 900);
+        Playtest.wait("let the screen render", 20);
+        Playtest.queue("click the first city", () -> {
+            Playtest.focusWindow();
+            int[] at = ((RegistrationScreen) Minecraft.getInstance().screen).cardCentre(0);
+            Playtest.clickGui(at[0], at[1]);
+        }, () -> ((RegistrationScreen) Minecraft.getInstance().screen).step() == 1, 100);
+        Playtest.queue("click the first profession", () -> {
+            int[] at = ((RegistrationScreen) Minecraft.getInstance().screen).cardCentre(0);
+            Playtest.clickGui(at[0], at[1]);
+        }, () -> ((RegistrationScreen) Minecraft.getInstance().screen).step() == 2, 100);
+        Playtest.wait("settle", 10);
+        Playtest.queue("click CONFIRM", () -> {
+            int[] at = ((RegistrationScreen) Minecraft.getInstance().screen).confirmCentre();
+            Playtest.clickGui(at[0], at[1]);
+        }, () -> !(Minecraft.getInstance().screen instanceof RegistrationScreen), 200);
+        Playtest.wait("let the server answer", 20);
+        Playtest.queue("survival mode, as a player would be", () -> Playtest.command("gamemode survival"));
+        Playtest.wait("settle", 10);
+
+        final DoorWalk.Spot[] spots = new DoorWalk.Spot[2];   // [0] a door that faces the street, [1] one that faces the room
+        final boolean[] searched = {false};
+        Playtest.queue("find a real exterior door of each orientation (on the server thread)", () -> {
+            var server = Minecraft.getInstance().getSingleplayerServer();
+            server.execute(() -> {
+                try {
+                    spots[0] = DoorWalk.find(server.overworld(), true, "flat_block").orElse(null);
+                    spots[1] = DoorWalk.find(server.overworld(), false, "flat_block").orElse(null);
+                } finally { searched[0] = true; }
+            });
+        }, () -> searched[0], 12000);
+        Playtest.queue("which doors", () -> {
+            for (int i = 0; i < 2; i++) {
+                DoorWalk.Spot spot = spots[i];
+                Playtest.log("door " + (i == 0 ? "facing the street" : "facing the room") + ": " + (spot == null ? "none found" : spot.type() + " class " + spot.securityClass() + " at " + spot.door().toShortString() + " facing " + spot.facing() + ", street to the " + spot.out()));
+                if (spot == null) Playtest.fail("no generated exterior door " + (i == 0 ? "facing the street" : "facing the room") + " near Ironhaven's centre");
+            }
+        });
+        for (int i = 0; i < 2; i++) for (boolean armed : new boolean[] {false, true}) walkIntoDoor(spots, i, armed);
+        for (int i = 0; i < 2; i++) walkOutOfDoor(spots, i);
+    }
+
+    /**
+     * The lock screen under a real mouse: a lock in the player's hands, the pointer slid across the bar the way a hand does, held still near the edge of a band, then pressed on the spot. It reports what the
+     * first human playtest called jitter as numbers: does the pick follow the pointer exactly, does the reading change by itself, how far does the needle wobble under a press, and how long a press takes to
+     * set a pin (with {@code -PucLockLatency=<ticks>} the client's reports are held back to play it against a slow connection). Window size: {@code -PucPtWidth/-PucPtHeight}, GUI scale: {@code -PucPtGuiscale}.
+     */
+    private static void lockjitter() {
+        Playtest.keepScreens = true;
+        Playtest.queue("the client has the ground under the player", () -> { }, Scenarios::groundBelowPlayer, 1200);
+        Playtest.queue("the first-login registration screen opens by itself", () -> { }, () -> Minecraft.getInstance().screen instanceof RegistrationScreen, 900);
+        Playtest.wait("let the screen render", 20);
+        Playtest.queue("click the first city", () -> {
+            Playtest.focusWindow();
+            int[] at = ((RegistrationScreen) Minecraft.getInstance().screen).cardCentre(0);
+            Playtest.clickGui(at[0], at[1]);
+        }, () -> ((RegistrationScreen) Minecraft.getInstance().screen).step() == 1, 100);
+        Playtest.queue("click the first profession", () -> {
+            int[] at = ((RegistrationScreen) Minecraft.getInstance().screen).cardCentre(0);
+            Playtest.clickGui(at[0], at[1]);
+        }, () -> ((RegistrationScreen) Minecraft.getInstance().screen).step() == 2, 100);
+        Playtest.wait("settle", 10);
+        Playtest.queue("click CONFIRM", () -> {
+            int[] at = ((RegistrationScreen) Minecraft.getInstance().screen).confirmCentre();
+            Playtest.clickGui(at[0], at[1]);
+        }, () -> !(Minecraft.getInstance().screen instanceof RegistrationScreen), 200);
+        Playtest.wait("let the server answer", 20);
+        Playtest.queue("survival, and the GUI scale the run asks for", () -> {
+            Playtest.command("gamemode survival");
+            var mc = Minecraft.getInstance();
+            int scale = Integer.getInteger("uc.playtest.guiscale", 2);
+            mc.options.guiScale().set(scale);
+            mc.resizeDisplay();
+        });
+        Playtest.wait("settle", 20);
+        final double[] sweet = {-1};
+        final double[] tolerance = {0};
+        Playtest.queue("put a deadbolt in the player's hands (server side)", () -> {
+            var mc = Minecraft.getInstance();
+            var server = mc.getSingleplayerServer();
+            server.execute(() -> {
+                var player = server.getPlayerList().getPlayer(mc.player.getUUID());
+                player.getInventory().add(new net.minecraft.world.item.ItemStack(UndergroundCity.item("lockpick"), 30));
+                String refusal = LockService.begin(player, server.overworld(), new LockService.Target(LockService.Kind.DOOR, player.blockPosition(), "deadbolt", "ironhaven", "flat_block", "Deadbolt", 1));
+                if (refusal != null) Playtest.fail("the lock did not start: " + refusal);
+                var active = LockService.activeFor(player.getUUID());
+                if (active != null) { sweet[0] = active.session.sweetSpot(); tolerance[0] = active.session.profile().tolerance(); }
+            });
+        }, () -> Minecraft.getInstance().screen instanceof LockpickScreen && sweet[0] >= 0, 400);
+        Playtest.wait("let the screen draw", 20);
+        final int[] geometry = new int[3];
+        final double[] scale = {1};
+        Playtest.queue("the bar, in GUI pixels and in device pixels", () -> {
+            var mc = Minecraft.getInstance();
+            var screen = (LockpickScreen) mc.screen;
+            System.arraycopy(screen.debugBar(), 0, geometry, 0, 3);
+            scale[0] = mc.getWindow().getGuiScale();
+            Playtest.log("LOCKJITTER window " + mc.getWindow().getScreenWidth() + "x" + mc.getWindow().getScreenHeight() + ", GUI scale " + (int) scale[0] + ", bar " + geometry[2] + " GUI px = " + Math.round(geometry[2] * scale[0])
+                + " device px wide; one device pixel of the mouse moves the pick by " + String.format(java.util.Locale.ROOT, "%.4f", 1.0 / (geometry[2] * scale[0])) + " of the bar (the band the pick must hold is " + String.format(java.util.Locale.ROOT, "%.3f", tolerance[0] * 2) + " wide, "
+                + Math.round(tolerance[0] * 2 * geometry[2] * scale[0]) + " device px); latency " + Integer.getInteger("uc.lock.latency", 0) + " ticks");
+        });
+
+        // 1. slide across the bar like a hand: a smooth start and stop over six seconds
+        final int[] t = {0};
+        final double[] expected = {0};
+        final double[] maxGap = {0}, maxStep = {0}, lastPosition = {-1};
+        final int[] reversals = {0}, feelChanges = {0}, lastFeel = {-1};
+        Playtest.queue("put the pointer at the left end of the bar", () -> Playtest.moveGui(geometry[0], geometry[1] + 10));
+        Playtest.wait("the pointer arrives", 15);
+        Playtest.queue("slide the pointer across the bar", () -> { }, () -> {
+            var mc = Minecraft.getInstance();
+            if (!(mc.screen instanceof LockpickScreen screen)) return true;
+            t[0]++;
+            double x = t[0] / 120.0, eased = x * x * (3 - 2 * x);
+            int deviceX = (int) Math.round((geometry[0] + eased * geometry[2]) * scale[0]);
+            Playtest.input("move " + deviceX + " " + Math.round((geometry[1] + 10) * scale[0]));
+            double position = screen.debugPosition();
+            if (lastPosition[0] >= 0) {
+                if (position < lastPosition[0] - 0.0005) reversals[0]++;
+                maxStep[0] = Math.max(maxStep[0], Math.abs(position - lastPosition[0]));
+            }
+            lastPosition[0] = position;
+            expected[0] = ((double) deviceX / scale[0] - geometry[0]) / geometry[2];
+            if (lastFeel[0] >= 0 && screen.debugShownFeel() != lastFeel[0]) feelChanges[0]++;
+            lastFeel[0] = screen.debugShownFeel();
+            return t[0] >= 120;
+        }, 400);
+        Playtest.wait("the last events arrive", 6);
+        Playtest.queue("the slide's numbers", () -> {
+            var screen = (LockpickScreen) Minecraft.getInstance().screen;
+            double gap = Math.abs(screen.debugPosition() - expected[0]);
+            Playtest.log("LOCKJITTER slide: the pick ended " + String.format(java.util.Locale.ROOT, "%.4f", gap) + " of the bar (" + String.format(java.util.Locale.ROOT, "%.1f", gap * geometry[2] * scale[0]) + " device px) from where the pointer is; "
+                + reversals[0] + " reversals while the pointer only moved forward; largest step in one tick " + String.format(java.util.Locale.ROOT, "%.4f", maxStep[0]) + " of the bar; the reading changed " + feelChanges[0] + " times in six seconds");
+            if (gap > 0.004) Playtest.fail("the pick is not where the pointer is after a slide: " + gap);
+            if (reversals[0] > 0) Playtest.fail("the pick moved backwards while the pointer moved forward " + reversals[0] + " times");
+            if (feelChanges[0] > 12) Playtest.fail("the reading changed " + feelChanges[0] + " times in one slide across the bar");
+        });
+
+        // 2. hold still at the very edge of the close band: the reading must not flicker
+        final int[] still = {0}, stillChanges = {0}, stillFeel = {-1};
+        Playtest.queue("rest the pick at the edge of the close band", () -> {
+            double edge = Math.min(0.99, sweet[0] + tolerance[0] * 2.6 + 0.002);
+            if (edge >= 0.99) edge = Math.max(0.01, sweet[0] - tolerance[0] * 2.6 - 0.002);
+            Playtest.input("move " + Math.round((geometry[0] + edge * geometry[2]) * scale[0]) + " " + Math.round((geometry[1] + 10) * scale[0]));
+        });
+        Playtest.wait("settle", 10);
+        Playtest.queue("hold still for four seconds, counting how often the reading changes", () -> { }, () -> {
+            if (!(Minecraft.getInstance().screen instanceof LockpickScreen screen)) return true;
+            if (stillFeel[0] >= 0 && screen.debugShownFeel() != stillFeel[0]) stillChanges[0]++;
+            stillFeel[0] = screen.debugShownFeel();
+            return ++still[0] >= 80;
+        }, 200);
+        Playtest.queue("the stillness numbers", () -> {
+            Playtest.log("LOCKJITTER still: at the edge of the close band the reading changed " + stillChanges[0] + " times in four seconds");
+            if (stillChanges[0] > 0) Playtest.fail("the reading changed " + stillChanges[0] + " times while the pick was held still");
+        });
+
+        // 3. press on the spot: the needle wobbles with the hand's tremor, and the pin sets after the hold
+        final int[] pressed = {0}, pinSetAfter = {-1};
+        final float[] wobbleMin = {0}, wobbleMax = {0};
+        Playtest.queue("move onto the sweet spot and press", () -> {
+            Playtest.input("move " + Math.round((geometry[0] + sweet[0] * geometry[2]) * scale[0]) + " " + Math.round((geometry[1] + 10) * scale[0]));
+        });
+        Playtest.wait("settle", 12);
+        Playtest.queue("press and hold", () -> Playtest.mouseButton(1, true), () -> {
+            if (!(Minecraft.getInstance().screen instanceof LockpickScreen screen)) return true;
+            pressed[0]++;
+            wobbleMin[0] = Math.min(wobbleMin[0], screen.debugWobblePixels());
+            wobbleMax[0] = Math.max(wobbleMax[0], screen.debugWobblePixels());
+            if (pinSetAfter[0] < 0 && screen.debugPinsSet() > 0) pinSetAfter[0] = pressed[0];
+            return pinSetAfter[0] >= 0 || pressed[0] >= 120;
+        }, 300);
+        Playtest.queue("let go", () -> Playtest.mouseButton(1, false));
+        Playtest.queue("the press numbers", () -> {
+            Playtest.log("LOCKJITTER press: pin 1 set " + (pinSetAfter[0] < 0 ? "never (in 6 s)" : pinSetAfter[0] + " ticks after the press began (the hold takes 8; " + Integer.getInteger("uc.lock.latency", 0) + " ticks of latency were played)")
+                + "; the needle wobbled between " + String.format(java.util.Locale.ROOT, "%.1f", wobbleMin[0]) + " and " + String.format(java.util.Locale.ROOT, "%.1f", wobbleMax[0]) + " GUI px while pressed");
+            if (pinSetAfter[0] < 0) Playtest.fail("pressing on the sweet spot did not set the pin");
+        });
+        Playtest.queue("screenshot of the lock", () -> Playtest.screenshotNextFrame("uc-lockjitter-" + Minecraft.getInstance().getWindow().getScreenWidth() + "x" + Minecraft.getInstance().getWindow().getScreenHeight() + "-gui" + (int) scale[0]));
+        Playtest.wait("frame", 8);
+        Playtest.queue("close the lock screen", () -> { if (Minecraft.getInstance().screen instanceof LockpickScreen) Playtest.tap("escape"); });
+        Playtest.wait("settle", 10);
+    }
+
+    /** One try: stand three blocks from the door, hold W, right-click it every few ticks for three and a half seconds, then read what the server says. */
+    private static void walkIntoDoor(DoorWalk.Spot[] spots, int index, boolean armed) {
+        String label = (index == 0 ? "street" : "room") + "-" + (armed ? "pick" : "bare");
+        final int[] ticks = {0};
+        final boolean[] screen = {false};
+        Playtest.queue("[" + label + "] stand in front of the door", () -> {
+            DoorWalk.Spot spot = spots[index];
+            if (spot == null) return;
+            var mc = Minecraft.getInstance();
+            var server = mc.getSingleplayerServer();
+            server.execute(() -> DoorWalk.prepare(server.getPlayerList().getPlayer(mc.player.getUUID()), spot, armed));
+        }, () -> {
+            DoorWalk.Spot spot = spots[index];
+            if (spot == null) return true;
+            var mc = Minecraft.getInstance();
+            return mc.player.position().distanceTo(spot.stand()) < 1.5 && mc.level.getBlockState(spot.door()).getBlock() instanceof net.minecraft.world.level.block.DoorBlock;
+        }, 600);
+        Playtest.wait("[" + label + "] settle", 25);
+        Playtest.queue("[" + label + "] hold W and right-click the door", () -> {
+            if (spots[index] == null) return;
+            if (index == 0 && !armed) Playtest.focusWindow();   // later tries must not warp the pointer: a warp over a grabbed cursor turns the camera
+            Playtest.keyDown("w");
+        }, () -> {
+            if (spots[index] == null) return true;
+            var mc = Minecraft.getInstance();
+            ticks[0]++;
+            mc.player.setYRot(spots[index].yaw());   // the door stays in the crosshair, as a person aiming at it would keep it
+            mc.player.setXRot(0);
+            if (mc.screen instanceof LockpickScreen) { screen[0] = true; return true; }
+            // with a pick the first click would start the lock three blocks away, so the clicking starts when the player is standing against the door (still holding W): that is the case the playtest found
+            boolean against = spots[index].past(mc.player.position()) > -1.0;
+            if (!armed || against) {
+                if (ticks[0] % 4 == 1) Playtest.mouseButton(3, true);
+                else if (ticks[0] % 4 == 2) Playtest.mouseButton(3, false);
+            }
+            if (ticks[0] == 12) Playtest.screenshotNextFrame("uc-doorwalk-" + label);
+            return ticks[0] >= 70;
+        }, 300);
+        Playtest.queue("[" + label + "] let go", () -> { Playtest.keyUp("w"); Playtest.mouseButton(3, false); });
+        Playtest.wait("[" + label + "] let the server settle", 10);
+        Playtest.queue("[" + label + "] the server's account", () -> {
+            DoorWalk.Spot spot = spots[index];
+            if (spot == null) return;
+            var mc = Minecraft.getInstance();
+            var server = mc.getSingleplayerServer();
+            var player = server.getPlayerList().getPlayer(mc.player.getUUID());
+            double past = spot.past(player.position());
+            boolean open = DoorWalk.doorOpen(server.overworld(), spot);
+            boolean walkedIn = past > 0.6;
+            Playtest.log("DOORWALK " + label + ": door facing " + spot.facing() + ", " + (spot.frontIsStreet() ? "front on the street" : "front on the room side") + "; after " + ticks[0] + " ticks the player is "
+                + String.format(java.util.Locale.ROOT, "%.2f", past) + " blocks past the door's centre (server), the door is " + (open ? "OPEN" : "closed") + ", the lock screen " + (screen[0] ? "opened" : "did not open") + ", client sees the door " + (mc.level.getBlockState(spot.door()).getValue(net.minecraft.world.level.block.DoorBlock.OPEN) ? "open" : "closed"));
+            if (walkedIn) Playtest.fail(label + ": the player walked into the building through a locked door");
+            if (open) Playtest.fail(label + ": the locked door stood open at the end");
+            if (armed && !screen[0] && !open) Playtest.fail(label + ": with a lockpick the click did not start the lock");
+            if (!armed && screen[0]) Playtest.fail(label + ": the lock screen opened without a lockpick");
+        });
+        Playtest.queue("[" + label + "] close the lock screen", () -> { if (Minecraft.getInstance().screen instanceof LockpickScreen) Playtest.tap("escape"); });
+        Playtest.wait("[" + label + "] settle", 15);
+    }
+
+    /** The other way: somebody inside stands against the same door, holds W and right-clicks. They must get out, and the door must be shut again a few seconds later. */
+    private static void walkOutOfDoor(DoorWalk.Spot[] spots, int index) {
+        String label = (index == 0 ? "street" : "room") + "-exit";
+        final int[] ticks = {0};
+        Playtest.queue("[" + label + "] stand inside, against the door, facing out", () -> {
+            DoorWalk.Spot spot = spots[index];
+            if (spot == null) return;
+            var mc = Minecraft.getInstance();
+            var server = mc.getSingleplayerServer();
+            Vec3 at = BuildingSecurityGameTests.flush(spot.door(), spot.facing(), false);
+            float yaw = (float) Math.toDegrees(Math.atan2(-spot.out().getStepX(), spot.out().getStepZ()));
+            server.execute(() -> {
+                var player = server.getPlayerList().getPlayer(mc.player.getUUID());
+                DoorWalk.prepare(player, spot, false);
+                player.teleportTo(server.overworld(), at.x, spot.door().getY(), at.z, yaw, 0f);
+            });
+        }, () -> {
+            DoorWalk.Spot spot = spots[index];
+            if (spot == null) return true;
+            var mc = Minecraft.getInstance();
+            return spot.past(mc.player.position()) > 0.0 && mc.player.position().distanceTo(Vec3.atBottomCenterOf(spot.door())) < 2.0;
+        }, 600);
+        Playtest.wait("[" + label + "] settle", 25);
+        Playtest.queue("[" + label + "] hold W and right-click the door from the inside", () -> {
+            if (spots[index] != null) Playtest.keyDown("w");
+        }, () -> {
+            DoorWalk.Spot spot = spots[index];
+            if (spot == null) return true;
+            var mc = Minecraft.getInstance();
+            ticks[0]++;
+            mc.player.setYRot((float) Math.toDegrees(Math.atan2(-spot.out().getStepX(), spot.out().getStepZ())));
+            mc.player.setXRot(0);
+            if (ticks[0] % 4 == 1) Playtest.mouseButton(3, true);
+            else if (ticks[0] % 4 == 2) Playtest.mouseButton(3, false);
+            return ticks[0] >= 60;
+        }, 300);
+        Playtest.queue("[" + label + "] let go", () -> { Playtest.keyUp("w"); Playtest.mouseButton(3, false); });
+        Playtest.queue("[" + label + "] the server's account of the way out", () -> {
+            DoorWalk.Spot spot = spots[index];
+            if (spot == null) return;
+            var mc = Minecraft.getInstance();
+            var server = mc.getSingleplayerServer();
+            var player = server.getPlayerList().getPlayer(mc.player.getUUID());
+            double past = spot.past(player.position());
+            boolean open = DoorWalk.doorOpen(server.overworld(), spot);
+            Playtest.log("DOORWALK " + label + ": the player is " + String.format(java.util.Locale.ROOT, "%.2f", past) + " blocks past the door's centre toward the street side (negative: outside), the door is " + (open ? "open" : "closed"));
+            if (past > -1.0) Playtest.fail(label + ": somebody inside could not get out through their own door");
+        });
+        Playtest.wait("[" + label + "] the door's few seconds", 160);
+        Playtest.queue("[" + label + "] the door shut behind them", () -> {
+            DoorWalk.Spot spot = spots[index];
+            if (spot == null) return;
+            var server = Minecraft.getInstance().getSingleplayerServer();
+            boolean open = DoorWalk.doorOpen(server.overworld(), spot);
+            Playtest.log("DOORWALK " + label + ": eight seconds later the door is " + (open ? "OPEN" : "closed"));
+            if (open) Playtest.fail(label + ": the door that somebody left through stood open eight seconds later");
+        });
+    }
+
+    /** The first-minutes checks: dry, open ground, near the layout's landing anchor, with Founders Row built beside it. */
+    private static void checkArrival() {
+        var mc = Minecraft.getInstance();
+        BlockPos feet = mc.player.blockPosition();
+        var anchor = WorldLayout.INSTANCE.arrivalAnchor();
+        BlockPos row = DistrictBuilder.originOf(level(), "founders_row");
+        Playtest.log("arrived at " + feet.toShortString() + ", landing anchor " + anchor.map(BlockPos::toShortString).orElse("none") + ", Founders Row origin " + (row == null ? "none" : row.toShortString()));
+        if (anchor.isEmpty()) { Playtest.fail("the world has no landing (run with -PucWorldLayout=archipelago)"); return; }
+        if (!mc.level.getFluidState(feet.below()).isEmpty() || !mc.level.getFluidState(feet).isEmpty()) Playtest.fail("the player arrived in or on water");
+        if (!mc.level.canSeeSky(feet)) Playtest.fail("the player arrived under cover");
+        double fromAnchor = Math.hypot(feet.getX() - anchor.get().getX(), feet.getZ() - anchor.get().getZ());
+        if (fromAnchor > 120) Playtest.fail("the player arrived " + Math.round(fromAnchor) + " blocks from the landing anchor");
+        if (row == null) { Playtest.fail("Founders Row was not built at the landing"); return; }
+        double fromRow = Math.hypot(feet.getX() - row.getX(), feet.getZ() - row.getZ());
+        Playtest.log("the arrival is " + Math.round(fromRow) + " blocks from the Row's origin");
+        if (fromRow > 90) Playtest.fail("Founders Row is " + Math.round(fromRow) + " blocks from the arrival");
+    }
+
+    /** The title of the next step of the first hours, as the server computes it for the real player. */
+    private static void expectStep(String when, String expected) {
+        var mc = Minecraft.getInstance();
+        var player = mc.getSingleplayerServer().getPlayerList().getPlayer(mc.player.getUUID());
+        var objective = Journey.next(player);
+        String title = objective == null ? "(finished)" : objective.title();
+        Playtest.log("next step " + when + ": " + title);
+        if (!title.equals(expected)) Playtest.fail("the next step " + when + " is '" + title + "', not '" + expected + "'");
+    }
+
+    /**
      * On foot along the generated roads: for each road the walker starts at its first block and holds the real W key, steering only
      * its heading along the road centreline. Options: {@code -PucPtRoute=<road id>} for one road, {@code -PucPtSprint=true}.
      */
@@ -128,7 +619,7 @@ final class Scenarios {
     }
 
     /** True once the chunk under the player has reached the client and the block below their feet is not air (so a survival player will not fall). */
-    private static boolean groundBelowPlayer() {
+    static boolean groundBelowPlayer() {
         var mc = Minecraft.getInstance();
         if (mc.player == null || mc.level == null) return false;
         BlockPos feet = mc.player.blockPosition();
@@ -168,7 +659,7 @@ final class Scenarios {
     private static net.minecraft.server.level.ServerLevel level() { return Minecraft.getInstance().getSingleplayerServer().overworld(); }
 
     /** Moves the player (through the integrated server) to {@code at}, looking at {@code target}. */
-    private static void standLooking(Vec3 at, Vec3 target) {
+    static void standLooking(Vec3 at, Vec3 target) {
         Vec3 delta = target.subtract(at.add(0, 1.62, 0)); // the view starts at the eyes, not the feet
         float yaw = (float) Math.toDegrees(Math.atan2(-delta.x, delta.z));
         float pitch = (float) -Math.toDegrees(Math.atan2(delta.y, Math.hypot(delta.x, delta.z)));
@@ -242,6 +733,11 @@ final class Scenarios {
      * {@code expect} says what should open: "dialogue", "registration", "terminal" or "ledger".
      */
     private static void talkTo(String label, int index, String expect, String shot) {
+        talkTo(label, () -> citizen(null, index), expect, shot);
+    }
+
+    /** As above, for a citizen found by what they do (the way the guided journey finds them), not by their place in the district's list. */
+    private static void talkTo(String label, java.util.function.Supplier<net.minecraft.world.entity.npc.Villager> who, String expect, String shot) {
         final int[] phase = {0}, tick = {0}, attempts = {0};
         final Vec3[] stand = new Vec3[1];
         Playtest.queue("talk to " + label + " (expecting " + expect + ")", () -> Playtest.focusWindow(), () -> {
@@ -249,14 +745,14 @@ final class Scenarios {
             if (matches(mc.screen, expect)) return true;
             switch (phase[0]) {
                 case 0 -> {
-                    var villager = citizen(null, index);
+                    var villager = who.get();
                     if (villager == null) { Playtest.fail(label + " is not in the world"); return true; }
                     Vec3 where = standingSpot(villager);
                     stand[0] = where;
                     standLooking(where, villager.position().add(0, villager.getBbHeight() * 0.85, 0));
                     tick[0] = 0; phase[0] = 1;
                 }
-                case 1 -> { if (++tick[0] >= 3) { var v = citizen(null, index); if (v != null) standLooking(stand[0], v.position().add(0, v.getBbHeight() * 0.85, 0)); Playtest.mouseButton(3, true); tick[0] = 0; phase[0] = 2; } }
+                case 1 -> { if (++tick[0] >= 3) { var v = who.get(); if (v != null) standLooking(stand[0], v.position().add(0, v.getBbHeight() * 0.85, 0)); Playtest.mouseButton(3, true); tick[0] = 0; phase[0] = 2; } }
                 case 2 -> { if (++tick[0] >= 3) { Playtest.mouseButton(3, false); tick[0] = 0; phase[0] = 3; } }
                 default -> {
                     if (++tick[0] >= 14) {
@@ -533,7 +1029,7 @@ final class Scenarios {
         } catch (ReflectiveOperationException error) { throw new IllegalStateException(error); }
     }
 
-    private static void unlockWithPrerequisites(CitizenState citizens, java.util.UUID uuid, String node) {
+    static void unlockWithPrerequisites(CitizenState citizens, java.util.UUID uuid, String node) {
         var skill = SkillCatalog.INSTANCE.find(node);
         for (String parent : skill.requires()) unlockWithPrerequisites(citizens, uuid, parent);
         if (!citizens.find(uuid).orElseThrow().skills().contains(node)) citizens.unlockSkill(uuid, node);
@@ -565,7 +1061,7 @@ final class Scenarios {
     }
 
     /** Watches the sequence flash on the real screen, as a person would, and returns what was seen once it is over. */
-    private static void watchTrace(java.util.List<Integer> seen, String label) {
+    static void watchTrace(java.util.List<Integer> seen, String label) {
         final int[] previous = {-1};
         Playtest.queue(label + ": watch the pads", () -> { seen.clear(); previous[0] = -1; }, () -> {
             if (!(Minecraft.getInstance().screen instanceof ChallengeScreen screen)) return true;
@@ -576,7 +1072,7 @@ final class Scenarios {
         }, 400);
     }
 
-    private static void typeTrace(java.util.List<Integer> seen, boolean wrong, String label) {
+    static void typeTrace(java.util.List<Integer> seen, boolean wrong, String label) {
         final int[] next = {0}, gap = {0};
         Playtest.queue(label + ": enter the symbols with the keyboard", () -> { next[0] = 0; gap[0] = 0; Playtest.focusWindow(); }, () -> {
             if (!(Minecraft.getInstance().screen instanceof ChallengeScreen)) return true;
@@ -1379,9 +1875,9 @@ final class Scenarios {
         waitForMeshes(1500);
         glance("jade-terminal", 4.5, 1.7, 6.5, 4.5, 0.5, 2.5);
         glance("jade-ledger", 14.5, 1.7, 25.5, 11.5, 0.5, 25.5);
-        Playtest.queue("a Sable Leaf crop in the greenhouse bed, nearly grown", () -> {
+        Playtest.queue("a cannabis crop in the greenhouse bed, nearly grown", () -> {
             BlockPos o = DistrictBuilder.originOf(level(), "founders_row");
-            Playtest.command("setblock " + (o.getX() + 27) + " " + o.getY() + " " + (o.getZ() + 3) + " underground_city:sable_leaf_crop[age=2,nourished=false]");
+            Playtest.command("setblock " + (o.getX() + 27) + " " + o.getY() + " " + (o.getZ() + 3) + " underground_city:cannabis_plant[age=2,nourished=false]");
         });
         glance("jade-crop", 27.5, 1.7, 6.5, 27.5, 0.4, 3.5);
         Playtest.queue("look at the sky and open the inventory", () -> {
@@ -1395,7 +1891,7 @@ final class Scenarios {
         Playtest.wait("frame", 8);
         Playtest.queue("focus JEI's search box (ctrl + f)", () -> { Playtest.keyDown("ctrl"); Playtest.tap("f"); Playtest.keyUp("ctrl"); });
         Playtest.wait("settle", 10);
-        Playtest.queue("type 'sable'", () -> { for (String key : new String[]{"s", "a", "b", "l", "e"}) Playtest.tap(key); });
+        Playtest.queue("type 'cannabis'", () -> { for (String key : new String[]{"c", "a", "n", "n", "a", "b", "i", "s"}) Playtest.tap(key); });
         Playtest.wait("let the list filter", 40);
         Playtest.queue("photograph the search", () -> Playtest.screenshotNextFrame("uc-jei-search"));
         Playtest.wait("frame", 8);

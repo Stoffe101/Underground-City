@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "outlet": "shop:dispatch",
+  "building": "roadside:northgate_dispatch",
+  "spot": "counter",
+  "city": "blackwater",
+  "title": "Northgate Dispatch"
+}

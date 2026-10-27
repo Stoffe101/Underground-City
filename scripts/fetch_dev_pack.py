@@ -52,7 +52,7 @@ def download(mod: dict, destination: Path) -> Path:
     target = destination / mod["filename"].replace(" ", "_")
     if target.exists() and hashlib.sha512(target.read_bytes()).hexdigest() == mod["sha512"]:
         return target
-    url = f"https://cdn.modrinth.com/data/{mod['project_id']}/versions/{mod['version_id']}/{mod['filename']}"
+    url = mod.get("download_url") or f"https://cdn.modrinth.com/data/{mod['project_id']}/versions/{mod['version_id']}/{mod['filename']}"
     request = urllib.request.Request(urllib.request.quote(url, safe=":/"), headers={"User-Agent": USER_AGENT})
     with urllib.request.urlopen(request, timeout=300) as response:
         payload = response.read()

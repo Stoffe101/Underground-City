@@ -69,12 +69,14 @@ jobs:
       - name: Print which tests failed (a failing GameTest makes the server exit 1; the reason is in the log)
         if: failure()
         run: |
-          grep -E 'failed!|required tests|GAME TESTS COMPLETE|Exception caught|Crash report' rpg-core/run-pack-${{ matrix.pack }}/logs/latest.log | head -n 40 || true
+          log=$(python3 scripts/ci_run_log.py rpg-core/run-pack-${{ matrix.pack }}/logs) || log=rpg-core/run-pack-${{ matrix.pack }}/logs/latest.log
+          grep -E 'failed!|required tests|GAME TESTS COMPLETE|Exception caught|Crash report' "$log" | head -n 40 || true
       - name: Confirm the mods really loaded and the tests ran (a server that failed to start still exits 0)
         run: |
           set -euo pipefail
-          log=rpg-core/run-pack-${{ matrix.pack }}/logs/latest.log
-          test -s "$log"
+          test -s rpg-core/run-pack-${{ matrix.pack }}/logs/latest.log
+          # the whole run's log: Forge rolls latest.log over at midnight, so a job that runs past 00:00 UTC has its first part in an archive (scripts/ci_run_log.py)
+          log=$(python3 scripts/ci_run_log.py rpg-core/run-pack-${{ matrix.pack }}/logs)
           if [ "${{ matrix.pack }}" = "firearms" ]; then
             grep -q "TaCZ Blueprints mod initializing" "$log"
             grep -q "Registered synced data key tacz:" "$log"

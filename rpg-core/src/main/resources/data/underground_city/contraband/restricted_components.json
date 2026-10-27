@@ -5,6 +5,9 @@
   "entries": [
     {
       "item": "underground_city:unstamped_plate"
+    },
+    {
+      "item": "underground_city:unmarked_parts_kit"
     }
   ]
 }

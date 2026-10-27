@@ -1,0 +1,192 @@
+{
+  "classes": {
+    "club": {
+      "category": "commercial",
+      "label": "club",
+      "lock_profile": "high_security",
+      "locked_exterior": true,
+      "response": {
+        "alarm_chance": 0.8,
+        "dispatch_seconds": 60,
+        "officers": 2,
+        "window_seconds": 150
+      },
+      "stash_chance": 0.6,
+      "stash_policy": "underground_city:illegal_cache",
+      "tier": 5
+    },
+    "house": {
+      "category": "residential",
+      "grade": [
+        2,
+        5
+      ],
+      "label": "house",
+      "lock_profile": "deadbolt",
+      "locked_exterior": true,
+      "response": {
+        "alarm_chance": 0.4,
+        "dispatch_seconds": 110,
+        "officers": 1,
+        "window_seconds": 120
+      },
+      "stash_chance": 0.6,
+      "stash_policy": "underground_city:apartment_affluent",
+      "tier": 3
+    },
+    "storefront": {
+      "category": "commercial",
+      "grade": [
+        1,
+        4
+      ],
+      "label": "shop",
+      "lock_profile": "commercial",
+      "locked_exterior": true,
+      "response": {
+        "alarm_chance": 0.5,
+        "dispatch_seconds": 90,
+        "officers": 1,
+        "window_seconds": 120
+      },
+      "stash_chance": 0.5,
+      "stash_policy": "underground_city:office",
+      "tier": 3
+    },
+    "townhouse": {
+      "category": "residential",
+      "grade": [
+        3,
+        5
+      ],
+      "label": "townhouse",
+      "lock_profile": "secured",
+      "locked_exterior": true,
+      "response": {
+        "alarm_chance": 0.55,
+        "dispatch_seconds": 100,
+        "officers": 1,
+        "window_seconds": 120
+      },
+      "stash_chance": 0.7,
+      "stash_policy": "underground_city:apartment_affluent",
+      "tier": 4
+    },
+    "villa": {
+      "category": "residential",
+      "grade": [
+        4,
+        5
+      ],
+      "label": "villa",
+      "lock_profile": "high_security",
+      "locked_exterior": true,
+      "response": {
+        "alarm_chance": 0.8,
+        "dispatch_seconds": 70,
+        "officers": 2,
+        "window_seconds": 150
+      },
+      "stash_chance": 0.8,
+      "stash_policy": "underground_city:apartment_affluent",
+      "tier": 5
+    },
+    "warehouse": {
+      "category": "industrial",
+      "grade": [
+        3,
+        5
+      ],
+      "label": "warehouse",
+      "lock_profile": "secured",
+      "locked_exterior": true,
+      "response": {
+        "alarm_chance": 0.6,
+        "dispatch_seconds": 100,
+        "officers": 1,
+        "window_seconds": 120
+      },
+      "stash_chance": 0.7,
+      "stash_policy": "underground_city:industrial",
+      "tier": 4
+    }
+  },
+  "rules": [
+    {
+      "class": "townhouse",
+      "priority": 10,
+      "type_prefix": "underground_city:vw_house_a"
+    },
+    {
+      "class": "house",
+      "priority": 10,
+      "type_prefix": "underground_city:vw_house_b"
+    },
+    {
+      "class": "cottage",
+      "priority": 10,
+      "type_prefix": "underground_city:vw_cottage"
+    },
+    {
+      "class": "storefront",
+      "priority": 10,
+      "type_prefix": "underground_city:vw_shop"
+    },
+    {
+      "class": "storefront",
+      "priority": 10,
+      "type_prefix": "underground_city:vw_bakery"
+    },
+    {
+      "class": "villa",
+      "priority": 10,
+      "type_prefix": "underground_city:vw_villa"
+    },
+    {
+      "class": "flat_block",
+      "priority": 10,
+      "type_prefix": "underground_city:ih_flats"
+    },
+    {
+      "class": "workshop",
+      "priority": 10,
+      "type_prefix": "underground_city:ih_workshop"
+    },
+    {
+      "class": "warehouse",
+      "priority": 10,
+      "type_prefix": "underground_city:ih_warehouse"
+    },
+    {
+      "class": "storefront",
+      "priority": 10,
+      "type_prefix": "underground_city:ih_pub"
+    },
+    {
+      "class": "flat_tower",
+      "priority": 10,
+      "type_prefix": "underground_city:bw_apartments"
+    },
+    {
+      "class": "flat_tower",
+      "priority": 10,
+      "type_prefix": "underground_city:bw_lofts"
+    },
+    {
+      "class": "office",
+      "priority": 10,
+      "type_prefix": "underground_city:bw_office"
+    },
+    {
+      "class": "club",
+      "priority": 10,
+      "type_prefix": "underground_city:bw_club"
+    },
+    {
+      "class": "storefront",
+      "priority": 10,
+      "type_prefix": "underground_city:bw_store"
+    }
+  ],
+  "schema_version": 1
+}

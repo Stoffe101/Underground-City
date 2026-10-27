@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "city": "ironhaven",
+  "item": "minecraft:copper_ingot",
+  "unit_price": 8,
+  "initial": 8,
+  "capacity": 16,
+  "units_per_interval": 4,
+  "interval_ticks": 36000,
+  "max_order": 8,
+  "outlets": [
+    "shop:salvage"
+  ]
+}

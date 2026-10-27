@@ -1,0 +1,19 @@
+{
+  "schema_version": 3,
+  "title": "Crew contract: flour for the depot canteen",
+  "career": "farmer",
+  "level": 2,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "underground_city:flour",
+      "count": 24
+    }
+  ],
+  "credits": 120,
+  "xp": 300,
+  "capacity": 2,
+  "refill_ticks": 12000,
+  "legality": "legal",
+  "crew_part": "underground_city:depot_canteen/flour"
+}

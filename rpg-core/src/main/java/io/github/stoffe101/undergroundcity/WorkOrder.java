@@ -28,10 +28,14 @@ import java.util.Set;
 public record WorkOrder(String id, String title, String career, int level, int maxLevel,
                         List<Requirement> requirements, int credits, int xp,
                         int capacity, int refillTicks, int foreignVisits, Terms terms) {
-    /** A plain-item requirement, or a factory gun when {@code gunIds} is not empty. */
-    public record Requirement(ResourceLocation item, int count, List<String> gunIds, String label) {
-        public Requirement { gunIds = List.copyOf(gunIds); }
-        public Requirement(ResourceLocation item, int count) { this(item, count, List.of(), ""); }
+    /**
+     * A plain-item requirement, or a factory gun when {@code gunIds} is not empty. {@code provenance} ("registered" or "unmarked", D-168) asks for a gun the Gunsmith built from that
+     * kind of parts kit; empty takes any factory gun of the listed models.
+     */
+    public record Requirement(ResourceLocation item, int count, List<String> gunIds, String label, String provenance) {
+        public Requirement { gunIds = List.copyOf(gunIds); provenance = provenance == null ? "" : provenance; }
+        public Requirement(ResourceLocation item, int count) { this(item, count, List.of(), "", ""); }
+        public Requirement(ResourceLocation item, int count, List<String> gunIds, String label) { this(item, count, gunIds, label, ""); }
         public Item registryItem() { return ForgeRegistries.ITEMS.getValue(item); }
         public String display() { return label.isEmpty() ? item.toString() : label; }
     }
@@ -49,13 +53,32 @@ public record WorkOrder(String id, String title, String career, int level, int m
     }
 
     /** Legality and gating. {@code requiresSkill}, {@code buyer} and {@code requiresMod} are empty when unused. */
+    /**
+     * {@code requiresFacility}: a bulk order only somebody who works in premises with that facility may take (D-169, "trade"). {@code crewPart}: "contract/part" when the order is
+     * one part of a Crew contract (D-170), which only a member of a Crew that has not brought that part in may take. {@code civic}: the civic project a delivery counts
+     * towards (D-171); {@code requiresCivic}: a project that must be finished before the order is offered. {@code raid}: the raid this order is the job of (D-173, "bonded_store").
+     * All empty for an ordinary order.
+     */
     public record Terms(boolean underground, String requiresSkill, String buyer, int minTrust, int trustGain,
-                        String requiresMod, List<Reward> rewards) {
-        public static final Terms DEFAULT = new Terms(false, "", "", 0, 0, "", List.of());
-        public Terms { rewards = List.copyOf(rewards); }
+                        String requiresMod, List<Reward> rewards, String requiresFacility, String crewPart, String civic, String requiresCivic, String raid) {
+        public static final Terms DEFAULT = new Terms(false, "", "", 0, 0, "", List.of(), "", "", "", "", "");
+        public Terms {
+            rewards = List.copyOf(rewards);
+            requiresFacility = requiresFacility == null ? "" : requiresFacility; crewPart = crewPart == null ? "" : crewPart;
+            civic = civic == null ? "" : civic; requiresCivic = requiresCivic == null ? "" : requiresCivic; raid = raid == null ? "" : raid;
+        }
+        public Terms(boolean underground, String requiresSkill, String buyer, int minTrust, int trustGain, String requiresMod, List<Reward> rewards) {
+            this(underground, requiresSkill, buyer, minTrust, trustGain, requiresMod, rewards, "", "", "", "", "");
+        }
     }
 
     public boolean underground() { return terms.underground(); }
+
+    /** An order any career may take (a civic contribution anybody can make, D-171); its XP goes to the career of whoever delivers it. */
+    public static final String ANY_CAREER = "any";
+
+    /** True when a citizen of {@code career} may take this order. */
+    public boolean openTo(String career) { return this.career.equals(career) || this.career.equals(ANY_CAREER); }
 
     /** An apprentice order stops being offered once the career is above {@link #maxLevel} (0 means it is never withdrawn): the entry rungs must not out-earn a skilled trade. */
     public boolean offeredAt(int careerLevel) { return careerLevel >= level && (maxLevel == 0 || careerLevel <= maxLevel); }
@@ -75,7 +98,7 @@ public record WorkOrder(String id, String title, String career, int level, int m
                 List<String> guns = new ArrayList<>();
                 if (entry.has("gun_ids")) for (JsonElement gun : entry.getAsJsonArray("gun_ids")) guns.add(gun.getAsString());
                 requirements.add(new Requirement(ResourceLocation.parse(entry.get("item").getAsString()), entry.get("count").getAsInt(),
-                    guns, entry.has("label") ? entry.get("label").getAsString() : ""));
+                    guns, entry.has("label") ? entry.get("label").getAsString() : "", entry.has("provenance") ? entry.get("provenance").getAsString() : ""));
             }
             visits = json.has("foreign_visits") ? json.get("foreign_visits").getAsInt() : 0;
             if (schema == 3) terms = parseTerms(json);
@@ -102,14 +125,14 @@ public record WorkOrder(String id, String title, String career, int level, int m
         }
         return new Terms(legality.equals("underground"), str(json, "requires_skill"), str(json, "buyer"),
             json.has("min_trust") ? json.get("min_trust").getAsInt() : 0, json.has("trust_gain") ? json.get("trust_gain").getAsInt() : 0,
-            str(json, "requires_mod"), rewards);
+            str(json, "requires_mod"), rewards, str(json, "requires_facility"), str(json, "crew_part"), str(json, "civic"), str(json, "requires_civic"), str(json, "raid"));
     }
 
     private static String str(JsonObject json, String key) { return json.has(key) ? json.get(key).getAsString() : ""; }
 
     private static WorkOrder validate(WorkOrder order) {
         Terms terms = order.terms;
-        if (order.id.length() > 128 || !ProgressionRules.validCareer(order.career) || order.title.isBlank()
+        if (order.id.length() > 128 || !(ProgressionRules.validCareer(order.career) || order.career.equals(ANY_CAREER)) || order.title.isBlank()
             || order.title.length() > 80 || order.level < 1 || order.level > 30
             || order.maxLevel != 0 && (order.maxLevel < order.level || order.maxLevel > 30)
             || order.requirements.isEmpty() || order.requirements.size() > 4
@@ -120,7 +143,9 @@ public record WorkOrder(String id, String title, String career, int level, int m
             || terms.minTrust < 0 || terms.minTrust > BuyerCatalog.MAX_TRUST || terms.trustGain < 0 || terms.trustGain > 2
             || terms.rewards.size() > 3 || (terms.minTrust > 0 || terms.trustGain > 0) && terms.buyer.isEmpty()
             || !terms.requiresSkill.isEmpty() && !terms.requiresSkill.matches("[a-z]+\\.[a-z_]{2,40}")
-            || !terms.buyer.isEmpty() && !terms.buyer.matches("[a-z_]{3,40}")) {
+            || !terms.buyer.isEmpty() && !terms.buyer.matches("[a-z_]{3,40}")
+            || !terms.requiresFacility.isEmpty() && !PropertyRules.KNOWN_FACILITIES.contains(terms.requiresFacility)
+            || !terms.crewPart.isEmpty() && !terms.crewPart.matches("[a-z0-9_.-]+:[a-z0-9_/.-]+/[a-z_]{2,32}")) {
             throw new IllegalArgumentException("Invalid work order " + order.id);
         }
         Set<ResourceLocation> seen = new HashSet<>();
@@ -128,7 +153,8 @@ public record WorkOrder(String id, String title, String career, int level, int m
             if (requirement.count < 1 || requirement.count > 64 || !seen.add(requirement.item)
                 || !ForgeRegistries.ITEMS.containsKey(requirement.item)
                 || ForgeRegistries.ITEMS.getValue(requirement.item) == net.minecraft.world.item.Items.AIR
-                || requirement.gunIds.size() > 24 || requirement.label.length() > 40) {
+                || requirement.gunIds.size() > 24 || requirement.label.length() > 40
+                || !(requirement.provenance.isEmpty() || (!requirement.gunIds.isEmpty() && (requirement.provenance.equals(GunsmithBuilds.REGISTERED) || requirement.provenance.equals(GunsmithBuilds.UNMARKED))))) {
                 throw new IllegalArgumentException("Invalid work order requirement in " + order.id + ": " + requirement);
             }
         }
@@ -160,7 +186,11 @@ public record WorkOrder(String id, String title, String career, int level, int m
         boolean freshVanillaTool = stack.isDamageableItem() && tag != null
             && tag.getAllKeys().equals(Set.of("Damage"))
             && tag.contains("Damage", Tag.TAG_INT) && tag.getInt("Damage") == 0;
-        if (stack.hasTag() && !freshVanillaTool) return false;
+        // a workshop grade (D-163) is the one tag a delivery accepts: the buyer pays more for it instead of refusing it
+        boolean gradedOnly = tag != null && tag.getAllKeys().equals(Set.of(Workshops.QUALITY));
+        // the bonded store's shipment (D-173) is stolen by its nature: the broker who asked for it takes it with its stolen mark and nothing else on it
+        boolean raidPrize = tag != null && requirement.item().getPath().equals(Raids.SHIPMENT) && StolenGoods.is(stack) && Set.of(StolenGoods.KEY, StolenGoods.THIEF, "display").containsAll(tag.getAllKeys());
+        if (stack.hasTag() && !freshVanillaTool && !gradedOnly && !raidPrize) return false;
         return stack.serializeNBT().getCompound("ForgeCaps").isEmpty();
     }
 
@@ -172,6 +202,7 @@ public record WorkOrder(String id, String title, String career, int level, int m
         CompoundTag tag = stack.getTag();
         if (tag == null || stack.hasCustomHoverName() || stack.isEnchanted()) return false;
         if (!tag.contains("GunId", Tag.TAG_STRING) || !requirement.gunIds().contains(tag.getString("GunId"))) return false;
+        if (!requirement.provenance().isEmpty() && !requirement.provenance().equals(tag.getString(GunsmithBuilds.PROVENANCE))) return false;
         for (String key : tag.getAllKeys()) {
             if (key.startsWith("Attachment") && !key.equals("AttachmentLock")) return false;
         }
@@ -194,6 +225,7 @@ public record WorkOrder(String id, String title, String career, int level, int m
                 entry.put("gun_ids", guns);
             }
             if (!requirement.label.isEmpty()) entry.putString("label", requirement.label);
+            if (!requirement.provenance.isEmpty()) entry.putString("provenance", requirement.provenance);
             list.add(entry);
         }
         tag.put("reqs", list);
@@ -201,6 +233,11 @@ public record WorkOrder(String id, String title, String career, int level, int m
             CompoundTag extra = new CompoundTag();
             extra.putBoolean("underground", terms.underground); extra.putString("skill", terms.requiresSkill); extra.putString("mod", terms.requiresMod);
             extra.putString("buyer", terms.buyer); extra.putInt("min_trust", terms.minTrust); extra.putInt("trust_gain", terms.trustGain);
+            if (!terms.requiresFacility.isEmpty()) extra.putString("facility", terms.requiresFacility);
+            if (!terms.crewPart.isEmpty()) extra.putString("crew_part", terms.crewPart);
+            if (!terms.civic.isEmpty()) extra.putString("civic", terms.civic);
+            if (!terms.requiresCivic.isEmpty()) extra.putString("requires_civic", terms.requiresCivic);
+            if (!terms.raid.isEmpty()) extra.putString("raid", terms.raid);
             ListTag rewardList = new ListTag();
             for (Reward reward : terms.rewards) {
                 CompoundTag entry = new CompoundTag();
@@ -223,7 +260,7 @@ public record WorkOrder(String id, String title, String career, int level, int m
                 List<String> guns = new ArrayList<>();
                 ListTag gunList = entry.getList("gun_ids", Tag.TAG_STRING);
                 for (int g = 0; g < gunList.size(); g++) guns.add(gunList.getString(g));
-                requirements.add(new Requirement(ResourceLocation.parse(entry.getString("item")), entry.getInt("count"), guns, entry.getString("label")));
+                requirements.add(new Requirement(ResourceLocation.parse(entry.getString("item")), entry.getInt("count"), guns, entry.getString("label"), entry.getString("provenance")));
             }
         } else {
             requirements.add(new Requirement(ResourceLocation.parse(tag.getString("item")), tag.getInt("count")));
@@ -238,7 +275,7 @@ public record WorkOrder(String id, String title, String career, int level, int m
                 rewards.add(new Reward(ResourceLocation.parse(entry.getString("item")), entry.getInt("count"), entry.getString("nbt")));
             }
             terms = new Terms(extra.getBoolean("underground"), extra.getString("skill"), extra.getString("buyer"),
-                extra.getInt("min_trust"), extra.getInt("trust_gain"), extra.getString("mod"), rewards);
+                extra.getInt("min_trust"), extra.getInt("trust_gain"), extra.getString("mod"), rewards, extra.getString("facility"), extra.getString("crew_part"), extra.getString("civic"), extra.getString("requires_civic"), extra.getString("raid"));
         }
         return validate(new WorkOrder(tag.getString("id"), tag.getString("title"),
             tag.getString("career"), tag.getInt("level"), tag.getInt("max_level"), List.copyOf(requirements),

@@ -169,8 +169,8 @@ class Model:
                             o.exchange_goods.add(good)
                             o.goods_units[good] = o.goods_units.get(good, 0) + crafts * n
                     hands += crafts * self.a["overhead"]["craft_operation_minutes"]
-                else:  # a harvest-only Core good: its operating cost per unit is in the reference values
-                    cash += count * self.refs["harvest_units"].get(item, 0)
+                else:  # a harvest-only Core good, or a workshop good (D-163): its operating cost per unit is in the reference values
+                    cash += count * (self.refs["harvest_units"].get(item) or self.refs.get("workshop_units", {}).get(item, 0))
                     hands += count * self.minutes(item)
                     wait = max(wait, self.a["wait_minutes"].get(item, 0))
                 continue
@@ -307,6 +307,8 @@ class Model:
         """Minutes of play until a brand-new citizen holds their first credits, and the order that does it."""
         best = None
         for o in self.available(career, 1, mods):
+            if o.net <= 0 and any(x.net > 0 for x in self.available(career, 1, mods)):
+                continue                                                   # nobody's first credits come from an order that costs more than it pays
             minutes = o.hands + o.wait
             if best is None or minutes < best[0]:
                 best = (minutes, o)
@@ -315,10 +317,229 @@ class Model:
     # -- property --------------------------------------------------------------------------------------------------------
 
     def listings(self):
-        return self.ladder["listings"]
+        """The district listings and the furnished cities' templates (D-127); a template stands for every unit of its building and is checked like a listing."""
+        city = [dict(t, id="city:" + t["building"].split(":", 1)[1], title=t["area"] + " " + t["category"]) for t in self.ladder.get("city_listings", [])]
+        return self.ladder["listings"] + city
 
     def categories(self):
         return self.ladder["categories"]
+
+
+# ------------------------------------------------------------------------------------------------------------------ a scarcity world
+
+MATERIALS = ROOT / "content/gameplay/materials-supply.json"
+SHOP_SUPPLY = ROOT / "content/gameplay/shop-supply.json"
+SURVIVAL_SUPPLY = ROOT / "content/gameplay/survival-supply.json"
+SITES = DATA / "resource_sites"
+FENCES = DATA / "fences"
+ORE_BLOCKS = {"minecraft:iron_ore": "minecraft:iron_ingot", "minecraft:copper_ore": "minecraft:copper_ingot", "minecraft:coal_ore": "minecraft:coal"}
+
+
+class ScarcityModel(Model):
+    """A new world made with the scarcity package (D-120): nothing to mine. Every ore-derived unit an order needs comes off a city's finite shelf
+    (``source="shelf"``: bought at the cheapest shelf price, plus an exchange run, from a pool the shelves refill) or, for the base metals the quarry
+    grows back, out of the quarry (``source="quarry"``: quarry minutes each, from a pool of veins x 60 / interval an hour, shared by the world; the
+    other ores still come off the shelves). The default model's mining minutes for those units are taken out."""
+
+    def __init__(self, source: str, scale: float = 1.0):
+        self.source = source
+        self.sc = json.loads(ASSUMPTIONS.read_text(encoding="utf-8"))["scarcity"]
+        self.shelves: dict[str, list[dict]] = {}
+        for line in json.loads(MATERIALS.read_text(encoding="utf-8"))["lines"]:
+            self.shelves.setdefault(line["item"], []).append(line)
+        self.quarry: dict[str, float] = {}
+        for path in sorted(SITES.glob("*.json")):
+            site = json.loads(path.read_text(encoding="utf-8"))
+            for vein in site["veins"]:
+                root = ORE_BLOCKS.get(vein["block"])
+                if root:
+                    self.quarry[root] = self.quarry.get(root, 0.0) + 60.0 / site["interval_minutes"]
+        super().__init__(scale)
+
+    def cheapest(self, root: str) -> float:
+        lines = self.shelves.get(root)
+        if not lines:
+            raise KeyError(f"no shelf sells {root}: a scarcity world has no route to it")
+        return min(l["price"] for l in lines)
+
+    def ore_units(self, o: Order) -> dict[str, float]:
+        """The ore-derived units an order consumes, from its requirements and the vanilla inputs of the products it asks for."""
+        content_of = self.sc["ore_content"]
+        units: dict[str, float] = {}
+
+        def add(item: str, n: float) -> None:
+            for root, k in content_of.get(item, {}).items():
+                units[root] = units.get(root, 0.0) + n * k
+
+        for req in o.requirements:
+            item, count = req["item"], req["count"]
+            if req.get("gun_ids"):
+                guns = self.refs["guns"]
+                iron = guns[min(req["gun_ids"], key=lambda g: guns[g])] / self.a["gun_minutes"]["iron_value_credits"]
+                units["minecraft:iron_ingot"] = units.get("minecraft:iron_ingot", 0.0) + count * iron
+                continue
+            if item in self.products or item in self.specials:
+                p = self.products.get(item) or self.specials[item]
+                crafts = math.ceil(count / p["count"]) if p.get("inputs") else 0
+                for key, n in (p.get("inputs") or {}).items():
+                    if ":" in key and not key.startswith("underground_city:"):
+                        add(key, crafts * n)
+                continue
+            if item not in self.prices:
+                add(item, count)
+        return units
+
+    def _economics(self, o: Order) -> None:
+        super()._economics(o)
+        units = self.ore_units(o)
+        if not units:
+            return
+        had_run = bool(o.exchange_goods)
+        for root, n in units.items():
+            mined = self.a["gun_minutes"]["minutes_per_iron"] * self.scale if root == "minecraft:iron_ingot" else self.minutes(root)
+            o.hands -= n * mined
+            if self.source == "quarry" and root in self.quarry:
+                o.hands += n * self.sc["quarry_minutes_each"][root] * self.scale
+                good = "quarry:" + root
+            else:
+                o.cash += n * self.cheapest(root)
+                good = "shelf:" + root
+                o.exchange_goods.add(good)
+            o.goods_units[good] = o.goods_units.get(good, 0.0) + n
+        if o.exchange_goods and not had_run:
+            overhead = self.a["overhead"]
+            o.hands += overhead["exchange_run_round_trip_minutes"] / overhead["exchange_run_orders_per_trip"]
+        o.hands = max(o.hands, self.a["overhead"]["terminal_minutes_per_order"])
+
+    def supply_pool(self) -> dict[str, float]:
+        pool = super().supply_pool()
+        horizon = self.a["supply_horizon_hours"]
+        for root, lines in self.shelves.items():
+            pool["shelf:" + root] = sum(l["units_per_interval"] * 60.0 / l["interval_minutes"] + l["initial"] / horizon for l in lines)
+        for root, rate in self.quarry.items():
+            pool["quarry:" + root] = rate
+        return pool
+
+
+def scarcity_rows(model: Model) -> list[dict]:
+    """Each career's legal net per active hour in the ore world, with the shelves only, and with the quarry for the base metals, by level."""
+    shelf, quarry = ScarcityModel("shelf", model.scale), ScarcityModel("quarry", model.scale)
+    rows = []
+    for level in (1, 3, 5, 8):
+        for career in CAREERS:
+            rows.append({"career": career, "level": level, "ore": model.income(career, level, ALL_MODS)["net"],
+                         "shelf": shelf.income(career, level, ALL_MODS)["net"], "quarry": quarry.income(career, level, ALL_MODS)["net"]})
+    return rows
+
+
+def quarry_and_shelves(model: Model) -> list[list]:
+    q = ScarcityModel("quarry", model.scale)
+    pool = q.supply_pool()
+    rows = []
+    for root in sorted(set(q.shelves) | set(q.quarry)):
+        rows.append([root.split(":")[1], f"{q.cheapest(root)}" if root in q.shelves else "-", f"{pool.get('shelf:' + root, 0):.1f}", f"{q.quarry.get(root, 0):.0f}"])
+    return rows
+
+
+# ------------------------------------------------------------------------------------------------------------------ salvage yards (D-138)
+
+SALVAGE_BLOCKS = {"underground_city:scrap_heap": DATA / "loot_tables/blocks/scrap_heap.json"}
+
+
+def expected_drops(table: dict) -> dict[str, float]:
+    """The mean count of each item one roll of a simple block loot table gives (pools of integer rolls, weighted entries, uniform set_count)."""
+    out: dict[str, float] = {}
+    for pool in table["pools"]:
+        entries = pool["entries"]
+        total = sum(e.get("weight", 1) for e in entries)
+        for e in entries:
+            if e["type"] != "minecraft:item":
+                continue
+            count = 1.0
+            for f in e.get("functions", []):
+                if f["function"] == "minecraft:set_count":
+                    c = f["count"]
+                    count = (c["min"] + c["max"]) / 2.0 if isinstance(c, dict) else float(c)
+            out[e["name"]] = out.get(e["name"], 0.0) + pool["rolls"] * count * e.get("weight", 1) / total
+    return out
+
+
+def salvage_rows(model: "Model") -> list[dict]:
+    """Each salvage yard: one row per place (its four rotations are one yard; a world builds one), heaps, interval, and the mean items an active hour if every heap is stripped."""
+    yards: dict[str, dict] = {}
+    for path in sorted(SITES.glob("*.json")):
+        site = json.loads(path.read_text(encoding="utf-8"))
+        heaps = [v for v in site["veins"] if v["block"] in SALVAGE_BLOCKS]
+        if not heaps:
+            continue
+        family = site["district"].rsplit("_", 1)[0] if site["district"].rsplit("_", 1)[-1] in ("n", "e", "s", "w") else site["district"]
+        per_hour = len(heaps) * 60.0 / site["interval_minutes"]
+        drops: dict[str, float] = {}
+        for block, table_path in SALVAGE_BLOCKS.items():
+            n = sum(1 for v in heaps if v["block"] == block) * 60.0 / site["interval_minutes"]
+            for item, mean in expected_drops(json.loads(table_path.read_text(encoding="utf-8"))).items():
+                drops[item] = drops.get(item, 0.0) + mean * n
+        yards[family] = {"yard": family, "heaps": len(heaps), "interval": site["interval_minutes"], "heaps_per_hour": per_hour, "drops": drops}
+    return list(yards.values())
+
+
+# ------------------------------------------------------------------------------------------------------------------ fences (D-125)
+
+def honest_prices(model: Model) -> dict[str, float]:
+    """The cheapest price anybody honest sells each item at: the cities' shelves and shops, the survival lines, the exchange, the starter shop."""
+    prices: dict[str, float] = {}
+
+    def offer(item: str, price: float) -> None:
+        prices[item] = min(price, prices.get(item, float("inf")))
+
+    for path in (MATERIALS, SHOP_SUPPLY, SURVIVAL_SUPPLY):
+        for line in json.loads(path.read_text(encoding="utf-8"))["lines"]:
+            offer(line["item"], line["price"])
+    for item, price in model.prices.items():
+        offer(item, price)
+    shop = json.loads((ROOT / "content/integrations/qshop/config/qshop/shops/uc_starter_supply.json").read_text(encoding="utf-8"))
+    for e in shop["entries"]:
+        if e["type"] == "BUY":
+            offer(e["item"]["item"], e["price"] / e["item"]["count"])
+    return prices
+
+
+def fences(model: Model) -> tuple[list[dict], dict[str, int]]:
+    if hasattr(model, "fence_override"):          # a test's own fences and values
+        return model.fence_override
+    values = json.loads((FENCES / "values.json").read_text(encoding="utf-8"))["values"]
+    out = [json.loads(p.read_text(encoding="utf-8")) for p in sorted(FENCES.glob("*.json")) if p.name != "values.json"]
+    return out, values
+
+
+def fence_rows(model: Model) -> list[dict]:
+    """Each fence's best rate (with every payout skill), the most it pays an hour once its opening budget is spent, against the best legal hour at level 5."""
+    found, _ = fences(model)
+    best_legal = max(model.income(c, 5, ALL_MODS)["net"] for c in CAREERS)
+    rows = []
+    for f in found:
+        rate = min(60, max(f["rate_percent"], f["same_city_rate_percent"]) + 10)
+        hourly = f["refill_credits"] * 60.0 / f["refill_minutes"]
+        rows.append({"city": f["city"], "title": f["title"], "rate": f["rate_percent"], "same_city": f["same_city_rate_percent"], "best_rate": rate,
+                     "budget": f["budget"], "hourly": hourly, "best_legal": best_legal, "share": hourly / best_legal if best_legal else float("inf")})
+    return rows
+
+
+def fence_problems(model: Model) -> list[str]:
+    problems = []
+    found, values = fences(model)
+    prices = honest_prices(model)
+    best_rate = max(min(60, max(f["rate_percent"], f["same_city_rate_percent"]) + 10) for f in found) if found else 0
+    for item, worth in values.items():
+        if item in prices and worth > prices[item]:
+            problems.append(f"fence: {item} is worth {worth} to a fence but sells honestly at {prices[item]:g}: buying it and fencing it would launder credits")
+        if item in prices and worth * best_rate // 100 >= prices[item]:
+            problems.append(f"fence: {item} fences for {worth * best_rate // 100} at the best rate, not below its honest price {prices[item]:g}")
+    limit = model.a["targets"]["fence_hourly_ceiling_vs_best_legal_max"]
+    for row in fence_rows(model):
+        if row["share"] > limit:
+            problems.append(f"fence: {row['title']} pays up to {row['hourly']:.0f} an hour after its budget, {row['share']:.0%} of the best legal hour at level 5 (limit {limit:.0%})")
+    return problems
 
 
 # ------------------------------------------------------------------------------------------------------------------ timelines
@@ -461,15 +682,27 @@ def shop_sell_vs_orders(model: Model) -> list[str]:
     return out
 
 
+PREMISES = {"commercial_workshop", "warehouse"}
+
+
+# homes the model takes to be a two-income household's (D-176): the villa's three bedrooms are for a couple or a Crew, as the business premises are a Crew's (an assumption, not a measurement)
+SHARED_HOMES = {"premium_residence"}
+
+
 def rent_shares(model: Model, mods: set[str]) -> list[dict]:
     """Rent as a share of the net income a household typically has at the level where it rents that category."""
     rows = []
-    typical = {"motel_room": 1, "small_apartment": 4, "workshop_house": 8}
+    # the level at which a household typically takes each kind of home; business premises (D-127) are taken late, and usually by a Crew with two incomes
+    typical = {"motel_room": 1, "small_apartment": 4, "comfortable_apartment": 5, "large_apartment": 6, "small_house": 7, "workshop_house": 8, "commercial_workshop": 12, "warehouse": 15,
+               "premium_residence": 15}
     for listing in model.listings():
         level = typical.get(listing["category"], 6)
         incomes = {c: model.income(c, level, mods)["net"] for c in CAREERS}
         mean = sum(incomes.values()) / len(incomes)
         worst = min(incomes, key=incomes.get)
+        # business premises are a Crew's: the household pays them from two incomes (an assumption of the model, not a measurement; docs/technical/economy-model.md)
+        if listing["category"] in PREMISES or listing["category"] in SHARED_HOMES:
+            mean *= 2
         rows.append({"listing": listing["id"], "category": listing["category"], "rent": listing["rent"], "level": level,
                      "mean_income": mean, "mean_share": listing["rent"] / mean if mean else None,
                      "worst_career": worst, "worst_income": incomes[worst], "worst_share": listing["rent"] / incomes[worst] if incomes[worst] else None})
@@ -590,6 +823,25 @@ def invariants(model: Model) -> list[str]:
             problems.append(f"vehicles: {row['id']} costs {row['price']}, under {row['floor']} times its materials ({row['materials']}): buying would beat making")
         if not 0.7 * row["target_hours"] <= row["hours"] <= 1.4 * row["target_hours"]:
             problems.append(f"vehicles: {row['id']} takes {row['hours']:.1f} active hours of a level-{row['level']} wage, not the {row['target_hours']} it is meant to")
+    # a scarcity world (no ore to mine): every career still has its first payout, and none loses most of its level-5 income to the shelves
+    shelf_world = ScarcityModel("shelf", model.scale)
+    for career in CAREERS:
+        fp = shelf_world.first_payout(career, set())
+        if fp["minutes"] is None or fp["minutes"] > t["first_payout_minutes_max"] or fp["net"] <= 0:
+            problems.append(f"scarcity: {career} has no quick, profitable first payout without ore ({fp})")
+    floor = model.a["scarcity"]["ore_world_share_min_at_level_5"]
+    for row in scarcity_rows(model):
+        if row["level"] == 5 and row["ore"] > 0 and max(row["shelf"], row["quarry"]) < floor * row["ore"]:
+            problems.append(f"scarcity: a level-5 {row['career']} earns {max(row['shelf'], row['quarry']):.0f}/h without ore, under {floor:.0%} of the {row['ore']:.0f}/h of the ore world")
+    problems += fence_problems(model)
+    # a salvage yard is a side source: its iron (nuggets, nine to an ingot) never out-supplies the regrowing sites' iron, and it is not a machined-parts mine
+    quarry_iron = ScarcityModel("quarry", model.scale).quarry.get("minecraft:iron_ingot", 0.0)
+    for y in salvage_rows(model):
+        iron = y["drops"].get("minecraft:iron_nugget", 0.0) / 9.0 + y["drops"].get("minecraft:iron_ingot", 0.0)
+        if iron > quarry_iron:
+            problems.append(f"salvage: {y['yard']} gives {iron:.1f} iron an active hour, more than the regrowing sites' {quarry_iron:.1f}")
+        if y["drops"].get("underground_city:machined_parts", 0.0) > 2.0:
+            problems.append(f"salvage: {y['yard']} gives {y['drops']['underground_city:machined_parts']:.1f} machined parts an active hour; a yard is not a parts mine")
     # no loops
     problems += exploit_checks(model)
     problems += [f"shop undercuts an order: {x}" for x in shop_sell_vs_orders(model)]
@@ -600,6 +852,8 @@ def invariants(model: Model) -> list[str]:
             problems.append(f"{career}: no order is open at level 1 in the default pack, so a new citizen can never earn XP")
         elif fp["minutes"] > t["first_payout_minutes_max"]:
             problems.append(f"{career}: first payout takes {fp['minutes']:.0f} minutes (target at most {t['first_payout_minutes_max']})")
+        elif fp["net"] <= 0:
+            problems.append(f"{career}: the first order a new citizen can do ({fp['order']}) loses money")
     # no career is far behind (level 5, legal)
     for level in (3, 5, 8):
         spread = career_spread(model, ALL_MODS, level)
@@ -680,9 +934,24 @@ def report(model: Model, markdown: bool = False) -> str:
              r["level"], f"{r['mean_income']:.0f}", f"{r['hours']:.1f}", r["target_hours"]] for r in vehicle_rows(model, ALL_MODS)]
     out.append(h("Vehicle and boat tiers: active hours of the five careers' mean wage to afford one (prices are the planning table of D-101)"))
     out.append(table(rows, ["tier", "vehicle", "acquired by", "price", "materials value", "at level", "mean net/h", "hours", "meant to be"]))
+    # a scarcity world
+    rows = [[r["career"], r["level"], f"{r['ore']:.0f}", f"{r['shelf']:.0f}", f"{r['quarry']:.0f}", f"{max(r['shelf'], r['quarry']) / r['ore']:.0%}" if r["ore"] > 0 else "-"] for r in scarcity_rows(model)]
+    out.append(h("A scarcity world (no ore to mine, D-120): legal net credits per active hour with metals from the shelves only, or with the regrowing sites' base metals (every mod)"))
+    out.append(table(rows, ["career", "level", "ore world", "shelves", "sites + shelves", "best as a share of the ore world"]))
+    losers = [[o.career, o.level, o.id, o.credits, f"{o.cash:.0f}"] for o in ScarcityModel("shelf", model.scale).orders if o.net <= 0 and o.cash > 0]
+    out.append(h("Orders that cost more than they pay when every ore unit is bought from a shelf (a scarcity world; the quarry's base metals do not help these)"))
+    out.append(table(losers, ["career", "L", "order", "credits", "shelf cost"]) if losers else "none")
+    out.append(h("Where a scarcity world's ore comes from: cheapest shelf price, units an hour the shelves sustain (all cities), units an hour the regrowing sites give back (the old quarry and the Valewood pit, shared by everybody)"))
+    out.append(table(quarry_and_shelves(model), ["ore", "cheapest shelf", "shelves/h", "sites/h"]))
+    out.append(h("Salvage yards (D-138): heaps that refill in active time, and the mean items an active hour if every heap is stripped (one rotation of each yard stands in a world)"))
+    out.append(table([[y["yard"], y["heaps"], y["interval"], f"{y['heaps_per_hour']:.0f}", ", ".join(f"{k.split(':')[1]} {v:.1f}" for k, v in sorted(y["drops"].items()))] for y in salvage_rows(model)],
+                     ["yard", "heaps", "minutes", "heaps/h", "items/h"]))
+    rows = [[r["city"], r["title"], f"{r['rate']}% ({r['same_city']}% at home)", f"{r['best_rate']}%", r["budget"], f"{r['hourly']:.0f}", f"{r['best_legal']:.0f}", f"{r['share']:.0%}"] for r in fence_rows(model)]
+    out.append(h("Fences (D-125): rate, best rate with every payout skill, opening budget, the most they pay an hour after it, against the best legal hour at level 5"))
+    out.append(table(rows, ["city", "fence", "rate", "best rate", "budget", "per hour", "best legal/h (L5)", "share"]))
     # exploit findings
     out.append(h("Loops the data allows"))
-    findings = exploit_checks(model)
+    findings = exploit_checks(model) + fence_problems(model)
     out.append("\n".join(f"- {f}" for f in findings) if findings else "none found")
     return "\n".join(out)
 

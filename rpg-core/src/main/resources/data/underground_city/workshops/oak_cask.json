@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "id": "oak_cask",
+  "career": "vintner",
+  "title": "Oak Cask",
+  "note": "Ages wine slowly. Aged wine is never below Fine and keeps the grade of what went in; a cellar master's cask makes Reserve.",
+  "tiers": [
+    {
+      "tier": 1,
+      "name": "Single Cask",
+      "batch": 1,
+      "speed": 1.0
+    },
+    {
+      "tier": 2,
+      "name": "Rack and Hoops",
+      "batch": 2,
+      "speed": 1.35,
+      "upgrade": {
+        "parts": {
+          "underground_city:cooperage_set": 1,
+          "underground_city:barrel_hoops": 2
+        }
+      }
+    },
+    {
+      "tier": 3,
+      "name": "Cellar Rack",
+      "batch": 4,
+      "speed": 1.75,
+      "upgrade": {
+        "parts": {
+          "underground_city:steel_bracket": 4,
+          "underground_city:barrel_hoops": 4
+        },
+        "skill": "vintner.cellar_fitout"
+      }
+    }
+  ],
+  "recipes": [
+    {
+      "id": "aged_wine",
+      "title": "Cask-aged wine",
+      "inputs": {
+        "underground_city:berry_wine": 3
+      },
+      "output": "underground_city:aged_wine",
+      "count": 2,
+      "seconds": 900,
+      "xp": 90,
+      "skill": "vintner.cellar_craft",
+      "grading": {
+        "base": 1,
+        "from_input": true,
+        "tier3": 1,
+        "skills": {
+          "vintner.estate_vintages": 1
+        }
+      },
+      "note": "Three bottles of berry wine make two bottles that are at least Fine. The wine's own grade carries over."
+    },
+    {
+      "id": "aged_red",
+      "title": "Cask-aged red (Vinery)",
+      "inputs": {
+        "vinery:red_wine": 2
+      },
+      "output": "vinery:red_wine",
+      "count": 2,
+      "seconds": 900,
+      "xp": 60,
+      "skill": "vintner.estate_vintages",
+      "grading": {
+        "base": 1,
+        "tier3": 1
+      },
+      "mod": "vinery",
+      "note": "Vinery's red wine rested in oak: the same wine, graded Fine or better, so the tavern and estate pay more for it."
+    }
+  ]
+}

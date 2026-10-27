@@ -1,0 +1,29 @@
+{
+  "schema_version": 3,
+  "title": "Pistols with no numbers for Dray",
+  "career": "gunsmith",
+  "level": 8,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "tacz:modern_kinetic_gun",
+      "count": 2,
+      "gun_ids": [
+        "tacz:glock_17",
+        "tacz:m1911"
+      ],
+      "label": "Unmarked pistol",
+      "provenance": "unmarked"
+    }
+  ],
+  "credits": 720,
+  "xp": 600,
+  "capacity": 1,
+  "refill_ticks": 24000,
+  "legality": "underground",
+  "requires_skill": "gunsmith.unregistered_builds",
+  "buyer": "dray",
+  "min_trust": 1,
+  "trust_gain": 1,
+  "requires_mod": "tacz"
+}

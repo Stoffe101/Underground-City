@@ -473,6 +473,13 @@ public final class CrewJourneyServer {
             lastProgress = "";
             return;
         }
+        if (contractStage == 1) {
+            // the clients are working the Crew contract on their terminals (seventh pass): watch the ledger until it is complete and both shares are paid
+            if (server.getTickCount() % 10 != 0) return;
+            JsonObject done = watchClientContract(server, farmer, smith);
+            if (done != null) finishPhaseTwo(server, folder, farmer, smith, ledger, done);
+            return;
+        }
         if (server.getTickCount() % 10 != 0) return;
         Crew crew = ledger.crewOf(farmer.getUUID());
         String text = "bank=" + crew.bank + " wallets " + (long) QShopEconomy.balance(farmer) + "/" + (long) QShopEconomy.balance(smith) + " pending " + ledger.allPending().size();
@@ -502,10 +509,31 @@ public final class CrewJourneyServer {
                 "conservation after the exchange purchases: " + QShopEconomy.balance(farmer) + " + " + QShopEconomy.balance(smith) + " + " + crew.bank + " + " + rentTotal + " + " + SPENT + " + " + exchangeSpent);
             System.out.println("[UC-JOURNEY] exchange purchases after the restart passed: " + survivalFacts);
         }
+        atClients = new double[] {bankAtClients, farmerAtClients, smithAtClients};
+        if (!SurvivalJourney.ON) {   // (not with shared finances: a delivery's pay would be swept into the bank)
+            beginClientContract(server, level, farmer, smith);
+            contractStage = 1;
+            lastProgress = "";
+            stalled = 0;
+            return;
+        }
+        finishPhaseTwo(server, folder, farmer, smith, ledger, null);
+    }
+
+    /** What the clients' screens showed before the contract (the bank and both wallets), for the report. */
+    private static double[] atClients;
+
+    /** Writes the phase-2 report and halts the server: the end of the journey. */
+    private static void finishPhaseTwo(MinecraftServer server, Path folder, ServerPlayer farmer, ServerPlayer smith, CrewLedger ledger, JsonObject contract) throws IOException {
+        Crew crew = ledger.crewOf(farmer.getUUID());
+        Residence houseNow = ledger.residence(houseId());
+        long bankAtClients = (long) atClients[0];
+        double farmerAtClients = atClients[1], smithAtClients = atClients[2];
         server.getPlayerList().saveAll();
         JsonObject marker = new JsonObject();
         marker.addProperty("scenario", "crew");
         marker.addProperty("phase", 2);
+        if (contract != null) marker.add("crew_contract", contract);
         marker.addProperty("connected_clients", 2);
         marker.addProperty("unresolved_transfers_found_in_file_at_start", pendingBeforeStart);
         marker.addProperty("unresolved_after_recovery_at_server_start", pendingAfterStart);
@@ -528,6 +556,82 @@ public final class CrewJourneyServer {
         System.out.println("[UC-JOURNEY] CREW PHASE 2 PASSED with two real connected clients after an abrupt server death");
         finished = true;
         server.halt(false);
+    }
+
+    // ------------------------------------------------------------------------------------------------------------ the Crew contract, by the clients' terminals (seventh pass)
+
+    static final String CANTEEN = "underground_city:depot_canteen", FLOUR = "underground_city:crew_canteen_flour", FITTINGS = "underground_city:crew_canteen_fittings", CIDER = "underground_city:crew_canteen_cider";
+    private static int contractStage;
+    private static double contractFarmer0, contractSmith0;
+
+    /**
+     * Sets up the Crew contract (D-170) for the two clients to work on their own terminal screens: the goods for the parts are handed over and the smith is given the career level the
+     * fittings part asks for (both logged as SCRIPTED); a terminal is set beside each player and opened. From here the clients choose the part, press Accept and Deliver, and the founder pays
+     * a supplier for the cider part, which neither trade makes and which is on the founder's screen because it is the Crew's (seventh pass: other trades' parts are listed to members).
+     */
+    private static void beginClientContract(MinecraftServer server, ServerLevel level, ServerPlayer farmer, ServerPlayer smith) {
+        CitizenState citizens = CitizenState.get(server);
+        CrewContracts.Contract canteen = CrewContracts.CATALOG.find(CANTEEN);
+        expect(canteen != null && CrewContracts.CATALOG.available(canteen), "the canteen contract is loaded");
+        int needed = WorkOrderCatalog.INSTANCE.find(FITTINGS).level();
+        if (citizens.find(smith.getUUID()).orElseThrow().careerLevel() < needed) {
+            citizens.addCareerXp(smith.getUUID(), (int) (125.0 * Math.pow(needed - 1, 2)));
+            System.out.println("[UC-JOURNEY] SCRIPTED the smith was given career level " + needed + " for the fittings part");
+        }
+        System.out.println("[UC-JOURNEY] SCRIPTED the goods for the parts were handed over: 24 flour to the farmer, 24 fasteners and 6 brackets to the smith");
+        farmer.getInventory().add(new ItemStack(UndergroundCity.item("flour"), 24));
+        smith.getInventory().add(new ItemStack(UndergroundCity.item("fasteners"), 24));
+        smith.getInventory().add(new ItemStack(UndergroundCity.item("steel_bracket"), 6));
+        contractFarmer0 = QShopEconomy.balance(farmer);
+        contractSmith0 = QShopEconomy.balance(smith);
+        for (ServerPlayer player : new ServerPlayer[] {farmer, smith}) {
+            BlockPos at = terminalBeside(level, player);
+            level.setBlock(at, UndergroundCity.TERMINAL.get().defaultBlockState(), 3);
+            TerminalNetwork.open(player, at);
+            System.out.println("[UC-JOURNEY] SCRIPTED a terminal was set beside " + player.getGameProfile().getName() + " at " + at.toShortString() + " and opened; the client works the contract on it");
+        }
+    }
+
+    private static BlockPos terminalBeside(ServerLevel level, ServerPlayer player) {
+        BlockPos feet = player.blockPosition();
+        for (net.minecraft.core.Direction d : net.minecraft.core.Direction.Plane.HORIZONTAL)
+            for (int step = 1; step <= 2; step++) {
+                BlockPos c = feet.relative(d, step);
+                if (level.getBlockState(c).isAir() && level.getBlockState(c.below()).isSolidRender(level, c.below())) return c;
+            }
+        return feet.above(2);
+    }
+
+    /** Null while the clients are still at it; the facts once the contract is complete and both shares are paid. */
+    private static JsonObject watchClientContract(MinecraftServer server, ServerPlayer farmer, ServerPlayer smith) {
+        WorkOrderLedger orders = WorkOrderLedger.get(server);
+        CrewContracts.Contract canteen = CrewContracts.CATALOG.find(CANTEEN);
+        Crew crew = CrewService.need(server).crewOf(farmer.getUUID());
+        int completions = orders.crewCompletions(crew.id, canteen.id());
+        String text = "contract: flour " + orders.crewPartBy(crew.id, canteen.id(), "flour") + ", fittings " + orders.crewPartBy(crew.id, canteen.id(), "fittings") + ", cider "
+            + orders.crewPartBy(crew.id, canteen.id(), "cider") + ", completions " + completions + ", wallets " + (long) QShopEconomy.balance(farmer) + "/" + (long) QShopEconomy.balance(smith);
+        if (!text.equals(lastProgress)) { lastProgress = text; stalled = 0; System.out.println("[UC-JOURNEY] " + text); }
+        else if (++stalled * 10 > STALL_TICKS) throw new IllegalStateException("The clients made no progress on the Crew contract for " + STALL_TICKS / 20 + " seconds; last state: " + text);
+        if (completions < 1 || orders.crewBonusOwed(farmer.getUUID()) != 0 || orders.crewBonusOwed(smith.getUUID()) != 0 || orders.player(farmer.getUUID()).contains("pending")
+            || orders.player(smith.getUUID()).contains("pending")) return null;
+        int flour = WorkOrderCatalog.INSTANCE.find(FLOUR).credits(), fittings = WorkOrderCatalog.INSTANCE.find(FITTINGS).credits();
+        int price = canteen.part("cider").fillPrice();
+        long share = canteen.bonus() / 2;
+        expect(QShopEconomy.balance(farmer) == contractFarmer0 + flour - price + share && QShopEconomy.balance(smith) == contractSmith0 + fittings + share,
+            "wallets after the contract: " + QShopEconomy.balance(farmer) + " / " + QShopEconomy.balance(smith) + " (each part paid its deliverer, the founder paid the supplier, the bonus shared by the two who delivered)");
+        CitizenState citizens = CitizenState.get(server);
+        refuses(() -> WorkOrderService.accept(smith, orders, citizens.find(smith.getUUID()).orElseThrow(), FITTINGS), "a second fittings part for the same Crew");
+        JsonObject out = new JsonObject();
+        out.addProperty("contract", canteen.id());
+        out.addProperty("driven_by", "the two clients' own terminal screens: each chose its part, pressed Accept and Deliver; the founder pressed Supplier on the cider part");
+        out.addProperty("farmer_part_credits", flour);
+        out.addProperty("smith_part_credits", fittings);
+        out.addProperty("supplier_fill_price", price);
+        out.addProperty("bonus_share_each", share);
+        out.addProperty("farmer_wallet_change", QShopEconomy.balance(farmer) - contractFarmer0);
+        out.addProperty("smith_wallet_change", QShopEconomy.balance(smith) - contractSmith0);
+        System.out.println("[UC-JOURNEY] Crew contract passed, worked on the two clients' terminals: " + out);
+        return out;
     }
 
     private static long ledgerStartTicks() { return state.get("rent_progress_ticks").getAsLong(); }

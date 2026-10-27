@@ -1,0 +1,13 @@
+{
+  "buildingsettings": {
+    "buildingchance": 0.44,
+    "maxfloors": 3
+  },
+  "inherit": "lostcities:citystyle_standard",
+  "parkblocks": {
+    "parkchance": 0.26
+  },
+  "streetblocks": {
+    "frontchance": 0.0
+  }
+}

@@ -124,6 +124,16 @@ final class CrewCaptures {
                 screen.showPage(CrewScreen.Page.HOME);
                 screen.showHomeTab(1);
             }
+            case "home-find-many" -> {   // a new player with no Crew and seven homes in reach: the welcome rooms first (D-136), the page arrows in the tab row, never under a card's buttons
+                List<CrewView.LeaseRow> many = new java.util.ArrayList<>(NEARBY);
+                CrewView.Offer motel = NEARBY.get(0).offer();
+                for (int i = 3; i <= 6; i++) many.add(new CrewView.LeaseRow("row_motel:motel_" + i, "Row Motel Room " + i, "motel", 0, false, 9 + i, motel));
+                many.sort(CrewView.MOVE_IN_ORDER);
+                screen = new CrewScreen(new CrewView(true, "", SELF, "Imogen", true, true, 4, 0, true, false, new UUID(0, 0), "", "", 0, "BANK", "BANK", false, 0, 0, 0, 0, false, false,
+                    List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), many, UPGRADES, CrewView.RulesRow.DEFAULT), "");
+                screen.showPage(CrewScreen.Page.HOME);
+                screen.showHomeTab(1);
+            }
             case "home-solo" -> {   // a player with no Crew at all: the Home page works for everybody
                 screen = new CrewScreen(new CrewView(true, "", SELF, "Imogen", true, true, 64, 0, true, false, new UUID(0, 0), "", "", 0, "BANK", "BANK", false, 0, 0, 0, 0, false, false,
                     List.of(), List.of(), List.of(), List.of(), List.of(), List.of(new CrewView.HomeRow("row_motel:motel_1", "Row Motel Room 1", "motel", "You", "380 70 -88", 1, true, MOTEL)),

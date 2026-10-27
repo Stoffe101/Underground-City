@@ -38,7 +38,7 @@
     {
       "id": "farmer",
       "name": "Farmer",
-      "description": "Grow field crops and kitchen produce, keep a greenhouse and sell to the co-op and the estates; the same fields can quietly raise a restricted cultivar for a Blackwater buyer.",
+      "description": "Grow field crops and kitchen produce, keep a greenhouse and sell to the co-op and the estates; the same fields can quietly raise cannabis for a Blackwater buyer.",
       "branches": ["cultivation", "agribusiness", "restricted_cultivation"],
       "starter_objectives": ["Plant and harvest a starter crop", "Deliver a municipal produce order"],
       "legal_path": true,

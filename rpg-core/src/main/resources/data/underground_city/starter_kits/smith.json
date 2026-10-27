@@ -2,9 +2,42 @@
   "schema_version": 1,
   "career": "smith",
   "items": [
-    {"item": "minecraft:stone_pickaxe", "count": 1},
-    {"item": "minecraft:coal", "count": 8},
-    {"item": "minecraft:bread", "count": 4},
-    {"item": "thirstwastaken2:waterskin", "count": 1, "requires_mod": "thirstwastaken2"}
+    {
+      "item": "minecraft:stone_pickaxe",
+      "count": 1
+    },
+    {
+      "item": "minecraft:coal",
+      "count": 8
+    },
+    {
+      "item": "minecraft:bread",
+      "count": 4
+    },
+    {
+      "item": "underground_city:machinist_bench",
+      "count": 1
+    },
+    {
+      "item": "minecraft:iron_ingot",
+      "count": 6
+    },
+    {
+      "item": "minecraft:iron_nugget",
+      "count": 12
+    },
+    {
+      "item": "underground_city:engineer_toolkit",
+      "count": 1
+    },
+    {
+      "item": "underground_city:bearing_set",
+      "count": 2
+    },
+    {
+      "item": "thirstwastaken2:waterskin",
+      "count": 1,
+      "requires_mod": "thirstwastaken2"
+    }
   ]
 }

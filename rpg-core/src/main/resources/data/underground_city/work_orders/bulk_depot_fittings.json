@@ -1,0 +1,28 @@
+{
+  "schema_version": 3,
+  "title": "Fittings by the crate for the Northgate depot",
+  "career": "smith",
+  "level": 4,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "underground_city:fasteners",
+      "count": 64
+    },
+    {
+      "item": "underground_city:steel_bracket",
+      "count": 16
+    },
+    {
+      "item": "underground_city:springs",
+      "count": 8
+    }
+  ],
+  "credits": 420,
+  "xp": 560,
+  "capacity": 1,
+  "refill_ticks": 24000,
+  "legality": "legal",
+  "requires_skill": "smith.fundamentals",
+  "requires_facility": "trade"
+}

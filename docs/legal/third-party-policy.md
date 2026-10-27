@@ -7,7 +7,7 @@
 1. **Private play is not a blanket redistribution license.** We may play privately with legitimately obtained mods/maps; publishing those binaries or assets to a public repository requires separate rights.
 2. **Mod metadata is not a license.** Check the project's actual license, download page, distribution rules, dependencies, and any terms governing modified assets or modpacks.
 3. **All Rights Reserved means ask first.** Unless a specific permission or exception applies, do not redistribute, modify, or incorporate another creator's protected assets.
-4. **Do not extract/copy DeceasedCraft's custom structures, loot tables, scripts, or art by default.** Its atmosphere is a design reference, not an asset license.
+4. **Do not extract/copy DeceasedCraft's custom structures, loot tables, scripts, or art by default.** Its atmosphere is a design reference, not an asset license. The one exception is the owner's reported private permission for the city-building content of its creator (C70 and team), which allows private use and private porting only and keeps every file out of this repository: see [private-content.md](private-content.md) (D-116).
 5. **Map stitching and schematic imports require provenance.** An available download is not automatically permission to incorporate and redistribute it, especially after alterations.
 6. **Credit is not a substitute for permission.** Record required credit precisely; retain license texts where necessary.
 7. **Never commit mod jars, purchased files, world downloads, secrets, player saves, or server backups.** Maintain machine-local installs and a dependency manifest.

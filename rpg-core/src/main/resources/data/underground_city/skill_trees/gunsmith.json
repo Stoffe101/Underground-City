@@ -16,8 +16,8 @@
       "id": "gunsmith.licensed_repairs",
       "branch": "legal",
       "title": "Licensed Repairs",
-      "description": "Maintain sidearms: unlocks the sidearm contract and a pistol blueprint.",
-      "cost": 2,
+      "description": "Sidearm and armoury kit contracts, and kits a grade up.",
+      "cost": 1,
       "min_level": 3,
       "requires": [
         "gunsmith.fundamentals"
@@ -28,7 +28,7 @@
       "id": "gunsmith.dealer_licence",
       "branch": "legal",
       "title": "Arms Dealer Licence",
-      "description": "Licensed dealer: civilian firearms are legal to carry where permitted.",
+      "description": "Licensed dealer: any civilian gun is legal where permitted, not just yours.",
       "cost": 3,
       "min_level": 6,
       "requires": [
@@ -88,7 +88,7 @@
       "branch": "utility",
       "title": "Bench Discipline",
       "short_title": "Bench Discipline",
-      "description": "A proper home bench, laid out once.",
+      "description": "A proper home bench: the Gunsmith's Bench test fixture.",
       "cost": 2,
       "min_level": 9,
       "requires": [
@@ -103,7 +103,7 @@
       "id": "gunsmith.unregistered_builds",
       "branch": "underground",
       "title": "Unregistered Builds",
-      "description": "Build restricted weapons for the restricted-weapon contracts.",
+      "description": "Restricted-weapon contracts, and unmarked parts kits at the bench.",
       "cost": 3,
       "min_level": 7,
       "requires": [

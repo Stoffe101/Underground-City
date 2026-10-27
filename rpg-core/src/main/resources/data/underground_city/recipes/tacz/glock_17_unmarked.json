@@ -1,0 +1,33 @@
+{
+  "conditions": [
+    {
+      "type": "forge:mod_loaded",
+      "modid": "tacz"
+    }
+  ],
+  "type": "tacz:gun_smith_table_crafting",
+  "materials": [
+    {
+      "item": {
+        "item": "underground_city:unmarked_parts_kit"
+      },
+      "count": 1
+    },
+    {
+      "item": {
+        "tag": "forge:ingots/iron"
+      },
+      "count": 4
+    }
+  ],
+  "result": {
+    "type": "gun",
+    "id": "tacz:glock_17",
+    "nbt": {
+      "display": {
+        "Name": "{\"translate\": \"underground_city.gun.unmarked\", \"with\": [{\"translate\": \"tacz.gun.glock_17.name\"}], \"italic\": false}"
+      },
+      "UcKitLabel": 1
+    }
+  }
+}

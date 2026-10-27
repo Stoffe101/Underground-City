@@ -134,6 +134,7 @@ public final class PropertyService {
             ledger.beginRentFromWallet(tx, player.getUUID(), player.getGameProfile().getName(), forCrew, residenceId, 0, terms, rules());
             Notice.send(player, Notice.Kind.STEP, "Welcome", r.title + " is yours for " + rules().welcomeMotelCycles() + " hours of play on the city.");
         }
+        CitizenState.get(player.server).markJourney(player.getUUID(), "home");
         announceToCrew(player, ledger, forCrew, "New Crew home", r.title + " is now a Crew home (rented).");
     }
 
@@ -152,6 +153,7 @@ public final class PropertyService {
             CrewService.transact(player, balance -> ledger.beginBuyFromWallet(tx, player.getUUID(), forCrew, residenceId, balance, terms));
             Notice.send(player, Notice.Kind.STEP, "Home bought", r.title + " is " + (forCrew ? "the Crew's now." : "yours now."));
         }
+        CitizenState.get(player.server).markJourney(player.getUUID(), "home");
         announceToCrew(player, ledger, forCrew, "New Crew home", r.title + " is now a Crew home.");
     }
 
@@ -410,7 +412,7 @@ public final class PropertyService {
             for (UUID id : ledger.residentsOf(r)) {
                 ServerPlayer player = lookup.apply(server, id);
                 if (player != null && online.contains(id)) {
-                    Notice.send(player, Notice.Kind.INFO, "Rent soon", r.title + ": " + r.charge + " credits due in " + minutes + " min of play. Pay in advance or switch on automatic payment (press K).");
+                    Notice.send(player, Notice.Kind.INFO, "Rent soon", r.title + ": " + r.charge + " credits due in " + minutes + " min of play. Press K to pay ahead.");
                 }
             }
         }

@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "id": "gunsmith_bench",
+  "career": "gunsmith",
+  "title": "Gunsmith's Bench",
+  "note": "Fits and checks parts kits from a Smith's springs, brackets and fasteners. The licensed kits go to the armoury; an unmarked kit goes to Dray.",
+  "tiers": [
+    {
+      "tier": 1,
+      "name": "Felt Mat and Tools",
+      "batch": 1,
+      "speed": 1.0
+    },
+    {
+      "tier": 2,
+      "name": "Vice and Jigs",
+      "batch": 2,
+      "speed": 1.35,
+      "upgrade": {
+        "parts": {
+          "underground_city:steel_bracket": 4,
+          "underground_city:springs": 2
+        }
+      }
+    },
+    {
+      "tier": 3,
+      "name": "Test Fixture",
+      "batch": 3,
+      "speed": 1.75,
+      "upgrade": {
+        "parts": {
+          "underground_city:gear_set": 1,
+          "underground_city:optical_components": 1,
+          "underground_city:machined_parts": 2
+        },
+        "skill": "gunsmith.bench_discipline"
+      }
+    }
+  ],
+  "recipes": [
+    {
+      "id": "firearm_parts_kit",
+      "title": "Firearm parts kit",
+      "inputs": {
+        "underground_city:springs": 2,
+        "underground_city:steel_bracket": 1,
+        "underground_city:fasteners": 4,
+        "underground_city:machined_parts": 1
+      },
+      "output": "underground_city:firearm_parts_kit",
+      "count": 1,
+      "seconds": 240,
+      "xp": 60,
+      "grading": {
+        "tier3": 1,
+        "skills": {
+          "gunsmith.licensed_repairs": 1
+        }
+      },
+      "note": "Springs, a bracket, fasteners and a machined part fitted and checked: one kit. Licensed Repairs and a test fixture lift the grade."
+    },
+    {
+      "id": "unmarked_parts_kit",
+      "title": "Unmarked parts kit",
+      "inputs": {
+        "underground_city:firearm_parts_kit": 1,
+        "underground_city:unstamped_plate": 1
+      },
+      "output": "underground_city:unmarked_parts_kit",
+      "count": 1,
+      "seconds": 180,
+      "xp": 70,
+      "tier": 2,
+      "skill": "gunsmith.unregistered_builds",
+      "legality": "underground",
+      "note": "A kit rebuilt around unstamped plate. Unregistered components at a checkpoint."
+    }
+  ]
+}

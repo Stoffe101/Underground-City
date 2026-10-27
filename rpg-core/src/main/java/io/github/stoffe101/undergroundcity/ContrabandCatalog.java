@@ -35,8 +35,10 @@ public final class ContrabandCatalog extends SimpleJsonResourceReloadListener {
     private static final Logger LOGGER = LogUtils.getLogger();
     public static final ContrabandCatalog INSTANCE = new ContrabandCatalog();
 
-    public record Entry(ResourceLocation item, String nbtKey, Set<String> values, String contains, boolean catchAll, TagKey<Item> tag) {
-        public Entry(ResourceLocation item, String nbtKey, Set<String> values, String contains, boolean catchAll) { this(item, nbtKey, values, contains, catchAll, null); }
+    /** {@code overrides}: this entry decides the category before any other (an unmarked build of a civilian model is restricted, D-168). */
+    public record Entry(ResourceLocation item, String nbtKey, Set<String> values, String contains, boolean catchAll, TagKey<Item> tag, boolean overrides) {
+        public Entry(ResourceLocation item, String nbtKey, Set<String> values, String contains, boolean catchAll) { this(item, nbtKey, values, contains, catchAll, null, false); }
+        public Entry(ResourceLocation item, String nbtKey, Set<String> values, String contains, boolean catchAll, TagKey<Item> tag) { this(item, nbtKey, values, contains, catchAll, tag, false); }
         boolean specific() { return !catchAll; }
         boolean matches(ItemStack stack) {
             if (tag != null) return stack.is(tag);
@@ -81,7 +83,7 @@ public final class ContrabandCatalog extends SimpleJsonResourceReloadListener {
                 java.util.Set<String> values = new java.util.HashSet<>();
                 if (e.has("values")) for (JsonElement v : e.getAsJsonArray("values")) values.add(v.getAsString());
                 entries.add(new Entry(item, e.has("nbt_key") ? e.get("nbt_key").getAsString() : "", Set.copyOf(values),
-                    e.has("contains") ? e.get("contains").getAsString() : "", e.has("catch_all") && e.get("catch_all").getAsBoolean()));
+                    e.has("contains") ? e.get("contains").getAsString() : "", e.has("catch_all") && e.get("catch_all").getAsBoolean(), null, e.has("overrides") && e.get("overrides").getAsBoolean()));
             }
             if (entries.isEmpty() || entries.size() > 16) throw new IllegalArgumentException("Contraband " + id + " needs 1-16 entries");
             next.put(id, new Category(id, json.get("title").getAsString(), List.copyOf(entries)));
@@ -98,6 +100,8 @@ public final class ContrabandCatalog extends SimpleJsonResourceReloadListener {
     public String classify(ItemStack stack) {
         if (stack.isEmpty()) return null;
         String fallback = null;
+        for (Category category : categories.values())
+            for (Entry entry : category.entries()) if (entry.overrides() && entry.matches(stack)) return category.id();
         for (Category category : categories.values()) {
             for (Entry entry : category.entries()) {
                 if (!entry.matches(stack)) continue;

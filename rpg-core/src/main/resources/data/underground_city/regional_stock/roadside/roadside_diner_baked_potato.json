@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "city": "valewood",
+  "item": "minecraft:baked_potato",
+  "unit_price": 4,
+  "initial": 12,
+  "capacity": 20,
+  "units_per_interval": 6,
+  "interval_ticks": 24000,
+  "max_order": 8,
+  "outlets": [
+    "shop:roadside_diner"
+  ]
+}

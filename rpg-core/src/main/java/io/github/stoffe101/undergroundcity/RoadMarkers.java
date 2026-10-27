@@ -110,7 +110,7 @@ public final class RoadMarkers {
                 tx /= length; tz /= length;
                 double out = plan.reach() + 1.5;
                 int x = (int) Math.floor(at[0] - tz * out), z = (int) Math.floor(at[1] + tx * out); // the right-hand side of the direction of travel (x is east, z is south)
-                if (!level.isLoaded(new BlockPos(x, level.getSeaLevel(), z))) continue;
+                if (level.getChunkSource().getChunkNow(x >> 4, z >> 4) == null) continue;   // see areaLoaded: never a chunk that is still being generated
                 CorridorPlan.Hit hit = plan.project(x + 0.5, z + 0.5);
                 if (hit != null && hit.distance() < plan.reach() + 0.5) continue; // never on the road itself
                 BlockPos base = DevCommands.surface(level, x, z);
@@ -129,7 +129,8 @@ public final class RoadMarkers {
     static boolean areaLoaded(ServerLevel level, double x, double z, int radius) {
         int sea = level.getSeaLevel();
         for (int dx : new int[]{-radius, 0, radius}) for (int dz : new int[]{-radius, 0, radius}) {
-            if (!level.isLoaded(new BlockPos((int) Math.floor(x) + dx, sea, (int) Math.floor(z) + dz))) return false;
+            // getChunkNow, not isLoaded: isLoaded counts a chunk that is still being generated, and the reads that follow would make the server wait for it
+            if (level.getChunkSource().getChunkNow(((int) Math.floor(x) + dx) >> 4, ((int) Math.floor(z) + dz) >> 4) == null) return false;
         }
         return true;
     }

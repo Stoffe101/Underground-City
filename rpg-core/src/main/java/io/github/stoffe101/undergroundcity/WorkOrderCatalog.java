@@ -15,6 +15,8 @@ import java.util.Map;
 
 /** Vanilla datapack reload hook; invalid data aborts the catalog replacement. */
 public final class WorkOrderCatalog extends SimpleJsonResourceReloadListener {
+    /** The most work orders the catalogue loads with every optional mod installed (69 with the workshops' contracts of D-163; it was 64, and the full-pack journey refused to start). */
+    static final int MAX_ORDERS = 128;
     private static final Logger LOGGER = LogUtils.getLogger();
     public static final WorkOrderCatalog INSTANCE = new WorkOrderCatalog();
     private Map<String, WorkOrder> orders = Map.of();
@@ -32,7 +34,7 @@ public final class WorkOrderCatalog extends SimpleJsonResourceReloadListener {
             }
             next.put(order.id(), order);
         });
-        if (next.size() > 64) throw new IllegalArgumentException("At most 64 work orders supported");
+        if (next.size() > MAX_ORDERS) throw new IllegalArgumentException("At most " + MAX_ORDERS + " work orders supported");
         orders = Map.copyOf(next);
         LOGGER.info("Loaded {} Underground City work orders", orders.size());
     }

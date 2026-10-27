@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "WGW",
+    "PIP",
+    "P P"
+  ],
+  "key": {
+    "W": {
+      "item": "minecraft:green_carpet"
+    },
+    "G": {
+      "item": "minecraft:iron_ingot"
+    },
+    "P": {
+      "item": "minecraft:dark_oak_planks"
+    },
+    "I": {
+      "item": "minecraft:iron_nugget"
+    }
+  },
+  "result": {
+    "item": "underground_city:gunsmith_bench",
+    "count": 1
+  }
+}

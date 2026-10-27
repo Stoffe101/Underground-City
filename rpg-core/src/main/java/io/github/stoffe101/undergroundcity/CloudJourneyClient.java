@@ -31,6 +31,7 @@ public final class CloudJourneyClient {
     @SubscribeEvent public static void render(TickEvent.RenderTickEvent event) {
         if(!ENABLED||event.phase!=TickEvent.Phase.END) return;
         Minecraft mc=Minecraft.getInstance();
+        if(PerfSessionServer.ENABLED) PerfSessionClient.frame(mc);
         SurvivalJourneyActions.render(mc);
         if(!mc.gameDirectory.toPath().toAbsolutePath().normalize().getFileName().toString().startsWith("run-journey-client")) throw new IllegalStateException("Journey client requires disposable game directory");
         if(!connecting && (mc.screen instanceof TitleScreen || mc.screen instanceof AccessibilityOnboardingScreen) && System.nanoTime()-retryAt>=0) {
@@ -60,6 +61,8 @@ public final class CloudJourneyClient {
     @SubscribeEvent public static void tick(TickEvent.ClientTickEvent event) {
         if(!ENABLED||event.phase!=TickEvent.Phase.END) return;
         if(!QShopEconomy.available()) throw new IllegalStateException("Journey requires installed Q Shop 1.8.4");
+        if(PerfSessionServer.ENABLED) { PerfSessionClient.tick(Minecraft.getInstance()); return; }   // the two-player performance session: a walk, no screens
+        if(DuoSessionServer.ENABLED) { DuoSessionClient.tick(Minecraft.getInstance()); return; }   // the ninth pass's two-player session: the first-login screen, then the server drives
         if(CrewJourneyServer.ENABLED) {
             // the combined journey's backpack and exchange steps use the screen once this client's Crew steps are done (SurvivalJourneyActions)
             if(SurvivalJourneyActions.takesOver(Minecraft.getInstance())) SurvivalJourneyActions.tick(Minecraft.getInstance());

@@ -5,11 +5,13 @@
     {"item": "minecraft:bow", "count": 1},
     {"item": "minecraft:arrow", "count": 16},
     {"item": "minecraft:bread", "count": 4},
+    {"item": "underground_city:gunsmith_bench", "count": 1},
     {"item": "thirstwastaken2:waterskin", "count": 1, "requires_mod": "thirstwastaken2"},
     {"item": "tacz:gun_smith_table", "count": 1, "requires_mod": "tacz"},
     {"item": "tacz:workbench_a", "count": 1, "requires_mod": "tacz", "nbt": "{BlockId:\"tacz:ammo_workbench\"}"},
     {"item": "taczblueprints:blueprint_pistol", "count": 1, "requires_mod": "taczblueprints", "nbt": "{GunId:\"tacz:glock_17\"}"},
-    {"item": "minecraft:iron_ingot", "count": 16, "requires_mod": "tacz"},
+    {"item": "underground_city:firearm_parts_kit", "count": 1, "requires_mod": "tacz"},
+    {"item": "minecraft:iron_ingot", "count": 4, "requires_mod": "tacz"},
     {"item": "minecraft:copper_ingot", "count": 10, "requires_mod": "tacz"},
     {"item": "minecraft:gunpowder", "count": 2, "requires_mod": "tacz"}
   ]

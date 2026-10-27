@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "equipment",
+  "ingredients": [
+    {"item": "minecraft:iron_ingot"},
+    {"item": "minecraft:iron_ingot"},
+    {"item": "underground_city:steel_bracket"},
+    {"item": "underground_city:fasteners"},
+    {"item": "minecraft:red_dye"}
+  ],
+  "result": {"item": "underground_city:engineer_toolkit", "count": 1}
+}
