@@ -277,6 +277,12 @@ Class histograms of run 4b showed the live heap growing from 1.9 GB to 2.8 GB in
      * Lost Cities' plans are let go every 500 chunks, as Lost Cities itself does when a server stops; it works them out again, the same, when asked.
      * A plan saved in the old order starts again from the beginning (the chunks already made load at once).
 
+**Pregen run 6** (the same: a real client, a new private world with the C70-first pack, a 4 GB heap, with the fix): `RESULT pass`.
+* 13,461 chunks in 3,044 s (51 minutes), none let go unfinished, no failed chunk write, no running out of memory.
+* The old generation's use, sampled every 30 s: 1.7 to 2.1 GB throughout (median 1.85 GB, the most 2.13 GB). Run 4 had passed 3.5 GB of its 4 GB before it ran out.
+* A first attempt (run 5) was stopped at about 1,000 chunks when the cloud machine's worker restarted; it was started again new, as run 6.
+* The world was then audited (section 7). The style-palette fault it showed meant the template had to be made again from the fixed port (run 8).
+
 ## 9. The new screens at the owner's sizes
 
 The ninth pass's notices and the glance cards were captured by the capture harness at 1920x1080 with GUI scale 3 and at 3440x1440 with GUI scale 2 (the owner's screen), and looked at.
