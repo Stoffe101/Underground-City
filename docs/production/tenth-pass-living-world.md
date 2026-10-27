@@ -143,6 +143,32 @@ No medical mod is selected (D-085). Core's **First Aid Kit** gives three hearts 
 
 **Retention found in Lost Cities' code:** a plan keeps its four neighbours in fields for good, so every plan ever made stays reachable. Core drops those links a slice at a time, every minute, without clearing Lost Cities' cache; see [lost-cities-memory.md](../technical/lost-cities-memory.md). The two exploring two-client sessions (unchaining off, then on) are reported in section 11.
 
+## 9. Screens reviewed and corrected
+
+The new screens were captured through a real Forge client at the three viewports the brief names, and every frame was opened and read:
+- **3440×1440 at GUI scale 2;**
+- **1920×1080 at GUI scale 2;**
+- **1920×1080 at GUI scale 3.**
+
+The screens:
+- the Skills page's General tab, at its top and scrolled to its end;
+- the Blackwater club bar's counter with a short line;
+- the tenth pass's notices.
+
+Defects found by looking, all fixed and captured again:
+
+| Defect | Where it showed | Fix |
+| --- | --- | --- |
+| The General tab's five cards ran over the footer and off the screen | all three viewports; worst at 1920×1080, GUI 3 | the cards clip to their well and scroll with a bar (wheel or arrow keys); a new capture, `uc-skills-general-end`, shows the end |
+| The bar's short line read "short: buys at..." and hid the price | 1920×1080, GUI 3 | the line falls back to "short: 19" when the full words do not fit |
+| The shortage notice's title ran past its plate, and off the screen at GUI 3 | all three | the title is now "The Bar is short", with the city in the body; any notice title too long for its plate is cut with an ellipsis |
+| "Valewood speaks well of y..." once titles were cut | 1920×1080, GUI 3 | the standing titles are now "Known in Valewood", "Respected in Valewood", "No longer respected" and "Talk of an arrest" |
+| The tenth notices' capture stacked the default plates under its own | the harness | fixed in the harness |
+
+The CI gallery check had refused the two new capture names until they were registered in `content/qa/gui-coverage.json`.
+
+These are my judgements from the frames, not the owner's. The frames are local review copies and are not committed.
+
 ## 12. Not done, not proven, and known problems
 
 **Not built in this pass** (the brief asked for them; they are left rather than half-made):

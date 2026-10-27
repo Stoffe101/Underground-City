@@ -44,6 +44,9 @@ public final class PhotoTour {
     private static long stageStarted = System.nanoTime();
     private static volatile double targetX, targetZ;
     private static volatile boolean aimed;
+    /** A shot whose building this world did not generate near its city is skipped and named in the log (private tour 13 stopped at its eighth of 21 frames); how many were. */
+    private static volatile boolean skipShot;
+    private static int skipped;
     /** Where the instances of each building type were found (nearest to the city centre first), so a second shot of a building does not search again. */
     private static final java.util.Map<String, List<CityBuildings.Building>> FOUND = new java.util.HashMap<>();
 
@@ -86,7 +89,10 @@ public final class PhotoTour {
                 if (found.isPresent() && shot.building().equals(found.get().type())) list.add(found.get());
             }
         }
-        if (list.size() <= shot.nth()) throw new IllegalStateException("Found only " + list.size() + " of " + shot.building() + " within 28 chunks of " + plan.city());
+        if (list.size() <= shot.nth()) {
+            System.out.println("[UC-PHOTO] " + shot.name() + ": found only " + list.size() + " of " + shot.building() + " within 28 chunks of " + plan.city() + "; skipping it");
+            return null;
+        }
         return list.get(shot.nth());
     }
 
@@ -112,12 +118,16 @@ public final class PhotoTour {
             var file = mc.gameDirectory.toPath().resolve("screenshots").resolve(shots().get(current).name() + ".png");
             if (!Files.isRegularFile(file) || Files.size(file) < 1024) return;
             captured = false; positioned = false; ticks = 0; stageStarted = System.nanoTime(); lastSections = 0; stableTicks = 0; placeBuilt = false; placeTicks = 0;
-            if (++current == shots().size()) {
-                Files.writeString(mc.gameDirectory.toPath().resolve("photo-tour-complete.txt"), "shots=" + shots().size() + "\n");
-                System.out.println("[UC-PHOTO] tour complete: " + shots().size() + " frames");
-                finished = true; mc.stop();
-            }
+            if (++current == shots().size()) finish(mc);
         } catch (IOException error) { throw new IllegalStateException("Photo tour screenshot failed", error); }
+    }
+
+    private static void finish(Minecraft mc) {
+        try {
+            Files.writeString(mc.gameDirectory.toPath().resolve("photo-tour-complete.txt"), "shots=" + shots().size() + "\nskipped=" + skipped + "\n");
+        } catch (IOException error) { throw new IllegalStateException("Photo tour could not record its end", error); }
+        System.out.println("[UC-PHOTO] tour complete: " + (shots().size() - skipped) + " frames, " + skipped + " skipped");
+        finished = true; mc.stop();
     }
 
     @SubscribeEvent public static void tick(TickEvent.ClientTickEvent event) {
@@ -128,6 +138,12 @@ public final class PhotoTour {
         // the first thing a new citizen sees is the registration screen; a photographer is not a citizen, so any screen that opened by itself is closed
         if (mc.screen != null) { mc.setScreen(null); return; }
         Shot shot = shots().get(current);
+        if (skipShot) {
+            skipShot = false; skipped++;
+            positioned = false; aimed = false; ticks = 0; stageStarted = System.nanoTime(); placeBuilt = false; placeTicks = 0;
+            if (++current == shots().size()) finish(mc);
+            return;
+        }
         if (shot.place() != null && !placeBuilt) {
             if (placeTicks == 0) stageStarted = System.nanoTime();   // the stage starts now, not when the class loaded (photo tour 24's first place timed out while its world was created)
             if (placeTicks++ % 40 == 0) {
@@ -195,6 +211,7 @@ public final class PhotoTour {
                     System.out.println("[UC-PHOTO] " + shot.name() + ": " + shot.place() + " at " + origin.toShortString() + " facing " + facingName);
                 } else if (shot.building() != null) {
                     var building = locate(level, shot);
+                    if (building == null) { skipShot = true; return; }
                     var plan = BuildingSpots.INSTANCE.forType(shot.building());
                     var spots = plan.indexesOf(shot.spot());
                     if (spots.size() <= shot.spotNth()) throw new IllegalStateException(shot.building() + " has no " + shot.spot() + " number " + shot.spotNth());

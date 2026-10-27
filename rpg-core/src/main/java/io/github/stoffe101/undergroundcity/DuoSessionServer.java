@@ -107,7 +107,8 @@ public final class DuoSessionServer {
         // the tenth pass's supply chain first: the Farmer's harvest becomes the Vintner's wine, sold at the bar, the money shared through the Crew bank
         if (step == 2) { if (CHAIN.tick(server, vale, black, REPORT, DuoSessionServer::check)) { step = 3; ticks = 0; } return; }
         // the burglary last, so that the house's (shortened) wait runs across the restart (duo run 8: run before the chain, it was over before the stop)
-        if (step == 3 && ticks > 100) { wreck(server, vale, black); step = 4; ticks = 0; return; }
+        // once the ground round the Farmer, moved home at the chain's end, is loaded (duo run 10, on a busier machine, searched five seconds after the move and found no chunk loaded)
+        if (step == 3 && ticks > 100 && (DuoSupplyChain.groundTicking(server.overworld(), vale) || ticks > 20 * 180)) { wreck(server, vale, black); step = 4; ticks = 0; return; }
         if (step == 4 && ticks > 100) {
             // positions to compare with after the restart, then a save and a normal stop
             REPORT.addProperty("vale_pos_before_stop", vale.blockPosition().toShortString());

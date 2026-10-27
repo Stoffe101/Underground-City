@@ -83,7 +83,11 @@ final class DuoSupplyChain {
      */
     private boolean ready(ServerLevel level, ServerPlayer player) {
         if (ticks > 20 * 180) throw new IllegalStateException("the ground round " + player.getGameProfile().getName() + " was not entity-ticking three minutes after the move");
-        if (ticks < 100) return false;
+        return ticks >= 100 && groundTicking(level, player);
+    }
+
+    /** True when the 3 by 3 chunks round the player are entity-ticking: what the server was asked to load round a moved player is loaded. */
+    static boolean groundTicking(ServerLevel level, ServerPlayer player) {
         BlockPos at = player.blockPosition();
         for (int dx = -16; dx <= 16; dx += 16) for (int dz = -16; dz <= 16; dz += 16) if (!level.isPositionEntityTicking(at.offset(dx, 0, dz))) return false;
         return true;
