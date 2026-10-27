@@ -33,8 +33,10 @@ import java.util.Map;
  * Two real clients on a dedicated server for the ninth pass (D-187, D-190, D-191; {@code scripts/run_duo_session.py}, a NEW furnished archipelago world): each client registers on the real
  * first-login screen (one for Valewood, one for Blackwater) and the server checks where each was really put; the server's console runs the operator commands (credits through Q Shop, levels,
  * points, general skills, the audit, and the mistakes an operator makes) and checks that a player who is not an operator cannot reach them; then a two-player burglary: only the player who holds a
- * breach permit for a house may break things in it, and nothing drops. Phase 2 starts the same world again: both rejoin as the same citizens where they were, nothing moves them again, what the
- * commands changed is still there, and the house is put back once its (shortened) wait is over.
+ * breach permit for a house may break things in it, and nothing drops; then the tenth pass's supply chain ({@link DuoSupplyChain}: the Valewood Farmer's berries and milled sugar become the
+ * Blackwater Vintner's wine, sold at the club's bar, and the money is shared through their Crew's bank). Phase 2 starts the same world again: both rejoin as the same citizens where they were, nothing moves them again, what the
+ * commands changed is still there, so is everything the supply chain left (wallets, the Crew bank, XP, inventories, the bar's shelf, the two stations), and the house is put
+ * back once its (shortened) wait is over.
  *
  * <p>Scripted, each logged {@code SCRIPTED}: the breach permit (as if the first player had picked the house's lock: the lock itself was played through a real client in the wreck scenario), the
  * teleports to the house and back, and the breaks, which are the real {@code destroyBlock} of each player's own game mode on the server. The wait is one minute ({@code -Duc.burglary.restoreMinutes=1}).
@@ -49,6 +51,7 @@ public final class DuoSessionServer {
     private static int step, ticks;
     private static boolean finished;
     private static final Map<BlockPos, BlockState> BROKEN = new LinkedHashMap<>();
+    private static final DuoSupplyChain CHAIN = new DuoSupplyChain();
 
     private DuoSessionServer() {}
 
@@ -71,7 +74,7 @@ public final class DuoSessionServer {
         }
     }
 
-    private static void check(String what, boolean ok, String detail) {
+    static void check(String what, boolean ok, String detail) {
         JsonObject c = new JsonObject();
         c.addProperty("check", what); c.addProperty("passed", ok); c.addProperty("detail", detail);
         CHECKS.add(c);
@@ -102,7 +105,9 @@ public final class DuoSessionServer {
             return;
         }
         if (step == 2) { wreck(server, vale, black); step = 3; ticks = 0; return; }
-        if (step == 3 && ticks > 100) {
+        // the tenth pass's supply chain: the Farmer's harvest becomes the Vintner's wine, sold at the bar, the money shared through the Crew bank
+        if (step == 3 && ticks > 100 && CHAIN.tick(server, vale, black, REPORT, DuoSessionServer::check)) { step = 4; ticks = 0; return; }
+        if (step == 4 && ticks > 100) {
             // positions to compare with after the restart, then a save and a normal stop
             REPORT.addProperty("vale_pos_before_stop", vale.blockPosition().toShortString());
             REPORT.addProperty("black_pos_before_stop", black.blockPosition().toShortString());
@@ -260,7 +265,7 @@ public final class DuoSessionServer {
                 check(p.getGameProfile().getName() + " rejoined as the same citizen, not moved again", citizen.isPresent() && placed.isPresent() && !CityArrival.pending(server, p.getUUID()),
                     "citizen " + citizen.map(c -> c.city).orElse("none") + ", placed " + placed.map(a -> a.pos().toShortString()).orElse("none") + ", at " + p.blockPosition().toShortString());
             }
-            check("credits set by the console are still there", Math.abs(QShopEconomy.balance(vale) - 75) < 0.01, "balance " + QShopEconomy.balance(vale));
+            chainKept(server, vale, black);
             var b = CitizenState.get(server).find(black.getUUID()).orElseThrow();
             check("level and operator points are still there", b.careerLevel() == 4 && b.careerBonus() == 1, "level " + b.careerLevel() + ", bonus " + b.careerBonus());
             check("the audit survived the restart", AdminCommands.Audit.get(server).last(50).size() >= AUDITED, AdminCommands.Audit.get(server).last(50).size() + " entries");
@@ -287,6 +292,30 @@ public final class DuoSessionServer {
             System.out.println("[UC-DUO] phase 2 done; stopping the server normally");
             server.halt(false);
         }
+    }
+
+    /** What the supply chain left, read back from phase 1's report after the restart: wallets, the Crew and its bank, XP, what each carries, the bar's shelf and the two stations. */
+    private static void chainKept(MinecraftServer server, ServerPlayer vale, ServerPlayer black) throws IOException {
+        Path folder = server.getWorldPath(LevelResource.ROOT).toAbsolutePath().normalize().getParent();
+        JsonObject first = com.google.gson.JsonParser.parseString(Files.readString(folder.resolve("duo-session-phase1.json"))).getAsJsonObject();
+        double farmer = first.get("chain_farmer_credits").getAsDouble(), vintner = first.get("chain_vintner_credits").getAsDouble();
+        check("both wallets are as the chain left them (the console's 75 plus the Farmer's cut)", Math.abs(QShopEconomy.balance(vale) - farmer) < 0.01 && Math.abs(QShopEconomy.balance(black) - vintner) < 0.01,
+            "Farmer " + QShopEconomy.balance(vale) + " (was " + farmer + "), Vintner " + QShopEconomy.balance(black) + " (was " + vintner + ")");
+        CrewLedger.Crew crew = CrewService.ledger(server).crewOf(vale.getUUID());
+        check("the Crew and its bank survived the restart", crew != null && crew == CrewService.ledger(server).crewOf(black.getUUID()) && crew.name.equals(first.get("chain_crew").getAsString())
+            && crew.bank == first.get("chain_bank").getAsLong(), crew == null ? "no Crew" : crew.name + ", bank " + crew.bank);
+        check("each career's XP survived the restart", DuoSupplyChain.careerXp(vale) == first.get("chain_farmer_xp").getAsInt() && DuoSupplyChain.careerXp(black) == first.get("chain_vintner_xp").getAsInt(),
+            "Farmer " + DuoSupplyChain.careerXp(vale) + ", Vintner " + DuoSupplyChain.careerXp(black));
+        int berriesV = DuoSupplyChain.count(vale, net.minecraft.world.item.Items.SWEET_BERRIES), berriesB = DuoSupplyChain.count(black, net.minecraft.world.item.Items.SWEET_BERRIES), wine = DuoSupplyChain.count(black, DuoSupplyChain.wine());
+        check("both inventories survived the restart", berriesV == first.get("chain_farmer_sweet_berries").getAsInt() && berriesB == first.get("chain_vintner_sweet_berries").getAsInt()
+            && wine == first.get("chain_vintner_berry_wine").getAsInt(), "Farmer " + berriesV + " berries, Vintner " + berriesB + " berries and " + wine + " berry wine");
+        int shelf = WorkOrderLedger.get(server).regionalUnits(RegionalCatalog.INSTANCE.find(DuoSupplyChain.LINE)), before = first.get("chain_bar_shelf_after_sale").getAsInt();
+        check("the bar's shelf kept the wine (less what its customers bought since)", shelf <= before && shelf >= before - 1, "shelf " + shelf + " (was " + before + ")");
+        ServerLevel level = server.overworld();
+        BlockPos mill = BlockPos.of(first.get("chain_mill").getAsLong()), vat = BlockPos.of(first.get("chain_vat").getAsLong());
+        level.getChunk(mill); level.getChunk(vat);
+        check("the Mill and the Vat stand where they were set down, empty", level.getBlockEntity(mill) instanceof WorkshopBlock.Entity m && !m.busy() && m.ready.isEmpty()
+            && level.getBlockEntity(vat) instanceof WorkshopBlock.Entity v && !v.busy() && v.ready.isEmpty(), level.getBlockState(mill) + " / " + level.getBlockState(vat));
     }
 
     private static void write(MinecraftServer server) throws IOException {

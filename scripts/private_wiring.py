@@ -80,6 +80,15 @@ class Pack:
         return out
 
 
+def inline(doc: dict) -> list:
+    """A part's or building's own palette entries. Lost Cities 7.5.5 decodes a part's only in the object form (``{"palette": [...]}``) and drops a bare list without a word
+    (multi run 2, October 27); the list form is read here too, as fixtures and older ports wrote it."""
+    entries = doc.get("palette")
+    if isinstance(entries, dict):
+        entries = entries.get("palette")
+    return entries if isinstance(entries, list) else []
+
+
 def layers(pack: Pack, building_id: str) -> tuple[list[tuple[int, list[list[str]], dict[str, str]]], dict]:
     """The building as Lost Cities would put it up for its smallest number of floors: (y of the part's floor slab, slices, palette) per part."""
     building = pack.doc("buildings", building_id)
@@ -87,7 +96,7 @@ def layers(pack: Pack, building_id: str) -> tuple[list[tuple[int, list[list[str]
         raise SystemExit(f"no building {building_id} in {pack.root}")
     floors = max(1, int(building.get("minfloors", 1)))
     base = pack.palette(building.get("refpalette"))
-    base.update({str(e.get("char")): e.get("block", "") for e in building.get("palette", []) if isinstance(e, dict)})
+    base.update({str(e.get("char")): e.get("block", "") for e in inline(building) if isinstance(e, dict)})
     out = []
     for floor in range(floors + 1):
         top = floor == floors
@@ -104,7 +113,7 @@ def layers(pack: Pack, building_id: str) -> tuple[list[tuple[int, list[list[str]
             continue
         palette = dict(base)
         palette.update(pack.palette(part.get("refpalette")))
-        palette.update({str(e.get("char")): e.get("block", "") for e in part.get("palette", []) if isinstance(e, dict)})
+        palette.update({str(e.get("char")): e.get("block", "") for e in inline(part) if isinstance(e, dict)})
         out.append((floor * FLOOR, part.get("slices", []), palette))
     return out, building
 
@@ -224,7 +233,10 @@ def plan(pack: Pack, building_id: str, city: str, use: str, title: str = "", bes
     doc = {"schema_version": 1, "id": building_id.split(":", 1)[1], "city": city, "use": use,
            "floors": {"min": int(building.get("minfloors", 1)), "max": int(building.get("maxfloors", building.get("minfloors", 1)))},
            "spots": ordered[:48], "notes": "Derived by scripts/private_wiring.py from the building's own parts (private pack)."}
-    if use == "house":
+    if use in ("house", "workshop", "warehouse", "flats") and (box[0] > box[3] or box[2] > box[5]):
+        # no roofed footprint inside walls: no unit at all (Core refuses a datapack with an empty unit box, and the server does not start; multi run 3)
+        missing.append("no unit: no roofed footprint inside walls")
+    elif use == "house":
         doc["units"] = [{"id": "house", "title": title or "House", "box": box}]
     elif use in ("workshop", "warehouse"):
         doc["units"] = [{"id": "premises", "title": title or use.capitalize(), "box": box}]

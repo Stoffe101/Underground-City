@@ -126,10 +126,26 @@ class PortTheFixture(unittest.TestCase):
         result = porter.port(self.source, self.dest)
         out = self.dest / "data" / "fixturecity" / "lostcities" / "parts"
         part = json.loads((out / "duo_1_ground.json").read_text(encoding="utf-8"))
-        self.assertEqual({e["char"]: e["block"] for e in part["palette"]}, {"#": "minecraft:bricks", "H": "minecraft:black_concrete"},
-                         "the part gets the building's H, and keeps its own # over the building's")
+        self.assertEqual({e["char"]: e["block"] for e in part["palette"]["palette"]}, {"#": "minecraft:bricks", "H": "minecraft:black_concrete"},
+                         "the part gets the building's H, and keeps its own # over the building's, in the object form Lost Cities decodes")
         self.assertNotIn("palette", json.loads((out / "duo_0_ground.json").read_text(encoding="utf-8")), "a part whose building defines nothing it uses is left alone")
         self.assertEqual((result["counts"]["multi_parts_given_building_characters"], result["counts"]["multi_part_characters_given"]), (1, 1))
+
+    def test_a_multi_chunk_part_that_names_its_palette_keeps_that_palettes_entries_in_its_own(self):
+        # Lost Cities reads a part's inline palette in place of the one it names: the named palette's entries go into the inline one with the building's character (multi run 2)
+        lc = self.source / "data" / "fixturecity" / "lostcities"
+        for folder in ("parts", "buildings", "multibuildings", "palettes"):
+            (lc / folder).mkdir(parents=True, exist_ok=True)
+        (lc / "palettes" / "trio_1_ground_palette.json").write_text(json.dumps({"palette": [{"char": "G", "block": "minecraft:grass_block"}]}), encoding="utf-8")
+        (lc / "parts" / "trio_1_ground.json").write_text(json.dumps({"xsize": 1, "zsize": 1, "refpalette": "fixturecity:trio_1_ground_palette",
+            "slices": [["GH"], ["  "], ["  "], ["  "], ["  "], ["  "]]}), encoding="utf-8")
+        (lc / "buildings" / "trio_1.json").write_text(json.dumps({"minfloors": 1, "maxfloors": 1, "palette": {"palette": [{"char": "H", "block": "minecraft:black_concrete"}]},
+            "parts": [{"part": "fixturecity:trio_1_ground", "ground": True}]}), encoding="utf-8")
+        (lc / "multibuildings" / "trio.json").write_text(json.dumps({"dimx": 1, "dimz": 1, "buildings": [["fixturecity:trio_1"]]}), encoding="utf-8")
+        porter.port(self.source, self.dest)
+        part = json.loads((self.dest / "data" / "fixturecity" / "lostcities" / "parts" / "trio_1_ground.json").read_text(encoding="utf-8"))
+        self.assertEqual({e["char"]: e["block"] for e in part["palette"]["palette"]}, {"G": "minecraft:grass_block", "H": "minecraft:black_concrete"})
+        self.assertNotIn("refpalette", part, "one palette is read: the inline one")
 
     def test_an_inline_palette_in_lost_cities_object_form_is_ported_too(self):
         lc = self.source / "data" / "fixturecity" / "lostcities"

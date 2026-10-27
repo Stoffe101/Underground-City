@@ -428,16 +428,19 @@ class Porter:
                         part_file, part = load("parts", partref["part"])
                         if not isinstance(part, dict):
                             continue
+                        # what Lost Cities reads as the part's own palette: its inline one when it has one, and only then; else the palette it names
                         _, part_ref = load("palettes", part["refpalette"]) if part.get("refpalette") else (None, None)
-                        defined = set(by_char(inline_entries(part))) | set(by_char((part_ref or {}).get("palette")))
+                        mine = inline_entries(part)
+                        if mine is None:
+                            mine = [dict(e) for e in (part_ref or {}).get("palette") or [] if isinstance(e, dict)]
                         used = {c for layer in part.get("slices") or [] for row in layer for c in row}
-                        given = [dict(own[c]) for c in sorted(used - defined - {" "}) if c in own]
+                        given = [dict(own[c]) for c in sorted(used - set(by_char(mine)) - {" "}) if c in own]
                         if not given:
                             continue
-                        if inline_entries(part) is not None:
-                            inline_entries(part).extend(given)
-                        else:
-                            part["palette"] = given
+                        # written in the object form ({"palette": [...]}), the only one Lost Cities 1.20.1 decodes for a part: it drops a bare list without a word
+                        # (multi run 2, October 27: the list form left the same two buildings unbuilt), and reads the inline palette in place of the named one
+                        part["palette"] = {"palette": mine + given}
+                        part.pop("refpalette", None)
                         part_file.write_text(json.dumps(part, indent=2, sort_keys=True) + "\n", encoding="utf-8")
                         self.counts["multi_parts_given_building_characters"] += 1
                         self.counts["multi_part_characters_given"] += len(given)

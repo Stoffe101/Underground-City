@@ -95,6 +95,22 @@ class WireTheFixture(unittest.TestCase):
         self.assertEqual(missing, [])
         self.assertEqual(doc["units"][0]["box"], [4, 1, 4, 11, 4, 11], "a house's unit is its roofed footprint inside its walls")
 
+    def test_a_part_whose_palette_is_in_lost_cities_object_form_is_read(self):
+        # the porter writes a multi-chunk part's palette as {"palette": [...]} (the only form Lost Cities decodes); read as a list, the house had no walls and an empty unit (multi run 3)
+        bid = self.f.building("objhouse", storey(bed=True))
+        part = self.f.pack / "data" / NS / "lostcities" / "parts" / "objhouse_ground.json"
+        doc = json.loads(part.read_text(encoding="utf-8"))
+        doc["palette"] = {"palette": doc["palette"]}
+        part.write_text(json.dumps(doc), encoding="utf-8")
+        plan, missing = self.plan(bid)
+        self.assertEqual(plan["units"][0]["box"], [4, 1, 4, 11, 4, 11])
+        self.assertEqual(missing, [])
+
+    def test_a_house_with_no_roof_gets_no_unit_and_says_so(self):
+        doc, missing = self.plan(self.f.building("yard", {(x, 0, z): "=" for x in range(16) for z in range(16)}))
+        self.assertNotIn("units", doc, "an empty box stops Core from loading the pack")
+        self.assertTrue(any("no unit" in m for m in missing), missing)
+
     def test_a_door_under_a_canopy_within_the_guards_covered_step_is_the_street_door(self):
         doc, missing = self.plan(self.f.building("porch", storey(z1=11, door=(7, 11), canopy=2, bed=True)))
         self.assertEqual((doc["spots"][0]["kind"], doc["spots"][0]["z"], doc["spots"][0]["facing"]), ("door", 11, "south"))

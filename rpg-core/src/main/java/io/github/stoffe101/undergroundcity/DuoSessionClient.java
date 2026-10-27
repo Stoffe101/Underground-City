@@ -11,7 +11,7 @@ import net.minecraftforge.fml.common.Mod;
 import java.nio.file.Files;
 
 /**
- * A client of the two-player session of the ninth pass ({@link DuoSessionServer}): on its first login it answers the real first-login screen (the city its name says, a Farmer or a Smith) by
+ * A client of the two-player session of the ninth pass ({@link DuoSessionServer}): on its first login it answers the real first-login screen (the city its name says, a Farmer or a Vintner) by
  * clicking the screen's own cards and its confirm button, the clicks given to the screen's own mouse handler at the cards' centres (not through the operating system: the single-player city-start
  * runs use real input); later the second player, who is not an operator, types {@code /uc admin info} and keeps what the server answers. Everything else (where the server puts them, the
  * commands, the burglary) is the server's to check.
@@ -33,7 +33,7 @@ final class DuoSessionClient {
         if (ticks == 1 || ticks % 200 == 0) System.out.println("[UC-DUO] client " + name + " tick " + ticks + ": screen " + (mc.screen == null ? "none" : mc.screen.getClass().getSimpleName()) + ", clicks so far " + registrationStep);
         if (mc.screen instanceof RegistrationScreen screen) {
             if (ticks % 30 != 0) return;
-            int city = name.equals(DuoSessionServer.VALE) ? 1 : 2, career = name.equals(DuoSessionServer.VALE) ? 0 : 2;
+            int city = name.equals(DuoSessionServer.VALE) ? 1 : 2, career = name.equals(DuoSessionServer.VALE) ? 0 : 1;   // a Farmer and a Vintner (the tenth pass's supply chain)
             int[] at = switch (screen.step()) { case 0 -> screen.cardCentre(city); case 1 -> screen.cardCentre(career); default -> screen.confirmCentre(); };
             System.out.println("[UC-DUO] client " + name + " clicks step " + screen.step() + " at " + at[0] + "," + at[1]);
             screen.mouseClicked(at[0], at[1], 0);
