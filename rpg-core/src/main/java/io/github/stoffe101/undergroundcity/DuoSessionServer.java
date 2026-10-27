@@ -32,9 +32,9 @@ import java.util.Map;
 /**
  * Two real clients on a dedicated server for the ninth pass (D-187, D-190, D-191; {@code scripts/run_duo_session.py}, a NEW furnished archipelago world): each client registers on the real
  * first-login screen (one for Valewood, one for Blackwater) and the server checks where each was really put; the server's console runs the operator commands (credits through Q Shop, levels,
- * points, general skills, the audit, and the mistakes an operator makes) and checks that a player who is not an operator cannot reach them; then a two-player burglary: only the player who holds a
- * breach permit for a house may break things in it, and nothing drops; then the tenth pass's supply chain ({@link DuoSupplyChain}: the Valewood Farmer's berries and milled sugar become the
- * Blackwater Vintner's wine, sold at the club's bar, and the money is shared through their Crew's bank). Phase 2 starts the same world again: both rejoin as the same citizens where they were, nothing moves them again, what the
+ * points, general skills, the audit, and the mistakes an operator makes) and checks that a player who is not an operator cannot reach them; then the tenth pass's supply chain ({@link DuoSupplyChain}: the
+ * Valewood Farmer's berries and milled sugar become the Blackwater Vintner's wine, sold at the club's bar, and the money is shared through their Crew's bank); then a two-player
+ * burglary: only the player who holds a breach permit for a house may break things in it, and nothing drops. Phase 2 starts the same world again: both rejoin as the same citizens where they were, nothing moves them again, what the
  * commands changed is still there, so is everything the supply chain left (wallets, the Crew bank, XP, inventories, the bar's shelf, the two stations), and the house is put
  * back once its (shortened) wait is over.
  *
@@ -104,9 +104,10 @@ public final class DuoSessionServer {
             step = 2; ticks = 0;
             return;
         }
-        if (step == 2) { wreck(server, vale, black); step = 3; ticks = 0; return; }
-        // the tenth pass's supply chain: the Farmer's harvest becomes the Vintner's wine, sold at the bar, the money shared through the Crew bank
-        if (step == 3 && ticks > 100 && CHAIN.tick(server, vale, black, REPORT, DuoSessionServer::check)) { step = 4; ticks = 0; return; }
+        // the tenth pass's supply chain first: the Farmer's harvest becomes the Vintner's wine, sold at the bar, the money shared through the Crew bank
+        if (step == 2) { if (CHAIN.tick(server, vale, black, REPORT, DuoSessionServer::check)) { step = 3; ticks = 0; } return; }
+        // the burglary last, so that the house's (shortened) wait runs across the restart (duo run 8: run before the chain, it was over before the stop)
+        if (step == 3 && ticks > 100) { wreck(server, vale, black); step = 4; ticks = 0; return; }
         if (step == 4 && ticks > 100) {
             // positions to compare with after the restart, then a save and a normal stop
             REPORT.addProperty("vale_pos_before_stop", vale.blockPosition().toShortString());
