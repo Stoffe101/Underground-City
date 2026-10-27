@@ -216,16 +216,19 @@ What it found, and what was done:
 | Diamond, gold and emerald blocks inside C70 buildings | 175 diamond, 224 gold and 158 emerald blocks in about 150 of the 622 C70 building chunks of the same world | the same fall-through: the pack drew spawners with `!` (air after the port), and Lost Cities' own `!` is its vault block (iron, sometimes diamond, gold or emerald). Likewise `z` and `=` became stone-brick stairs and smooth-stone slabs instead of stone and concrete | the same porter fix: each building now has the pack's own meaning of those characters |
 | Shiny iron floors where the pack drew asphalt, and iron where it drew coke bricks, hempcrete, slag glass, ores and fuel | the owner's factory courtyards and 38 other blocks of two machinery mods the game does not load | the look-alike rules' catch-all for those two mods is an iron block, and it came before the more fitting rules (one coke-brick rule also had the wrong spelling) | specific rules before the catch-alls: asphalt is black concrete (slabs and stairs polished blackstone), coke brick bricks, hempcrete white concrete, slag glass grey stained glass, ores stone or deepslate, a metal ladder a ladder, and a fuel or other fluid air. Unit-tested |
 | The audit itself: an inline palette in Lost Cities' object form was skipped, and a storey Lost Cities chose among several was compared with the first one | every audit before October 27 | `"palette": {"palette": [...]}` read as a list; Lost Cities picks one of the parts that fit a floor at random | both fixed: inline palettes are read in either form, and the storey that fits the generated blocks best is compared. A real defect still shows, because no candidate matches it. Unit-tested |
+| Missing blocks that were never missing: one kind of block per chunk read as air (an apartment roof's 16 slabs, its 8 floor plates, a vent, two iron bars), a different kind in each world of the same seed | 248 of the 263 "missing" C70 blocks of the three-city audit below, and all 96 of an Ironhaven probe | the probe's dump gives each kind of block a glyph in the order it meets them, and its alphabet held the dot that stands for air (and the `=` of its legend): the 71st kind in a chunk was written as air | the alphabet holds neither, and the audit reads a dot that an older dump lists in its legend as that block or air, counted as neither. Unit-tested, with a guard on the alphabet |
 
 **The three cities of the pre-generated C70-first world** (pregen run 6, the port from before the style fix; a probe of a copy reads every chunk within 15 chunks of each centre, 2,883 chunks):
 
 | Buildings | Building chunks | Cells compared | Missing | Foreign | Of the missing |
 | --- | --- | --- | --- | --- | --- |
 | Ours (the bakery, stores, villa, flats, workshop, warehouse, pub, club, lofts, apartments) | 207 | 1,032,192 | **0** | 46 | none |
-| C70, other than the factory | 554 | 2,972,214 | 263 (0.009%) | 3,010 | mostly in one apartment family (128 Builder's Delight industrial flats, 80 smooth-stone slabs); not yet traced |
+| C70, other than the factory | 554 | 2,879,117 | 15 | 3,010 | 15 lawn flowers in one office family's garden (tulips, bluets, lilies of the valley). As first read, 263: the other 248 were the dump's own fault (the row about the dot above) |
 | C70's factory | 68 | 296,412 | 52,874 | 7,249 | every lot empty (above) |
 
 Most of the foreign blocks are the game's grass, flowers and mushrooms in gardens and on lots; the rest is in the factory's empty lots.
+
+**Ironhaven on the fixed port** (probe r6b, a new disposable world, 441 chunks; the factory fix and the asphalt rules in): our 35 building chunks and the 122 C70 building chunks, factories included (649,894 cells), have **0 missing blocks**. The 444 foreign blocks are the game's grass, tall grass, flowers and 12 mushrooms.
 
 **Before and after, the same 225 Valewood chunks of one seed with the C70-first pack** (`building_audit.py`; every building chunk, its cells compared with its data):
 
