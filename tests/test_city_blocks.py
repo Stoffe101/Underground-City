@@ -44,6 +44,30 @@ class CityBlockTests(unittest.TestCase):
             self.assertFalse(used & set(citykit.LOST_CITIES_RESERVED), f"{path.name} redraws the city with {sorted(used & set(citykit.LOST_CITIES_RESERVED))}")
 
 
+    def test_a_block_lost_cities_would_read_by_its_1_12_name_is_written_so_that_it_places_that_block(self):
+        # Lost Cities runs a palette block written without properties through Minecraft's 1.13 name fixer: "grass" became a grass block, "flower_pot" a potted cactus, "pumpkin" a
+        # carved pumpkin, in every generated city (ninth pass). With an empty property list it is parsed as written, and every check still reads the block it names.
+        palette = citykit.Palette("t")
+        palette.char("minecraft:flower_pot")
+        palette.char([(200, "minecraft:grass"), (0, "minecraft:poppy")])
+        palette.char("minecraft:oak_planks")
+        written = palette.to_json()["palette"]
+        self.assertEqual(written[0]["block"], "minecraft:flower_pot[]")
+        self.assertEqual([o["block"] for o in written[1]["blocks"]], ["minecraft:grass[]", "minecraft:poppy"])
+        self.assertEqual(written[2]["block"], "minecraft:oak_planks")
+        self.assertEqual(v.parse_spec("minecraft:grass[]"), ("minecraft:grass", {}))
+        self.assertEqual(v.problems_of("minecraft:pumpkin[]", {"minecraft:pumpkin": {}}), [])
+
+    def test_no_generated_lost_cities_palette_writes_a_1_12_name_bare(self):
+        import json
+        bare = []
+        for path in sorted((Path(__file__).resolve().parents[1] / "content/generated").glob("*/pack/data/*/lostcities/palettes/*.json")):
+            for entry in json.loads(path.read_text(encoding="utf-8")).get("palette", []):
+                for spec in [entry.get("block")] + [o.get("block") for o in entry.get("blocks", [])]:
+                    if spec in citykit.LEGACY_RENAMED:
+                        bare.append(f"{path.parent.parent.parent.name}/{path.name}: {spec}")
+        self.assertEqual(bare, [])
+
 
 class StreetDoorTests(unittest.TestCase):
     """Every street door of a furnished building can be walked through: nothing that blocks a person stands in the cell before it or behind it, at the feet or the head. A ring of hedge

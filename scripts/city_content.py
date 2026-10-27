@@ -143,11 +143,11 @@ def camera_spot(part: citykit.Part, door: tuple[int, int], out: tuple[int, int])
 
 
 # What else Lost Cities' writing order takes (read back from generated worlds, plan against world): a carpet or a garden plant on a floor of its own part (the floor is written after it),
-# and a shelf or a screen on a wall written after it. Small flowers are not lost: Lost Cities places them itself, after the part. After everything is placed, each such block becomes one
-# that needs no support: a carpet becomes its colour of wool in the floor under it, a berry bush a flowering azalea, a fern or grass a cornflower, a wall shelf a bookshelf (still searched
-# as one), a screen a monitor, and any other wall-hung piece is left out.
-FLOOR_PLANTS = {"minecraft:sweet_berry_bush": "minecraft:flowering_azalea_leaves[persistent=true]", "minecraft:fern": "minecraft:cornflower", "minecraft:grass": "minecraft:cornflower",
-                "minecraft:tall_grass": "minecraft:cornflower", "minecraft:large_fern": "minecraft:cornflower", "minecraft:dead_bush": None}
+# and a shelf or a screen on a wall written after it. After everything is placed, each such block becomes one that needs no support: a carpet becomes its colour of wool in the floor under
+# it, a berry bush a flowering azalea, a wall shelf a bookshelf (still searched as one), a screen a monitor, and any other wall-hung piece is left out. A fern or a grass stays as drawn:
+# Core keeps a block Lost Cities placed when a neighbour's update would turn it to air (D-195), and the cornflower that stood in for them was a small flower, which Lost Cities leaves
+# out of every building when the profile avoids foliage (D-106; the ninth pass's audit found every cottage's three missing).
+FLOOR_PLANTS = {"minecraft:sweet_berry_bush": "minecraft:flowering_azalea_leaves[persistent=true]", "minecraft:dead_bush": None}
 WALL_HUNG = ("wall_shelf", "cctv_screen", "cctv_camera", "mirror", "light_switch", "wall_socket", "electrical_outlet", "canvas")
 
 

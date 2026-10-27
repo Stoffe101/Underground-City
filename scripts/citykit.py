@@ -27,6 +27,18 @@ SIZE = 16
 LOST_CITIES_RESERVED = "ywSbBx+Z9v"
 CHAR_POOL = "".join(c for c in "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!$%&*,-./:;<=>?@[]^_`{|}~#'()" if c not in LOST_CITIES_RESERVED) \
     + "".join(chr(c) for c in range(0xC0, 0x100) if c not in (0xD7, 0xF7))   # Latin-1 letters, for a palette that outgrows ASCII (Lost Cities keys palettes by Java char)
+# Lost Cities reads a palette block written without properties through Minecraft's 1.13 name fixer (Tools.stringToState, BlockStateData.upgradeBlock, read from the 7.5.5 jar), where
+# these three were the 1.12 names of other blocks: "grass" the grass block, "flower_pot" a pot with a cactus, "pumpkin" a carved pumpkin. Written with an empty property list, a block is
+# parsed as written. Ninth pass: every short grass, empty flower pot and pumpkin of the generated cities had become the other block (the fixer run over every name our packs write
+# changes no other).
+LEGACY_RENAMED = frozenset({"minecraft:grass", "minecraft:flower_pot", "minecraft:pumpkin"})
+
+
+def as_written(spec: str) -> str:
+    """A block spec as Lost Cities must read it to place that very block: one of LEGACY_RENAMED gets an empty property list."""
+    return spec + "[]" if spec in LEGACY_RENAMED else spec
+
+
 DIRS = {"north": (0, -1), "south": (0, 1), "east": (1, 0), "west": (-1, 0)}
 OPPOSITE = {"north": "south", "south": "north", "east": "west", "west": "east"}
 LEFT_OF = {"north": "west", "west": "south", "south": "east", "east": "north"}   # turning left from facing
@@ -72,10 +84,10 @@ class Palette:
         out = []
         for c, spec in self.entries.items():
             if isinstance(spec, str):
-                out.append({"char": c, "block": spec})
+                out.append({"char": c, "block": as_written(spec)})
             else:
                 # Lost Cities tries the entries in order and takes the first whose "random" beats a draw from 0 to 999 (a chance in thousandths); the last entry (1000) is the default
-                options = [{"random": chance, "block": b} for chance, b in spec[:-1]] + [{"random": 1000, "block": spec[-1][1]}]
+                options = [{"random": chance, "block": as_written(b)} for chance, b in spec[:-1]] + [{"random": 1000, "block": as_written(spec[-1][1])}]
                 out.append({"char": c, "blocks": options})
         return {"palette": out}
 

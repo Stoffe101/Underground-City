@@ -48,7 +48,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import block_lookalikes  # noqa: E402
 import private_pack_tool as packs  # noqa: E402
 import validate_city_blocks as blocks  # noqa: E402
-from citykit import CHAR_POOL, LOST_CITIES_RESERVED  # noqa: E402
+from citykit import CHAR_POOL, LOST_CITIES_RESERVED, LEGACY_RENAMED, as_written  # noqa: E402
 
 REPORT = "uc-port-report.json"
 PACK_FORMAT_1201 = 15
@@ -99,7 +99,7 @@ class Porter:
                        "mob_markers_removed": 0, "loot_dropped": 0, "files_copied": 0, "worldstyles_to_review": 0, "worldstyles_left_out": 0,
                        "kept_but_gone": 0, "properties_dropped": 0, "by_rule": 0, "by_sibling": 0, "by_shape": 0, "to_air": 0,
                        "floors_made_explicit": 0, "floors_raised": 0, "style_characters_renamed": 0, "parts_with_style_characters_renamed": 0,
-                       "buildings_given_style_characters": 0, "style_characters_given": 0}
+                       "buildings_given_style_characters": 0, "style_characters_given": 0, "legacy_names_kept": 0}
         self.foreign: dict[str, str] = {}      # replaced block id -> what it became
         self.gone: dict[str, str] = {}         # a kept mod's block that 1.20.1 no longer has -> what it became
         self.dropped: dict[str, list[str]] = {}   # block id -> properties of the 1.18.2 spec that the 1.20.1 block does not accept
@@ -174,17 +174,24 @@ class Porter:
             out.pop("loot")
             self.counts["loot_dropped"] += 1
         if "block" in out:
-            out["block"] = self.block(out["block"])
+            out["block"] = self.written(self.block(out["block"]))
             self.check(out["block"], where)
         if "blocks" in out:
             converted = []
             for option in out["blocks"]:
                 option = dict(option)
-                option["block"] = self.block(option["block"])
+                option["block"] = self.written(self.block(option["block"]))
                 self.check(option["block"], where)
                 converted.append(option)
             out["blocks"] = converted
         return out
+
+    def written(self, spec: str) -> str:
+        """The spec as Lost Cities must read it to place that very block (citykit.LEGACY_RENAMED): a short grass, an empty flower pot or a pumpkin, the pack's own or a
+        look-alike, is otherwise placed as a grass block, a potted cactus or a carved pumpkin."""
+        if spec in LEGACY_RENAMED:
+            self.counts["legacy_names_kept"] += 1
+        return as_written(spec)
 
     def palette(self, entries: list, where: str) -> list:
         self.counts["palettes"] += 1

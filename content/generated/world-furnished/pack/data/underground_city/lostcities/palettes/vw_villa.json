@@ -19,7 +19,7 @@
           "random": 70
         },
         {
-          "block": "minecraft:grass",
+          "block": "minecraft:grass[]",
           "random": 200
         },
         {

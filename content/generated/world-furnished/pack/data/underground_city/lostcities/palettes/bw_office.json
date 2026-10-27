@@ -166,7 +166,7 @@
       "char": "J"
     },
     {
-      "block": "minecraft:flower_pot",
+      "block": "minecraft:flower_pot[]",
       "char": "K"
     },
     {

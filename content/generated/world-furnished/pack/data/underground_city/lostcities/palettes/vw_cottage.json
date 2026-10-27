@@ -19,7 +19,7 @@
           "random": 70
         },
         {
-          "block": "minecraft:grass",
+          "block": "minecraft:grass[]",
           "random": 200
         },
         {
@@ -62,7 +62,7 @@
       "char": "a"
     },
     {
-      "block": "minecraft:pumpkin",
+      "block": "minecraft:pumpkin[]",
       "char": "c"
     },
     {
@@ -196,10 +196,6 @@
     {
       "block": "minecraft:flowering_azalea_leaves[persistent=true]",
       "char": "O"
-    },
-    {
-      "block": "minecraft:cornflower",
-      "char": "P"
     }
   ]
 }

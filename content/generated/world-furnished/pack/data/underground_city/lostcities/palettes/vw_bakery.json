@@ -117,7 +117,7 @@
       "char": "u"
     },
     {
-      "block": "minecraft:flower_pot",
+      "block": "minecraft:flower_pot[]",
       "char": "z"
     },
     {

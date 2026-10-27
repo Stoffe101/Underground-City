@@ -38,10 +38,18 @@ class PlanAuditTests(unittest.TestCase):
         lost = audit.missing(grid, GROUND, PALETTE, 71)
         self.assertEqual(lost, [((7, 72, 15), "modernlife:cctv_camera[facing=north]", "minecraft:air")])
 
-    def test_what_lost_cities_changes_on_purpose_is_not_a_loss(self):
+    def test_what_the_game_changes_on_purpose_is_not_a_loss(self):
+        part = plan([["################"] * 16, ["g"]])
+        grid = world(part, {"#": "minecraft:stone_bricks", "g": "minecraft:grass_block"}, 71, change={(0, 72, 0): "minecraft:dirt"})
+        self.assertEqual(audit.missing(grid, part, {"#": "minecraft:stone_bricks", "g": "minecraft:grass_block"}, 71), [], "grass under a block becomes dirt")
+
+    def test_a_flower_pot_that_came_out_as_a_cactus_is_reported(self):
+        # it was taken for Lost Cities' own choice; it was its reading of the 1.12 name, and the pack now writes the pot so that it stands as drawn (citykit.LEGACY_RENAMED)
         part = plan([["################"] * 16, ["p"]])
-        grid = world(part, {"#": "minecraft:stone_bricks", "p": "minecraft:flower_pot"}, 71, change={(0, 72, 0): "minecraft:potted_cactus"})
-        self.assertEqual(audit.missing(grid, part, {"#": "minecraft:stone_bricks", "p": "minecraft:flower_pot"}, 71), [])
+        palette = {"#": "minecraft:stone_bricks", "p": "minecraft:flower_pot[]"}
+        grid = world(part, palette, 71, change={(0, 72, 0): "minecraft:potted_cactus"})
+        self.assertEqual(audit.missing(grid, part, palette, 71), [((0, 72, 0), "minecraft:flower_pot[]", "minecraft:potted_cactus")])
+        self.assertEqual(audit.missing(world(part, palette, 71), part, palette, 71), [])
 
     def test_the_floors_above_are_matched_six_blocks_apart(self):
         upper = plan([["################"] * 16, ["#" + " " * 14 + "#"] * 16])

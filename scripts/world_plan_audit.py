@@ -27,8 +27,9 @@ ROOT = Path(__file__).resolve().parents[1]
 LOSTCITIES = ROOT / "content/generated/world-furnished/pack/data/underground_city/lostcities"
 FLOOR_H = 6
 GROUND_BASES = range(64, 80)
-# what Lost Cities itself replaces, so that a difference is not a loss: flower pots get a random plant, grass under a block becomes dirt, a pumpkin may be carved
-ON_PURPOSE = {"minecraft:flower_pot": "potted_", "minecraft:grass_block": "minecraft:dirt", "minecraft:pumpkin": "minecraft:carved_pumpkin"}
+# what the game itself replaces, so that a difference is not a loss: grass under a block becomes dirt. (A flower pot and a pumpkin were here too, thought to be Lost Cities' own
+# choices; they were its reading of 1.12 names, and are now written so that it places them as drawn: citykit.LEGACY_RENAMED.)
+ON_PURPOSE = {"minecraft:grass_block": "minecraft:dirt"}
 
 
 def load_parts(lostcities: Path = LOSTCITIES) -> dict[str, tuple[list, dict[str, str]]]:
