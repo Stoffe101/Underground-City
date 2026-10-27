@@ -222,6 +222,10 @@ public final class WorkOrderService {
         if (buyer != null && terms.trustGain() > 0) player.sendSystemMessage(Component.literal(buyer.title() + " trusts you a little more (" + ledger.trust(player.getUUID(), buyer.id()) + "/" + BuyerCatalog.MAX_TRUST + ")."));
         if (witnessed) player.sendSystemMessage(Component.literal("Someone noticed the hand-off. The " + TerminalScreenText.capitalize(buyer.city()) + " guard will search you more closely for a while."));
         GeneralSkills.delivered(player, order, credits, buyer != null && ledger.trust(player.getUUID(), buyer.id()) > trustBefore);   // Trading and Social (D-174), after the settlement
+        if (!order.underground()) {   // the city where it was delivered thinks a little better of the player (D-204)
+            String where = buyer != null ? buyer.city() : terminal == null ? "" : CityRegions.INSTANCE.cityAt(player.level(), terminal).orElse("");
+            CityStanding.earn(player, where, CityStanding.DELIVERY + (terms.civic().isEmpty() ? 0 : CityStanding.CIVIC));
+        }
     }
 
     /** The credits for a delivery whose {@code units} weighed {@code gradeWeight} in all: Standard goods pay the order's credits, Fine and Reserve goods pay more in proportion (D-163). */

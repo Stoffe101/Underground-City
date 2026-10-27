@@ -548,6 +548,7 @@ public final class PoliceResponse {
             + city + " is now " + heat + "; checkpoint searches become more likely until it cools."));
         LOGGER.info("[UC-POLICE] arrest of {} in {} for {}: {} stacks seized, fined {}, heat {}", player.getGameProfile().getName(), d.city, d.offence.id(), result.stacksSeized(), result.fine(), heat);
         Notice.send(player, Notice.Kind.HEAT, "Arrested", result.stacksSeized() + (result.stacksSeized() == 1 ? " stack" : " stacks") + " taken, " + result.fine() + " credits fined. Heat " + heat + " in " + city + ".");
+        CityStanding.arrested(server, player, d.city);   // an arrest is talked about (D-204)
         dismiss(server, d);
         return true;
     }

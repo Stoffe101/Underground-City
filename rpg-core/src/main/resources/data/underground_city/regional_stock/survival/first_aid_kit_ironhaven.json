@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "city": "ironhaven",
+  "item": "underground_city:first_aid_kit",
+  "unit_price": 18,
+  "initial": 4,
+  "capacity": 8,
+  "units_per_interval": 1,
+  "interval_ticks": 36000,
+  "max_order": 2,
+  "outlets": [
+    "city"
+  ]
+}

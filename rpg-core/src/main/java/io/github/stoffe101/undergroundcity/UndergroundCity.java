@@ -112,6 +112,8 @@ public final class UndergroundCity {
     }
     /** A courier's sealed letter from a roadside encounter (D-139): pays its fee once, at any terminal or counter in the city it is addressed to. */
     public static final RegistryObject<Item> SEALED_ENVELOPE = ITEMS.register("sealed_envelope", () -> new EnvelopeItem(new Item.Properties().stacksTo(1)));
+    /** The medical item (D-203): three hearts back, bought at an exchange or a wayside desk, never free. */
+    public static final RegistryObject<Item> FIRST_AID_KIT = ITEMS.register("first_aid_kit", () -> new FirstAidKitItem(new Item.Properties().stacksTo(8)));
 
     private static final DeferredRegister<net.minecraft.world.level.block.entity.BlockEntityType<?>> BLOCK_ENTITIES =
         DeferredRegister.create(ForgeRegistries.BLOCK_ENTITY_TYPES, MOD_ID);
@@ -319,6 +321,7 @@ public final class UndergroundCity {
         if (event.getTabKey() == CreativeModeTabs.TOOLS_AND_UTILITIES) {
             CORE_ITEMS.forEach((id, item) -> { if (CORE_ITEM_KINDS.get(id).equals("tool")) event.accept(item); });
         }
+        if (event.getTabKey() == CreativeModeTabs.FOOD_AND_DRINKS) event.accept(FIRST_AID_KIT);
     }
 
     @SubscribeEvent

@@ -894,7 +894,8 @@ public final class PopulationService {
         long h = PopulationPlan.mix(body.person() + spoken * 7919L + PopulationPlan.dayOf(player.level().getDayTime()));
         String line = def != null && !def.flavour().isEmpty() && (h & 3) == 0 ? def.flavour().get((int) ((h >>> 2) % def.flavour().size())) : own.get((int) (Math.floorMod(h >>> 5, own.size())));
         if ((h & 3) == 1) line = CivicProjects.flavour(player.server, body.city()).orElse(line);   // people talk about what their city finished together (D-171)
-        String greeting = returning ? (hour < 12 ? "Morning again, " : hour < 18 ? "Back again, " : "Evening, ") + player.getGameProfile().getName() + ". " : "";
+        String greeting = returning ? (hour < 12 ? "Morning again, " : hour < 18 ? "Back again, " : "Evening, ") + player.getGameProfile().getName() + ". "
+            : CityStanding.greeting(CitizenState.get(player.server).find(player.getUUID()).orElse(null), body.city(), player.getGameProfile().getName());   // a city's good name (D-204)
         return greeting + line;
     }
 

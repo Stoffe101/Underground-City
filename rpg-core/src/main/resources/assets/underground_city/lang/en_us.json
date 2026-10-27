@@ -128,5 +128,6 @@
   "key.underground_city.places": "Places you know",
   "key.underground_city.tracker": "Show or hide the active order",
   "underground_city.gun.registered": "Registered %s",
-  "underground_city.gun.unmarked": "Unmarked %s"
+  "underground_city.gun.unmarked": "Unmarked %s",
+  "item.underground_city.first_aid_kit": "First Aid Kit"
 }

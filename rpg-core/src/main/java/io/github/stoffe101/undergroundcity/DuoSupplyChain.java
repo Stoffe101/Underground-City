@@ -91,9 +91,9 @@ final class DuoSupplyChain {
     // ------------------------------------------------------------------------------------------------ the Farmer's work
 
     private void farm(ServerLevel level, ServerPlayer vale, Check check) {
-        // a row of open soil near the Farmer's welcome that no building owns, with standing room along its south side: four bushes, four beds of beetroot and a place for the Mill
+        // a row of open soil near the Farmer's welcome that no building or home owns, with standing room along its south side: four bushes, four beds of beetroot and a place for the Mill
         farm = openRow(level, vale.blockPosition(), BUSHES + BEETS + 1);
-        check.check("open soil near the Farmer's welcome that no building owns", farm != null, farm == null ? "none within 64 blocks" : "row from " + farm.toShortString());
+        check.check("open soil near the Farmer's welcome that no building or home owns", farm != null, farm == null ? "none within 64 blocks" : "row from " + farm.toShortString());
         vale.teleportTo(level, farm.getX() + 4.5, farm.getY(), farm.getZ() + 1.5, 180, 30);
         scripted("the Farmer was put beside the row at " + farm.south().toShortString() + "; four sweet berry bushes were set down fully grown (they take about a day of the world's time)");
         for (int i = 0; i < BUSHES; i++) level.setBlock(farm.east(i), Blocks.SWEET_BERRY_BUSH.defaultBlockState().setValue(SweetBerryBushBlock.AGE, 3), 3);
@@ -116,6 +116,9 @@ final class DuoSupplyChain {
             vale.gameMode.useItemOn(vale, level, vale.getMainHandItem(), InteractionHand.MAIN_HAND, new BlockHitResult(Vec3.atCenterOf(bush), Direction.SOUTH, bush, false));
         }
         for (int i = 0; i < BEETS; i++) vale.gameMode.destroyBlock(farm.east(BUSHES + i));
+        StringBuilder after = new StringBuilder();
+        for (int i = 0; i < BUSHES + BEETS; i++) after.append(i == 0 ? "" : ", ").append(level.getBlockState(farm.east(i)).getBlock().getName().getString());
+        System.out.println("[UC-DUO] after the harvest the row holds: " + after);
     }
 
     private void gather(ServerLevel level, ServerPlayer vale, Check check) {
@@ -172,7 +175,7 @@ final class DuoSupplyChain {
 
     private void ferment(ServerLevel level, ServerPlayer black, Check check) {
         BlockPos row = openRow(level, black.blockPosition(), 1);
-        check.check("open ground near the Vintner that no building owns", row != null, row == null ? "none within 64 blocks" : row.toShortString());
+        check.check("open ground near the Vintner that no building or home owns", row != null, row == null ? "none within 64 blocks" : row.toShortString());
         vat = row;
         black.teleportTo(level, vat.getX() + 0.5, vat.getY(), vat.getZ() + 1.5, 180, 30);
         scripted("the Vintner stepped to the open ground at " + vat.south().toShortString());
@@ -308,7 +311,17 @@ final class DuoSupplyChain {
         player.connection.send(new ClientboundSetCarriedItemPacket(inv.selected));
     }
 
-    /** A row of {@code n} cells along x near {@code from}, in loaded chunks that no building owns: each free for two blocks over soil, with standing room along its south side. */
+    /**
+     * True when a building or a home owns {@code pos}. The building's guard stands aside inside a registered home and leaves it to the home's own guard (BuildingGuard.protectedAt), which
+     * refuses a stranger's harvest and break: duo run 4 chose a row in a home's garden, where the hoe tilled (an item's use) but the bushes and the beetroot were the household's.
+     */
+    static boolean owned(ServerLevel level, BlockPos pos) {
+        if (BuildingGuard.protectedAt(level, pos).isPresent()) return true;
+        CrewLedger ledger = CrewService.ledger(level.getServer());
+        return ledger != null && ledger.residenceAt(level.dimension().location().toString(), pos) != null;
+    }
+
+    /** A row of {@code n} cells along x near {@code from}, in loaded chunks that no building or home owns: each free for two blocks over soil, with standing room along its south side. */
     static BlockPos openRow(ServerLevel level, BlockPos from, int n) {
         for (int r = 2; r <= 64; r++) for (int dx = -r; dx <= r; dx++) for (int dz = -r; dz <= r; dz++) {
             if (Math.max(Math.abs(dx), Math.abs(dz)) != r) continue;
@@ -326,7 +339,7 @@ final class DuoSupplyChain {
             if (!level.isLoaded(cell) || !level.isLoaded(front)) return false;
             BlockState ground = level.getBlockState(cell.below());
             if (!level.getBlockState(cell).isAir() || !level.getBlockState(cell.above()).isAir() || !(ground.is(Blocks.GRASS_BLOCK) || ground.is(Blocks.DIRT))) return false;
-            if (BuildingGuard.protectedAt(level, cell).isPresent() || BuildingGuard.protectedAt(level, cell.below()).isPresent() || BuildingGuard.protectedAt(level, front).isPresent()) return false;
+            if (owned(level, cell) || owned(level, cell.below()) || owned(level, front)) return false;
             if (!CityArrival.standable(level, front)) return false;
         }
         return true;

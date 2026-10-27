@@ -141,4 +141,31 @@ public final class GeneralActivityGameTests {
         for (String skill : GeneralSkills.SHOWN) check(!GeneralSkills.earned(skill).startsWith("Nothing"), skill + " still says nothing earns it");
         helper.succeed();
     }
+    /** A city's good name (D-204): earned within its hourly cap, a discount only in that city from 50, lost by an arrest, and kept by a save. */
+    @GameTest(template = "empty")
+    public static void aCitysGoodNameIsEarnedSlowlyGivesASmallDiscountThereAndIsLostByAnArrest(GameTestHelper helper) {
+        CityStanding.clearForTest();
+        ServerPlayer player = citizen(helper, "uc_standing");
+        CitizenState state = CitizenState.get(player.server);
+        int paid = 0;
+        for (int i = 0; i < 30; i++) paid += CityStanding.earn(player, "valewood", CityStanding.DELIVERY + CityStanding.CIVIC);
+        check(paid == CityStanding.HOURLY_CAP, "an hour earned " + paid + " standing, not the cap of " + CityStanding.HOURLY_CAP);
+        CitizenState.Citizen c = state.find(player.getUUID()).orElseThrow();
+        check(CityStanding.of(c, "valewood") == CityStanding.HOURLY_CAP && CityStanding.of(c, "ironhaven") == 0, "standing leaked to another city");
+        state.changeStanding(player.getUUID(), "valewood", CityStanding.RESPECTED);
+        RegionalStock vale = new RegionalStock("underground_city:test/bread_valewood", "valewood", new net.minecraft.resources.ResourceLocation("minecraft", "bread"), 50, 1, 1, 1, 72000, 1);
+        RegionalStock iron = new RegionalStock("underground_city:test/bread_ironhaven", "ironhaven", new net.minecraft.resources.ResourceLocation("minecraft", "bread"), 50, 1, 1, 1, 72000, 1);
+        check(Math.abs(GeneralSkills.exchangeDiscount(c, vale) - GeneralSkills.exchangeDiscount(c) - 0.02) < 1e-9 && GeneralSkills.exchangeDiscount(c, iron) == GeneralSkills.exchangeDiscount(c),
+            "a respected name takes 2% off in its own city only: " + GeneralSkills.exchangeDiscount(c, vale) + " / " + GeneralSkills.exchangeDiscount(c, iron));
+        check(CityStanding.greeting(c, "valewood", "Ann").startsWith("You're the one") && CityStanding.greeting(c, "ironhaven", "Ann").isEmpty(), "the greeting is wrong");
+        int before = CityStanding.of(c, "valewood");
+        CityStanding.arrested(player.server, player, "valewood");
+        check(CityStanding.of(c, "valewood") == before - CityStanding.ARREST, "an arrest did not cost " + CityStanding.ARREST);
+        CitizenState loaded = CitizenState.load(state.save(new net.minecraft.nbt.CompoundTag()));
+        check(CityStanding.of(loaded.find(player.getUUID()).orElseThrow(), "valewood") == before - CityStanding.ARREST, "the standing did not survive a save");
+        net.minecraft.nbt.CompoundTag old = state.save(new net.minecraft.nbt.CompoundTag());
+        old.getList("citizens", 10).forEach(t -> ((net.minecraft.nbt.CompoundTag) t).remove("standing"));
+        check(CityStanding.of(CitizenState.load(old).find(player.getUUID()).orElseThrow(), "valewood") == 0, "an older save without standing did not load with none");
+        helper.succeed();
+    }
 }

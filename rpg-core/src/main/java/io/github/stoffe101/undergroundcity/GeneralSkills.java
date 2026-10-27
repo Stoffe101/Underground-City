@@ -43,10 +43,11 @@ public final class GeneralSkills {
         return Math.min(SkillNode.MAX_TOTAL_DISCOUNT, SkillService.exchangeDiscount(citizen) + tradingDiscount(citizen.generalLevel(TRADING)));
     }
 
-    /** The same for one line: a vehicle dealer's line (D-101) also takes Driving's discount, all of it never above the shared cap. */
+    /** The same for one line: a vehicle dealer's line (D-101) also takes Driving's discount, a city's line its good name's (D-204), all of it never above the shared cap. */
     static double exchangeDiscount(CitizenState.Citizen citizen, RegionalStock stock) {
         double driving = vehicle(stock) ? drivingDiscount(citizen.generalLevel(DRIVING)) : 0;
-        return Math.min(SkillNode.MAX_TOTAL_DISCOUNT, SkillService.exchangeDiscount(citizen) + tradingDiscount(citizen.generalLevel(TRADING)) + driving);
+        double standing = stock == null ? 0 : CityStanding.discount(citizen, stock.city());   // a city's good name (D-204)
+        return Math.min(SkillNode.MAX_TOTAL_DISCOUNT, SkillService.exchangeDiscount(citizen) + tradingDiscount(citizen.generalLevel(TRADING)) + driving + standing);
     }
 
     /** True for a vehicle dealer's line (the lines generated from the vehicle tiers, {@code regional_stock/vehicles/}). */

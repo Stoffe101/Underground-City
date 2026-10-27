@@ -98,5 +98,6 @@ public final class ShopSupply {
         if (citizen.careerLevel() > levelBefore) Notice.send(player, Notice.Kind.SKILL, "Level " + citizen.careerLevel(), TerminalScreenText.capitalize(citizen.career) + " level up. A skill point is waiting.");
         GeneralSkills.suppliedShop(player, credits);   // Trading (D-174), after the settlement
         Regulars.traded(player.server, exchange.city(), exchange.outlet(), player.getUUID(), premiumUnits > 0);   // and the keepers remember who filled their shelf (D-202)
+        if (premiumUnits > 0) CityStanding.earn(player, exchange.city(), CityStanding.SHORTAGE);   // and so does the city (D-204)
     }
 }
