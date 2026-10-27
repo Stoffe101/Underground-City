@@ -614,8 +614,7 @@ public final class VisualCaptureHarness {
                 noticeCaptures.add(new UcToast(Notice.Kind.SKILL,"Fitness level 3",GeneralSkills.gives(GeneralSkills.FITNESS,3)));
                 noticeCaptures.add(new UcToast(Notice.Kind.TRUST,"Valewood speaks well of you","People in Valewood have heard of the work you do for the city."));
                 noticeCaptures.add(new UcToast(Notice.Kind.TRUST,"Respected in Valewood","Valewood's exchange sells to you 2% cheaper (within the 10% cap)."));
-            }
-            if(capture.challenge.equals("notices-ninth")) {
+            } else if(capture.challenge.equals("notices-ninth")) {
                 // the ninth pass's notices (D-187, D-189), with the texts the server sends
                 noticeCaptures.add(new UcToast(Notice.Kind.INFO,"Welcome to Valewood","You are at the General Store."));
                 noticeCaptures.add(new UcToast(Notice.Kind.WARN,"Police searching","Officers are at the scene, looking for you. Keep out of their sight."));

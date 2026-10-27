@@ -136,6 +136,13 @@
       "description": "The ninth pass's notice plates (D-187, D-189): the welcome in the chosen city, the police searching a scene and a building, and the police standing down after a logout, with the texts the server sends"
     },
     {
+      "id": "notices.tenth",
+      "expected_file": "uc-notices-tenth.png",
+      "owner": "underground_city",
+      "group": "notices",
+      "description": "The tenth pass's notice plates (D-200 to D-204): a general skill's level reached, a short shelf a career can fill, and a city's good name reached, with the texts the server sends"
+    },
+    {
       "id": "civilian_shop.counter",
       "expected_file": "uc-civilian-shop-counter.png",
       "owner": "underground_city",
@@ -245,7 +252,7 @@
       "expected_file": "uc-skills-general.png",
       "owner": "underground_city",
       "group": "skills",
-      "description": "Skills page, General tab (D-174): Trading and Social as cards with level, XP to the next level, what they give now and next and how they are earned; the Thief track in one line; driving, fitness and shooting named as not used yet"
+      "description": "Skills page, General tab (D-174, D-200): Trading, Social, Fitness, Driving and Shooting as cards with level, XP to the next level, what they give now and next and how they are earned; the Thief track in one line"
     },
     {
       "id": "skills.available",
@@ -785,6 +792,13 @@
       "owner": "underground_city",
       "group": "shop_counter",
       "description": "The pub's counter (D-164): lines the shop buys say what it pays, and the second button sells the bottles the player carries"
+    },
+    {
+      "id": "counter.bar_short",
+      "expected_file": "uc-counter-bar-short.png",
+      "owner": "underground_city",
+      "group": "shop_counter",
+      "description": "The Blackwater club's bar (D-201): a short wine line says it buys at the shortage price, with the tooltip explaining why"
     },
     {
       "id": "contract.crew",

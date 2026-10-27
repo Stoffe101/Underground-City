@@ -144,6 +144,8 @@ public final class BurglaryDamageGameTests {
             BurglaryDamage.resetForTest();
             BurglaryDamage.store(h.level.getServer()).records.remove(h.building.key());
             ServerPlayer thief = thief(helper, "uc_wreck_d"), owner = thief(helper, "uc_wreck_owner");
+            // items left lying here by earlier tests in this crowded world are not this test's
+            h.level.getEntitiesOfClass(ItemEntity.class, new AABB(h.in(0, 0, 0)).inflate(12)).forEach(ItemEntity::discard);
             long now = LockService.clock(h.level.getServer());
             BurglaryDamage.grantForTest(thief, h.building, now);
             BurglaryDamage.breakFor(thief, h.level, h.building, h.in(4, 1, 4), now);   // the inner wall (and the torch on it), while nobody lives here
