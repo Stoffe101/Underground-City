@@ -211,6 +211,7 @@ public final class UndergroundCity {
         MinecraftForge.EVENT_BUS.register(new TerrainMapHarness());
         MinecraftForge.EVENT_BUS.register(new CityProbe());
         MinecraftForge.EVENT_BUS.register(new OreAudit());
+        MinecraftForge.EVENT_BUS.register(new LostCitiesMemory());
         MinecraftForge.EVENT_BUS.register(new RoadCheck());
         MinecraftForge.EVENT_BUS.register(new BurglaryHarness());
         MinecraftForge.EVENT_BUS.register(new PopulationService());

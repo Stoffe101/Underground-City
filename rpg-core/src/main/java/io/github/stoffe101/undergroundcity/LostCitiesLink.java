@@ -58,6 +58,8 @@ public final class LostCitiesLink {
     /** When Lost Cities last generated an overworld chunk (any chunk, near a city or not): its workers take the plan lock while they generate. */
     private static volatile long lastGenerated;
     private static volatile boolean everGenerated;
+    /** Lost Cities' street height of city level 0 and the height of one level, read from its own answer when the overworld loaded ({@link #streetY}); unknown before. */
+    private static volatile int groundLevel = Integer.MIN_VALUE, levelStep;
     /** How long after the last generated chunk Lost Cities counts as still generating. */
     private static final long QUIET_NANOS = 2_000_000_000L;
     /** Off ({@code -Duc.lostcities.record=false}, or {@code -PucPtRecord=false} in a scripted run) only to measure the hitch without the record. */
@@ -163,6 +165,15 @@ public final class LostCitiesLink {
         }
     }
 
+    /** The plan recorded for an overworld chunk ({@link net.minecraft.world.level.ChunkPos#asLong}), or null. Never asks Lost Cities, so it is safe on a generation worker. */
+    static ChunkSample recordedSample(long chunkKey) { return RECORDED.get(chunkKey); }
+
+    /** The street height of a city level in the loaded overworld, from Lost Cities' own answer when the level loaded; {@link Integer#MIN_VALUE} when unknown. Safe on a generation worker. */
+    static int streetY(int cityLevel) {
+        int ground = groundLevel;
+        return ground == Integer.MIN_VALUE ? ground : ground + levelStep * cityLevel;
+    }
+
     /** True when the plan of this overworld chunk was recorded (asking about it takes no lock). */
     public static boolean recorded(ServerLevel level, int chunkX, int chunkZ) {
         return level.dimension() == Level.OVERWORLD && level.getSeed() == overworldSeed && RECORDED.containsKey(net.minecraft.world.level.ChunkPos.asLong(chunkX, chunkZ));
@@ -224,7 +235,8 @@ public final class LostCitiesLink {
             everGenerated = true;
             int chunkX = (Integer) eventChunkX.invoke(event), chunkZ = (Integer) eventChunkZ.invoke(event);
             if (!nearCity(chunkX, chunkZ)) return;
-            RECORDED.put(net.minecraft.world.level.ChunkPos.asLong(chunkX, chunkZ), sample(information, chunkX, chunkZ));
+            ChunkSample sample = sample(information, chunkX, chunkZ);
+            RECORDED.put(net.minecraft.world.level.ChunkPos.asLong(chunkX, chunkZ), sample);
             recordedOnWorkers++;
             Store kept = store;
             if (kept != null) kept.setDirty();   // a flag the next save reads on the server thread
@@ -260,6 +272,11 @@ public final class LostCitiesLink {
         try {
             handles();
             overworldInfo = getLostInfo.invoke(implementation, (Level) level);
+            if (overworldInfo != null) {
+                int ground = (Integer) realHeight.invoke(overworldInfo, 0);
+                levelStep = (Integer) realHeight.invoke(overworldInfo, 1) - ground;
+                groundLevel = ground;
+            }
             LOGGER.info("[UC-CITY] {} chunk plans loaded with the world; new ones are recorded as Lost Cities generates them", RECORDED.size());
         } catch (ReflectiveOperationException | RuntimeException error) {
             LOGGER.error("[UC-CITY] could not resolve Lost Cities' information for the overworld: plans are asked of it directly", error);
@@ -269,10 +286,30 @@ public final class LostCitiesLink {
     private static void levelUnloaded(LevelEvent.Unload event) {
         if (!(event.getLevel() instanceof ServerLevel level) || level.dimension() != Level.OVERWORLD) return;
         overworldInfo = null;
+        groundLevel = Integer.MIN_VALUE;
         overworldSeed = 0;
         store = null;
         everGenerated = false;
         RECORDED.clear();
+    }
+
+    /**
+     * Test seam: runs {@code body} as if this chunk's plan had been recorded and Lost Cities' city level 0 stood at {@code ground} (levels {@code step} apart); the record and the
+     * heights are as they were afterwards. For the city ground guard's rule (a GameTest server has no Lost Cities).
+     */
+    static <T> T withRecordForTest(long chunkKey, ChunkSample sample, int ground, int step, java.util.function.Supplier<T> body) {
+        ChunkSample before = RECORDED.get(chunkKey);
+        int groundBefore = groundLevel, stepBefore = levelStep;
+        try {
+            RECORDED.put(chunkKey, sample);
+            levelStep = step;
+            groundLevel = ground;
+            return body.get();
+        } finally {
+            if (before == null) RECORDED.remove(chunkKey); else RECORDED.put(chunkKey, before);
+            levelStep = stepBefore;
+            groundLevel = groundBefore;
+        }
     }
 
     /** Test seam: the save and load of the record, as a restart does it, for these samples (returns what came back). */

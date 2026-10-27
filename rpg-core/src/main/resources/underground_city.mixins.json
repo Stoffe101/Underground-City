@@ -10,7 +10,12 @@
     "GroundPathNavigationMixin",
     "ChunkGeneratorStructuresMixin",
     "LostCitiesChunkDriverMixin",
-    "LakeFeatureMixin"
+    "LakeFeatureMixin",
+    "ChunkGeneratorDecorationMixin",
+    "PlacedFeatureMixin",
+    "WorldGenRegionMixin",
+    "OreFeatureMixin",
+    "LostCitiesTerrainMixin"
   ],
   "client": [
     "ToastComponentMixin",

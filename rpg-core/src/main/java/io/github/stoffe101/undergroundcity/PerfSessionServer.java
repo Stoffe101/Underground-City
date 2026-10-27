@@ -43,10 +43,22 @@ public final class PerfSessionServer {
     private static final int ARRIVAL_TICKS = 200, SAMPLE_EVERY = 600, AFTER_RESTART_TICKS = 2400, RAID_TICKS = 1200, TRACK_TICKS = 600;
 
     private record Segment(String name, String farmerCity, String smithCity, long dayTime) {}
-    private static final List<Segment> PLAN = List.of(
+    /**
+     * {@code -Duc.perf.plan=explore} (tenth pass, D-197): both players travel and new ground keeps generating, for the Lost Cities memory measurement. The farmer follows the three
+     * roads through each city, the smith circles each island's outskirts; each is moved {@link #HOP_BLOCKS} blocks on along their route every {@link #HOP_TICKS} ticks (about a
+     * sprint's pace), flying and invulnerable (logged as SCRIPTED). At the end of each third, the JVM's own class histogram counts the live plans after a full collection.
+     */
+    static final boolean EXPLORE = "explore".equals(System.getProperty("uc.perf.plan", ""));
+    static final int HOP_TICKS = 300, HOP_BLOCKS = 96;
+    private static final List<Segment> PLAN = EXPLORE ? List.of(
+        new Segment("explore_first_third", "ironhaven", "ironhaven", 6000),
+        new Segment("explore_second_third", "valewood", "valewood", 6000),
+        new Segment("explore_last_third", "blackwater", "blackwater", 6000)) : List.of(
         new Segment("ironhaven_together_day", "ironhaven", "ironhaven", 6000),
         new Segment("two_cities_day", "ironhaven", "valewood", 8000),
         new Segment("blackwater_together_night", "blackwater", "blackwater", 18000));
+    private static final List<double[]> FARMER_ROUTE = new ArrayList<>(), SMITH_ROUTE = new ArrayList<>();
+    private static int hop;
 
     private static final Map<String, List<Long>> TICKS = new LinkedHashMap<>();
     private static final Map<String, JsonArray> SAMPLES = new LinkedHashMap<>();
@@ -80,6 +92,7 @@ public final class PerfSessionServer {
             if (++sinceSample >= SAMPLE_EVERY) { sinceSample = 0; sample(server); }
             if (PHASE == 1) {
                 if (ticksInSegment == ARRIVAL_TICKS) enter(PLAN.get(index).name());
+                if (EXPLORE && ticksInSegment % HOP_TICKS == 0) travel(server, farmer, smith);
                 // half a minute in, when the chunks round each player have been sent: at the teleport itself none were loaded and nobody had anything to track (first full session)
                 if (ticksInSegment == TRACK_TICKS) trackPlaces(server.overworld(), farmer, smith);
                 // a minute in, once the chunks round the players have been generated and their plans recorded: the bonded store is taken in Ironhaven and delivered in Blackwater
@@ -288,6 +301,7 @@ public final class PerfSessionServer {
 
     private static void next(MinecraftServer server, ServerPlayer farmer, ServerPlayer smith) throws IOException {
         REPORT.add(PLAN.get(index).name() + "_status", status(server));
+        if (EXPLORE) REPORT.add(PLAN.get(index).name() + "_live", live());
         index++;
         if (index < PLAN.size()) { start(server, farmer, smith); return; }
         current = "save";
@@ -301,6 +315,7 @@ public final class PerfSessionServer {
 
     private static void finish(MinecraftServer server) throws IOException {
         sample(server);
+        if (EXPLORE && PHASE == 2) REPORT.add("after_restart_live", live());
         if (PHASE == 2) REPORT.add("after_restart_status", status(server));
         REPORT.addProperty("status", "passed");
         write(server);
@@ -329,8 +344,61 @@ public final class PerfSessionServer {
         o.addProperty("loaded_chunks", level.getChunkSource().getLoadedChunksCount());
         o.addProperty("heap_used_mb", (rt.totalMemory() - rt.freeMemory()) / (1024 * 1024));
         o.addProperty("heap_max_mb", rt.maxMemory() / (1024 * 1024));
+        o.addProperty("lost_cities", LostCitiesMemory.status());
+        o.addProperty("chunks_generated_by_lost_cities_recorded", LostCitiesLink.recordStatus());
         SAMPLES.computeIfAbsent(current, k -> new JsonArray()).add(o);
         System.out.println("[UC-PERF] sample " + current + ": " + o);
+    }
+
+    /** The live Lost Cities plans and palettes and the heap after a full collection (the collection is the measurement's own cost: its tick is in the segment that follows). */
+    private static JsonObject live() {
+        long[] counts = LostCitiesMemory.liveInstances("mcjty.lostcities.worldgen.lost.BuildingInfo", "mcjty.lostcities.worldgen.lost.cityassets.CompiledPalette",
+            "mcjty.lostcities.api.LostChunkCharacteristics");
+        Runtime rt = Runtime.getRuntime();
+        JsonObject o = new JsonObject();
+        o.addProperty("plans", counts[0]); o.addProperty("plans_bytes", counts[1]);
+        o.addProperty("compiled_palettes", counts[2]); o.addProperty("compiled_palettes_bytes", counts[3]);
+        o.addProperty("characteristics", counts[4]); o.addProperty("characteristics_bytes", counts[5]);
+        o.addProperty("heap_after_full_gc_mb", (rt.totalMemory() - rt.freeMemory()) / (1024 * 1024));
+        o.addProperty("lost_cities", LostCitiesMemory.status());
+        o.addProperty("hops", hop);
+        System.out.println("[UC-PERF] live after a full collection: " + o);
+        return o;
+    }
+
+    /** The explore plan's routes: the farmer along the three roads, through each city's centre; the smith round each island's outskirts. */
+    private static void routes(ServerLevel level) {
+        if (!FARMER_ROUTE.isEmpty()) return;
+        for (CorridorPlan plan : CorridorRoadFeature.ready(level)) {
+            for (double at = 0; at <= plan.length(); at += HOP_BLOCKS) {
+                double[] c = plan.pointAt(at);
+                FARMER_ROUTE.add(new double[] {c[0], c[1], plan.built() && plan.openAt(at) ? CorridorPlan.deckBlockY(plan.deckHalfAt(at)) + 3 : 120});
+            }
+        }
+        for (CityRegions.Region region : CityRegions.INSTANCE.all()) {
+            double cx = region.centerChunkX() * 16 + 8, cz = region.centerChunkZ() * 16 + 8, r = region.cityRadius() + 160;
+            int steps = (int) Math.ceil(2 * Math.PI * r / HOP_BLOCKS);
+            for (int i = 0; i <= steps; i++) SMITH_ROUTE.add(new double[] {cx + r * Math.cos(2 * Math.PI * i / steps), cz + r * Math.sin(2 * Math.PI * i / steps), 120});
+        }
+        if (FARMER_ROUTE.isEmpty()) throw new IllegalStateException("the explore plan found no road plans");
+        System.out.println("[UC-PERF] explore routes: the farmer " + FARMER_ROUTE.size() + " stops along the roads, the smith " + SMITH_ROUTE.size() + " round the outskirts");
+    }
+
+    /** Moves both players to their next stop (SCRIPTED: a teleport, flying and invulnerable, so that nothing but the travelling is measured). */
+    private static void travel(MinecraftServer server, ServerPlayer farmer, ServerPlayer smith) {
+        ServerLevel level = server.overworld();
+        routes(level);
+        for (ServerPlayer player : List.of(farmer, smith)) {
+            List<double[]> route = player == farmer ? FARMER_ROUTE : SMITH_ROUTE;
+            double[] at = route.get(hop % route.size()), ahead = route.get((hop + 1) % route.size());
+            player.getAbilities().mayfly = true;
+            player.getAbilities().flying = true;
+            player.onUpdateAbilities();
+            float yaw = (float) Math.toDegrees(Math.atan2(-(ahead[0] - at[0]), ahead[1] - at[1]));
+            player.teleportTo(level, at[0], at[2], at[1], yaw, 10);
+        }
+        if (hop % 20 == 0) System.out.println("[UC-PERF] SCRIPTED: explore hop " + hop + ": both players moved " + HOP_BLOCKS + " blocks on along their routes");
+        hop++;
     }
 
     private static void write(MinecraftServer server) throws IOException {

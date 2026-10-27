@@ -97,6 +97,58 @@ final class WorldRoadVerifier {
         problems.add(entry);
     }
 
+    /**
+     * Every cell of the carriageway, not only the centre line (tenth pass, D-196: the owner's "terrain blocks on paved roads"): each column the deck covers must hold the deck
+     * block at the deck's height and nothing at all in the three blocks above it. What stands there instead is counted by kind ({@code deck:<block>} for a deck cell that is
+     * something else, {@code above+N:<block>} for the first thing N blocks over the deck), with the first twenty places.
+     */
+    static JsonObject carriageway(ServerLevel level, CorridorPlan plan) {
+        java.util.Map<String, Integer> kinds = new java.util.TreeMap<>();
+        java.util.Set<Long> seen = new java.util.HashSet<>();
+        JsonArray where = new JsonArray();
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        double half = plan.deckHalfWidth();
+        int cells = 0, wrong = 0;
+        for (double s = 0; s <= plan.length(); s += 0.5) {
+            if (!plan.openAt(s)) continue;
+            double[] c = plan.pointAt(s), a = plan.pointAt(Math.max(0, s - 1)), b = plan.pointAt(Math.min(plan.length(), s + 1));
+            double dx = b[0] - a[0], dz = b[1] - a[1], norm = Math.hypot(dx, dz);
+            if (norm == 0) continue;
+            double nx = -dz / norm, nz = dx / norm;
+            for (double off = -half; off <= half; off += 0.5) {
+                int x = (int) Math.floor(c[0] + nx * off), z = (int) Math.floor(c[1] + nz * off);
+                if (!seen.add(BlockPos.asLong(x, 0, z))) continue;
+                CorridorPlan.Hit hit = plan.nearest(x + 0.5, z + 0.5);
+                if (hit == null || Math.abs(hit.u()) >= half || !plan.openAt(hit.s())) continue;
+                cells++;
+                int deckHalf = plan.deckHalfAt(hit.s()), deckY = CorridorPlan.deckBlockY(deckHalf);
+                BlockState deck = level.getBlockState(pos.set(x, deckY, z));
+                String bad = null;
+                if (!(CorridorPlan.isSlab(deckHalf) ? deck.is(Blocks.POLISHED_ANDESITE_SLAB) : deck.is(Blocks.POLISHED_ANDESITE))) bad = "deck:" + id(deck);
+                else for (int y = deckY + 1; y <= deckY + 3 && bad == null; y++) {
+                    BlockState above = level.getBlockState(pos.set(x, y, z));
+                    if (!above.isAir()) bad = "above+" + (y - deckY) + ":" + id(above);
+                }
+                if (bad == null) continue;
+                wrong++;
+                kinds.merge(bad, 1, Integer::sum);
+                if (where.size() < 20) where.add(x + "," + deckY + "," + z + " " + bad);
+            }
+        }
+        JsonObject out = new JsonObject();
+        out.addProperty("cells", cells);
+        out.addProperty("cells_not_clear_deck", wrong);
+        JsonObject byKind = new JsonObject();
+        kinds.forEach(byKind::addProperty);
+        out.add("by_kind", byKind);
+        out.add("first", where);
+        return out;
+    }
+
+    private static String id(BlockState state) {
+        return net.minecraftforge.registries.ForgeRegistries.BLOCKS.getKey(state.getBlock()).toString().replace("minecraft:", "");
+    }
+
     private void verify(ServerLevel level) {
         List<CorridorPlan> plans = CorridorRoadFeature.ready(level);   // a reopened world's plan is the one made in the background as it loaded
         if (plans.isEmpty()) throw new IllegalStateException("Road chunks generated but the feature never built a plan");
@@ -212,6 +264,7 @@ final class WorldRoadVerifier {
                 }
             }
             JsonObject route = new JsonObject();
+            route.add("carriageway", carriageway(level, plan));
             route.addProperty("id", plan.id());
             route.addProperty("length_blocks", Math.round(plan.length()));
             route.addProperty("samples_checked", samples + deckMissing);

@@ -110,6 +110,11 @@ public final class CityProbe {
         JsonObject summary = new JsonObject();
         totals.forEach((key, counts) -> { JsonObject o = new JsonObject(); o.addProperty("chunks", counts[0]); o.addProperty("with_vegetation_on_structure", counts[1]); o.addProperty("with_tree_in_city", counts[2]); summary.add(key, o); });
         report.add("summary", summary);
+        report.addProperty("city_ground", CityGround.status());
+        if (GenerationTrace.ON) report.add("guarded_writes_by_feature", GenerationTrace.totals());
+        JsonArray legend = new JsonArray();
+        SURFACE_LEGEND.forEach(legend::add);
+        report.add("surface_legend", legend);
         report.add("chunks", chunks);
         try { Files.writeString(Path.of(OUTPUT), report + "\n", StandardCharsets.UTF_8); }
         catch (IOException error) { throw new IllegalStateException("Cannot write the city probe", error); }
@@ -236,11 +241,66 @@ public final class CityProbe {
         out.addProperty("vegetation_on_structure", onStructure);
         out.add("samples", samples);
         String key = (sample.city() ? "city:" : "outside:") + (type.isEmpty() ? "none" : type);
+        surface(chunk, street, out);
+        if (GenerationTrace.ON) {
+            JsonObject trace = GenerationTrace.diff(chunk, type.isEmpty());
+            if (trace != null) out.add("after_lost_cities", trace);
+        }
         dump(level, chunk, sample, street, type);
         out.add("counters", counters(level, cx, cz));
         int[] total = totals.computeIfAbsent(key, k -> new int[3]);
         total[0]++; if (onStructure > 0) total[1]++; if (trees > 0) total[2]++;
         return out;
+    }
+
+    // ----------------------------------------------------------------------------------------------------- the ground a person walks on
+
+    /** Every block kind met as a column's surface, in the order met (the report's {@code surface_legend}; a chunk's {@code surface} holds indices into it). */
+    private static final List<String> SURFACE_LEGEND = new ArrayList<>();
+    private static final Map<String, Integer> SURFACE_INDEX = new java.util.HashMap<>();
+
+    /**
+     * For each of the 256 columns, the top block from three under the street height to four above it (what a person on the street walks on or bumps into) and its height above the
+     * street: {@code surface} (indices into the legend, -1 for nothing) and {@code surface_rel} (one digit per column, the height plus 3, a dot for nothing). Read by
+     * {@code scripts/city_surface_map.py}, which draws a city's ground as a picture (D-196).
+     */
+    private static void surface(LevelChunk chunk, int street, JsonObject out) {
+        JsonArray kinds = new JsonArray(), layer = new JsonArray(), over = new JsonArray();
+        StringBuilder rel = new StringBuilder(256), overRel = new StringBuilder(256);
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        ChunkPos base = chunk.getPos();
+        for (int z = 0; z < 16; z++) for (int x = 0; x < 16; x++) {
+            int found = -1, at = 0;
+            for (int y = street + 4; y >= street - 3; y--) {
+                BlockState state = chunk.getBlockState(pos.set(base.getMinBlockX() + x, y, base.getMinBlockZ() + z));
+                if (state.isAir()) continue;
+                found = legendIndex(state);
+                at = y - street;
+                break;
+            }
+            kinds.add(found);
+            rel.append(found < 0 ? '.' : (char) ('0' + at + 3));
+            // the street's own layer (Lost Cities lays its street block at the street height) and the first thing standing in the four blocks over it
+            BlockState ground = chunk.getBlockState(pos.set(base.getMinBlockX() + x, street, base.getMinBlockZ() + z));
+            layer.add(ground.isAir() ? -1 : legendIndex(ground));
+            int first = -1, firstAt = 0;
+            for (int y = street + 1; y <= street + 4 && first < 0; y++) {
+                BlockState state = chunk.getBlockState(pos.set(base.getMinBlockX() + x, y, base.getMinBlockZ() + z));
+                if (!state.isAir()) { first = legendIndex(state); firstAt = y - street; }
+            }
+            over.add(first);
+            overRel.append(first < 0 ? '.' : (char) ('0' + firstAt));
+        }
+        out.add("surface", kinds);
+        out.addProperty("surface_rel", rel.toString());
+        out.add("street_layer", layer);
+        out.add("over_street", over);
+        out.addProperty("over_street_rel", overRel.toString());
+    }
+
+    private static int legendIndex(BlockState state) {
+        String name = String.valueOf(ForgeRegistries.BLOCKS.getKey(state.getBlock())).replace("minecraft:", "");
+        return SURFACE_INDEX.computeIfAbsent(name, n -> { SURFACE_LEGEND.add(n); return SURFACE_LEGEND.size() - 1; });
     }
 
     // ----------------------------------------------------------------------------------------------------- counters a customer can reach

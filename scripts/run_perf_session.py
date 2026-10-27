@@ -69,13 +69,16 @@ def start(module: Path, task: str, flags: list[str], log: Path, tmpdir: Path | N
     return process, stream
 
 
+EXTRA_SERVER_FLAGS: list[str] = []
+
+
 def phase(number: int, modules: list[Path], minutes: float) -> dict:
     processes = []
     marker = SERVER / f'perf-session-phase{number}.json'
     budget = 900 + (minutes * 60 if number == 1 else 300) + 600
     try:
         server_log = OUTPUT / 'logs' / f'server-phase{number}.log'
-        processes.append(start(MODULE, 'runServer', ['-PucRunDir=run-perf-server', f'-PucJourneyPhase={number}', f'-PucPerfMinutes={minutes}', '-PucServerHeap=3G', f'-PucPack={SETS}', *WORLD_FLAGS], server_log))
+        processes.append(start(MODULE, 'runServer', ['-PucRunDir=run-perf-server', f'-PucJourneyPhase={number}', f'-PucPerfMinutes={minutes}', '-PucServerHeap=3G', f'-PucPack={SETS}', *WORLD_FLAGS, *EXTRA_SERVER_FLAGS], server_log))
         deadline = time.monotonic() + 900
         while 'Done (' not in server_log.read_text(errors='replace'):
             if processes[0][0].poll() is not None or time.monotonic() > deadline: raise RuntimeError(f'the server did not start; see {server_log}')
@@ -144,9 +147,16 @@ def waypoints(report: dict) -> dict:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--minutes', type=float, default=30.0, help='length of phase 1 (three equal segments)')
+    parser.add_argument('--plan', choices=['cities', 'explore'], default='cities',
+                        help='cities: the three city segments; explore: both players travel (the roads, the outskirts) while new ground generates, with live Lost Cities counts each third (D-197)')
+    parser.add_argument('--unchain', choices=['on', 'off'], default='on', help="off: Lost Cities' plans keep their neighbour links (the before measurement of D-197)")
     args = parser.parse_args()
+    if args.plan == 'explore':
+        EXTRA_SERVER_FLAGS.append('-PucPerfPlan=explore')
+    if args.unchain == 'off':
+        EXTRA_SERVER_FLAGS.append('-PucLcUnchain=false')
     modules = prepare()
-    report = {'server_sets': SETS, 'client_sets': CLIENT_SETS, 'minutes': args.minutes, 'phases': []}
+    report = {'server_sets': SETS, 'client_sets': CLIENT_SETS, 'minutes': args.minutes, 'plan': args.plan, 'unchain': args.unchain, 'phases': []}
     for number in (1, 2):
         report['phases'].append(phase(number, modules, args.minutes))
         print(f'perf session phase {number} done', flush=True)
