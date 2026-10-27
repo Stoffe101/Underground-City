@@ -1,6 +1,6 @@
 # Ninth pass: critical gameplay fixes and private building integration (October 26, 2026)
 
-Owner brief: "Underground City: C70 Integration + Critical Gameplay Fixes". Decisions D-187 to D-192.
+Owner brief: "Underground City: C70 Integration + Critical Gameplay Fixes", and the owner's message that followed it. Decisions D-187 to D-195.
 
 **The current branch and its recent gameplay systems have not received human playtesting.** Every result below comes from scripts, Forge GameTests, the Python suite, a dedicated server or scripted real clients. None of it was played by a person. Each scripted run logs every shortcut it takes, marked `SCRIPTED` or `PREPARED`.
 
@@ -273,6 +273,22 @@ Results:
 * No text is cut and nothing leaves its panel.
 * At 1080p GUI 3, four notices stacked at once (the worst case) partly cover the right edge of the Operations screen. That screen is not a timed one, which the notices are allowed to cover.
 * At 3440x1440 GUI 2 they sit clear of it.
+
+## 10. The C70-first world through a real client (private)
+
+Every frame and world below is private and kept outside the repository. Only what was seen is written here.
+
+**Photo run 9** (a real client at 1920x1080; 24 frames: from the air on four sides, three street-level views and one from overhead, for each city). It used the C70-first template from pregen run 4, made before the D-195 fixes. Every frame was looked at:
+* All three cities read as C70 cities. Valewood is a suburb of pitched dark-oak roofs, gardens, fences and stepped streets. Ironhaven and Blackwater are blocks of modern flats and offices with roof terraces. Streets, parks and roofs are whole.
+* Furnished rooms render with the furniture set: sofas, tables and kitchens behind the glass.
+* **The overhead frame of Valewood showed a lava pool beside a house.** This is the lake fault that the audit found (D-195), seen from the air.
+* Two street-level cameras stood inside a building's balcony and lounge. The tour's fixed points are to blame, not the world.
+
+## Known issues
+
+* **Lost Cities keeps every chunk's building information it has linked** (section 8). It is let go only when a server stops. Pre-generation lets go of it every 500 chunks; ordinary play does not, and in a long session that explores far, memory grows. It was not measured in play.
+* **Mushrooms on paving and roofs** (section 7): the game's own vegetation, 23 in 98 building chunks.
+* **Chunks generated before a fix keep their old blocks.** Carpets, flower boxes and lakes are fixed only in chunks generated afterwards. A world made before this pass keeps its lava pools and bare beams until those chunks are generated again.
 
 ## Runs in progress
 
