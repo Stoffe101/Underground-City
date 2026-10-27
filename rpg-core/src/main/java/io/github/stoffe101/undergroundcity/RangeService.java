@@ -25,7 +25,7 @@ import java.util.UUID;
  * The firing range's score. A TaCZ bullet that lands on a {@code minecraft:target} block inside the range district is scored by how near the centre of the
  * block's face it hit (10 on the middle, 0 at the edge), the shooter is told on a notice, and the citizen's best score and hit count are kept with their
  * journey. The server alone decides: the listener reads the hit from TaCZ's own server event, checks that a registered range stands there and that the block
- * is a target, and pays nothing: a range is practice, never income.
+ * is a target, and pays nothing: a range is practice, never income. Any target block, in the range or not, gives Shooting XP (D-200, {@link GeneralActivity#targetHit}).
  *
  * <p>TaCZ is optional, so the event is reached by reflection ({@code AmmoHitBlockEvent}); without TaCZ the range is simply scenery.
  */
@@ -67,9 +67,11 @@ public final class RangeService {
             BlockHitResult result = (BlockHitResult) event.getClass().getMethod("getHitResult").invoke(event);
             Object ammo = event.getClass().getMethod("getAmmo").invoke(event);
             if (!(ammo instanceof Projectile bullet) || !(bullet.getOwner() instanceof ServerPlayer shooter)) return;
-            if (!serverLevel.getBlockState(result.getBlockPos()).is(Blocks.TARGET) || !insideRange(serverLevel, result.getBlockPos())) return;
+            if (!serverLevel.getBlockState(result.getBlockPos()).is(Blocks.TARGET)) return;
             int points = score(result.getLocation(), result.getBlockPos(), result.getDirection());
-            record(shooter, points, (int) Math.round(Math.sqrt(shooter.distanceToSqr(Vec3.atCenterOf(result.getBlockPos())))));
+            double distance = Math.sqrt(shooter.distanceToSqr(Vec3.atCenterOf(result.getBlockPos())));
+            GeneralActivity.targetHit(shooter, result.getBlockPos(), points, distance);   // Shooting XP for any target block (D-200)
+            if (insideRange(serverLevel, result.getBlockPos())) record(shooter, points, (int) Math.round(distance));
         } catch (ReflectiveOperationException | RuntimeException error) {
             LOGGER.debug("[UC] a bullet hit could not be scored: {}", error.toString());
         }

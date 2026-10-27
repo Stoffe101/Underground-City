@@ -1089,7 +1089,8 @@ public final class TerminalScreen extends UcScreen {
             } else {
                 int barW = Math.min(TradeLayout.BAR_W, Math.max(0, sw - 40));
                 if (barW >= 12) UcUi.bar(g, sx, ry + 19, barW, 5, offer.capacity() == 0 ? 0f : (float) offer.stock() / offer.capacity(), UcUi.LEGAL);
-                String count = offer.stock() + "/" + offer.capacity() + (data.counter() && offer.pays() > 0 ? "  buys at " + offer.pays() : "");
+                boolean low = data.counter() && offer.pays() > 0 && offer.capacity() >= 4 && offer.stock() <= offer.capacity() / 4;
+                String count = offer.stock() + "/" + offer.capacity() + (data.counter() && offer.pays() > 0 ? (low ? "  short: buys at " : "  buys at ") + offer.pays() : "");
                 g.drawString(font, UcUi.fit(font, count, Math.max(0, sw - (barW >= 12 ? barW + 4 : 0))), sx + (barW >= 12 ? barW + 4 : 0), ry + 17, data.counter() && offer.pays() > 0 && offer.carried() > 0 ? UcUi.OK : UcUi.DIM, false);
             }
         }
@@ -1116,7 +1117,8 @@ public final class TerminalScreen extends UcScreen {
             lines.add(net.minecraft.network.chat.Component.literal(itemName(offer.item())));
             lines.add(net.minecraft.network.chat.Component.literal(offer.price() + " credits each, " + offer.stock() + " of " + offer.capacity() + " in stock"));
             if (data.counter() && offer.pays() > 0)
-                lines.add(net.minecraft.network.chat.Component.literal("The shop buys it at " + offer.pays() + " a unit while the shelf has room" + (offer.carried() > 0 ? "; you carry " + offer.carried() : "")));
+                lines.add(net.minecraft.network.chat.Component.literal("The shop buys it at " + offer.pays() + " a unit while the shelf has room"
+                    + (offer.capacity() >= 4 && offer.stock() <= offer.capacity() / 4 ? " (short: a quarter more until the shelf is half full again)" : "") + (offer.carried() > 0 ? "; you carry " + offer.carried() : "")));
             String reason = buyRefusal(offer, 1);
             if (!reason.isEmpty()) lines.add(net.minecraft.network.chat.Component.literal(reason));
             UcUi.tooltip(g, font, lines, mouseX, mouseY, width, height);

@@ -275,7 +275,11 @@ public final class PopulationService {
         List<RegionalStock> lines = RegionalCatalog.INSTANCE.forOutlet(city, outlet).stream().filter(st -> RegionalCatalog.INSTANCE.supply(st.id()) != null).toList();
         if (lines.isEmpty()) return;
         WorkOrderLedger ledger = WorkOrderLedger.get(level.getServer());
-        try { if (ledger.drawDown(lines.get(level.random.nextInt(lines.size())), 1) > 0) shelfPurchases++; }
+        RegionalStock line = lines.get(level.random.nextInt(lines.size()));
+        try {
+            int before = ledger.regionalUnits(line);
+            if (ledger.drawDown(line, 1) > 0) { shelfPurchases++; Shortages.drawnDown(level.getServer(), line, before, before - 1); }
+        }
         catch (RuntimeException error) { LOGGER.warn("A customer's purchase off a shelf was not saved: {}", error.toString()); }   // a ledger that cannot write never stops the street
     }
 
@@ -901,7 +905,15 @@ public final class PopulationService {
         String text = body.homeKey() != 0 ? HouseholdService.say(player, body, returning) : say(player, body, returning, met.size());
         body.getLookControl().setLookAt(player);
         body.getNavigation().stop();
-        TerminalNetwork.sendDialogue(player, body.getId(), body.getName().getString(), subtitle(body), body.city(), text, choices(body));
+        TerminalNetwork.sendDialogue(player, body.getId(), body.getName().getString(), subtitle(body), body.city(), text, choices(body, player));
+    }
+
+    /** The same, for this player: a keeper who saw them force the building's door will not open the counter to them (D-202). */
+    static List<Dialogue.Choice> choices(TownspersonEntity body, ServerPlayer player) {
+        List<Dialogue.Choice> out = choices(body);
+        if (ShopCounters.shopOf(body).isPresent() && HouseholdService.sawThief(player.serverLevel(), body, player.getUUID()))
+            out.replaceAll(c -> c.id().equals("shop") ? new Dialogue.Choice("shop", "What do you sell?", false, "They saw you at their door. They will not serve you.") : c);
+        return out;
     }
 
     /** What a conversation offers: a fence's trade (D-125), and always a goodbye. */
@@ -920,13 +932,21 @@ public final class PopulationService {
     static void choose(ServerPlayer player, TownspersonEntity body, String id) {
         // the screen is already closed on the client; answering with a close could shut a newer conversation (a second right click had replaced it: farmer run 2, D-178)
         if (id.equals("end") || player.distanceToSqr(body) > 100.0) return;
-        if (id.equals("shop") && ShopCounters.shopOf(body).isPresent()) { TerminalNetwork.closeDialogue(player); ShopCounters.open(player, body); return; }
+        if (id.equals("shop") && ShopCounters.shopOf(body).isPresent()) {
+            if (HouseholdService.sawThief(player.serverLevel(), body, player.getUUID())) {
+                TerminalNetwork.sendDialogue(player, body.getId(), body.getName().getString(), subtitle(body), body.city(), "Not you. I saw you at our door. Go on, before I call somebody.", choices(body, player));
+                return;
+            }
+            TerminalNetwork.closeDialogue(player);
+            ShopCounters.open(player, body);
+            return;
+        }
         FenceCatalog.Fence fence = FenceService.fenceOf(body);
         if (fence != null && id.equals("fence_offer")) { TerminalNetwork.closeDialogue(player); FenceService.open(player, body); return; }
         if (fence != null && id.equals("fence_how")) {
             TerminalNetwork.sendDialogue(player, body.getId(), body.getName().getString(), subtitle(body), body.city(),
                 "Goods with a story. Marked, you understand, from a lock somebody forced. I pay " + fence.ratePercent() + " in the hundred of what a thing is worth, less for anything lifted here in "
-                    + capitalise(fence.city()) + ": that is too close to home and people talk. Paper and bread I do not want. I only have so much cash about me; it comes in slowly.", choices(body));
+                    + capitalise(fence.city()) + ": that is too close to home and people talk. Paper and bread I do not want. I only have so much cash about me; it comes in slowly.", choices(body, player));
             return;
         }
         TerminalNetwork.closeDialogue(player);

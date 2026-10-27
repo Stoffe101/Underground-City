@@ -71,6 +71,7 @@ public final class RegionalMarket {
         CrewService.checkpoint("purchase_after_prepare");
         WorkOrderService.recover(player, ledger);
         CitizenState.get(player.server).markJourney(player.getUUID(), "bought");
+        if (exchange.counter()) Regulars.traded(player.server, city, exchange.outlet(), player.getUUID(), false);   // the keepers remember who buys from them (D-202)
         player.sendSystemMessage(Component.literal("Bought " + quantity + " x " + stock.registryItem().getDescription().getString()
             + " from " + exchange.seller() + " for " + cost + " credits"
             + (share.credits() > 0 ? " (" + share.credits() + " from the Crew bank, " + personal + " from your wallet)." : ".")));
@@ -86,11 +87,11 @@ public final class RegionalMarket {
     }
 
     /**
-     * The list price less the citizen's exchange discount from utility skills and Trading (at most 10% together), never below 1 credit; a shop line costs more while the machine of the building
+     * The list price less the citizen's exchange discount from utility skills, Trading and (for a vehicle) Driving (at most 10% together), never below 1 credit; a shop line costs more while the machine of the building
      * that keeps it supplied is broken down (eighth pass, {@link MachineService#short_}).
      */
     static int unitPrice(RegionalStock stock, CitizenState.Citizen citizen) {
-        double discount = citizen == null ? 0 : GeneralSkills.exchangeDiscount(citizen);   // career skills and Trading (D-174), at most 10% together
+        double discount = citizen == null ? 0 : GeneralSkills.exchangeDiscount(citizen, stock);   // career skills, Trading (D-174) and, at a vehicle dealer, Driving (D-200): at most 10% together
         int price = (int) Math.max(1, Math.round(stock.unitPrice() * (1.0 - discount)));
         return MachineService.short_(stock) ? MachineService.marked(price) : price;
     }
@@ -106,8 +107,9 @@ public final class RegionalMarket {
         if (city == null || city.isEmpty()) return List.of();
         return RegionalCatalog.INSTANCE.forOutlet(city, outlet).stream().map(stock -> {
             RegionalCatalog.Supply supply = RegionalStock.isShop(outlet) ? RegionalCatalog.INSTANCE.supply(stock.id()) : null;
-            return new TerminalData.Offer(stock.id(), stock.item().toString(), unitPrice(stock, citizen), ledger.regionalUnits(stock), stock.capacity(), stock.maxOrder(),
-                supply == null ? 0 : supply.pays(), supply == null || player == null ? 0 : ShopSupply.carried(player, stock));
+            int units = ledger.regionalUnits(stock);
+            return new TerminalData.Offer(stock.id(), stock.item().toString(), unitPrice(stock, citizen), units, stock.capacity(), stock.maxOrder(),
+                supply == null ? 0 : Shortages.paysNow(stock, supply.pays(), units), supply == null || player == null ? 0 : ShopSupply.carried(player, stock));
         }).toList();
     }
 }

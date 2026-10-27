@@ -268,6 +268,56 @@ public final class WorkshopGameTests {
         helper.succeed();
     }
 
+    /** The keepers' memory (D-202): three trades make a regular, a sale that filled a short shelf is remembered as help, a regular hears of that counter's shortages, and it all survives a save. */
+    @GameTest(template = "empty")
+    public static void aKeeperRemembersARegularAndSomebodyWhoFilledAShortShelf(GameTestHelper helper) {
+        net.minecraft.server.MinecraftServer server = helper.getLevel().getServer();
+        UUID buyer = UUID.randomUUID(), helper2 = UUID.randomUUID();
+        for (int i = 0; i < Regulars.REGULAR - 1; i++) Regulars.traded(server, "blackwater", "shop:bar", buyer, false);
+        check(!Regulars.of(server, "blackwater", "shop:bar", buyer).regular() && Regulars.greeting(server, "blackwater", "shop:bar", buyer, "Ann").isEmpty(), "two trades made a regular");
+        Regulars.traded(server, "blackwater", "shop:bar", buyer, false);
+        check(Regulars.of(server, "blackwater", "shop:bar", buyer).regular() && Regulars.greeting(server, "blackwater", "shop:bar", buyer, "Ann").startsWith("Good to see you again, Ann"), "three trades did not make a regular");
+        check(!Regulars.of(server, "ironhaven", "shop:bar", buyer).regular() && !Regulars.of(server, "blackwater", "shop:pub", buyer).regular(), "a regular of one counter is known at another");
+        RegionalStock bar = RegionalCatalog.INSTANCE.find(UndergroundCity.MOD_ID + ":shops/bar_wine_blackwater");
+        check(Shortages.regular(server, bar, buyer) && !Shortages.regular(server, bar, helper2), "a regular does not hear of the bar's shortage, or a stranger does");
+        Regulars.traded(server, "blackwater", "shop:bar", helper2, true);
+        check(Regulars.greeting(server, "blackwater", "shop:bar", helper2, "Bo").startsWith("You filled our shelf"), "filling a short shelf was not remembered");
+        Regulars loaded = Regulars.load(Regulars.get(server).save(new net.minecraft.nbt.CompoundTag()));
+        check(loaded.known.get(Regulars.key("blackwater", "shop:bar", buyer)).trades() == Regulars.REGULAR && loaded.known.get(Regulars.key("blackwater", "shop:bar", helper2)).helped() == 1,
+            "the keepers' memory did not survive a save");
+        helper.succeed();
+    }
+
+    /** A short shelf (D-201): a quarter of its capacity or less pays a quarter more for the goods that bring it back to half, never as much as the shop sells for, and filling it ends it. */
+    @GameTest(template = "empty")
+    public static void aShortShelfPaysAQuarterMoreUntilItIsHalfFullAgain(GameTestHelper helper) throws Exception {
+        Path path = helper.getLevel().getServer().getWorldPath(net.minecraft.world.level.storage.LevelResource.ROOT).resolve("uc-test-journals/" + UUID.randomUUID() + ".dat");
+        WorkOrderLedger ledger = new WorkOrderLedger(path);
+        try {
+            RegionalStock bar = RegionalCatalog.INSTANCE.find(UndergroundCity.MOD_ID + ":shops/bar_wine_blackwater");
+            check(bar != null && bar.capacity() == 12, "the bar's wine line did not load as twelve bottles");
+            int pays = RegionalCatalog.INSTANCE.supply(bar.id()).pays();
+            ledger.drawDown(bar, 99);
+            check(Shortages.isShort(bar, 0) && Shortages.isShort(bar, 3) && !Shortages.isShort(bar, 4), "the bar is short at 3 of 12 and not at 4");
+            check(Shortages.premiumUnits(bar, 0, 4) == 4 && Shortages.premiumUnits(bar, 3, 4) == 3 && Shortages.premiumUnits(bar, 4, 4) == 0, "the premium is for what brings the shelf back to half");
+            check(Shortages.shortPays(bar, pays) == Math.round(pays * 1.25) && Shortages.paysNow(bar, pays, 3) > pays && Shortages.paysNow(bar, pays, 4) == pays, "the bar does not pay a quarter more while short");
+            // filling the shelf ends it: the counter pays the usual price again
+            UUID player = UUID.randomUUID();
+            ledger.prepareSupply(player, UUID.randomUUID(), bar, 4, 70, new ListTag(), 70, 0);
+            ledger.settle(player);
+            check(!Shortages.isShort(bar, ledger.regionalUnits(bar)) && Shortages.paysNow(bar, pays, ledger.regionalUnits(bar)) == pays, "four bottles on an empty shelf did not end the shortage");
+            // never as much as any shop sells for, so buying to sell back never pays
+            for (RegionalStock line : RegionalCatalog.INSTANCE.all()) {
+                RegionalCatalog.Supply terms = RegionalCatalog.INSTANCE.supply(line.id());
+                if (terms != null) check(Shortages.shortPays(line, terms.pays()) < line.unitPrice(), line.id() + " pays as much as it sells for while short");
+            }
+            Shortages.drawnDown(helper.getLevel().getServer(), bar, 4, 3);   // nobody of the trade is in the game: nothing to tell, nothing breaks
+        } finally {
+            Files.deleteIfExists(path);
+        }
+        helper.succeed();
+    }
+
     @GameTest(template = "empty")
     public static void aShopBuysASuppliersGoodsOnceOntoAShelfItsCustomersEmpty(GameTestHelper helper) throws Exception {
         Path path = helper.getLevel().getServer().getWorldPath(net.minecraft.world.level.storage.LevelResource.ROOT).resolve("uc-test-journals/" + UUID.randomUUID() + ".dat");
