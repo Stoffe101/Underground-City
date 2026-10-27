@@ -93,7 +93,7 @@ Run 4 failed once to break the upstairs bed and did not do so again. That step n
 
 * `AdminGameTests` cover the point rules and the commands through the real command tree.
 * Doors run 2 added credits with `/uc admin credits` through a real client.
-* The two-player dedicated-server console session: see "Runs in progress".
+* The two-player dedicated-server session ran them from the server's console (section 12).
 
 ## 6. Private buildings and the furniture set (D-192)
 
@@ -338,6 +338,25 @@ A scan of the template's region files for lava above y 55: 144 chunks hold some,
   * a Forge installer download and a TaCZ start-up crash, which passed on one re-run;
   * a native abort of the development client while it created its world, which passed on the next commit with the same change.
 
+## 12. Two players on a dedicated server
+
+`scripts/run_duo_session.py`: a new archipelago world on a dedicated server (loopback only, `online-mode=false` because the clients are development clients without accounts) with two scripted real clients. **Duo run 3: both phases passed, 32 checks, none failed.** Three shortcuts were logged: the time set to noon, a breach permit given as if the first player had picked the lock, and both players put back at their arrivals after the burglary.
+
+Phase 1 (25 checks):
+* Both clients answered their own first-login screen. One became a citizen of Valewood, the other of Blackwater; each was put on safe ground in their city (1,624 blocks apart), with their own respawn there. The world spawn was untouched.
+* From the server console: `/uc admin info`, credits added, set and refused (more than the balance, and zero) through Q Shop, a career level, operator points added and removed and kept apart from earned ones, a Thief level, general XP, an unknown skill and an unknown player refused, and the audit listing the 7 changes.
+* The player who is not an operator cannot reach `/uc admin`.
+* A two-player burglary in a Valewood shop: the second player, who picked nothing, could not break anything; the permit holder broke two things, nothing dropped, and the damage was recorded to be put back.
+
+Phase 2 (7 checks), the same world after a normal stop and a new start:
+* Both players rejoined as the same citizens and were not moved again.
+* The console's credits, level and operator points, and the audit's 7 entries, were still there.
+* The house still waited to be put back, and was put back after its wait (shortened to one minute with `-Duc.burglary.restoreMinutes=1`), with nobody in it.
+
+Earlier runs found, and this branch fixed:
+* Run 1: the clients never saw the first-login screen, which journey clients had switched off.
+* Run 2: the second phase asked for 8 audit entries where the first phase makes 7.
+
 ## Known issues
 
 * **Lost Cities keeps every chunk's building information it has linked** (section 8). It is let go only when a server stops. Pre-generation lets go of it every 500 chunks; ordinary play does not, and in a long session that explores far, memory grows. It was not measured in play.
@@ -345,7 +364,3 @@ A scan of the template's region files for lava above y 55: 144 chunks hold some,
 * **The game's underground blobs reach into some ground floors.** Its dirt, gravel, granite, diorite and andesite blobs are placed into stone after the buildings, so a few cells of a building's stone ground floor or foundation are one of those instead (198 cells in 157 Ironhaven building chunks). Not fixed: it is cosmetic, and a gravel cell with nothing under it could fall.
 * **Small flowers a building draws are left out** under the archipelago's foliage setting (D-106), and the photo tour's street cameras can stand inside a building.
 * **Chunks generated before a fix keep their old blocks.** Carpets, flower boxes and lakes are fixed only in chunks generated afterwards. A world made before this pass keeps its lava pools and bare beams until those chunks are generated again.
-
-## Runs in progress
-
-This section lists only runs that have finished, with their result. A run that has only started is not recorded here.

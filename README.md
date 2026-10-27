@@ -155,6 +155,20 @@ New, and tested by scripts, Forge GameTests, the Python suite, the economy model
 
 See [docs/production/eighth-pass-living-sandbox.md](docs/production/eighth-pass-living-sandbox.md).
 
+## October 26 to 27 ninth pass: critical fixes and the owner's private buildings (scripted, not yet human-tested)
+
+Owner brief "C70 Integration + Critical Gameplay Fixes" and the owner's follow-up (D-187 to D-195). Tested by scripts, Forge GameTests, the Python suite, dedicated-server probes of the game's own generator and scripted real clients. **The current branch and its recent gameplay systems have not received human playtesting.**
+
+* **First login lands the citizen in the city they chose (D-187)**, on safe ground, as their respawn, once (citystart runs 4, 6, 7, 8 and 9, the last two in the private C70-first world).
+* **Doors follow the lease (D-188)**, **witnesses and the police answer a blow or an alarm (D-189)**, and **a breached house can be wrecked inside and is put back after 30 minutes of play (D-190)**, each through a real client.
+* **`/uc admin` (D-191)**: credits through Q Shop, career and Thief levels, XP, operator points kept apart, general skills, relocation, an audit and pre-generation. Exact commands: [docs/technical/admin-commands.md](docs/technical/admin-commands.md).
+* **The owner's private C70 buildings with an eight-mod furniture set (D-192, D-193)**, ported and wired C70-first in all three cities, tested in the cloud in private folders only. Nothing private is in the repository.
+* **The islands generated ahead of play for test worlds (D-194):** `-PucPregen=islands`, `/uc admin pregen`, or `-Pregen` in the Windows scripts.
+* **No missing blocks in the generated buildings (D-195):** an audit of every building against its data found and fixed blocks Lost Cities dropped, lakes dug into cities, a railway through a house, style characters the private pack relied on, and three block names Lost Cities read by their 1.12 meaning. The pre-generated C70-first world has 0 missing in our buildings and only 15 foliage-setting flowers in the C70 ones.
+* **Two players on a dedicated server** registered, ran the console's commands, burgled a house and came back after a restart (duo run 3, 32 checks).
+
+See [docs/production/ninth-pass-c70-critical-fixes.md](docs/production/ninth-pass-c70-critical-fixes.md).
+
 ## Ownership and license
 
 **Copyright © 2026 Stoffe101. All rights reserved.** See [LICENSE](LICENSE). The license governs **original Underground City material only**. Minecraft, third-party mods, map downloads, artworks, and their trademarks remain subject to their respective owners' terms. Public repository visibility does **not** mean the project is open source. This project is intended for private play, not for sale or public modpack publication.
