@@ -26,18 +26,28 @@ import static io.github.stoffe101.undergroundcity.CrewGameTests.player;
 @PrefixGameTestTemplate(false)
 public final class CrimeGameTests {
 
+    /** How long a scene may wait for its people to be found before its checks run anyway (and fail, saying who was not found). */
+    private static final int SETTLE_TICKS = 100;
+
     /**
-     * Runs a scene's checks once its chunks are loaded for entities, then closes the street. The street lies beside its one-block test structure, so on some runners' grids its people stood in
-     * a chunk loaded only at the border, where an entity is not found by the lookups the police use (October 26: an officer in plain sight was not seen, and a passer-by was not counted).
-     * The street forces its chunks; the checks wait a few ticks for that to take effect. A failed check is the test's failure (a plain assertion error here would stop the server).
+     * Runs a scene's checks once every person it placed is found by the lookups the police use, then closes the street. The street lies beside its one-block test structure, so on some
+     * runners' grids its people stood in a chunk loaded only at the border, where an entity is not found by those lookups (October 26: an officer in plain sight was not seen, and a passer-by
+     * was not counted). The street forces its chunks, and the checks wait until that has taken effect: a fixed five ticks were not always enough on a slow runner (October 27: a passer-by
+     * beside the blow was not counted as a witness in one CI job). A failed check is the test's failure (a plain assertion error here would stop the server).
      */
     private static void settled(GameTestHelper helper, Street s, Runnable checks) {
-        helper.runAfterDelay(5, () -> {
-            try { checks.run(); }
-            catch (AssertionError failed) { throw new GameTestAssertException(failed.getMessage()); }
-            finally { s.close(); }
-            helper.succeed();
-        });
+        int[] waited = {0};
+        helper.startSequence()
+            .thenWaitUntil(() -> { if (!s.missing().isEmpty() && ++waited[0] < SETTLE_TICKS) throw new GameTestAssertException("the street's people are not found yet"); })
+            .thenExecute(() -> {
+                try {
+                    check(s.missing().isEmpty(), "after " + waited[0] + " ticks the lookups the police use do not find " + s.missing());
+                    checks.run();
+                }
+                catch (AssertionError failed) { throw new GameTestAssertException(failed.getMessage()); }
+                finally { s.close(); }
+            })
+            .thenSucceed();
     }
 
     /** An open stone floor high above the test grid with clear air round it (so lines of sight do not depend on the neighbouring tests), its chunks forced, a striker, and the police and the watch reset. */
@@ -46,6 +56,7 @@ public final class CrimeGameTests {
         final BlockPos centre;
         final ServerPlayer striker;
         final List<net.minecraft.world.level.ChunkPos> forced = new java.util.ArrayList<>();
+        final List<TownspersonEntity> placed = new java.util.ArrayList<>();
         Street(GameTestHelper helper, String name) {
             level = helper.getLevel();
             BlockPos base = helper.absolutePos(new BlockPos(2, 2, 2));
@@ -75,7 +86,9 @@ public final class CrimeGameTests {
             BlockPos at = centre.offset(dx, 0, dz);
             body.moveTo(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, 0, 0);
             body.become(who, at);
+            body.setPersistenceRequired();   // the striker is a fake player, not in the level's player list: no despawn check may count it as nobody near
             check(level.addFreshEntity(body), "a townsperson was not added");
+            placed.add(body);
             return body;
         }
         TownspersonEntity officer(int dx, int dz) {
@@ -83,8 +96,19 @@ public final class CrimeGameTests {
             BlockPos at = centre.offset(dx, 0, dz);
             officer.moveTo(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, 0, 0);
             officer.becomeOfficer("valewood", "Officer Test", 0);
+            officer.setPersistenceRequired();
             check(level.addFreshEntity(officer), "an officer was not added");
+            placed.add(officer);
             return officer;
+        }
+        /** The people this street placed that the police's lookups (the level's entity index and a box search round the scene) do not find, by name; empty when all are found. */
+        String missing() {
+            List<TownspersonEntity> near = level.getEntitiesOfClass(TownspersonEntity.class, new AABB(centre).inflate(32));
+            StringBuilder out = new StringBuilder();
+            for (TownspersonEntity t : placed) {
+                if (!t.isAlive() || level.getEntity(t.getUUID()) != t || !near.contains(t)) out.append(out.isEmpty() ? "" : ", ").append(t.getName().getString()).append(t.isAlive() ? "" : " (removed)");
+            }
+            return out.toString();
         }
         @Override public void close() {
             for (TownspersonEntity t : level.getEntitiesOfClass(TownspersonEntity.class, new AABB(centre).inflate(48))) t.discard();
