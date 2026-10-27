@@ -259,6 +259,9 @@ public final class RoadApproaches {
         return n;
     }
 
+    /** The road's deck and the ramp's paving (polished andesite, whole or a slab). */
+    static boolean paving(BlockState state) { return state.is(Blocks.POLISHED_ANDESITE) || state.is(Blocks.POLISHED_ANDESITE_SLAB); }
+
     /** Inside a generated city building's protected volume (its whole chunk: walls, garden and yard), which the ramp never changes. */
     static boolean cityOwned(ServerLevel level, BlockPos pos) { return CityBuildings.INSTANCE.at(level, pos).isPresent(); }
 

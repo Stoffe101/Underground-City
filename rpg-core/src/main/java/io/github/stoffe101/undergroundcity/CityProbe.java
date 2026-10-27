@@ -107,6 +107,9 @@ public final class CityProbe {
         report.addProperty("seconds", (System.nanoTime() - started) / 1_000_000_000L);
         report.addProperty("flattened_lots_left_empty", CityCharacter.flattenedLeftEmpty);
         report.addProperty("railway_lots_left_empty", CityCharacter.railwayLotsLeftEmpty);
+        report.addProperty("multi_building_chunks_kept", CityCharacter.multiKept);
+        report.addProperty("multi_building_chunks_swapped_for_the_citys", CityCharacter.multiSwapped);
+        report.addProperty("multi_building_chunks_flattened_for_a_railway", CityCharacter.multiRailFlattened);
         JsonObject summary = new JsonObject();
         totals.forEach((key, counts) -> { JsonObject o = new JsonObject(); o.addProperty("chunks", counts[0]); o.addProperty("with_vegetation_on_structure", counts[1]); o.addProperty("with_tree_in_city", counts[2]); summary.add(key, o); });
         report.add("summary", summary);

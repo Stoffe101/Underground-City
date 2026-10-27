@@ -131,6 +131,51 @@ class WireTheFixture(unittest.TestCase):
         with self.assertRaises(SystemExit):
             wiring.wire(self.f.pack, selection, self.f.public)
 
+    def two_chunk_house(self) -> str:
+        """A house over two chunks (D-198): the south part has the street door and the beds, the north part its kitchen under a roof that runs on across the border, with a
+        doorway in the border wall."""
+        south = storey(z0=0, z1=12, door=(7, 12), bed=True)
+        south[(7, 1, 0)] = "D"
+        south[(7, 2, 0)] = "d"
+        north = storey(z0=3, z1=15, door=None)
+        self.f.building("double_0", north)
+        self.f.building("double_1", south)
+        self.f.write("multibuildings", "double", {"dimx": 1, "dimz": 2, "buildings": [["double_0", "double_1"]]})
+        return f"{NS}:double"
+
+    def test_a_door_into_the_next_part_of_a_multi_chunk_building_is_not_a_street_door(self):
+        mid = self.two_chunk_house()
+        pack = wiring.Pack(self.f.pack)
+        self.assertEqual(wiring.multi_parts(pack, mid), [(f"{NS}:double_0", 0, 0), (f"{NS}:double_1", 0, 1)], "a part named without a namespace is the multi's")
+        alone, _ = wiring.plan(pack, f"{NS}:double_1", "valewood", "house")
+        north = wiring.roofed_cells(pack, f"{NS}:double_0")
+        beside = {(x, z - 16) for x, z in north}
+        within, missing = wiring.plan(pack, f"{NS}:double_1", "valewood", "house", beside=beside)
+        self.assertEqual((within["spots"][0]["x"], within["spots"][0]["z"]), (7, 12), "the street door is the one to the open street")
+        self.assertEqual(within["spots"][0]["facing"], "south")
+        self.assertEqual(missing, [])
+        self.assertEqual(len([s for s in alone["spots"] if s["kind"] == "door"]), 2)
+
+    def test_a_multi_chunk_building_is_wired_part_by_part_and_kept_by_its_city(self):
+        mid = self.two_chunk_house()
+        listing = {"share_percent": 30, "category": "small_house", "rent": 85, "deposit": 170, "buy_price": 5400, "upkeep": 17}
+        selection = {"schema_version": 1, "buildings": [], "cities": ["valewood"], "multi_factor": 2.0, "multi_buildings": [
+            {"id": mid, "city": "valewood", "use": "house", "class": "house", "weight": 3, "listing": listing},
+            {"id": f"{NS}:none", "city": "valewood", "weight": 2}]}
+        report = wiring.wire(self.f.pack, selection, self.f.public)
+        for part in ("double_0", "double_1"):
+            self.assertTrue((self.f.pack / "data" / NS / "city_buildings" / f"{part}.json").is_file(), part)
+        character = json.loads((self.f.pack / "data/underground_city/city_character/valewood.json").read_text(encoding="utf-8"))
+        self.assertEqual(character["multi_buildings"], [{"id": mid, "weight": 3}, {"id": f"{NS}:none", "weight": 2}])
+        style = json.loads((self.f.pack / "data/lostcities/lostcities/citystyles/citystyle_standard.json").read_text(encoding="utf-8"))
+        self.assertEqual(style["inherit"], "citystyle_common")
+        self.assertEqual(style["selectors"]["multibuildings"], [{"factor": 6.0, "value": mid}], "the flatten share is not a building of the style")
+        rules = json.loads((self.f.pack / "data/underground_city/building_security/fixture_private.json").read_text(encoding="utf-8"))["rules"]
+        self.assertEqual(rules, [{"type_prefix": mid + "_", "class": "house", "priority": 20}])
+        listings = json.loads((self.f.pack / "data/underground_city/properties/fixture_private.json").read_text(encoding="utf-8"))["city_listings"]
+        self.assertEqual([entry["building"] for entry in listings], [f"{NS}:double_1"], "only the part with the street door and the bed is let")
+        self.assertEqual(report["buildings"][mid]["listed_parts"], 1)
+
     def test_a_ring_left_without_any_building_is_refused(self):
         bid = self.f.building("house", storey(bed=True))
         selection = {"schema_version": 1, "buildings": [{"id": bid, "city": "valewood", "zone": 0, "use": "house"}],

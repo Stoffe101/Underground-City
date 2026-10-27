@@ -99,6 +99,7 @@ class Porter:
                        "mob_markers_removed": 0, "loot_dropped": 0, "files_copied": 0, "worldstyles_to_review": 0, "worldstyles_left_out": 0,
                        "kept_but_gone": 0, "properties_dropped": 0, "by_rule": 0, "by_sibling": 0, "by_shape": 0, "to_air": 0,
                        "floors_made_explicit": 0, "floors_raised": 0, "style_characters_renamed": 0, "parts_with_style_characters_renamed": 0,
+                       "multi_parts_given_building_characters": 0, "multi_part_characters_given": 0,
                        "buildings_given_style_characters": 0, "style_characters_given": 0, "legacy_names_kept": 0}
         self.foreign: dict[str, str] = {}      # replaced block id -> what it became
         self.gone: dict[str, str] = {}         # a kept mod's block that 1.20.1 no longer has -> what it became
@@ -251,6 +252,7 @@ class Porter:
             self.counts["files_copied"] += 1
         self.rename_style_characters(dest)
         self.give_style_characters(dest)
+        self.give_multi_part_characters(dest)
         return self.report()
 
     def rename_style_characters(self, dest: Path) -> None:
@@ -395,6 +397,50 @@ class Porter:
             p.write_text(json.dumps(d, indent=2, sort_keys=True) + "\n", encoding="utf-8")
             self.counts["buildings_given_style_characters"] += 1
             self.counts["style_characters_given"] += len(given)
+
+    def give_multi_part_characters(self, dest: Path) -> None:
+        """Give each part of a multi-chunk building's buildings the characters it takes from its building's own palette. Lost Cities 7.5.5 does
+        not find them for a part of a multi-chunk building whose building alone defines a character ("Could not find entry 'H' in the palette for
+        part ...", measured on the owner's pack, October 27: three lots of two multi-chunk buildings left as raw ground); a part's own palette is
+        layered over everything else, so the same entry copied there gives the same block wherever Lost Cities looks. Only characters the part uses,
+        does not define itself, and its building does define are copied."""
+        def load(kind: str, rid: str):
+            ns, path = rid.split(":", 1)
+            file = dest / "data" / ns / "lostcities" / kind / f"{path}.json"
+            return (file, json.loads(file.read_text(encoding="utf-8"))) if file.is_file() else (file, None)
+
+        def by_char(entries) -> dict[str, dict]:
+            return {str(e.get("char", "")): e for e in entries or [] if isinstance(e, dict)}
+
+        for multi_file in sorted(dest.rglob("multibuildings/*.json")):
+            ns = multi_file.relative_to(dest).parts[1]
+            multi = json.loads(multi_file.read_text(encoding="utf-8"))
+            for column in multi.get("buildings") or []:
+                for name in column:
+                    _, building = load("buildings", name if ":" in name else f"{ns}:{name}")
+                    if not isinstance(building, dict):
+                        continue
+                    _, ref = load("palettes", building["refpalette"]) if building.get("refpalette") else (None, None)
+                    own = {**by_char((ref or {}).get("palette")), **by_char(inline_entries(building))}
+                    for partref in list(building.get("parts") or []) + list(building.get("parts2") or []):
+                        if not isinstance(partref, dict) or not partref.get("part"):
+                            continue
+                        part_file, part = load("parts", partref["part"])
+                        if not isinstance(part, dict):
+                            continue
+                        _, part_ref = load("palettes", part["refpalette"]) if part.get("refpalette") else (None, None)
+                        defined = set(by_char(inline_entries(part))) | set(by_char((part_ref or {}).get("palette")))
+                        used = {c for layer in part.get("slices") or [] for row in layer for c in row}
+                        given = [dict(own[c]) for c in sorted(used - defined - {" "}) if c in own]
+                        if not given:
+                            continue
+                        if inline_entries(part) is not None:
+                            inline_entries(part).extend(given)
+                        else:
+                            part["palette"] = given
+                        part_file.write_text(json.dumps(part, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+                        self.counts["multi_parts_given_building_characters"] += 1
+                        self.counts["multi_part_characters_given"] += len(given)
 
     def report(self) -> dict:
         return {"schema_version": 1, "counts": self.counts, "replaced_blocks": dict(sorted(self.foreign.items())), "kept_mod_blocks_gone": dict(sorted(self.gone.items())),

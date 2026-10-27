@@ -110,6 +110,27 @@ class PortTheFixture(unittest.TestCase):
         self.assertEqual(result["buildings_with_undefined_characters"], {"fixturecity:fixture_odd": "Q"})
         self.assertTrue(result["loadable"], "an undefined character empties a lot, it does not stop a world from loading")
 
+    def test_a_part_of_a_multi_chunk_building_is_given_the_characters_its_building_defines(self):
+        # Lost Cities 7.5.5 does not find a character only the building of a multi-chunk building's part defines (D-198): the part is given it
+        lc = self.source / "data" / "fixturecity" / "lostcities"
+        (lc / "parts").mkdir(parents=True, exist_ok=True)
+        (lc / "parts" / "duo_1_ground.json").write_text(json.dumps({"xsize": 1, "zsize": 1, "palette": [{"char": "#", "block": "minecraft:bricks"}],
+            "slices": [["#H"], ["  "], ["  "], ["  "], ["  "], ["  "]]}), encoding="utf-8")
+        (lc / "parts" / "duo_0_ground.json").write_text(json.dumps({"xsize": 1, "zsize": 1, "slices": [["#"], [" "], [" "], [" "], [" "], [" "]]}), encoding="utf-8")
+        (lc / "buildings").mkdir(parents=True, exist_ok=True)
+        (lc / "buildings" / "duo_1.json").write_text(json.dumps({"minfloors": 1, "maxfloors": 1, "palette": {"palette": [{"char": "H", "block": "minecraft:black_concrete"},
+            {"char": "#", "block": "minecraft:stone"}]}, "parts": [{"part": "fixturecity:duo_1_ground", "ground": True}]}), encoding="utf-8")
+        (lc / "buildings" / "duo_0.json").write_text(json.dumps({"minfloors": 1, "maxfloors": 1, "parts": [{"part": "fixturecity:duo_0_ground", "ground": True}]}), encoding="utf-8")
+        (lc / "multibuildings").mkdir(parents=True, exist_ok=True)
+        (lc / "multibuildings" / "duo.json").write_text(json.dumps({"dimx": 1, "dimz": 2, "buildings": [["duo_0", "fixturecity:duo_1"]]}), encoding="utf-8")
+        result = porter.port(self.source, self.dest)
+        out = self.dest / "data" / "fixturecity" / "lostcities" / "parts"
+        part = json.loads((out / "duo_1_ground.json").read_text(encoding="utf-8"))
+        self.assertEqual({e["char"]: e["block"] for e in part["palette"]}, {"#": "minecraft:bricks", "H": "minecraft:black_concrete"},
+                         "the part gets the building's H, and keeps its own # over the building's")
+        self.assertNotIn("palette", json.loads((out / "duo_0_ground.json").read_text(encoding="utf-8")), "a part whose building defines nothing it uses is left alone")
+        self.assertEqual((result["counts"]["multi_parts_given_building_characters"], result["counts"]["multi_part_characters_given"]), (1, 1))
+
     def test_an_inline_palette_in_lost_cities_object_form_is_ported_too(self):
         lc = self.source / "data" / "fixturecity" / "lostcities"
         (lc / "parts" / "fixture_obj_ground.json").write_text(json.dumps({"xsize": 1, "zsize": 1, "palette": {"palette": [{"char": "k", "block": "create:andesite_casing"}]},

@@ -174,7 +174,9 @@ public final class RoadCheck {
                     }
                     if (stand != null) previous = stand;
                     // the city's own built ground has been reached: from here on a person follows its streets, and a wall further along the line is walked round, not climbed
-                    if (k > 0 && stand != null && (!RoadApproaches.natural(level.getBlockState(new net.minecraft.core.BlockPos(x, stand - 1, z)))
+                    // the ramp's own paving (the road's deck, D-196) is the road, not the city: the walk goes on along it
+                    if (k > 0 && stand != null && !RoadApproaches.paving(level.getBlockState(new net.minecraft.core.BlockPos(x, stand - 1, z)))
+                        && (!RoadApproaches.natural(level.getBlockState(new net.minecraft.core.BlockPos(x, stand - 1, z)))
                         || RoadApproaches.cityOwned(level, new net.minecraft.core.BlockPos(x, stand - 1, z)))) { entry.addProperty("city_ground_at", k); break; }
                 }
                 entry.addProperty("deck_stand", deck);

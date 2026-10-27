@@ -25,6 +25,7 @@ def main() -> int:
     parser.add_argument("--layout", choices=["legacy", "archipelago"], default="archipelago")
     parser.add_argument("--seed", default="5908")
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--port", type=int, default=25565, help="the disposable server's port (another measurement server may be running beside it)")
     parser.add_argument("--timeout", type=int, default=3600)
     parser.add_argument("--pack", default="world", help="world package sets, as -PucPack (for example world,furnished,scarcity: the furnished cities change what stands at a road's end)")
     args = parser.parse_args()
@@ -38,7 +39,7 @@ def main() -> int:
     (run_dir / "eula.txt").write_text("eula=true\n", encoding="utf-8")
     (run_dir / "server.properties").write_text("\n".join([
         f"level-type={preset}", f"level-seed={args.seed}", "online-mode=false", "spawn-protection=0", "view-distance=4", "simulation-distance=4", "max-tick-time=-1",
-        "level-name=world", "white-list=false"]) + "\n", encoding="utf-8")
+        "level-name=world", "white-list=false", f"server-port={args.port}"]) + "\n", encoding="utf-8")
     args.output.parent.mkdir(parents=True, exist_ok=True)
     command = [str(ROOT / "gradlew"), "--no-daemon", ":rpg-core:runServer", f"-PucRunDir={run_name}", f"-PucPack={args.pack}", "-PucDevWorld=true", "-PucAutoWorld=false",
                f"-PucWorldLayout={args.layout}", f"-PucRoadCheck={args.output.resolve()}"]

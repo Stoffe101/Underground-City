@@ -210,6 +210,28 @@ public final class RegionalWorldgenGameTests {
         helper.succeed();
     }
 
+    /** A city's multi-chunk buildings (D-198): read from its file, chosen from the seed and the building's corner only, the flatten share, and Lost Cities' part names. */
+    @GameTest(template = "empty", batch = "uc_regional")
+    public static void aCitysMultiChunkBuildingsAreChosenByTheirCornerAndAFlattenShareIsKept(GameTestHelper helper) {
+        String text = "{\"schema_version\":1,\"city\":\"blackwater\",\"style\":\"underground_city:blackwater\",\"zones\":[{\"within\":1.0,\"buildings\":[{\"id\":\"underground_city:bw_office\",\"weight\":1}]}],"
+            + "\"multi_buildings\":[{\"id\":\"x:condo\",\"weight\":3},{\"id\":\"x:tower\",\"weight\":1},{\"id\":\"x:none\",\"weight\":2}]}";
+        var character = CityCharacter.parse(net.minecraft.resources.ResourceLocation.parse("underground_city:blackwater"), com.google.gson.JsonParser.parseString(text).getAsJsonObject());
+        check(character.multiBuildings().size() == 3 && !character.keepMultiBuildings(), "the multi-chunk list was not read: " + character.multiBuildings());
+        check(CityCharacter.flattens(net.minecraft.resources.ResourceLocation.parse("x:none")) && !CityCharacter.flattens(net.minecraft.resources.ResourceLocation.parse("x:condo")), "the flatten share is not told apart");
+        int condo = 0, none = 0;
+        for (int x = -30; x < 30; x++) for (int z = -30; z < 30; z++) {
+            var first = CityCharacter.chooseMulti(character.multiBuildings(), 5908L, x, z).orElseThrow();
+            check(first.equals(CityCharacter.chooseMulti(character.multiBuildings(), 5908L, x, z).orElseThrow()), "two chunks of one building would get different buildings");
+            if (first.getPath().equals("condo")) condo++;
+            if (CityCharacter.flattens(first)) none++;
+        }
+        check(condo > 1500 && condo < 2100 && none > 1000 && none < 1400, "the weights 3, 1 and 2 are not kept: " + condo + " condos, " + none + " flattened of 3600");
+        check(CityCharacter.chooseMulti(java.util.List.of(), 1L, 0, 0).isEmpty(), "a footprint nothing fits must flatten");
+        check(CityCharacter.partId(net.minecraft.resources.ResourceLocation.parse("lostcities:multi1"), "building1").toString().equals("lostcities:building1"), "a part without a namespace is the multi's");
+        check(CityCharacter.partId(net.minecraft.resources.ResourceLocation.parse("x:condo"), "y:condo_3").toString().equals("y:condo_3"), "a part's own namespace is kept");
+        helper.succeed();
+    }
+
     @GameTest(template = "empty", batch = "uc_regional")
     public static void aChunkBelongsToTheNearestCityCircleAndNoneOutside(GameTestHelper helper) {
         var regions = java.util.List.of(
