@@ -59,6 +59,7 @@
   "item.underground_city.fermentation_vat": "Fermentation Vat",
   "item.underground_city.field_repair_set": "Field Repair Set",
   "item.underground_city.firearm_parts_kit": "Firearm Parts Kit",
+  "item.underground_city.first_aid_kit": "First Aid Kit",
   "item.underground_city.flour": "Flour",
   "item.underground_city.fruit_crate": "Fruit Crate",
   "item.underground_city.gear_set": "Gear Set",
@@ -128,6 +129,5 @@
   "key.underground_city.places": "Places you know",
   "key.underground_city.tracker": "Show or hide the active order",
   "underground_city.gun.registered": "Registered %s",
-  "underground_city.gun.unmarked": "Unmarked %s",
-  "item.underground_city.first_aid_kit": "First Aid Kit"
+  "underground_city.gun.unmarked": "Unmarked %s"
 }

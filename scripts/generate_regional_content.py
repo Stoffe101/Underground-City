@@ -253,6 +253,7 @@ def build(data: dict, contracts: dict) -> dict[Path, bytes]:
         "block.underground_city.scrap_heap": "Scrap Heap",
         "item.underground_city.scrap_heap": "Scrap Heap",
         "item.underground_city.sealed_envelope": "Sealed Envelope",
+        "item.underground_city.first_aid_kit": "First Aid Kit",
         "block.underground_city.utility_panel": "Utility Panel",
         "block.underground_city.machine_drive": "Machine Drive Housing",
         "block.underground_city.exploration_find": "Battered Crate",
@@ -433,8 +434,10 @@ def build(data: dict, contracts: dict) -> dict[Path, bytes]:
     for station in WORKSHOP_STATIONS:
         files[Path(f"rpg-core/src/main/resources/assets/{NAMESPACE}/models/item/{station}.json")] = jdump({"parent": f"{NAMESPACE}:block/{station}_1"}).encode()
         files[Path(f"rpg-core/src/main/resources/data/{NAMESPACE}/loot_tables/blocks/{station}.json")] = jdump({"type": "minecraft:block", "pools": []}).encode()
-    files[Path(f"rpg-core/src/main/resources/assets/{NAMESPACE}/models/item/sealed_envelope.json")] = jdump(
-        {"parent": "minecraft:item/generated", "textures": {"layer0": f"{NAMESPACE}:item/sealed_envelope"}}).encode()
+    # two items registered in Java with their own behaviour: the courier's envelope (D-139) and the first aid kit (D-203); their sprites are drawn by tools/art/gen_items.py
+    for special in ("sealed_envelope", "first_aid_kit"):
+        files[Path(f"rpg-core/src/main/resources/assets/{NAMESPACE}/models/item/{special}.json")] = jdump(
+            {"parent": "minecraft:item/generated", "textures": {"layer0": f"{NAMESPACE}:item/{special}"}}).encode()
     blueprint = json.loads((ROOT / "content/region-blueprints/cities.json").read_text(encoding="utf-8"))
     for city in blueprint["cities"]:
         files[Path(f"rpg-core/src/main/resources/data/{NAMESPACE}/regions/{city['id']}.json")] = jdump({
