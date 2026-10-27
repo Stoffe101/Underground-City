@@ -324,6 +324,20 @@ Every frame and world below is private and kept outside the repository. Only wha
 
 A scan of the template's region files for lava above y 55: 144 chunks hold some, 98 of them inside a city's circle, and every one of those holds a single block (the same chunks and counts as the template before the fixes, so they are part of the buildings' own design). The lava lakes with dozens of blocks are all 180 to 304 blocks outside a city's edge, out on the islands, beyond the 160 blocks round a city where lakes are now refused.
 
+## 11. Test evidence
+
+* **Forge GameTests:** 444 of 444 in each local run from 160 to 165 (the last on eed98f3's tests), and in hosted CI on 0c3c01d, where every check passed.
+* **Python:** 373 tests, `validate_repo.py`, the generated-pack checks (`emit_dev_world_pack.py --check` for every layout) and the private-content guard.
+* **Hosted CI found, and this branch fixed:**
+  * result checks that grepped `latest.log` after Forge had rolled it over at midnight (`scripts/ci_run_log.py`);
+  * a back-room stock test and a plant-in-the-open test that depended on other tests' blocks in their chunk or column;
+  * a failure step that printed only the plain run's log;
+  * two crime scenes that struck before their passer-by could be found by the police's lookups (they now wait until every person they placed is found);
+  * a Cannabis loop test whose floor for a flower's cost no rule of the game sets (a lucky grafting harvest cost 7.5; the loop now checks the harvest against the crop's own rules).
+* **Hosted CI failures that were not this branch's,** each commented on the PR:
+  * a Forge installer download and a TaCZ start-up crash, which passed on one re-run;
+  * a native abort of the development client while it created its world, which passed on the next commit with the same change.
+
 ## Known issues
 
 * **Lost Cities keeps every chunk's building information it has linked** (section 8). It is let go only when a server stops. Pre-generation lets go of it every 500 chunks; ordinary play does not, and in a long session that explores far, memory grows. It was not measured in play.
