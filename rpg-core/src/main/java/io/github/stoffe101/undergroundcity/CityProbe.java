@@ -288,7 +288,11 @@ public final class CityProbe {
 
     private static final String DUMP = System.getProperty("uc.cityProbe.dump");
     private static final String DUMP_PREFIX = System.getProperty("uc.cityProbe.dumpprefix", "");
-    private static final String GLYPHS = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!$%&*+,-./:;<=>?@[]^_`{|}~";
+    /**
+     * One glyph per block kind, in the order the kinds are met; the last one stands for every kind past the end. None of them is the dot of air, the {@code =} of the legend or the {@code ?}
+     * a reader prints for a glyph it does not know (ninth pass: the alphabet held the dot, so the 71st kind of block in a chunk was written as air, and the building audit counted it as missing).
+     */
+    private static final String GLYPHS = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!$%&*+,-/:;<>@[]^_`{|}~";
 
     /**
      * For a chunk whose building type starts with {@code -PucCpDumpprefix=}, writes {@code <type>_<chunkX>_<chunkZ>.txt} to {@code -PucCpDump=<folder>}: the blocks of the chunk layer by layer from just under the street to

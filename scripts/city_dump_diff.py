@@ -37,8 +37,9 @@ def main() -> int:
     legend_line = next(line for line in text.splitlines() if line.startswith("# legend:"))
     legend = {}
     for token in legend_line[len("# legend:"):].split():
-        glyph, _, name = token.partition("=")
-        legend[glyph] = name.replace("minecraft:", "")
+        if len(token) > 2 and token[1] == "=":           # a one-character glyph, which may itself be "=" in an older dump
+            legend[token[0]] = token[2:].replace("minecraft:", "")
+    dot = "?." if "." in legend else "air"               # an older dump gave its 71st block kind the dot of air: a dot there is that block or air
     _, got = layers(text)
     floors = args.floors or building.min_floors
     # the parts in the order Lost Cities stacks them: ground floor, upper floors, top
@@ -63,7 +64,9 @@ def main() -> int:
                     options = {"air"} if c == " " else {strip(spec)} if isinstance(spec, str) else {strip(b) for _, b in spec}
                     options = {("air" if o == "minecraft:air" else o) for o in options}
                     glyph = rows[z][x]
-                    real = "air" if glyph == "." else legend.get(glyph, "?" + glyph)
+                    real = dot if glyph == "." else legend.get(glyph, "?" + glyph)
+                    if real == "?.":
+                        continue
                     real = strip(real)
                     checked += 1
                     if real not in options:

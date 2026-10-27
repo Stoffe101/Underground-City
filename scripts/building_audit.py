@@ -161,8 +161,10 @@ def parse_dump(path: Path) -> dict | None:
     for line in lines[:4]:
         if line.startswith("# legend:"):
             for item in line[len("# legend:"):].split():
-                glyph, _, name = item.partition("=")
-                legend[glyph] = block_id(name)
+                if len(item) > 2 and item[1] == "=":      # the glyph is one character, and may itself be "=" in a dump written before the ninth pass
+                    legend[item[0]] = block_id(item[2:])
+    # A dump written before the ninth pass gave its 71st block kind the dot of air: there a dot is that block or air, and is not counted either way
+    dot = "?" if "." in legend else "minecraft:air"
     world: dict[tuple[int, int, int], str] = {}
     rel = None
     z = 0
@@ -174,7 +176,7 @@ def parse_dump(path: Path) -> dict | None:
         if rel is None or line.startswith("#") or len(line) != 16:
             continue
         for x, ch in enumerate(line):
-            world[(x, rel, z)] = "minecraft:air" if ch == "." else legend.get(ch, "?")
+            world[(x, rel, z)] = dot if ch == "." else legend.get(ch, "?")
         z += 1
     return {"type": head.group("type"), "chunk": (int(head.group("cx")), int(head.group("cz"))), "floors": int(head.group("floors")), "world": world, "ambiguous": "~" in legend}
 

@@ -225,6 +225,28 @@ class AuditTheFixture(unittest.TestCase):
         wall = next(k for k, c in ground.items() if c == "#")
         self.assertEqual(cells[wall], frozenset({"minecraft:stone_bricks"}), "the ground part's # is read from its object-form palette, not matched as anything")
 
+    def test_a_dump_that_gave_a_block_kind_the_dot_of_air_does_not_count_it_as_missing(self):
+        # Before the ninth pass the probe's alphabet held the dot, so the 71st block kind of a chunk was written as "." like air: one kind of block per
+        # chunk read as missing (a roof's slabs, a vent, two iron bars). A dot such a dump lists in its legend is that block or air, and counts as neither.
+        bid = self.f.building("house", storey(bed=True))
+        world = {k: sorted(v)[0] for k, v in audit.render(audit.Packs([self.f.pack]), bid, 1).items() if v}
+        self.dump(bid, 1, world)
+        path = next(self.dumps.glob("*.txt"))
+        lines = path.read_text(encoding="utf-8").split("\n")
+        glyph = next(item[0] for item in lines[2][len("# legend:"):].split() if item.endswith("=red_bed"))
+        lines[2] = lines[2].replace(f" {glyph}=", " .=")
+        lines[3:] = [line if line.startswith("---") else line.replace(glyph, ".") for line in lines[3:]]
+        path.write_text("\n".join(lines), encoding="utf-8")
+        report = audit.audit(self.dumps, audit.Packs([self.f.pack]))["types"][bid]
+        self.assertEqual((report["missing"], report["foreign"]), (0, 0))
+
+    def test_the_probes_alphabet_has_no_dot_equals_sign_or_question_mark_and_no_glyph_twice(self):
+        source = (ROOT / "rpg-core/src/main/java/io/github/stoffe101/undergroundcity/CityProbe.java").read_text(encoding="utf-8")
+        glyphs = source.split('GLYPHS = "', 1)[1].split('"', 1)[0]
+        self.assertFalse(set(glyphs) & set(".=? #"), "the dot is air, = joins the legend and ? is a reader's unknown glyph")
+        self.assertEqual(len(glyphs), len(set(glyphs)))
+        self.assertGreaterEqual(len(glyphs), 80)
+
 
 if __name__ == "__main__":
     unittest.main()
