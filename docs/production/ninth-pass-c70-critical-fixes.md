@@ -212,6 +212,19 @@ What it found, and what was done:
 | Carpets on attic beams missing, and flower boxes, a toilet-paper holder | most C70 houses: 374 of their 430 carpets, 32 flower boxes, 4 holders (410 of the 434 blocks missing in 68 building chunks) | Lost Cities' chunk writer keeps the blocks it writes in a cache and puts them into the chunk at the end. Each block it places updates its four neighbours' shapes, but asks the chunk itself, which does not hold the cached beam under a carpet yet. The carpet sees air below and becomes air (`ChunkDriver.correct` and `updateAdjacent`, read from the 7.5.5 jar) | Core keeps a block Lost Cities placed when that update would turn it into air; any other change of shape stands (D-195). Verified by the next probe of the same seed: all 430 carpets stand |
 | A lava lake in a house's garden: lava in place of the paving, the fence, a terrace's steps and glass above it gone | one Valewood house (the other 24 missing blocks) | the game's lakes are placed after Lost Cities' buildings, and a lake digs its bowl wherever its spot falls; lava beside a wooden house is also a fire | on the archipelago, no lake touching a city's ring is placed (D-195). Verified by the next probe of the same seed: no lava, and the garden as its data says |
 | Mushrooms on paving and roofs | 10 round the General Stores, 13 on C70 roofs, in 98 building chunks | the game's own vegetation, placed after the buildings | none (cosmetic; known issue) |
+| A factory's lots empty: no building at all, the hillside or bare ground | all 68 lots of one C70 factory family, in Ironhaven and Blackwater (found by the three-city audit of the pre-generated world, below) | a 1.18.2 pack's city styles merge a shared palette under every building. The factory's ground part takes `H` from it, and this game's city styles replace the pack's, so `H` was defined nowhere: Lost Cities threw ("Could not find entry 'H' in the palette for part ...") and left the lot empty | the porter gives each building the characters its parts take from the pack's own style palettes when nothing else in its palettes defines them (618 characters to 218 buildings in the owner's pack). Unit-tested on invented fixtures |
+| Diamond, gold and emerald blocks inside C70 buildings | 175 diamond, 224 gold and 158 emerald blocks in about 150 of the 622 C70 building chunks of the same world | the same fall-through: the pack drew spawners with `!` (air after the port), and Lost Cities' own `!` is its vault block (iron, sometimes diamond, gold or emerald). Likewise `z` and `=` became stone-brick stairs and smooth-stone slabs instead of stone and concrete | the same porter fix: each building now has the pack's own meaning of those characters |
+| The audit itself: an inline palette in Lost Cities' object form was skipped, and a storey Lost Cities chose among several was compared with the first one | every audit before October 27 | `"palette": {"palette": [...]}` read as a list; Lost Cities picks one of the parts that fit a floor at random | both fixed: inline palettes are read in either form, and the storey that fits the generated blocks best is compared. A real defect still shows, because no candidate matches it. Unit-tested |
+
+**The three cities of the pre-generated C70-first world** (pregen run 6, the port from before the style fix; a probe of a copy reads every chunk within 15 chunks of each centre, 2,883 chunks):
+
+| Buildings | Building chunks | Cells compared | Missing | Foreign | Of the missing |
+| --- | --- | --- | --- | --- | --- |
+| Ours (the bakery, stores, villa, flats, workshop, warehouse, pub, club, lofts, apartments) | 207 | 1,032,192 | **0** | 46 | none |
+| C70, other than the factory | 554 | 2,972,214 | 263 (0.009%) | 3,010 | mostly in one apartment family (128 Builder's Delight industrial flats, 80 smooth-stone slabs); not yet traced |
+| C70's factory | 68 | 296,412 | 52,874 | 7,249 | every lot empty (above) |
+
+Most of the foreign blocks are the game's grass, flowers and mushrooms in gardens and on lots; the rest is in the factory's empty lots.
 
 **Before and after, the same 225 Valewood chunks of one seed with the C70-first pack** (`building_audit.py`; every building chunk, its cells compared with its data):
 
@@ -221,7 +234,7 @@ What it found, and what was done:
 | r5e (+ blocks Lost Cities placed are kept) | 68 C70 | 308,583 | 24 | 389 | the same |
 | r5f (+ no lakes in a city) | 68 C70, plus 30 of ours | 308,583 (C70) | **0** | 386 | the same |
 
-Our own furnished buildings in probe r5f: the bakery (14 copies), the General Store (13) and the villa (3) have no block missing; the stores have the mushrooms outside. A probe is a measurement of one seed's Valewood, not of every chunk of every city. Blackwater and Ironhaven are covered by the photo tour of the pre-generated world (below), not yet by an audit.
+Our own furnished buildings in probe r5f: the bakery (14 copies), the General Store (13) and the villa (3) have no block missing; the stores have the mushrooms outside. A probe is a measurement of one seed's Valewood, not of every chunk of every city; the three cities' audit is the next table.
 
 ## 8. The islands generated ahead of play (D-194)
 

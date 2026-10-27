@@ -192,6 +192,39 @@ class AuditTheFixture(unittest.TestCase):
         report = audit.audit(self.dumps, audit.Packs([self.f.pack]))["types"][bid]
         self.assertEqual((report["missing"], report["foreign"], report["other"], report["above"]), (0, 0, 0, 0))
 
+    def test_a_storey_lost_cities_chose_among_several_is_not_counted_as_another_storeys_missing_blocks(self):
+        ground = storey(bed=True)
+        first = {(4, 1, 4): "c"}                          # an upper storey with a carpet in one corner
+        second = {(11, 1, 11): "c"}                       # the other storey Lost Cities may pick instead: the carpet in the far corner
+        bid = self.f.building("hotel", ground, upper=[first], top={})
+        self.f.write("parts", "hotel_floor_b", {"xsize": 16, "zsize": 16, "slices": slices(second), "palette": [{"char": c, "block": b} for c, b in PALETTE.items()]})
+        path = self.f.pack / "data" / NS / "lostcities" / "buildings" / "hotel.json"
+        doc = json.loads(path.read_text(encoding="utf-8"))
+        doc["parts"].insert(2, {"part": f"{NS}:hotel_floor_b", "ground": False, "top": False})
+        path.write_text(json.dumps(doc), encoding="utf-8")
+        # the world holds the second storey
+        world = {k: sorted(v)[0] for k, v in audit.render(audit.Packs([self.f.pack]), bid, 2).items() if v}
+        world.pop((4, 7, 4), None)
+        world[(11, 7, 11)] = "minecraft:light_gray_carpet"
+        self.dump(bid, 2, world)
+        report = audit.audit(self.dumps, audit.Packs([self.f.pack]))["types"][bid]
+        self.assertEqual((report["missing"], report["foreign"]), (0, 0), "the storey the game chose is the one compared")
+        world.pop((11, 7, 11))                            # and a carpet that really is gone is still found
+        self.dump(bid, 2, world)
+        self.assertEqual(audit.audit(self.dumps, audit.Packs([self.f.pack]))["types"][bid]["missing"], 1)
+
+    def test_an_inline_palette_in_lost_cities_object_form_is_read(self):
+        # Lost Cities writes a building's or part's own palette as {"palette": [...]}; read as a list it was skipped and its characters matched anything
+        ground = storey(bed=True)
+        bid = self.f.building("house", ground)
+        path = self.f.pack / "data" / NS / "lostcities" / "parts" / "house_ground.json"
+        doc = json.loads(path.read_text(encoding="utf-8"))
+        doc["palette"] = {"palette": doc["palette"]}
+        path.write_text(json.dumps(doc), encoding="utf-8")
+        cells = audit.render(audit.Packs([self.f.pack]), bid, 1)
+        wall = next(k for k, c in ground.items() if c == "#")
+        self.assertEqual(cells[wall], frozenset({"minecraft:stone_bricks"}), "the ground part's # is read from its object-form palette, not matched as anything")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -71,6 +71,14 @@ def options(entry: dict) -> frozenset | None:
     return WILD
 
 
+def inline(doc: dict) -> list:
+    """A part's or building's inline palette entries, in either form Lost Cities reads (a list, or ``{"palette": [...]}``)."""
+    entries = doc.get("palette")
+    if isinstance(entries, dict):
+        entries = entries.get("palette")
+    return entries if isinstance(entries, list) else []
+
+
 def part_matches(p: dict, f: int, floors: int) -> bool:
     if p.get("cellar", False) != (f < 0):
         return False
@@ -87,32 +95,60 @@ def part_matches(p: dict, f: int, floors: int) -> bool:
     return True
 
 
-def render(packs: Packs, building_id: str, floors: int) -> dict[tuple[int, int, int], frozenset | None] | None:
-    """The expected cells of a building with ``floors`` floors: (x, y above street, z) -> the block ids allowed there (an empty set is air)."""
+def part_cells(packs: Packs, part: dict, base: dict, f: int) -> dict[tuple[int, int, int], frozenset | None]:
+    """The cells one part draws as floor ``f`` of a building whose own palette is ``base``."""
+    palette = dict(base)
+    palette.update(packs.palette(part.get("refpalette")))
+    palette.update({str(e.get("char")): options(e) for e in inline(part) if isinstance(e, dict)})
+    cells: dict[tuple[int, int, int], frozenset | None] = {}
+    for dy, layer in enumerate(part.get("slices", [])):
+        for z, row in enumerate(layer):
+            for x, ch in enumerate(row):
+                cells[(x, f * FLOOR + dy, z)] = frozenset() if ch == " " else palette.get(ch, WILD)
+    return cells
+
+
+def mismatches(cells: dict, world: dict) -> int:
+    """How many cells of ``cells`` the world does not hold as drawn (a missing, foreign or other block)."""
+    n = 0
+    for key, allowed in cells.items():
+        got = world.get(key)
+        if allowed is WILD or got is None or got == "?":
+            continue
+        if not allowed:
+            n += got not in AIR
+        elif got in AIR:
+            n += not (allowed & AIR)
+        else:
+            n += got not in allowed
+    return n
+
+
+def render(packs: Packs, building_id: str, floors: int, world: dict | None = None) -> dict[tuple[int, int, int], frozenset | None] | None:
+    """The expected cells of a building with ``floors`` floors: (x, y above street, z) -> the block ids allowed there (an empty set is air).
+
+    Lost Cities picks one at random of the parts that fit a floor (a hotel's three storeys, say). Without ``world`` the first is drawn; with the generated
+    chunk's blocks, the one that fits them best, so a storey the game chose is not counted as the wrong storey's missing blocks. A real defect still shows:
+    no candidate matches it."""
     building = packs.doc("buildings", building_id)
     if building is None:
         return None
     base = packs.palette(building.get("refpalette"))
-    base.update({str(e.get("char")): options(e) for e in building.get("palette", []) if isinstance(e, dict)})
+    base.update({str(e.get("char")): options(e) for e in inline(building) if isinstance(e, dict)})
     cells: dict[tuple[int, int, int], frozenset | None] = {}
     for f in range(0, floors + 1):
-        part_ref = next((p for p in building.get("parts", []) if isinstance(p, dict) and part_matches(p, f, floors)), None)
-        if part_ref is None:
-            continue
-        part = packs.doc("parts", part_ref["part"])
-        if part is None:
-            continue
-        palette = dict(base)
-        palette.update(packs.palette(part.get("refpalette")))
-        palette.update({str(e.get("char")): options(e) for e in part.get("palette", []) if isinstance(e, dict)})
-        for dy, layer in enumerate(part.get("slices", [])):
-            for z, row in enumerate(layer):
-                for x, ch in enumerate(row):
-                    y = f * FLOOR + dy
-                    if ch == " ":
-                        cells[(x, y, z)] = frozenset()
-                    else:
-                        cells[(x, y, z)] = palette.get(ch, WILD)
+        candidates = [p for p in building.get("parts", []) if isinstance(p, dict) and part_matches(p, f, floors)]
+        best = None
+        for ref in candidates if world is not None else candidates[:1]:
+            part = packs.doc("parts", ref["part"])
+            if part is None:
+                continue
+            drawn = part_cells(packs, part, base, f)
+            score = mismatches(drawn, world) if world is not None else 0
+            if best is None or score < best[0]:
+                best = (score, drawn)
+        if best is not None:
+            cells.update(best[1])
     return cells
 
 
@@ -151,7 +187,7 @@ def audit(dumps: Path, packs: Packs) -> dict:
         d = parse_dump(path)
         if d is None:
             continue
-        cells = render(packs, d["type"], d["floors"])
+        cells = render(packs, d["type"], d["floors"], d["world"])
         if cells is None:
             unknown[d["type"]] += 1
             continue

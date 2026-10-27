@@ -71,6 +71,53 @@ class PortTheFixture(unittest.TestCase):
         self.assertEqual(result["counts"]["parts_with_style_characters_renamed"], 1)
         self.assertTrue(result["loadable"])
 
+    def add_style_pack(self):
+        """An invented style whose shared palette defines "H" and "y", and two buildings whose parts lean on it: one with no palette of its own, one with a
+        referenced palette; a third character ("Q") nothing defines."""
+        lc = self.source / "data" / "fixturecity" / "lostcities"
+        (lc / "styles").mkdir(parents=True, exist_ok=True)
+        (lc / "palettes" / "fixture_common.json").write_text(json.dumps({"palette": [
+            {"char": "H", "block": "minecraft:iron_bars"}, {"char": "y", "block": "minecraft:stone"}, {"char": "#", "block": "minecraft:cobblestone"}]}), encoding="utf-8")
+        (lc / "styles" / "fixture_style.json").write_text(json.dumps({"randompalettes": [[{"factor": 1.0, "palette": "fixturecity:fixture_common"}]]}), encoding="utf-8")
+        (lc / "palettes" / "fixture_shed.json").write_text(json.dumps({"palette": [{"char": "#", "block": "minecraft:bricks"}]}), encoding="utf-8")
+        (lc / "parts" / "fixture_shed_ground.json").write_text(json.dumps({"xsize": 2, "zsize": 2, "refpalette": "fixturecity:fixture_shed",
+            "slices": [["##", "##"], ["Hy", "  "], ["  ", "  "], ["  ", "  "], ["  ", "  "], ["##", "##"]]}), encoding="utf-8")
+        (lc / "buildings" / "fixture_shed.json").write_text(json.dumps({"minfloors": 1, "maxfloors": 1,
+            "parts": [{"ground": True, "part": "fixturecity:fixture_shed_ground"}]}), encoding="utf-8")
+        (lc / "buildings" / "fixture_shed_ref.json").write_text(json.dumps({"minfloors": 1, "maxfloors": 1, "refpalette": "fixturecity:fixture_shed",
+            "parts": [{"ground": True, "part": "fixturecity:fixture_shed_ground"}]}), encoding="utf-8")
+        (lc / "parts" / "fixture_odd_ground.json").write_text(json.dumps({"xsize": 2, "zsize": 2, "refpalette": "fixturecity:fixture_shed",
+            "slices": [["#Q", "##"], ["  ", "  "], ["  ", "  "], ["  ", "  "], ["  ", "  "], ["##", "##"]]}), encoding="utf-8")
+        (lc / "buildings" / "fixture_odd.json").write_text(json.dumps({"minfloors": 1, "maxfloors": 1, "parts": [{"ground": True, "part": "fixturecity:fixture_odd_ground"}]}),
+                                                         encoding="utf-8")
+        return lc
+
+    def test_a_character_the_parts_take_from_the_packs_style_is_given_to_the_building(self):
+        # the pack's style palette defines "H"; this game's city styles replace the pack's, so without the building's own definition Lost Cities throws and the lot stays empty
+        self.add_style_pack()
+        result = porter.port(self.source, self.dest)
+        lc = self.dest / "data" / "fixturecity" / "lostcities"
+        shed = json.loads((lc / "buildings" / "fixture_shed.json").read_text(encoding="utf-8"))
+        self.assertEqual(shed["palette"], {"palette": [{"char": "H", "block": "minecraft:iron_bars"}]},
+                         "the building with no palette gets an inline palette (Lost Cities' object form) with the style's H, and not the style character y")
+        ref = json.loads((lc / "buildings" / "fixture_shed_ref.json").read_text(encoding="utf-8"))
+        self.assertNotIn("palette", ref, "an inline palette would replace the referenced one in Lost Cities")
+        self.assertEqual(ref["refpalette"], "fixturecity:fixture_shed_ref_with_style")
+        merged = json.loads((lc / "palettes" / "fixture_shed_ref_with_style.json").read_text(encoding="utf-8"))["palette"]
+        self.assertEqual({e["char"]: e["block"] for e in merged}, {"#": "minecraft:bricks", "H": "minecraft:iron_bars"}, "the referenced palette is kept and H added")
+        self.assertEqual(result["counts"]["buildings_given_style_characters"], 2)
+        self.assertEqual(result["counts"]["style_characters_given"], 2)
+        self.assertEqual(result["buildings_with_undefined_characters"], {"fixturecity:fixture_odd": "Q"})
+        self.assertTrue(result["loadable"], "an undefined character empties a lot, it does not stop a world from loading")
+
+    def test_an_inline_palette_in_lost_cities_object_form_is_ported_too(self):
+        lc = self.source / "data" / "fixturecity" / "lostcities"
+        (lc / "parts" / "fixture_obj_ground.json").write_text(json.dumps({"xsize": 1, "zsize": 1, "palette": {"palette": [{"char": "k", "block": "create:andesite_casing"}]},
+            "slices": [["k"], [" "], [" "], [" "], [" "], [" "]]}), encoding="utf-8")
+        porter.port(self.source, self.dest)
+        part = json.loads((self.dest / "data" / "fixturecity" / "lostcities" / "parts" / "fixture_obj_ground.json").read_text(encoding="utf-8"))
+        self.assertNotIn("create:", json.dumps(part), "a Create block in an object-form inline palette is replaced like any other")
+
     def test_a_mapping_decides_before_the_fallbacks(self):
         report = porter.port(self.source, self.dest, mapping={"create:shaft": "minecraft:chain[axis=y]"})
         self.assertIn("minecraft:chain[axis=y]", every_json(self.dest / "data"))

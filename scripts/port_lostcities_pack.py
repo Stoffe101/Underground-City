@@ -28,7 +28,9 @@ What a port does to every palette entry (``data/<ns>/lostcities/palettes/*.json`
   it must not be loaded).
 
 Parts' slices, multibuildings and citystyles are copied unchanged. A building's floors are made explicit for Lost Cities 7 (``overrideFloors``) and
-raised when its middle parts (a roof, an upper storey) would otherwise never be built. World styles are left out unless ``--keep-worldstyles``
+raised when its middle parts (a roof, an upper storey) would otherwise never be built. A character a building's parts take from the pack's own
+city-style palettes (``styles/*.json``), which no palette of the building or its parts defines, is given to the building's palette: this game's city
+styles choose the look, and a character none of them defines makes Lost Cities throw and leave the lot empty. World styles are left out unless ``--keep-worldstyles``
 (then copied and flagged for a person to review): Lost Cities 7 loads them as a registry, and one that names a biome of a mod that is not loaded
 stops the world from loading; the game's own world style chooses the cities. The report (``uc-port-report.json`` in the destination) holds counts and block ids, never
 the content itself.
@@ -74,6 +76,18 @@ def namespace(spec: str) -> str:
     return spec.split(":", 1)[0] if ":" in spec else "minecraft"
 
 
+def inline_entries(doc) -> list | None:
+    """The entry list of a part's or building's inline palette, in either form Lost Cities reads (``"palette": [...]`` or ``"palette": {"palette": [...]}``)."""
+    if not isinstance(doc, dict):
+        return None
+    inline = doc.get("palette")
+    if isinstance(inline, list):
+        return inline
+    if isinstance(inline, dict) and isinstance(inline.get("palette"), list):
+        return inline["palette"]
+    return None
+
+
 class Porter:
     def __init__(self, mapping: dict[str, str] | None = None, keep: set[str] | None = None, registry: dict | None = None, keep_worldstyles: bool = False):
         self.keep_worldstyles = keep_worldstyles
@@ -84,13 +98,15 @@ class Porter:
         self.counts = {"palettes": 0, "entries": 0, "renamed": 0, "create_replaced": 0, "foreign_replaced": 0, "spawners_removed": 0,
                        "mob_markers_removed": 0, "loot_dropped": 0, "files_copied": 0, "worldstyles_to_review": 0, "worldstyles_left_out": 0,
                        "kept_but_gone": 0, "properties_dropped": 0, "by_rule": 0, "by_sibling": 0, "by_shape": 0, "to_air": 0,
-                       "floors_made_explicit": 0, "floors_raised": 0, "style_characters_renamed": 0, "parts_with_style_characters_renamed": 0}
+                       "floors_made_explicit": 0, "floors_raised": 0, "style_characters_renamed": 0, "parts_with_style_characters_renamed": 0,
+                       "buildings_given_style_characters": 0, "style_characters_given": 0}
         self.foreign: dict[str, str] = {}      # replaced block id -> what it became
         self.gone: dict[str, str] = {}         # a kept mod's block that 1.20.1 no longer has -> what it became
         self.dropped: dict[str, list[str]] = {}   # block id -> properties of the 1.18.2 spec that the 1.20.1 block does not accept
         self.problems: list[str] = []
         self.style_chars: dict[str, list[str]] = {}   # palette -> Lost Cities style characters it gives a block of its own (a warning: see LOST_CITIES_RESERVED)
         self.char_map: dict[str, str] = {}             # a style character a pack's palette took -> the free character it became (rename_style_characters)
+        self.undefined: dict[str, list[str]] = {}       # building -> characters its parts use that no palette of the pack defines (still undefined after the port)
 
     # ------------------------------------------------------------------------------------------------ one block spec
 
@@ -215,8 +231,9 @@ class Porter:
                     target.unlink(missing_ok=True)
                     self.counts["worldstyles_left_out"] += 1
                     continue
-                if isinstance(doc, dict) and isinstance(doc.get("palette"), list):
-                    doc["palette"] = self.palette(doc["palette"], where)
+                inline = inline_entries(doc)
+                if inline is not None:
+                    inline[:] = self.palette(inline, where)
                 if kind == "buildings" and isinstance(doc, dict) and isinstance(doc.get("parts"), list):
                     self.floors(doc)
                 if kind == "worldstyles":
@@ -226,6 +243,7 @@ class Porter:
             shutil.copyfile(path, target)
             self.counts["files_copied"] += 1
         self.rename_style_characters(dest)
+        self.give_style_characters(dest)
         return self.report()
 
     def rename_style_characters(self, dest: Path) -> None:
@@ -258,10 +276,10 @@ class Porter:
         defined_by_part: dict[str, set[str]] = {}
         for p, d in docs.items():
             if kind_of(p) == "parts" and isinstance(d, dict):
-                defined_by_part[rid(p)] = chars(d.get("palette")) | palettes.get(d.get("refpalette") or "", set())
+                defined_by_part[rid(p)] = chars(inline_entries(d)) | palettes.get(d.get("refpalette") or "", set())
         for p, d in docs.items():
             if kind_of(p) == "buildings" and isinstance(d, dict):
-                own = chars(d.get("palette")) | palettes.get(d.get("refpalette") or "", set())
+                own = chars(inline_entries(d)) | palettes.get(d.get("refpalette") or "", set())
                 for ref in d.get("parts", []):
                     if isinstance(ref, dict) and ref.get("part") in defined_by_part:
                         defined_by_part[ref["part"]] |= own
@@ -280,8 +298,8 @@ class Porter:
             return
         for p, d in docs.items():
             changed = False
-            if isinstance(d.get("palette"), list):
-                for e in d["palette"]:
+            if inline_entries(d) is not None:
+                for e in inline_entries(d):
                     if isinstance(e, dict) and str(e.get("char", "")) in self.char_map:
                         e["char"] = self.char_map[str(e["char"])]
                         changed = True
@@ -301,12 +319,84 @@ class Porter:
         # what is left to warn about: none, unless a style's own palette (kept as it is) takes them
         self.style_chars = {k: v for k, v in self.style_chars.items() if not set(v) <= set(self.char_map)}
 
+    def give_style_characters(self, dest: Path) -> None:
+        """Give a building the characters its parts take from the pack's own city-style palettes when no palette of the building or of those parts
+        defines them. A 1.18.2 pack's styles merge a shared palette under every building (one pack's styles all use one "common" palette), and its
+        parts lean on it for blocks of their own. This game's city styles replace the pack's, so such a character is defined nowhere: Lost Cities throws
+        ("Could not find entry ... in the palette for part ...") and the lot stays empty (measured: a factory of the owner's pack, 68 lots in three cities,
+        October 27). The style characters Lost Cities draws its streets with (``LOST_CITIES_RESERVED``) stay the city style's. The building's palette
+        sits between the style's and the part's, so a part's own definition still wins."""
+        docs: dict[Path, dict] = {}
+        for path in sorted(dest.rglob("*.json")):
+            parts = path.relative_to(dest).parts
+            if "lostcities" in parts and parts.index("lostcities") + 1 < len(parts) and parts[parts.index("lostcities") + 1] in ("palettes", "parts", "buildings", "styles"):
+                docs[path] = json.loads(path.read_text(encoding="utf-8"))
+
+        def rid(path: Path) -> str:
+            parts = path.relative_to(dest).parts
+            return parts[1] + ":" + "/".join(parts[parts.index("lostcities") + 2:])[:-len(".json")]
+
+        def kind_of(path: Path) -> str:
+            parts = path.relative_to(dest).parts
+            return parts[parts.index("lostcities") + 1]
+
+        def entries_by_char(entries) -> dict[str, dict]:
+            return {str(e.get("char", "")): e for e in entries or [] if isinstance(e, dict)}
+
+        palettes = {rid(p): entries_by_char(d.get("palette")) for p, d in docs.items() if kind_of(p) == "palettes" and isinstance(d, dict)}
+        # the styles' palettes, merged in the order a style lists them (the first choice of each group: they are alternatives of one look)
+        style: dict[str, dict] = {}
+        for p, d in docs.items():
+            if kind_of(p) != "styles" or not isinstance(d, dict):
+                continue
+            for group in d.get("randompalettes") or []:
+                choices = group if isinstance(group, list) else [group]
+                first = next((c.get("palette") for c in choices if isinstance(c, dict) and c.get("palette")), None)
+                for char, entry in palettes.get(first or "", {}).items():
+                    style.setdefault(char, entry)
+        parts_by_id = {rid(p): d for p, d in docs.items() if kind_of(p) == "parts" and isinstance(d, dict)}
+        for p, d in docs.items():
+            if kind_of(p) != "buildings" or not isinstance(d, dict):
+                continue
+            own = set(entries_by_char(inline_entries(d))) | set(palettes.get(d.get("refpalette") or "", {}))
+            missing: set[str] = set()
+            for ref in list(d.get("parts") or []) + list(d.get("parts2") or []):
+                part = parts_by_id.get(ref.get("part")) if isinstance(ref, dict) else None
+                if part is None:
+                    continue
+                defined = own | set(entries_by_char(inline_entries(part))) | set(palettes.get(part.get("refpalette") or "", {}))
+                used = {c for layer in part.get("slices") or [] for row in layer for c in row}
+                missing |= used - defined - set(LOST_CITIES_RESERVED) - {" "}
+            given = [dict(style[c]) for c in sorted(missing) if c in style]
+            unknown = sorted(c for c in missing if c not in style)
+            if unknown:
+                self.undefined[rid(p)] = unknown
+            if not given:
+                continue
+            if inline_entries(d) is not None:
+                inline_entries(d).extend(given)
+            elif d.get("refpalette"):
+                # Lost Cities reads a building's inline palette instead of its referenced one, so the referenced palette is copied with the additions
+                name = rid(p).split(":", 1)[1].replace("/", "_") + "_with_style"
+                target = p.parents[1] / "palettes" / f"{name}.json"
+                target.parent.mkdir(parents=True, exist_ok=True)
+                merged = list(palettes.get(d["refpalette"], {}).values()) + given
+                target.write_text(json.dumps({"palette": merged}, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+                d["refpalette"] = rid(p).split(":", 1)[0] + ":" + name
+            else:
+                d["palette"] = {"palette": given}
+            p.write_text(json.dumps(d, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+            self.counts["buildings_given_style_characters"] += 1
+            self.counts["style_characters_given"] += len(given)
+
     def report(self) -> dict:
         return {"schema_version": 1, "counts": self.counts, "replaced_blocks": dict(sorted(self.foreign.items())), "kept_mod_blocks_gone": dict(sorted(self.gone.items())),
                 "properties_dropped": dict(sorted(self.dropped.items())), "registry_checked": self.registry is not None,
                 "problems": self.problems, "loadable": not self.problems,
                 "style_characters_redefined": dict(sorted(self.style_chars.items())),
                 "style_characters_renamed_to": dict(sorted(self.char_map.items())),
+                # a building listed here uses a character no palette of the pack defines: Lost Cities leaves its lot empty (leave it out of a selection)
+                "buildings_with_undefined_characters": {b: "".join(c) for b, c in sorted(self.undefined.items())},
                 "note": "Counts and block ids only; no content. A port with problems must not be loaded: fix the mapping and port again."}
 
 
