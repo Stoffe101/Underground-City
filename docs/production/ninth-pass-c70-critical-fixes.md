@@ -286,6 +286,11 @@ Class histograms of run 4b showed the live heap growing from 1.9 GB to 2.8 GB in
 * A first attempt (run 5) was stopped at about 1,000 chunks when the cloud machine's worker restarted; it was started again new, as run 6.
 * The world was then audited (section 7). The style-palette fault it showed meant the template had to be made again from the fixed port (run 8).
 
+**Pregen run 8** (the same, from the port with the style characters and the asphalt rules fixed, and with Lost Cities' blocks kept and no lakes in a city): `RESULT pass`.
+* 13,461 chunks in 1,957 s (33 minutes), none let go unfinished, no failed chunk write, no running out of memory, and no "Could not find entry" palette error in its log (in run 6, 71 chunks had failed with it, all of them the factory's missing `H`).
+* A first attempt was killed by a restart of the cloud container; it was started again new.
+* The world is the C70-first template the private runs in sections 7 and 10 use. Its heap was not sampled: the sampler attached to a GameTest server that started beside it.
+
 ## 9. The new screens at the owner's sizes
 
 The ninth pass's notices and the glance cards were captured by the capture harness at 1920x1080 with GUI scale 3 and at 3440x1440 with GUI scale 2 (the owner's screen), and looked at.
