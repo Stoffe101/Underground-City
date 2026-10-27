@@ -156,6 +156,10 @@ def main() -> int:
     if args.unchain == 'off':
         EXTRA_SERVER_FLAGS.append('-PucLcUnchain=false')
     modules = prepare()
+    if args.plan == 'explore':
+        # the explore plan moves its players flying at a road's height or 120; after the restart they rejoin in the air, and a server without flight kicks them for floating
+        with open(SERVER / 'server.properties', 'a') as props:
+            props.write('allow-flight=true\n')
     report = {'server_sets': SETS, 'client_sets': CLIENT_SETS, 'minutes': args.minutes, 'plan': args.plan, 'unchain': args.unchain, 'phases': []}
     for number in (1, 2):
         report['phases'].append(phase(number, modules, args.minutes))

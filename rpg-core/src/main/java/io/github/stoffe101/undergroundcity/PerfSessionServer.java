@@ -95,9 +95,10 @@ public final class PerfSessionServer {
                 if (EXPLORE && ticksInSegment % HOP_TICKS == 0) travel(server, farmer, smith);
                 // half a minute in, when the chunks round each player have been sent: at the teleport itself none were loaded and nobody had anything to track (first full session)
                 if (ticksInSegment == TRACK_TICKS) trackPlaces(server.overworld(), farmer, smith);
-                // a minute in, once the chunks round the players have been generated and their plans recorded: the bonded store is taken in Ironhaven and delivered in Blackwater
-                if (ticksInSegment == RAID_TICKS && index == 0) raidTake(server, farmer, smith);
-                if (ticksInSegment == RAID_TICKS && PLAN.get(index).farmerCity().equals("blackwater")) raidDeliver(server, farmer, smith);
+                // a minute in, once the chunks round the players have been generated and their plans recorded: the bonded store is taken in Ironhaven and delivered in Blackwater.
+                // Not in the explore plan, whose players are always moving (its first session's delivery found the shipment missing); the city plan keeps it
+                if (!EXPLORE && ticksInSegment == RAID_TICKS && index == 0) raidTake(server, farmer, smith);
+                if (!EXPLORE && ticksInSegment == RAID_TICKS && PLAN.get(index).farmerCity().equals("blackwater")) raidDeliver(server, farmer, smith);
                 if (ticksInSegment >= segmentTicks) next(server, farmer, smith);
             } else {
                 if (ticksInSegment == ARRIVAL_TICKS) enter("after_restart");
@@ -137,7 +138,7 @@ public final class PerfSessionServer {
             current = "after_restart_arrival";
             ticksInSegment = 0;
             System.out.println("[UC-PERF] phase 2: both players rejoined the restarted server as the same citizens");
-            raidReplay(server, farmer);
+            if (!EXPLORE) raidReplay(server, farmer);
         }
     }
 
