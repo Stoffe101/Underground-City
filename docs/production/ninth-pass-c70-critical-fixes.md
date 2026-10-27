@@ -223,7 +223,7 @@ What it found, and what was done:
 | Buildings | Building chunks | Cells compared | Missing | Foreign | Of the missing |
 | --- | --- | --- | --- | --- | --- |
 | Ours (the bakery, stores, villa, flats, workshop, warehouse, pub, club, lofts, apartments) | 207 | 1,032,192 | **0** | 46 | none |
-| C70, other than the factory | 554 | 2,879,117 | 15 | 3,010 | 15 lawn flowers in one office family's garden (tulips, bluets, lilies of the valley). As first read, 263: the other 248 were the dump's own fault (the row about the dot above) |
+| C70, other than the factory | 554 | 2,879,117 | 15 | 3,010 | 15 lawn flowers in one office family's garden (tulips, bluets, lilies of the valley), which Lost Cities leaves out on purpose: the archipelago profile avoids foliage (D-106; Lost Cities' park saplings had grown into trees over streets and roofs), and that drops a building's own small flowers and saplings too. As first read, 263: the other 248 were the dump's own fault (the row about the dot above) |
 | C70's factory | 68 | 296,412 | 52,874 | 7,249 | every lot empty (above) |
 
 Most of the foreign blocks are the game's grass, flowers and mushrooms in gardens and on lots; the rest is in the factory's empty lots.
