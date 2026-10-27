@@ -144,6 +144,10 @@ public final class DuoSessionServer {
     }
 
     /** Runs a command as the server console (permission 4) and keeps what it said. */
+    /** The changes phase 1's console commands make, each one audited: credits add and set, a career level, operator points added and removed, a Thief level and general XP (the
+     *  refused ones change nothing and are not). Phase 2 expected one more than phase 1 had made (its first run, October 27). */
+    static final int AUDITED = 7;
+
     private static Answer console(MinecraftServer server, String command) {
         List<String> said = new ArrayList<>();
         CommandSource capture = new CommandSource() {
@@ -186,7 +190,7 @@ public final class DuoSessionServer {
         Answer nobody = console(server, "uc admin info UC_Nobody");
         check("an unknown player is refused", !nobody.ok(), nobody.text());
         Answer audit = console(server, "uc admin audit 20");
-        check("the audit lists the changes", audit.ok() && audit.said().size() >= 6, audit.said().size() + " lines");
+        check("the audit lists the changes", audit.ok() && audit.said().size() >= AUDITED, audit.said().size() + " lines");
         REPORT.addProperty("vale_credits_after", QShopEconomy.balance(vale));
         boolean playerCan = server.getCommands().getDispatcher().getRoot().getChild("uc").getChild("admin").canUse(black.createCommandSourceStack());
         check("a player who is not an operator cannot reach /uc admin", !playerCan && !black.hasPermissions(2), "can use " + playerCan);
@@ -259,7 +263,7 @@ public final class DuoSessionServer {
             check("credits set by the console are still there", Math.abs(QShopEconomy.balance(vale) - 75) < 0.01, "balance " + QShopEconomy.balance(vale));
             var b = CitizenState.get(server).find(black.getUUID()).orElseThrow();
             check("level and operator points are still there", b.careerLevel() == 4 && b.careerBonus() == 1, "level " + b.careerLevel() + ", bonus " + b.careerBonus());
-            check("the audit survived the restart", AdminCommands.Audit.get(server).last(50).size() >= 8, AdminCommands.Audit.get(server).last(50).size() + " entries");
+            check("the audit survived the restart", AdminCommands.Audit.get(server).last(50).size() >= AUDITED, AdminCommands.Audit.get(server).last(50).size() + " entries");
             check("the house still waits to be put back after the restart", !BurglaryDamage.store(server).records.isEmpty(), BurglaryDamage.status(server));
             step = 1; ticks = 0;
             return;
