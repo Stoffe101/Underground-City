@@ -29,8 +29,13 @@ public final class CannabisLawGameTests {
         ServerLevel level = helper.getLevel();
         check(CannabisLaw.prohibited("valewood") && CannabisLaw.prohibited("ironhaven") && !CannabisLaw.prohibited("blackwater"), "the cities' laws on the crop are not as the data says");
         BlockPos arena = helper.absolutePos(BlockPos.ZERO);
-        int y = level.getMaxBuildHeight() - 160;
-        BlockPos plant = new BlockPos(arena.getX() + 4000, y + 1, arena.getZ());
+        // other tests build roads, places and shelters high in the sky beside their own arenas, and the grid moves with the batches (CI, a private-pack run, October 27:
+        // something stood over this column): the plant goes above whatever already stands in it, so nothing is over it but what this test puts there
+        int x = arena.getX() + 4000, z = arena.getZ();
+        level.getChunk(x >> 4, z >> 4);
+        int y = Math.max(level.getMaxBuildHeight() - 160, level.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING, x, z));
+        check(y + 5 < level.getMaxBuildHeight(), "no free sky over the test column");
+        BlockPos plant = new BlockPos(x, y + 1, z);
         FakePlayer grower = FakePlayerFactory.get(level, new GameProfile(UUID.randomUUID(), "uc_law_grower"));
         try {
             level.setBlock(plant.below(), Blocks.FARMLAND.defaultBlockState(), 2);

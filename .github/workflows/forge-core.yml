@@ -58,8 +58,13 @@ jobs:
       - name: Print which tests failed (a failing GameTest makes the server exit 1; the reason is in the log)
         if: failure()
         run: |
-          log=$(python3 scripts/ci_run_log.py rpg-core/run/logs) || log=rpg-core/run/logs/latest.log
-          grep -E 'failed!|required tests|GAME TESTS COMPLETE|Exception caught|Crash report' "$log" | head -n 40 || true
+          # both GameTest runs: the plain one and the one with the synthetic private pack
+          for run in run run-private; do
+            [ -d "rpg-core/$run/logs" ] || continue
+            echo "== $run"
+            log=$(python3 scripts/ci_run_log.py "rpg-core/$run/logs") || log="rpg-core/$run/logs/latest.log"
+            grep -E 'failed!|required tests|GAME TESTS COMPLETE|Exception caught|Crash report' "$log" | head -n 40 || true
+          done
       - name: Inspect generated files
         run: |
           ls -lah rpg-core/build/libs
