@@ -56,12 +56,12 @@ final class DuoSupplyChain {
         ticks++;
         switch (step) {
             case 0 -> { crew(server, vale, black, check); outTo(level, vale, "valewood", "the Farmer went out to the fields past Valewood's edge", check); next(); }
-            case 1 -> { if (ticks > 100) { farm(level, vale, check); next(); } }
+            case 1 -> { if (ready(level, vale)) { farm(level, vale, check); next(); } }
             case 2 -> { if (ticks > 30) { gather(level, vale, check); next(); } }
             case 3 -> { if (ticks > 20 * 90) throw new IllegalStateException("the Mill did not finish in ninety seconds");
                         if (!level.getBlockState(mill).getValue(WorkshopBlock.WORKING)) { milled(level, vale, check); next(); } }
             case 4 -> { outTo(level, black, "blackwater", "the Vintner went out to open ground past Blackwater's edge to set up the vat", check); next(); }
-            case 5 -> { if (ticks > 100) { handOver(level, vale, black); next(); } }
+            case 5 -> { if (ready(level, black)) { handOver(level, vale, black); next(); } }
             case 6 -> { if (ticks > 60) { received(level, vale, black, check); ferment(level, black, check); next(); } }
             case 7 -> { if (ticks > 20 * 60 * 9) throw new IllegalStateException("the vat did not finish in nine minutes");
                         if (!level.getBlockState(vat).getValue(WorkshopBlock.WORKING)) { bottled(level, black, check); next(); } }
@@ -76,6 +76,18 @@ final class DuoSupplyChain {
     }
 
     private void next() { step++; ticks = 0; }
+
+    /**
+     * True once the ground round a player who was just moved is entity-ticking (at least five seconds after the move). Duo run 7: a field past the city's edge was not, yet, when the Farmer
+     * harvested, so the crops' drops were neither listed nor ticked and nothing was picked up; the Mill and the Vat would not have worked there either.
+     */
+    private boolean ready(ServerLevel level, ServerPlayer player) {
+        if (ticks > 20 * 180) throw new IllegalStateException("the ground round " + player.getGameProfile().getName() + " was not entity-ticking three minutes after the move");
+        if (ticks < 100) return false;
+        BlockPos at = player.blockPosition();
+        for (int dx = -16; dx <= 16; dx += 16) for (int dz = -16; dz <= 16; dz += 16) if (!level.isPositionEntityTicking(at.offset(dx, 0, dz))) return false;
+        return true;
+    }
 
     // ------------------------------------------------------------------------------------------------ the Crew
 
@@ -146,10 +158,23 @@ final class DuoSupplyChain {
         StringBuilder after = new StringBuilder();
         for (int i = 0; i < BUSHES + BEETS; i++) after.append(i == 0 ? "" : ", ").append(level.getBlockState(farm.east(i)).getBlock().getName().getString());
         System.out.println("[UC-DUO] after the harvest the row holds: " + after);
+        dropsNear(level, vale, "right after the harvest");
+    }
+
+    /** What lies on the ground near the row and where the Farmer stands (duo runs 4 and 6 picked up nothing after a harvest that broke the beetroot). */
+    private void dropsNear(ServerLevel level, ServerPlayer vale, String when) {
+        StringBuilder out = new StringBuilder();
+        for (ItemEntity item : level.getEntitiesOfClass(ItemEntity.class, new AABB(farm).inflate(16)))
+            out.append(" [").append(item.getItem().getCount()).append(' ').append(item.getItem().getItem()).append(" at ").append(item.blockPosition().toShortString())
+                .append(item.hasPickUpDelay() ? " (delay)" : "").append(item.isRemoved() ? " (removed)" : "").append(']');
+        System.out.println("[UC-DUO] items " + when + ":" + (out.length() == 0 ? " none" : out) + "; the Farmer at " + vale.blockPosition().toShortString() + ", chunk entity-ticking "
+            + level.isPositionEntityTicking(farm) + ", inventory " + vale.getInventory().items.stream().filter(st -> !st.isEmpty()).map(st -> st.getCount() + " " + st.getItem()).toList());
     }
 
     private void gather(ServerLevel level, ServerPlayer vale, Check check) {
+        dropsNear(level, vale, "before the pick-up");
         for (ItemEntity item : level.getEntitiesOfClass(ItemEntity.class, new AABB(farm).expandTowards(BUSHES + BEETS, 1, 0).inflate(3))) item.playerTouch(vale);
+        dropsNear(level, vale, "after the pick-up");
         int berries = count(vale, Items.SWEET_BERRIES) - berriesBefore, beet = count(vale, Items.BEETROOT) - beetBefore;
         check.check("the Farmer harvests berries and beetroot into their own inventory", berries >= BERRIES && beet >= BEETS, berries + " sweet berries, " + beet + " beetroot");
         // the Mill from the kit, set down on the last cell of the row with a right click
@@ -348,7 +373,7 @@ final class DuoSupplyChain {
         return ledger != null && ledger.residenceAt(level.dimension().location().toString(), pos) != null;
     }
 
-    /** A row of {@code n} cells along x near {@code from}, in loaded chunks that no building or home owns: each free for two blocks over soil, with standing room along its south side. */
+    /** A row of {@code n} cells along x near {@code from}, in entity-ticking chunks that no building or home owns: each free for two blocks over soil, with standing room along its south side. */
     static BlockPos openRow(ServerLevel level, BlockPos from, int n) {
         for (int r = 2; r <= 64; r++) for (int dx = -r; dx <= r; dx++) for (int dz = -r; dz <= r; dz++) {
             if (Math.max(Math.abs(dx), Math.abs(dz)) != r) continue;
@@ -363,7 +388,7 @@ final class DuoSupplyChain {
     private static boolean fits(ServerLevel level, BlockPos c, int n) {
         for (int i = 0; i < n; i++) {
             BlockPos cell = c.east(i), front = cell.south();
-            if (!level.isLoaded(cell) || !level.isLoaded(front)) return false;
+            if (!level.isPositionEntityTicking(cell) || !level.isPositionEntityTicking(front)) return false;   // drops, the Mill and the Vat need ticking ground
             BlockState ground = level.getBlockState(cell.below());
             if (!level.getBlockState(cell).isAir() || !level.getBlockState(cell.above()).isAir() || !(ground.is(Blocks.GRASS_BLOCK) || ground.is(Blocks.DIRT))) return false;
             if (owned(level, cell) || owned(level, cell.below()) || owned(level, front)) return false;
