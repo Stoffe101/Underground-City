@@ -18,9 +18,13 @@ Independent from profession trees. General skills reward normal behavior and off
 | Thievery (the Thief track, D-143) | entering buildings by tier, searches, safes, escapes, fence sales | its own 16-skill tree on the terminal's Thief page | L3 (thief run 12) |
 | Trading | legal deliveries (credits / 8, at most 50 XP each) and goods sold to a shop (at most 30) | regional exchange prices 2% lower from level 3, 4% from 6, 5% from 10, inside the 10% cap shared with career skills | L2 |
 | Social | civic contributions (40), Crew contract parts (30), a legal buyer's trust growing (25) | from level 3 a legal buyer counts one more step of trust when offering trusted work (today only the Valewood council's stall orders) | L2 |
-| Driving, fitness, shooting | nothing yet (an operator command only) | nothing | none |
+| Fitness (D-200, October 27) | the straight line covered on foot in ten-second windows (one XP per 25 blocks) | 2% / 4% / 6% quicker on foot from level 3 / 6 / 10 | L2 |
+| Driving (D-200) | the straight line covered at the controls of a vehicle or a boat (one XP per 50 blocks) | the vehicle dealers 3% / 6% / 8% cheaper, inside the shared 10% cap | L2 |
+| Shooting (D-200) | hits on a target block from ten blocks or more (2 to 7 XP) | a shot leaves 20% / 35% / 50% of the way closer to the aim, speed and damage unchanged | L2 |
 
-General XP uses the career curve (level 2 at 125 XP, 3 at 500, 5 at 2,000). The terminal has no general-skills panel yet; level-ups arrive as notices and `/uc skills` lists each skill with what it gives.
+General XP uses the career curve (level 2 at 125 XP, 3 at 500, 5 at 2,000). The terminal's Skills page has a General tab with all five; level-ups arrive as notices and `/uc skills` lists each skill with what it gives. How Fitness, Driving and Shooting are earned, the anti-AFK rules and the limits: [technical/general-skills.md](../technical/general-skills.md).
+
+**Where the build departs from the table above (October 27, owner to confirm):** Driving and Fitness are earned by distance. Circles and pacing pay next to nothing, because only the straight line across each window counts. Idling pays nothing, because the view must have turned in the last minute, and a teleport voids its window. Transport deliveries and route challenges, which the table names, do not exist yet. Shooting is earned at target blocks only, never at a person or a creature.
 
 ## System rules
 

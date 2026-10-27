@@ -385,6 +385,29 @@ Write down for each part: did it feel prepared for, dangerous or rewarding; what
 
 **The question that matters most, after every session: Would you voluntarily keep playing, and what would you want to do next?**
 
+## 6j. Tenth pass: clean streets, the five general skills, shortages and a supply chain (about 60 minutes, a NEW world)
+
+**Written for the October 27 tenth pass (D-196 to D-204, `tenth-pass-living-world.md`). The current branch and its recent gameplay systems have not received human playtesting.** The street and road fixes change only chunks generated after them: use a **new** world, never an old one (and never `UC-Alpha-Test-01`).
+
+Get the branch on both PCs: `.\scripts\windows\uc-update.ps1 -Branch feature/tenth-pass-living-world` (compare the commit it prints). Then the host: `.\scripts\windows\uc-server.ps1 -Sets furnished,scarcity -World UC-T10 -LanOfflineMode -AcceptEula`; each player: `.\scripts\windows\uc-client.ps1 -Name <you> -Sets furnished,scarcity -Join`. One player registers as a **Farmer in Valewood**, the other as a **Vintner in Blackwater** (Track A: no commands).
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Walk the streets of your city and the road out of it to the next city | paved streets with no grass blocks, dirt, stone, mushrooms or flowers on the paving and no bare rock verges; the road's end walks onto the city's ground |
+| 2 | Look at the ground floors and cellars of a few buildings | no patches of dirt, gravel, granite, diorite or andesite in the floors |
+| 3 | Walk for five minutes, then open the terminal's **Skills** page, **General** tab | Fitness XP has grown (about 2 XP each ten seconds of real walking); standing still or walking in a tight circle adds next to none |
+| 4 | Craft a target block (hay bale and redstone), place it, and shoot it from ten blocks or more with a bow (or a TaCZ gun with the firearms set) | Shooting XP for each hit, more near the centre; the same block pays once in two seconds; nothing from closer than ten blocks |
+| 5 | The Farmer founds a Crew on the Crew screen (K) and invites the Vintner; the Vintner accepts | both in one Crew |
+| 6 | The Farmer: grows sweet berries and beetroot outside the city (the city's own gardens belong to their households), mills four beetroot into three sugar at the Mill | sugar from the Mill and Farmer XP when you **Take** it |
+| 7 | The Farmer travels to the Vintner and drops berries and sugar with **Q**; the Vintner picks them up | the goods move from one inventory to the other |
+| 8 | The Vintner: a batch of berry wine at the Fermentation Vat (six minutes of play), then, after 18:00, talk to the barkeeper of a Blackwater club and ask "What do you sell?" | the counter shows the wine line as **"short: buys at 19"** while the shelf holds three or fewer; selling three pays about 57 credits (more for a Fine bottle) and the shelf count rises |
+| 9 | The Vintner pays a share into the Crew bank (Crew screen, Money); the Farmer withdraws it | both wallets and the bank change by exactly the amounts |
+| 10 | Stop the server (type `stop`), start it again, both rejoin | wallets, the Crew bank, the XP, the inventories and the two stations are as you left them |
+| 11 | Hurt yourself a little (a fall), buy a **First Aid Kit** at the terminal (18 credits) and hold right click with it | three hearts back; a second one waits thirty seconds; at full health it does nothing |
+| 12 | Talk to the same shopkeeper after three trades | they greet you as a regular |
+
+**Private buildings (the owner's PC only).** The C70 multi-chunk fix needs the private pack **ported and wired again** with this branch's tools: run `port_lostcities_pack.py port` and `private_wiring.py wire` again, as in [private-content-workflow.md](../technical/private-content-workflow.md), into a new private folder; an old port's multi-chunk parts keep the old palette form and two buildings stay unbuilt. Use a new world with `-PucPrivateContent=<the new folder>`. Never put the private pack, its port or its screenshots in the repository.
+
 ## 7. Logs, screenshots and bug reports
 
 * Server log: `rpg-core\run-dev\logs\latest.log` (authenticated pack: `build\server-pack\server\logs\latest.log`); crash reports: `rpg-core\run-dev\crash-reports\`.

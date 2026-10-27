@@ -34,8 +34,8 @@ import java.util.UUID;
  *
  * <p>Each action is the server's own path for what a client sends (a right click is {@code useItemOn}, a break is {@code destroyBlock}, a pick-up is {@code playerTouch}). Scripted, each
  * logged {@code SCRIPTED}: the crops set down fully grown, the travel out to the fields and between the cities, the time of day, the move onto the bar's floor, and opening the counter as
- * speaking to the barkeeper does. The Vintner's starter kit could have made this one batch alone (sixteen berries, four sugar): the run counts the goods from hand to hand rather than
- * proving the Vintner needed them.
+ * speaking to the barkeeper does. The Vintner's starter kit holds enough berries and sugar for a batch of its own (sixteen berries, four sugar); they are set aside before the hand-over
+ * (logged {@code SCRIPTED}), so the batch can be made only from what the Farmer brought, and the run checks that.
  */
 final class DuoSupplyChain {
     static final String CREW = "Berry Run", LINE = UndergroundCity.MOD_ID + ":shops/bar_wine_blackwater";
@@ -200,10 +200,24 @@ final class DuoSupplyChain {
         scripted("the Farmer travelled to Blackwater with the goods (the road takes minutes; the session moves them) and stands two blocks from the Vintner, facing them");
         Vec3 at = black.position();
         vale.teleportTo(level, at.x, at.y, at.z - 2, 0, 0);
+        // the Vintner's kit holds enough berries and sugar for a batch of its own; set aside, the batch can be made only from what the Farmer brings
+        int ownBerries = discard(black, Items.SWEET_BERRIES), ownSugar = discard(black, Items.SUGAR);
+        scripted("the Vintner's own berries and sugar from the kit (" + ownBerries + " and " + ownSugar + ") were set aside, so the batch can be made only from what the Farmer brings");
         berriesBefore = count(black, Items.SWEET_BERRIES);
         sugarBefore = count(black, Items.SUGAR);
         give(vale, Items.SWEET_BERRIES, BERRIES);
         give(vale, Items.SUGAR, SUGAR);
+    }
+
+    /** Takes every one of an item out of the player's inventory; returns how many. */
+    private static int discard(ServerPlayer player, Item item) {
+        Inventory inv = player.getInventory();
+        int n = 0;
+        for (int slot = 0; slot < inv.items.size(); slot++) {
+            if (inv.items.get(slot).is(item)) n += inv.removeItemNoUpdate(slot).getCount();
+        }
+        inv.setChanged();
+        return n;
     }
 
     /** Throws {@code n} of an item out of the player's inventory, as dropping a stack with Q does. */
@@ -235,6 +249,7 @@ final class DuoSupplyChain {
         black.gameMode.useItemOn(black, level, black.getMainHandItem(), InteractionHand.MAIN_HAND, new BlockHitResult(Vec3.atCenterOf(vat.below()).add(0, 0.5, 0), Direction.UP, vat.below(), false));
         check.check("the Vintner sets down the Fermentation Vat from the kit", level.getBlockEntity(vat) instanceof WorkshopBlock.Entity, String.valueOf(level.getBlockState(vat)));
         int berries = count(black, Items.SWEET_BERRIES), sugar = count(black, Items.SUGAR), bottles = count(black, Items.GLASS_BOTTLE);
+        check.check("the Vintner holds only what the Farmer brought", berries == BERRIES && sugar == SUGAR, berries + " sweet berries, " + sugar + " sugar");
         xpBefore = careerXp(black);
         String said = WorkshopBlock.start(black, level, (WorkshopBlock.Entity) level.getBlockEntity(vat), "berry_wine", 1);
         boolean took = berries - count(black, Items.SWEET_BERRIES) == 8 && sugar - count(black, Items.SUGAR) == 2 && bottles - count(black, Items.GLASS_BOTTLE) == 3;
@@ -280,13 +295,15 @@ final class DuoSupplyChain {
     }
 
     private void sell(ServerLevel level, ServerPlayer black, TownspersonEntity keeper, JsonObject report, Check check) {
-        // to the public cell nearest the barkeeper, then the counter opens as speaking to them does
-        BlockPos near = null;
+        // to the public cell nearest the barkeeper but not their own (run 9 put the Vintner on the barkeeper's cell), facing them; then the counter opens as speaking to them does
+        BlockPos near = null, k = keeper.blockPosition();
         for (long cell : StaffZones.of(level, club).publicCells()) {
             BlockPos p = BlockPos.of(cell);
-            if (StaffZones.walkable(level, p) && (near == null || p.distSqr(keeper.blockPosition()) < near.distSqr(keeper.blockPosition()))) near = p;
+            if (p.getX() == k.getX() && p.getZ() == k.getZ()) continue;
+            if (StaffZones.walkable(level, p) && (near == null || p.distSqr(k) < near.distSqr(k))) near = p;
         }
-        black.teleportTo(level, near.getX() + 0.5, near.getY(), near.getZ() + 0.5, 0, 0);
+        float yaw = (float) (Math.toDegrees(Math.atan2(k.getZ() - near.getZ(), k.getX() - near.getX())) - 90);
+        black.teleportTo(level, near.getX() + 0.5, near.getY(), near.getZ() + 0.5, yaw, 0);
         ShopCounters.open(black, keeper);
         scripted("the Vintner stepped up to the counter and the counter opened as speaking to the barkeeper does (\"What do you sell?\")");
         BlockPos counter = keeper.blockPosition();

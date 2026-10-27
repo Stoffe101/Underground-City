@@ -169,6 +169,19 @@ Owner brief "C70 Integration + Critical Gameplay Fixes" and the owner's follow-u
 
 See [docs/production/ninth-pass-c70-critical-fixes.md](docs/production/ninth-pass-c70-critical-fixes.md).
 
+## October 27 tenth pass: clean streets, the owner's buildings, a two-player supply chain (scripted, not yet human-tested)
+
+Owner brief "Living World, C70 City Overhaul, Gameplay Expansion & World Quality" (D-196 to D-204). Tested by scripts, Forge GameTests, the Python suite, probes of new disposable worlds and scripted real clients. **The current branch and its recent gameplay systems have not received human playtesting.**
+
+* **No terrain on the paving, no blobs in floors (D-196).** Lost Cities levelled each street one block short, and every later decoration step could write into a finished city chunk. Core fixes both at the step that causes them; there is no pass over finished chunks. In new worlds: 0 terrain blocks on the paving, 0 bare verges and 0 stone or dirt blobs in buildings in all three cities (from 968 to 1,603 terrain cells a city before). The road check covered 21,191 carriageway cells, every one clear deck, and all six road ends are walkable. Only newly generated ground changes.
+* **The owner's multi-chunk buildings are built and are the cities' own (D-198)**, tested privately in the cloud. The private building audit found 0.009% missing, all of it flowers and dirt. The owner's multi-chunk homes cannot be rented yet.
+* **A two-player supply chain through two real clients** (duo runs 8 and 9): a Farmer grows and mills, hands the goods to a Vintner, who ferments wine and sells it into a short bar shelf; the Crew bank shares the money, and it all survives a restart.
+* **Fitness, Driving and Shooting are earned and used (D-200)**, with anti-AFK rules. GameTested only.
+* **Shops run short and pay more (D-201)**, **keepers remember regulars and thieves (D-202)**, and **a city's good name (D-204)** gives a 2% discount there at 50. A **First Aid Kit** is on sale (D-203). An owner's own changes are never taken for burglary damage (D-199).
+* **Lost Cities' memory (D-197):** a plan's neighbour links kept every plan ever made alive. Core drops those links.
+
+See [docs/production/tenth-pass-living-world.md](docs/production/tenth-pass-living-world.md).
+
 ## Ownership and license
 
 **Copyright © 2026 Stoffe101. All rights reserved.** See [LICENSE](LICENSE). The license governs **original Underground City material only**. Minecraft, third-party mods, map downloads, artworks, and their trademarks remain subject to their respective owners' terms. Public repository visibility does **not** mean the project is open source. This project is intended for private play, not for sale or public modpack publication.
