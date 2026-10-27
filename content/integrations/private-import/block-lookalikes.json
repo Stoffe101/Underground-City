@@ -240,8 +240,60 @@
       "to": "minecraft:barrel"
     },
     {
+      "match": "immersiveengineering:cokebrick",
+      "to": "minecraft:bricks"
+    },
+    {
+      "match": "immersiveengineering:slab_cokebrick",
+      "to": "minecraft:brick_slab"
+    },
+    {
+      "match": "immersiveengineering:hempcrete",
+      "to": "minecraft:white_concrete"
+    },
+    {
+      "match": "immersiveengineering:slab_hempcrete",
+      "to": "minecraft:smooth_quartz_slab"
+    },
+    {
+      "match": "immersiveengineering:slag_glass",
+      "to": "minecraft:gray_stained_glass"
+    },
+    {
+      "match": "immersiveengineering:deepslate_ore_[a-z]+",
+      "to": "minecraft:deepslate"
+    },
+    {
+      "match": "immersiveengineering:ore_[a-z]+",
+      "to": "minecraft:stone"
+    },
+    {
+      "match": "immersiveengineering:metal_ladder.*",
+      "to": "minecraft:ladder"
+    },
+    {
+      "match": "immersiveengineering:.*_fluid_block",
+      "to": "air"
+    },
+    {
       "match": "immersiveengineering:.*",
       "to": "minecraft:iron_block"
+    },
+    {
+      "match": "immersivepetroleum:asphalt",
+      "to": "minecraft:black_concrete"
+    },
+    {
+      "match": "immersivepetroleum:asphalt_slab",
+      "to": "minecraft:polished_blackstone_slab"
+    },
+    {
+      "match": "immersivepetroleum:asphalt_stairs?",
+      "to": "minecraft:polished_blackstone_stairs"
+    },
+    {
+      "match": "immersivepetroleum:(crudeoil|diesel.*|gasoline|lubricant|kerosene|napalm|benzene|propylene|ethylene|naphtha.*|.*_fluid_block)",
+      "to": "air"
     },
     {
       "match": "immersivepetroleum:.*",

@@ -118,6 +118,16 @@ class PortTheFixture(unittest.TestCase):
         part = json.loads((self.dest / "data" / "fixturecity" / "lostcities" / "parts" / "fixture_obj_ground.json").read_text(encoding="utf-8"))
         self.assertNotIn("create:", json.dumps(part), "a Create block in an object-form inline palette is replaced like any other")
 
+    def test_a_road_surface_fuel_and_bricks_of_a_machinery_mod_are_not_its_catch_all_iron(self):
+        # the catch-all for Immersive Engineering and Immersive Petroleum is an iron block: asphalt drew shiny iron courtyards in the owner's factory (October 27)
+        looks = block_lookalikes.Lookalikes()
+        self.assertEqual(looks.resolve("immersivepetroleum:asphalt")[0], "minecraft:black_concrete")
+        self.assertEqual(looks.resolve("immersivepetroleum:asphalt_slab", {"type": "top"})[0].split("[")[0], "minecraft:polished_blackstone_slab")
+        self.assertEqual(looks.resolve("immersivepetroleum:crudeoil")[0], "minecraft:air", "a fuel is a fluid, not a block of iron")
+        self.assertEqual(looks.resolve("immersiveengineering:cokebrick")[0], "minecraft:bricks")
+        self.assertEqual(looks.resolve("immersiveengineering:biodiesel_fluid_block")[0], "minecraft:air")
+        self.assertEqual(looks.resolve("immersiveengineering:radiator")[0], "minecraft:iron_block", "a machine is still the catch-all's iron")
+
     def test_a_mapping_decides_before_the_fallbacks(self):
         report = porter.port(self.source, self.dest, mapping={"create:shaft": "minecraft:chain[axis=y]"})
         self.assertIn("minecraft:chain[axis=y]", every_json(self.dest / "data"))
