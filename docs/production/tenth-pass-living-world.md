@@ -4,6 +4,16 @@ Owner brief: "Underground City: Tenth Pass — Living World, C70 City Overhaul, 
 
 **The current branch and its recent gameplay systems have not received human playtesting.** Every result below comes from scripts, Forge GameTests, the Python suite, generator probes of new disposable worlds, a dedicated server or scripted real clients. None of it was played by a person. Each scripted run logs every shortcut it takes, marked `SCRIPTED` or `PREPARED`. The owner's own world `UC-Alpha-Test-01` was never opened or changed. No C70 asset, converted structure, private selection, private screenshot or private world is in the repository, the PR or any CI artifact. The owner's buildings were ported, wired, probed and photographed in private folders outside the checkout only.
 
+
+**How this pass's pieces connect.**
+- **Customers drain the shelves.** The city's own customers buy down a shop's real stock. A line that drops to a quarter goes short (D-201).
+- **Shortages reach the people who can fill them.** The players of the trade that makes that line are told, and so are the shop's regulars (D-202).
+- **Filling the shelf pays and is remembered.** Selling into the shortage pays more, through Q Shop. It raises the city's good name (D-204), and the keeper remembers the help.
+- **A good name gives back.** With a good name the city's sellers take 2% off, inside the same 10% cap as the career skills, Trading and now Driving (D-200).
+- **The duo chain runs all of it at once.** A Valewood Farmer's crop becomes a Blackwater Vintner's wine, sold into such a shortage, with the money shared through the Crew bank.
+- **Crime pulls the other way.** A keeper who saw a player at a forced door refuses them, and an arrest costs standing.
+- **The world underneath was fixed first:** clean streets and floors (D-196), the owner's buildings as the cities' own (D-198), and Lost Cities' memory (D-197).
+
 ## 1. Roads and city ground: what caused the blocks, and the fix (D-196)
 
 **What the owner saw:** grass and dirt blocks on paved streets, mushrooms and plants on the paving, and dirt, gravel, granite, diorite and andesite blobs in building floors.
@@ -54,7 +64,7 @@ The wiring tool also read only the list form, so it saw the re-ported parts as e
 - **A multi-chunk home is not listed.** Homes are listed per chunk, so the owner's multi-chunk houses are built and lived in but cannot be rented.
 - **Some multi-chunk parts name no street door**, because their door leads into the next part. The wiring reports it.
 - **The condo and tower plans find no beds.**
-- **Interior photographs** of the owner's buildings in this pass are covered in section 10.
+- **Interior photographs** of the owner's buildings are in section 10.
 
 ## 3. A two-player supply chain, tested (brief section 6)
 
@@ -189,6 +199,28 @@ The CI gallery check had refused the two new capture names until they were regis
 
 These are my judgements from the frames, not the owner's. The frames are local review copies and are not committed.
 
+## 10. The owner's buildings through a real client (private)
+
+Every frame and world here is private and kept outside the repository; only what was seen is written down.
+
+**Photo run 13.** A real client at 1920×1080 in a new private world, using the re-ported and re-wired pack and the furniture set. It ran 21 building-relative shots, mostly the residential buildings of all three cities, at a door, a bed, a stove or a counter. All 20 frames taken were looked at.
+
+- **13 frames show the owner's buildings as built and furnished**, with the furniture set rendering:
+  - bedrooms in five houses and flats;
+  - a hotel room and a hospital ward;
+  - a restaurant kitchen and a café kitchen;
+  - an office reception;
+  - three house fronts.
+  
+  Two of these are the owner's multi-chunk homes: one house front and one furnished bedroom.
+- **7 frames show nothing to judge.** The tour puts its camera a fixed distance in front of a spot, and there it stood inside a wall, a block or a roof, or in a room too dark to read. That is the tour's placement, not the buildings, and no conclusion is drawn from them.
+- **1 shot was skipped:** this seed generated no instance of one multi-chunk flat within 28 chunks of Ironhaven. The tour first stopped at that shot. It now names the shot in its log and goes on (`PhotoTour`).
+- **In every frame that shows a floor, no terrain or ore blob was seen in it.**
+
+Two earlier attempts did not finish:
+- **Run 12** pointed at the pack folder itself instead of the folder that holds the packs, so no private pack loaded.
+- **Run 13's first rerun** was killed by the system for lack of memory, while a duo session ran beside it.
+
 ## 11. Test evidence
 
 Evidence levels as in earlier passes:
@@ -216,7 +248,7 @@ None of it is a person playing.
 - **The GUI gallery check refused two new capture names** that were not yet in the coverage manifest.
 - **The owner-changes GameTest picked up items** that earlier tests had dropped near its house. It now clears them first, as its sibling test does. It had passed locally.
 
-From 4f0974d to 76c7017, every hosted check that completed passed. At the time of writing, two jobs on 76c7017 were still running: the Lost Cities smoke job (it passed on 353eae1) and the 720p capture job.
+From 4f0974d to 20f4e50, every hosted check that completed passed. At the time of writing, two jobs on 20f4e50 were still running: the Lost Cities smoke job (it passed on 353eae1) and the 720p capture job.
 
 **Two players on a dedicated server (L3).** `scripts/run_duo_session.py`, with two scripted real clients.
 
@@ -232,7 +264,9 @@ From 4f0974d to 76c7017, every hosted check that completed passed. At the time o
 - the road check t10b: 21,191 carriageway cells, six road ends;
 - the private C70-first probe and the private building audit (section 2).
 
-**Screens (L3):** captures at three viewports, read frame by frame (section 9).
+**Screens (L3):** captures at three viewports, read frame by frame (section 9). The owner's buildings: 20 private frames (section 10).
+
+**Lost Cities' memory (L3):** two 30-minute exploring sessions with two real clients, unchaining off and then on (section 8). The on session's restart passed.
 
 **Not run:**
 - driving a real vehicle mod for Driving;

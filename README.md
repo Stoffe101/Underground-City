@@ -178,7 +178,7 @@ Owner brief "Living World, C70 City Overhaul, Gameplay Expansion & World Quality
 * **A two-player supply chain through two real clients** (duo run 11, 58 checks, none failed): a Farmer grows and mills and hands the goods to a Vintner, whose own kit goods are set aside. The Vintner ferments wine and sells it into a short bar shelf, the Crew bank shares the money, and it all survives a restart.
 * **Fitness, Driving and Shooting are earned and used (D-200)**, with anti-AFK rules. GameTested only.
 * **Shops run short and pay more (D-201)**, **keepers remember regulars and thieves (D-202)**, and **a city's good name (D-204)** gives a 2% discount there at 50. A **First Aid Kit** is on sale (D-203). An owner's own changes are never taken for burglary damage (D-199).
-* **Lost Cities' memory (D-197):** a plan's neighbour links kept every plan ever made alive. Core drops those links.
+* **Lost Cities' memory (D-197):** a plan's neighbour links kept up to half a million plans alive while the cache held a few thousand. Core drops those links. In two 30-minute sessions with two real clients, 85–98% fewer plans stayed alive, and the heap in use averaged 300 to 420 MB lower.
 
 See [docs/production/tenth-pass-living-world.md](docs/production/tenth-pass-living-world.md).
 
