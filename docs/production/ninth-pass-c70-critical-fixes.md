@@ -20,6 +20,7 @@ The owner's playtest findings come first and override any older test that called
 | Blackwater | citystart run 7, 5 of 5: landed at 711, 72, 1568 at the Corner Store |
 | Death and respawn | each run: `/kill`, then a real Respawn click, returned to the citizen's own respawn |
 | No repeat after reconnect | each run: save, quit and reopen; not moved again, not asked to register again |
+| In the C70-first world (private) | citystart runs 8 (Valewood) and 9 (Blackwater), 5 of 5 each, on copies of the pre-generated template from pregen run 8 with the private pack loaded: moved about 2,000 blocks onto dry open ground in front of the General Store and the Corner Store, which became the respawn; the same death, respawn and reopen checks passed |
 
 Bugs these runs found and fixed:
 * An objective hint longer than 160 characters crashed the client's packet decoder.

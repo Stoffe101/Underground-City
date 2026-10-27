@@ -96,7 +96,7 @@ public final class ProductionLoopGameTests {
         throw new AssertionError("setup: " + ForgeRegistries.ITEMS.getKey(item) + " in the inventory");
     }
 
-    private record Outcome(long spent, long paid, int flower, int randomTicks, int cuttingsLeft, int xpGained) {}
+    private record Outcome(long spent, long paid, int flower, int randomTicks, int cuttingsLeft, int xpGained, int yieldPercent) {}
 
     /** Everything stage one builds and stage two uses. The light engine needs a few ticks to light the plots, so the loop runs in two stages. */
     private static final class Loop {
@@ -211,7 +211,7 @@ public final class ProductionLoopGameTests {
         WorkOrderService.complete(player, loop.ledger, loop.ledger.player(player.getUUID()).getUUID("order"), loop.terminal);
         long paid = (long) QShopEconomy.balance(player) - before;
         check(player.getInventory().countItem(bud) == flower - 6, "the delivery took exactly six flower");
-        return new Outcome(loop.spent, paid, flower, randomTicks, player.getInventory().countItem(seed), loop.citizen.careerXp() - loop.xpBefore);
+        return new Outcome(loop.spent, paid, flower, randomTicks, player.getInventory().countItem(seed), loop.citizen.careerXp() - loop.xpBefore, SkillService.yieldPercent(player));
     }
 
     private static void judge(Outcome o, boolean grafting) {
@@ -226,7 +226,11 @@ public final class ProductionLoopGameTests {
             + ", profit on the delivery " + Math.round(o.paid - 6 * perBale) + " (the surplus " + (o.flower - 6) + " flower are unsold)");
         check(o.paid == order.credits(), "the delivery paid the order's credits (this farmer holds no contract-rate skill): " + o.paid + " of " + order.credits());
         check(o.xpGained >= order.xp(), "the delivery paid its career XP: " + o.xpGained);
-        check(perBale > 8 && perBale < 30, "a flower costs between 8 and 30 credits to grow (the model prices it at 18): " + perBale);
+        // the most flower three plants can give: the loot table's three each, and the grafting skills' extra at its luckiest roll. A lucky harvest with seeds left over costs
+        // less a flower than the model's 18 (October 27 in CI: twelve flower and four seeds back, 7.5 a flower, under a floor of 8 that no rule of the game sets)
+        int most = 3 * (3 + RestrictedCropBlock.extraFlower(o.yieldPercent, 0.0));
+        check(o.flower <= most, "three plants gave more flower than their rules allow: " + o.flower + " of at most " + most);
+        check(perBale > 0 && perBale < 30, "a flower costs something and less than 30 credits to grow (the model prices it at 18): " + perBale);
         check(o.paid - 6 * perBale > 0, "growing six flower and selling them licensed is a profit: " + (o.paid - 6 * perBale));
         // the licence cannot be dodged by buying the goods and delivering them unchanged: nothing the exchange sells is a flower
         check(RegionalCatalog.INSTANCE.find(UndergroundCity.MOD_ID + ":cannabis_flower") == null, "the exchange does not sell flower");
