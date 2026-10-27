@@ -27,13 +27,13 @@ import java.util.UUID;
 
 /**
  * The two-player supply chain of the tenth pass ({@link DuoSessionServer}, after the burglary): the Valewood Farmer and the Blackwater Vintner found a Crew; the Farmer harvests real
- * crop blocks (sweet berries with a right click, beetroot broken by hand), sets down the Mill from their kit with a right click and mills the beetroot into sugar; the Farmer travels to
- * Blackwater and throws the berries and sugar to the Vintner, who picks them up; the Vintner sets down the Fermentation Vat from their kit, starts a batch of berry wine, waits out its six
+ * crop blocks in the fields past Valewood's edge (sweet berries with a right click, beetroot broken by hand), sets down the Mill from their kit with a right click and mills the beetroot into
+ * sugar; the Farmer travels to the open ground past Blackwater's edge and throws the berries and sugar to the Vintner, who picks them up; the Vintner sets down the Fermentation Vat from their kit, starts a batch of berry wine, waits out its six
  * minutes of play, takes the three bottles and sells them over the club bar's counter; the Vintner pays a share into the Crew bank and the Farmer takes their cut out. Every number the
  * restart has to keep is written to the report, and phase 2 checks it.
  *
  * <p>Each action is the server's own path for what a client sends (a right click is {@code useItemOn}, a break is {@code destroyBlock}, a pick-up is {@code playerTouch}). Scripted, each
- * logged {@code SCRIPTED}: the crops set down fully grown, the vanilla crafting, the travel between the cities, the time of day, the move onto the bar's floor, and opening the counter as
+ * logged {@code SCRIPTED}: the crops set down fully grown, the travel out to the fields and between the cities, the time of day, the move onto the bar's floor, and opening the counter as
  * speaking to the barkeeper does. The Vintner's starter kit could have made this one batch alone (sixteen berries, four sugar): the run counts the goods from hand to hand rather than
  * proving the Vintner needed them.
  */
@@ -55,19 +55,21 @@ final class DuoSupplyChain {
         ServerLevel level = server.overworld();
         ticks++;
         switch (step) {
-            case 0 -> { crew(server, vale, black, check); farm(level, vale, check); next(); }
-            case 1 -> { if (ticks > 30) { gather(level, vale, check); next(); } }
-            case 2 -> { if (ticks > 20 * 90) throw new IllegalStateException("the Mill did not finish in ninety seconds");
+            case 0 -> { crew(server, vale, black, check); outTo(level, vale, "valewood", "the Farmer went out to the fields past Valewood's edge", check); next(); }
+            case 1 -> { if (ticks > 100) { farm(level, vale, check); next(); } }
+            case 2 -> { if (ticks > 30) { gather(level, vale, check); next(); } }
+            case 3 -> { if (ticks > 20 * 90) throw new IllegalStateException("the Mill did not finish in ninety seconds");
                         if (!level.getBlockState(mill).getValue(WorkshopBlock.WORKING)) { milled(level, vale, check); next(); } }
-            case 3 -> { handOver(level, vale, black); next(); }
-            case 4 -> { if (ticks > 60) { received(level, vale, black, check); ferment(level, black, check); next(); } }
-            case 5 -> { if (ticks > 20 * 60 * 9) throw new IllegalStateException("the vat did not finish in nine minutes");
+            case 4 -> { outTo(level, black, "blackwater", "the Vintner went out to open ground past Blackwater's edge to set up the vat", check); next(); }
+            case 5 -> { if (ticks > 100) { handOver(level, vale, black); next(); } }
+            case 6 -> { if (ticks > 60) { received(level, vale, black, check); ferment(level, black, check); next(); } }
+            case 7 -> { if (ticks > 20 * 60 * 9) throw new IllegalStateException("the vat did not finish in nine minutes");
                         if (!level.getBlockState(vat).getValue(WorkshopBlock.WORKING)) { bottled(level, black, check); next(); } }
-            case 6 -> { toTheBar(level, black, check); next(); }
-            case 7 -> { TownspersonEntity keeper = keeper(level);
+            case 8 -> { toTheBar(level, black, check); next(); }
+            case 9 -> { TownspersonEntity keeper = keeper(level);
                         if (keeper == null) { if (ticks > 20 * 90) throw new IllegalStateException("no barkeeper came to the club's counter in ninety seconds"); return false; }
                         sell(level, black, keeper, report, check); next(); }
-            case 8 -> { share(server, vale, black, report, check); return true; }
+            case 10 -> { share(server, vale, black, report, check); return true; }
             default -> { return true; }
         }
         return false;
@@ -88,12 +90,37 @@ final class DuoSupplyChain {
         check.check("the Farmer and the Vintner are one Crew", a != null && a == b && a.name.equals(CREW), a == null ? "no Crew" : a.name + ", " + a.members.size() + " members");
     }
 
+    // ------------------------------------------------------------------------------------------------ out past the city's edge
+
+    /**
+     * Puts a player on open ground just past a city's edge (duo run 5: within 64 blocks of a city's welcome every cell is a building's or a home's, and a home's guard refuses a stranger's
+     * harvest): eight directions from the city's centre, 24, 48 and 80 blocks past its radius, the first dry soil that no building or home owns.
+     */
+    private static void outTo(ServerLevel level, ServerPlayer player, String city, String what, Check check) {
+        CityRegions.Region region = CityRegions.INSTANCE.region(city).orElseThrow();
+        int cx = region.centerChunkX() * 16 + 8, cz = region.centerChunkZ() * 16 + 8;
+        BlockPos found = null;
+        for (int extra : new int[] {24, 48, 80}) for (int d = 0; d < 8 && found == null; d++) {
+            if (found != null) break;
+            double a = Math.toRadians(45 * d);
+            int x = cx + (int) Math.round(Math.cos(a) * (region.cityRadius() + extra)), z = cz + (int) Math.round(Math.sin(a) * (region.cityRadius() + extra));
+            level.getChunk(x >> 4, z >> 4);
+            int y = level.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+            BlockPos feet = new BlockPos(x, y, z);
+            BlockState ground = level.getBlockState(feet.below());
+            if ((ground.is(Blocks.GRASS_BLOCK) || ground.is(Blocks.DIRT)) && level.getBlockState(feet).isAir() && !owned(level, feet)) found = feet;
+        }
+        check.check("open soil past " + TerminalScreenText.capitalize(city) + "'s edge", found != null, found == null ? "none in eight directions" : found.toShortString());
+        player.teleportTo(level, found.getX() + 0.5, found.getY(), found.getZ() + 0.5, 0, 0);
+        scripted(what + ", at " + found.toShortString());
+    }
+
     // ------------------------------------------------------------------------------------------------ the Farmer's work
 
     private void farm(ServerLevel level, ServerPlayer vale, Check check) {
-        // a row of open soil near the Farmer's welcome that no building or home owns, with standing room along its south side: four bushes, four beds of beetroot and a place for the Mill
+        // a row of open soil in the fields that no building or home owns, with standing room along its south side: four bushes, four beds of beetroot and a place for the Mill
         farm = openRow(level, vale.blockPosition(), BUSHES + BEETS + 1);
-        check.check("open soil near the Farmer's welcome that no building or home owns", farm != null, farm == null ? "none within 64 blocks" : "row from " + farm.toShortString());
+        check.check("a row of open soil in the fields that no building or home owns", farm != null, farm == null ? "none within 64 blocks" : "row from " + farm.toShortString());
         vale.teleportTo(level, farm.getX() + 4.5, farm.getY(), farm.getZ() + 1.5, 180, 30);
         scripted("the Farmer was put beside the row at " + farm.south().toShortString() + "; four sweet berry bushes were set down fully grown (they take about a day of the world's time)");
         for (int i = 0; i < BUSHES; i++) level.setBlock(farm.east(i), Blocks.SWEET_BERRY_BUSH.defaultBlockState().setValue(SweetBerryBushBlock.AGE, 3), 3);
