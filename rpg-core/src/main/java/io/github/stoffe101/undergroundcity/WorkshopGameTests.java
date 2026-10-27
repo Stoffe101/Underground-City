@@ -313,7 +313,12 @@ public final class WorkshopGameTests {
         BuildingSpots.INSTANCE.replaceForTest(test);
         try {
         var security = new CityBuildings.SecurityClass("storefront", "deadbolt", true, "", 0, "bakery", new CityBuildings.Response(0.0, 60, 1, 60), 3, "");
-        CityBuildings.Building bakery = new CityBuildings.Building("valewood", at.getX() >> 4, at.getZ() >> 4, "underground_city:vw_bakery", "vw_bakery", 2, 0, at.getY() - 1, security);
+        // the barrel is in the back room: the stand-in bakery's street level is the bottom of the world, where no door of another test's structure in this chunk can open a public floor
+        // round it, and the chunk's cached zones (kept per chunk) are dropped before and after (CI, October 27: once a neighbour's door made the barrel public floor and it stayed empty)
+        int noDoors = helper.getLevel().getMinBuildHeight() + 1;
+        CityBuildings.Building bakery = new CityBuildings.Building("valewood", at.getX() >> 4, at.getZ() >> 4, "underground_city:vw_bakery", "vw_bakery", 2, 0, noDoors, security);
+        StaffZones.forgetForTest(bakery);
+        check(!StaffZones.onPublicFloor(helper.getLevel(), bakery, at), "the test's back-room barrel stands on a public floor");
         var barrel = new net.minecraft.world.SimpleContainer(27);
         int stacks = BurglarySearch.stock(helper.getLevel(), bakery, at, barrel, 0);
         check(stacks > 0, "an empty back-room barrel in a bakery held nothing");
@@ -329,8 +334,9 @@ public final class WorkshopGameTests {
         var full = new net.minecraft.world.SimpleContainer(27);
         full.setItem(0, new ItemStack(Items.STICK));
         check(BurglarySearch.stock(helper.getLevel(), bakery, at, full, 0) == 0 && full.getItem(1).isEmpty(), "a barrel that held something was filled too");
-        CityBuildings.Building house = new CityBuildings.Building("valewood", at.getX() >> 4, at.getZ() >> 4, "underground_city:vw_house_a", "vw_house_a", 2, 0, at.getY() - 1, security);
+        CityBuildings.Building house = new CityBuildings.Building("valewood", at.getX() >> 4, at.getZ() >> 4, "underground_city:vw_house_a", "vw_house_a", 2, 0, noDoors, security);
         check(BurglarySearch.stock(helper.getLevel(), house, at, new net.minecraft.world.SimpleContainer(27), 0) == 0, "a house's barrel was filled with a business's stock");
+        StaffZones.forgetForTest(bakery);
         } finally {
             BuildingSpots.INSTANCE.replaceForTest(plans);
         }

@@ -316,6 +316,9 @@ public final class StaffZones {
     @SubscribeEvent
     public void loggedOut(PlayerEvent.PlayerLoggedOutEvent event) { SEEN.remove(event.getEntity().getUUID()); REPORTED.remove(event.getEntity().getUUID()); }
 
+    /** Drops one chunk's cached zones (a GameTest's stand-in building shares its chunk with other tests' structures). */
+    static void forgetForTest(CityBuildings.Building b) { synchronized (CACHE) { CACHE.remove(b.key()); } }
+
     static void resetForTest() { synchronized (CACHE) { CACHE.clear(); } SEEN.clear(); REPORTED.clear(); computed = warned = reported = poweredShut = 0; }
 
     static String status() { return "zones read " + computed + ", warned " + warned + ", reported " + reported + ", powered staff doors shut " + poweredShut; }
