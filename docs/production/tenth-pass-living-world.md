@@ -66,7 +66,7 @@ The wiring tool also read only the list form, so it saw the re-ported parts as e
    - Picks four grown berry bushes with a right click and breaks four grown beetroot by hand in survival *(the crops are set down grown: scripted)*.
    - Picks up the drops: **8 berries and 4 beetroot**.
    - Sets the kit's Mill down with a right click and mills the beetroot: **3 sugar and 8 Farmer XP**.
-3. The Farmer travels to the Vintner's ground past Blackwater's edge *(scripted)* and throws 8 berries and 2 sugar, as Q does; **the Vintner picks them up**.
+3. The Vintner's starter kit holds enough berries and sugar for a batch of its own (16 berries, 4 sugar). From run 10 these are set aside first *(scripted)*, so the batch can be made only from what the Farmer brings. The Farmer then travels to the Vintner's ground past Blackwater's edge *(scripted)* and throws 8 berries and 2 sugar, as Q does. **The Vintner picks them up and holds exactly those**: 8 berries and 2 sugar.
 4. The Vintner sets down the kit's Fermentation Vat and starts a batch of berry wine, which takes 8 berries, 2 sugar and 3 bottles. After **six minutes of play, not shortened**, the Vintner takes 3 bottles and **40 Vintner XP**.
 5. At 21:00 *(time set: scripted)*, at a Blackwater club, the Vintner is put on the public floor and steps up to the barkeeper. The counter opens as speaking to them does *(scripted)*.
    - The bar was short (3 bottles of 12), so it **pays 19 a bottle instead of 15**: **57 credits through Q Shop**, the shelf goes from 3 to 6, and **18 Vintner XP**.
@@ -74,14 +74,21 @@ The wiring tool also read only the list form, so it saw the re-ported parts as e
 
 **Phase 2 restarts the same world.** Every number the chain left was there: both wallets (95 and 27), the Crew with its bank of 10, both careers' XP, both inventories, the bar's shelf (6) and the Mill and the Vat where they were set down, empty.
 
-**Duo runs 8 and 9 passed the whole chain and all of its after-restart checks.** Run 8 failed only the older burglary check: the house's one-minute wait had run out during the now-longer phase 1. Run 9 put the burglary after the chain, with the same numbers; its burglary result is in section 11.
+**Duo run 11 passed every check: 58, none failed, with 14 shortcuts logged.** That covers the chain with the kit's goods set aside, every check after the restart, and the two-player burglary with its house put back after the restart. The Vintner ended with no berries, so the batch could only have come from the Farmer.
+
+Earlier runs:
+- **Run 8** passed the chain and its after-restart checks. It failed only the older burglary check: the house's one-minute wait had run out during the now-longer phase 1.
+- **Run 9** put the burglary after the chain and passed all 57 checks. The Vintner's kit was not yet set aside.
+- **Run 10** passed the chain with the kit set aside. It then failed to find the house for the burglary, because the search ran five seconds after the Farmer was moved home, on a machine also running a photo tour, before the ground there had loaded. The burglary now waits for loaded ground.
 
 Earlier runs found real problems, all fixed:
 - **Run 4:** the farm row lay in a home's garden. The building guard stands aside there for the home's own guard, which refuses a stranger's harvest; the hoe tilled (an item's use) while the harvest was refused (a block's use).
 - **Run 5:** within reach of a city's welcome every cell is a building's or a home's.
 - **Runs 6 and 7:** the field past the edge was not yet entity-ticking a few seconds after the move. The crops' drops were neither listed nor ticked, and the diagnostics showed it.
 
-**Candour about what the chain proves.** The Vintner's starter kit could have made this one batch alone (16 berries, 4 sugar). The run counts the goods from hand to hand rather than proving the Vintner needed them.
+**What the chain does not prove.**
+- The travel, the grown crops, the time of day and the step up to the counter are scripted.
+- The kit's own berries and sugar were set aside by the script. In play, a new Vintner has enough for a first batch without a Farmer.
 
 ## 4. Fitness, Driving and Shooting, earned and used (D-200)
 
@@ -169,6 +176,58 @@ The CI gallery check had refused the two new capture names until they were regis
 
 These are my judgements from the frames, not the owner's. The frames are local review copies and are not committed.
 
+## 11. Test evidence
+
+Evidence levels as in earlier passes:
+- **L1:** Python tests and scripts.
+- **L2:** Forge GameTests on a headless server.
+- **L3:** a dedicated or integrated server driven through scripted real clients.
+
+None of it is a person playing.
+
+**Python:** 385 tests pass, 5 skipped (`python -m unittest discover -s tests`), and `validate_repo.py` passes. New in this pass:
+- the porter's and the wiring's multi-chunk cases;
+- the city surface map (6 tests);
+- the first aid kit's supply rules;
+- the two new capture names registered in the GUI coverage manifest.
+
+**Forge GameTests:** 457 of 457 in the local run on the tree of 2af5a95 (run 104). New in this pass:
+- `GeneralActivityGameTests`;
+- the shortage and regulars tests in `WorkshopGameTests`;
+- `FirstAidGameTests`;
+- `CityGroundGameTests`;
+- the owner-changes test in `BurglaryDamageGameTests`;
+- the multi-chunk building test in `RegionalWorldgenGameTests`.
+
+**Hosted CI.** CI found two failures on this branch, both fixed (4f0974d):
+- **The GUI gallery check refused two new capture names** that were not yet in the coverage manifest.
+- **The owner-changes GameTest picked up items** that earlier tests had dropped near its house. It now clears them first, as its sibling test does. It had passed locally.
+
+From 4f0974d to 76c7017, every hosted check that completed passed. At the time of writing, two jobs on 76c7017 were still running: the Lost Cities smoke job (it passed on 353eae1) and the 720p capture job.
+
+**Two players on a dedicated server (L3).** `scripts/run_duo_session.py`, with two scripted real clients.
+
+| Run | Result | What it showed |
+| --- | --- | --- |
+| 8 | the chain and every after-restart check passed; the burglary check failed | the house's wait ran out during the longer phase 1 |
+| 9 | 57 checks, none failed, 13 shortcuts | the burglary moved after the chain |
+| 10 | the chain passed; failed at the burglary's house search | the search ran before the ground had loaded on a machine also running a photo tour; the burglary now waits |
+| 11 | **58 checks, none failed, 14 shortcuts** | the Vintner's kit goods set aside; every number kept across the restart; the house put back after the restart |
+
+**World generation (L3, new disposable worlds):**
+- the city probes with the guard off and on (section 1);
+- the road check t10b: 21,191 carriageway cells, six road ends;
+- the private C70-first probe and the private building audit (section 2).
+
+**Screens (L3):** captures at three viewports, read frame by frame (section 9).
+
+**Not run:**
+- driving a real vehicle mod for Driving;
+- shooting TaCZ through a client for Shooting;
+- a first aid kit used by a client;
+- the Windows scripts on Windows;
+- any session with a person.
+
 ## 12. Not done, not proven, and known problems
 
 **Not built in this pass** (the brief asked for them; they are left rather than half-made):
@@ -186,7 +245,7 @@ These are my judgements from the frames, not the owner's. The frames are local r
 **Known problems:**
 - **The owner's multi-chunk homes cannot be rented** (section 2). Homes are listed per chunk. Some multi-chunk parts have no street door of their own, and the selection lists none of them. Which multi-chunk houses are one home and which are a pair of homes is the owner's call.
 - **The condo and tower plans find no beds,** so their households sleep nowhere in particular.
-- **In the duo chain, the Vintner's starter kit could have made the batch alone.** The run shows goods, money and XP moving between two players and surviving a restart. It does not show that the Vintner needed the Farmer.
+- **A new Vintner's starter kit can make a first batch without a Farmer.** The duo chain sets those goods aside to prove the hand-over. In play, the need for a Farmer starts with the second batch.
 - **The duo session puts a player at a counter by teleport.** In run 8 the Vintner stood on the barkeeper's cell. That is the script's shortcut and is logged.
 
 **The current branch and its recent gameplay systems have not received human playtesting.**
