@@ -58,6 +58,14 @@ public final class UcToast implements Toast {
 
     private List<String> lines;
 
+    /** The title in the plate's width, cut with an ellipsis when it is longer (a shortage's title ran past the plate and off the screen at GUI scale 3, tenth pass). */
+    private String shownTitle(Font font, int max) {
+        if (UcUi.displayWidth(font, title) <= max) return title;
+        String t = title;
+        while (!t.isEmpty() && UcUi.displayWidth(font, t + "...") > max) t = t.substring(0, t.length() - 1);
+        return t.stripTrailing() + "...";
+    }
+
     @Override public Visibility render(GuiGraphics g, ToastComponent toasts, long visibleMs) {
         Minecraft mc = Minecraft.getInstance();
         Font font = mc.font;
@@ -73,7 +81,7 @@ public final class UcToast implements Toast {
         g.fill(5, 1, 6, h - 1, UcUi.shade(accent, 0.5f));
         UcUi.icon(g, icon(kind), 11, (h - 16) / 2, accent);
         int tx = 32;
-        UcUi.display(g, font, title, tx, body.isEmpty() ? (h - 8) / 2 : 6, UcUi.TEXT);
+        UcUi.display(g, font, shownTitle(font, w - tx - 6), tx, body.isEmpty() ? (h - 8) / 2 : 6, UcUi.TEXT);
         if (!body.isEmpty()) {
             List<String> shown = lines();
             for (int i = 0; i < shown.size(); i++) g.drawString(font, shown.get(i), tx, 18 + i * 10, UcUi.SOFT, false);

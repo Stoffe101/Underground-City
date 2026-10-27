@@ -48,7 +48,7 @@ final class CityStanding {
         hour[1] += add;
         int before = of(citizen, city), after = state.changeStanding(player.getUUID(), city, add);
         String name = TerminalScreenText.capitalize(city);
-        if (before < WELL_SPOKEN && after >= WELL_SPOKEN) Notice.send(player, Notice.Kind.TRUST, name + " speaks well of you", "People in " + name + " have heard of the work you do for the city.");
+        if (before < WELL_SPOKEN && after >= WELL_SPOKEN) Notice.send(player, Notice.Kind.TRUST, "Known in " + name, "People in " + name + " have heard of the work you do for the city.");
         if (before < RESPECTED && after >= RESPECTED) Notice.send(player, Notice.Kind.TRUST, "Respected in " + name, name + "'s exchange sells to you " + DISCOUNT_PERCENT + "% cheaper (within the 10% cap).");
         return after - before;
     }
@@ -61,8 +61,8 @@ final class CityStanding {
         if (citizen == null) return;
         int before = of(citizen, city), after = state.changeStanding(player.getUUID(), city, -ARREST);
         String name = TerminalScreenText.capitalize(city);
-        if (before >= RESPECTED && after < RESPECTED) Notice.send(player, Notice.Kind.HEAT, "No longer respected in " + name, "The exchange's discount is gone until the city thinks well of you again.");
-        else if (before >= WELL_SPOKEN && after < WELL_SPOKEN) Notice.send(player, Notice.Kind.HEAT, name + " has heard otherwise", "An arrest is talked about.");
+        if (before >= RESPECTED && after < RESPECTED) Notice.send(player, Notice.Kind.HEAT, "No longer respected", name + "'s exchange discount is gone until the city thinks well of you again.");
+        else if (before >= WELL_SPOKEN && after < WELL_SPOKEN) Notice.send(player, Notice.Kind.HEAT, "Talk of an arrest", "People in " + name + " have heard of it.");
     }
 
     /** What people of the city say first to somebody of good name there, or "". */

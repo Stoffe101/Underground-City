@@ -499,6 +499,7 @@ public final class VisualCaptureHarness {
         cases.add(new Case("uc-skills-technician",TerminalScreen.Page.SKILLS,careerSkills("technician",11,java.util.Set.of("technician.fundamentals","technician.municipal_repairs","technician.automation_install")),0,false,"technician.bypass_tooling"));
         cases.add(new Case("uc-skills-farmer-deep",TerminalScreen.Page.SKILLS,careerSkills("farmer",22,java.util.Set.of("farmer.fundamentals","farmer.greenhouse_management","farmer.cultivar_broker","farmer.estate_wholesale","farmer.restricted_cultivation","farmer.concealed_stores","farmer.underground_trade","farmer.grey_market_contacts","farmer.field_logistics")),0,false,"farmer.back_lot_network"));
         cases.add(new Case("uc-skills-general",TerminalScreen.Page.SKILLS,generalSkills(),0,false,"general"));
+        cases.add(new Case("uc-skills-general-end",TerminalScreen.Page.SKILLS,generalSkills(),0,false,"general-end"));
         cases.add(new Case("uc-skills-available",TerminalScreen.Page.SKILLS,rich("valewood",false,0,VALEWOOD_LAW),0,false,"farmer.concealed_stores"));
         cases.add(new Case("uc-skills-locked",TerminalScreen.Page.SKILLS,rich("valewood",false,0,VALEWOOD_LAW),0,false,"farmer.underground_trade"));
         cases.add(new Case("uc-skills-legal-locked",TerminalScreen.Page.SKILLS,rich("valewood",false,0,VALEWOOD_LAW),0,false,"farmer.controlled_crop_licence"));
@@ -610,9 +611,9 @@ public final class VisualCaptureHarness {
             noticeCaptures.clear();
             if(capture.challenge.equals("notices-tenth")) {
                 // the tenth pass's notices (D-200, D-201, D-204), with the texts the server sends
-                noticeCaptures.add(new UcToast(Notice.Kind.INFO,"The Bar in Blackwater is short","Berry Wine: it pays 19 a unit (a quarter more) for the next 4."));
+                noticeCaptures.add(new UcToast(Notice.Kind.INFO,"The Bar is short","Blackwater. Berry Wine: it pays 19 a unit (a quarter more) for the next 4."));
                 noticeCaptures.add(new UcToast(Notice.Kind.SKILL,"Fitness level 3",GeneralSkills.gives(GeneralSkills.FITNESS,3)));
-                noticeCaptures.add(new UcToast(Notice.Kind.TRUST,"Valewood speaks well of you","People in Valewood have heard of the work you do for the city."));
+                noticeCaptures.add(new UcToast(Notice.Kind.TRUST,"Known in Valewood","People in Valewood have heard of the work you do for the city."));
                 noticeCaptures.add(new UcToast(Notice.Kind.TRUST,"Respected in Valewood","Valewood's exchange sells to you 2% cheaper (within the 10% cap)."));
             } else if(capture.challenge.equals("notices-ninth")) {
                 // the ninth pass's notices (D-187, D-189), with the texts the server sends
@@ -656,7 +657,7 @@ public final class VisualCaptureHarness {
             TerminalScreen screen=new TerminalScreen(BlockPos.ZERO,capture.data);
             mc.setScreen(screen); screen.showPage(capture.page);
             if(capture.page==TerminalScreen.Page.CONTRACTS && capture.underground) screen.showView(true);
-            if(capture.skill!=null && capture.skill.equals("general")) screen.showGeneral();
+            if(capture.skill!=null && capture.skill.startsWith("general")) { screen.showGeneral(); if(capture.skill.equals("general-end")) screen.scrollGeneralTo(100000); }
             else if(capture.skill!=null) screen.selectSkill(capture.skill);
             // The "legal with rewards" case selects the heirloom contract (index 1 of the legal list).
             if(capture.name.equals("uc-contract-legal-rewards")) screen.selectJob(1);

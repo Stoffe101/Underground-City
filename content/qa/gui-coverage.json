@@ -255,6 +255,13 @@
       "description": "Skills page, General tab (D-174, D-200): Trading, Social, Fitness, Driving and Shooting as cards with level, XP to the next level, what they give now and next and how they are earned; the Thief track in one line"
     },
     {
+      "id": "skills.general_end",
+      "expected_file": "uc-skills-general-end.png",
+      "owner": "underground_city",
+      "group": "skills",
+      "description": "The General tab scrolled to its end (tenth pass): the five skills' cards scroll inside their well, with a bar, and the Thief track's line is the last"
+    },
+    {
       "id": "skills.available",
       "expected_file": "uc-skills-available.png",
       "owner": "underground_city",

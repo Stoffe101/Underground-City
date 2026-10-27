@@ -52,7 +52,7 @@ final class Shortages {
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             CitizenState.Citizen c = CitizenState.get(server).find(player.getUUID()).orElse(null);
             if (c == null || !terms.career().equals(c.career) && !regular(server, stock, player.getUUID())) continue;
-            Notice.send(player, Notice.Kind.INFO, shop + " in " + city + " is short", item + ": it pays " + shortPays(stock, terms.pays()) + " a unit (a quarter more) for the next " + units + ".");
+            Notice.send(player, Notice.Kind.INFO, shop + " is short", city + ". " + item + ": it pays " + shortPays(stock, terms.pays()) + " a unit (a quarter more) for the next " + units + ".");
         }
     }
 
