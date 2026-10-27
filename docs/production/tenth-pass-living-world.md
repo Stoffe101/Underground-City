@@ -148,7 +148,20 @@ No medical mod is selected (D-085). Core's **First Aid Kit** gives three hearts 
 
 ## 8. Lost Cities' memory (D-197)
 
-**Retention found in Lost Cities' code:** a plan keeps its four neighbours in fields for good, so every plan ever made stays reachable. Core drops those links a slice at a time, every minute, without clearing Lost Cities' cache; see [lost-cities-memory.md](../technical/lost-cities-memory.md). The two exploring two-client sessions (unchaining off, then on) are reported in section 11.
+**Retention found in Lost Cities' code:** a plan keeps its four neighbours in fields for good, so every plan ever made stays reachable. Core drops those links a slice at a time, every minute, without clearing Lost Cities' cache; see [lost-cities-memory.md](../technical/lost-cities-memory.md).
+
+**Measured in two 30-minute exploring sessions** with a dedicated server and two real clients, the same seed, routes and hops, unchaining off and then on:
+
+| End of third | Live plans, off | Live plans, on |
+| --- | --- | --- |
+| First | 491,528 (114 MB) | 32,266 (7.5 MB) |
+| Second | 392,081 (91 MB) | 9,559 (2.2 MB) |
+| Last | 123,930 (29 MB) | 18,432 (4.3 MB) |
+
+- **The retention is proven and the fix removes 85–98% of it.** With unchaining off, up to 190 times as many plans stay alive as the cache holds. The count falls when the players move to another island, so the retention is the linked area of the island being explored.
+- **The heap in use**, sampled every 30 seconds with about the same number of chunks loaded, averaged **300 to 420 MB lower** with unchaining on in every third.
+- **Ticks:** p95 and p99 were a little lower with unchaining on. The multi-second ticks of new ground being generated (D-096) were there in both sessions.
+- **Not run:** a session of hours, and a person exploring.
 
 ## 9. Screens reviewed and corrected
 
