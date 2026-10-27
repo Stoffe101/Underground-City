@@ -83,7 +83,9 @@ jobs:
           set -euo pipefail
           gradle -p rpg-core runGameTestServer -PucWorldCandidate="$CANDIDATE" --no-daemon --stacktrace
           # A Forge GameTest server that fails to start (a broken datapack, a registry error) still exits 0, so the result line is the evidence.
-          grep -E "All [0-9]+ required tests passed" rpg-core/run/logs/latest.log
+          # the whole run's log: Forge rolls latest.log over at midnight, so a job that runs past 00:00 UTC has its first part in an archive (scripts/ci_run_log.py)
+          log=$(python3 scripts/ci_run_log.py rpg-core/run/logs)
+          grep -E "All [0-9]+ required tests passed" "$log"
       - name: Survey actual native city generation in a fresh dedicated world
         if: matrix.candidate == 'lostcities'
         shell: bash
