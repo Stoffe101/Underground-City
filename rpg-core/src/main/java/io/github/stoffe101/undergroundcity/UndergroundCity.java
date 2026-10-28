@@ -92,6 +92,10 @@ public final class UndergroundCity {
     public static final RegistryObject<Block> ELECTRONICS_BENCH = BLOCKS.register("electronics_bench",
         () -> new TechBlocks.Bench(BlockBehaviour.Properties.of().mapColor(net.minecraft.world.level.material.MapColor.WOOD).strength(2.0f).sound(net.minecraft.world.level.block.SoundType.WOOD)));
     public static final RegistryObject<Item> ELECTRONICS_BENCH_ITEM = ITEMS.register("electronics_bench", () -> new BlockItem(ELECTRONICS_BENCH.get(), new Item.Properties()));
+    // player business v1 (D-208): a counter set down in trade premises; the city's street people buy from it
+    public static final RegistryObject<Block> BUSINESS_COUNTER = BLOCKS.register("business_counter",
+        () -> new PlayerBusiness.Counter(BlockBehaviour.Properties.of().mapColor(net.minecraft.world.level.material.MapColor.WOOD).strength(2.0f).sound(net.minecraft.world.level.block.SoundType.WOOD)));
+    public static final RegistryObject<Item> BUSINESS_COUNTER_ITEM = ITEMS.register("business_counter", () -> new BlockItem(BUSINESS_COUNTER.get(), new Item.Properties()));
     // the Farmer's drying rack (D-160): two Cannabis Flower dry into one Dried Cannabis in six minutes of play
     public static final RegistryObject<Block> DRYING_RACK = BLOCKS.register("drying_rack",
         () -> new DryingRack.Rack(BlockBehaviour.Properties.of().mapColor(net.minecraft.world.level.material.MapColor.WOOD).strength(1.0f).noOcclusion().sound(net.minecraft.world.level.block.SoundType.WOOD)));
@@ -112,6 +116,8 @@ public final class UndergroundCity {
     }
     /** A courier's sealed letter from a roadside encounter (D-139): pays its fee once, at any terminal or counter in the city it is addressed to. */
     public static final RegistryObject<Item> SEALED_ENVELOPE = ITEMS.register("sealed_envelope", () -> new EnvelopeItem(new Item.Properties().stacksTo(1)));
+    /** The medical item (D-203): three hearts back, bought at an exchange or a wayside desk, never free. */
+    public static final RegistryObject<Item> FIRST_AID_KIT = ITEMS.register("first_aid_kit", () -> new FirstAidKitItem(new Item.Properties().stacksTo(8)));
 
     private static final DeferredRegister<net.minecraft.world.level.block.entity.BlockEntityType<?>> BLOCK_ENTITIES =
         DeferredRegister.create(ForgeRegistries.BLOCK_ENTITY_TYPES, MOD_ID);
@@ -189,6 +195,7 @@ public final class UndergroundCity {
         TechNetwork.register();
         SmithNetwork.register();
         FenceNetwork.register();
+        PackFingerprint.register();
         MinecraftForge.EVENT_BUS.register(this);
         MinecraftForge.EVENT_BUS.register(new RenamedIds());
         MinecraftForge.EVENT_BUS.register(new BurglarySearch());
@@ -211,6 +218,7 @@ public final class UndergroundCity {
         MinecraftForge.EVENT_BUS.register(new TerrainMapHarness());
         MinecraftForge.EVENT_BUS.register(new CityProbe());
         MinecraftForge.EVENT_BUS.register(new OreAudit());
+        MinecraftForge.EVENT_BUS.register(new LostCitiesMemory());
         MinecraftForge.EVENT_BUS.register(new RoadCheck());
         MinecraftForge.EVENT_BUS.register(new BurglaryHarness());
         MinecraftForge.EVENT_BUS.register(new PopulationService());
@@ -269,6 +277,7 @@ public final class UndergroundCity {
         event.addListener(CityCharacter.INSTANCE);
         event.addListener(ResourceSiteCatalog.INSTANCE);
         event.addListener(BuildingSpots.INSTANCE);
+        event.addListener(CityDwellings.INSTANCE);
         event.addListener(WorldLayout.INSTANCE);
         event.addListener(PropertyPolicies.INSTANCE);
         event.addListener(ExceptionalLoot.INSTANCE);
@@ -305,6 +314,7 @@ public final class UndergroundCity {
             event.accept(PERSONAL_COMPUTER_ITEM);
             event.accept(ELECTRONICS_BENCH_ITEM);
             event.accept(DRYING_RACK_ITEM);
+            event.accept(BUSINESS_COUNTER_ITEM);
             WORKSHOP_ITEMS.values().forEach(event::accept);
         }
         if (event.getTabKey() == CreativeModeTabs.OP_BLOCKS && event.hasPermissions()) {
@@ -318,6 +328,7 @@ public final class UndergroundCity {
         if (event.getTabKey() == CreativeModeTabs.TOOLS_AND_UTILITIES) {
             CORE_ITEMS.forEach((id, item) -> { if (CORE_ITEM_KINDS.get(id).equals("tool")) event.accept(item); });
         }
+        if (event.getTabKey() == CreativeModeTabs.FOOD_AND_DRINKS) event.accept(FIRST_AID_KIT);
     }
 
     @SubscribeEvent
@@ -455,6 +466,7 @@ public final class UndergroundCity {
             )
         );
         root.then(dev);
+        root.then(PlayerBusiness.command());   // a player's own business (D-208)
         root.then(AdminCommands.branch());   // the operator's commands (D-191)
         event.getDispatcher().register(root);
     }

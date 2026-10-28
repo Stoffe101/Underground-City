@@ -58,6 +58,7 @@ public final class StaffZoneGameTests {
             var security = new CityBuildings.SecurityClass("test_shop", "deadbolt", true, "", 0, "test shop", new CityBuildings.Response(0, 60, 1, 60), 2, "");
             CityBuildings.Building b = new CityBuildings.Building("valewood", cx, cz, "test", "test_shop", 1, 0, y + 1, security);
             StaffZones.resetForTest();
+            BuildingGuard.roofReach = 4;   // the room is four high and only six are cleared above it; other tests build above this one in a crowded world
 
             check(BuildingGuard.exterior(level, street, level.getBlockState(street)), "the street door is not taken for a street door");
             check(!BuildingGuard.exterior(level, inside, level.getBlockState(inside)), "the inside door is taken for a street door");
@@ -108,6 +109,7 @@ public final class StaffZoneGameTests {
         } finally {
             for (int x = 0; x < 16; x++) for (int z = 0; z < 16; z++) for (int dy = 0; dy <= 6; dy++) level.setBlock(new BlockPos(x0 + x, y + dy, z0 + z), air, 2);
             StaffZones.resetForTest();
+            BuildingGuard.roofReach = BuildingGuard.ROOF_REACH;
         }
         helper.succeed();
     }

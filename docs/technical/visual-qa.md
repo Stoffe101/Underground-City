@@ -136,3 +136,28 @@ The final journey run (37, 1280x720, GUI scale 2, a brand-new furnished archipel
 **Seen after the fixes:** journey run 47 (1280x720, GUI scale 2) shows the counter clear of notices right after a delivery and the travel step's "Road to Valewood" line with its arrow; development run 40 shows the Valewood exchange clear and the terminal footer reading "1 skill point ... Valewood".
 
 **Not covered:** the frames above are from scripted runs. No person has looked at these screens; no pixel baseline exists.
+
+## October 28 review: the private interior tour and the tour's safe camera (eleventh pass)
+
+**The camera.** In private tour 13, seven of twenty interior frames showed a wall or the inside of a block, because each camera was put a fixed distance in front of its spot. `PhotoTour` now looks for a safe place for every shot of a building's spot (`"safe": false` keeps the old behaviour). It tries the place asked for first, then nearer, then from the seven other directions round the spot and at a person's eye height. A camera must:
+
+* stand in open space, with nearly half a block of room on every side, so no wall fills half the frame;
+* stand under a roof for a spot inside;
+* have a clear line to the spot. A block drawn solid, a pane, a set of bars or anything that fills its block (glass) breaks the line. Furniture that does not fill its block does not.
+
+The log says how many places were tried, or that none was clear (the frame is then taken as asked). `scripts/photo_tour_plan.py` writes a private tour from a staged pack's own plans. It takes the most likely building of each use: the street door from across the street, then the first bed, stove, bathroom, seat and counter inside. Shot names are the use and a number, and the tour is refused inside a checkout (`tests/test_photo_tour_plan.py`).
+
+**Private tour 14** (a new disposable world from the owner's staged pack, 1920×1080, every frame looked at in the cloud, none kept in the repository or any artifact):
+
+* 29 of 34 frames were taken, and every one found a clear view. The five frames of one house were skipped: that house is rare in its city and was not generated within reach.
+* The frames show what they are meant to: bedrooms, a bathroom, kitchens, shop and office interiors, a corridor.
+* One frame (a house's bathroom) was taken from the garden through a window. The roof and room rules above came from it.
+* **A real defect found:** a generated cabin had four of its five bedrooms full of dirt. Lost Cities 7 put the owner's one-part cabin up five times, six blocks apart, and each copy's mound buried the copy below. That is fixed in the porter (porter 13, [private-content-workflow.md](private-content-workflow.md)).
+
+**Private tour 15** (porter 13, a new disposable world, 45 shots planned from the staged pack's own plans, every frame looked at in the cloud and none kept in the repository or any artifact):
+
+* 43 frames taken; two shots of one office were skipped because no copy of it was generated within reach of its city.
+* 39 frames show their spot clearly: bedrooms, kitchens, bathrooms, living rooms, shop counters and seating, office interiors and street doors. The cabin that tour 14 found buried is built once, its beds in place.
+* Four do not: two bathrooms were taken from a garden through a window (the camera found no clear place inside), one street door from under its own overhang and one from above a terrace.
+* **A real defect found:** a restaurant's floor had grown into bamboo shoots over bare dirt, under its tables and its stove. The owner's pack laid that floor in Quark's bamboo mat, and the porter had turned the mat into the bamboo plant. Porter 14 makes it bamboo mosaic ([private-content-workflow.md](private-content-workflow.md)).
+* **Private tour 16** took the restaurant's four frames again in a new world from a pack staged by porter 14: a woven floor under every table, the counter and the stove, no shoots and no dirt.

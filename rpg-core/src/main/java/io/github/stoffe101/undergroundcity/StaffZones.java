@@ -277,6 +277,8 @@ public final class StaffZones {
     }
 
     static void watch(ServerLevel level, ServerPlayer player) {
+        // a timed check: while Lost Cities generates and this chunk's plan is not known, look again next second rather than wait on its lock (eleventh pass: a 0.45 s tick)
+        if (!CityBuildings.INSTANCE.askable(level, player.blockPosition().getX() >> 4, player.blockPosition().getZ() >> 4)) return;
         Optional<CityBuildings.Building> found = BurglarySearch.foreignBuilding(player, level, player.blockPosition());
         if (found.isEmpty() || !BuildingGuard.openToPublic(level, found.get(), null) || !inStaffArea(level, found.get(), player.blockPosition())) { SEEN.remove(player.getUUID()); return; }
         CityBuildings.Building b = found.get();

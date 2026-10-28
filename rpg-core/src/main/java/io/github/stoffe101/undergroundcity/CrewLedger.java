@@ -9,6 +9,7 @@ import io.github.stoffe101.undergroundcity.PropertyRules.Upgrade;
 import io.github.stoffe101.undergroundcity.CrewRules.Perm;
 import io.github.stoffe101.undergroundcity.CrewRules.Role;
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtIo;
@@ -124,10 +125,38 @@ public final class CrewLedger {
 
     public enum OwnerType { NONE, PLAYER, CREW }
 
-    /** A registered region of the world that can be leased: the interior is what a tenant may change, the one-block shell around it is city infrastructure. */
+    /** One interior box of a home, inclusive. */
+    public record Box(BlockPos min, BlockPos max) {
+        public Box {
+            BlockPos lo = new BlockPos(Math.min(min.getX(), max.getX()), Math.min(min.getY(), max.getY()), Math.min(min.getZ(), max.getZ()));
+            BlockPos hi = new BlockPos(Math.max(min.getX(), max.getX()), Math.max(min.getY(), max.getY()), Math.max(min.getZ(), max.getZ()));
+            min = lo; max = hi;
+        }
+        boolean inside(BlockPos p) { return p.getX() >= min.getX() && p.getX() <= max.getX() && p.getY() >= min.getY() && p.getY() <= max.getY() && p.getZ() >= min.getZ() && p.getZ() <= max.getZ(); }
+        boolean inShell(BlockPos p) {
+            return p.getX() >= min.getX() - 1 && p.getX() <= max.getX() + 1 && p.getY() >= min.getY() - 1 && p.getY() <= max.getY() + 1 && p.getZ() >= min.getZ() - 1 && p.getZ() <= max.getZ() + 1;
+        }
+        double distanceSqr(BlockPos p) {
+            double dx = Math.max(Math.max(min.getX() - p.getX(), 0), p.getX() - max.getX());
+            double dy = Math.max(Math.max(min.getY() - p.getY(), 0), p.getY() - max.getY());
+            double dz = Math.max(Math.max(min.getZ() - p.getZ(), 0), p.getZ() - max.getZ());
+            return dx * dx + dy * dy + dz * dz;
+        }
+        long volume() { return (long) (max.getX() - min.getX() + 1) * (max.getY() - min.getY() + 1) * (max.getZ() - min.getZ() + 1); }
+    }
+
+    /** At most this many boxes make one home (D-206): the rooms of a house over several chunks, or of a flat that is not one rectangle. */
+    public static final int MAX_BOXES = 160;
+
+    /**
+     * A registered region of the world that can be leased: the interior is what a tenant may change, the one-block shell around it is city infrastructure. The interior is one box, or several
+     * (D-206: a property follows the dwelling, not the chunk): a house over two chunks is one home whose boxes lie in both, and two flats that share a wall are two homes whose boxes never
+     * reach into each other's shell. {@code min} and {@code max} are the first box, which holds the home's entrance where the plan names one.
+     */
     public static final class Residence {
         public final String id, title, kind, dimension, district;
         public final BlockPos min, max;
+        public final List<Box> boxes;
         public final int price, starterPrice;
         public OwnerType ownerType = OwnerType.NONE;
         public UUID owner;
@@ -181,31 +210,51 @@ public final class CrewLedger {
         }
 
         Residence(String id, String title, String kind, String dimension, String district, BlockPos min, BlockPos max, int price, int starterPrice) {
+            this(id, title, kind, dimension, district, List.of(new Box(min, max)), price, starterPrice);
+        }
+
+        Residence(String id, String title, String kind, String dimension, String district, List<Box> boxes, int price, int starterPrice) {
+            if (boxes.isEmpty()) throw new IllegalArgumentException("A home has at least one box");
             this.id = id; this.title = title; this.kind = kind; this.dimension = dimension; this.district = district;
-            this.min = min.immutable(); this.max = max.immutable(); this.price = price; this.starterPrice = starterPrice;
+            this.boxes = List.copyOf(boxes);
+            this.min = this.boxes.get(0).min().immutable(); this.max = this.boxes.get(0).max().immutable(); this.price = price; this.starterPrice = starterPrice;
         }
 
         public boolean insideInterior(String dim, BlockPos p) {
-            return dim.equals(dimension) && p.getX() >= min.getX() && p.getX() <= max.getX() && p.getY() >= min.getY() && p.getY() <= max.getY()
-                && p.getZ() >= min.getZ() && p.getZ() <= max.getZ();
+            if (!dim.equals(dimension)) return false;
+            for (Box b : boxes) if (b.inside(p)) return true;
+            return false;
         }
 
-        /** The interior plus the one-block shell of walls, floor and ceiling around it. */
+        /** The interior plus the one-block shell of walls, floor and ceiling around each of its boxes. */
         public boolean insideShell(String dim, BlockPos p) {
-            return dim.equals(dimension) && p.getX() >= min.getX() - 1 && p.getX() <= max.getX() + 1 && p.getY() >= min.getY() - 1 && p.getY() <= max.getY() + 1
-                && p.getZ() >= min.getZ() - 1 && p.getZ() <= max.getZ() + 1;
+            if (!dim.equals(dimension)) return false;
+            for (Box b : boxes) if (b.inShell(p)) return true;
+            return false;
         }
 
         /** Squared distance from a block position to the nearest block of the interior (0 inside). */
         public double distanceSqr(BlockPos p) {
-            double dx = Math.max(Math.max(min.getX() - p.getX(), 0), p.getX() - max.getX());
-            double dy = Math.max(Math.max(min.getY() - p.getY(), 0), p.getY() - max.getY());
-            double dz = Math.max(Math.max(min.getZ() - p.getZ(), 0), p.getZ() - max.getZ());
-            return dx * dx + dy * dy + dz * dz;
+            double best = Double.MAX_VALUE;
+            for (Box b : boxes) best = Math.min(best, b.distanceSqr(p));
+            return best;
         }
 
+        /** The chunks the interior lies in (not the shell): what a count of the home's belongings has to look through. */
+        public List<ChunkPos> chunks() {
+            java.util.LinkedHashSet<ChunkPos> out = new java.util.LinkedHashSet<>();
+            for (Box b : boxes)
+                for (int cx = b.min().getX() >> 4; cx <= b.max().getX() >> 4; cx++)
+                    for (int cz = b.min().getZ() >> 4; cz <= b.max().getZ() >> 4; cz++) out.add(new ChunkPos(cx, cz));
+            return List.copyOf(out);
+        }
+
+        /** The blocks of the interior, every box once. */
+        public long volume() { long v = 0; for (Box b : boxes) v += b.volume(); return v; }
+
         public boolean owned() { return ownerType != OwnerType.NONE; }
-        public boolean sameGeometry(String dim, BlockPos lo, BlockPos hi) { return dim.equals(dimension) && lo.equals(min) && hi.equals(max); }
+        public boolean sameGeometry(String dim, BlockPos lo, BlockPos hi) { return sameGeometry(dim, List.of(new Box(lo, hi))); }
+        public boolean sameGeometry(String dim, List<Box> other) { return dim.equals(dimension) && boxes.equals(other); }
     }
 
     /** LEASE_WALLET is the purchase of a home (the old word is kept in the file); RENT_WALLET signs a tenancy; PAY_WALLET pays cycles of rent or upkeep; UPGRADE_WALLET fits an improvement. */
@@ -1340,15 +1389,20 @@ public final class CrewLedger {
 
     /** {@code factorPct} is the city's price factor at the home's position (100 outside every city circle); it applies to rent, deposit and purchase price. */
     public Residence registerResidence(String id, String title, String kind, String dimension, String district, BlockPos min, BlockPos max, int price, int starterPrice, int factorPct) {
+        return registerResidence(id, title, kind, dimension, district, List.of(new Box(min, max)), price, starterPrice, factorPct);
+    }
+
+    /** A home of one or more interior boxes (D-206). No box may reach into the shell of another home's box; the boxes of one home may touch and share their shells. */
+    public Residence registerResidence(String id, String title, String kind, String dimension, String district, List<Box> boxes, int price, int starterPrice, int factorPct) {
         checkHealthy();
         require(factorPct >= 50 && factorPct <= 200, "Bad price factor");
         require(id.matches("[a-z0-9_:.\\-/]{3,64}"), "Bad residence id " + id);
         require(price >= 1 && price <= 1_000_000 && starterPrice <= price, "Bad residence price");
-        BlockPos lo = new BlockPos(Math.min(min.getX(), max.getX()), Math.min(min.getY(), max.getY()), Math.min(min.getZ(), max.getZ()));
-        BlockPos hi = new BlockPos(Math.max(min.getX(), max.getX()), Math.max(min.getY(), max.getY()), Math.max(min.getZ(), max.getZ()));
+        require(!boxes.isEmpty() && boxes.size() <= MAX_BOXES, "A home has 1 to " + MAX_BOXES + " boxes");
+        List<Box> geometry = List.copyOf(boxes);
         Residence old = residences.get(id);
         if (old != null) {
-            if (old.sameGeometry(dimension, lo, hi)) {
+            if (old.sameGeometry(dimension, geometry)) {
                 if (!old.owned() && old.factorPct != factorPct) { old.factorPct = factorPct; persist(); }
                 return old;
             }
@@ -1357,12 +1411,14 @@ public final class CrewLedger {
         for (Residence other : residences.values()) {
             if (other.id.equals(id) || !other.dimension.equals(dimension)) continue;
             // Two shells may touch (neighbouring flats share a wall), but no interior may reach into another unit's shell.
-            require(!boxesIntersect(lo.getX() - 1, lo.getY() - 1, lo.getZ() - 1, hi.getX() + 1, hi.getY() + 1, hi.getZ() + 1,
-                    other.min.getX(), other.min.getY(), other.min.getZ(), other.max.getX(), other.max.getY(), other.max.getZ())
-                && !boxesIntersect(other.min.getX() - 1, other.min.getY() - 1, other.min.getZ() - 1, other.max.getX() + 1, other.max.getY() + 1, other.max.getZ() + 1,
-                    lo.getX(), lo.getY(), lo.getZ(), hi.getX(), hi.getY(), hi.getZ()), "Residence " + id + " overlaps " + other.id);
+            for (Box mine : geometry) for (Box theirs : other.boxes) {
+                require(!boxesIntersect(mine.min().getX() - 1, mine.min().getY() - 1, mine.min().getZ() - 1, mine.max().getX() + 1, mine.max().getY() + 1, mine.max().getZ() + 1,
+                        theirs.min().getX(), theirs.min().getY(), theirs.min().getZ(), theirs.max().getX(), theirs.max().getY(), theirs.max().getZ())
+                    && !boxesIntersect(theirs.min().getX() - 1, theirs.min().getY() - 1, theirs.min().getZ() - 1, theirs.max().getX() + 1, theirs.max().getY() + 1, theirs.max().getZ() + 1,
+                        mine.min().getX(), mine.min().getY(), mine.min().getZ(), mine.max().getX(), mine.max().getY(), mine.max().getZ()), "Residence " + id + " overlaps " + other.id);
+            }
         }
-        Residence r = new Residence(id, title, kind, dimension, district, lo, hi, price, starterPrice);
+        Residence r = new Residence(id, title, kind, dimension, district, geometry, price, starterPrice);
         r.factorPct = factorPct;
         residences.put(id, r);
         reindex();
@@ -1440,9 +1496,11 @@ public final class CrewLedger {
     private void reindex() {
         chunkIndex.clear();
         for (Residence r : residences.values()) {
-            for (int cx = (r.min.getX() - 1) >> 4; cx <= (r.max.getX() + 1) >> 4; cx++)
-                for (int cz = (r.min.getZ() - 1) >> 4; cz <= (r.max.getZ() + 1) >> 4; cz++)
-                    chunkIndex.computeIfAbsent(chunkKey(cx, cz), key -> new ArrayList<>()).add(r);
+            java.util.Set<Long> seen = new java.util.HashSet<>();
+            for (Box b : r.boxes)
+                for (int cx = (b.min().getX() - 1) >> 4; cx <= (b.max().getX() + 1) >> 4; cx++)
+                    for (int cz = (b.min().getZ() - 1) >> 4; cz <= (b.max().getZ() + 1) >> 4; cz++)
+                        if (seen.add(chunkKey(cx, cz))) chunkIndex.computeIfAbsent(chunkKey(cx, cz), key -> new ArrayList<>()).add(r);
         }
     }
 
@@ -1525,6 +1583,12 @@ public final class CrewLedger {
             CompoundTag t = new CompoundTag();
             t.putString("id", r.id); t.putString("title", r.title); t.putString("kind", r.kind); t.putString("dimension", r.dimension); t.putString("district", r.district);
             t.putLong("min", r.min.asLong()); t.putLong("max", r.max.asLong()); t.putInt("price", r.price); t.putInt("starter_price", r.starterPrice);
+            if (r.boxes.size() > 1) {
+                // every box, the first one too; an older Core reads min and max alone, the first box (D-206)
+                long[] corners = new long[r.boxes.size() * 2];
+                for (int i = 0; i < r.boxes.size(); i++) { corners[2 * i] = r.boxes.get(i).min().asLong(); corners[2 * i + 1] = r.boxes.get(i).max().asLong(); }
+                t.putLongArray("boxes", corners);
+            }
             t.putString("owner_type", r.ownerType.name()); if (r.owner != null) t.putUUID("owner", r.owner); t.putLong("since", r.since);
             if (r.reservedBy != null) t.putUUID("reserved_by", r.reservedBy);
             ListTag guests = new ListTag();
@@ -1604,8 +1668,16 @@ public final class CrewLedger {
         }
         for (Tag raw : root.getList("residences", Tag.TAG_COMPOUND)) {
             CompoundTag t = (CompoundTag) raw;
+            // a home of several boxes (D-206) lists them all; a save made before keeps one box, its min and max
+            List<Box> boxes = new ArrayList<>();
+            long[] corners = t.contains("boxes", Tag.TAG_LONG_ARRAY) ? t.getLongArray("boxes") : new long[0];
+            if (corners.length >= 2 && corners.length % 2 == 0 && corners.length <= 2 * MAX_BOXES) {
+                for (int i = 0; i < corners.length; i += 2) boxes.add(new Box(BlockPos.of(corners[i]), BlockPos.of(corners[i + 1])));
+            } else {
+                boxes.add(new Box(BlockPos.of(t.getLong("min")), BlockPos.of(t.getLong("max"))));
+            }
             Residence r = new Residence(t.getString("id"), t.getString("title"), t.getString("kind"), t.getString("dimension"), t.getString("district"),
-                BlockPos.of(t.getLong("min")), BlockPos.of(t.getLong("max")), t.getInt("price"), t.getInt("starter_price"));
+                boxes, t.getInt("price"), t.getInt("starter_price"));
             r.ownerType = OwnerType.valueOf(t.getString("owner_type"));
             r.owner = t.hasUUID("owner") ? t.getUUID("owner") : null;
             r.since = t.getLong("since");

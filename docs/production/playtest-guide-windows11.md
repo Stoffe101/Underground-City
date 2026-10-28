@@ -32,7 +32,7 @@ In PowerShell:
 ```
 git clone https://github.com/Stoffe101/Underground-City.git
 cd Underground-City
-git checkout feature/world-playability-overhaul
+git checkout feature/tenth-pass-living-world
 .\gradlew.bat runServer -PucAcceptEula=true
 ```
 
@@ -77,14 +77,17 @@ The commands in this guide are wrapped in a few PowerShell scripts, so that a se
 | Script | What it does |
 | --- | --- |
 | `uc-update.ps1` | fetches the playtest branch and fast-forwards to it; refuses when you have local changes; prints the commit both players must share |
-| `uc-server.ps1 -Sets furnished,scarcity -World UC-S2 [-LanOfflineMode] [-AcceptEula] [-Pregen]` | backs up the game folder, then starts the dev server; a new `-World` name makes a new world beside the old one (never replacing it). Offline mode must be asked for on every start, and only for a home network. `-Pregen` generates the three islands once in the background ([test worlds](../technical/test-worlds.md); about 13,500 chunks) |
-| `uc-client.ps1 -Name Alice -Sets furnished,scarcity [-Join] [-Xaero] [-World UC-S1]` | starts a client: `-Join` for a server, otherwise single player; `-Xaero` adds Xaero's Minimap and World Map (client only) |
-| `uc-new-world.ps1 -Name Alice -World UC-S1 [-Pregen]` | a single-player client in a NEW world with the furnished cities and scarcity; refuses a name that exists. `-Pregen` generates the islands in it once, in the background |
+| `uc-server.ps1 -Sets furnished,scarcity -World UC-S2 [-LanOfflineMode] [-AcceptEula] [-Pregen] [-C70] [-PrivateContent <folder>]` | backs up the game folder, then starts the dev server; a new `-World` name makes a new world beside the old one (never replacing it). Offline mode must be asked for on every start, and only for a home network. `-Pregen` generates the three islands once in the background ([test worlds](../technical/test-worlds.md); about 13,500 chunks). `-C70`: the owner's buildings first (section 6k). Client-only mods (Embeddium, Xaero's maps, the client helpers) are left out of the server |
+| `uc-client.ps1 -Name Alice -Sets furnished,scarcity [-Join] [-Xaero] [-World UC-S1] [-C70] [-PrivateContent <folder>]` | starts a client: `-Join` for a server, otherwise single player; `-Xaero` adds Xaero's Minimap and World Map (client only); `-C70 -Join` loads the sets the owner's buildings need, not the private folder |
+| `uc-new-world.ps1 -Name Alice -World UC-S1 [-Pregen] [-C70]` | a single-player client in a NEW world with the furnished cities and scarcity (and with `-C70` the furniture set and the owner's staged buildings); refuses a name that exists. `-Pregen` generates the islands in it once, in the background |
+| `uc-private-stage.ps1 -Source <the C70 folder or zip>` | ports, chooses, wires and seals the owner's private buildings into `%USERPROFILE%\UndergroundCityPrivate\runtime`, outside the repository (section 6k) |
 | `uc-second-copy.ps1` | copies the repository to `..\Underground-City-P2` for a second player on the same PC |
 | `uc-backup.ps1` | copies `rpg-core\run-dev` (worlds, saves, configs) to `backups\run-dev-<date-time>`; stop the server and clients first |
-| `uc-logs.ps1` | packs the logs, crash reports and screenshots (never a world) into `reports\uc-report-<date-time>.zip` for a bug report |
+| `uc-logs.ps1` | packs the logs, crash reports and screenshots (never a world) into `reports\uc-report-<date-time>.zip` for a bug report. After a session with private content it leaves the screenshots out and replaces the private buildings' ids in the logs with `<private>` |
 
-**Tested in the cloud:** PowerShell 7 parsed all of them, and a test (`tests/test_windows_scripts.py`) ran the server, client, new-world and logs scripts against a stand-in for gradle: the commands they build, the server settings they write, and their refusals (an unknown set, a bad name, an existing world, offline mode not asked for). **Not tested:** Windows PowerShell 5.1 on a real Windows 11 machine, `robocopy` (the backup and the second copy), and the real gradle launches through them. Run `uc-backup.ps1` once by hand and look at the folder it made before you trust it.
+**Tested in the cloud:** a test (`tests/test_windows_scripts.py`) runs the server, client, new-world, logs and staging scripts with PowerShell 7 on GitHub's Linux runners against a stand-in for gradle (and, for the staging script, for Python): the commands they build, the server settings they write, and their refusals (an unknown set, a bad name, an existing world, offline mode not asked for, `-C70` with nothing staged, a private folder that is a pack itself or needs a set the launch leaves out). The same test checks that the scripts accept exactly the sets `build.gradle` knows; the `furniture` set was missing from them until the eleventh pass. **Not tested:** any of it on Windows (PowerShell 5.1 or 7 on Windows 11), `robocopy` (the backup and the second copy), the real gradle launches through the scripts, and Python on Windows. Run `uc-backup.ps1` once by hand and look at the folder it made before you trust it.
+
+**Both PCs must run the same pack.** Every start prints `Underground City pack fingerprint: <12 characters>` (Core's commit and every mod both sides need, with its pinned version). The server and both clients should print the same; when a client's differs, that player sees *Your game differs from the server's* in the game and the server's log names both. Fix it with `uc-update.ps1` on both PCs and the same sets (or the same `-C70`) on every start.
 
 ## 4. Start the clients
 
@@ -385,11 +388,71 @@ Write down for each part: did it feel prepared for, dangerous or rewarding; what
 
 **The question that matters most, after every session: Would you voluntarily keep playing, and what would you want to do next?**
 
+## 6j. Tenth pass: clean streets, the five general skills, shortages and a supply chain (about 60 minutes, a NEW world)
+
+**Written for the October 27 tenth pass (D-196 to D-204, `tenth-pass-living-world.md`). The current branch and its recent gameplay systems have not received human playtesting.** The street and road fixes change only chunks generated after them: use a **new** world, never an old one (and never `UC-Alpha-Test-01`).
+
+Get the branch on both PCs: `.\scripts\windows\uc-update.ps1 -Branch feature/tenth-pass-living-world` (compare the commit it prints). Then the host: `.\scripts\windows\uc-server.ps1 -Sets furnished,scarcity -World UC-T10 -LanOfflineMode -AcceptEula`; each player: `.\scripts\windows\uc-client.ps1 -Name <you> -Sets furnished,scarcity -Join`. One player registers as a **Farmer in Valewood**, the other as a **Vintner in Blackwater** (Track A: no commands).
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Walk the streets of your city and the road out of it to the next city | paved streets with no grass blocks, dirt, stone, mushrooms or flowers on the paving and no bare rock verges; the road's end walks onto the city's ground |
+| 2 | Look at the ground floors and cellars of a few buildings | no patches of dirt, gravel, granite, diorite or andesite in the floors |
+| 3 | Walk for five minutes, then open the terminal's **Skills** page, **General** tab | Fitness XP has grown (about 2 XP each ten seconds of real walking); standing still or walking in a tight circle adds next to none |
+| 4 | Craft a target block (hay bale and redstone), place it, and shoot it from ten blocks or more with a bow (or a TaCZ gun with the firearms set) | Shooting XP for each hit, more near the centre; the same block pays once in two seconds; nothing from closer than ten blocks |
+| 5 | The Farmer founds a Crew on the Crew screen (K) and invites the Vintner; the Vintner accepts | both in one Crew |
+| 6 | The Farmer: grows sweet berries and beetroot outside the city (the city's own gardens belong to their households), mills four beetroot into three sugar at the Mill | sugar from the Mill and Farmer XP when you **Take** it |
+| 7 | The Farmer travels to the Vintner and drops berries and sugar with **Q**; the Vintner picks them up | the goods move from one inventory to the other |
+| 8 | The Vintner: a batch of berry wine at the Fermentation Vat (six minutes of play), then, after 18:00, talk to the barkeeper of a Blackwater club and ask "What do you sell?" | the counter shows the wine line as **"short: buys at 19"** (on a narrow screen **"short: 19"**) while the shelf holds three or fewer; selling three pays about 57 credits (more for a Fine bottle) and the shelf count rises |
+| 9 | The Vintner pays a share into the Crew bank (Crew screen, Money); the Farmer withdraws it | both wallets and the bank change by exactly the amounts |
+| 10 | Stop the server (type `stop`), start it again, both rejoin | wallets, the Crew bank, the XP, the inventories and the two stations are as you left them |
+| 11 | Hurt yourself a little (a fall), buy a **First Aid Kit** at the terminal (18 credits) and hold right click with it | three hearts back; a second one waits thirty seconds; at full health it does nothing |
+| 12 | Talk to the same shopkeeper after three trades | they greet you as a regular |
+
+**Private buildings (the owner's PC only):** section 6k.
+
+## 6k. The owner's buildings first (C70), on the owner's PC
+
+**Eleventh pass (D-205). The staging ran on the owner's pack in the cloud and the scripts ran under PowerShell 7 on Linux against stand-ins; none of it has been run on Windows. The current branch and its recent gameplay systems have not received human playtesting.** The private pack, its port, the work folder, the selection and every screenshot of it stay on your PC: never in this repository, a GitHub issue or a public upload.
+
+1. **Once:** JDK 17 (section 1), Python 3.10 or newer from python.org with *Add python.exe to PATH* ticked, and `python scripts\install_git_hooks.py` (a commit that would carry private content then stops).
+2. **Stage the buildings** (again after every `uc-update.ps1`; a launch refuses a pack staged by an older porter or wiring):
+
+   ```
+   .\scripts\windows\uc-private-stage.ps1 -Source "<the C70 folder or zip>" -Holder "C70 and team" -Summary "<what the permission covers, in your words>"
+   ```
+
+   `-Holder` and `-Summary` are needed only the first time, and only when the download has no `uc-private-pack.json`. The script finds the Lost Cities data in the folder or zip (it checks the zip's paths first and copies nothing but the `lostcities` data), keeps the original untouched, and the first time boots a disposable server for a few minutes to read the furniture set's blocks (nothing private is loaded in it). Then it ports, chooses the buildings, wires them into the three cities, seals the result and installs it as `%USERPROFILE%\UndergroundCityPrivate\runtime\c70-port`. The pack it replaces is kept in `runtime-work\previous`.
+3. **The choice of buildings.** Without `-Selection` the script chooses from what each building is called and what its plan holds: houses for Valewood, flats for Ironhaven and Blackwater, workshops and warehouses for Ironhaven, offices for Blackwater, shops, cafés and public buildings spread over the three. A house needs a bed, a street door and a roof; flats need a storey with a bed. Anything it cannot place for certain (a building whose name names no use it knows, a house without a bed) is left out and listed with the reason in `runtime-work\selection-auto-report.json`. The selection it wrote is `runtime-work\selection-auto.json`: copy it, change it and stage again with `-Selection <your copy>`. On the cloud's copy of the pack it chose every building the hand-made selection had chosen and 26 more, and left 24 out.
+4. **Play in a NEW world.** Alone: `.\scripts\windows\uc-new-world.ps1 -Name <you> -World UC-C70-1 -C70`. Two players: the host runs `.\scripts\windows\uc-server.ps1 -C70 -World UC-C70-1 -LanOfflineMode -AcceptEula`, and each player runs `.\scripts\windows\uc-client.ps1 -Name <you> -C70 -Join`. Only the host needs the private folder; the other player needs the same sets, which `-C70` gives. A world that already exists keeps what its chunks were generated with.
+5. **What is checked before anything starts** (`scripts\private_c70.py check`): the folder exists and is outside the repository; it holds packs and is not a pack itself; every manifest is one the game accepts; no pack is the unported original; the porter and wiring that staged it are new enough; and the sets include the ones the pack needs (furnished and furniture). Anything else stops the launch with the reason, and nothing is started.
+6. **Homes in the owner's buildings** (D-206, [dwellings](../technical/dwellings.md)). A house over two chunks is one home, a terrace two, a block's flats one each behind its own door, premises one lease. A building whose rooms leave that uncertain (a hall open onto a courtyard, a tower with lifts) is not let, and `runtime-work\wiring-report.json` says why; `-Dwellings <file>` on `uc-private-stage.ps1` names its homes yourself. Worth trying with two players: rent a house that spans two chunks, check that its far rooms are yours, that the other player's key does not open its door, and that a flat's neighbour cannot open the flat.
+7. **Reports.** `uc-logs.ps1` after such a session leaves the screenshots out (`-IncludeScreenshots` keeps them) and writes `<private>` for every block or building id of the private pack in the logs. Share the zip only with the owner and the people the permission covers.
+
+## 6l. Eleventh pass: your own business and shortage contracts (about 45 minutes, a NEW world)
+
+**Written for the October 28 eleventh pass (D-207, D-208, [player-business.md](../technical/player-business.md)). GameTested and run through scripted real clients only; the current branch and its recent gameplay systems have not received human playtesting.** The same launch as 6j (`-Sets furnished,scarcity`, a new world).
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | One player rents the **workshop's or the warehouse's premises** in Ironhaven on the Home page (K, Home, Find a home). Craft a **Business Counter** (three smooth stone slabs over planks, a chest, planks) | the premises are yours; the counter is in your inventory |
+| 2 | Stand inside the premises and set the counter down facing the free floor where customers will stand | "Your business is set up in ..." |
+| 3 | Hold goods a city's shop also sells (berry wine, bread, fasteners) and right-click the counter | they go onto the counter at the city's price (the chat says the price; 12% of it is tax). Dirt, goods over 60 credits, a named item or stolen goods are refused |
+| 4 | Crouch and right-click it with an empty hand | "Open for business"; if it says why customers will not come (the hours, the rent owed, an empty counter), fix that |
+| 5 | Between 08:00 and 18:00, wait nearby for a few minutes with the street busy | street people walk in through the premises' door to the counter, look round and buy one thing each; at most eight an hour of play |
+| 6 | Right-click the counter with an empty hand (or type `/uc business`) | the statement: what sold, the tax, the till; then the till goes into your wallet, once |
+| 7 | Let the rent fall behind (or move out), then look again | the counter sells nothing while the rent is owed; the stock and the till are still yours (`/uc business withdraw` takes the stock back) |
+| 8 | The Vintner: leave a shop's wine line short for five minutes of play (its customers buy it down; the barkeeper says "We're nearly out") and look at a terminal in that city | a **Shortage** order for the Vintner ("Shortage: 4 Berry Wine for The Anvil"), with a notice when it was posted |
+| 9 | Take it, then the other Vintner tries to take it | the second player is told somebody else has it |
+| 10 | Deliver it at a terminal in the shop's city within thirty minutes of play | paid once, half as much again a bottle as the shop pays; the shop's shelf fills and the keeper stops asking; delivered in another city it is refused |
+| 11 | Stop and restart the server with a contract open | the contract and its time left are kept |
+
 ## 7. Logs, screenshots and bug reports
 
 * Server log: `rpg-core\run-dev\logs\latest.log` (authenticated pack: `build\server-pack\server\logs\latest.log`); crash reports: `rpg-core\run-dev\crash-reports\`.
 * Client log: `rpg-core\run-dev\logs\latest.log` of the client's own checkout; screenshots (F2): `rpg-core\run-dev\screenshots\`.
 * The Crew ledger's unresolved transfers (there should never be any): in the server console, `uc_crew pending`.
+* After a session with the owner's private buildings, send the report privately, never as a GitHub issue (section 6k).
 * Please report (GitHub issue or message): what you did, what you expected, what happened, the time, both players' names, and attach the two `latest.log` files and screenshots. Do **not** attach the world folder unless asked; it is large.
 * If a transfer ever looks wrong: do not keep playing in that world. Stop the server, back the whole `run-dev` up, and report.
 

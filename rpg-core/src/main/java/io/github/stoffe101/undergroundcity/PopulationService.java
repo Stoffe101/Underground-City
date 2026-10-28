@@ -89,6 +89,11 @@ public final class PopulationService {
         UUID partner;
         /** The outlet of the shop being browsed ({@code shop:<kind>}), or null: a customer leaving it may have bought something off its shelf (D-164). */
         String shop;
+        /** The player business whose counter this customer is walking to or standing at (D-208), and the street cell they came from and go back to. */
+        String business;
+        BlockPos origin;
+        /** The cell in front of that business's counter, while the customer is still on the way in through its street door. */
+        BlockPos counterFront;
         Vec3 lastPos = Vec3.ZERO;
         int stuck, legs;
 
@@ -115,7 +120,7 @@ public final class PopulationService {
 
     static void clearCaches() {
         ROSTERS.clear(); ACTIVE.clear(); MET.clear(); STREETS.clear(); OPEN.clear(); RETRY_AFTER.clear(); AREAS.clear(); DOORS.clear();
-        passes = nanosTotal = nanosWorst = spawned = spawnedAtDoors = removed = entered = browsed = chats = spotMisses = activePeak = stuckGivenUp = 0;
+        passes = nanosTotal = nanosWorst = spawned = spawnedAtDoors = removed = entered = browsed = chats = spotMisses = activePeak = stuckGivenUp = businessVisits = businessPurchases = 0;
         nanosFirst = lcCalls = lcNanos = lcWorst = shelfPurchases = 0;
         stepNanos = topUpNanos = worstSteps = worstTopUp = worstLookups = worstPeople = 0;
     }
@@ -206,7 +211,10 @@ public final class PopulationService {
             else if (now - w.lastMoved > 100) {
                 // no progress for five seconds: another errand, and after three of those somewhere to go in, or away out of sight
                 w.lastMoved = now;
+                if (w.business != null) LOGGER.info("[UC-POPULATION] a customer for business {} is stuck at {} on the way to {} ({}, {})", w.business, body.position(),
+                    w.goal == null ? "nowhere" : w.goal.toShortString(), w.errand, w.phase);
                 if (++w.stuck >= 3) { stuckGivenUp++; return goIn(level, body, w, players, now, hour) || !seen(level, players, body.blockPosition()) ? quietly(level, body, w, players) : rest(body, w, now, 200); }
+                if (w.phase == Phase.ENTER && w.business != null) return true;   // a counter's customer at its door: the step's own ten seconds decide
                 if (w.phase == Phase.ENTER) return false;
                 return newErrand(level, body, w, players, now, hour);
             }
@@ -233,6 +241,24 @@ public final class PopulationService {
             case ENTER -> {
                 body.stepThrough(w.goal);
                 if (w.door != null) HouseholdService.openDoorBriefly(level, w.door.lower(), 20);
+                if (w.business != null) {
+                    // a customer of a player's counter, through its street door: square onto the door's street side first, then straight through, then to the counter
+                    // (business run 5: a path planned from the threshold never went in; run 6: a step in from two blocks off at an angle met the wall beside the door)
+                    BlockPos outside = w.door.lower().relative(w.door.out());
+                    if (w.goal.equals(outside) && near(body, outside, 0.45)) w.goal = w.door.lower().relative(w.door.out().getOpposite());
+                    body.stepThrough(throughDoorway(level, w.door, w.goal));
+                    if (!w.goal.equals(outside) && near(body, w.goal, 0.8)) {
+                        w.errand = "business"; w.phase = Phase.WALK; w.goal = w.counterFront; w.lastMoved = now;
+                        body.errand(w.goal, 0.55);
+                        LOGGER.info("[UC-POPULATION] a customer is in at {} and goes to the counter at {}", body.blockPosition().toShortString(), w.goal.toShortString());
+                    } else if (now >= w.until) {
+                        LOGGER.info("[UC-POPULATION] a customer did not get in at {}: at {} ({}) stepping for {}; the door {}, its upper half {}, the cell inside {}, the move {}", w.door.lower().toShortString(),
+                            body.blockPosition().toShortString(), body.position(), w.goal.toShortString(), level.getBlockState(w.door.lower()), level.getBlockState(w.door.lower().above()),
+                            level.getBlockState(w.goal), body.getMoveControl().hasWanted() ? "wanted " + body.getMoveControl().getWantedX() + "," + body.getMoveControl().getWantedZ() : "none");
+                        return newErrand(level, body, w, players, now, hour);
+                    }
+                    return true;
+                }
                 if (near(body, w.goal, 0.8) || now >= w.until) { entered++; return false; }
                 return true;
             }
@@ -244,6 +270,22 @@ public final class PopulationService {
                 if (level.random.nextInt(6) == 0) body.getLookControl().setLookAt(Vec3.atCenterOf(w.goal.relative(Direction.from2DDataValue(level.random.nextInt(4)), 2)));
                 if (now < w.until) return true;
                 body.hold(false);
+                if (w.business != null) {
+                    // a player's counter (D-208): they buy at it if they reached it, then walk back out to the street they came from
+                    boolean bought = PlayerBusiness.customerBuys(level, w.business, body.blockPosition());
+                    if (bought) businessPurchases++;
+                    LOGGER.info("[UC-POPULATION] a customer at {} (counter front {}) {}", body.blockPosition().toShortString(), w.goal.toShortString(),
+                        bought ? "bought" : "bought nothing: " + PlayerBusiness.whyNot(level, w.business, body.blockPosition()));
+                    w.business = null;
+                    if (w.door != null) {   // out through the door they came in by
+                        w.errand = "leave_business"; w.phase = Phase.LEAVE; w.goal = w.door.lower().relative(w.door.out().getOpposite());
+                        body.errand(w.goal, 0.6);
+                        return true;
+                    }
+                    w.errand = "leave_business"; w.phase = Phase.WALK; w.goal = w.origin == null ? body.blockPosition() : w.origin;
+                    body.errand(w.goal, 0.6);
+                    return true;
+                }
                 if (w.shop != null) { if (ShopSupply.tillRefusal(level, w.goal) == null) buyFromShelf(level, w.city, w.shop); w.shop = null; }
                 w.phase = Phase.LEAVE;
                 w.goal = w.door.lower().relative(w.door.out().getOpposite());
@@ -263,6 +305,10 @@ public final class PopulationService {
 
     /** A customer bought this much off the shelves (D-164), for the status command and the notes. */
     static long shelfPurchases;
+    /** Customers who walked to a player's counter, and of them those who bought (D-208). */
+    static long businessVisits, businessPurchases;
+    /** One street person in this many who go shopping goes to a player's open counter within reach instead. */
+    static final int BUSINESS_ONE_IN = 3;
     /** One customer in two who browsed a shop buys one thing from it on the way out. */
     static final int BUY_ONE_IN = 2;
 
@@ -275,8 +321,27 @@ public final class PopulationService {
         List<RegionalStock> lines = RegionalCatalog.INSTANCE.forOutlet(city, outlet).stream().filter(st -> RegionalCatalog.INSTANCE.supply(st.id()) != null).toList();
         if (lines.isEmpty()) return;
         WorkOrderLedger ledger = WorkOrderLedger.get(level.getServer());
-        try { if (ledger.drawDown(lines.get(level.random.nextInt(lines.size())), 1) > 0) shelfPurchases++; }
+        RegionalStock line = lines.get(level.random.nextInt(lines.size()));
+        try {
+            int before = ledger.regionalUnits(line);
+            if (ledger.drawDown(line, 1) > 0) { shelfPurchases++; Shortages.drawnDown(level.getServer(), line, before, before - 1); }
+        }
         catch (RuntimeException error) { LOGGER.warn("A customer's purchase off a shelf was not saved: {}", error.toString()); }   // a ledger that cannot write never stops the street
+    }
+
+    /**
+     * The point in {@code cell} (a cell in line with the door, outside or inside it) that lines a body up with the free part of the doorway: an open door's panel takes 3/16 of one side, which
+     * leaves a body aimed at the cell's centre a hundredth of a block to spare (business run 9 stuck there).
+     */
+    static Vec3 throughDoorway(ServerLevel level, TechService.StreetDoor door, BlockPos cell) {
+        double ox = 0.5, oz = 0.5;
+        net.minecraft.world.phys.shapes.VoxelShape shape = level.getBlockState(door.lower()).getCollisionShape(level, door.lower());
+        if (!shape.isEmpty()) {
+            net.minecraft.world.phys.AABB b = shape.bounds();
+            if (door.out().getAxis() == Direction.Axis.Z && b.maxX - b.minX < 0.5) ox = b.minX < 0.1 ? (b.maxX + 1) / 2 : b.minX / 2;
+            if (door.out().getAxis() == Direction.Axis.X && b.maxZ - b.minZ < 0.5) oz = b.minZ < 0.1 ? (b.maxZ + 1) / 2 : b.minZ / 2;
+        }
+        return new Vec3(cell.getX() + ox, cell.getY(), cell.getZ() + oz);
     }
 
     private static boolean near(TownspersonEntity body, BlockPos pos, double r) {
@@ -292,7 +357,23 @@ public final class PopulationService {
     /** Arrived where the errand went. */
     private static boolean arrive(ServerLevel level, TownspersonEntity body, Walker w, List<ServerPlayer> players, long now, int hour) {
         w.stuck = 0;
+        if (!w.errand.startsWith("business")) body.passDoors(false);   // back on the street from a player's counter, or never at one
         switch (w.errand) {
+            case "business_door" -> {
+                // at the street door of a player's business: through it, then to the counter
+                HouseholdService.openDoorBriefly(level, w.door.lower(), 30);
+                w.phase = Phase.ENTER; w.goal = w.door.lower().relative(w.door.out()); w.until = now + 200; w.lastMoved = now;
+                body.stepThrough(w.goal);
+                LOGGER.info("[UC-POPULATION] a customer goes in at {} for the counter at {}", w.door.lower().toShortString(), w.counterFront.toShortString());
+                return true;
+            }
+            case "business" -> {
+                // at a player's counter: a look round, then the purchase as they leave (BROWSE)
+                w.phase = Phase.BROWSE; w.until = 0; w.lastMoved = now;
+                body.errand(w.goal, 0.5);
+                return true;
+            }
+            case "leave_business" -> { return next(level, body, w, players, now, hour); }
             case "shop" -> {
                 Optional<CityBuildings.Building> b = CityBuildings.INSTANCE.ofChunk(level, w.door.lower().getX() >> 4, w.door.lower().getZ() >> 4);
                 if (b.isPresent() && BuildingGuard.openToPublic(level, b.get(), null)) {
@@ -406,6 +487,26 @@ public final class PopulationService {
         };
         w.stuck = Math.max(0, w.stuck - 1);
         w.lastMoved = now;
+        w.business = null;
+        // only from the street: somebody still inside a building (just out of a door, in its hall behind an iron one) cannot path out to a counter (business run 5: two of every three stuck)
+        if (kind.equals("shop") && level.random.nextInt(BUSINESS_ONE_IN) == 0 && level.canSeeSky(body.blockPosition())) {
+            // a player's open counter within reach (D-208), one customer at a time: they walk in through its doors to the counter
+            PlayerBusiness.Target t = PlayerBusiness.nearestOpen(level, body.blockPosition());
+            if (t != null && ACTIVE.values().stream().noneMatch(o -> t.id().equals(o.business))) {
+                // in through the building's street door as a shop's customer is (an iron door is a wall to a path: business run 3's ten customers never reached the counter), then to it
+                int cx = t.counter().getX() >> 4, cz = t.counter().getZ() >> 4;
+                Optional<TechService.StreetDoor> door = CityBuildings.INSTANCE.known(cx, cz) ? CityBuildings.INSTANCE.ofChunk(level, cx, cz).flatMap(b -> doorOf(level, b)) : Optional.empty();
+                w.errand = door.isPresent() ? "business_door" : "business"; w.business = t.id(); w.origin = body.blockPosition(); w.door = door.orElse(null); w.phase = Phase.WALK;
+                w.counterFront = t.front();
+                w.goal = door.map(d -> d.lower().relative(d.out())).orElse(t.front());
+                LOGGER.info("[UC-POPULATION] a customer sets out for business {} from {}: {}", t.id(), body.blockPosition().toShortString(),
+                    door.map(d -> "by its street door " + d.lower().toShortString()).orElse("straight to the counter " + t.front().toShortString()));
+                body.passDoors(true);
+                body.errand(w.goal, 0.55);
+                businessVisits++;
+                return true;
+            }
+        }
         if (wanted != null) {
             List<Candidate> doors = doorsNear(level, body.blockPosition(), 10, 44, wanted);
             if (kind.equals("shop")) doors.removeIf(c -> !BuildingGuard.openToPublic(level, c.building(), null) && level.random.nextInt(3) != 0);
@@ -890,7 +991,8 @@ public final class PopulationService {
         long h = PopulationPlan.mix(body.person() + spoken * 7919L + PopulationPlan.dayOf(player.level().getDayTime()));
         String line = def != null && !def.flavour().isEmpty() && (h & 3) == 0 ? def.flavour().get((int) ((h >>> 2) % def.flavour().size())) : own.get((int) (Math.floorMod(h >>> 5, own.size())));
         if ((h & 3) == 1) line = CivicProjects.flavour(player.server, body.city()).orElse(line);   // people talk about what their city finished together (D-171)
-        String greeting = returning ? (hour < 12 ? "Morning again, " : hour < 18 ? "Back again, " : "Evening, ") + player.getGameProfile().getName() + ". " : "";
+        String greeting = returning ? (hour < 12 ? "Morning again, " : hour < 18 ? "Back again, " : "Evening, ") + player.getGameProfile().getName() + ". "
+            : CityStanding.greeting(CitizenState.get(player.server).find(player.getUUID()).orElse(null), body.city(), player.getGameProfile().getName());   // a city's good name (D-204)
         return greeting + line;
     }
 
@@ -901,7 +1003,15 @@ public final class PopulationService {
         String text = body.homeKey() != 0 ? HouseholdService.say(player, body, returning) : say(player, body, returning, met.size());
         body.getLookControl().setLookAt(player);
         body.getNavigation().stop();
-        TerminalNetwork.sendDialogue(player, body.getId(), body.getName().getString(), subtitle(body), body.city(), text, choices(body));
+        TerminalNetwork.sendDialogue(player, body.getId(), body.getName().getString(), subtitle(body), body.city(), text, choices(body, player));
+    }
+
+    /** The same, for this player: a keeper who saw them force the building's door will not open the counter to them (D-202). */
+    static List<Dialogue.Choice> choices(TownspersonEntity body, ServerPlayer player) {
+        List<Dialogue.Choice> out = choices(body);
+        if (ShopCounters.shopOf(body).isPresent() && HouseholdService.sawThief(player.serverLevel(), body, player.getUUID()))
+            out.replaceAll(c -> c.id().equals("shop") ? new Dialogue.Choice("shop", "What do you sell?", false, "They saw you at their door. They will not serve you.") : c);
+        return out;
     }
 
     /** What a conversation offers: a fence's trade (D-125), and always a goodbye. */
@@ -920,13 +1030,21 @@ public final class PopulationService {
     static void choose(ServerPlayer player, TownspersonEntity body, String id) {
         // the screen is already closed on the client; answering with a close could shut a newer conversation (a second right click had replaced it: farmer run 2, D-178)
         if (id.equals("end") || player.distanceToSqr(body) > 100.0) return;
-        if (id.equals("shop") && ShopCounters.shopOf(body).isPresent()) { TerminalNetwork.closeDialogue(player); ShopCounters.open(player, body); return; }
+        if (id.equals("shop") && ShopCounters.shopOf(body).isPresent()) {
+            if (HouseholdService.sawThief(player.serverLevel(), body, player.getUUID())) {
+                TerminalNetwork.sendDialogue(player, body.getId(), body.getName().getString(), subtitle(body), body.city(), "Not you. I saw you at our door. Go on, before I call somebody.", choices(body, player));
+                return;
+            }
+            TerminalNetwork.closeDialogue(player);
+            ShopCounters.open(player, body);
+            return;
+        }
         FenceCatalog.Fence fence = FenceService.fenceOf(body);
         if (fence != null && id.equals("fence_offer")) { TerminalNetwork.closeDialogue(player); FenceService.open(player, body); return; }
         if (fence != null && id.equals("fence_how")) {
             TerminalNetwork.sendDialogue(player, body.getId(), body.getName().getString(), subtitle(body), body.city(),
                 "Goods with a story. Marked, you understand, from a lock somebody forced. I pay " + fence.ratePercent() + " in the hundred of what a thing is worth, less for anything lifted here in "
-                    + capitalise(fence.city()) + ": that is too close to home and people talk. Paper and bread I do not want. I only have so much cash about me; it comes in slowly.", choices(body));
+                    + capitalise(fence.city()) + ": that is too close to home and people talk. Paper and bread I do not want. I only have so much cash about me; it comes in slowly.", choices(body, player));
             return;
         }
         TerminalNetwork.closeDialogue(player);
@@ -995,9 +1113,9 @@ public final class PopulationService {
             Around a = around(p.serverLevel(), p);
             players.append("; ").append(p.getGameProfile().getName()).append(": ").append(a.within64()).append(" within 64 blocks (").append(a.inSight()).append(" in sight, target ").append(a.target()).append(")");
         }
-        return String.format(Locale.ROOT, "density %s; street people out now %d (peak %d, cap %d total / %d per player); passes %d, mean %.0f us, worst %d us (steps %d us, top-up %d us, %d Lost Cities lookups, %d people out), first %d us; Lost Cities lookups %d (mean %.0f us, worst %d us); spawned %d (%d out of a door), removed %d, went in at a door %d, browsed a shop %d (bought %d off a shelf), chats %d, given up %d, spots missed %d; doors known %d; %s%s",
+        return String.format(Locale.ROOT, "density %s; street people out now %d (peak %d, cap %d total / %d per player); passes %d, mean %.0f us, worst %d us (steps %d us, top-up %d us, %d Lost Cities lookups, %d people out), first %d us; Lost Cities lookups %d (mean %.0f us, worst %d us); spawned %d (%d out of a door), removed %d, went in at a door %d, browsed a shop %d (bought %d off a shelf), to a player's counter %d (bought %d), chats %d, given up %d, spots missed %d; doors known %d; %s%s",
             preset.name().toLowerCase(Locale.ROOT), ACTIVE.size(), activePeak, preset.world, preset.perPlayer, passes, average, nanosWorst / 1000, worstSteps / 1000, worstTopUp / 1000, worstLookups, worstPeople, nanosFirst / 1000, lcCalls,
-            lcCalls == 0 ? 0.0 : lcNanos / (double) lcCalls / 1000.0, lcWorst / 1000, spawned, spawnedAtDoors, removed, entered, browsed, shelfPurchases, chats, stuckGivenUp, spotMisses, DOORS.size(), LostCitiesLink.recordStatus(), players);
+            lcCalls == 0 ? 0.0 : lcNanos / (double) lcCalls / 1000.0, lcWorst / 1000, spawned, spawnedAtDoors, removed, entered, browsed, shelfPurchases, businessVisits, businessPurchases, chats, stuckGivenUp, spotMisses, DOORS.size(), LostCitiesLink.recordStatus(), players);
     }
 
     @SubscribeEvent

@@ -922,6 +922,19 @@ def sealed_envelope():
 
 
 
+# ------------------------------------------------------------------------------------------------ survival (D-203)
+@item
+def first_aid_kit():
+    """A first aid kit: a white case with a lit top edge, a red cross on its face, a grey carrying handle and a dark clasp."""
+    s = Sprite()
+    s.rect(6, 2, 9, 2, GUNMETAL[2]); s.put(5, 3, GUNMETAL[2]); s.put(10, 3, GUNMETAL[2])
+    bevel_rect(s, 2, 4, 13, 13, WHITE)
+    s.rect(7, 6, 8, 11, RED[2]); s.rect(5, 8, 10, 9, RED[2])
+    s.line(7, 6, 7, 11, RED[3]); s.line(5, 8, 10, 8, RED[3])
+    s.rect(7, 13, 8, 13, GUNMETAL[1])
+    return finish(s)
+
+
 # ------------------------------------------------------------------------------------------------ workshops (D-163)
 WINE = ramp('#7b2346')
 CIDER = ramp('#d39a2c')

@@ -37,6 +37,13 @@ public final class CorridorRoadFeature extends Feature<CorridorRoadConfig> {
     private static final BlockState RAIL = Blocks.STONE_BRICK_WALL.defaultBlockState();
     private static final BlockState LAMP = Blocks.LANTERN.defaultBlockState();
 
+    /**
+     * How far beyond a chunk a road may lie and still be repaired from it: the distance to the middle of a diagonal neighbour (16 times the square root of two). A chunk's features
+     * may write into all eight chunks round it, so a mushroom patch from the chunk diagonally beside a road's chunk can land on the deck; with the earlier 16 that chunk did not count
+     * as near the road and never laid the deck again after its own vegetation (tenth pass, D-196).
+     */
+    static final double NEIGHBOURS = 22.7;
+
     public CorridorRoadFeature() { super(CorridorRoadConfig.CODEC); }
 
     /** Plans already built for a level (empty before the first road chunk was generated). */
@@ -111,7 +118,7 @@ public final class CorridorRoadFeature extends Feature<CorridorRoadConfig> {
         int x0 = context.origin().getX() & ~15, z0 = context.origin().getZ() & ~15;
         boolean near = false;
         for (CorridorPlan plan : context.config().plans()) {
-            near |= plan.nearChunk(x0, z0, 16);
+            near |= plan.nearChunk(x0, z0, NEIGHBOURS);
             if (near) break;
         }
         if (!near) return false;

@@ -18,6 +18,28 @@ def every_json(folder: Path) -> str:
     return "\n".join(p.read_text(encoding="utf-8") for p in folder.rglob("*.json") if p.name != porter.REPORT)
 
 
+class CreateStones(unittest.TestCase):
+    """Create's decorative stones are walls, floors and steps: ported to air they left holes in the owner's houses (eleventh pass)."""
+
+    def test_a_create_stone_keeps_its_shape_and_its_properties_and_is_never_air(self):
+        self.assertEqual(porter.create_shaped("create:cut_calcite", {}), "minecraft:calcite")
+        self.assertEqual(porter.create_shaped("create:polished_cut_calcite_stairs", {"facing": "east", "half": "top", "shape": "straight", "waterlogged": "false"}),
+                         "minecraft:smooth_quartz_stairs[facing=east,half=top,shape=straight,waterlogged=false]")
+        self.assertEqual(porter.create_shaped("create:polished_cut_scoria_slab", {"type": "bottom"}), "minecraft:nether_brick_slab[type=bottom]")
+        self.assertEqual(porter.create_shaped("create:cut_tuff_brick_wall", {"up": "true", "north": "low", "axis": "y"}), "minecraft:andesite_wall[north=low,up=true]")
+        self.assertEqual(porter.create_shaped("create:calcite_pillar", {"axis": "y"}), "minecraft:calcite", "a full block takes no shape properties")
+        for stone in porter.CREATE_STONES:
+            for prefix in ("cut_", "polished_cut_", "layered_", "small_"):
+                self.assertNotEqual(porter.create_shaped(f"create:{prefix}{stone}", {}), "minecraft:air")
+
+    def test_glass_stays_whole_a_seat_is_a_carpet_and_machinery_is_still_air(self):
+        self.assertEqual(porter.create_shaped("create:framed_glass", {}), "minecraft:glass")
+        self.assertEqual(porter.create_shaped("create:dark_oak_window_pane", {"north": "true"}), "minecraft:glass_pane[north=true]")
+        self.assertEqual(porter.create_shaped("create:red_seat", {}), "minecraft:red_carpet")
+        self.assertIsNone(porter.create_shaped("create:shaft", {"axis": "y"}))
+        self.assertIsNone(porter.create_shaped("create:cogwheel", {}))
+
+
 class PortTheFixture(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -92,6 +114,33 @@ class PortTheFixture(unittest.TestCase):
                                                          encoding="utf-8")
         return lc
 
+    def test_a_building_of_one_part_without_conditions_is_built_once(self):
+        # Lost Cities 7 builds storeys 0 to floors and puts a part with no conditions up on every one: a cabin on its own mound, raised to two floors and given two
+        # cellars, came out as five copies whose mounds buried the bedrooms below (eleventh pass, a private generated world)
+        lc = self.source / "data" / "fixturecity" / "lostcities"
+        (lc / "parts" / "fixture_cabin.json").write_text(json.dumps({"xsize": 2, "zsize": 2, "slices": [["##", "##"]] * 9}), encoding="utf-8")
+        (lc / "buildings" / "fixture_cabin.json").write_text(json.dumps({"minfloors": 1, "maxfloors": 1, "parts": [{"part": "fixturecity:fixture_cabin"}]}), encoding="utf-8")
+        (lc / "buildings" / "fixture_cellared.json").write_text(json.dumps({"minfloors": 1, "maxfloors": 1, "maxcellars": 1, "parts": [{"part": "fixturecity:fixture_cabin"}]}),
+                                                              encoding="utf-8")
+        (lc / "parts" / "fixture_tall_ground.json").write_text(json.dumps({"xsize": 2, "zsize": 2, "slices": [["##", "##"]] * 6}), encoding="utf-8")
+        (lc / "parts" / "fixture_tall_floor.json").write_text(json.dumps({"xsize": 2, "zsize": 2, "slices": [["##", "##"]] * 6}), encoding="utf-8")
+        (lc / "parts" / "fixture_tall_top.json").write_text(json.dumps({"xsize": 2, "zsize": 2, "slices": [["##", "##"]] * 6}), encoding="utf-8")
+        (lc / "buildings" / "fixture_tall.json").write_text(json.dumps({"minfloors": 1, "maxfloors": 1, "parts": [
+            {"part": "fixturecity:fixture_tall_ground", "ground": True, "top": False}, {"part": "fixturecity:fixture_tall_floor", "ground": False, "top": False},
+            {"part": "fixturecity:fixture_tall_top", "top": True, "ground": False}]}), encoding="utf-8")
+        result = porter.port(self.source, self.dest)
+        out = self.dest / "data" / "fixturecity" / "lostcities" / "buildings"
+        cabin = json.loads((out / "fixture_cabin.json").read_text(encoding="utf-8"))
+        self.assertEqual((cabin["minfloors"], cabin["maxfloors"], cabin["mincellars"], cabin["maxcellars"]), (0, 0, 0, 0), "storey 0 alone, and no cellar")
+        self.assertTrue(cabin["overrideFloors"], "Lost Cities 7 reads the building's own numbers only when it overrides")
+        cellared = json.loads((out / "fixture_cellared.json").read_text(encoding="utf-8"))
+        self.assertEqual((cellared["minfloors"], cellared["maxfloors"], cellared["maxcellars"]), (0, 0, 1), "cellars the building names are kept")
+        self.assertNotIn("mincellars", cellared)
+        tall = json.loads((out / "fixture_tall.json").read_text(encoding="utf-8"))
+        self.assertEqual((tall["minfloors"], tall["maxfloors"]), (2, 2), "a ground, a middle and a top part still need storeys 0 to 2")
+        self.assertNotIn("maxcellars", tall)
+        self.assertEqual(result["counts"]["single_structures"], 2)
+
     def test_a_character_the_parts_take_from_the_packs_style_is_given_to_the_building(self):
         # the pack's style palette defines "H"; this game's city styles replace the pack's, so without the building's own definition Lost Cities throws and the lot stays empty
         self.add_style_pack()
@@ -109,6 +158,43 @@ class PortTheFixture(unittest.TestCase):
         self.assertEqual(result["counts"]["style_characters_given"], 2)
         self.assertEqual(result["buildings_with_undefined_characters"], {"fixturecity:fixture_odd": "Q"})
         self.assertTrue(result["loadable"], "an undefined character empties a lot, it does not stop a world from loading")
+
+    def test_a_part_of_a_multi_chunk_building_is_given_the_characters_its_building_defines(self):
+        # Lost Cities 7.5.5 does not find a character only the building of a multi-chunk building's part defines (D-198): the part is given it
+        lc = self.source / "data" / "fixturecity" / "lostcities"
+        (lc / "parts").mkdir(parents=True, exist_ok=True)
+        (lc / "parts" / "duo_1_ground.json").write_text(json.dumps({"xsize": 1, "zsize": 1, "palette": [{"char": "#", "block": "minecraft:bricks"}],
+            "slices": [["#H"], ["  "], ["  "], ["  "], ["  "], ["  "]]}), encoding="utf-8")
+        (lc / "parts" / "duo_0_ground.json").write_text(json.dumps({"xsize": 1, "zsize": 1, "slices": [["#"], [" "], [" "], [" "], [" "], [" "]]}), encoding="utf-8")
+        (lc / "buildings").mkdir(parents=True, exist_ok=True)
+        (lc / "buildings" / "duo_1.json").write_text(json.dumps({"minfloors": 1, "maxfloors": 1, "palette": {"palette": [{"char": "H", "block": "minecraft:black_concrete"},
+            {"char": "#", "block": "minecraft:stone"}]}, "parts": [{"part": "fixturecity:duo_1_ground", "ground": True}]}), encoding="utf-8")
+        (lc / "buildings" / "duo_0.json").write_text(json.dumps({"minfloors": 1, "maxfloors": 1, "parts": [{"part": "fixturecity:duo_0_ground", "ground": True}]}), encoding="utf-8")
+        (lc / "multibuildings").mkdir(parents=True, exist_ok=True)
+        (lc / "multibuildings" / "duo.json").write_text(json.dumps({"dimx": 1, "dimz": 2, "buildings": [["duo_0", "fixturecity:duo_1"]]}), encoding="utf-8")
+        result = porter.port(self.source, self.dest)
+        out = self.dest / "data" / "fixturecity" / "lostcities" / "parts"
+        part = json.loads((out / "duo_1_ground.json").read_text(encoding="utf-8"))
+        self.assertEqual({e["char"]: e["block"] for e in part["palette"]["palette"]}, {"#": "minecraft:bricks", "H": "minecraft:black_concrete"},
+                         "the part gets the building's H, and keeps its own # over the building's, in the object form Lost Cities decodes")
+        self.assertNotIn("palette", json.loads((out / "duo_0_ground.json").read_text(encoding="utf-8")), "a part whose building defines nothing it uses is left alone")
+        self.assertEqual((result["counts"]["multi_parts_given_building_characters"], result["counts"]["multi_part_characters_given"]), (1, 1))
+
+    def test_a_multi_chunk_part_that_names_its_palette_keeps_that_palettes_entries_in_its_own(self):
+        # Lost Cities reads a part's inline palette in place of the one it names: the named palette's entries go into the inline one with the building's character (multi run 2)
+        lc = self.source / "data" / "fixturecity" / "lostcities"
+        for folder in ("parts", "buildings", "multibuildings", "palettes"):
+            (lc / folder).mkdir(parents=True, exist_ok=True)
+        (lc / "palettes" / "trio_1_ground_palette.json").write_text(json.dumps({"palette": [{"char": "G", "block": "minecraft:grass_block"}]}), encoding="utf-8")
+        (lc / "parts" / "trio_1_ground.json").write_text(json.dumps({"xsize": 1, "zsize": 1, "refpalette": "fixturecity:trio_1_ground_palette",
+            "slices": [["GH"], ["  "], ["  "], ["  "], ["  "], ["  "]]}), encoding="utf-8")
+        (lc / "buildings" / "trio_1.json").write_text(json.dumps({"minfloors": 1, "maxfloors": 1, "palette": {"palette": [{"char": "H", "block": "minecraft:black_concrete"}]},
+            "parts": [{"part": "fixturecity:trio_1_ground", "ground": True}]}), encoding="utf-8")
+        (lc / "multibuildings" / "trio.json").write_text(json.dumps({"dimx": 1, "dimz": 1, "buildings": [["fixturecity:trio_1"]]}), encoding="utf-8")
+        porter.port(self.source, self.dest)
+        part = json.loads((self.dest / "data" / "fixturecity" / "lostcities" / "parts" / "trio_1_ground.json").read_text(encoding="utf-8"))
+        self.assertEqual({e["char"]: e["block"] for e in part["palette"]["palette"]}, {"G": "minecraft:grass_block", "H": "minecraft:black_concrete"})
+        self.assertNotIn("refpalette", part, "one palette is read: the inline one")
 
     def test_an_inline_palette_in_lost_cities_object_form_is_ported_too(self):
         lc = self.source / "data" / "fixturecity" / "lostcities"
@@ -191,6 +277,15 @@ class PortTheFixture(unittest.TestCase):
         self.assertEqual(look.resolve("othermod:flux_capacitor"), ("minecraft:air", "air"))
         # without a registry nothing is guessed beyond the rules
         self.assertEqual(block_lookalikes.Lookalikes().resolve("othermod:fir_stairs"), ("minecraft:air", "air"))
+
+    def test_a_woven_mat_is_a_floor_and_never_the_bamboo_plant(self):
+        # private tour 15: a restaurant's floor of Quark bamboo mats came out as the bamboo plant, from the shapeless fallback's bare material
+        registry = {"minecraft:bamboo": {"age": ["0", "1"]}, "minecraft:bamboo_mosaic": {}, "minecraft:bamboo_planks": {}, "minecraft:yellow_carpet": {}, "minecraft:granite": {}}
+        look = block_lookalikes.Lookalikes(registry=registry)
+        self.assertEqual(look.resolve("quark:bamboo_mat", {"facing": "north"}), ("minecraft:bamboo_mosaic", "rule"))
+        self.assertEqual(look.resolve("quark:bamboo_mat_carpet"), ("minecraft:yellow_carpet", "rule"))
+        self.assertEqual(look.resolve("othermod:bamboo_thing"), ("minecraft:bamboo_planks", "shape"))
+        self.assertEqual(look.resolve("othermod:granite"), ("minecraft:granite", "shape"))
 
     def test_a_port_with_a_registry_reports_what_became_what(self):
         registry = {"minecraft:stone_bricks": {}, "minecraft:dirt_path": {}, "minecraft:polished_andesite": {}, "minecraft:cut_copper": {}, "minecraft:oak_planks": {},

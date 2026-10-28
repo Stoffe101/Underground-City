@@ -218,6 +218,31 @@ class AScarcityWorldAndTheFences(unittest.TestCase):
         self.assertTrue(any("of the best legal hour" in p for p in em.invariants(model)))
 
 
+class APlayersCounterAndShortageContracts(unittest.TestCase):
+    """The counter's tax, its price ceiling and its sales an hour, and a shortage contract's pay (D-207, D-208): each guard fails on numbers made to break it."""
+
+    def setUp(self):
+        self.saved = (em.BUSINESS_TAX, em.BUSINESS_MIN_TAX, em.BUSINESS_SALES_PER_HOUR, em.CONTRACT_PAY)
+
+    def tearDown(self):
+        em.BUSINESS_TAX, em.BUSINESS_MIN_TAX, em.BUSINESS_SALES_PER_HOUR, em.CONTRACT_PAY = self.saved
+
+    def test_the_shipped_numbers_hold(self):
+        self.assertEqual(em.business_problems(em.Model()), [])
+
+    def test_a_tax_no_larger_than_the_discounts_is_a_loop(self):
+        em.BUSINESS_TAX, em.BUSINESS_MIN_TAX = 0.10, 1
+        self.assertTrue(any("a loop" in p for p in em.business_problems(em.Model())))
+
+    def test_a_counter_that_out_sells_legal_work_fails(self):
+        em.BUSINESS_SALES_PER_HOUR = 12
+        self.assertTrue(any("best legal hour" in p for p in em.business_problems(em.Model())))
+
+    def test_a_contract_never_reaches_the_shops_price_however_generous_its_rate(self):
+        em.CONTRACT_PAY = 3.0   # the game caps a contract's unit at the shop's price less one (ShortageContracts.unitPay); the guard reads the capped pay
+        self.assertEqual([p for p in em.business_problems(em.Model()) if p.startswith("shortage")], [])
+
+
 class TheDocumentIsCurrent(unittest.TestCase):
     def test_the_generated_block_of_the_economy_model_document_matches_the_data(self):
         path = ROOT / "docs/technical/economy-model.md"

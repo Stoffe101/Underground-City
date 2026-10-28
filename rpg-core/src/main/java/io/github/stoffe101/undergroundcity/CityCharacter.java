@@ -48,7 +48,14 @@ public final class CityCharacter extends SimpleJsonResourceReloadListener {
     public record Zone(double within, List<Pick> picks) {
         double total() { double sum = 0; for (Pick pick : picks) sum += pick.weight; return sum; }
     }
-    public record Character(String city, ResourceLocation style, List<Zone> zones, boolean keepMultiBuildings) {}
+    /**
+     * A city's look: its style, its rings of single-chunk buildings, and its multi-chunk buildings. {@code keepMultiBuildings} keeps every multi-chunk building Lost Cities plans;
+     * otherwise {@code multiBuildings} (tenth pass, D-198) names the ones the city keeps: one of them is kept where Lost Cities planned it, any other is replaced by one of them with
+     * the same footprint (chosen from the seed and the building's corner, so all its chunks agree), and a building none fits is flattened into single lots as before.
+     */
+    public record Character(String city, ResourceLocation style, List<Zone> zones, boolean keepMultiBuildings, List<Pick> multiBuildings) {
+        public Character(String city, ResourceLocation style, List<Zone> zones, boolean keepMultiBuildings) { this(city, style, zones, keepMultiBuildings, List.of()); }
+    }
 
     private volatile Map<String, Character> characters = Map.of();
     private final Set<String> warned = java.util.concurrent.ConcurrentHashMap.newKeySet();
@@ -99,7 +106,35 @@ public final class CityCharacter extends SimpleJsonResourceReloadListener {
             zones.add(new Zone(within, List.copyOf(picks)));
         }
         if (last < 1.0 - 1e-9) throw new IllegalArgumentException("The last zone must reach the edge of the city: " + file);
-        return new Character(city, style, List.copyOf(zones), json.has("keep_multi_buildings") && json.get("keep_multi_buildings").getAsBoolean());
+        List<Pick> multis = new ArrayList<>();
+        if (json.has("multi_buildings")) {
+            for (JsonElement pick : json.getAsJsonArray("multi_buildings")) {
+                JsonObject object = pick.getAsJsonObject();
+                double weight = object.has("weight") ? object.get("weight").getAsDouble() : 1.0;
+                if (weight <= 0 || weight > 1000) throw new IllegalArgumentException("Bad multi-building weight in " + file);
+                multis.add(new Pick(ResourceLocation.parse(object.get("id").getAsString()), weight));
+            }
+        }
+        return new Character(city, style, List.copyOf(zones), json.has("keep_multi_buildings") && json.get("keep_multi_buildings").getAsBoolean(), List.copyOf(multis));
+    }
+
+    /** A multi-chunk building of a city's list with this footprint, from the seed and the building's corner only (empty when none fits): every chunk of the building agrees. */
+    static java.util.Optional<ResourceLocation> chooseMulti(List<Pick> fitting, long seed, int cornerX, int cornerZ) {
+        if (fitting.isEmpty()) return java.util.Optional.empty();
+        double total = 0;
+        for (Pick pick : fitting) total += pick.weight;
+        SplittableRandom random = new SplittableRandom(seed * 0x2545F4914F6CDD1DL + cornerX * 0x9E3779B97F4A7C15L + cornerZ * 1442695040888963407L + 0x5DEECE66DL);
+        double roll = random.nextDouble() * total;
+        for (Pick pick : fitting) { roll -= pick.weight; if (roll < 0) return java.util.Optional.of(pick.building); }
+        return java.util.Optional.of(fitting.get(fitting.size() - 1).building);
+    }
+
+    /** A city's list may name {@code <namespace>:none} with a weight: the share of Lost Cities' multi-chunk buildings that become single lots instead (it fits any footprint). */
+    static boolean flattens(ResourceLocation id) { return id.getPath().equals("none"); }
+
+    /** The registry id of a multi-chunk building's part: Lost Cities' own files name parts without a namespace, meaning the multi-chunk building's. */
+    static ResourceLocation partId(ResourceLocation multi, String part) {
+        return part.contains(":") ? ResourceLocation.parse(part) : ResourceLocation.fromNamespaceAndPath(multi.getNamespace(), part);
     }
 
     public Map<String, Character> all() { return characters; }
@@ -134,6 +169,10 @@ public final class CityCharacter extends SimpleJsonResourceReloadListener {
     // ------------------------------------------------------------------------------------------------ the hook into Lost Cities (reflection)
 
     private static Method getCharacteristics, getChunkX, getChunkZ, getWorld, getLostInfo, getBuildings, getCityStyles, registryGet;
+    /** Multi-chunk buildings (D-198): the registry, a building's part and footprint, and a chunk's place in it; null when this Lost Cities has none (multi-chunk buildings are then flattened). */
+    private static Method getMultiBuildings, multiPart, multiDimX, multiDimZ, posX, posZ, posW, posH;
+    /** Chunks of multi-chunk buildings kept, swapped for one of the city's, and flattened because a railway reached one of the building's lots (for the probes; Lost Cities may ask about a chunk more than once). */
+    static volatile long multiKept, multiSwapped, multiRailFlattened;
     private static Field cityStyleId, cityStyle, buildingTypeId, buildingType, multiBuilding, multiBuildingId, multiPos, isCity, couldHaveBuilding, cityLevel, plannedRoadType;
     private static Object singlePos;
     /** Lost Cities' own rule for a single-chunk lot ({@code BuildingInfo.checkBuildingPossibility}) and what it needs; null when this Lost Cities does not have them (the check is then skipped). */
@@ -170,6 +209,17 @@ public final class CityCharacter extends SimpleJsonResourceReloadListener {
             cityLevel = characteristics.getField("cityLevel");
             plannedRoadType = characteristics.getField("plannedRoadType");
             try {
+                Class<?> multi = Class.forName("mcjty.lostcities.api.ILostCityMultiBuilding"), pos = Class.forName("mcjty.lostcities.api.MultiPos");
+                multiPart = multi.getMethod("getBuilding", int.class, int.class);
+                multiDimX = multi.getMethod("getDimX");
+                multiDimZ = multi.getMethod("getDimZ");
+                posX = pos.getMethod("x"); posZ = pos.getMethod("z"); posW = pos.getMethod("w"); posH = pos.getMethod("h");
+                getMultiBuildings = information.getMethod("getMultiBuildings");
+            } catch (ReflectiveOperationException | RuntimeException error) {
+                getMultiBuildings = null;
+                LOGGER.warn("[UC-CITY] Lost Cities' multi-chunk building API was not found; every multi-chunk building is flattened into single lots ({})", error.toString());
+            }
+            try {
                 Class<?> buildingInfo = Class.forName("mcjty.lostcities.worldgen.lost.BuildingInfo");
                 Class<?> coord = Class.forName("mcjty.lostcities.varia.ChunkCoord"), dimension = Class.forName("mcjty.lostcities.worldgen.IDimensionInfo");
                 singleLotRule = buildingInfo.getDeclaredMethod("checkBuildingPossibility", coord, dimension, Class.forName("mcjty.lostcities.config.LostCityProfile"),
@@ -196,6 +246,12 @@ public final class CityCharacter extends SimpleJsonResourceReloadListener {
     }
 
     private void onCharacteristics(net.minecraftforge.eventbus.api.Event event) {
+        try {
+            // a worker is planning a chunk and holds Lost Cities' lock: from now the server thread's questions wait their turn (LostCitiesLink.askable), not from when the chunk is done
+            if (getWorld.invoke(event) instanceof WorldGenLevel planning) LostCitiesLink.planning(planning.getLevel());
+        } catch (ReflectiveOperationException | RuntimeException ignored) {
+            // only a timing hint: the post-generation event still keeps the clock
+        }
         Map<String, Character> loaded = characters;
         if (loaded.isEmpty()) return;
         try {
@@ -219,6 +275,7 @@ public final class CityCharacter extends SimpleJsonResourceReloadListener {
             // Lost Cities' multi-chunk buildings (a mall, a library, a skyscraper over four chunks) belong to the standard look: unless the city asks to keep them every chunk of one becomes a single-chunk lot
             if (multiBuilding.get(ch) != null) {
                 if (character.keepMultiBuildings) return;
+                if (!character.multiBuildings.isEmpty() && getMultiBuildings != null && keepOrSwap(level, information, ch, character, world.getSeed(), chunkX, chunkZ)) return;
                 multiBuilding.set(ch, null); multiBuildingId.set(ch, null); multiPos.set(ch, singlePos);
                 if (FLATTENED.size() < 65536) FLATTENED.add(net.minecraft.world.level.ChunkPos.asLong(chunkX, chunkZ));
                 // Lost Cities builds every lot of a multi-chunk section whatever runs through it, and draws its railways after the building: as a single lot the chunk gets
@@ -249,6 +306,43 @@ public final class CityCharacter extends SimpleJsonResourceReloadListener {
     }
 
     private static Object INSTANCE_API() { return LostCitiesLink.implementation(); }
+
+    /**
+     * Keeps a multi-chunk building of the city's list where Lost Cities planned it, or puts one of the list with the same footprint in its place (its building, and this chunk's part
+     * of it); false when the chunk is to be flattened: nothing of the list fits, or a railway comes within a storey of any of the building's lots (Lost Cities draws its railways
+     * after the buildings, through them). Every chunk of the building gives the same answer: the choice depends on the seed and the building's corner only.
+     */
+    private boolean keepOrSwap(net.minecraft.server.level.ServerLevel level, Object information, Object ch, Character character, long seed, int chunkX, int chunkZ)
+            throws ReflectiveOperationException {
+        Object pos = multiPos.get(ch);
+        int x = (Integer) posX.invoke(pos), z = (Integer) posZ.invoke(pos), w = (Integer) posW.invoke(pos), h = (Integer) posH.invoke(pos);
+        int cornerX = chunkX - x, cornerZ = chunkZ - z, level0 = cityLevel.getInt(ch);
+        for (int dx = 0; dx < w; dx++) for (int dz = 0; dz < h; dz++) {
+            if (railwayReachesLot(level, information, cornerX + dx, cornerZ + dz, level0)) { multiRailFlattened++; return false; }
+        }
+        Object current = multiBuildingId.get(ch);
+        for (Pick pick : character.multiBuildings) if (pick.building.equals(current)) { multiKept++; return true; }
+        Object registry = getMultiBuildings.invoke(information);
+        List<Pick> fitting = new ArrayList<>();
+        for (Pick pick : character.multiBuildings) {
+            if (flattens(pick.building)) { fitting.add(pick); continue; }
+            Object candidate = registryGet.invoke(registry, level, pick.building);
+            if (candidate == null) { warnOnce("multi " + pick.building, "multi-chunk building " + pick.building + " is not registered; " + character.city + " cannot use it"); continue; }
+            if ((Integer) multiDimX.invoke(candidate) == w && (Integer) multiDimZ.invoke(candidate) == h) fitting.add(pick);
+        }
+        var chosen = chooseMulti(fitting, seed, cornerX, cornerZ);
+        if (chosen.isEmpty() || flattens(chosen.get())) return false;
+        Object building = registryGet.invoke(registry, level, chosen.get());
+        ResourceLocation part = partId(chosen.get(), (String) multiPart.invoke(building, x, z));
+        Object partBuilding = registryGet.invoke(getBuildings.invoke(information), level, part);
+        if (partBuilding == null) { warnOnce("part " + part, "building " + part + " of " + chosen.get() + " is not registered; the multi-chunk building is flattened"); return false; }
+        multiBuilding.set(ch, building);
+        multiBuildingId.set(ch, chosen.get());
+        buildingType.set(ch, partBuilding);
+        buildingTypeId.set(ch, part);
+        multiSwapped++;
+        return true;
+    }
 
     /** Lost Cities' railway in a chunk ("TYPE@level", "NONE@..." for none), for the probes; empty when it cannot be asked. */
     static String railAt(net.minecraft.server.level.ServerLevel level, int chunkX, int chunkZ) {

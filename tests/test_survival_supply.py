@@ -25,7 +25,10 @@ class SurvivalSupply(unittest.TestCase):
     def test_every_third_party_line_is_optional_and_no_vanilla_line_is(self):
         for line in LINES:
             namespace = line["item"].split(":")[0]
-            self.assertEqual(line.get("requires_mod", "minecraft"), namespace if namespace != "minecraft" else "minecraft", line["id"])
+            if namespace in ("minecraft", "underground_city"):
+                self.assertNotIn("requires_mod", line, line["id"] + ": a vanilla or Core item is always there")
+            else:
+                self.assertEqual(line.get("requires_mod"), namespace, line["id"])
 
     def test_create_is_nowhere(self):
         text = SOURCE_TEXT = (ROOT / "content/gameplay/survival-supply.json").read_text(encoding="utf-8")
@@ -75,10 +78,17 @@ class SurvivalSupply(unittest.TestCase):
             if line["item"].startswith("sophisticatedbackpacks:"):
                 self.assertEqual("sophisticatedbackpacks", line.get("requires_mod"), line["id"])
 
-    def test_no_medical_item_is_pretended(self):
-        text = (ROOT / "content/gameplay/survival-supply.json").read_text(encoding="utf-8")
-        self.assertIn("no medical item", text)
-        self.assertFalse([l for l in LINES if "bandage" in l["item"] or "medkit" in l["item"]])
+    def test_the_one_medical_item_is_cores_first_aid_kit_bought_in_every_city_and_at_every_wayside_desk(self):
+        # D-203: no medical mod is selected; the medical item is Core's own kit, sold, never free, and dearer on the road
+        medical = [l for l in LINES if any(word in l["item"] for word in ("first_aid", "bandage", "medkit", "medical"))]
+        self.assertTrue(medical and all(l["item"] == "underground_city:first_aid_kit" for l in medical), [l["item"] for l in medical])
+        for city in ("valewood", "ironhaven", "blackwater"):
+            for outlet in ("city", "wayside"):
+                self.assertTrue([l for l in medical if l["city"] == city and outlet in l["outlets"]], f"{city} sells no kit at its {outlet} outlet")
+        city_price = min(l["price"] for l in medical if "city" in l["outlets"])
+        self.assertTrue(all(l["price"] >= city_price * 1.2 for l in medical if "wayside" in l["outlets"]), "a wayside kit is not dearer than the city's")
+        texture = ROOT / "rpg-core/src/main/resources/assets/underground_city/textures/item/first_aid_kit.png"
+        self.assertTrue(texture.is_file(), "the kit has no texture")
 
 
 if __name__ == "__main__":

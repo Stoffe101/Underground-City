@@ -113,7 +113,7 @@ public final class BuildingGuard {
         BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos();
         for (int dx = -SIGNAL_REACH; dx <= SIGNAL_REACH; dx++) for (int dz = -SIGNAL_REACH; dz <= SIGNAL_REACH; dz++) for (int dy = -2; dy <= 1; dy++) {
             p.set(pos.getX() + dx, pos.getY() + dy, pos.getZ() + dz);
-            if (!level.isLoaded(p)) continue;
+            if (!Chunks.ready(level, p)) continue;
             BlockState state = level.getBlockState(p);
             if (!(state.getBlock() instanceof DoorBlock) || state.getValue(DoorBlock.HALF) != DoubleBlockHalf.LOWER) continue;
             Optional<CityBuildings.Building> found = protectedAt(level, p);
@@ -253,7 +253,7 @@ public final class BuildingGuard {
         int unitDoor = lowerState.getBlock() instanceof DoorBlock ? householdUnitDoor(level, found.get(), lower, lowerState) : -1;
         if (unitDoor >= 0) { householdDoor(event, player, level, found.get(), lower, lowerState, unitDoor); return; }
         // a staff door of an open building (D-159): shut to the public side and locked like its street door, so a lockpick opens it; from behind it opens by hand
-        if (lowerState.getBlock() instanceof DoorBlock && !CityHomes.holdsKey(player, found.get()) && StaffZones.staffDoorNow(level, found.get(), lower)
+        if (lowerState.getBlock() instanceof DoorBlock && !CityHomes.holdsKey(player, found.get(), lower, lowerState) && StaffZones.staffDoorNow(level, found.get(), lower)
                 && StaffZones.onPublicSide(level, found.get(), lower, player.position())) {
             long now = LockService.clock(level.getServer());
             if (PropertyLocks.get(level.getServer()).breached(lower, now) || lowerState.getValue(DoorBlock.OPEN)) { byHand(event, player, level, lower, lowerState); return; }
@@ -280,7 +280,7 @@ public final class BuildingGuard {
             return;
         }
         // casing (D-144): crouched with an empty hand at a street door, from the street, a thief reads the place instead of trying it
-        if (Casing.wants(player) && outsideSide(level, lower, lowerState, player.position()) && !CityHomes.holdsKey(player, found.get())) {
+        if (Casing.wants(player) && outsideSide(level, lower, lowerState, player.position()) && !CityHomes.holdsKey(player, found.get(), lower, lowerState)) {
             event.setCanceled(true);
             event.setCancellationResult(InteractionResult.SUCCESS);
             if (event.getHand() == InteractionHand.MAIN_HAND) Casing.caseDoor(player, level, found.get(), lower);
@@ -296,7 +296,7 @@ public final class BuildingGuard {
             return;
         }
         // a keypad door (the SecurityCraft trial, D-140) would ask for its code on the way out too, even while it stands unlocked after somebody came in: Core opens it for the person leaving
-        if (keypad && (!outsideSide(level, lower, lowerState, player.position()) || CityHomes.holdsKey(player, found.get()))) {
+        if (keypad && (!outsideSide(level, lower, lowerState, player.position()) || CityHomes.holdsKey(player, found.get(), lower, lowerState))) {
             PropertyLocks.get(level.getServer()).exitOpen(lower, now + EXIT_TICKS);
             event.setCanceled(true);
             event.setCancellationResult(InteractionResult.SUCCESS);
@@ -307,8 +307,9 @@ public final class BuildingGuard {
         }
         if (PropertyLocks.get(level.getServer()).breached(lower, now)) { byHand(event, player, level, lower, lowerState); return; }   // somebody picked it a moment ago
         if (lowerState.getValue(DoorBlock.OPEN)) { byHand(event, player, level, lower, lowerState); return; }   // a click on a door that stands open only shuts it
-        if (!outsideSide(level, lower, lowerState, player.position()) || CityHomes.holdsKey(player, found.get())) {
-            // from the inside a door always opens, and a tenant of a flat in the building has a key to its street door (D-127); either way it shuts itself again a few seconds later
+        if (!outsideSide(level, lower, lowerState, player.position()) || CityHomes.holdsKey(player, found.get(), lower, lowerState)) {
+            // from the inside a door always opens, and a tenant of a flat in the building has a key to its shared street door (D-127), the tenant of a house or a terraced house to
+            // its own (D-206: a neighbour's key never opens it); either way it shuts itself again a few seconds later
             PropertyLocks.get(level.getServer()).exitOpen(lower, now + EXIT_TICKS);
             byHand(event, player, level, lower, lowerState);
             return;
@@ -337,14 +338,13 @@ public final class BuildingGuard {
      * on its edge and stay unlocked.
      */
     static int householdUnitDoor(ServerLevel level, CityBuildings.Building b, BlockPos lower, BlockState state) {
-        BuildingSpots.Plan plan = BuildingSpots.INSTANCE.forType(b.type());
-        if (plan == null || plan.units().size() < 2 || exterior(level, lower, state)) return -1;
-        int lx = lower.getX() - b.chunkX() * 16, ly = lower.getY() - b.streetY(), lz = lower.getZ() - b.chunkZ() * 16;
-        for (int i = 0; i < plan.units().size(); i++) {
-            BuildingSpots.Unit u = plan.units().get(i);
-            boolean shell = lx >= u.x0() - 1 && lx <= u.x1() + 1 && ly >= u.y0() - 1 && ly <= u.y1() + 1 && lz >= u.z0() - 1 && lz <= u.z1() + 1;
-            if (!shell || u.contains(lx, ly, lz) || CityHomes.toLet(level.getSeed(), b, i)) continue;
-            return i;
+        if (exterior(level, lower, state)) return -1;
+        // the places of the lot, or the dwellings of the multi-chunk building it is part of (D-206)
+        List<CityHomes.Place> places = CityHomes.places(level.getSeed(), b);
+        if (places.size() < 2) return -1;
+        for (CityHomes.Place place : places) {
+            if (!place.inShell(lower) || place.contains(lower) || CityHomes.toLet(level.getSeed(), b, place.index())) continue;
+            return place.index();
         }
         return -1;
     }
@@ -352,17 +352,18 @@ public final class BuildingGuard {
     /** A household's flat door: from inside, open; picked a moment ago or standing open, as any door; otherwise locked, and a lockpick starts on the building's lock. */
     private static void householdDoor(PlayerInteractEvent.RightClickBlock event, ServerPlayer player, ServerLevel level, CityBuildings.Building b, BlockPos lower, BlockState lowerState, int unit) {
         long now = LockService.clock(level.getServer());
-        BuildingSpots.Unit u = BuildingSpots.INSTANCE.forType(b.type()).units().get(unit);
         BlockPos at = player.blockPosition();
-        boolean inside = u.contains(at.getX() - b.chunkX() * 16, at.getY() - b.streetY(), at.getZ() - b.chunkZ() * 16);
+        CityHomes.Place place = CityHomes.places(level.getSeed(), b).stream().filter(x -> x.index() == unit).findFirst().orElse(null);
+        boolean inside = place != null && place.contains(at);
+        String title = place == null ? "a flat" : place.title().split(",")[0];
         if (inside) PropertyLocks.get(level.getServer()).exitOpen(lower, now + EXIT_TICKS);
         if (inside || PropertyLocks.get(level.getServer()).breached(lower, now) || lowerState.getValue(DoorBlock.OPEN)) { byHand(event, player, level, lower, lowerState); return; }
         event.setCanceled(true);
         event.setCancellationResult(InteractionResult.SUCCESS);
         if (event.getHand() != InteractionHand.MAIN_HAND) return;
-        if (!LockService.isPick(player.getMainHandItem())) { tell(player, "Locked. Somebody lives here: " + u.title() + "."); return; }
+        if (!LockService.isPick(player.getMainHandItem())) { tell(player, "Locked. Somebody lives here: " + title + "."); return; }
         var security = b.security();
-        String refusal = LockService.begin(player, level, new LockService.Target(LockService.Kind.DOOR, lower, security.lockProfile(), b.city(), security.id(), u.title() + " door", 1));
+        String refusal = LockService.begin(player, level, new LockService.Target(LockService.Kind.DOOR, lower, security.lockProfile(), b.city(), security.id(), title + " door", 1));
         if (refusal != null) tell(player, refusal);
     }
 
@@ -419,7 +420,7 @@ public final class BuildingGuard {
         BlockPos pos = event.getPos();
         for (Direction side : event.getNotifiedSides()) {
             BlockPos near = pos.relative(side);
-            if (level.isLoaded(near) && level.getBlockState(near).getBlock() instanceof DoorBlock) synchronized (RECHECK) { if (RECHECK.size() < 256) RECHECK.add(near.asLong()); }
+            if (Chunks.ready(level, near) && level.getBlockState(near).getBlock() instanceof DoorBlock) synchronized (RECHECK) { if (RECHECK.size() < 256) RECHECK.add(near.asLong()); }
         }
     }
 
@@ -437,7 +438,7 @@ public final class BuildingGuard {
         }
         for (long key : due) {
             BlockPos pos = BlockPos.of(key);
-            if (!level.isLoaded(pos)) continue;
+            if (!Chunks.ready(level, pos)) continue;
             BlockState state = level.getBlockState(pos);
             if (state.getBlock() instanceof DoorBlock) enforce(level, lowerOf(pos, state));
         }
@@ -455,7 +456,7 @@ public final class BuildingGuard {
         BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos();
         for (int dx = -6; dx <= 6; dx++) for (int dz = -6; dz <= 6; dz++) for (int dy = -2; dy <= 3; dy++) {
             p.set(at.getX() + dx, at.getY() + dy, at.getZ() + dz);
-            if (!level.isLoaded(p)) continue;
+            if (!Chunks.ready(level, p)) continue;
             BlockState state = level.getBlockState(p);
             if (state.getBlock() instanceof DoorBlock && state.getValue(DoorBlock.OPEN) && state.getValue(DoorBlock.HALF) == DoubleBlockHalf.LOWER && enforce(level, p.immutable())) shut++;
         }
@@ -489,7 +490,10 @@ public final class BuildingGuard {
 
     @SubscribeEvent
     public void mobGriefing(EntityMobGriefingEvent event) {
-        if (event.getEntity() != null && event.getEntity().level() instanceof ServerLevel level && protectedAt(level, event.getEntity().blockPosition()).isPresent()) event.setResult(Event.Result.DENY);
+        if (event.getEntity() == null || !(event.getEntity().level() instanceof ServerLevel level)) return;
+        BlockPos at = event.getEntity().blockPosition();
+        // a mob's goals ask before every try: while Lost Cities generates and this chunk's plan is not known, the answer is no rather than a wait on its lock (eleventh pass), and it asks again soon
+        if (!CityBuildings.INSTANCE.askable(level, at.getX() >> 4, at.getZ() >> 4) || protectedAt(level, at).isPresent()) event.setResult(Event.Result.DENY);
     }
 
     @SubscribeEvent

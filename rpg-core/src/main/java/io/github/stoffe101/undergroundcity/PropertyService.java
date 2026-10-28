@@ -213,27 +213,27 @@ public final class PropertyService {
         ServerLevel level = server.getLevel(ResourceKey.create(Registries.DIMENSION, ResourceLocation.parse(r.dimension)));
         if (level == null) throw new IllegalStateException("That home's world is not loaded.");
         int found = 0;
-        for (int cx = r.min.getX() >> 4; cx <= r.max.getX() >> 4; cx++) {
-            for (int cz = r.min.getZ() >> 4; cz <= r.max.getZ() >> 4; cz++) {
-                LevelChunk chunk = level.getChunk(cx, cz);
-                for (BlockEntity entity : chunk.getBlockEntities().values()) {
-                    if (r.insideInterior(r.dimension, entity.getBlockPos()) && holdsItems(entity)) found++;
-                }
+        for (ChunkPos c : r.chunks()) {
+            LevelChunk chunk = level.getChunk(c.x, c.z);
+            for (BlockEntity entity : chunk.getBlockEntities().values()) {
+                if (r.insideInterior(r.dimension, entity.getBlockPos()) && holdsItems(entity)) found++;
             }
         }
-        AABB box = new AABB(r.min.getX(), r.min.getY(), r.min.getZ(), r.max.getX() + 1, r.max.getY() + 1, r.max.getZ() + 1);
-        for (Entity entity : level.getEntitiesOfClass(Entity.class, box, ResidenceGuard::protectedEntity)) if (ResidenceGuard.holdsThings(entity)) found++;
+        // each box once: an entity in two touching boxes of the same home is still one thing
+        java.util.Set<java.util.UUID> counted = new java.util.HashSet<>();
+        for (CrewLedger.Box b : r.boxes) {
+            AABB box = new AABB(b.min().getX(), b.min().getY(), b.min().getZ(), b.max().getX() + 1, b.max().getY() + 1, b.max().getZ() + 1);
+            for (Entity entity : level.getEntitiesOfClass(Entity.class, box, ResidenceGuard::protectedEntity)) if (ResidenceGuard.holdsThings(entity) && counted.add(entity.getUUID())) found++;
+        }
         return found;
     }
 
     /** Every storage container inside a home, empty or not (furnaces and hoppers are not storage). */
     public static int containerCount(ServerLevel level, Residence r) {
         int found = 0;
-        for (int cx = r.min.getX() >> 4; cx <= r.max.getX() >> 4; cx++) {
-            for (int cz = r.min.getZ() >> 4; cz <= r.max.getZ() >> 4; cz++) {
-                for (BlockEntity entity : level.getChunk(cx, cz).getBlockEntities().values()) {
-                    if (r.insideInterior(r.dimension, entity.getBlockPos()) && ResidenceGuard.isStorage(entity)) found++;
-                }
+        for (ChunkPos c : r.chunks()) {
+            for (BlockEntity entity : level.getChunk(c.x, c.z).getBlockEntities().values()) {
+                if (r.insideInterior(r.dimension, entity.getBlockPos()) && ResidenceGuard.isStorage(entity)) found++;
             }
         }
         return found;
@@ -437,8 +437,6 @@ public final class PropertyService {
 
     /** The chunk positions a home touches, for callers that need to load them. */
     static List<ChunkPos> chunksOf(Residence r) {
-        List<ChunkPos> list = new ArrayList<>();
-        for (int cx = r.min.getX() >> 4; cx <= r.max.getX() >> 4; cx++) for (int cz = r.min.getZ() >> 4; cz <= r.max.getZ() >> 4; cz++) list.add(new ChunkPos(cx, cz));
-        return list;
+        return new ArrayList<>(r.chunks());
     }
 }

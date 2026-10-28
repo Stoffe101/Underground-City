@@ -28,9 +28,24 @@ public final class BuildingSpots extends SimpleJsonResourceReloadListener {
     public record Spot(String kind, int x, int y, int z, String facing, String note) {}
 
     /** One building: its use ("house", "flats", "shop", "office", ...), its city and its spots in file order. */
-    /** A home or premises of the building that can be let or sold (D-127): its interior box in the building's own coordinates (y above the street), inclusive. */
-    public record Unit(String id, String title, int x0, int y0, int z0, int x1, int y1, int z1) {
+    /** One interior box in the building's own coordinates (y above the street), inclusive. */
+    public record Box(int x0, int y0, int z0, int x1, int y1, int z1) {
         boolean contains(int x, int y, int z) { return x >= x0 && x <= x1 && y >= y0 && y <= y1 && z >= z0 && z <= z1; }
+        boolean inShell(int x, int y, int z) { return x >= x0 - 1 && x <= x1 + 1 && y >= y0 - 1 && y <= y1 + 1 && z >= z0 - 1 && z <= z1 + 1; }
+        boolean valid() { return x0 >= 0 && x1 <= 15 && z0 >= 0 && z1 <= 15 && x0 <= x1 && y0 <= y1 && z0 <= z1 && y0 >= 0 && y1 <= 250; }
+    }
+
+    /**
+     * A home or premises of the building that can be let or sold (D-127): its interior, one box or several (D-206: a flat whose rooms are not one rectangle), in the building's own
+     * coordinates. The first box's corners are the unit's {@code x0} to {@code z1}.
+     */
+    public record Unit(String id, String title, List<Box> boxes) {
+        public Unit(String id, String title, int x0, int y0, int z0, int x1, int y1, int z1) { this(id, title, List.of(new Box(x0, y0, z0, x1, y1, z1))); }
+        public int x0() { return boxes.get(0).x0(); } public int y0() { return boxes.get(0).y0(); } public int z0() { return boxes.get(0).z0(); }
+        public int x1() { return boxes.get(0).x1(); } public int y1() { return boxes.get(0).y1(); } public int z1() { return boxes.get(0).z1(); }
+        boolean contains(int x, int y, int z) { for (Box b : boxes) if (b.contains(x, y, z)) return true; return false; }
+        /** In the one-block shell of any of its boxes, or inside one. */
+        boolean inShell(int x, int y, int z) { for (Box b : boxes) if (b.inShell(x, y, z)) return true; return false; }
     }
 
     public record Plan(String id, String use, String city, List<Spot> spots, List<Unit> units) {
@@ -63,9 +78,12 @@ public final class BuildingSpots extends SimpleJsonResourceReloadListener {
             List<Unit> units = new ArrayList<>();
             if (json.has("units")) for (JsonElement element : json.getAsJsonArray("units")) {
                 JsonObject u = element.getAsJsonObject();
-                var box = u.getAsJsonArray("box");
-                Unit unit = new Unit(u.get("id").getAsString(), u.get("title").getAsString(), box.get(0).getAsInt(), box.get(1).getAsInt(), box.get(2).getAsInt(), box.get(3).getAsInt(), box.get(4).getAsInt(), box.get(5).getAsInt());
-                if (!unit.id().matches("[a-z0-9_]{2,24}") || unit.x0() < 0 || unit.x1() > 15 || unit.z0() < 0 || unit.z1() > 15 || unit.x0() > unit.x1() || unit.y0() > unit.y1() || unit.z0() > unit.z1() || unit.y0() < 0 || unit.y1() > 64) {
+                // "boxes" lists every box of a unit that is not one rectangle (D-206); "box" is the one box of any other
+                List<Box> boxes = new ArrayList<>();
+                if (u.has("boxes")) for (JsonElement b : u.getAsJsonArray("boxes")) boxes.add(box(b.getAsJsonArray()));
+                else boxes.add(box(u.getAsJsonArray("box")));
+                Unit unit = new Unit(u.get("id").getAsString(), u.get("title").getAsString(), List.copyOf(boxes));
+                if (!unit.id().matches("[a-z0-9_]{2,24}") || boxes.isEmpty() || boxes.size() > 64 || !boxes.stream().allMatch(Box::valid)) {
                     throw new IllegalArgumentException("Bad unit " + unit.id() + " in " + entry.getKey());
                 }
                 units.add(unit);
@@ -76,6 +94,8 @@ public final class BuildingSpots extends SimpleJsonResourceReloadListener {
         plans = Map.copyOf(next);
         LOGGER.info("Loaded the spots of {} furnished buildings", plans.size());
     }
+
+    private static Box box(com.google.gson.JsonArray a) { return new Box(a.get(0).getAsInt(), a.get(1).getAsInt(), a.get(2).getAsInt(), a.get(3).getAsInt(), a.get(4).getAsInt(), a.get(5).getAsInt()); }
 
     /** The plan of a building of the type Lost Cities reports for it ({@code namespace:id}, as {@link CityBuildings.Building#type()}), or null when it has none (a stock building). */
     public Plan forType(String type) { return type == null ? null : plans.get(type); }

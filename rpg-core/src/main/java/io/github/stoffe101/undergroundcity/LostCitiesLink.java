@@ -38,13 +38,19 @@ import java.util.function.Function;
 public final class LostCitiesLink {
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    public record ChunkSample(boolean city, int highwayLevel, String building, String buildingId, int floors, int cellars, int cityLevel, String style) {
+    /** {@code multi}: the multi-chunk building this chunk is a part of and where (D-206), or null for a single lot, or a plan recorded before Core asked. */
+    public record ChunkSample(boolean city, int highwayLevel, String building, String buildingId, int floors, int cellars, int cityLevel, String style, CityBuildings.Multi multi) {
+        public ChunkSample(boolean city, int highwayLevel, String building, String buildingId, int floors, int cellars, int cityLevel, String style) {
+            this(city, highwayLevel, building, buildingId, floors, cellars, cityLevel, style, null);
+        }
         /** The three-argument form older callers used (the survey and the launch smoke only read whether it is a city and which building type). */
         public ChunkSample(boolean city, int highwayLevel, String building) { this(city, highwayLevel, building, "", 0, 0, 0, ""); }
     }
 
     private static volatile Object api;
     private static Method getLostInfo, getChunkInfo, isCity, maxHighwayLevel, buildingType, buildingId, numFloors, numCellars, cityLevel, realHeight, cityStyle, styleName;
+    /** Lost Cities' multi-chunk building of a chunk ({@code getMultiBuildingInfo}, 7.5.5); null handles when the version has none, and every chunk then reads as a single lot. */
+    private static Method multiInfo, multiType, multiOffsetX, multiOffsetZ, multiW, multiH;
     private static Method eventWorld, eventChunkX, eventChunkZ;
     /** The overworld's ILostCityInformation, resolved on the server thread when the level loads; the workers' recording uses only this. */
     private static volatile Object overworldInfo;
@@ -58,6 +64,8 @@ public final class LostCitiesLink {
     /** When Lost Cities last generated an overworld chunk (any chunk, near a city or not): its workers take the plan lock while they generate. */
     private static volatile long lastGenerated;
     private static volatile boolean everGenerated;
+    /** Lost Cities' street height of city level 0 and the height of one level, read from its own answer when the overworld loaded ({@link #streetY}); unknown before. */
+    private static volatile int groundLevel = Integer.MIN_VALUE, levelStep;
     /** How long after the last generated chunk Lost Cities counts as still generating. */
     private static final long QUIET_NANOS = 2_000_000_000L;
     /** Off ({@code -Duc.lostcities.record=false}, or {@code -PucPtRecord=false} in a scripted run) only to measure the hitch without the record. */
@@ -163,6 +171,15 @@ public final class LostCitiesLink {
         }
     }
 
+    /** The plan recorded for an overworld chunk ({@link net.minecraft.world.level.ChunkPos#asLong}), or null. Never asks Lost Cities, so it is safe on a generation worker. */
+    static ChunkSample recordedSample(long chunkKey) { return RECORDED.get(chunkKey); }
+
+    /** The street height of a city level in the loaded overworld, from Lost Cities' own answer when the level loaded; {@link Integer#MIN_VALUE} when unknown. Safe on a generation worker. */
+    static int streetY(int cityLevel) {
+        int ground = groundLevel;
+        return ground == Integer.MIN_VALUE ? ground : ground + levelStep * cityLevel;
+    }
+
     /** True when the plan of this overworld chunk was recorded (asking about it takes no lock). */
     public static boolean recorded(ServerLevel level, int chunkX, int chunkZ) {
         return level.dimension() == Level.OVERWORLD && level.getSeed() == overworldSeed && RECORDED.containsKey(net.minecraft.world.level.ChunkPos.asLong(chunkX, chunkZ));
@@ -174,6 +191,17 @@ public final class LostCitiesLink {
      */
     public static boolean askable(ServerLevel level, int chunkX, int chunkZ) {
         return !RECORDING || !everGenerated || recorded(level, chunkX, chunkZ) || System.nanoTime() - lastGenerated > QUIET_NANOS;
+    }
+
+    /**
+     * Lost Cities' characteristics event, on whichever thread is planning a chunk: when that is a generation worker it holds Lost Cities' lock from here on, so the quiet clock starts now
+     * rather than when the chunk is finished (the first chunk after a quiet spell used to find {@link #askable} still true; measured: a 0.7 s wait in the population's area lookup).
+     * The server thread's own questions do not count, or every answer would put the next ones off.
+     */
+    public static void planning(ServerLevel level) {
+        if (!RECORDING || level.dimension() != Level.OVERWORLD || level.getServer().isSameThread()) return;
+        lastGenerated = System.nanoTime();
+        everGenerated = true;
     }
 
     /** How many plans are recorded, and how questions were answered this session (for the street service's status and the arrival measurement). */
@@ -196,6 +224,15 @@ public final class LostCitiesLink {
         cityLevel = chunk.getMethod("getCityLevel");
         cityStyle = chunk.getMethod("getCityStyle");
         styleName = Class.forName("mcjty.lostcities.api.ILostCityCityStyle").getMethod("getName");
+        try {
+            Class<?> multi = Class.forName("mcjty.lostcities.api.ILostChunkInfo$MultiBuildingInfo");
+            multiType = multi.getMethod("buildingType"); multiOffsetX = multi.getMethod("offsetX"); multiOffsetZ = multi.getMethod("offsetZ");
+            multiW = multi.getMethod("w"); multiH = multi.getMethod("h");
+            multiInfo = chunk.getMethod("getMultiBuildingInfo");
+        } catch (ReflectiveOperationException absent) {
+            multiInfo = null;
+            LOGGER.warn("[UC] this Lost Cities has no multi-chunk building information: a dwelling over several chunks cannot be let (D-206)");
+        }
         realHeight = info.getMethod("getRealHeight", int.class);
         getLostInfo = root.getMethod("getLostInfo", Level.class);   // last: the others are set once this is
     }
@@ -204,9 +241,14 @@ public final class LostCitiesLink {
         Object sample = getChunkInfo.invoke(information, chunkX, chunkZ);
         Object id = buildingId.invoke(sample);
         Object style = cityStyle.invoke(sample);
+        CityBuildings.Multi multi = null;
+        Object m = multiInfo == null ? null : multiInfo.invoke(sample);
+        if (m != null && multiType.invoke(m) != null) {
+            multi = new CityBuildings.Multi(multiType.invoke(m).toString(), (Integer) multiOffsetX.invoke(m), (Integer) multiOffsetZ.invoke(m), (Integer) multiW.invoke(m), (Integer) multiH.invoke(m));
+        }
         return new ChunkSample((Boolean) isCity.invoke(sample), (Integer) maxHighwayLevel.invoke(sample),
             (String) buildingType.invoke(sample), id == null ? "" : id.toString(), (Integer) numFloors.invoke(sample), (Integer) numCellars.invoke(sample), (Integer) cityLevel.invoke(sample),
-            style == null ? "" : String.valueOf(styleName.invoke(style)));
+            style == null ? "" : String.valueOf(styleName.invoke(style)), multi);
     }
 
     // ------------------------------------------------------------------------------------------------ recording on the generation workers
@@ -224,7 +266,8 @@ public final class LostCitiesLink {
             everGenerated = true;
             int chunkX = (Integer) eventChunkX.invoke(event), chunkZ = (Integer) eventChunkZ.invoke(event);
             if (!nearCity(chunkX, chunkZ)) return;
-            RECORDED.put(net.minecraft.world.level.ChunkPos.asLong(chunkX, chunkZ), sample(information, chunkX, chunkZ));
+            ChunkSample sample = sample(information, chunkX, chunkZ);
+            RECORDED.put(net.minecraft.world.level.ChunkPos.asLong(chunkX, chunkZ), sample);
             recordedOnWorkers++;
             Store kept = store;
             if (kept != null) kept.setDirty();   // a flag the next save reads on the server thread
@@ -260,6 +303,11 @@ public final class LostCitiesLink {
         try {
             handles();
             overworldInfo = getLostInfo.invoke(implementation, (Level) level);
+            if (overworldInfo != null) {
+                int ground = (Integer) realHeight.invoke(overworldInfo, 0);
+                levelStep = (Integer) realHeight.invoke(overworldInfo, 1) - ground;
+                groundLevel = ground;
+            }
             LOGGER.info("[UC-CITY] {} chunk plans loaded with the world; new ones are recorded as Lost Cities generates them", RECORDED.size());
         } catch (ReflectiveOperationException | RuntimeException error) {
             LOGGER.error("[UC-CITY] could not resolve Lost Cities' information for the overworld: plans are asked of it directly", error);
@@ -269,10 +317,30 @@ public final class LostCitiesLink {
     private static void levelUnloaded(LevelEvent.Unload event) {
         if (!(event.getLevel() instanceof ServerLevel level) || level.dimension() != Level.OVERWORLD) return;
         overworldInfo = null;
+        groundLevel = Integer.MIN_VALUE;
         overworldSeed = 0;
         store = null;
         everGenerated = false;
         RECORDED.clear();
+    }
+
+    /**
+     * Test seam: runs {@code body} as if this chunk's plan had been recorded and Lost Cities' city level 0 stood at {@code ground} (levels {@code step} apart); the record and the
+     * heights are as they were afterwards. For the city ground guard's rule (a GameTest server has no Lost Cities).
+     */
+    static <T> T withRecordForTest(long chunkKey, ChunkSample sample, int ground, int step, java.util.function.Supplier<T> body) {
+        ChunkSample before = RECORDED.get(chunkKey);
+        int groundBefore = groundLevel, stepBefore = levelStep;
+        try {
+            RECORDED.put(chunkKey, sample);
+            levelStep = step;
+            groundLevel = ground;
+            return body.get();
+        } finally {
+            if (before == null) RECORDED.remove(chunkKey); else RECORDED.put(chunkKey, before);
+            levelStep = stepBefore;
+            groundLevel = groundBefore;
+        }
     }
 
     /** Test seam: the save and load of the record, as a restart does it, for these samples (returns what came back). */
@@ -301,7 +369,9 @@ public final class LostCitiesLink {
             ListTag list = tag.getList("plans", Tag.TAG_COMPOUND);
             for (int i = 0; i < list.size(); i++) {
                 CompoundTag p = list.getCompound(i);
-                store.plans.put(p.getLong("k"), new ChunkSample(p.getBoolean("c"), p.getInt("h"), p.getString("b"), p.getString("i"), p.getInt("f"), p.getInt("n"), p.getInt("l"), p.getString("s")));
+                // schema 2 (D-206) keeps a part's multi-chunk building; a plan recorded by schema 1 has none, and its chunk reads as a single lot
+                CityBuildings.Multi multi = p.contains("m") ? new CityBuildings.Multi(p.getString("m"), p.getInt("mx"), p.getInt("mz"), p.getInt("mw"), p.getInt("mh")) : null;
+                store.plans.put(p.getLong("k"), new ChunkSample(p.getBoolean("c"), p.getInt("h"), p.getString("b"), p.getString("i"), p.getInt("f"), p.getInt("n"), p.getInt("l"), p.getString("s"), multi));
             }
             return store;
         }
@@ -321,10 +391,13 @@ public final class LostCitiesLink {
                 if (s.cellars() != 0) p.putInt("n", s.cellars());
                 if (s.cityLevel() != 0) p.putInt("l", s.cityLevel());
                 if (!s.style().isEmpty()) p.putString("s", s.style());
+                if (s.multi() != null) {
+                    p.putString("m", s.multi().id()); p.putInt("mx", s.multi().x()); p.putInt("mz", s.multi().z()); p.putInt("mw", s.multi().w()); p.putInt("mh", s.multi().h());
+                }
                 list.add(p);
             }
             tag.put("plans", list);
-            tag.putInt("schema_version", 1);
+            tag.putInt("schema_version", 2);
             return tag;
         }
     }

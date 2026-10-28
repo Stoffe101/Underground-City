@@ -88,6 +88,14 @@
       "to": "another_furniture:\\1_flower_box"
     },
     {
+      "match": "quark:bamboo_mat",
+      "to": "minecraft:bamboo_mosaic"
+    },
+    {
+      "match": "quark:bamboo_mat_carpet",
+      "to": "minecraft:yellow_carpet"
+    },
+    {
       "match": "quark:([a-z_]+)_stool",
       "to": "another_furniture:\\1_stool"
     },
@@ -598,8 +606,8 @@
       "stone"
     ],
     "": [
-      "{material}",
       "{material}_planks",
+      "{material}",
       "{material}_block"
     ]
   },

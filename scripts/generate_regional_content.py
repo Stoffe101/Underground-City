@@ -253,6 +253,7 @@ def build(data: dict, contracts: dict) -> dict[Path, bytes]:
         "block.underground_city.scrap_heap": "Scrap Heap",
         "item.underground_city.scrap_heap": "Scrap Heap",
         "item.underground_city.sealed_envelope": "Sealed Envelope",
+        "item.underground_city.first_aid_kit": "First Aid Kit",
         "block.underground_city.utility_panel": "Utility Panel",
         "block.underground_city.machine_drive": "Machine Drive Housing",
         "block.underground_city.exploration_find": "Battered Crate",
@@ -263,6 +264,8 @@ def build(data: dict, contracts: dict) -> dict[Path, bytes]:
         "item.underground_city.electronics_bench": "Electronics Bench",
         "block.underground_city.drying_rack": "Drying Rack",
         "item.underground_city.drying_rack": "Drying Rack",
+        "block.underground_city.business_counter": "Business Counter",
+        "item.underground_city.business_counter": "Business Counter",
         "block.underground_city.grading_table": "Grading Table",
         "item.underground_city.grading_table": "Grading Table",
         "block.underground_city.mill": "Mill",
@@ -426,15 +429,19 @@ def build(data: dict, contracts: dict) -> dict[Path, bytes]:
     files[Path(f"rpg-core/src/main/resources/assets/{NAMESPACE}/models/item/personal_computer.json")] = jdump({"parent": f"{NAMESPACE}:block/personal_computer"}).encode()
     files[Path(f"rpg-core/src/main/resources/assets/{NAMESPACE}/models/item/electronics_bench.json")] = jdump({"parent": f"{NAMESPACE}:block/electronics_bench"}).encode()
     files[Path(f"rpg-core/src/main/resources/assets/{NAMESPACE}/models/item/drying_rack.json")] = jdump({"parent": f"{NAMESPACE}:block/drying_rack_drying"}).encode()
-    for dropped in ("personal_computer", "electronics_bench", "drying_rack"):
+    # a player business's counter (D-208): its model takes vanilla textures by reference, nothing of them is copied
+    files[Path(f"rpg-core/src/main/resources/assets/{NAMESPACE}/models/item/business_counter.json")] = jdump({"parent": f"{NAMESPACE}:block/business_counter"}).encode()
+    for dropped in ("personal_computer", "electronics_bench", "drying_rack", "business_counter"):
         files[Path(f"rpg-core/src/main/resources/data/{NAMESPACE}/loot_tables/blocks/{dropped}.json")] = jdump({"type": "minecraft:block", "pools": [{"rolls": 1,
             "entries": [{"type": "minecraft:item", "name": f"{NAMESPACE}:{dropped}"}], "conditions": [{"condition": "minecraft:survives_explosion"}]}]}).encode()
     # the trades' workshop stations (D-163): drawn in three tiers by tools/art/gen_workshops.py; a station drops itself, at its tier, and what is in it from code, so its loot table is empty
     for station in WORKSHOP_STATIONS:
         files[Path(f"rpg-core/src/main/resources/assets/{NAMESPACE}/models/item/{station}.json")] = jdump({"parent": f"{NAMESPACE}:block/{station}_1"}).encode()
         files[Path(f"rpg-core/src/main/resources/data/{NAMESPACE}/loot_tables/blocks/{station}.json")] = jdump({"type": "minecraft:block", "pools": []}).encode()
-    files[Path(f"rpg-core/src/main/resources/assets/{NAMESPACE}/models/item/sealed_envelope.json")] = jdump(
-        {"parent": "minecraft:item/generated", "textures": {"layer0": f"{NAMESPACE}:item/sealed_envelope"}}).encode()
+    # two items registered in Java with their own behaviour: the courier's envelope (D-139) and the first aid kit (D-203); their sprites are drawn by tools/art/gen_items.py
+    for special in ("sealed_envelope", "first_aid_kit"):
+        files[Path(f"rpg-core/src/main/resources/assets/{NAMESPACE}/models/item/{special}.json")] = jdump(
+            {"parent": "minecraft:item/generated", "textures": {"layer0": f"{NAMESPACE}:item/{special}"}}).encode()
     blueprint = json.loads((ROOT / "content/region-blueprints/cities.json").read_text(encoding="utf-8"))
     for city in blueprint["cities"]:
         files[Path(f"rpg-core/src/main/resources/data/{NAMESPACE}/regions/{city['id']}.json")] = jdump({

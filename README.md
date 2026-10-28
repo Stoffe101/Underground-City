@@ -169,6 +169,32 @@ Owner brief "C70 Integration + Critical Gameplay Fixes" and the owner's follow-u
 
 See [docs/production/ninth-pass-c70-critical-fixes.md](docs/production/ninth-pass-c70-critical-fixes.md).
 
+## October 28 eleventh pass: a player's counter, shortage contracts, homes by the dwelling (scripted, not yet human-tested)
+
+Owner brief "Tenth-Pass Follow-up and Integration Completion" (D-205 to D-208). Tested by scripts, Forge GameTests, the Python suite, the economy model, probes of new disposable worlds and scripted real clients. **The current branch and its recent gameplay systems have not received human playtesting.**
+
+* **A player business (D-208).** A Business Counter set down in rented trade premises takes everyday goods, and the city's own street people walk in during shop hours and buy, after a 12% sales tax. It sells at most eight an hour of active play and pays nothing while everybody is away. Business run 10 passed through a real client: a customer came in through the premises' iron street door and bought. Runs 1 to 9 found and fixed what kept customers out, among them a step through any doorway that moved a body one tick in ten.
+* **Shortage contracts (D-207).** A shop line short for five minutes of play posts one time-bound work order for its trade, paid once at half as much again as the shop pays. The notice, the barkeeper's ask and the short price passed through a real client (workshop runs 6 and 7). No contract was taken through a client.
+* **A home follows the dwelling, not the chunk (D-206).** A house over two chunks is one home, terraced houses two, a block's flats one each. Uncertain boundaries are left unlet. A tenant cannot break the wall to the next flat or the floor under the flat above (GameTested).
+* **Reliability.** No Core frame in any tick over a second in a 60-minute two-client exploring session; the second round of Core waits it found is fixed. Lost Cities' live plans stayed bounded over twice the travel. The general skills' hourly caps survive a restart. The first aid kit and Shooting XP with TaCZ passed through a real client (skills run 3).
+* **The owner's buildings (private, in the cloud only).** Porter 13 stops one-part buildings being stacked on themselves: a cabin had four of its five bedrooms buried. Porter 14 ports a woven floor mat as a floor: a restaurant's floor had come out as bamboo shoots over dirt. The photo tour's camera finds clear views (private tour 15: 39 of 43 frames clear).
+* **Windows (D-205).** The scripts derive their sets from the manifest, separate client and server mods, print a matching fingerprint, and stage the owner's buildings with one command. They have not been run on Windows.
+
+See [docs/production/eleventh-pass-follow-up.md](docs/production/eleventh-pass-follow-up.md).
+
+## October 27 tenth pass: clean streets, the owner's buildings, a two-player supply chain (scripted, not yet human-tested)
+
+Owner brief "Living World, C70 City Overhaul, Gameplay Expansion & World Quality" (D-196 to D-204). Tested by scripts, Forge GameTests, the Python suite, probes of new disposable worlds and scripted real clients. **The current branch and its recent gameplay systems have not received human playtesting.**
+
+* **No terrain on the paving, no blobs in floors (D-196).** Lost Cities levelled each street one block short, and every later decoration step could write into a finished city chunk. Core fixes both at the step that causes them; there is no pass over finished chunks. In new worlds: 0 terrain blocks on the paving, 0 bare verges and 0 stone or dirt blobs in buildings in all three cities (from 968 to 1,603 terrain cells a city before). The road check covered 21,191 carriageway cells, every one clear deck, and all six road ends are walkable. Only newly generated ground changes.
+* **The owner's multi-chunk buildings are built and are the cities' own (D-198)**, tested privately in the cloud. The private building audit found 0.009% missing, all of it flowers and dirt. The owner's multi-chunk homes cannot be rented yet.
+* **A two-player supply chain through two real clients** (duo run 11, 58 checks, none failed): a Farmer grows and mills and hands the goods to a Vintner, whose own kit goods are set aside. The Vintner ferments wine and sells it into a short bar shelf, the Crew bank shares the money, and it all survives a restart.
+* **Fitness, Driving and Shooting are earned and used (D-200)**, with anti-AFK rules. GameTested only.
+* **Shops run short and pay more (D-201)**, **keepers remember regulars and thieves (D-202)**, and **a city's good name (D-204)** gives a 2% discount there at 50. A **First Aid Kit** is on sale (D-203). An owner's own changes are never taken for burglary damage (D-199).
+* **Lost Cities' memory (D-197):** a plan's neighbour links kept up to half a million plans alive while the cache held a few thousand. Core drops those links. In two 30-minute sessions with two real clients, 85–98% fewer plans stayed alive, and the heap in use averaged 300 to 420 MB lower.
+
+See [docs/production/tenth-pass-living-world.md](docs/production/tenth-pass-living-world.md).
+
 ## Ownership and license
 
 **Copyright © 2026 Stoffe101. All rights reserved.** See [LICENSE](LICENSE). The license governs **original Underground City material only**. Minecraft, third-party mods, map downloads, artworks, and their trademarks remain subject to their respective owners' terms. Public repository visibility does **not** mean the project is open source. This project is intended for private play, not for sale or public modpack publication.

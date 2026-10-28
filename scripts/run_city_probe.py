@@ -12,6 +12,7 @@ join it: it stops by itself), as in ``run_terrain_map.py``.
 from __future__ import annotations
 
 import argparse
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -36,6 +37,9 @@ def main() -> int:
     parser.add_argument("--namespaces", default="modernlife,minecraft")
     parser.add_argument("--private", type=Path, default=None, help="a private content folder OUTSIDE the checkout (docs/technical/private-content-workflow.md): its packs are loaded for this probe; write --output and --dump outside the checkout too")
     parser.add_argument("--world", type=Path, default=None, help="a world folder to COPY in as the probe's world (a pre-generated test world, test-worlds.md): its chunks are read, not generated; the folder itself is never opened")
+    parser.add_argument("--homes", action="store_true", help="register the to-let homes of every probed building and report them in counts (D-206: homes over several chunks)")
+    parser.add_argument("--let-all", action="store_true", help="with --homes: every place with a template is to let in this disposable world, so every home is registered")
+    parser.add_argument("--port", type=int, default=25565, help="the disposable server's port (another measurement server may be running beside it)")
     parser.add_argument("--timeout", type=int, default=3000)
     args = parser.parse_args()
     run_name = f"run-cityprobe-{args.name}"
@@ -54,9 +58,10 @@ def main() -> int:
     (run_dir / "eula.txt").write_text("eula=true\n", encoding="utf-8")
     (run_dir / "server.properties").write_text("\n".join([
         f"level-type={preset}", f"level-seed={args.seed}", "online-mode=false", "spawn-protection=0", "view-distance=4", "simulation-distance=4", "max-tick-time=-1",
-        "level-name=world", "white-list=false"]) + "\n", encoding="utf-8")
+        "level-name=world", "white-list=false", f"server-port={args.port}"]) + "\n", encoding="utf-8")
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    command = [str(ROOT / "gradlew"), "--no-daemon", ":rpg-core:runServer", f"-PucRunDir={run_name}", f"-PucPack={args.sets}", "-PucDevWorld=true", "-PucAutoWorld=false",
+    # gradlew.bat on Windows (private_c70.py stage dumps the owner's registry with this probe), gradlew elsewhere
+    command = [str(ROOT / ("gradlew.bat" if os.name == "nt" else "gradlew")), "--no-daemon", ":rpg-core:runServer", f"-PucRunDir={run_name}", f"-PucPack={args.sets}", "-PucDevWorld=true", "-PucAutoWorld=false",
                f"-PucWorldLayout={args.layout}", f"-PucCityProbe={args.output.resolve()}", f"-PucCpRadius={args.radius}", f"-PucCpCities={args.cities}"]
     if args.extra:
         command.append(f"-PucCpExtra={args.extra}")
@@ -64,6 +69,10 @@ def main() -> int:
         command += [f"-PucCpRegistry={args.registry.resolve()}", f"-PucCpNamespaces={args.namespaces}"]
     if args.private:
         command.append(f"-PucPrivateContent={args.private.resolve()}")
+    if args.homes:
+        command.append("-PucCpHomes=true")
+    if args.let_all:
+        command.append("-PucCpLetall=true")
     if args.stack:
         command.append(f"-PucCpStack={args.stack}")
     if args.dump:

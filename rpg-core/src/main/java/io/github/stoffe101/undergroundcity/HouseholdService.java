@@ -147,16 +147,26 @@ public final class HouseholdService {
         else if (recent) lines = BROKEN_INTO;
         else if (body.role().equals("fence")) lines = FENCE;
         else if (body.role().equals("worker")) {
+            // a shopkeeper knows a regular, and somebody who filled their shelf when it was short (D-202)
+            String known = ShopCounters.shopOf(body).map(shop -> Regulars.greeting(level.getServer(), shop.city(), shop.outlet(), player.getUUID(), player.getGameProfile().getName())).orElse("");
             // a shopkeeper whose supplied shelf runs low asks for it (D-164): the opportunity comes from the shop, not from a board
             String wanted = wanted(level, body);
-            if (wanted != null) return wanted;
+            if (wanted != null) return known + wanted;
             lines = WORK;
+            return known + lines.get((int) Math.floorMod(h >>> 8, (long) lines.size()));
         }
         else {
             int hour = PopulationPlan.hourOf(dayTime(level));
             lines = hour < 12 ? HOME_MORNING : hour < 18 ? HOME_DAY : HOME_EVENING;
         }
         return lines.get((int) Math.floorMod(h >>> 8, (long) lines.size()));
+    }
+
+    /** True when this person saw {@code player} at their building's forced door in the last while: they will not serve, and say why (D-202). */
+    static boolean sawThief(ServerLevel level, TownspersonEntity body, java.util.UUID player) {
+        Mem mem = memory(level).byBuilding.get(body.homeKey());
+        long now = LockService.clock(level.getServer());
+        return mem != null && mem.seen() && mem.intruder().equals(player) && now - mem.tick() >= 0 && now - mem.tick() < MEMORY_TICKS;
     }
 
     /**
@@ -176,7 +186,8 @@ public final class HouseholdService {
         }
         if (lowest == null || share >= 1.0 / 3) return null;
         String item = lowest.registryItem().getDescription().getString();
-        int pays = RegionalCatalog.INSTANCE.supply(lowest.id()).pays();
+        // what the counter pays now, the short price when the shelf is short (workshop run 6: the barkeeper said 14 while the counter paid 18)
+        int pays = Shortages.paysNow(lowest, RegionalCatalog.INSTANCE.supply(lowest.id()).pays(), ledger.regionalUnits(lowest));
         return "We're nearly out of " + item + ". Bring some to the counter and I'll pay " + pays + " a unit.";
     }
 

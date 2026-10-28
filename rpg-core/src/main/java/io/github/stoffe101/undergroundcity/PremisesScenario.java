@@ -38,6 +38,68 @@ final class PremisesScenario {
         ThiefScenario.tag = "PREMISES";
         Playtest.keepScreens = true;
         ThiefScenario.register(2, "the Smith card", "1 a new citizen registers as a Smith through the registration screen");
+        rentAndEnter();
+        placeInside(BENCH, UndergroundCity.WORKSHOP_ITEMS.get("machinist_bench").get());
+        ThiefScenario.stopIfFailed("the bench inside");
+        StationSteps.open(BENCH, "the premises' bonus");
+        Playtest.queue("the bench in trade premises", () -> {
+            if (!(mc().screen instanceof WorkshopScreen s)) { Playtest.fail("the bench's screen did not open"); return; }
+            var v = s.view();
+            Playtest.log("PREMISES bench: " + v.tierName() + ", " + v.batch() + " at a time, " + v.speedPercent() + "% speed; note \"" + v.note() + "\"");
+            if (v.batch() < 2 || v.speedPercent() < 120) Playtest.fail("the bench inside the premises does not run one more batch a quarter faster");
+            else pass("3 the Machinist's Bench set down inside the premises runs " + v.batch() + " batches at a time at " + v.speedPercent() + "% speed (trade premises, D-169)");
+        });
+        shot("2-premises-bench");
+        // a crate's worth of fittings with the second batch
+        for (int i = 0; i < 4; i++) twoBatches("fasteners", NS + "fasteners", 16, "4." + (i + 1) + " two batches of fasteners at once");
+        for (int i = 0; i < 3; i++) twoBatches("steel_bracket", NS + "steel_bracket", 6, "5." + (i + 1) + " two batches of brackets at once");
+        twoBatches("springs", NS + "springs", 8, "6 two batches of springs at once");
+        JourneyScenario.closeScreen("close the bench");
+        // the workshop's own public terminal by the bay door, inside the premises, and the bulk order only premises may take
+        final BlockPos[] terminal = new BlockPos[1];
+        Playtest.queue("the workshop's public terminal", () -> {
+            terminal[0] = server(() -> StationSteps.terminalIn(F.workshop));
+            Playtest.log("PREMISES public terminal " + (terminal[0] == null ? "none" : terminal[0].toShortString()));
+            if (terminal[0] == null) Playtest.fail("the workshop has no public terminal");
+        });
+        ThiefScenario.walkOrTeleport("walk to the terminal", () -> terminal[0] == null ? mc().player.position() : StationSteps.standBeside(terminal[0]), 0.8, 900);
+        JourneyScenario.use("open the terminal", () -> terminal[0], () -> mc().screen instanceof TerminalScreen, 400);
+        StationSteps.learn("smith.fundamentals", "Forge Fundamentals");
+        JourneyScenario.click("Work", true);
+        Playtest.wait("draw", 12);
+        final int[] w = {0};
+        Playtest.queue("turn the wheel until the bulk order is in view", () -> w[0] = 0, () -> {
+            if (!(mc().screen instanceof TerminalScreen screen)) return true;
+            int i = JourneyScenario.jobIndex(BULK);
+            if (i >= 0 && screen.jobCentre(i) != null) return true;
+            if (w[0]++ % 6 == 0) Playtest.click(5);
+            return w[0] > 180;
+        }, 200);
+        JourneyScenario.clickAt("the bulk order", () -> { int i = JourneyScenario.jobIndex(BULK); return i < 0 || !(mc().screen instanceof TerminalScreen s) ? null : s.jobCentre(i); });
+        shot("3-bulk-order");
+        final double[] before = {0};
+        Playtest.queue("before the bulk order", () -> before[0] = JourneyScenario.wallet());
+        JourneyScenario.click("Accept order", true);
+        until("accepted", () -> server(() -> WorkOrderLedger.get(me().server).player(me().getUUID()).hasUUID("order")), 200);
+        JourneyScenario.click("Deliver", true);
+        until("delivered", () -> server(() -> !WorkOrderLedger.get(me().server).player(me().getUUID()).hasUUID("order")), 200);
+        Playtest.queue("paid for the crate", () -> {
+            double paid = JourneyScenario.wallet() - before[0];
+            Playtest.log("PREMISES bulk order paid " + paid);
+            if (paid < 400) Playtest.fail("the bulk order was not delivered and paid");
+            else pass("7 the bulk order only trade premises may take, accepted and delivered at a terminal inside them: +" + Math.round(paid) + " credits");
+        });
+        JourneyScenario.closeScreen("close the terminal");
+        StationSteps.reconnect(() -> List.of(JourneyScenario.wallet(), server(() -> { var r = CrewService.need(mc().getSingleplayerServer()).residence(F.premisesId); return r == null ? "none" : r.tenure + " " + me().getUUID().equals(r.owner); }),
+            server(() -> level().getBlockState(BENCH.pos).getBlock() instanceof WorkshopBlock)), (b, a) -> {
+            if (!b.equals(a)) Playtest.fail("the premises, the bench or the wallet changed across the save and reopen");
+            else pass("8 saved, left and reopened: the premises still rented, the bench where it stood, the wallet unchanged");
+        });
+        Playtest.queue("summary", ThiefScenario::summary);
+    }
+
+    /** Prepared with /uc_prepare, to Ironhaven, the workshop's premises rented on the Home page with real clicks, and in through its door (shared with {@link BusinessScenario}). */
+    static void rentAndEnter() {
         Playtest.queue("prepared with /uc_prepare (scripted)", () -> {
             Playtest.command("gamerule doDaylightCycle false");
             Playtest.command("time set 7000");
@@ -114,64 +176,10 @@ final class PremisesScenario {
         shot("1-premises-rented");
         JourneyScenario.closeScreen("close the Home page");
         StationSteps.enter("the workshop", () -> F.door);
-        placeInside(BENCH, UndergroundCity.WORKSHOP_ITEMS.get("machinist_bench").get());
-        ThiefScenario.stopIfFailed("the bench inside");
-        StationSteps.open(BENCH, "the premises' bonus");
-        Playtest.queue("the bench in trade premises", () -> {
-            if (!(mc().screen instanceof WorkshopScreen s)) { Playtest.fail("the bench's screen did not open"); return; }
-            var v = s.view();
-            Playtest.log("PREMISES bench: " + v.tierName() + ", " + v.batch() + " at a time, " + v.speedPercent() + "% speed; note \"" + v.note() + "\"");
-            if (v.batch() < 2 || v.speedPercent() < 120) Playtest.fail("the bench inside the premises does not run one more batch a quarter faster");
-            else pass("3 the Machinist's Bench set down inside the premises runs " + v.batch() + " batches at a time at " + v.speedPercent() + "% speed (trade premises, D-169)");
-        });
-        shot("2-premises-bench");
-        // a crate's worth of fittings with the second batch
-        for (int i = 0; i < 4; i++) twoBatches("fasteners", NS + "fasteners", 16, "4." + (i + 1) + " two batches of fasteners at once");
-        for (int i = 0; i < 3; i++) twoBatches("steel_bracket", NS + "steel_bracket", 6, "5." + (i + 1) + " two batches of brackets at once");
-        twoBatches("springs", NS + "springs", 8, "6 two batches of springs at once");
-        JourneyScenario.closeScreen("close the bench");
-        // the workshop's own public terminal by the bay door, inside the premises, and the bulk order only premises may take
-        final BlockPos[] terminal = new BlockPos[1];
-        Playtest.queue("the workshop's public terminal", () -> {
-            terminal[0] = server(() -> StationSteps.terminalIn(F.workshop));
-            Playtest.log("PREMISES public terminal " + (terminal[0] == null ? "none" : terminal[0].toShortString()));
-            if (terminal[0] == null) Playtest.fail("the workshop has no public terminal");
-        });
-        ThiefScenario.walkOrTeleport("walk to the terminal", () -> terminal[0] == null ? mc().player.position() : StationSteps.standBeside(terminal[0]), 0.8, 900);
-        JourneyScenario.use("open the terminal", () -> terminal[0], () -> mc().screen instanceof TerminalScreen, 400);
-        StationSteps.learn("smith.fundamentals", "Forge Fundamentals");
-        JourneyScenario.click("Work", true);
-        Playtest.wait("draw", 12);
-        final int[] w = {0};
-        Playtest.queue("turn the wheel until the bulk order is in view", () -> w[0] = 0, () -> {
-            if (!(mc().screen instanceof TerminalScreen screen)) return true;
-            int i = JourneyScenario.jobIndex(BULK);
-            if (i >= 0 && screen.jobCentre(i) != null) return true;
-            if (w[0]++ % 6 == 0) Playtest.click(5);
-            return w[0] > 180;
-        }, 200);
-        JourneyScenario.clickAt("the bulk order", () -> { int i = JourneyScenario.jobIndex(BULK); return i < 0 || !(mc().screen instanceof TerminalScreen s) ? null : s.jobCentre(i); });
-        shot("3-bulk-order");
-        final double[] before = {0};
-        Playtest.queue("before the bulk order", () -> before[0] = JourneyScenario.wallet());
-        JourneyScenario.click("Accept order", true);
-        until("accepted", () -> server(() -> WorkOrderLedger.get(me().server).player(me().getUUID()).hasUUID("order")), 200);
-        JourneyScenario.click("Deliver", true);
-        until("delivered", () -> server(() -> !WorkOrderLedger.get(me().server).player(me().getUUID()).hasUUID("order")), 200);
-        Playtest.queue("paid for the crate", () -> {
-            double paid = JourneyScenario.wallet() - before[0];
-            Playtest.log("PREMISES bulk order paid " + paid);
-            if (paid < 400) Playtest.fail("the bulk order was not delivered and paid");
-            else pass("7 the bulk order only trade premises may take, accepted and delivered at a terminal inside them: +" + Math.round(paid) + " credits");
-        });
-        JourneyScenario.closeScreen("close the terminal");
-        StationSteps.reconnect(() -> List.of(JourneyScenario.wallet(), server(() -> { var r = CrewService.need(mc().getSingleplayerServer()).residence(F.premisesId); return r == null ? "none" : r.tenure + " " + me().getUUID().equals(r.owner); }),
-            server(() -> level().getBlockState(BENCH.pos).getBlock() instanceof WorkshopBlock)), (b, a) -> {
-            if (!b.equals(a)) Playtest.fail("the premises, the bench or the wallet changed across the save and reopen");
-            else pass("8 saved, left and reopened: the premises still rented, the bench where it stood, the wallet unchanged");
-        });
-        Playtest.queue("summary", ThiefScenario::summary);
     }
+
+    /** The id of the premises this run rented, once rented. */
+    static String premisesId() { return F.premisesId; }
 
     /** A station set down with a real right click on free floor inside the rented premises, aimed from two blocks off across a clear cell. */
     private static void placeInside(StationSteps.Station station, net.minecraft.world.item.Item item) {

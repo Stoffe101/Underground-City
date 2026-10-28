@@ -38,6 +38,8 @@ Ten categories are *priced* and **all ten have a building** in a new furnished a
 
 ## Homes in the furnished cities (D-127)
 
+A home over several chunks, a terrace of two homes and a block's flats each behind its own door: [dwellings.md](dwellings.md) (D-206). A home may have several boxes; every rule below applies to all of them.
+
 **Implemented; GameTested (`CityHomesGameTests`, 3 cases); nobody has rented one in a real client.**
 
 The furnished cities' buildings carry units (a tenement's flats, a house, a workshop's or warehouse's premises), and `ladder.json` has **city templates** that tie a kind of building to a category and a share that is to let:

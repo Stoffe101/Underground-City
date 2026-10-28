@@ -252,7 +252,7 @@ final class ExplorationFinds {
         int y0 = origin.getY() + d.min().getY(), y1 = origin.getY() + Math.min(d.max().getY(), d.min().getY() + 6);
         for (int y = y0; y <= y1; y++) for (int x = origin.getX() + d.min().getX() + 1; x < origin.getX() + d.max().getX(); x++) for (int z = origin.getZ() + d.min().getZ() + 1; z < origin.getZ() + d.max().getZ(); z++) {
             BlockPos c = new BlockPos(x, y, z);
-            if (!level.isLoaded(c) || !level.getBlockState(c).isAir() || !level.getBlockState(c.above()).isAir() || !level.getBlockState(c.below()).isSolidRender(level, c.below())) continue;
+            if (!Chunks.ready(level, c) || !level.getBlockState(c).isAir() || !level.getBlockState(c.above()).isAir() || !level.getBlockState(c.below()).isSolidRender(level, c.below())) continue;
             int walls = 0;
             boolean door = false;
             for (Direction dir : Direction.Plane.HORIZONTAL) {

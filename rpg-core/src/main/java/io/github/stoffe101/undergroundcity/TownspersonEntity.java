@@ -60,6 +60,7 @@ public final class TownspersonEntity extends PathfinderMob {
     @Override protected void registerGoals() {
         goalSelector.addGoal(0, new FloatGoal(this));
         goalSelector.addGoal(1, new PanicGoal(this, 1.35) { @Override public boolean canUse() { return !police() && super.canUse(); } });
+        goalSelector.addGoal(2, new StepGoal());
         goalSelector.addGoal(2, new ErrandGoal());
         goalSelector.addGoal(5, new WaterAvoidingRandomStrollGoal(this, 0.55, 0.002f) { @Override public boolean canUse() { return !police() && errand == null && !holding && super.canUse(); } });
         goalSelector.addGoal(6, new LookAtPlayerGoal(this, Player.class, 8.0f));
@@ -95,7 +96,7 @@ public final class TownspersonEntity extends PathfinderMob {
     }
 
     /**
-     * An officer opens the closed doors on the next steps of their path as they reach them, whatever the door (a wooden one, an iron street door), and marks each as opened on purpose for a
+     * An officer, or a customer on the way to a player's counter, opens the closed doors on the next steps of their path as they reach them, whatever the door (a wooden one, an iron street door), and marks each as opened on purpose for a
      * few seconds so the building's door watch does not shut it in their face; the watch shuts it again afterwards. Nobody else's doors are touched.
      */
     private void openDoorsAhead() {
@@ -140,12 +141,25 @@ public final class TownspersonEntity extends PathfinderMob {
 
     boolean police() { return role.equals("police"); }
 
+    /** True while this street person walks to a player's counter and back out (D-208): they go through the doors on their way, as an officer does. */
+    private boolean passDoors;
+
+    /** On for a customer of a player's business, off again once they are back on the street; an officer always passes doors. */
+    void passDoors(boolean on) {
+        if (passDoors == on || police()) return;
+        passDoors = on;
+        if (getNavigation() instanceof GroundPathNavigation ground) { ground.setCanOpenDoors(on); ground.setCanPassDoors(on); }
+        setPathfindingMalus(net.minecraft.world.level.pathfinder.BlockPathTypes.DOOR_WOOD_CLOSED, on ? 0f : -1f);
+        setPathfindingMalus(net.minecraft.world.level.pathfinder.BlockPathTypes.DOOR_IRON_CLOSED, on ? 0f : -1f);
+    }
+
     /** True once an officer has been told to leave. */
     boolean leaving() { return leaveAt != Long.MAX_VALUE; }
     BlockPos errandPlace() { return errand; }
 
     /** Sends an officer (or a commuter) to a place at a speed (a multiple of their walking speed); null stands them still. */
     void errand(BlockPos where, double speed) {
+        if (where != null) stepping = null;
         boolean changed = where == null || !where.equals(errand);
         errand = where; errandSpeed = speed;
         if (changed && !police()) { getNavigation().stop(); freshErrand = true; }
@@ -156,17 +170,43 @@ public final class TownspersonEntity extends PathfinderMob {
     private boolean freshErrand;
 
     /** Stands still on purpose, or walks on again. */
-    void hold(boolean on) { holding = on; if (on) getNavigation().stop(); }
+    void hold(boolean on) { holding = on; if (on) { getNavigation().stop(); stepping = null; } }
 
     /**
      * Steps straight to {@code to} without a path (through a doorway the navigation will not plan through, since these people never open doors themselves): the door is opened for them by
      * {@link PopulationService} or {@link HouseholdService}.
      */
-    void stepThrough(BlockPos to) {
+    void stepThrough(BlockPos to) { stepThrough(net.minecraft.world.phys.Vec3.atBottomCenterOf(to)); }
+
+    /** Steps straight to a point, not only a block's centre: through the free part of a doorway an open door's panel narrows ({@link PopulationService}). */
+    void stepThrough(net.minecraft.world.phys.Vec3 to) {
         errand = null;
         holding = false;
         getNavigation().stop();
-        getMoveControl().setWantedPosition(to.getX() + 0.5, to.getY(), to.getZ() + 0.5, 0.6);
+        if (!to.equals(stepping)) stepUntil = tickCount + 100;
+        stepping = to;
+        getMoveControl().setWantedPosition(to.x, to.y, to.z, 0.6);
+    }
+
+    /** Where {@link #stepThrough} is taking this body, until it is there (or five seconds have passed); null when it is not stepping. */
+    private net.minecraft.world.phys.Vec3 stepping;
+    private int stepUntil;
+
+    /**
+     * Keeps a step going: a move control's wanted position lasts one tick, and a step was given only on the population's pass (one tick in ten), so a body stepping through a doorway moved a
+     * tenth of the time and never got through (business run 8: an open door, a clear doorway, and the body half a block short after ten seconds).
+     */
+    private final class StepGoal extends Goal {
+        StepGoal() { setFlags(java.util.EnumSet.of(Flag.MOVE)); }
+        @Override public boolean canUse() { return stepping != null; }
+        @Override public boolean canContinueToUse() { return stepping != null; }
+        @Override public boolean requiresUpdateEveryTick() { return true; }   // a goal is otherwise ticked every other tick, and a move lasts one
+        @Override public void tick() {
+            if (stepping == null) return;
+            double dx = getX() - stepping.x, dz = getZ() - stepping.z;
+            if (dx * dx + dz * dz < 0.15 * 0.15 || tickCount > stepUntil) { stepping = null; return; }
+            getMoveControl().setWantedPosition(stepping.x, stepping.y, stepping.z, 0.6);
+        }
     }
 
     /** An officer (or a commuter) leaves (is removed) this many ticks from now; nobody is left standing in a street for good. */
@@ -175,7 +215,7 @@ public final class TownspersonEntity extends PathfinderMob {
     @Override public void tick() {
         super.tick();
         if (!level().isClientSide && leaving() && level().getGameTime() >= leaveAt) discard();
-        if (!level().isClientSide && police() && errand != null && tickCount % 2 == 0) openDoorsAhead();
+        if (!level().isClientSide && (police() || passDoors) && errand != null && tickCount % 2 == 0) openDoorsAhead();
     }
 
     /** Walks to the errand's place while there is one; stands and watches when there is none. */

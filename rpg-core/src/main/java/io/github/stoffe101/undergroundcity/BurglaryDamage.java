@@ -120,15 +120,16 @@ public final class BurglaryDamage {
     /** A lock of this building was picked by this player (D-190): they may break things inside it for a while. */
     static void grant(ServerPlayer player, CityBuildings.Building building, long now) {
         List<Permit> list = PERMITS.computeIfAbsent(player.getUUID(), k -> new ArrayList<>());
-        list.removeIf(p -> p.buildingKey() == building.key() || p.until() <= now);
-        list.add(new Permit(building.key(), player.level().dimension(), now + RULES.permitMinutes() * 60L * 20L));
+        // the whole building: every chunk of a multi-chunk building is one building to whoever picked its lock (D-206)
+        list.removeIf(p -> p.buildingKey() == building.instanceKey() || p.until() <= now);
+        list.add(new Permit(building.instanceKey(), player.level().dimension(), now + RULES.permitMinutes() * 60L * 20L));
     }
 
     /** True when this player holds a live permit for this building. */
     static boolean permitted(ServerPlayer player, CityBuildings.Building building, long now) {
         List<Permit> list = PERMITS.get(player.getUUID());
         if (list == null) return false;
-        for (Permit p : list) if (p.buildingKey() == building.key() && p.dimension() == player.level().dimension() && p.until() > now) return true;
+        for (Permit p : list) if (p.buildingKey() == building.instanceKey() && p.dimension() == player.level().dimension() && p.until() > now) return true;
         return false;
     }
 

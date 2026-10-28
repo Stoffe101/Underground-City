@@ -1,0 +1,22 @@
+{
+ "type": "minecraft:crafting_shaped",
+ "pattern": [
+  "SSS",
+  "PCP",
+  "PPP"
+ ],
+ "key": {
+  "S": {
+   "item": "minecraft:smooth_stone_slab"
+  },
+  "P": {
+   "tag": "minecraft:planks"
+  },
+  "C": {
+   "item": "minecraft:chest"
+  }
+ },
+ "result": {
+  "item": "underground_city:business_counter"
+ }
+}

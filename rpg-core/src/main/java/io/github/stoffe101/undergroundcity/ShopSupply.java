@@ -59,24 +59,28 @@ public final class ShopSupply {
         if (stock == null || terms == null || !stock.city().equals(exchange.city()) || !stock.soldAt(exchange.outlet())) throw new IllegalStateException("This shop does not buy that.");
         if (quantity < 1 || quantity > stock.maxOrder()) throw new IllegalStateException("Sell between 1 and " + stock.maxOrder() + " at a time");
         if (ledger.hasSupply(player.getUUID(), nonce)) throw new IllegalStateException("That sale was already made");
-        int room = stock.capacity() - ledger.regionalUnits(stock);
+        int shelf = ledger.regionalUnits(stock), room = stock.capacity() - shelf;
+        int premiumLeft = Shortages.premiumUnits(stock, shelf, quantity);   // a short shelf pays a quarter more for the goods that bring it back to half (D-201)
         if (room <= 0) throw new IllegalStateException("The shelf is full; the shop buys again when its customers have bought some.");
         if (quantity > room) throw new IllegalStateException("The shop has room for " + room + " more.");
         // Plan the removal on a COPY; too few goods leave the live inventory untouched.
         Inventory after = new Inventory(player);
         after.load(player.getInventory().save(new ListTag()));
-        double weight = 0;
-        int needed = quantity;
+        double weight = 0, premiumWeight = 0;
+        int needed = quantity, premiumUnits = premiumLeft;
         for (int slot = 0; slot < after.items.size() && needed > 0; slot++) {
             ItemStack s = after.items.get(slot);
             if (!acceptable(stock, s)) continue;
             int take = Math.min(needed, s.getCount());
             weight += take * Workshops.GRADE_PRICE[Workshops.grade(s)];
+            int premium = Math.min(take, premiumLeft);
+            premiumWeight += premium * Workshops.GRADE_PRICE[Workshops.grade(s)];
+            premiumLeft -= premium;
             s.shrink(take);
             needed -= take;
         }
         if (needed > 0) throw new IllegalStateException("You carry " + (quantity - needed) + " the shop would take; named, damaged or stolen goods are never bought here.");
-        long credits = Math.max(1, Math.round(terms.pays() * weight));
+        long credits = Math.max(1, Math.round(terms.pays() * (weight - premiumWeight) + Shortages.shortPays(stock, terms.pays()) * premiumWeight));
         double balance = QShopEconomy.balance(player) + credits;
         if (balance > 1_000_000_000) throw new IllegalStateException("Wallet limit reached");
         boolean ownTrade = !terms.career().isEmpty() && terms.career().equals(citizen.career);
@@ -86,10 +90,14 @@ public final class ShopSupply {
         WorkOrderService.recover(player, ledger);
         CitizenState.get(player.server).bumpJourney(player.getUUID(), "shop_supplied");
         String what = quantity + " x " + stock.registryItem().getDescription().getString();
-        String bonus = credits > (long) terms.pays() * quantity ? " (" + (credits - (long) terms.pays() * quantity) + " of it for the grade)" : "";
+        long shortBonus = premiumUnits == 0 ? 0 : Math.round((Shortages.shortPays(stock, terms.pays()) - terms.pays()) * premiumWeight);
+        long gradeBonus = credits - shortBonus - (long) terms.pays() * quantity;
+        String bonus = (gradeBonus > 0 ? " (" + gradeBonus + " of it for the grade)" : "") + (shortBonus > 0 ? " (" + shortBonus + " of it because the shelf was short)" : "");
         player.sendSystemMessage(Component.literal("Sold " + what + " to " + exchange.seller() + " for " + credits + " credits" + bonus + (ownTrade ? ", +" + terms.xp() * quantity + " career XP." : ".")));
         Notice.send(player, Notice.Kind.DELIVERED, "Sold to the shop", what + ": +" + credits + " credits");
         if (citizen.careerLevel() > levelBefore) Notice.send(player, Notice.Kind.SKILL, "Level " + citizen.careerLevel(), TerminalScreenText.capitalize(citizen.career) + " level up. A skill point is waiting.");
         GeneralSkills.suppliedShop(player, credits);   // Trading (D-174), after the settlement
+        Regulars.traded(player.server, exchange.city(), exchange.outlet(), player.getUUID(), premiumUnits > 0);   // and the keepers remember who filled their shelf (D-202)
+        if (premiumUnits > 0) CityStanding.earn(player, exchange.city(), CityStanding.SHORTAGE);   // and so does the city (D-204)
     }
 }

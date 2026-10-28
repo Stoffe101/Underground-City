@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "status": "implemented_as_data",
-  "disclaimer": "Source of the survival goods that the regional exchange and the wayside provisions desks sell (D-091). Run scripts/generate_survival_supply.py to regenerate rpg-core/src/main/resources/data/underground_city/regional_stock/survival/. A line whose mod is not installed is left out when the data loads, so the optional survival set never breaks the default pack. Prices are in Q Shop credits; stock is finite, shared by everyone, and refills only while a human is online. There is no medical item: no medical mod is selected yet (D-085).",
+  "disclaimer": "Source of the survival goods that the regional exchange and the wayside provisions desks sell (D-091). Run scripts/generate_survival_supply.py to regenerate rpg-core/src/main/resources/data/underground_city/regional_stock/survival/. A line whose mod is not installed is left out when the data loads, so the optional survival set never breaks the default pack. Prices are in Q Shop credits; stock is finite, shared by everyone, and refills only while a human is online. The medical item is Core's First Aid Kit (D-203): no medical mod is selected (D-085), and the kit is small, bought and never free.",
   "lines": [
     {
       "id": "waterskin_valewood",
@@ -454,6 +454,96 @@
       "interval_minutes": 60,
       "max_order": 2,
       "why": "Spiders do not exist in the simulation world (D-094); the apothecary of Valewood sells a few spider eyes to the vintners, whose two special wines are made with them (D-095)."
+    },
+    {
+      "id": "first_aid_kit_valewood",
+      "city": "valewood",
+      "item": "underground_city:first_aid_kit",
+      "outlets": [
+        "city"
+      ],
+      "price": 18,
+      "initial": 4,
+      "capacity": 8,
+      "units_per_interval": 1,
+      "interval_minutes": 30,
+      "max_order": 2,
+      "why": "Three hearts back after a fall or a fight: every city sells a few, so nobody crosses the map for one."
+    },
+    {
+      "id": "first_aid_kit_wayside_valewood",
+      "city": "valewood",
+      "item": "underground_city:first_aid_kit",
+      "outlets": [
+        "wayside"
+      ],
+      "price": 24,
+      "initial": 2,
+      "capacity": 3,
+      "units_per_interval": 1,
+      "interval_minutes": 45,
+      "max_order": 1,
+      "why": "The road is long and the desk is the only help on it: a kit, at the desk's price."
+    },
+    {
+      "id": "first_aid_kit_ironhaven",
+      "city": "ironhaven",
+      "item": "underground_city:first_aid_kit",
+      "outlets": [
+        "city"
+      ],
+      "price": 18,
+      "initial": 4,
+      "capacity": 8,
+      "units_per_interval": 1,
+      "interval_minutes": 30,
+      "max_order": 2,
+      "why": "The works and the docks are where people get hurt; the exchange keeps a few kits."
+    },
+    {
+      "id": "first_aid_kit_wayside_ironhaven",
+      "city": "ironhaven",
+      "item": "underground_city:first_aid_kit",
+      "outlets": [
+        "wayside"
+      ],
+      "price": 24,
+      "initial": 2,
+      "capacity": 3,
+      "units_per_interval": 1,
+      "interval_minutes": 45,
+      "max_order": 1,
+      "why": "The road is long and the desk is the only help on it: a kit, at the desk's price."
+    },
+    {
+      "id": "first_aid_kit_blackwater",
+      "city": "blackwater",
+      "item": "underground_city:first_aid_kit",
+      "outlets": [
+        "city"
+      ],
+      "price": 18,
+      "initial": 4,
+      "capacity": 8,
+      "units_per_interval": 1,
+      "interval_minutes": 30,
+      "max_order": 2,
+      "why": "A night out ends badly sometimes; the exchange keeps a few kits."
+    },
+    {
+      "id": "first_aid_kit_wayside_blackwater",
+      "city": "blackwater",
+      "item": "underground_city:first_aid_kit",
+      "outlets": [
+        "wayside"
+      ],
+      "price": 24,
+      "initial": 2,
+      "capacity": 3,
+      "units_per_interval": 1,
+      "interval_minutes": 45,
+      "max_order": 1,
+      "why": "The road is long and the desk is the only help on it: a kit, at the desk's price."
     }
   ]
 }

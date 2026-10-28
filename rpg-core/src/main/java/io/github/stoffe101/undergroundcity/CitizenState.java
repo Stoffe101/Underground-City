@@ -46,6 +46,9 @@ public final class CitizenState extends SavedData {
             CompoundTag bonus = entry.getCompound("admin_points");
             citizen.careerBonus = Math.max(-MAX_BONUS, Math.min(MAX_BONUS, bonus.getInt("career")));
             citizen.thiefBonus = Math.max(-MAX_BONUS, Math.min(MAX_BONUS, bonus.getInt("thief")));
+            // a city's good name (D-204): absent in an older save, which loads with none
+            CompoundTag standing = entry.getCompound("standing");
+            for (String key : standing.getAllKeys()) if (ProgressionRules.validCity(key)) citizen.standing.put(key, Math.max(0, Math.min(CityStanding.MAX, standing.getInt(key))));
             CompoundTag journey = entry.getCompound("journey");
             for (String key : journey.getAllKeys()) {
                 if (key.matches("[a-z_]{2,24}") && citizen.journey.size() < 32) citizen.journey.put(key, Math.max(0, Math.min(9999, journey.getInt(key))));
@@ -118,6 +121,16 @@ public final class CitizenState extends SavedData {
         if (citizen == null || citizen.journey.getOrDefault(key, 0) > 0 || citizen.journey.size() >= 32) return;
         citizen.journey.put(key, 1);
         setDirty();
+    }
+
+    /** Moves a city's good name for a citizen by {@code delta}, within 0 and {@link CityStanding#MAX}. Returns the new value (-1 for nobody). */
+    public int changeStanding(UUID uuid, String city, int delta) {
+        Citizen citizen = citizens.get(uuid);
+        if (citizen == null || !ProgressionRules.validCity(city)) return -1;
+        int now = Math.max(0, Math.min(CityStanding.MAX, citizen.standing.getOrDefault(city, 0) + delta));
+        citizen.standing.put(city, now);
+        setDirty();
+        return now;
     }
 
     /** Counts a guided-journey milestone (deliveries made, for instance). */
@@ -199,6 +212,11 @@ public final class CitizenState extends SavedData {
             CompoundTag journey = new CompoundTag();
             citizen.journey.forEach(journey::putInt);
             record.put("journey", journey);
+            if (!citizen.standing.isEmpty()) {
+                CompoundTag standing = new CompoundTag();
+                citizen.standing.forEach(standing::putInt);
+                record.put("standing", standing);
+            }
             if (citizen.careerBonus != 0 || citizen.thiefBonus != 0) {
                 CompoundTag bonus = new CompoundTag();
                 bonus.putInt("career", citizen.careerBonus);
@@ -222,6 +240,8 @@ public final class CitizenState extends SavedData {
         public final String career;
         public final Map<String, Integer> careerXp = new HashMap<>();
         public final Map<String, Integer> generalXp = new HashMap<>();
+        /** Each city's good name for this citizen, 0 to {@link CityStanding#MAX} (D-204). */
+        public final Map<String, Integer> standing = new java.util.TreeMap<>();
         private final java.util.Set<String> skills = new java.util.TreeSet<>();
         private final Map<String, Integer> journey = new java.util.TreeMap<>();
         /** Points an operator granted (or, below zero, took) on top of what levels give (D-191): separate from the levels, so no level or unlock requirement moves with them. */
@@ -241,6 +261,7 @@ public final class CitizenState extends SavedData {
         public int generalLevel(String skill) {
             return ProgressionRules.levelForXp(generalXp.getOrDefault(skill, 0));
         }
+        public int generalXp(String skill) { return generalXp.getOrDefault(skill, 0); }
         /** Thievery XP and the Thief level it gives (D-143): a track of its own, never the career's. */
         public int thiefXp() { return generalXp.getOrDefault(ProgressionRules.THIEVERY, 0); }
         public int thiefLevel() { return ProgressionRules.thiefLevelForXp(thiefXp()); }

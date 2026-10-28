@@ -28,7 +28,8 @@ What a port does to every palette entry (``data/<ns>/lostcities/palettes/*.json`
   it must not be loaded).
 
 Parts' slices, multibuildings and citystyles are copied unchanged. A building's floors are made explicit for Lost Cities 7 (``overrideFloors``) and
-raised when its middle parts (a roof, an upper storey) would otherwise never be built. A character a building's parts take from the pack's own
+raised when its middle parts (a roof, an upper storey) would otherwise never be built; a building of one part with no conditions is one structure, built once
+(storey 0, no cellars). A character a building's parts take from the pack's own
 city-style palettes (``styles/*.json``), which no palette of the building or its parts defines, is given to the building's palette: this game's city
 styles choose the look, and a character none of them defines makes Lost Cities throw and leave the lot empty. World styles are left out unless ``--keep-worldstyles``
 (then copied and flagged for a person to review): Lost Cities 7 loads them as a registry, and one that names a biome of a mod that is not loaded
@@ -51,13 +52,58 @@ import validate_city_blocks as blocks  # noqa: E402
 from citykit import CHAR_POOL, LOST_CITIES_RESERVED, LEGACY_RENAMED, as_written  # noqa: E402
 
 REPORT = "uc-port-report.json"
+# raised when a port changes in a way an older port lacks; private_c70.py check refuses a staged pack made by an older one
+PORTER_VERSION = 14
 PACK_FORMAT_1201 = 15
 
 # 1.18.2 -> 1.20.1 changes that matter for building palettes (vanilla). A rule maps an old id to a new one, optionally with property renames.
 RENAMES: dict[str, str] = {
     "minecraft:grass_path": "minecraft:dirt_path",
 }
-# The project does not use Create: what each kind of Create block becomes (first matching pattern wins).
+# Create's decorative stones (its palette blocks: cut, polished cut, bricks, small bricks, layered and pillars of each stone) are the walls, floors and steps of the
+# buildings that use them: each becomes the vanilla block of the nearest look in the same shape, keeping a slab's half, a stair's facing and a wall's sides. The
+# eleventh pass found 87 kinds of Create block ported to air, among them about 800 uses of these stones: walls of cut calcite became holes in the owner's houses.
+CREATE_STONES: dict[str, tuple[str, str, str, str]] = {   # stone: (full block, slab, stairs, wall)
+    "calcite": ("minecraft:calcite", "minecraft:smooth_quartz_slab", "minecraft:smooth_quartz_stairs", "minecraft:diorite_wall"),
+    "diorite": ("minecraft:polished_diorite", "minecraft:polished_diorite_slab", "minecraft:polished_diorite_stairs", "minecraft:diorite_wall"),
+    "granite": ("minecraft:polished_granite", "minecraft:polished_granite_slab", "minecraft:polished_granite_stairs", "minecraft:granite_wall"),
+    "andesite": ("minecraft:polished_andesite", "minecraft:polished_andesite_slab", "minecraft:polished_andesite_stairs", "minecraft:andesite_wall"),
+    "deepslate": ("minecraft:polished_deepslate", "minecraft:polished_deepslate_slab", "minecraft:polished_deepslate_stairs", "minecraft:polished_deepslate_wall"),
+    "tuff": ("minecraft:tuff", "minecraft:andesite_slab", "minecraft:andesite_stairs", "minecraft:andesite_wall"),
+    "dripstone": ("minecraft:dripstone_block", "minecraft:mud_brick_slab", "minecraft:mud_brick_stairs", "minecraft:mud_brick_wall"),
+    "scoria": ("minecraft:nether_bricks", "minecraft:nether_brick_slab", "minecraft:nether_brick_stairs", "minecraft:nether_brick_wall"),
+    "scorchia": ("minecraft:polished_blackstone", "minecraft:polished_blackstone_slab", "minecraft:polished_blackstone_stairs", "minecraft:polished_blackstone_wall"),
+    "limestone": ("minecraft:smooth_sandstone", "minecraft:smooth_sandstone_slab", "minecraft:smooth_sandstone_stairs", "minecraft:sandstone_wall"),
+    "ochrum": ("minecraft:smooth_sandstone", "minecraft:smooth_sandstone_slab", "minecraft:smooth_sandstone_stairs", "minecraft:sandstone_wall"),
+    "veridium": ("minecraft:deepslate_tiles", "minecraft:deepslate_tile_slab", "minecraft:deepslate_tile_stairs", "minecraft:deepslate_tile_wall"),
+    "asurine": ("minecraft:prismarine_bricks", "minecraft:prismarine_brick_slab", "minecraft:prismarine_brick_stairs", "minecraft:prismarine_wall"),
+    "crimsite": ("minecraft:red_nether_bricks", "minecraft:red_nether_brick_slab", "minecraft:red_nether_brick_stairs", "minecraft:red_nether_brick_wall"),
+}
+CREATE_STONE = re.compile(r"create:(?:polished_cut_|cut_|small_|layered_)?(?P<stone>[a-z]+?)(?:_bricks?|_pillar)?(?P<shape>_slab|_stairs|_wall)?")
+SHAPE_PROPERTIES = {"_slab": {"type", "waterlogged"}, "_stairs": {"facing", "half", "shape", "waterlogged"}, "_wall": {"up", "north", "east", "south", "west", "waterlogged"}}
+
+
+def create_shaped(name: str, props: dict[str, str]) -> str | None:
+    """A Create block that has a vanilla look in the same shape, with the properties that shape takes; None for anything else."""
+    m = CREATE_STONE.fullmatch(name)
+    if m and m.group("stone") in CREATE_STONES:
+        shape = m.group("shape") or ""
+        block = CREATE_STONES[m.group("stone")][{"": 0, "_slab": 1, "_stairs": 2, "_wall": 3}[shape]]
+        kept = {k: v for k, v in props.items() if k in SHAPE_PROPERTIES.get(shape, set())}
+        return block + ("[" + ",".join(f"{k}={v}" for k, v in sorted(kept.items())) + "]" if kept else "")
+    if name.endswith("_window_pane") or name == "create:brass_bars":
+        kept = {k: v for k, v in props.items() if k in {"north", "east", "south", "west", "waterlogged"}}
+        block = "minecraft:iron_bars" if name == "create:brass_bars" else "minecraft:glass_pane"
+        return block + ("[" + ",".join(f"{k}={v}" for k, v in sorted(kept.items())) + "]" if kept else "")
+    if re.fullmatch(r"create:.*(_window|framed_glass|_glass)", name):
+        return "minecraft:glass"   # a whole glass block stays a whole one, not a pane
+    seat = re.fullmatch(r"create:([a-z_]+)_seat", name)
+    if seat:
+        return f"minecraft:{seat.group(1)}_carpet"   # a seat is somewhere to sit, not machinery
+    return None
+
+
+# The project does not use Create: what each other kind of Create block becomes (first matching pattern wins).
 CREATE_FALLBACKS: list[tuple[str, str]] = [
     (r"create:.*_casing$", "minecraft:polished_andesite"),
     (r"create:.*andesite.*", "minecraft:polished_andesite"),
@@ -98,7 +144,8 @@ class Porter:
         self.counts = {"palettes": 0, "entries": 0, "renamed": 0, "create_replaced": 0, "foreign_replaced": 0, "spawners_removed": 0,
                        "mob_markers_removed": 0, "loot_dropped": 0, "files_copied": 0, "worldstyles_to_review": 0, "worldstyles_left_out": 0,
                        "kept_but_gone": 0, "properties_dropped": 0, "by_rule": 0, "by_sibling": 0, "by_shape": 0, "to_air": 0,
-                       "floors_made_explicit": 0, "floors_raised": 0, "style_characters_renamed": 0, "parts_with_style_characters_renamed": 0,
+                       "floors_made_explicit": 0, "floors_raised": 0, "single_structures": 0, "style_characters_renamed": 0, "parts_with_style_characters_renamed": 0,
+                       "multi_parts_given_building_characters": 0, "multi_part_characters_given": 0,
                        "buildings_given_style_characters": 0, "style_characters_given": 0, "legacy_names_kept": 0}
         self.foreign: dict[str, str] = {}      # replaced block id -> what it became
         self.gone: dict[str, str] = {}         # a kept mod's block that 1.20.1 no longer has -> what it became
@@ -123,6 +170,10 @@ class Porter:
         ns = namespace(name)
         if ns == "create":
             self.counts["create_replaced"] += 1
+            shaped = create_shaped(name, props)
+            if shaped is not None:
+                self.foreign[name] = shaped.split("[", 1)[0]
+                return shaped
             for pattern, fallback in CREATE_FALLBACKS:
                 if re.fullmatch(pattern, name):
                     self.foreign[name] = fallback
@@ -210,6 +261,16 @@ class Porter:
         if "overrideFloors" not in building:
             building["overrideFloors"] = True
             self.counts["floors_made_explicit"] += 1
+        parts = [p for p in building["parts"] if isinstance(p, dict)]
+        if len(parts) == 1 and set(parts[0]) == {"part"}:
+            # one part with no conditions is the whole building (a cabin on its own mound, a food truck): Lost Cities 7 builds storeys 0 to ``floors`` and puts that
+            # part up again every six blocks, so each copy's ground buried the rooms of the copy below (a generated cabin: four of its five bedrooms full of dirt).
+            # Storey 0 alone, and no cellars unless the building names them.
+            building["minfloors"] = building["maxfloors"] = 0
+            if "mincellars" not in building and "maxcellars" not in building:
+                building["mincellars"] = building["maxcellars"] = 0
+            self.counts["single_structures"] += 1
+            return
         if middle:
             needed = max(int(p.get("floor", 1)) for p in middle) + 1
             if int(building.get("maxfloors", building.get("minfloors", 1))) < needed:
@@ -251,6 +312,7 @@ class Porter:
             self.counts["files_copied"] += 1
         self.rename_style_characters(dest)
         self.give_style_characters(dest)
+        self.give_multi_part_characters(dest)
         return self.report()
 
     def rename_style_characters(self, dest: Path) -> None:
@@ -395,6 +457,53 @@ class Porter:
             p.write_text(json.dumps(d, indent=2, sort_keys=True) + "\n", encoding="utf-8")
             self.counts["buildings_given_style_characters"] += 1
             self.counts["style_characters_given"] += len(given)
+
+    def give_multi_part_characters(self, dest: Path) -> None:
+        """Give each part of a multi-chunk building's buildings the characters it takes from its building's own palette. Lost Cities 7.5.5 does
+        not find them for a part of a multi-chunk building whose building alone defines a character ("Could not find entry 'H' in the palette for
+        part ...", measured on the owner's pack, October 27: three lots of two multi-chunk buildings left as raw ground); a part's own palette is
+        layered over everything else, so the same entry copied there gives the same block wherever Lost Cities looks. Only characters the part uses,
+        does not define itself, and its building does define are copied."""
+        def load(kind: str, rid: str):
+            ns, path = rid.split(":", 1)
+            file = dest / "data" / ns / "lostcities" / kind / f"{path}.json"
+            return (file, json.loads(file.read_text(encoding="utf-8"))) if file.is_file() else (file, None)
+
+        def by_char(entries) -> dict[str, dict]:
+            return {str(e.get("char", "")): e for e in entries or [] if isinstance(e, dict)}
+
+        for multi_file in sorted(dest.rglob("multibuildings/*.json")):
+            ns = multi_file.relative_to(dest).parts[1]
+            multi = json.loads(multi_file.read_text(encoding="utf-8"))
+            for column in multi.get("buildings") or []:
+                for name in column:
+                    _, building = load("buildings", name if ":" in name else f"{ns}:{name}")
+                    if not isinstance(building, dict):
+                        continue
+                    _, ref = load("palettes", building["refpalette"]) if building.get("refpalette") else (None, None)
+                    own = {**by_char((ref or {}).get("palette")), **by_char(inline_entries(building))}
+                    for partref in list(building.get("parts") or []) + list(building.get("parts2") or []):
+                        if not isinstance(partref, dict) or not partref.get("part"):
+                            continue
+                        part_file, part = load("parts", partref["part"])
+                        if not isinstance(part, dict):
+                            continue
+                        # what Lost Cities reads as the part's own palette: its inline one when it has one, and only then; else the palette it names
+                        _, part_ref = load("palettes", part["refpalette"]) if part.get("refpalette") else (None, None)
+                        mine = inline_entries(part)
+                        if mine is None:
+                            mine = [dict(e) for e in (part_ref or {}).get("palette") or [] if isinstance(e, dict)]
+                        used = {c for layer in part.get("slices") or [] for row in layer for c in row}
+                        given = [dict(own[c]) for c in sorted(used - set(by_char(mine)) - {" "}) if c in own]
+                        if not given:
+                            continue
+                        # written in the object form ({"palette": [...]}), the only one Lost Cities 1.20.1 decodes for a part: it drops a bare list without a word
+                        # (multi run 2, October 27: the list form left the same two buildings unbuilt), and reads the inline palette in place of the named one
+                        part["palette"] = {"palette": mine + given}
+                        part.pop("refpalette", None)
+                        part_file.write_text(json.dumps(part, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+                        self.counts["multi_parts_given_building_characters"] += 1
+                        self.counts["multi_part_characters_given"] += len(given)
 
     def report(self) -> dict:
         return {"schema_version": 1, "counts": self.counts, "replaced_blocks": dict(sorted(self.foreign.items())), "kept_mod_blocks_gone": dict(sorted(self.gone.items())),

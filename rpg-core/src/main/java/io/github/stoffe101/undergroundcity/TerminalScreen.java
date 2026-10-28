@@ -49,6 +49,8 @@ public final class TerminalScreen extends UcScreen {
     private final UcButton[] rail = new UcButton[Page.values().length];
     /** The Skills page's two views: the trade's tree, or the general skills (D-174) with a summary of the Thief track. */
     private boolean generalView;
+    /** The General tab's cards scroll inside their well (the tenth pass's five skills did not fit at 1920 x 1080, GUI scale 3); the most is found as they are drawn. */
+    private int generalScroll, generalMaxScroll;
     private UcButton treeChip, generalChip;
     private final UcButton[] buyOne = new UcButton[MAX_OFFERS], buyLot = new UcButton[MAX_OFFERS];
     // the skill tree, laid out once per snapshot and size: node cards by index
@@ -280,7 +282,7 @@ public final class TerminalScreen extends UcScreen {
     private TerminalData.Row row() { List<TerminalData.Row> list = jobs(); return list.isEmpty() ? null : list.get(Math.max(0, Math.min(selected, list.size() - 1))); }
     private boolean exchangeOpen() { return (!data.region().isEmpty() || data.shopOnly()) && !data.offers().isEmpty(); }
     private void setView(boolean underground) { undergroundView = underground; selected = 0; jobScroll = 0; refresh(); }
-    private void setGeneral(boolean general) { generalView = general; refresh(); }
+    private void setGeneral(boolean general) { generalView = general; generalScroll = 0; refresh(); }
     /** The Skills page keeps a row for its two view chips above the column headings; the Thief page has no chips. */
     private int tabRow() { return current == Page.SKILLS && !data.career().isEmpty() ? 20 : 0; }
     private boolean generalShown() { return current == Page.SKILLS && generalView && !data.career().isEmpty(); }
@@ -737,12 +739,14 @@ public final class TerminalScreen extends UcScreen {
     @Override public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
         if (current == Page.CONTRACTS) { jobScroll = Math.max(0, Math.min(jobScroll - (int) Math.signum(delta), Math.max(0, jobs().size() - visibleRows()))); return true; }
         if (current == Page.IMPORTS) { offerScroll = Math.max(0, offerScroll - (int) Math.signum(delta)); layoutOffers(); return true; }
+        if (generalShown()) { scrollGeneral(-(int) Math.signum(delta) * GENERAL_STEP); return true; }
         if (skillsPage() && skillMaxScroll > 0) { scrollSkills(-(int) Math.signum(delta) * skillStep); return true; }
         return super.mouseScrolled(mouseX, mouseY, delta);
     }
 
     @Override public boolean keyPressed(int key, int scan, int modifiers) {
         if (key >= 49 && key <= 53) { showPage(Page.values()[key - 49]); return true; }
+        if (generalShown() && (key == 264 || key == 265)) { scrollGeneral((key == 264 ? 1 : -1) * GENERAL_STEP); return true; }
         if (skillsPage() && (key == 264 || key == 265)) { scrollSkills((key == 264 ? 1 : -1) * skillStep); return true; }
         if (current == Page.CONTRACTS && (key == 264 || key == 265)) {
             int size = jobs().size();
@@ -971,9 +975,11 @@ public final class TerminalScreen extends UcScreen {
 
     /** The General tab: the general skills in use as cards (level, XP to the next level, what they give now and next, how they are earned), the Thief track in one line, and the skills nothing uses yet named as such. */
     private void renderGeneral(GuiGraphics g) {
-        int top = cy + tabRow() + 2;
-        UcUi.well(g, cx, top, cw, cy + ch - top);
-        int y = top + 6, x = cx + 8, w = cw - 16;
+        int top = cy + tabRow() + 2, bottom = cy + ch;
+        UcUi.well(g, cx, top, cw, bottom - top);
+        // the cards are clipped to the well and scroll in it, with a thin bar on the right while there is more than fits
+        g.enableScissor(cx, top + 1, cx + cw, bottom - 1);
+        int y = top + 6 - generalScroll, x = cx + 8, w = cw - 16;
         List<String> unused = new ArrayList<>();
         for (TerminalData.General row : data.general()) {
             if (!row.used()) { unused.add(row.title()); continue; }
@@ -999,8 +1005,23 @@ public final class TerminalScreen extends UcScreen {
         UcUi.text(g, font, txp, x + w - font.width(txp), y, UcUi.SOFT);
         y = UcUi.wrapped(g, font, "Earned by getting into places, cracking safes and selling what you took. Its tree and points are on the Thief tab.", x, y + 11, w, UcUi.DIM, 2) + 8;
         if (!unused.isEmpty())
-            UcUi.wrapped(g, font, String.join(", ", unused) + ": nothing in the game earns or uses these yet.", x, y, w, UcUi.FAINT, 2);
+            y = UcUi.wrapped(g, font, String.join(", ", unused) + ": nothing in the game earns or uses these yet.", x, y, w, UcUi.FAINT, 2) + 8;
+        g.disableScissor();
+        generalMaxScroll = Math.max(0, y + generalScroll - (bottom - 2));
+        generalScroll = Math.min(generalScroll, generalMaxScroll);
+        if (generalMaxScroll > 0) {
+            int track = bottom - top - 4, thumb = Math.max(14, track * track / (track + generalMaxScroll));
+            int thumbY = top + 2 + (int) ((long) (track - thumb) * generalScroll / generalMaxScroll);
+            g.fill(cx + cw - 4, top + 2, cx + cw - 2, top + 2 + track, 0xff16222d);
+            g.fill(cx + cw - 4, thumbY, cx + cw - 2, thumbY + thumb, UcUi.SOFT);
+        }
     }
+
+    private static final int GENERAL_STEP = 24;
+    private void scrollGeneral(int pixels) { generalScroll = Math.max(0, Math.min(generalMaxScroll, generalScroll + pixels)); }
+
+    /** Scrolls the General tab (the visual captures). */
+    public void scrollGeneralTo(int pixels) { generalScroll = Math.max(0, pixels); }
 
     private void renderNode(GuiGraphics g, int i, boolean sel, boolean over) {
         TerminalData.SkillRow row = tree().get(i);
@@ -1089,8 +1110,17 @@ public final class TerminalScreen extends UcScreen {
             } else {
                 int barW = Math.min(TradeLayout.BAR_W, Math.max(0, sw - 40));
                 if (barW >= 12) UcUi.bar(g, sx, ry + 19, barW, 5, offer.capacity() == 0 ? 0f : (float) offer.stock() / offer.capacity(), UcUi.LEGAL);
-                String count = offer.stock() + "/" + offer.capacity() + (data.counter() && offer.pays() > 0 ? "  buys at " + offer.pays() : "");
-                g.drawString(font, UcUi.fit(font, count, Math.max(0, sw - (barW >= 12 ? barW + 4 : 0))), sx + (barW >= 12 ? barW + 4 : 0), ry + 17, data.counter() && offer.pays() > 0 && offer.carried() > 0 ? UcUi.OK : UcUi.DIM, false);
+                boolean low = data.counter() && offer.pays() > 0 && offer.capacity() >= 4 && offer.stock() <= offer.capacity() / 4;
+                String stock = offer.stock() + "/" + offer.capacity();
+                int countW = Math.max(0, sw - (barW >= 12 ? barW + 4 : 0));
+                // the price a short line pays is the point of it: a narrower form keeps the number rather than cutting it off ("short: buys at..." at 1920 x 1080, GUI scale 3)
+                String count = stock;
+                if (data.counter() && offer.pays() > 0) {
+                    String[] forms = low ? new String[] {"  short: buys at " + offer.pays(), "  short: " + offer.pays(), "  buys " + offer.pays()} : new String[] {"  buys at " + offer.pays(), "  buys " + offer.pays()};
+                    count = stock + forms[forms.length - 1];
+                    for (String form : forms) if (font.width(stock + form) <= countW) { count = stock + form; break; }
+                }
+                g.drawString(font, UcUi.fit(font, count, countW), sx + (barW >= 12 ? barW + 4 : 0), ry + 17, data.counter() && offer.pays() > 0 && offer.carried() > 0 ? UcUi.OK : UcUi.DIM, false);
             }
         }
         int more = data.offers().size() - rows;
@@ -1116,7 +1146,8 @@ public final class TerminalScreen extends UcScreen {
             lines.add(net.minecraft.network.chat.Component.literal(itemName(offer.item())));
             lines.add(net.minecraft.network.chat.Component.literal(offer.price() + " credits each, " + offer.stock() + " of " + offer.capacity() + " in stock"));
             if (data.counter() && offer.pays() > 0)
-                lines.add(net.minecraft.network.chat.Component.literal("The shop buys it at " + offer.pays() + " a unit while the shelf has room" + (offer.carried() > 0 ? "; you carry " + offer.carried() : "")));
+                lines.add(net.minecraft.network.chat.Component.literal("The shop buys it at " + offer.pays() + " a unit while the shelf has room"
+                    + (offer.capacity() >= 4 && offer.stock() <= offer.capacity() / 4 ? " (short: a quarter more until the shelf is half full again)" : "") + (offer.carried() > 0 ? "; you carry " + offer.carried() : "")));
             String reason = buyRefusal(offer, 1);
             if (!reason.isEmpty()) lines.add(net.minecraft.network.chat.Component.literal(reason));
             UcUi.tooltip(g, font, lines, mouseX, mouseY, width, height);

@@ -34,7 +34,7 @@ class RegionalContentTests(unittest.TestCase):
 
     def test_every_item_texture_belongs_to_an_item(self):
         ids = {e["id"] for e in SOURCE["commodities"] + SOURCE["products"] + SOURCE["tools"] + SOURCE["specials"]}
-        ids |= {"sealed_envelope"}   # registered in Java (EnvelopeItem, D-139): its model is generated, its sprite drawn by tools/art
+        ids |= {"sealed_envelope", "first_aid_kit"}   # registered in Java (EnvelopeItem, D-139; FirstAidKitItem, D-203): their models are generated, their sprites drawn by tools/art
         for path in (RES / "assets/underground_city/textures/item").glob("*.png"):
             self.assertIn(path.stem, ids, f"texture without an item: {path.name}")
 

@@ -132,4 +132,53 @@ public final class BurglaryDamageGameTests {
         }
         helper.succeed();
     }
+    /**
+     * An owner's changes are never the city's to put back (tenth pass): a thief's break before the house became somebody's home is recorded; once it is a home, the thief may break
+     * nothing more there, what the owner changes is never recorded, and when the wait is over the city puts back nothing inside the home (not the thief's old break, not the owner's
+     * change) and forgets the record, so nothing is put back after the owner moves out either.
+     */
+    @GameTest(template = "empty", batch = "uc_wreck_owner", timeoutTicks = 300)
+    public static void anOwnersChangesAreNeverPutBackAndTheirHomeIsNeverBroken(GameTestHelper helper) {
+        try (BuildingSecurityGameTests.House h = new BuildingSecurityGameTests.House(helper)) {
+            furnish(h);
+            BurglaryDamage.resetForTest();
+            BurglaryDamage.store(h.level.getServer()).records.remove(h.building.key());
+            ServerPlayer thief = thief(helper, "uc_wreck_d"), owner = thief(helper, "uc_wreck_owner");
+            // items left lying here by earlier tests in this crowded world are not this test's
+            h.level.getEntitiesOfClass(ItemEntity.class, new AABB(h.in(0, 0, 0)).inflate(12)).forEach(ItemEntity::discard);
+            long now = LockService.clock(h.level.getServer());
+            BurglaryDamage.grantForTest(thief, h.building, now);
+            BurglaryDamage.breakFor(thief, h.level, h.building, h.in(4, 1, 4), now);   // the inner wall (and the torch on it), while nobody lives here
+            check(BurglaryDamage.store(h.level.getServer()).records.get(h.building.key()).cells.size() == 2, "the thief's break was not recorded");
+            // the house becomes the owner's home
+            CrewLedger ledger = CrewService.ledger(h.level.getServer());
+            check(ledger != null && !ledger.faulted(), "no Crew ledger in the test world");
+            String id = "test:wreck_owner";
+            CrewLedger.Residence home = ledger.registerResidence(id, "Wreck test home", "flat", h.level.dimension().location().toString(), "test", h.in(1, 0, 1), h.in(5, 3, 5), 10, -1);
+            home.ownerType = CrewLedger.OwnerType.PLAYER;
+            home.owner = owner.getUUID();
+            try {
+                check(BurglaryDamage.judge(thief, h.level, h.building, h.in(2, 0, 2), now) == BurglaryDamage.Verdict.HOME, "a thief may break things in somebody's home");
+                // the owner takes up their carpet and builds a shelf where the thief's wall was: neither is a burglary, neither is recorded
+                h.level.setBlock(h.in(2, 0, 2), Blocks.AIR.defaultBlockState(), 2);
+                h.level.setBlock(h.in(4, 1, 4), Blocks.BOOKSHELF.defaultBlockState(), 2);
+                check(BurglaryDamage.store(h.level.getServer()).records.get(h.building.key()).cells.size() == 2, "the owner's changes were recorded as damage");
+                long wait = BurglaryDamage.RULES.restoreMinutes() * 60L * 20L;
+                BurglaryDamage.fixClockForTest(now + 2 * wait);
+                BurglaryDamage.restoreDue(h.level.getServer());
+                check(h.level.getBlockState(h.in(2, 0, 2)).isAir(), "the carpet the owner took up was put back");
+                check(h.level.getBlockState(h.in(4, 1, 4)).is(Blocks.BOOKSHELF), "the owner's shelf was replaced by the wall the thief broke");
+                check(h.level.getBlockState(h.in(4, 2, 4)).isAir(), "the torch was put back inside somebody's home");
+                check(!BurglaryDamage.store(h.level.getServer()).records.containsKey(h.building.key()), "the record was kept: it would be put back once the owner moves out");
+                check(h.level.getEntitiesOfClass(ItemEntity.class, new AABB(h.in(0, 0, 0)).inflate(12)).isEmpty(), "something dropped (a belonging copied)");
+            } finally {
+                home.ownerType = CrewLedger.OwnerType.NONE;
+                home.owner = null;
+                ledger.unregisterResidence(id);
+                BurglaryDamage.fixClockForTest(null);
+                BurglaryDamage.resetForTest();
+            }
+        }
+        helper.succeed();
+    }
 }

@@ -212,7 +212,7 @@ public final class PropertyIntel {
     static int searchable(ServerLevel level, CityBuildings.Building b) {
         int n = 0;
         for (BlockPos pos : BlockPos.betweenClosed(b.chunkX() * 16, b.minY(), b.chunkZ() * 16, b.chunkX() * 16 + 15, b.maxY() - 1, b.chunkZ() * 16 + 15)) {
-            if (!level.isLoaded(pos)) return n;
+            if (!Chunks.ready(level, pos)) return n;
             BlockState state = level.getBlockState(pos);
             if (state.isAir()) continue;
             boolean container = state.getBlock() instanceof ChestBlock || state.getBlock() instanceof BarrelBlock;

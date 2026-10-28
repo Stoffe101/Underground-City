@@ -1,5 +1,6 @@
 {
   "block.underground_city.alarm_panel": "Alarm Panel",
+  "block.underground_city.business_counter": "Business Counter",
   "block.underground_city.cannabis_plant": "Cannabis Plant",
   "block.underground_city.drying_rack": "Drying Rack",
   "block.underground_city.electronics_bench": "Electronics Bench",
@@ -33,6 +34,7 @@
   "item.underground_city.bearing_set": "Bearing Set",
   "item.underground_city.berry_wine": "Berry Wine",
   "item.underground_city.biopolymer": "Biopolymer Sheet",
+  "item.underground_city.business_counter": "Business Counter",
   "item.underground_city.bypass_kit": "Bypass Kit",
   "item.underground_city.cannabis_flower": "Cannabis Flower",
   "item.underground_city.cannabis_seeds": "Cannabis Seeds",
@@ -59,6 +61,7 @@
   "item.underground_city.fermentation_vat": "Fermentation Vat",
   "item.underground_city.field_repair_set": "Field Repair Set",
   "item.underground_city.firearm_parts_kit": "Firearm Parts Kit",
+  "item.underground_city.first_aid_kit": "First Aid Kit",
   "item.underground_city.flour": "Flour",
   "item.underground_city.fruit_crate": "Fruit Crate",
   "item.underground_city.gear_set": "Gear Set",

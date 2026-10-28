@@ -57,3 +57,4 @@ The lines are in `content/gameplay/shop-supply.json`. A line that buys carries a
 * Nobody has played it. The prices and shelf sizes are first numbers.
 * Customers buy only while somebody is in the city to make them walk. A shelf does not empty while nobody plays.
 * Only the six shops above buy. The hardware store and the roadside places buy nothing yet.
+* A shelf that stays short for five minutes of active play posts a timed **shortage contract** for its trade (D-207), and a player's own counter sells to the same street people (D-208): see [player-business.md](player-business.md).

@@ -80,6 +80,16 @@ public final class VisualCaptureHarness {
         return new TerminalData("valewood","vintner",3,520,balance,true,null,1,"ironhaven",List.of(),offers,0,List.of(),List.of(),List.of(),0,"",List.of(),"shop:pub|The Anvil");
     }
 
+    /** The club bar's counter short of wine (D-201): two bottles of twelve, so it buys at a quarter more; the player carries three. */
+    private static TerminalData barShort(double balance) {
+        List<TerminalData.Offer> offers=List.of(
+            new TerminalData.Offer("underground_city:shops/bar_honey_blackwater","minecraft:honey_bottle",6,8,12,4),
+            new TerminalData.Offer("underground_city:shops/bar_pie_blackwater","minecraft:pumpkin_pie",6,8,12,4),
+            new TerminalData.Offer("underground_city:shops/bar_spirit_blackwater","underground_city:grain_spirit",26,5,8,4,17,0),
+            new TerminalData.Offer("underground_city:shops/bar_wine_blackwater","underground_city:berry_wine",24,2,12,4,19,3));
+        return new TerminalData("blackwater","vintner",3,520,balance,true,null,1,"blackwater",List.of(),offers,0,List.of(),List.of(),List.of(),0,"",List.of(),"shop:bar|The Bar");
+    }
+
     /** A workshop station's screen as the server would fill it (D-163): the vat at work, the Machinist's Bench ready to be fitted, the still with its licensed and underground recipes. */
     private static net.minecraft.client.gui.screens.Screen workshopCapture(String pose) {
         net.minecraft.core.BlockPos at=net.minecraft.core.BlockPos.ZERO;
@@ -292,19 +302,16 @@ public final class VisualCaptureHarness {
         };
     }
 
-    /** The Skills page's General tab (D-174) as the server fills it: Trading at level 4 (the first discount owned, the next at level 6), Social at level 2, the Thief track at level 3, and the three skills nothing uses yet. */
+    /** The Skills page's General tab (D-174, D-200) as the server fills it, from the server's own row builder: Trading 4, Social 2, Driving 2, Fitness 4 and Shooting 3 (all five in use), the Thief track at level 3. */
     private static TerminalData generalSkills() {
         List<TerminalData.General> rows=new ArrayList<>();
-        int[][] xp={{1400,4},{300,2}};
-        String[] used={GeneralSkills.TRADING,GeneralSkills.SOCIAL};
-        for(int i=0;i<2;i++) {
-            String id=used[i]; int level=xp[i][1];
-            boolean active=id.equals(GeneralSkills.TRADING)?GeneralSkills.tradingDiscount(level)>0:level>=GeneralSkills.SOCIAL_TRUST_LEVEL;
-            rows.add(new TerminalData.General(id,id.substring(0,1).toUpperCase()+id.substring(1),level,xp[i][0],ProgressionRules.xpAtLevel(level),ProgressionRules.xpAtLevel(level+1),
-                active?GeneralSkills.gives(id,level):"",GeneralSkills.next(id,level),GeneralSkills.earned(id),true));
-        }
-        for(String id:List.of("driving","fitness","shooting"))
-            rows.add(new TerminalData.General(id,id.substring(0,1).toUpperCase()+id.substring(1),1,0,0,ProgressionRules.xpAtLevel(2),"","",GeneralSkills.earned(id),false));
+        CitizenState posed=new CitizenState();
+        java.util.UUID who=new java.util.UUID(7,7);
+        posed.register(who,"valewood","farmer");
+        posed.addGeneralXp(who,GeneralSkills.TRADING,1400); posed.addGeneralXp(who,GeneralSkills.SOCIAL,300); posed.addGeneralXp(who,GeneralSkills.DRIVING,260);
+        posed.addGeneralXp(who,GeneralSkills.FITNESS,1300); posed.addGeneralXp(who,GeneralSkills.SHOOTING,640);
+        CitizenState.Citizen pose=posed.find(who).orElseThrow();
+        for(String id:GeneralSkills.SHOWN) rows.add(GeneralSkills.row(pose,id));
         TerminalData base=farmerData();
         int thiefXp=ProgressionRules.thiefXpAtLevel(3)+60;
         return new TerminalData(base.city(),base.career(),base.level(),base.xp(),base.balance(),base.economy(),base.active(),base.foreignVisits(),base.region(),base.jobs(),base.offers(),
@@ -492,6 +499,7 @@ public final class VisualCaptureHarness {
         cases.add(new Case("uc-skills-technician",TerminalScreen.Page.SKILLS,careerSkills("technician",11,java.util.Set.of("technician.fundamentals","technician.municipal_repairs","technician.automation_install")),0,false,"technician.bypass_tooling"));
         cases.add(new Case("uc-skills-farmer-deep",TerminalScreen.Page.SKILLS,careerSkills("farmer",22,java.util.Set.of("farmer.fundamentals","farmer.greenhouse_management","farmer.cultivar_broker","farmer.estate_wholesale","farmer.restricted_cultivation","farmer.concealed_stores","farmer.underground_trade","farmer.grey_market_contacts","farmer.field_logistics")),0,false,"farmer.back_lot_network"));
         cases.add(new Case("uc-skills-general",TerminalScreen.Page.SKILLS,generalSkills(),0,false,"general"));
+        cases.add(new Case("uc-skills-general-end",TerminalScreen.Page.SKILLS,generalSkills(),0,false,"general-end"));
         cases.add(new Case("uc-skills-available",TerminalScreen.Page.SKILLS,rich("valewood",false,0,VALEWOOD_LAW),0,false,"farmer.concealed_stores"));
         cases.add(new Case("uc-skills-locked",TerminalScreen.Page.SKILLS,rich("valewood",false,0,VALEWOOD_LAW),0,false,"farmer.underground_trade"));
         cases.add(new Case("uc-skills-legal-locked",TerminalScreen.Page.SKILLS,rich("valewood",false,0,VALEWOOD_LAW),0,false,"farmer.controlled_crop_licence"));
@@ -532,9 +540,11 @@ public final class VisualCaptureHarness {
         cases.add(new Case("uc-counter-hardware",TerminalScreen.Page.IMPORTS,counter(140),0));
         cases.add(new Case("uc-counter-poor",TerminalScreen.Page.IMPORTS,counter(6),0));
         cases.add(new Case("uc-counter-pub-sells",TerminalScreen.Page.IMPORTS,pubCounter(140),0));
+        cases.add(new Case("uc-counter-bar-short",TerminalScreen.Page.IMPORTS,barShort(140),0));
         cases.add(Case.ledger("uc-ledger"));
         cases.add(Case.notices("uc-notices"));
         cases.add(new Case("uc-notices-ninth",null,null,0,false,null,"notices-ninth"));
+        cases.add(new Case("uc-notices-tenth",null,null,0,false,null,"notices-tenth"));
         for(String pose:new String[]{"nocrew","nocrew-invited","unregistered","unavailable","members","members-member","money","money-consent","money-shared","money-shared-nospend","home","home-notice","home-owned","home-find","home-find-many","home-solo","rules-permissions","rules-mode","rules-mode-active","rules-disband"}) {
             cases.add(Case.crew("uc-crew-"+pose,pose));
         }
@@ -599,7 +609,13 @@ public final class VisualCaptureHarness {
             // The game draws toasts after the screen, which is after the event this harness grabs its frame in, and they time out; so the plates are
             // drawn by hand, stacked, at a fixed moment. (In the game itself at most two of these fit on screen at once and the others wait their turn.)
             noticeCaptures.clear();
-            if(capture.challenge.equals("notices-ninth")) {
+            if(capture.challenge.equals("notices-tenth")) {
+                // the tenth pass's notices (D-200, D-201, D-204), with the texts the server sends
+                noticeCaptures.add(new UcToast(Notice.Kind.INFO,"The Bar is short","Blackwater. Berry Wine: it pays 19 a unit (a quarter more) for the next 4."));
+                noticeCaptures.add(new UcToast(Notice.Kind.SKILL,"Fitness level 3",GeneralSkills.gives(GeneralSkills.FITNESS,3)));
+                noticeCaptures.add(new UcToast(Notice.Kind.TRUST,"Known in Valewood","People in Valewood have heard of the work you do for the city."));
+                noticeCaptures.add(new UcToast(Notice.Kind.TRUST,"Respected in Valewood","Valewood's exchange sells to you 2% cheaper (within the 10% cap)."));
+            } else if(capture.challenge.equals("notices-ninth")) {
                 // the ninth pass's notices (D-187, D-189), with the texts the server sends
                 noticeCaptures.add(new UcToast(Notice.Kind.INFO,"Welcome to Valewood","You are at the General Store."));
                 noticeCaptures.add(new UcToast(Notice.Kind.WARN,"Police searching","Officers are at the scene, looking for you. Keep out of their sight."));
@@ -641,7 +657,7 @@ public final class VisualCaptureHarness {
             TerminalScreen screen=new TerminalScreen(BlockPos.ZERO,capture.data);
             mc.setScreen(screen); screen.showPage(capture.page);
             if(capture.page==TerminalScreen.Page.CONTRACTS && capture.underground) screen.showView(true);
-            if(capture.skill!=null && capture.skill.equals("general")) screen.showGeneral();
+            if(capture.skill!=null && capture.skill.startsWith("general")) { screen.showGeneral(); if(capture.skill.equals("general-end")) screen.scrollGeneralTo(100000); }
             else if(capture.skill!=null) screen.selectSkill(capture.skill);
             // The "legal with rewards" case selects the heirloom contract (index 1 of the legal list).
             if(capture.name.equals("uc-contract-legal-rewards")) screen.selectJob(1);

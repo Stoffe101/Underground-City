@@ -26,7 +26,8 @@ import java.util.WeakHashMap;
  * saved. Recovery runs before the player can interact. No second wallet lives here.
  */
 public final class WorkOrderLedger {
-    private static final String PURCHASE = "purchase", SEIZURE = "seizure", SALE = "sale", ENCOUNTER = "encounter", SUPPLY = "supply", CREW_FILL = "crew_fill", CREW_BONUS = "crew_bonus";
+    private static final String PURCHASE = "purchase", SEIZURE = "seizure", SALE = "sale", ENCOUNTER = "encounter", SUPPLY = "supply", CREW_FILL = "crew_fill", CREW_BONUS = "crew_bonus",
+        BUSINESS_STOCK = "business_stock", BUSINESS_TAKINGS = "business_takings";
     /** Who brought a Crew contract part that an NPC supplier filled (D-170). */
     static final String NPC_FILL = "npc";
     /** How many searches a person's history keeps (the latest ones; who was searched where, what was found and what it cost). */
@@ -221,6 +222,13 @@ public final class WorkOrderLedger {
             record.putLong("crew_bonus_owed", Math.max(0, record.getLong("crew_bonus_owed") - credits));
             record.putLong("crew_bonus_credits", Math.addExact(record.getLong("crew_bonus_credits"), credits));
             record.remove("pending");
+        } else if (BUSINESS_STOCK.equals(pending.getString("kind"))) {
+            // Goods moved between a player's inventory and their business's counter (D-208): the counter's stock changed when this was prepared
+            record.remove("pending");
+        } else if (BUSINESS_TAKINGS.equals(pending.getString("kind"))) {
+            // A business's takings reached the wallet (D-208): the counter's till was emptied when this was prepared
+            record.putLong("business_credits", Math.addExact(record.getLong("business_credits"), pending.getLong("credits")));
+            record.remove("pending");
         } else if (SEIZURE.equals(pending.getString("kind"))) {
             // A seizure never touches an accepted order or career XP either; it only cools or heats a city.
             record.putInt("seizures", Math.addExact(record.getInt("seizures"), 1));
@@ -398,6 +406,113 @@ public final class WorkOrderLedger {
         record.put("pending", pending);
         putPlayer(player, record); persist();
     }
+
+    // ---------------------------------------------------------------- player businesses (eleventh pass, D-208)
+
+    /** A player business's record ({@link PlayerBusiness}), by the id of the premises it trades from; an empty tag when there is none. */
+    CompoundTag business(String id) { return root.getCompound("businesses").getCompound(id); }
+
+    boolean hasBusiness(String id) { return root.getCompound("businesses").contains(id, Tag.TAG_COMPOUND); }
+
+    java.util.Set<String> businesses() { return java.util.Set.copyOf(root.getCompound("businesses").getAllKeys()); }
+
+    /** Writes a business's record; its caller persists (an opening or a closing, never stock or money). */
+    void putBusiness(String id, CompoundTag value) {
+        CompoundTag all = root.getCompound("businesses");
+        all.put(id, value);
+        root.put("businesses", all);
+    }
+
+    private static int stockTotal(CompoundTag business) {
+        int n = 0;
+        CompoundTag stock = business.getCompound("stock");
+        for (String key : stock.getAllKeys()) n += stock.getInt(key);
+        return n;
+    }
+
+    /**
+     * Durably commits goods moved between a player and their business's counter (D-208): the counter's stock changed by {@code change} (a line's units up when stocked, down when taken
+     * back; never below none, never above {@code capacity} in all) together with the player's absolute inventory, BEFORE the live inventory changes. Recovery replays the inventory and
+     * {@link #settle} retires the record, so goods are never in both places nor in neither.
+     */
+    void prepareBusinessStock(UUID player, String business, Map<String, Integer> change, int capacity, ListTag inventoryAfter, double balanceNow, int xpNow) {
+        checkHealthy();
+        CompoundTag record = player(player);
+        if (record.contains("pending")) throw new IllegalStateException("Another settlement is pending; try again");
+        if (!hasBusiness(business) || change.isEmpty() || !Double.isFinite(balanceNow) || balanceNow < 0) throw new IllegalArgumentException("Invalid stock settlement");
+        CompoundTag b = business(business);
+        CompoundTag stock = b.getCompound("stock");
+        for (var e : change.entrySet()) {
+            int now = stock.getInt(e.getKey()) + e.getValue();
+            if (now < 0) throw new IllegalStateException("The counter has fewer of those");
+            if (now == 0) stock.remove(e.getKey()); else stock.putInt(e.getKey(), now);
+        }
+        b.put("stock", stock);
+        if (stockTotal(b) > capacity) throw new IllegalStateException("The counter holds " + capacity + " goods");
+        putBusiness(business, b);
+        CompoundTag pending = new CompoundTag();
+        pending.putString("kind", BUSINESS_STOCK); pending.putString("business", business);
+        pending.put("inventory", inventoryAfter.copy()); pending.putDouble("balance", balanceNow); pending.putInt("xp", xpNow);
+        record.put("pending", pending);
+        putPlayer(player, record); persist(); // BEFORE touching the inventory
+    }
+
+    /**
+     * A customer bought one of a line off a business's counter (D-208): the stock down by one, the till up by {@code net} (the price less the city's sales tax), and the period's figures
+     * counted, persisted once. False, and nothing changed, when the line is gone or the counter has sold {@code perHour} in this hour of active play.
+     */
+    boolean businessSale(String business, String key, long gross, long tax, int perHour) {
+        if (faulted || !hasBusiness(business) || gross < 1 || tax < 0 || tax >= gross) return false;
+        CompoundTag b = business(business);
+        CompoundTag stock = b.getCompound("stock");
+        int units = stock.getInt(key);
+        long now = clock();
+        if (now - b.getLong("window_start") >= 72_000 || b.getLong("window_start") > now) { b.putLong("window_start", now); b.putInt("window_sales", 0); }
+        if (units < 1 || b.getInt("window_sales") >= perHour) return false;
+        if (units == 1) stock.remove(key); else stock.putInt(key, units - 1);
+        b.put("stock", stock);
+        b.putInt("window_sales", b.getInt("window_sales") + 1);
+        b.putLong("takings", Math.addExact(b.getLong("takings"), gross - tax));
+        b.putLong("gross", Math.addExact(b.getLong("gross"), gross));
+        b.putLong("tax", Math.addExact(b.getLong("tax"), tax));
+        b.putInt("sold", b.getInt("sold") + 1);
+        b.putInt("sold_total", b.getInt("sold_total") + 1);
+        putBusiness(business, b);
+        persist();
+        return true;
+    }
+
+    /**
+     * Durably commits a business's takings reaching a player's wallet (D-208): the till emptied and the period's figures started again, with the absolute wallet target, BEFORE the
+     * wallet changes. Recovery replays it and {@link #settle} retires it; the till is already empty, so the same takings are never paid twice.
+     */
+    void prepareBusinessTakings(UUID player, String business, long credits, ListTag inventoryNow, double balanceAfter, int xpNow) {
+        checkHealthy();
+        CompoundTag record = player(player);
+        if (record.contains("pending")) throw new IllegalStateException("Another settlement is pending; try again");
+        CompoundTag b = business(business);
+        if (!hasBusiness(business) || credits < 1 || credits != b.getLong("takings") || !Double.isFinite(balanceAfter) || balanceAfter < 0) throw new IllegalArgumentException("Invalid takings settlement");
+        b.putLong("takings", 0);
+        b.putLong("paid_total", Math.addExact(b.getLong("paid_total"), credits));
+        b.putLong("gross", 0); b.putLong("tax", 0); b.putInt("sold", 0); b.putLong("since", clock());
+        putBusiness(business, b);
+        CompoundTag pending = new CompoundTag();
+        pending.putString("kind", BUSINESS_TAKINGS); pending.putString("business", business); pending.putLong("credits", credits);
+        pending.put("inventory", inventoryNow.copy()); pending.putDouble("balance", balanceAfter); pending.putInt("xp", xpNow);
+        record.put("pending", pending);
+        putPlayer(player, record); persist(); // BEFORE touching the wallet
+    }
+
+    // ---------------------------------------------------------------- shortage contracts (eleventh pass, D-207)
+
+    /** The shortage contracts' shared record ({@link ShortageContracts}: the open contracts, how long each line has been short, the lines resting); its caller persists. */
+    CompoundTag shortages() {
+        if (!root.contains("shortages", Tag.TAG_COMPOUND)) root.put("shortages", new CompoundTag());
+        return root.getCompound("shortages");
+    }
+
+    /** Forgets the employer demand of an order that will never be offered again (a closed shortage contract); its caller persists. */
+    void forgetDemand(String orderId) { root.getCompound("demand").remove(orderId); }
 
     // ---------------------------------------------------------------- trust, heat and inspections
 

@@ -367,7 +367,7 @@ public final class LockService {
         if (locks.remembered() == 0) return;
         ServerLevel level = server.overworld();
         for (BlockPos pos : locks.dueToClose(now)) {
-            if (!level.isLoaded(pos)) continue;   // shut when its chunk next loads and the sweep runs again
+            if (!Chunks.ready(level, pos)) continue;   // shut when its chunk next loads and the sweep runs again
             BlockState state = level.getBlockState(pos);
             if (!(state.getBlock() instanceof DoorBlock door)) { locks.closed(pos); continue; }
             if (!level.getEntitiesOfClass(Player.class, new AABB(pos).inflate(1.2, 1.0, 1.2)).isEmpty()) continue;

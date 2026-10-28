@@ -27,7 +27,8 @@ import java.util.Set;
  * <p>Once per end, once somebody is within {@link #NEAR} blocks of it and every chunk it reads has been generated, the line the road was coming along is read on for up to {@link #APPROACH} blocks into the city: the deck's
  * height at the end, and the ground along the centre until the first thing the city built (a street, a wall, a building's lot). A straight ramp is laid from the deck to that height (over
  * up to sixty-four blocks, so a difference of eight blocks is at least one in five): natural ground (earth, stone, sand, gravel, clay, snow, plants, leaves, logs) above the ramp is cut away, and a dip below it is filled with
- * earth, {@link #HALF} blocks either side of the centre, with a path down the middle. Anything the city built is never touched (nor a building's lot, garden included), and a column that has one in the way is left as it is.
+ * earth, {@link #HALF} blocks either side of the centre. The ramp is paved with the road's own deck, the whole width, in half-block steps (D-196; until the tenth pass it was the earth
+ * itself with a path down the middle, so a paved road ran into grass and dirt at every city). Anything the city built is never touched (nor a building's lot, garden included), and a column that has one in the way is left as it is.
  *
  * <p>The build never makes the server generate a chunk. Journey runs showed the server thread stalled 4 to 43 seconds (the watchdog stops it at 60) in the same second as each ramp, the
  * Valewood ones worst: the ramp reached up to seventy blocks into a city the walking player's own loading had not generated yet, and asked for those chunks on the spot, so Lost Cities built
@@ -52,6 +53,8 @@ public final class RoadApproaches {
     static final int FAR_CHECKS = 15;
     private static final java.util.Map<String, Integer> FAR_WAITED = new java.util.concurrent.ConcurrentHashMap<>();
     static final BlockState FILL = Blocks.DIRT.defaultBlockState(), PATH = Blocks.DIRT_PATH.defaultBlockState(), AIR = Blocks.AIR.defaultBlockState();
+    /** The road's own deck, for the ramp into the city (D-196). */
+    static final BlockState PAVING = Blocks.POLISHED_ANDESITE.defaultBlockState(), PAVING_SLAB = Blocks.POLISHED_ANDESITE_SLAB.defaultBlockState();
 
     /** A new archipelago world started by this version carries the approaches; an older one never does. */
     static void enable(ServerLevel level) {
@@ -111,11 +114,12 @@ public final class RoadApproaches {
 
     /** As above; in play ({@code loadAll} false) the ramp's own chunks are in the world already ({@link #ready}) and the far reach is read only where its chunks are. */
     static Result build(ServerLevel level, CorridorPlan plan, CorridorPlan.End end, boolean loadAll) {
-        int deckY = CorridorPlan.deckBlockY(plan.deckHalfAt(end.s()));
+        int deckHalf = plan.deckHalfAt(end.s());
+        int deckY = CorridorPlan.deckBlockY(deckHalf);
         for (ChunkPos chunk : loadAll ? chunks(end) : rampChunks(end)) level.getChunk(chunk.x, chunk.z);
         // the ground along the centre, until the first thing the city built
         BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos();
-        int cityAt = APPROACH, cityLevel = Integer.MIN_VALUE, last = deckY, lastWithin = deckY;
+        int cityAt = APPROACH, cityLevel = Integer.MIN_VALUE, cityHalf = Integer.MIN_VALUE, last = deckY, lastWithin = deckY;
         for (int k = 1; k <= FAR; k++) {
             int x = (int) Math.floor(end.x() + end.dirX() * k), z = (int) Math.floor(end.z() + end.dirZ() * k);
             if (!loadAll && k > APPROACH && level.getChunkSource().getChunkNow(x >> 4, z >> 4) == null) break;   // never a read that would make the chunk
@@ -123,29 +127,44 @@ public final class RoadApproaches {
             if (top == Integer.MIN_VALUE) continue;
             last = top;
             if (k <= APPROACH) lastWithin = top;
-            if (!natural(level.getBlockState(p.set(x, top, z))) || cityOwned(level, p)) { cityAt = k; cityLevel = top; break; }
+            BlockState ground = level.getBlockState(p.set(x, top, z));
+            if (!natural(ground) || cityOwned(level, p)) { cityAt = k; cityLevel = top; cityHalf = standHalf(top, ground); break; }
         }
         if (cityLevel == Integer.MIN_VALUE) { cityAt = APPROACH; cityLevel = lastWithin; }
+        if (cityHalf == Integer.MIN_VALUE) cityHalf = 2 * (cityLevel + 1);
         // a ramp longer than 64 blocks is laid only where every chunk of its band is in the world; otherwise the 64-block ramp it was before the longer reach
         if (!loadAll && cityAt > APPROACH) {
             final int reach = cityAt;
             boolean loaded = band(end, -4, reach + 1, HALF + 1.5).stream().allMatch(c -> level.getChunkSource().getChunkNow(c.x() >> 4, c.z() >> 4) != null);
-            if (!loaded) { cityAt = APPROACH; cityLevel = lastWithin; }
+            if (!loaded) { cityAt = APPROACH; cityLevel = lastWithin; cityHalf = 2 * (cityLevel + 1); }
         }
-        int changed = 0, leftAlone = 0, steepest = 0, previous = deckY;
+        int changed = 0, leftAlone = 0, steepest = 0, previous = deckHalf;
         for (int k = 0; k < cityAt; k++) {
-            int target = deckY + (int) Math.round((cityLevel - deckY) * (double) k / cityAt);
+            int target = rampHalf(deckHalf, cityHalf, k, cityAt);
             steepest = Math.max(steepest, Math.abs(target - previous));
             previous = target;
         }
         // every block column of the ramp, from the column at the road's very end (it belongs to neither the deck nor the city: the road check found a four-block hole there) to the city's
-        // first built ground
+        // first built ground, paved as the road is paved, the whole width, in half-block steps (D-196: the earth ramp with a path down its middle that it was before is what a person met
+        // where a paved road ran into a city)
         for (Cell cell : band(end, -0.75, cityAt, HALF + 0.5)) {
-            int target = deckY + (int) Math.round((cityLevel - deckY) * Math.max(0, cell.k()) / cityAt);
-            int n = column(level, cell.x(), cell.z(), target, Math.abs(cell.u()) <= 0.5 ? PATH : null, p);
+            int half = rampHalf(deckHalf, cityHalf, Math.max(0, cell.k()), cityAt);
+            int n = column(level, cell.x(), cell.z(), CorridorPlan.deckBlockY(half), CorridorPlan.isSlab(half) ? PAVING_SLAB : PAVING, p);
             if (n < 0) leftAlone++; else changed += n;
         }
         return new Result(deckY, cityAt, cityLevel, changed, leftAlone, steepest);
+    }
+
+    /** The height a person stands at on the ramp {@code k} blocks in, in half blocks (as the deck's profile is kept), from the deck's to the city ground's. */
+    static int rampHalf(int deckHalf, int cityHalf, double k, int cityAt) {
+        return deckHalf + (int) Math.round((cityHalf - deckHalf) * Math.min(1.0, k / cityAt));
+    }
+
+    /** The height a person stands at on top of {@code state} at {@code y}, in half blocks: half a block up on a bottom slab, a whole block on anything else. */
+    static int standHalf(int y, BlockState state) {
+        boolean bottomSlab = state.getBlock() instanceof net.minecraft.world.level.block.SlabBlock
+            && state.getValue(net.minecraft.world.level.block.SlabBlock.TYPE) == net.minecraft.world.level.block.state.properties.SlabType.BOTTOM;
+        return 2 * y + (bottomSlab ? 1 : 2);
     }
 
     /** A block column along the road's line: its centre is {@code k} blocks in from the road's end and {@code u} to the side. */
@@ -235,10 +254,13 @@ public final class RoadApproaches {
         for (int y = ground + 1; y <= target; y++) { level.setBlock(p.set(x, y, z), FILL, FLAGS); n++; }
         BlockState top = level.getBlockState(p.set(x, target, z));
         // a path is worn into earth only (as before, D-137); any other surface (a driveway's gravel) covers whatever natural ground is there
-        boolean lay = surface != null && !top.is(surface.getBlock()) && (surface.is(Blocks.DIRT_PATH) ? top.is(BlockTags.DIRT) : natural(top));
+        boolean lay = surface != null && top != surface && (surface.is(Blocks.DIRT_PATH) ? top.is(BlockTags.DIRT) && !top.is(Blocks.DIRT_PATH) : natural(top));
         if (lay) { level.setBlock(p, surface, FLAGS); n++; }
         return n;
     }
+
+    /** The road's deck and the ramp's paving (polished andesite, whole or a slab). */
+    static boolean paving(BlockState state) { return state.is(Blocks.POLISHED_ANDESITE) || state.is(Blocks.POLISHED_ANDESITE_SLAB); }
 
     /** Inside a generated city building's protected volume (its whole chunk: walls, garden and yard), which the ramp never changes. */
     static boolean cityOwned(ServerLevel level, BlockPos pos) { return CityBuildings.INSTANCE.at(level, pos).isPresent(); }
