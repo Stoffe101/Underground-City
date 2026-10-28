@@ -33,7 +33,10 @@ public final class PhotoTour {
     private static final long STAGE_LIMIT_NANOS = Long.getLong("uc.photoTour.limitSeconds", 420L) * 1_000_000_000L;
     /** A building-relative shot names a furnished building and one of its spots instead of coordinates: {@code building} (its type), {@code nth} (which instance, nearest to the city centre first), {@code spot} (a kind) and {@code spot_nth}, a camera {@code back} blocks in front of the spot, {@code eye} blocks above the floor (the camera, not the feet), looking at it. */
     private record Shot(String name, double x, Double y, double z, double dy, float yaw, float pitch, int settle, boolean gui, int hour,
-                        String building, int nth, String spot, int spotNth, double back, double eye, Float yawOverride, String place, double side) {}
+                        String building, int nth, String spot, int spotNth, double back, double eye, Float yawOverride, String place, double side, boolean safe) {}
+
+    /** Where a safe camera stands: its feet, its view, and how many places were tried before it. */
+    private record Camera(double x, double feetY, double z, float yaw, float pitch, int tried) {}
 
     private static List<Shot> shots;
     private static int current, ticks, lastSections, stableTicks;
@@ -65,7 +68,8 @@ public final class PhotoTour {
                     o.has("settle") ? o.get("settle").getAsInt() : 160, o.has("gui") && o.get("gui").getAsBoolean(), o.has("hour") ? o.get("hour").getAsInt() : 6000,
                     o.has("building") ? o.get("building").getAsString() : null, o.has("nth") ? o.get("nth").getAsInt() : 0, o.has("spot") ? o.get("spot").getAsString() : "door",
                     o.has("spot_nth") ? o.get("spot_nth").getAsInt() : 0, o.has("back") ? o.get("back").getAsDouble() : 3.0, o.has("eye") ? o.get("eye").getAsDouble() : 1.62,
-                    o.has("yaw") ? o.get("yaw").getAsFloat() : null, o.has("place") ? o.get("place").getAsString() : null, o.has("side") ? o.get("side").getAsDouble() : 0));
+                    o.has("yaw") ? o.get("yaw").getAsFloat() : null, o.has("place") ? o.get("place").getAsString() : null, o.has("side") ? o.get("side").getAsDouble() : 0,
+                    !o.has("safe") || o.get("safe").getAsBoolean()));
             }
         } catch (IOException | RuntimeException error) {
             throw new IllegalStateException("Cannot read the photo tour list " + LIST, error);
@@ -94,6 +98,71 @@ public final class PhotoTour {
             return null;
         }
         return list.get(shot.nth());
+    }
+
+    /**
+     * A camera with a clear view of a spot (eleventh pass; seven of private tour 13's twenty frames showed a wall or the inside of a block): the place asked for first ({@code back}
+     * blocks along the spot's facing, {@code eye} above its floor), then nearer, then from the seven other directions round it and at a person's eye height, until the camera stands
+     * in open space with room round it (and, for a spot inside, under a roof) and nothing that hides what is behind it lies on the line to the spot. Null when no place is clear.
+     */
+    static Camera safeCamera(net.minecraft.server.level.ServerLevel level, double tx, double ty, double tz, net.minecraft.core.Direction facing, double back, double eye, double floor, boolean indoor) {
+        double base = Math.toRadians(facing.toYRot());   // the facing as Minecraft's yaw: its step is x = -sin, z = cos (south is 0, west 90)
+        int tried = 0;
+        for (int turn : new int[] {0, 45, -45, 90, -90, 135, -135, 180}) {
+            double angle = base + Math.toRadians(turn);
+            double dx = -Math.sin(angle), dz = Math.cos(angle);
+            for (double distance = Math.max(1.5, back); distance >= 1.5; distance -= 1.0) {
+                for (double height : new double[] {eye, 1.62, 2.4}) {
+                    double cx = tx + dx * distance, cz = tz + dz * distance, cy = floor + height;
+                    tried++;
+                    if (!open(level, BlockPos.containing(cx, cy, cz)) || !open(level, BlockPos.containing(cx, cy - 1.0, cz)) && height < 2) continue;
+                    if (!roomy(level, cx, cy, cz) || indoor && !roofed(level, cx, cy, cz)) continue;
+                    if (!clear(level, cx, cy, cz, tx, ty, tz)) continue;
+                    double horizontal = Math.sqrt((tx - cx) * (tx - cx) + (tz - cz) * (tz - cz));
+                    float yaw = (float) Math.toDegrees(Math.atan2(-(tx - cx), tz - cz));
+                    float pitch = (float) -Math.toDegrees(Math.atan2(ty - cy, horizontal));
+                    return new Camera(cx, cy - 1.62, cz, yaw, pitch, tried);
+                }
+            }
+        }
+        return null;
+    }
+
+    /** A block a camera may stand in: nothing to collide with (air, a carpet's top, a torch). */
+    private static boolean open(net.minecraft.server.level.ServerLevel level, BlockPos pos) {
+        return level.getBlockState(pos).getCollisionShape(level, pos).isEmpty();
+    }
+
+    /** Nearly half a block of room round the eye on every side: a camera against a wall shows the wall across half the frame (private tour 14's bath frame). */
+    private static boolean roomy(net.minecraft.server.level.ServerLevel level, double cx, double cy, double cz) {
+        return open(level, BlockPos.containing(cx + 0.45, cy, cz)) && open(level, BlockPos.containing(cx - 0.45, cy, cz))
+            && open(level, BlockPos.containing(cx, cy, cz + 0.45)) && open(level, BlockPos.containing(cx, cy, cz - 0.45));
+    }
+
+    /** Something solid over the camera within eight blocks: an interior frame is taken from inside, never from the garden through a window (private tour 14's bath frame). */
+    private static boolean roofed(net.minecraft.server.level.ServerLevel level, double cx, double cy, double cz) {
+        BlockPos eye = BlockPos.containing(cx, cy, cz);
+        for (int up = 1; up <= 8; up++) if (!open(level, eye.above(up))) return true;
+        return false;
+    }
+
+    /**
+     * Nothing that hides what is behind it on the line from the camera to the target (sampled every fifth of a block, the target's own block excluded): a block drawn solid, a pane or a
+     * set of bars, or anything that fills its block (glass). Furniture that does not fill its block does not hide it.
+     */
+    private static boolean clear(net.minecraft.server.level.ServerLevel level, double cx, double cy, double cz, double tx, double ty, double tz) {
+        BlockPos target = BlockPos.containing(tx, ty, tz);
+        double length = Math.sqrt((tx - cx) * (tx - cx) + (ty - cy) * (ty - cy) + (tz - cz) * (tz - cz));
+        int steps = Math.max(1, (int) Math.ceil(length / 0.2));
+        for (int i = 1; i < steps; i++) {
+            double t = i / (double) steps;
+            BlockPos at = BlockPos.containing(cx + (tx - cx) * t, cy + (ty - cy) * t, cz + (tz - cz) * t);
+            if (at.equals(target)) return true;
+            var state = level.getBlockState(at);
+            if (state.canOcclude() && state.isSolidRender(level, at) || state.getBlock() instanceof net.minecraft.world.level.block.IronBarsBlock
+                || net.minecraft.world.level.block.Block.isShapeFullBlock(state.getCollisionShape(level, at))) return false;
+        }
+        return true;
     }
 
     private static int renderedSections(Minecraft mc) {
@@ -193,6 +262,7 @@ public final class PhotoTour {
                 level.setWeatherParameters(6000, 0, false, false);
                 double x = shot.x(), z = shot.z(), y;
                 float yaw = shot.yaw();
+                Float pitchOf = null;
                 if (shot.place() != null && PlacedSites.get(level, RoadsidePlaces.KEY).where.containsKey(shot.place())) {
                     // a roadside place: from in front of it (its front looks at the road), turned {@code side} degrees round it, {@code back} blocks beyond its front edge, {@code eye} above its ground
                     var place = RoadsidePlaces.CATALOG.find(shot.place());
@@ -218,12 +288,22 @@ public final class PhotoTour {
                     var spot = plan.spots().get(spots.get(shot.spotNth()));
                     net.minecraft.core.Direction facing = net.minecraft.core.Direction.byName(spot.facing());
                     if (facing == null || facing.getAxis().isVertical()) facing = net.minecraft.core.Direction.SOUTH;
-                    x = building.chunkX() * 16 + spot.x() + 0.5 + facing.getStepX() * shot.back();
-                    z = building.chunkZ() * 16 + spot.z() + 0.5 + facing.getStepZ() * shot.back();
-                    // the player's position is their feet; the camera is 1.62 above them, so a camera {@code eye} above the floor needs the feet at eye - 1.62 above it
-                    y = building.streetY() + spot.y() + shot.eye() - 1.62;
-                    if (shot.yawOverride() == null) yaw = facing.getOpposite().toYRot();
+                    double tx = building.chunkX() * 16 + spot.x() + 0.5, tz = building.chunkZ() * 16 + spot.z() + 0.5, floor = building.streetY() + spot.y();
                     System.out.println("[UC-PHOTO] " + shot.name() + ": " + shot.building() + " #" + shot.nth() + " at chunk " + building.chunkX() + "," + building.chunkZ() + " street y " + building.streetY() + ", spot " + spot.kind() + " " + spot.x() + "," + spot.y() + "," + spot.z());
+                    // the chunks round the spot first: a camera is judged by the blocks it would see, so they must be there
+                    for (int cx = (int) Math.floor(tx / 16) - 1; cx <= (int) Math.floor(tx / 16) + 1; cx++) for (int cz = (int) Math.floor(tz / 16) - 1; cz <= (int) Math.floor(tz / 16) + 1; cz++) level.getChunk(cx, cz);
+                    Camera camera = shot.safe() ? safeCamera(level, tx, floor + 0.8, tz, facing, shot.back(), shot.eye(), floor, !shot.spot().equals("door")) : null;
+                    if (camera != null) {
+                        x = camera.x(); z = camera.z(); y = camera.feetY(); yaw = camera.yaw(); pitchOf = camera.pitch();
+                        System.out.println("[UC-PHOTO] " + shot.name() + ": a clear view after " + camera.tried() + " place(s) tried");
+                    } else {
+                        x = tx + facing.getStepX() * shot.back();
+                        z = tz + facing.getStepZ() * shot.back();
+                        // the player's position is their feet; the camera is 1.62 above them, so a camera {@code eye} above the floor needs the feet at eye - 1.62 above it
+                        y = floor + shot.eye() - 1.62;
+                        if (shot.yawOverride() == null) yaw = facing.getOpposite().toYRot();
+                        if (shot.safe()) System.out.println("[UC-PHOTO] " + shot.name() + ": no clear view of the spot was found; the frame is taken from in front of it as asked");
+                    }
                     for (int cx = (int) Math.floor(x / 16) - 1; cx <= (int) Math.floor(x / 16) + 1; cx++) for (int cz = (int) Math.floor(z / 16) - 1; cz <= (int) Math.floor(z / 16) + 1; cz++) level.getChunk(cx, cz);
                 } else if (shot.y() != null) y = shot.y();
                 else {
@@ -231,8 +311,9 @@ public final class PhotoTour {
                     y = generator.getBaseHeight((int) x, (int) z, Heightmap.Types.WORLD_SURFACE_WG, level, level.getChunkSource().randomState()) + shot.dy();
                 }
                 targetX = x; targetZ = z;
-                System.out.println("[UC-PHOTO] camera for " + shot.name() + ": " + String.format(java.util.Locale.ROOT, "%.1f,%.1f,%.1f yaw=%.0f pitch=%.0f", x, y, z, yaw, shot.pitch()));
-                player.teleportTo(level, x, y, z, yaw, shot.pitch());
+                float pitch = pitchOf != null ? pitchOf : shot.pitch();
+                System.out.println("[UC-PHOTO] camera for " + shot.name() + ": " + String.format(java.util.Locale.ROOT, "%.1f,%.1f,%.1f yaw=%.0f pitch=%.0f", x, y, z, yaw, pitch));
+                player.teleportTo(level, x, y, z, yaw, pitch);
                 aimed = true;
             });
             positioned = true; ticks = 0; stageStarted = System.nanoTime();
