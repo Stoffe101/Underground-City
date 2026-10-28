@@ -45,7 +45,8 @@ A home now has one interior box or several (up to 160). Core reads from Lost Cit
 * **Private tour 14:** 29 of 34 frames taken, every one with a clear view, each looked at in the cloud: bedrooms, a bathroom, kitchens, shop and office interiors, a corridor. One bathroom frame was taken from the garden through a window, which gave the roof and room rules.
 * **A real defect found and fixed: buildings buried in themselves.** A cabin had four of its five bedrooms full of dirt. Lost Cities 7 builds storeys 0 to `floors` and puts a part with no conditions up on every one; porter 12 had also raised such buildings to two floors. The owner's one-part cabin (a cabin on its own mound) was put up five times, six blocks apart, and each mound buried the bedroom below. **Porter 13 and wiring 13** build such a building once (storey 0, no cellars unless named). 25 of the owner's 218 buildings are of that kind. The building audit now counts rooms a storey above buries.
   * Probe of a new private world after the fix: 358 building chunks of 113 types, 1.89 million cells compared, **0 buried**, 262 missing (0.014%). The same cabin is now built with floors 0 and cellars 0, its beds in place and no dirt above its ground.
-* **Pending:** a repeat tour with the tightened camera and porter 13 (section 9).
+* **Private tour 15** (porter 13 and the tightened camera, 45 shots planned): 43 frames taken, two skipped (one office not generated within reach). 39 show their spot clearly; four do not (two bathrooms from a garden through a window, two street doors from under an overhang or above a terrace). The cabin is built once, its beds in place.
+* **A second real defect found and fixed: a restaurant floor of bamboo shoots.** The owner's pack laid it in Quark's bamboo mat; Quark is not loaded, and the porter's fallback for a name with no shape took the bare material, which for bamboo is the plant. **Porter 14** makes the mat bamboo mosaic and tries a material's planks before the bare material. A re-port of the owner's original changed that one block and nothing else (16 palette entries). **Private tour 16**, in a new world from the re-staged pack, shows the restaurant with a woven floor under its tables, counter and stove.
 
 ## 4. Reliability
 
@@ -64,7 +65,7 @@ The tenth pass's exploring session had 16 ticks over a second (the longest 16.4 
 * 17 ticks over a second (16 in the first third), the longest 13.1 s.
 * Every one was vanilla waiting for a chunk: the player's own tick or the spawners'. There was **no Core frame in any tick over a second**; the tenth pass had 7.2 s of Core in them.
 * **A second round of Core waits** was found in shorter ticks (0.25 to 0.9 s) and fixed: the staff-area watch, the camera watch and a mob's griefing check, 4.3 s in all.
-* **A 20-minute session after that fix** (78 hops, one city a third, all new ground): 20 ticks over a second, the longest 10.9 s, again all vanilla waiting for a chunk. None of the three watches appears in any tick the sampler reported; the only Core frame in one was a townsperson's own movement (12 ms of a 151 ms tick).
+* **A 20-minute session after that fix** (78 hops, one city a third, all new ground): 20 ticks over a second, the longest 10.9 s, again all vanilla waiting for a chunk. None of the three watches appears in any tick the sampler reported; the only Core frame in one was a townsperson's own movement (12 ms of a 151 ms tick). The restart that follows passed: both clients back, the longest tick after arrival 0.85 s and 0.2 s after that.
 
 What remains is a hop landing in a chunk still generating, on a four-core cloud machine.
 
@@ -138,10 +139,10 @@ See [player-business.md](../technical/player-business.md).
 
 ## 6. Test evidence
 
-* **GameTests:** 469 passed (run 117) before the last changes; the final count is in section 9.
-* **Python suite:** 429 tests at the start of this pass's last checks; see section 9 for the final run.
+* **GameTests:** 470 passed locally (runs 118 and 119); the staff-area test was then made to read only its own roof (it failed once on CI when another test built above it), and every GameTest job on CI passed on the final head.
+* **Python suite:** 434 tests, all passed (10 skipped).
 * **Economy model:** every invariant holds, including the new business and contract checks.
-* **Private probes:** stage 13 (porter 13) in a new disposable world, as in section 3.
+* **Private probes and tours:** stage 13 (porter 13) in a new disposable world, private tours 14 and 15, and tour 16 from a pack staged by porter 14, as in section 3.
 
 ## 7. Not done, not proven, and known problems
 
@@ -161,9 +162,11 @@ See [player-business.md](../technical/player-business.md).
 3. Shortage contracts delivered over the shop's counter, and contracts from a city's civic needs.
 4. Homes over several chunks leased through a real client with two players.
 
-## 9. Runs in progress (this draft is filled in as they finish)
+## 9. Runs, all finished
 
-* The 60-minute exploring session with two real clients (long ticks, live plans per third, the heap), and a shorter one after the watch fixes.
-* The GameTests and the Python suite on the final head.
-* Real-client runs, all passed and reported above: the first aid kit and Shooting (skills run 3), a shortage (workshop runs 6 and 7), a counter with a customer (business run 10), Driving XP in a quad (car run 21).
-* A repeat private photo tour with porter 13 and the tightened camera.
+* The 60-minute and 20-minute exploring sessions with two real clients, each with a restart (section 4).
+* Real-client runs, all passed: the first aid kit and Shooting (skills run 3), a shortage (workshop runs 6 and 7), a counter with a customer (business run 10), Driving XP in a quad (car run 21).
+* Private photo tours 15 and 16 (section 3).
+* The Python suite (434) and the GameTests on CI on the final head (section 6).
+
+The current branch and its recent gameplay systems have not received human playtesting.

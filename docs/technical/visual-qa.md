@@ -153,3 +153,11 @@ The log says how many places were tried, or that none was clear (the frame is th
 * The frames show what they are meant to: bedrooms, a bathroom, kitchens, shop and office interiors, a corridor.
 * One frame (a house's bathroom) was taken from the garden through a window. The roof and room rules above came from it.
 * **A real defect found:** a generated cabin had four of its five bedrooms full of dirt. Lost Cities 7 put the owner's one-part cabin up five times, six blocks apart, and each copy's mound buried the copy below. That is fixed in the porter (porter 13, [private-content-workflow.md](private-content-workflow.md)).
+
+**Private tour 15** (porter 13, a new disposable world, 45 shots planned from the staged pack's own plans, every frame looked at in the cloud and none kept in the repository or any artifact):
+
+* 43 frames taken; two shots of one office were skipped because no copy of it was generated within reach of its city.
+* 39 frames show their spot clearly: bedrooms, kitchens, bathrooms, living rooms, shop counters and seating, office interiors and street doors. The cabin that tour 14 found buried is built once, its beds in place.
+* Four do not: two bathrooms were taken from a garden through a window (the camera found no clear place inside), one street door from under its own overhang and one from above a terrace.
+* **A real defect found:** a restaurant's floor had grown into bamboo shoots over bare dirt, under its tables and its stove. The owner's pack laid that floor in Quark's bamboo mat, and the porter had turned the mat into the bamboo plant. Porter 14 makes it bamboo mosaic ([private-content-workflow.md](private-content-workflow.md)).
+* **Private tour 16** took the restaurant's four frames again in a new world from a pack staged by porter 14: a woven floor under every table, the counter and the stove, no shoots and no dirt.
