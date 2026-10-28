@@ -1,6 +1,6 @@
 # General skills: earned by doing, used where it is felt (D-174, D-200)
 
-**Status (October 27, 2026): implemented and GameTested; not played by a person, and not yet run through a real client.**
+**Status (October 28, 2026, eleventh pass): implemented and GameTested; not played by a person. Through real clients: Shooting XP with a TaCZ pistol (skills run 3: 7 for a hit 12 blocks away, nothing for a second hit on the block inside two seconds, 7 again after the pause) and Driving XP at the wheel of an Immersive Vehicles quad (car run 21: 7 for a 701-block drive). Fitness through a client, and the Shooting and Fitness effects, are not run through one.**
 
 There are five general skills beside the career and the Thief track. Each uses the same level curve as a career (`ProgressionRules`: level 3 at 500 XP, level 6 at 3,125, level 10 at 10,125). Each is shown on the terminal's Skills page, General tab, with its level, what it gives now, the next step and how it is earned. Nothing here touches Q Shop: no skill pays credits.
 

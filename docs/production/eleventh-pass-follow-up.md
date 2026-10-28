@@ -99,7 +99,7 @@ Scripted, each logged: the kits, the pistol and its rounds given by command, the
 
 The run found one fault: the barkeeper quoted the usual 14, not the 18 the counter paid. The line now quotes what the counter pays now, and the scenario checks for it. **Workshop run 7 passed every step**, the barkeeper saying "I'll pay 18 a unit".
 
-Pending (section 9): Driving XP with an Immersive Vehicles quad.
+**Driving XP at the wheel of a real vehicle (car run 21: passed).** A registered Smith placed an Immersive Vehicles quad on the Ironhaven–Valewood road and boarded it with a real click, and was put in survival at the wheel. The scenario's driver steered it with W, A and D for 701 blocks in 76 s of play (44 s on bridges, at most 2.9 blocks off the centreline, top speed 7.3 blocks a second). The drive paid **7 Driving XP**. Scripted, each logged: registration by command, the quad given and fuelled, creative to place it, the start on the road. Car run 20 had registered the driver at the wheel, which put them at the city's gate and out of the quad. The run does not show whether the camera or the vehicle's own turning satisfied the look rule.
 
 ## 5. Player business v1 and shortage contracts (D-207, D-208)
 
@@ -164,5 +164,5 @@ See [player-business.md](../technical/player-business.md).
 
 * The 60-minute exploring session with two real clients (long ticks, live plans per third, the heap), and a shorter one after the watch fixes.
 * The GameTests and the Python suite on the final head.
-* Real-client runs: Driving XP at the wheel of an Immersive Vehicles quad. (Passed and reported above: the first aid kit and Shooting, skills run 3; a shortage, workshop runs 6 and 7; a counter with a customer, business run 10.)
+* Real-client runs, all passed and reported above: the first aid kit and Shooting (skills run 3), a shortage (workshop runs 6 and 7), a counter with a customer (business run 10), Driving XP in a quad (car run 21).
 * A repeat private photo tour with porter 13 and the tightened camera.
