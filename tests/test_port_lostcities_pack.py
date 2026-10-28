@@ -18,6 +18,28 @@ def every_json(folder: Path) -> str:
     return "\n".join(p.read_text(encoding="utf-8") for p in folder.rglob("*.json") if p.name != porter.REPORT)
 
 
+class CreateStones(unittest.TestCase):
+    """Create's decorative stones are walls, floors and steps: ported to air they left holes in the owner's houses (eleventh pass)."""
+
+    def test_a_create_stone_keeps_its_shape_and_its_properties_and_is_never_air(self):
+        self.assertEqual(porter.create_shaped("create:cut_calcite", {}), "minecraft:calcite")
+        self.assertEqual(porter.create_shaped("create:polished_cut_calcite_stairs", {"facing": "east", "half": "top", "shape": "straight", "waterlogged": "false"}),
+                         "minecraft:smooth_quartz_stairs[facing=east,half=top,shape=straight,waterlogged=false]")
+        self.assertEqual(porter.create_shaped("create:polished_cut_scoria_slab", {"type": "bottom"}), "minecraft:nether_brick_slab[type=bottom]")
+        self.assertEqual(porter.create_shaped("create:cut_tuff_brick_wall", {"up": "true", "north": "low", "axis": "y"}), "minecraft:andesite_wall[north=low,up=true]")
+        self.assertEqual(porter.create_shaped("create:calcite_pillar", {"axis": "y"}), "minecraft:calcite", "a full block takes no shape properties")
+        for stone in porter.CREATE_STONES:
+            for prefix in ("cut_", "polished_cut_", "layered_", "small_"):
+                self.assertNotEqual(porter.create_shaped(f"create:{prefix}{stone}", {}), "minecraft:air")
+
+    def test_glass_stays_whole_a_seat_is_a_carpet_and_machinery_is_still_air(self):
+        self.assertEqual(porter.create_shaped("create:framed_glass", {}), "minecraft:glass")
+        self.assertEqual(porter.create_shaped("create:dark_oak_window_pane", {"north": "true"}), "minecraft:glass_pane[north=true]")
+        self.assertEqual(porter.create_shaped("create:red_seat", {}), "minecraft:red_carpet")
+        self.assertIsNone(porter.create_shaped("create:shaft", {"axis": "y"}))
+        self.assertIsNone(porter.create_shaped("create:cogwheel", {}))
+
+
 class PortTheFixture(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()

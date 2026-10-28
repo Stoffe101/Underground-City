@@ -52,14 +52,57 @@ from citykit import CHAR_POOL, LOST_CITIES_RESERVED, LEGACY_RENAMED, as_written 
 
 REPORT = "uc-port-report.json"
 # raised when a port changes in a way an older port lacks; private_c70.py check refuses a staged pack made by an older one
-PORTER_VERSION = 11
+PORTER_VERSION = 12
 PACK_FORMAT_1201 = 15
 
 # 1.18.2 -> 1.20.1 changes that matter for building palettes (vanilla). A rule maps an old id to a new one, optionally with property renames.
 RENAMES: dict[str, str] = {
     "minecraft:grass_path": "minecraft:dirt_path",
 }
-# The project does not use Create: what each kind of Create block becomes (first matching pattern wins).
+# Create's decorative stones (its palette blocks: cut, polished cut, bricks, small bricks, layered and pillars of each stone) are the walls, floors and steps of the
+# buildings that use them: each becomes the vanilla block of the nearest look in the same shape, keeping a slab's half, a stair's facing and a wall's sides. The
+# eleventh pass found 87 kinds of Create block ported to air, among them about 800 uses of these stones: walls of cut calcite became holes in the owner's houses.
+CREATE_STONES: dict[str, tuple[str, str, str, str]] = {   # stone: (full block, slab, stairs, wall)
+    "calcite": ("minecraft:calcite", "minecraft:smooth_quartz_slab", "minecraft:smooth_quartz_stairs", "minecraft:diorite_wall"),
+    "diorite": ("minecraft:polished_diorite", "minecraft:polished_diorite_slab", "minecraft:polished_diorite_stairs", "minecraft:diorite_wall"),
+    "granite": ("minecraft:polished_granite", "minecraft:polished_granite_slab", "minecraft:polished_granite_stairs", "minecraft:granite_wall"),
+    "andesite": ("minecraft:polished_andesite", "minecraft:polished_andesite_slab", "minecraft:polished_andesite_stairs", "minecraft:andesite_wall"),
+    "deepslate": ("minecraft:polished_deepslate", "minecraft:polished_deepslate_slab", "minecraft:polished_deepslate_stairs", "minecraft:polished_deepslate_wall"),
+    "tuff": ("minecraft:tuff", "minecraft:andesite_slab", "minecraft:andesite_stairs", "minecraft:andesite_wall"),
+    "dripstone": ("minecraft:dripstone_block", "minecraft:mud_brick_slab", "minecraft:mud_brick_stairs", "minecraft:mud_brick_wall"),
+    "scoria": ("minecraft:nether_bricks", "minecraft:nether_brick_slab", "minecraft:nether_brick_stairs", "minecraft:nether_brick_wall"),
+    "scorchia": ("minecraft:polished_blackstone", "minecraft:polished_blackstone_slab", "minecraft:polished_blackstone_stairs", "minecraft:polished_blackstone_wall"),
+    "limestone": ("minecraft:smooth_sandstone", "minecraft:smooth_sandstone_slab", "minecraft:smooth_sandstone_stairs", "minecraft:sandstone_wall"),
+    "ochrum": ("minecraft:smooth_sandstone", "minecraft:smooth_sandstone_slab", "minecraft:smooth_sandstone_stairs", "minecraft:sandstone_wall"),
+    "veridium": ("minecraft:deepslate_tiles", "minecraft:deepslate_tile_slab", "minecraft:deepslate_tile_stairs", "minecraft:deepslate_tile_wall"),
+    "asurine": ("minecraft:prismarine_bricks", "minecraft:prismarine_brick_slab", "minecraft:prismarine_brick_stairs", "minecraft:prismarine_wall"),
+    "crimsite": ("minecraft:red_nether_bricks", "minecraft:red_nether_brick_slab", "minecraft:red_nether_brick_stairs", "minecraft:red_nether_brick_wall"),
+}
+CREATE_STONE = re.compile(r"create:(?:polished_cut_|cut_|small_|layered_)?(?P<stone>[a-z]+?)(?:_bricks?|_pillar)?(?P<shape>_slab|_stairs|_wall)?")
+SHAPE_PROPERTIES = {"_slab": {"type", "waterlogged"}, "_stairs": {"facing", "half", "shape", "waterlogged"}, "_wall": {"up", "north", "east", "south", "west", "waterlogged"}}
+
+
+def create_shaped(name: str, props: dict[str, str]) -> str | None:
+    """A Create block that has a vanilla look in the same shape, with the properties that shape takes; None for anything else."""
+    m = CREATE_STONE.fullmatch(name)
+    if m and m.group("stone") in CREATE_STONES:
+        shape = m.group("shape") or ""
+        block = CREATE_STONES[m.group("stone")][{"": 0, "_slab": 1, "_stairs": 2, "_wall": 3}[shape]]
+        kept = {k: v for k, v in props.items() if k in SHAPE_PROPERTIES.get(shape, set())}
+        return block + ("[" + ",".join(f"{k}={v}" for k, v in sorted(kept.items())) + "]" if kept else "")
+    if name.endswith("_window_pane") or name == "create:brass_bars":
+        kept = {k: v for k, v in props.items() if k in {"north", "east", "south", "west", "waterlogged"}}
+        block = "minecraft:iron_bars" if name == "create:brass_bars" else "minecraft:glass_pane"
+        return block + ("[" + ",".join(f"{k}={v}" for k, v in sorted(kept.items())) + "]" if kept else "")
+    if re.fullmatch(r"create:.*(_window|framed_glass|_glass)", name):
+        return "minecraft:glass"   # a whole glass block stays a whole one, not a pane
+    seat = re.fullmatch(r"create:([a-z_]+)_seat", name)
+    if seat:
+        return f"minecraft:{seat.group(1)}_carpet"   # a seat is somewhere to sit, not machinery
+    return None
+
+
+# The project does not use Create: what each other kind of Create block becomes (first matching pattern wins).
 CREATE_FALLBACKS: list[tuple[str, str]] = [
     (r"create:.*_casing$", "minecraft:polished_andesite"),
     (r"create:.*andesite.*", "minecraft:polished_andesite"),
@@ -126,6 +169,10 @@ class Porter:
         ns = namespace(name)
         if ns == "create":
             self.counts["create_replaced"] += 1
+            shaped = create_shaped(name, props)
+            if shaped is not None:
+                self.foreign[name] = shaped.split("[", 1)[0]
+                return shaped
             for pattern, fallback in CREATE_FALLBACKS:
                 if re.fullmatch(pattern, name):
                     self.foreign[name] = fallback
