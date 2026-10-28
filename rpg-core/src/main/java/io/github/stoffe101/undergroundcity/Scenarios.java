@@ -1380,6 +1380,16 @@ final class Scenarios {
                 Playtest.log(road + ": first bridge from " + (int) found[0] + " to " + (int) found[1] + "; starting at " + startMetres[0] + ", driving " + driveBlocks[0]);
             }
         });
+        // Driving XP through a real client (eleventh pass, -Duc.playtest.drivexp=true): a registered driver in survival, the XP read on the server before and after the drive
+        boolean driveXp = Boolean.getBoolean("uc.playtest.drivexp");
+        if (driveXp) {
+            // registered before the road: a new citizen is put at their city's gate, which took car run 20's driver out of the quad
+            Playtest.queue("a citizen first", () -> {
+                Playtest.command("uc register ironhaven smith");
+                Playtest.log("SCRIPTED: registered by command before going to the road (the registration screen is proven by other scenarios; registering puts a new citizen at their city's gate)");
+            });
+            Playtest.wait("the arrival at the city's gate", 100);
+        }
         pregenerate(road, () -> startMetres[0] - 12, () -> startMetres[0] + driveBlocks[0] + 40);
         final double[][] arrival = new double[1][];
         Playtest.queue("an empty inventory, then onto the road in spectator mode (which cannot fall)", () -> {
@@ -1436,14 +1446,11 @@ final class Scenarios {
         Playtest.wait("let the tank update reach the client", 20);
         Playtest.queue("log the fuel state", () -> Playtest.log("after fuelling: " + describeVehicle(ivVehicle(vehicleNear()))));
         board(Scenarios::vehicleNear, () -> roadHeading[0], "car", true);
-        // Driving XP through a real client (eleventh pass, -Duc.playtest.drivexp=true): a registered driver in survival, the XP read on the server before and after the drive
-        boolean driveXp = Boolean.getBoolean("uc.playtest.drivexp");
         final int[] drivingXp = new int[1];
         if (driveXp) {
-            Playtest.queue("a citizen at the wheel, in survival", () -> {
-                Playtest.command("uc register ironhaven smith");
+            Playtest.queue("survival at the wheel", () -> {
                 Playtest.command("gamemode survival");
-                Playtest.log("SCRIPTED: registered by command (the registration screen is proven by other scenarios) and put in survival at the wheel");
+                Playtest.log("SCRIPTED: put in survival at the wheel (the vehicle is placed in creative)");
             });
             Playtest.wait("settle", 40);
             Playtest.queue("Driving XP before the drive", () -> {
