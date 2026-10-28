@@ -95,7 +95,7 @@ The owner's buildings are read in three dimensions, as a person moves through th
   * 95 homes of several boxes, 14 over several chunks, at most 62 boxes in one home;
   * no home reaches a chunk of another building, and every multi-chunk building's chunks agreed on one corner and one layout.
 
-  Of the 19 multi-chunk buildings the automatic selection chose, the analysis gave 16 their dwellings, 23 in all. Three were left out:
+  Of the 19 multi-chunk buildings the automatic selection chose, the analysis gave 16 their dwellings, 23 in all (19 since porter 13 builds a one-part building once instead of stacking it: a cabin over two chunks used to be read as three storeys of itself). Three were left out:
   * a condominium with no bed anywhere;
   * a tower whose upper corridors connect to nothing (lifts, not stairs);
   * a clubhouse with no rooms.

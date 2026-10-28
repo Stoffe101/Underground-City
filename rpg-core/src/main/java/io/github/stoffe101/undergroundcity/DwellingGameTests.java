@@ -197,6 +197,14 @@ public final class DwellingGameTests {
             String dim = flat1.dimension;
             check(!ResidenceGuard.allowed(f.l, flat2, one.getUUID(), dim, at(p.east(), 8, 2, 8), ResidenceGuard.Act.PLACE), "flat 1's tenant can build in flat 2");
             check(ResidenceGuard.allowed(f.l, flat3, three.getUUID(), dim, at(p.west(), 8, 6, 8), ResidenceGuard.Act.PLACE), "flat 3's tenant cannot build in its west half");
+            // damage stays in its own flat (owner brief, eleventh pass): a tenant may change what is inside their flat, never the wall it shares with the next flat, the floor under
+            // the flat above, or the next flat itself
+            check(ResidenceGuard.allowed(f.l, flat1, one.getUUID(), dim, at(p.west(), 8, 2, 8), ResidenceGuard.Act.BREAK), "flat 1's tenant cannot change their own flat");
+            check(!ResidenceGuard.allowed(f.l, flat1, one.getUUID(), dim, at(p.west(), 15, 2, 8), ResidenceGuard.Act.BREAK)
+                && !ResidenceGuard.allowed(f.l, flat2, one.getUUID(), dim, at(p.east(), 0, 2, 8), ResidenceGuard.Act.BREAK), "flat 1's tenant can break the wall it shares with flat 2");
+            check(!ResidenceGuard.allowed(f.l, flat2, one.getUUID(), dim, at(p.east(), 8, 2, 8), ResidenceGuard.Act.BREAK), "flat 1's tenant can break into flat 2");
+            check(!ResidenceGuard.allowed(f.l, flat1, three.getUUID(), dim, at(p.west(), 8, 4, 8), ResidenceGuard.Act.BREAK)
+                && !ResidenceGuard.allowed(f.l, flat3, three.getUUID(), dim, at(p.west(), 8, 4, 8), ResidenceGuard.Act.BREAK), "flat 3's tenant can break through the floor into flat 1");
             // a burglar who picked the building's lock may break into the corridor's things in both chunks, and into no flat, let or held
             long now = LockService.clock(helper.getLevel().getServer());
             BurglaryDamage.grantForTest(stranger, p.west(), now);
