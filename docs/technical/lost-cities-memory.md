@@ -52,7 +52,19 @@ Both sessions ran a new world, seed 5908, with the same routes and the same numb
 | Second | 61.0 / 53.3 ms | 107.5 / 93.0 ms | 23 / 26 |
 | Last | 64.8 / 59.1 ms | 108.8 / 98.5 ms | 20 / 14 |
 
+**Twice as long (eleventh pass).** The same exploring plan for 60 minutes, unchaining on, seed 5908, a new world: 80 hops a third, 240 in all, twice the ground of the 30-minute sessions.
+
+| End of third | Live plans | Plans in Lost Cities' cache | Heap after a full collection | Heap in use, mean of the samples | Loaded chunks, mean |
+| --- | --- | --- | --- | --- | --- |
+| First (Ironhaven) | 14,328 | 4,243 | 651 MB | 1,701 MB | 4,548 |
+| Second (Valewood) | 14,828 | 3,219 | 775 MB | 1,784 MB | 5,553 |
+| Last (Blackwater) | 1,313 | 1,304 | 632 MB | 1,643 MB | 5,934 |
+
+- **Twice the travel did not make more stay alive.** Against 32,266, 9,559 and 18,432 at the same thirds of the 30-minute session, the live plans were lower in two thirds and higher in one. They were never near the 123,930 to 491,528 with unchaining off, and at the end they fell to the cache's own size. Core dropped 135,175 links in 61 passes.
+- **The heap stayed flat.** The mean in use was 1,643 to 1,784 MB in every third, as low as or lower than the 30-minute session's (1,795 to 1,904 MB), with more chunks loaded.
+- **The restart passed.** Both players rejoined as the same citizens, with 448 MB of heap after a full collection.
+
 **Not shown.**
-- The sessions are 30 minutes with flights and teleports; a person exploring for hours on foot or by road was not run.
+- The sessions are 30 and 60 minutes with flights and teleports; a person exploring for hours on foot or by road was not run.
 - The off session's restart phase lost a client, kicked for floating because it rejoined in the air. The session tool now allows flight for this plan. The on session's restart passed: both players rejoined as the same citizens, with 567 live plans and 530 MB of heap after a full collection.
 - The off session also ran the bonded store step, which failed on its delivery; the on session does not run it. Neither changes Lost Cities' plans.

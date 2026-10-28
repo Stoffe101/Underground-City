@@ -121,6 +121,23 @@ The tenth pass's 30-minute exploring session (two real clients flown 96 blocks e
 
 **Vanilla's part** is the player outrunning generation: the destination chunk of each 96-block hop was not ready when the player landed. Core cannot make the workers faster. A person travelling at a walk or in a vehicle that keeps to the generation's pace does not meet it, and the islands can be generated ahead of play for a test world ([test-worlds.md](test-worlds.md)).
 
+**Measured after the fix: 60 minutes, twice the tenth pass's session** (two real clients, seed 5908, a new world, 240 hops; the cloud machine has four cores):
+
+| Third | Ticks over 1 s | Longest | Ticks over 250 ms | p95 / p99 | Core frames in ticks over 1 s |
+| --- | --- | --- | --- | --- | --- |
+| First (Ironhaven) | 16 | 13.1 s | 35 | 42.4 / 82.4 ms | none |
+| Second (Valewood) | 1 | 1.6 s | 17 | 47.5 / 78.2 ms | none |
+| Last (Blackwater) | 0 | 0.37 s | 3 | 45.0 / 71.4 ms | none |
+
+* **Every tick over a second was vanilla waiting for a chunk:** the player's own tick (82.5 s in all) and the spawners' (1.8 s). There was no Core frame in any of them; the tenth pass had 7.2 s of Core's door watch and exploration crates in its ticks over a second.
+* **Most of it is in the first third.** The routes go round, so the later thirds travel ground partly generated already, and fewer hops land in a chunk still generating.
+* **A second round of Core waits, all in ticks under a second, is fixed.** The sampler found three more callers reaching Lost Cities' lock while a worker held it, in ticks of 0.25 to 0.9 s:
+  * the staff-area watch (every second, 2.4 s in all);
+  * the camera watch (twice a second, 1.6 s);
+  * a mob's griefing check (0.3 s).
+
+  The two watches now ask only when the chunk's plan is known or Lost Cities is quiet, as the door watch and the street population do, and try again on their next pass. A mob's griefing check is refused while the plan cannot be answered (fail closed).
+
 ## Operating rules
 
 * **The production watchdog stays on.** A server that cannot finish a tick in 60 seconds is better stopped than frozen; the journey fixture's `max-tick-time=-1` and the probe's are for one disposable test server each, and each document that uses it says so. **No server of the pack, and no production-style check, has its watchdog disabled.**

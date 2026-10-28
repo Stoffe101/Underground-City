@@ -59,11 +59,17 @@ The tenth pass's exploring session had 16 ticks over a second (the longest 16.4 
 
 **Fixed:** every timed check round players asks `Chunks.ready` (the chunk is generated and loaded) and tries again on its next pass; Lost Cities' quiet clock starts when a worker begins planning a chunk. See [lost-cities-stalls.md](../technical/lost-cities-stalls.md).
 
-**Measured (pending the end of the run, section 9):** the 60-minute exploring session with two real clients.
+**Measured: a 60-minute exploring session with two real clients** (twice the tenth pass's 30 minutes, the same seed and routes, 240 hops):
+
+* 17 ticks over a second (16 in the first third), the longest 13.1 s.
+* Every one was vanilla waiting for a chunk: the player's own tick or the spawners'. There was **no Core frame in any tick over a second**; the tenth pass had 7.2 s of Core in them.
+* **A second round of Core waits** was found in shorter ticks (0.25 to 0.9 s) and fixed: the staff-area watch, the camera watch and a mob's griefing check, 4.3 s in all. A shorter session to confirm the fix is in section 9.
+
+What remains is a hop landing in a chunk still generating, on a four-core cloud machine.
 
 ### Lost Cities' memory on longer travel
 
-Pending: the 60-minute exploring session (twice the tenth pass's 30 minutes), with the live plans counted at the end of each third.
+The same 60-minute session counted the live plans after a full collection at the end of each third: **14,328, 14,828 and 1,313** (the 30-minute session: 32,266, 9,559 and 18,432; with unchaining off, up to 491,528). The heap in use averaged 1,643 to 1,784 MB in every third, as low as or lower than the 30-minute session's, with more chunks loaded. After a full collection it was 632 to 775 MB. The restart passed with both citizens kept and 448 MB after a full collection. See [lost-cities-memory.md](../technical/lost-cities-memory.md).
 
 ### The general skills' hourly caps
 
