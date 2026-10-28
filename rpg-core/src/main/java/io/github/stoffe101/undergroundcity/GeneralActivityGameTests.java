@@ -76,6 +76,49 @@ public final class GeneralActivityGameTests {
         helper.succeed();
     }
 
+    /** Ten one-second samples of a driver whose boat moves {@code step} a second and turns {@code boatTurn} degrees a second, the driver's own view held still; returns the tick after. */
+    private static long drive(ServerPlayer driver, net.minecraft.world.entity.vehicle.Boat boat, Vec3 step, float boatTurn, long from) {
+        long t = from;
+        for (int i = 0; i <= GeneralActivity.WINDOW_SAMPLES; i++) {
+            if (i > 0) boat.setPos(boat.position().add(step));
+            boat.setYRot(boat.getYRot() + boatTurn);
+            boat.positionRider(driver);
+            GeneralActivity.sample(driver, t);
+            t += GeneralActivity.SAMPLE_TICKS;
+        }
+        return t;
+    }
+
+    /**
+     * At the controls the driver steers with keys while the camera may stay put (eleventh pass, found preparing the real-client drive): a boat that turns as it is steered counts as looking
+     * round, so a straight road still pays; a boat drifting straight with a still view for over a minute pays nothing, as a still walker does.
+     */
+    @GameTest(template = "empty")
+    public static void aDriverWhoSteersEarnsDrivingWithAStillCameraAndADriftingBoatDoesNot(GameTestHelper helper) {
+        GeneralActivity.clearForTest();
+        ServerPlayer driver = citizen(helper, "uc_steerer");
+        var boat = new net.minecraft.world.entity.vehicle.Boat(helper.getLevel(), 0, 100, 0);
+        helper.getLevel().addFreshEntity(boat);
+        try {
+            check(driver.startRiding(boat, true) && GeneralActivity.mode(driver) == GeneralActivity.Mode.DRIVE, "a player in a boat is driving: " + GeneralActivity.mode(driver));
+            long t = 6_000_000;
+            for (int i = 0; i < 9; i++) t = drive(driver, boat, new Vec3(10, 0, 0), 1.0f, t);   // ninety seconds, steering, the camera still
+            int steered = xp(driver, GeneralSkills.DRIVING);
+            check(steered >= 15, "a driver steering with a still camera earned " + steered + " Driving XP over 900 blocks");
+            GeneralActivity.clearForTest();
+            ServerPlayer drifter = citizen(helper, "uc_boatdrifter");
+            boat.ejectPassengers();
+            check(drifter.startRiding(boat, true), "the second player boarded");
+            long u = 7_000_000;
+            for (int i = 0; i < 9; i++) u = drive(drifter, boat, new Vec3(10, 0, 0), 0f, u);
+            check(xp(drifter, GeneralSkills.DRIVING) == 0, "a boat drifting straight with a still view paid " + xp(drifter, GeneralSkills.DRIVING));
+        } finally {
+            boat.ejectPassengers();
+            boat.discard();
+        }
+        helper.succeed();
+    }
+
     /** The hour's cap is kept with the world (eleventh pass): a restart and a re-login used to start a new hour; now neither does, and the next hour of play pays again. */
     @GameTest(template = "empty")
     public static void aCapReachedBeforeARestartOrAReloginIsStillReachedAfterIt(GameTestHelper helper) {

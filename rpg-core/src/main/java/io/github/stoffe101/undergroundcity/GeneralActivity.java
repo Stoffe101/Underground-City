@@ -60,7 +60,7 @@ public final class GeneralActivity {
         Mode mode = Mode.NONE;
         int samples;
         boolean broken;
-        float yaw, pitch;
+        float yaw, pitch, vehicleYaw;
         double turned;
         long lookedAt = Long.MIN_VALUE / 2;
         final Map<String, Double> carry = new HashMap<>();
@@ -107,6 +107,9 @@ public final class GeneralActivity {
         Vec3 at = player.position();
         Mode mode = mode(player);
         t.turned += Math.abs(Mth.wrapDegrees(player.getYRot() - t.yaw)) + Math.abs(player.getXRot() - t.pitch);
+        // at the controls the driver steers with keys while the camera may stay put: the vehicle's own turning counts as much as the view's (eleventh pass)
+        if (mode == Mode.DRIVE && t.mode == Mode.DRIVE) t.turned += Math.abs(Mth.wrapDegrees(player.getVehicle().getYRot() - t.vehicleYaw));
+        t.vehicleYaw = player.getVehicle() == null ? 0 : player.getVehicle().getYRot();
         t.yaw = player.getYRot();
         t.pitch = player.getXRot();
         if (t.turned >= LOOK_DEGREES) { t.lookedAt = now; t.turned = 0; }

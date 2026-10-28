@@ -22,7 +22,7 @@ All the discounts together (career skills, Trading, Driving at a dealer) are hel
 
 The fraction left over is carried to the next window. A window pays nothing when:
 
-- **the player has not turned their view** by five degrees or more in the last minute. An idle player in a water stream or on a moving platform does not move the mouse.
+- **the player has not turned their view** by five degrees or more in the last minute. An idle player in a water stream or on a moving platform does not move the mouse. At the controls of a vehicle, the vehicle's own turning counts as well (eleventh pass): a driver steers with keys while the camera may stay put, so a driver who steers along a road earns, and a boat drifting straight with a still view does not (`GeneralActivityGameTests.aDriverWhoSteersEarnsDrivingWithAStillCameraAndADriftingBoatDoesNot`).
 - **it holds a teleport**: a step of more than 40 blocks in one second.
 - **the way of moving changed** during it. On foot means no vehicle, not flying, not gliding, not a spectator, not in creative. Driving means a vehicle that is not a living mount and not a minecart, with the player at its controls or its first passenger.
 - **the hourly cap is reached**: 600 XP of Fitness and 600 of Driving in an hour of the server's time.
