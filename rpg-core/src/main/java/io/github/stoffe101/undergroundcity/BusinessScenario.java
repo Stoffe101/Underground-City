@@ -64,8 +64,10 @@ final class BusinessScenario {
         JourneyScenario.use("open the business with a crouching right click", () -> counter, () -> business().getBoolean("open"), 400);
         Playtest.queue("stand up", () -> Playtest.keyUp("shift"));
         Playtest.queue("open to the city's people", () -> {
-            boolean open = server(() -> PlayerBusiness.open(level(), business()));
-            Playtest.log("BUSINESS open flag " + business().getBoolean("open") + ", open to customers " + open + (open ? "" : ": " + server(() -> PlayerBusiness.whyShut(level(), business()))));
+            // read the business first: a server read inside another blocks the server thread on itself until the read times out (business runs 1 and 2)
+            var b = business();
+            boolean open = server(() -> PlayerBusiness.open(level(), b));
+            Playtest.log("BUSINESS open flag " + b.getBoolean("open") + ", open to customers " + open + (open ? "" : ": " + server(() -> PlayerBusiness.whyShut(level(), b))));
             if (!open) Playtest.fail("the opened counter is not open to customers");
             else pass("5 a crouching right click opens the business, and it is open to the city's people (stocked, in good standing, at 13:00)");
             walletBefore = JourneyScenario.wallet();
