@@ -322,6 +322,16 @@ class AuditTheFixture(unittest.TestCase):
         self.assertEqual(report["missing_blocks"], {"minecraft:light_gray_carpet": 1})
         self.assertEqual(report["above_blocks"], {"minecraft:oak_leaves": 1})
 
+    def test_a_part_taller_than_a_storey_put_up_twice_is_counted_as_buried(self):
+        # one part with no conditions: a mound of earth with a room on it, nine slices tall. Put up on storeys 0 and 1 the second mound fills the first room;
+        # the world then matches its data, so only the data can tell (a private cabin, eleventh pass)
+        slices = [["#" * 16] * 16] * 6 + [[" " * 16] * 16] * 3
+        self.f.write("parts", "mound", {"xsize": 16, "zsize": 16, "palette": [{"char": "#", "block": "minecraft:dirt"}], "slices": slices})
+        self.f.write("buildings", "mound", {"minfloors": 1, "maxfloors": 1, "parts": [{"part": f"{NS}:mound"}]})
+        packs = audit.Packs([self.f.pack])
+        self.assertEqual(audit.buried(packs, f"{NS}:mound", 1), 3 * 256, "the second mound's first three slices fill the first room's three of air")
+        self.assertEqual(audit.buried(packs, f"{NS}:mound", 0), 0, "built once, nothing is buried")
+
     def test_a_building_as_its_data_says_has_nothing_to_report(self):
         bid = self.f.building("house", storey(bed=True))
         cells = audit.render(audit.Packs([self.f.pack]), bid, 1)

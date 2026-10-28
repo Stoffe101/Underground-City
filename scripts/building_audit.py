@@ -9,7 +9,8 @@ and compares the two cell by cell over the chunk, from the street up:
 * **foreign**: the data leaves the cell empty and the world has a block (something else built into the building: another structure, a run-time
   builder, the street of a neighbouring chunk);
 * **other**: both have a block but not the same one (a random palette choice, a style's block, or a block replaced by something else);
-* **above**: a block over the building's top, where its data has nothing at all (another structure, a tree or a run-time builder over the roof).
+* **above**: a block over the building's top, where its data has nothing at all (another structure, a tree or a run-time builder over the roof);
+* **buried**: a cell one storey draws as air that a storey above draws as a block (a part taller than a storey, put up again six blocks higher).
 
 A palette character the packs do not define (a city style's own characters) matches anything, and a random palette entry matches any of its
 choices. The report is counts and block ids per building type, never a building's content, so it can be shared for a private pack too.
@@ -124,6 +125,29 @@ def mismatches(cells: dict, world: dict) -> int:
     return n
 
 
+def buried(packs: Packs, building_id: str, floors: int) -> int:
+    """Cells one storey draws as air that a storey above it draws as a block: a part taller than a storey put up again six blocks higher fills the rooms below
+    (a cabin on its own mound, eleventh pass). The world then matches the data, so ``render`` alone cannot tell; this counts it from the data."""
+    building = packs.doc("buildings", building_id)
+    if building is None:
+        return 0
+    drawn: dict[tuple[int, int, int], bool] = {}   # cell -> drawn as air by an earlier storey
+    n = 0
+    for f in range(0, floors + 1):
+        candidates = [p for p in building.get("parts", []) if isinstance(p, dict) and part_matches(p, f, floors)]
+        part = packs.doc("parts", candidates[0]["part"]) if candidates else None
+        if part is None:
+            continue
+        for dy, layer in enumerate(part.get("slices", [])):
+            for z, row in enumerate(layer):
+                for x, ch in enumerate(row):
+                    key = (x, f * FLOOR + dy, z)
+                    if ch != " " and drawn.get(key) is True:
+                        n += 1
+                    drawn[key] = ch == " "
+    return n
+
+
 def render(packs: Packs, building_id: str, floors: int, world: dict | None = None) -> dict[tuple[int, int, int], frozenset | None] | None:
     """The expected cells of a building with ``floors`` floors: (x, y above street, z) -> the block ids allowed there (an empty set is air).
 
@@ -182,7 +206,7 @@ def parse_dump(path: Path) -> dict | None:
 
 
 def audit(dumps: Path, packs: Packs) -> dict:
-    per_type: dict[str, dict] = defaultdict(lambda: {"chunks": 0, "missing": 0, "foreign": 0, "other": 0, "above": 0, "cells": 0, "missing_blocks": Counter(), "foreign_blocks": Counter(),
+    per_type: dict[str, dict] = defaultdict(lambda: {"chunks": 0, "missing": 0, "foreign": 0, "other": 0, "above": 0, "buried": 0, "cells": 0, "missing_blocks": Counter(), "foreign_blocks": Counter(),
                                                      "above_blocks": Counter(), "worst": []})
     unknown = Counter()
     for path in sorted(dumps.glob("*.txt")):
@@ -195,6 +219,7 @@ def audit(dumps: Path, packs: Packs) -> dict:
             continue
         t = per_type[d["type"]]
         t["chunks"] += 1
+        t["buried"] += buried(packs, d["type"], d["floors"])
         miss = foreign = other = 0
         for (x, y, z), allowed in cells.items():
             if y < 0 or allowed is WILD:
@@ -228,7 +253,7 @@ def audit(dumps: Path, packs: Packs) -> dict:
     report = {"types": {}, "no_data_for": dict(unknown)}
     for name, t in sorted(per_type.items()):
         t["worst"].sort(reverse=True)
-        report["types"][name] = {"chunks": t["chunks"], "cells_compared": t["cells"], "missing": t["missing"], "foreign": t["foreign"], "other": t["other"], "above": t["above"],
+        report["types"][name] = {"chunks": t["chunks"], "cells_compared": t["cells"], "missing": t["missing"], "foreign": t["foreign"], "other": t["other"], "above": t["above"], "buried": t["buried"],
                                  "missing_blocks": dict(t["missing_blocks"].most_common(8)), "foreign_blocks": dict(t["foreign_blocks"].most_common(8)),
                                  "above_blocks": dict(t["above_blocks"].most_common(8)),
                                  "worst_chunks": [c for _, c in t["worst"][:3]]}
@@ -246,7 +271,7 @@ def main(argv: list[str]) -> int:
         args.json.write_text(json.dumps(report, indent=1) + "\n", encoding="utf-8")
     for name, t in report["types"].items():
         share = lambda n: f"{100.0 * n / max(1, t['cells_compared']):.1f}%"
-        print(f"{name}: {t['chunks']} chunks, missing {t['missing']} ({share(t['missing'])}), foreign {t['foreign']} ({share(t['foreign'])}), other {t['other']}, above {t['above']}"
+        print(f"{name}: {t['chunks']} chunks, missing {t['missing']} ({share(t['missing'])}), foreign {t['foreign']} ({share(t['foreign'])}), other {t['other']}, above {t['above']}" + (f", buried {t['buried']}" if t["buried"] else "")
               + (f"; missing {t['missing_blocks']}" if t["missing"] else "") + (f"; foreign {t['foreign_blocks']}" if t["foreign"] else "")
               + (f"; above {t['above_blocks']}" if t["above"] else ""))
     if report["no_data_for"]:
