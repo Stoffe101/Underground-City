@@ -90,7 +90,8 @@ def part_matches(p: dict, f: int, floors: int) -> bool:
     if "floor" in p and int(p["floor"]) != f:
         return False
     if "range" in p:
-        lo, _, hi = str(p["range"]).partition("-")
+        # Lost Cities writes a range "3,14"; older packs "3-14"
+        lo, _, hi = str(p["range"]).replace(",", "-").partition("-")
         if not (int(lo) <= f <= int(hi or lo)):
             return False
     return True
