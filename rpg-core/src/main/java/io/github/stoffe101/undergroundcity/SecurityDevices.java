@@ -116,6 +116,7 @@ public final class SecurityDevices {
     }
 
     static void watch(ServerLevel level, net.minecraft.server.level.ServerPlayer player) {
+        if (!CityBuildings.INSTANCE.askable(level, player.blockPosition().getX() >> 4, player.blockPosition().getZ() >> 4)) return;   // never waits on Lost Cities' generation: next half second
         java.util.Optional<CityBuildings.Building> found = BurglarySearch.foreignBuilding(player, level, player.blockPosition());
         if (found.isEmpty()) return;
         CityBuildings.Building b = found.get();

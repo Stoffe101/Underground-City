@@ -490,7 +490,10 @@ public final class BuildingGuard {
 
     @SubscribeEvent
     public void mobGriefing(EntityMobGriefingEvent event) {
-        if (event.getEntity() != null && event.getEntity().level() instanceof ServerLevel level && protectedAt(level, event.getEntity().blockPosition()).isPresent()) event.setResult(Event.Result.DENY);
+        if (event.getEntity() == null || !(event.getEntity().level() instanceof ServerLevel level)) return;
+        BlockPos at = event.getEntity().blockPosition();
+        // a mob's goals ask before every try: while Lost Cities generates and this chunk's plan is not known, the answer is no rather than a wait on its lock (eleventh pass), and it asks again soon
+        if (!CityBuildings.INSTANCE.askable(level, at.getX() >> 4, at.getZ() >> 4) || protectedAt(level, at).isPresent()) event.setResult(Event.Result.DENY);
     }
 
     @SubscribeEvent
