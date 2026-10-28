@@ -166,7 +166,8 @@
       1.0,
       1.4
     ],
-    "fence_hourly_ceiling_vs_best_legal_max": 1.5
+    "fence_hourly_ceiling_vs_best_legal_max": 1.5,
+    "business_hourly_ceiling_vs_best_legal_max": 1.0
   },
   "efficiency": {
     "hands_on_share_of_active_time": 0.5,

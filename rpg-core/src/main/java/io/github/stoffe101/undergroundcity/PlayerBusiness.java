@@ -37,18 +37,20 @@ import java.util.UUID;
  * people buy while it is open. Nothing here is a second wallet: the till is credits Core owes the business (the work-order journal holds them with the stock), and they reach Q Shop's wallet
  * only through the journal's prepared settlement when somebody who may run the business collects them, once.
  *
- * <p>Earnings are after real expenses: every sale pays the city its sales tax ({@link #TAX}) before the till sees it, the premises cost their rent or upkeep on the household's active clock as
+ * <p>Earnings are after real expenses: every sale pays the city its sales tax ({@link #TAX}, more than any discount a buyer holds) before the till sees it, the premises cost their rent or upkeep on the household's active clock as
  * any home does, and the goods were made or bought first. There is no passive income: a counter sells only what was put on it, at most {@link #SALES_PER_HOUR} an hour of active play, only
  * while it is open, in the premises' good standing and in a shop's hours, and only to a street person who walked in to it, which happens only while somebody is in the city. A unit sells at
  * the price the city's shops charge for it (the lowest), never more, so buying from a shop to sell on always loses the tax.
  */
 public final class PlayerBusiness {
-    /** The city's sales tax on every sale. */
-    static final double TAX = 0.10;
+    /** The city's sales tax on every sale: more than every discount a buyer can hold together ({@link SkillNode#MAX_TOTAL_DISCOUNT}), so buying from a shop to sell on always loses. */
+    static final double TAX = 0.12;
+    /** Street people buy everyday goods: nothing dearer than this a unit (a pump assembly is a works' order, not a passer-by's purchase). */
+    static final int CUSTOMER_MAX_PRICE = 60;
     /** The goods a counter holds in all. */
     static final int CAPACITY = 64;
-    /** At most this many sales an hour of active play. */
-    static final int SALES_PER_HOUR = 12;
+    /** At most this many sales an hour of active play: its best hour stays under the best legal hour at the level premises are taken (economy_model.py). */
+    static final int SALES_PER_HOUR = 8;
     /** Street people come from this far to an open counter. */
     static final int REACH = 40;
 
@@ -65,13 +67,14 @@ public final class PlayerBusiness {
         return best;
     }
 
-    /** A stack a counter takes: plain goods (undamaged, no tag but a workshop grade, so nothing stolen, named or enchanted) that a city's shop also sells. */
+    /** A stack a counter takes: plain goods (undamaged, no tag but a workshop grade, so nothing stolen, named or enchanted) that a city's shop also sells, at a street person's price. */
     static boolean sellable(ItemStack stack) {
         if (stack.isEmpty() || stack.isDamaged()) return false;
         CompoundTag tag = stack.getTag();
         if (tag != null && !tag.getAllKeys().isEmpty() && !tag.getAllKeys().equals(java.util.Set.of(Workshops.QUALITY))) return false;
         if (!stack.serializeNBT().getCompound("ForgeCaps").isEmpty()) return false;
-        return referencePrice(stack.getItem()) > 0;
+        long price = referencePrice(stack.getItem());
+        return price > MIN_TAX && price <= CUSTOMER_MAX_PRICE;
     }
 
     /** A line's key on the counter: the item and its workshop grade. */
@@ -94,7 +97,11 @@ public final class PlayerBusiness {
         return base < 0 ? -1 : Math.max(1, Math.round(base * Workshops.GRADE_PRICE[Math.max(0, Math.min(Workshops.GRADE_PRICE.length - 1, Workshops.grade(stack)))]));
     }
 
-    static long tax(long gross) { return Math.round(gross * TAX); }
+    /** The least tax on a sale: a shop's discounted price is rounded, which favours a buyer of cheap goods by up to half a credit. */
+    static final int MIN_TAX = 2;
+
+    /** The city's tax on a sale, rounded up and at least {@link #MIN_TAX}, so even the cheapest goods lose when bought from a shop to sell on (economy_model.py checks every line). */
+    static long tax(long gross) { return Math.max(MIN_TAX, (long) Math.ceil(gross * TAX - 1e-9)); }
 
     // ------------------------------------------------------------------------------------------------ where a business is
 
@@ -195,7 +202,7 @@ public final class PlayerBusiness {
         if (!mayRun(level, b, player.getUUID())) { player.sendSystemMessage(Component.literal("This counter is somebody else's business.")); return; }
         ItemStack held = player.getMainHandItem();
         if (!held.isEmpty()) {
-            if (!sellable(held)) { player.sendSystemMessage(Component.literal("The counter sells plain goods a city's shop also sells: nothing named, damaged or stolen.")); return; }
+            if (!sellable(held)) { player.sendSystemMessage(Component.literal("The counter sells everyday goods a city's shop also sells, at " + CUSTOMER_MAX_PRICE + " credits or less: nothing named, damaged or stolen.")); return; }
             int n = stock(player, orders, id, key(held), held.getCount());
             player.sendSystemMessage(Component.literal("Stocked " + n + " x " + held.getHoverName().getString() + " at " + price(key(held)) + " each (the city's price; " + Math.round(TAX * 100) + "% of it is sales tax)."));
             return;
@@ -336,7 +343,23 @@ public final class PlayerBusiness {
         if (orders.faulted() || !orders.hasBusiness(id)) return false;
         CompoundTag b = orders.business(id);
         if (!open(level, b) || BlockPos.of(b.getLong("pos")).distSqr(at) > 3.5 * 3.5) return false;
-        return sell(orders, id, level.random.nextInt(Math.max(1, b.getCompound("stock").getAllKeys().stream().mapToInt(k -> b.getCompound("stock").getInt(k)).sum())));
+        CompoundTag stock = b.getCompound("stock");
+        List<String> wanted = wanted(orders, b.getString("city"), stock);
+        if (!wanted.isEmpty()) return sellKey(orders, id, wanted.get(level.random.nextInt(wanted.size())));
+        return sell(orders, id, level.random.nextInt(Math.max(1, stock.getAllKeys().stream().mapToInt(stock::getInt).sum())));
+    }
+
+    /** The counter's goods that its city's own shops have run short of (D-201): a customer asks for those first, so a counter takes up the slack while a shelf is low. */
+    static List<String> wanted(WorkOrderLedger orders, String city, CompoundTag stock) {
+        List<String> keys = new ArrayList<>();
+        if (city.isEmpty()) return keys;
+        for (String key : stock.getAllKeys()) {
+            if (stock.getInt(key) <= 0) continue;
+            ResourceLocation item = ResourceLocation.parse(key.split("\\|")[0]);
+            for (RegionalStock line : RegionalCatalog.INSTANCE.all())
+                if (line.city().equals(city) && line.item().equals(item) && Shortages.isShort(line, orders.regionalUnits(line))) { keys.add(key); break; }
+        }
+        return keys;
     }
 
     /** Sells one unit, the {@code pick}-th of the counter's goods in order, at its price less tax. */
@@ -345,13 +368,18 @@ public final class PlayerBusiness {
         for (String key : new ArrayList<>(stock.getAllKeys())) {
             int units = stock.getInt(key);
             if (pick >= units) { pick -= units; continue; }
-            long gross = price(key);
-            if (gross < 1) return false;
-            boolean sold = orders.businessSale(id, key, gross, tax(gross), SALES_PER_HOUR);
-            if (sold) customerSales++;
-            return sold;
+            return sellKey(orders, id, key);
         }
         return false;
+    }
+
+    /** Sells one unit of the line {@code key} at its price less tax. */
+    static boolean sellKey(WorkOrderLedger orders, String id, String key) {
+        long gross = price(key);
+        if (gross < 1) return false;
+        boolean sold = orders.businessSale(id, key, gross, tax(gross), SALES_PER_HOUR);
+        if (sold) customerSales++;
+        return sold;
     }
 
     /** Sales to the city's people since the server started (for the population status). */

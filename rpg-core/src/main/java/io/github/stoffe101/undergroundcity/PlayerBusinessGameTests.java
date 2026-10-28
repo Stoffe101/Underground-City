@@ -69,6 +69,8 @@ public final class PlayerBusinessGameTests {
             check(PlayerBusiness.placed(owner, o.ledger, counter(f, level, 0, 3, 3)) == null, "a second counter in the same premises opened another business");
             // what it takes: plain goods a city's shop sells
             check(!PlayerBusiness.sellable(new ItemStack(Items.DIRT, 4)), "the counter takes goods no shop sells");
+            check(!PlayerBusiness.sellable(new ItemStack(UndergroundCity.item("pump_assembly"), 1)), "the counter takes a works' pump assembly, dearer than a street person buys");
+            check(PlayerBusiness.TAX > SkillNode.MAX_TOTAL_DISCOUNT, "the sales tax does not exceed every discount a buyer can hold");
             ItemStack marked = wine(1);
             marked.getOrCreateTag().putString("uc_stolen_from", "somewhere");
             check(!PlayerBusiness.sellable(marked), "the counter takes marked goods");
@@ -138,6 +140,23 @@ public final class PlayerBusinessGameTests {
             // a customer buys only at the counter
             check(!PlayerBusiness.customerBuys(level, o.ledger, id, at.offset(10, 0, 0)), "a customer bought from across the street");
             check(PlayerBusiness.customerBuys(level, o.ledger, id, t.front()) && stockOf(o.ledger, id) == 5 && o.ledger.business(id).getLong("takings") > 0, "a customer at the counter did not buy");
+            // a customer asks first for what the city's own shops have run short of (D-201): the pub out of cider, the counter's cider goes before its wine
+            owner.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(UndergroundCity.item("apple_cider"), 5));
+            PlayerBusiness.use(owner, o.ledger, at, false);
+            check(stockOf(o.ledger, id) == 10, "the counter did not take the cider");
+            RegionalStock pubWine = RegionalCatalog.INSTANCE.find(UndergroundCity.MOD_ID + ":shops/pub_wine_ironhaven"), pubCider = RegionalCatalog.INSTANCE.find(UndergroundCity.MOD_ID + ":shops/pub_cider_ironhaven");
+            check(pubWine != null && pubCider != null, "the pub's wine and cider lines did not load");
+            o.ledger.setRegionalUnitsForTest(pubWine, pubWine.capacity());
+            o.ledger.setRegionalUnitsForTest(pubCider, 0);
+            List<String> wanted = PlayerBusiness.wanted(o.ledger, "ironhaven", o.ledger.business(id).getCompound("stock"));
+            check(wanted.size() == 1 && wanted.get(0).startsWith(UndergroundCity.MOD_ID + ":apple_cider|"), "the short cider is not what Ironhaven's customers ask for: " + wanted);
+            check(PlayerBusiness.wanted(o.ledger, "valewood", o.ledger.business(id).getCompound("stock")).isEmpty(), "Ironhaven's shortage drew Valewood's customers");
+            o.ledger.business(id).putString("city", "ironhaven");   // the test's structure stands in no city
+            for (int i = 0; i < 2; i++) check(PlayerBusiness.customerBuys(level, o.ledger, id, t.front()), "a customer at the counter did not buy");
+            int wineLeft = o.ledger.business(id).getCompound("stock").getAllKeys().stream().filter(k -> k.startsWith(UndergroundCity.MOD_ID + ":berry_wine|")).mapToInt(k -> o.ledger.business(id).getCompound("stock").getInt(k)).sum();
+            check(stockOf(o.ledger, id) == 8 && wineLeft == 5, "customers did not buy the short cider first (wine left " + wineLeft + ", stock " + stockOf(o.ledger, id) + ")");
+            o.ledger.setRegionalUnitsForTest(pubCider, pubCider.capacity());
+            check(PlayerBusiness.wanted(o.ledger, "ironhaven", o.ledger.business(id).getCompound("stock")).isEmpty(), "a refilled shelf still sends its customers to the counter first");
             // shut: at night, while the rent is owed, and when the founder no longer works there
             level.setDayTime(18000);   // midnight
             check(!PlayerBusiness.open(level, o.ledger.business(id)) && PlayerBusiness.nearestOpen(level, o.ledger, at) == null, "a counter is open at midnight");

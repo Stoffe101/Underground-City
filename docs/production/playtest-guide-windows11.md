@@ -429,6 +429,24 @@ Get the branch on both PCs: `.\scripts\windows\uc-update.ps1 -Branch feature/ten
 6. **Homes in the owner's buildings** (D-206, [dwellings](../technical/dwellings.md)). A house over two chunks is one home, a terrace two, a block's flats one each behind its own door, premises one lease. A building whose rooms leave that uncertain (a hall open onto a courtyard, a tower with lifts) is not let, and `runtime-work\wiring-report.json` says why; `-Dwellings <file>` on `uc-private-stage.ps1` names its homes yourself. Worth trying with two players: rent a house that spans two chunks, check that its far rooms are yours, that the other player's key does not open its door, and that a flat's neighbour cannot open the flat.
 7. **Reports.** `uc-logs.ps1` after such a session leaves the screenshots out (`-IncludeScreenshots` keeps them) and writes `<private>` for every block or building id of the private pack in the logs. Share the zip only with the owner and the people the permission covers.
 
+## 6l. Eleventh pass: your own business and shortage contracts (about 45 minutes, a NEW world)
+
+**Written for the October 28 eleventh pass (D-207, D-208, [player-business.md](../technical/player-business.md)). GameTested and run through scripted real clients only; the current branch and its recent gameplay systems have not received human playtesting.** The same launch as 6j (`-Sets furnished,scarcity`, a new world).
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | One player rents the **workshop's or the warehouse's premises** in Ironhaven on the Home page (K, Home, Find a home). Craft a **Business Counter** (three smooth stone slabs over planks, a chest, planks) | the premises are yours; the counter is in your inventory |
+| 2 | Stand inside the premises and set the counter down facing the free floor where customers will stand | "Your business is set up in ..." |
+| 3 | Hold goods a city's shop also sells (berry wine, bread, fasteners) and right-click the counter | they go onto the counter at the city's price (the chat says the price; 12% of it is tax). Dirt, goods over 60 credits, a named item or stolen goods are refused |
+| 4 | Crouch and right-click it with an empty hand | "Open for business"; if it says why customers will not come (the hours, the rent owed, an empty counter), fix that |
+| 5 | Between 08:00 and 18:00, wait nearby for a few minutes with the street busy | street people walk in through the premises' door to the counter, look round and buy one thing each; at most eight an hour of play |
+| 6 | Right-click the counter with an empty hand (or type `/uc business`) | the statement: what sold, the tax, the till; then the till goes into your wallet, once |
+| 7 | Let the rent fall behind (or move out), then look again | the counter sells nothing while the rent is owed; the stock and the till are still yours (`/uc business withdraw` takes the stock back) |
+| 8 | The Vintner: leave a shop's wine line short for five minutes of play (its customers buy it down; the barkeeper says "We're nearly out") and look at a terminal in that city | a **Shortage** order for the Vintner ("Shortage: 4 Berry Wine for The Anvil"), with a notice when it was posted |
+| 9 | Take it, then the other Vintner tries to take it | the second player is told somebody else has it |
+| 10 | Deliver it at a terminal in the shop's city within thirty minutes of play | paid once, half as much again a bottle as the shop pays; the shop's shelf fills and the keeper stops asking; delivered in another city it is refused |
+| 11 | Stop and restart the server with a contract open | the contract and its time left are kept |
+
 ## 7. Logs, screenshots and bug reports
 
 * Server log: `rpg-core\run-dev\logs\latest.log` (authenticated pack: `build\server-pack\server\logs\latest.log`); crash reports: `rpg-core\run-dev\crash-reports\`.

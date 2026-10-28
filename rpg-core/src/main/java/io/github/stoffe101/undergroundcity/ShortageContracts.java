@@ -86,6 +86,7 @@ public final class ShortageContracts {
         RegionalCatalog.Supply terms = RegionalCatalog.INSTANCE.supply(c.line());
         if (stock == null || terms == null || terms.career().isEmpty() || stock.registryItem() == null || stock.registryItem() == net.minecraft.world.item.Items.AIR) return null;
         long unit = unitPay(stock, terms);
+        if (unit <= terms.pays()) return null;   // a line too cheap for a contract to pay more than the shop (three-credit fasteners): no contract
         int credits = (int) Math.max(1, Math.min(1000, unit * c.quantity()));
         int xp = (int) Math.max(1, Math.min(1000, Math.round(terms.xp() * c.quantity() * XP)));
         String title = "Shortage: " + c.quantity() + " " + stock.registryItem().getDescription().getString() + " for " + Shortages.shopTitle(stock);

@@ -682,6 +682,64 @@ def shop_sell_vs_orders(model: Model) -> list[str]:
     return out
 
 
+# ------------------------------------------------------------------------------------------------ a player's counter and shortage contracts (D-207, D-208)
+
+BUSINESS_TAX = 0.12                # PlayerBusiness.TAX
+BUSINESS_MAX_PRICE = 60            # PlayerBusiness.CUSTOMER_MAX_PRICE
+BUSINESS_SALES_PER_HOUR = 8        # PlayerBusiness.SALES_PER_HOUR
+BUSINESS_MIN_TAX = 2               # PlayerBusiness.MIN_TAX
+CONTRACT_PAY = 1.5                 # ShortageContracts.PAY
+MAX_TOTAL_DISCOUNT = 0.10          # SkillNode.MAX_TOTAL_DISCOUNT
+REGIONAL_STOCK = ROOT / "rpg-core/src/main/resources/data/underground_city/regional_stock"
+
+
+def java_round(x: float) -> int:
+    return int(math.floor(x + 0.5))
+
+
+def business_tax(price: int) -> int:
+    """PlayerBusiness.tax: rounded up, at least MIN_TAX."""
+    return max(BUSINESS_MIN_TAX, math.ceil(price * BUSINESS_TAX - 1e-9))
+
+
+def regional_lines() -> list[dict]:
+    return [json.loads(f.read_text(encoding="utf-8")) for f in sorted(REGIONAL_STOCK.rglob("*.json"))]
+
+
+def business_problems(model: Model) -> list[str]:
+    """A counter must never turn shop goods into credits, a shortage contract must pay more than the shop and less than it charges, and a counter's best hour must stay under the best
+    legal hour at the level premises are taken (it sells only what was made or bought, to people who walk in)."""
+    problems = []
+    lines = regional_lines()
+    lowest: dict[str, int] = {}
+    for line in lines:
+        if "item" in line and line.get("unit_price", 0) > 0:
+            lowest[line["item"]] = min(lowest.get(line["item"], line["unit_price"]), line["unit_price"])
+    for item, price in lowest.items():
+        if not BUSINESS_MIN_TAX < price <= BUSINESS_MAX_PRICE:
+            continue
+        net = price - business_tax(price)
+        cheapest_buy = max(1, java_round(price * (1 - MAX_TOTAL_DISCOUNT)))   # RegionalMarket rounds a discounted price
+        if net >= cheapest_buy:
+            problems.append(f"business: {item} bought at {cheapest_buy} with every discount sells for {net} at a counter after tax: a loop")
+    for line in lines:
+        supply = line.get("supply")
+        if not supply:
+            continue
+        unit = max(1, min(line["unit_price"] - 1, java_round(supply["pays"] * CONTRACT_PAY)))
+        if unit <= supply["pays"]:
+            continue   # too cheap for a contract to pay more than the shop: none is posted (ShortageContracts.order)
+        if not unit < line["unit_price"]:
+            problems.append(f"shortage contract: {line['item']} pays {unit} a unit, not between the shop's {supply['pays']} and its price {line['unit_price']}")
+    sellable = [p for p in lowest.values() if BUSINESS_MIN_TAX < p <= BUSINESS_MAX_PRICE]
+    hourly = BUSINESS_SALES_PER_HOUR * max(p - business_tax(p) for p in sellable) if sellable else 0
+    best_legal = max(model.income(c, 12, ALL_MODS)["net"] for c in CAREERS)
+    limit = model.a["targets"]["business_hourly_ceiling_vs_best_legal_max"]
+    if hourly > limit * best_legal:
+        problems.append(f"business: a counter's best hour takes {hourly} after tax, over {limit:.0%} of the best legal hour at level 12 ({best_legal:.0f})")
+    return problems
+
+
 PREMISES = {"commercial_workshop", "warehouse"}
 
 
@@ -845,6 +903,7 @@ def invariants(model: Model) -> list[str]:
     # no loops
     problems += exploit_checks(model)
     problems += [f"shop undercuts an order: {x}" for x in shop_sell_vs_orders(model)]
+    problems += business_problems(model)
     # a brand-new citizen of every career can earn something at level 1 in the default pack (Core only), and quickly
     for career in CAREERS:
         fp = model.first_payout(career, set())

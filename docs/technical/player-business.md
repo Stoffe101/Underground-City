@@ -21,16 +21,17 @@ The counter's front, the side that faced you when you set it down, is where cust
 
 **What it sells, and for how much.**
 
-* **What it takes:** plain goods (undamaged, no tag but a workshop grade, so nothing named, enchanted or stolen) that some city's shop also sells.
+* **What it takes:** plain goods (undamaged, no tag but a workshop grade, so nothing named, enchanted or stolen) that some city's shop also sells, at 3 to 60 credits a unit. Street people buy everyday goods: a 320-credit pump assembly is a works' order, not a passer-by's purchase.
 * **What it charges:** the lowest price any city's shop charges for that item, times the grade's weight (Standard 1.0, Fine 1.25, Reserve 1.6). A player does not set prices in v1.
-* **Tax:** every sale pays the city 10% sales tax before the till sees it.
+* **Tax:** every sale pays the city 12% sales tax (rounded up, at least 2 credits) before the till sees it. That is more than every discount a buyer can hold together (10%, `SkillNode.MAX_TOTAL_DISCOUNT`), even after a shop rounds its discounted price.
 
-Buying from a shop to sell on therefore always loses the tax. A Vintner's own wine earns more over the counter than sold to the pub (22 less 2 tax, against the pub's 14 a bottle), but only as fast as customers come.
+Buying from a shop to sell on therefore always loses: `economy_model.py` checks every line of every shop. A Vintner's own wine earns more over the counter than sold to the pub (22 less 3 tax, against the pub's 14 a bottle), but only as fast as customers come.
 
 **The customers.** A street person going shopping (D-162) goes, one time in three, to an open counter within 40 blocks instead, one customer a counter at a time.
 
 * They walk to the counter's front, through the premises' doors, opening them as an officer does (D-189). The building's door watch shuts each door again afterwards.
 * They look round for 15 to 45 seconds, buy one thing at the counter, and walk back out to where they came from.
+* **They ask first for what their city's own shops have run short of (D-201).** While the pub is out of cider, a counter's cider goes before its wine; otherwise a customer picks at random from what is on the counter. A counter takes up a shortage's slack without selling any faster.
 * A customer who cannot reach the counter buys nothing.
 * `/uc_population status` counts visits and purchases.
 
@@ -53,7 +54,7 @@ A counter sells only when it is:
 **No passive income.** A counter:
 
 * sells only what was put on it;
-* sells at most 12 units an hour of active play;
+* sells at most 8 units an hour of active play. Its best hour (8 of the dearest goods it takes, after tax: 424 credits) stays under the best legal hour at level 12, the level premises are typically taken at (521); `economy_model.py` checks it;
 * sells only to a street person who walked in, and street people exist only while somebody is in the city.
 
 The premises cost their rent or upkeep on the household's active clock as any home does; the statement shows it, and it is paid from a wallet or the Crew bank, never from the till. Nothing is charged, and nothing sells, while everybody is away.
@@ -71,7 +72,7 @@ The premises cost their rent or upkeep on the household's active clock as any ho
 A shop's line runs short (D-201) when its customers have bought its shelf down to a quarter. If it **stays short for five minutes of active play**, it posts a **shortage contract** on its city's terminals for the trade that makes it ("Shortage: 4 Berry Wine for The Anvil").
 
 * **An ordinary work order with one taker:** taken at a terminal, delivered at a terminal in the shop's city, paid through the ledger's settlement once (the order's nonce).
-* **Pay:** half as much again a unit as the shop pays its suppliers, and never as much as the shop charges, so buying from it to deliver never pays. Career XP is half as much again as selling to the shop.
+* **Pay:** half as much again a unit as the shop pays its suppliers, and never as much as the shop charges, so buying from it to deliver never pays. Career XP is half as much again as selling to the shop. A line too cheap for that to be more than the shop pays (three-credit fasteners) posts no contract. `economy_model.py` checks every line.
 * **The goods go onto the shop's shelf** (never above it), so the shortage is really filled. The keeper remembers the player (D-202) and the city's good name rises (D-204).
 * **Limited:** one contract a line, two a city, four in all.
 * **Time-bound:** open for thirty minutes of active play. An untaken contract lapses. One taken and not delivered by then can no longer be delivered (its holder cancels it), and its record goes ten minutes later.
@@ -90,12 +91,13 @@ A shop's line runs short (D-201) when its customers have bought its shelf down t
   * a counter opens a business only in trade premises its holder works in, one per premises;
   * it refuses goods no shop sells and marked goods, and charges the city's lowest price;
   * stocking moves twenty bottles once;
-  * twelve sales an hour of play, a thirteenth refused, the next hour selling again;
+  * eight sales an hour of play, a ninth refused, the next hour selling again; a works' pump assembly refused; the tax above every discount;
   * the till holds the sales less their tax, and a restart keeps stock and till;
   * a stranger may not run it; the till is paid into Q Shop's wallet once and the statement starts again;
   * the stock comes back;
   * a counter picked up closes the business and a counter set down again finds it;
   * customers find only an open, stocked counter within reach;
+  * a customer asks first for what the city's shops are short of, never another city's shortage, and picks at random again once the shelf is refilled;
   * a customer buys only at the counter;
   * it is shut at midnight, while the rent is owed, and when closed.
 * **`ShortageContractGameTests`:**
@@ -113,6 +115,6 @@ A shop's line runs short (D-201) when its customers have bought its shelf down t
 ## Limits, said plainly
 
 * No real client has set up a counter, watched a customer walk in, or taken a shortage contract. Customers' paths into real premises (stairs, several doors) are untested in a world.
-* A player does not set prices, hire staff or advertise in v1. Customers buy one thing a visit at random from the counter.
+* A player does not set prices, hire staff or advertise in v1. Customers buy one thing a visit, what their city is short of first, otherwise at random.
 * The counter's look uses vanilla textures by reference; it has no art of its own.
 * Shortage contracts are delivered at a terminal, not over the shop's counter.
