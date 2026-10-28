@@ -53,6 +53,7 @@ The docs here distinguish **confirmed product direction**, **design proposals**,
 - [The economy model: net profit, timelines, exploit checks (D-098)](technical/economy-model.md)
 - [The property economy: rent, ownership, upkeep, storage and upgrades (D-099)](technical/property-economy.md)
 - [Dwellings: a property follows the dwelling, not the chunk (D-206)](technical/dwellings.md)
+- [Player business v1 and shortage contracts (D-207, D-208)](technical/player-business.md)
 - [Checkpoint searches of carried storage, including backpacks (D-100)](technical/checkpoint-search.md)
 - [Vehicle and boat price tiers and the two dealer lines (D-101)](technical/vehicle-tiers.md)
 - [The archipelago world: three islands, three bridges, no snow (D-104, D-106, D-107)](technical/archipelago-world.md)
