@@ -89,7 +89,17 @@ Preparing the real-client drive found that Driving paid only when the *view* tur
 
 Scripted, each logged: the kits, the pistol and its rounds given by command, the damage, a firing lane cleared and the target set, and natural regeneration turned off. Run 2 had shown a full stomach healing alongside the kit, which made the cooldown check misread; the kit itself was not used inside its cooldown.
 
-Pending (section 9): Driving XP with an Immersive Vehicles quad, and a shortage's notice, the shopkeeper's ask and the short price.
+**A shortage through a real client (workshop run 6: every step).** A new Vintner made three bottles of berry wine at a Fermentation Vat.
+
+* Scripted and logged: the pub's wine shelf was set one bottle above its short mark, and one customer's purchase was taken off it on the server.
+* The Vintner in the game was told by a notice: "The Anvil is short".
+* The barkeeper asked for the wine.
+* The pub's counter showed it pays 18 a bottle while short (14 otherwise).
+* A real click on Sell paid 54 for the three bottles and put them on the shelf (3 to 6).
+
+The run found one fault: the barkeeper quoted the usual 14, not the 18 the counter paid. The line now quotes what the counter pays now, and the scenario checks for it (run 7 in section 9).
+
+Pending (section 9): Driving XP with an Immersive Vehicles quad.
 
 ## 5. Player business v1 and shortage contracts (D-207, D-208)
 
