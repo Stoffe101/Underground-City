@@ -2020,6 +2020,7 @@ final class Scenarios {
      */
     private static void skills() {
         ThiefScenario.tag = "SKILLS";
+        Playtest.keepScreens = true;   // the first-login registration screen is clicked through, not closed (skills run 1)
         ThiefScenario.register(3, "the Gunsmith card", "1 a new citizen registers as a Gunsmith through the registration screen");
         net.minecraft.world.item.Item kit = UndergroundCity.FIRST_AID_KIT.get();
         final float[] health = new float[1];
