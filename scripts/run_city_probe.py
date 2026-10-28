@@ -12,6 +12,7 @@ join it: it stops by itself), as in ``run_terrain_map.py``.
 from __future__ import annotations
 
 import argparse
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -57,7 +58,8 @@ def main() -> int:
         f"level-type={preset}", f"level-seed={args.seed}", "online-mode=false", "spawn-protection=0", "view-distance=4", "simulation-distance=4", "max-tick-time=-1",
         "level-name=world", "white-list=false", f"server-port={args.port}"]) + "\n", encoding="utf-8")
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    command = [str(ROOT / "gradlew"), "--no-daemon", ":rpg-core:runServer", f"-PucRunDir={run_name}", f"-PucPack={args.sets}", "-PucDevWorld=true", "-PucAutoWorld=false",
+    # gradlew.bat on Windows (private_c70.py stage dumps the owner's registry with this probe), gradlew elsewhere
+    command = [str(ROOT / ("gradlew.bat" if os.name == "nt" else "gradlew")), "--no-daemon", ":rpg-core:runServer", f"-PucRunDir={run_name}", f"-PucPack={args.sets}", "-PucDevWorld=true", "-PucAutoWorld=false",
                f"-PucWorldLayout={args.layout}", f"-PucCityProbe={args.output.resolve()}", f"-PucCpRadius={args.radius}", f"-PucCpCities={args.cities}"]
     if args.extra:
         command.append(f"-PucCpExtra={args.extra}")

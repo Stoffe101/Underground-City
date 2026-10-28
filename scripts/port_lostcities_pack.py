@@ -51,6 +51,8 @@ import validate_city_blocks as blocks  # noqa: E402
 from citykit import CHAR_POOL, LOST_CITIES_RESERVED, LEGACY_RENAMED, as_written  # noqa: E402
 
 REPORT = "uc-port-report.json"
+# raised when a port changes in a way an older port lacks; private_c70.py check refuses a staged pack made by an older one
+PORTER_VERSION = 11
 PACK_FORMAT_1201 = 15
 
 # 1.18.2 -> 1.20.1 changes that matter for building palettes (vanilla). A rule maps an old id to a new one, optionally with property renames.

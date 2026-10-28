@@ -44,6 +44,8 @@ ROOT = Path(__file__).resolve().parents[1]
 PUBLIC = ROOT / "content/generated/world-furnished/pack"
 FLOOR = 6
 COVERED_STEP = 3   # BuildingGuard.COVERED_STEP
+# raised when a plan or a city file changes in a way an older wiring lacks; private_c70.py check refuses a staged pack wired by an older one
+WIRING_VERSION = 11
 SPEC = re.compile(r"^(?P<name>[a-z0-9_.-]+:[a-z0-9_./-]+)(?:\[(?P<props>[^\]]*)\])?$")
 # what a block is for a household, by words in its id (furniture mods name their blocks plainly)
 KINDS = [("bed", re.compile(r"_bed$|:bed$|fancy_bed")), ("stove", re.compile(r"furnace|smoker|stove|oven|cooking_pot|range_hood|microwave")),

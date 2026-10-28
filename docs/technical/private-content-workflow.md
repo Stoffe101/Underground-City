@@ -80,6 +80,38 @@ Said exactly, so the record is honest. The public repository that holds the refe
 3. `private_pack_tool.py init` a pack folder for the original, `port_lostcities_pack.py port` into a second folder, then a registry dump from a game with the kept mods and a second `port --registry` until the report says loadable.
 4. A **new world** with the ported pack loaded (`UC_PRIVATE_CONTENT_DIR`), a city probe and photographs that stay private. Wiring a ported building into a city (a `city_character` rule naming its building ids) is the owner's choice and is done in the private pack, not here.
 
+## One command (eleventh pass, D-205)
+
+**Implemented. L1: `tests/test_private_c70.py` (16 cases on invented packs) and `tests/test_windows_scripts.py` (the launchers under PowerShell 7 on GitHub's Linux runners). Private, in the cloud: the owner's original staged in 6 seconds with the registry dumped earlier. Not run on Windows.**
+
+The tested workflow below, run by one tool: `python scripts/private_c70.py stage --source <original folder or zip> --out <runtime folder>` (on Windows `scripts\windows\uc-private-stage.ps1 -Source ...`, whose default `--out` is `%USERPROFILE%\UndergroundCityPrivate\runtime`).
+
+1. **The source.** A folder or a zip. A zip's members are checked before anything is unpacked (no absolute path, drive or `..`, no link, at most 200,000 members and 2 GiB). The folder that holds `data/<namespace>/lostcities/buildings` is found up to four levels down, as in a server pack, and only the `lostcities` data under it is copied, unchanged, into `<runtime>-work/original`. A server pack's loot tables, recipes and spawn rules are never copied. The manifest is the original's own, or one made from `--holder` and `--summary`, the owner's statement, asked for once and reused at the next staging.
+2. **The registry.** `--registry`, or the one dumped at the last staging while the pinned mods of the world, furnished and furniture sets are the same (`registry.key`), or a new dump: a disposable dedicated server through `run_city_probe.py --registry` (`gradlew.bat` on Windows) with no private content loaded.
+3. **The port**, keeping the furniture set's mods. A port that is not loadable stops here. One case is a registry that has no block of a kept mod at all, as a registry dumped without the furniture set would be. Nothing is installed.
+4. **The selection.** `--selection <file>` is used as written. Without one, `auto_select` chooses from each building's id and plan:
+   * a use from the words of its id (house, flats, workshop, warehouse, office, public building, shop, club; "public" is never a pub);
+   * a city by use (D-193: Valewood residential, Ironhaven industry and flats, Blackwater offices and towers; shops and public buildings in turn);
+   * ring weights, a family's rotations shared out when a use has fewer families than cities, and the public ladder's terms for a listing of the same category;
+   * the public generic houses and office left out where private ones of that use stand in every ring of that city, and the public functional buildings kept at weight 1.
+
+   A building whose id names no known use is left out and listed with the reason, and so is a house without a bed, a street door or a roof, flats without a storey with a bed, and a building whose parts use a character no palette defines. Staging stops when nothing could be chosen.
+5. **Wire, seal, record.** The pack gains `uc-private-stage.json`: the porter's and the wiring's versions (`PORTER_VERSION`, `WIRING_VERSION`), the sets it needs, Core's commit and counts.
+6. **Install** as `<runtime>/c70-port`. The pack it replaces moves to `<runtime>-work/previous`; the last three are kept.
+
+`python scripts/private_c70.py check <runtime folder> --sets <sets>` is what every Windows launcher runs before it passes `-PucPrivateContent`. It refuses, with the reason:
+
+* a folder that is missing, inside a checkout (except the checkout's ignored `private-content` folder, as the game itself allows), or a pack itself (the photo run 12 mistake);
+* a manifest the game would refuse;
+* an unported original: a 1.18.2 pack format, or Lost Cities buildings without the porter's report;
+* a port its own report calls not loadable;
+* a pack staged by an older porter or wiring than this checkout's minimums;
+* a launch whose sets leave out one the pack needs.
+
+A file that differs from the seal is a warning. A hand-made port without `uc-private-stage.json` loads with a warning, because its versions cannot be checked.
+
+On the owner's original in the cloud, the automatic selection chose every building the hand-made C70-first selection had chosen and 26 more, and left out 24 for the reasons above. The port's palettes and parts were identical to the port that photo run 13 walked through. Only the plans of the newly chosen buildings and the city files differ.
+
 ## The tested workflow (ninth pass, D-192)
 
 1. **Validate the archive and extract it outside the checkout.** Check its paths and integrity first, and keep the original untouched in its own folder.

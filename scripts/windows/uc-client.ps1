@@ -7,6 +7,12 @@
     -Sets must match the server's sets when joining. -Xaero adds the navigation set (Xaero's Minimap and World Map); it is a client mod, the server does not need it.
     A second player on the same PC needs a second copy of the repository folder (uc-second-copy.ps1): the cloud tests always gave each client its own copy.
     -Pregen (single player only) generates the three islands once in the background in the world it opens (about 40 minutes on four cores); a server does it with its own -Pregen.
+    -C70 loads the owner's private buildings first (D-193): the furnished, scarcity and furniture sets, and in single player the private folder uc-private-stage.ps1 staged (or
+    -PrivateContent <folder>, or UC_PRIVATE_CONTENT_DIR), checked before the start. A joining client (-C70 -Join) needs the sets only: the server holds the buildings.
+.EXAMPLE
+    .\scripts\windows\uc-client.ps1 -Name Alice -C70 -Join -Xaero
+.EXAMPLE
+    .\scripts\windows\uc-client.ps1 -Name Alice -C70 -World UC-C70-Solo
 .EXAMPLE
     .\scripts\windows\uc-client.ps1 -Name Alice -Sets furnished,scarcity -Join -Xaero
 .EXAMPLE
@@ -19,6 +25,8 @@ param(
     [switch] $Join,
     [string] $World = '',
     [switch] $Pregen,
+    [switch] $C70,
+    [string] $PrivateContent = '',
     [string] $RunDir = 'run-dev'
 )
 . (Join-Path $PSScriptRoot 'uc-common.ps1')
@@ -26,7 +34,14 @@ Test-UcJava
 $gradle = Get-UcGradle
 if ($Name -notmatch '^[A-Za-z0-9_]{3,16}$') { throw 'A player name is 3 to 16 letters, digits or _.' }
 $chosen = Resolve-UcSets $Sets
+if ($C70) { $chosen = Add-UcSets $chosen $script:UcC70Sets }
 if ($Xaero -and $chosen -notcontains 'navigation') { $chosen += 'navigation' }
+if ($Join -and $C70 -and $PrivateContent -eq '') {
+    Write-Host 'Joining with -C70: this client loads the furnished, scarcity and furniture sets; the private buildings come from the server.'
+    $privateDir = ''
+} else {
+    $privateDir = Resolve-UcPrivateContent -Dir $PrivateContent -C70 $C70.IsPresent -Sets $chosen
+}
 $arguments = @('runClient', "-PucUsername=$Name")
 if ($chosen.Count -gt 0) { $arguments += "-PucExtraSets=$($chosen -join ',')" }
 if ($RunDir -ne 'run-dev') { $arguments += "-PucRunDir=$RunDir" }
@@ -37,10 +52,14 @@ if ($Join) {
 } elseif ($World -ne '') {
     if ($World -notmatch '^[A-Za-z0-9_-]{1,40}$') { throw 'A world name may use letters, digits, - and _ only.' }
     $saves = Join-Path (Get-UcRunDir $RunDir) (Join-Path 'saves' $World)
-    if (Test-Path $saves) { Write-Host "Opening the existing single-player world $World." } else { Write-Host "Making a new single-player world $World." }
+    if (Test-Path $saves) {
+        Write-Host "Opening the existing single-player world $World."
+        if ($privateDir -ne '') { Write-Warning "Private buildings appear only in chunks generated from now on; the parts of $World already generated keep what they have." }
+    } else { Write-Host "Making a new single-player world $World." }
     $arguments += "-PucDevWorldName=$World"
 }
 if ($Pregen) { $arguments += '-PucPregen=islands' }
+if ($privateDir -ne '') { $arguments += "-PucPrivateContent=$privateDir" }
 Write-Host "Starting: gradlew.bat $($arguments -join ' ')"
 Push-Location $script:UcRoot
 try { & $gradle @arguments } finally { Pop-Location }
