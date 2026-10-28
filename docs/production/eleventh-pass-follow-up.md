@@ -97,7 +97,7 @@ Scripted, each logged: the kits, the pistol and its rounds given by command, the
 * The pub's counter showed it pays 18 a bottle while short (14 otherwise).
 * A real click on Sell paid 54 for the three bottles and put them on the shelf (3 to 6).
 
-The run found one fault: the barkeeper quoted the usual 14, not the 18 the counter paid. The line now quotes what the counter pays now, and the scenario checks for it (run 7 in section 9).
+The run found one fault: the barkeeper quoted the usual 14, not the 18 the counter paid. The line now quotes what the counter pays now, and the scenario checks for it. **Workshop run 7 passed every step**, the barkeeper saying "I'll pay 18 a unit".
 
 Pending (section 9): Driving XP with an Immersive Vehicles quad.
 
@@ -123,7 +123,17 @@ See [player-business.md](../technical/player-business.md).
 
   The tax, its minimum, the price ceiling, the eight sales an hour and the contract floor come from those findings.
 * **NPC routines:** the customers who walk to a counter are the new routine that affects a business. They ask first for what their city's own shops have run short of, so a counter takes up a shortage's slack. They run within a strict budget: one customer at a counter at a time, chosen from the handful of businesses in the journal, and only near a player.
-* **Evidence:** `PlayerBusinessGameTests` (2), `ShortageContractGameTests` (3), the economy model's four new tests. A real-client business run: pending (section 9).
+* **Evidence:** `PlayerBusinessGameTests` (2), `ShortageContractGameTests` (3), the economy model's four new tests, and a counter through a real client.
+* **A counter through a real client: business run 10 passed every step**, after runs 1 to 9 found what kept the city's people from a counter in a real building.
+  * A Smith rented the Ironhaven workshop's premises with real clicks, set a counter down, stocked it with twelve bottles and opened it.
+  * The first street person who set out came in through the premises' iron street door and bought a bottle after 56 s of play: 22, 3 of it tax.
+  * An empty-handed right click paid the till of 19 into the wallet once.
+* **What runs 1 to 9 found (each fixed):**
+  * the scenario read the business inside another server read (runs 1 and 2: a 20 s stall that was the test's own);
+  * no path goes through a closed iron door, and every premises' street door is iron (run 3: twelve customers set out, none arrived);
+  * customers were chosen from people still inside buildings (runs 4 and 5);
+  * **a townsperson's step through a doorway was applied one tick in ten**, because a move lasts one tick and the population passes every ten (runs 6 to 8). Every step through a door had this fault: shops' customers, people leaving, a counter's customers. A step is now a goal that moves the body every tick. The 60-minute session had counted almost nobody going in at a door;
+  * the step was aimed at the doorway's centre, a hundredth of a block from an open door's panel (run 9). It is now aimed at the middle of the free part.
 
 ## 6. Test evidence
 
@@ -137,8 +147,8 @@ See [player-business.md](../technical/player-business.md).
 * **Nothing here was played by a person.** The Windows scripts have not run on Windows.
 * **No real client has:**
   * leased a home over several chunks;
-  * watched a customer walk into a business;
-  * taken a shortage contract (pending runs aside, section 9).
+  * taken a shortage contract (its notice, the ask and the short price did pass, workshop runs 6 and 7);
+  * watched a customer walk into premises up stairs or behind several doors (one ground-floor workshop passed, business run 10).
 * **Vanilla's own generation wait** remains when a player outruns the generation workers (a 96-block hop every 15 seconds in the exploring session). A walker or a vehicle at the generation's pace does not meet it, and test worlds can generate their islands ahead.
 * **A player business v1 has no prices of its own, no staff and no advertising.** Shortage contracts are delivered at a terminal, not over the shop's counter.
 * **The owner's buildings:** a building whose rooms are uncertain (a courtyard of open halls, a tower with lifts) is not let.
@@ -154,5 +164,5 @@ See [player-business.md](../technical/player-business.md).
 
 * The 60-minute exploring session with two real clients (long ticks, live plans per third, the heap), and a shorter one after the watch fixes.
 * The GameTests and the Python suite on the final head.
-* Real-client runs: the first aid kit and Shooting XP with TaCZ, Driving XP at the wheel of an Immersive Vehicles quad, a business with a customer, a shortage's notice and pay.
+* Real-client runs: Driving XP at the wheel of an Immersive Vehicles quad. (Passed and reported above: the first aid kit and Shooting, skills run 3; a shortage, workshop runs 6 and 7; a counter with a customer, business run 10.)
 * A repeat private photo tour with porter 13 and the tightened camera.

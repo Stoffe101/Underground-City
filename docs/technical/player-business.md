@@ -1,6 +1,6 @@
 # Player business v1 and shortage contracts (D-207, D-208)
 
-**Status (October 28, eleventh pass): implemented. L2: `PlayerBusinessGameTests` (2 cases) and `ShortageContractGameTests` (3 cases) on the dedicated test server, with Q Shop's own wallet and a scratch work-order journal. No real client has set up a counter or taken a shortage contract yet, and no person has played either.** The current branch and its recent gameplay systems have not received human playtesting.
+**Status (October 28, eleventh pass): implemented. L2: `PlayerBusinessGameTests` (2 cases) and `ShortageContractGameTests` (3 cases) on the dedicated test server, with Q Shop's own wallet and a scratch work-order journal. L3 for the counter: business run 10 through a real client (rent, set down, stock, open, a street person walks in through the premises' iron street door and buys, collect). A shortage's notice, the barkeeper's ask and the short price passed through a real client (workshop runs 6 and 7); a shortage contract has not been taken through a real client. No person has played either.** The current branch and its recent gameplay systems have not received human playtesting.
 
 ## Player business v1 (D-208)
 
@@ -29,11 +29,12 @@ Buying from a shop to sell on therefore always loses: `economy_model.py` checks 
 
 **The customers.** A street person going shopping (D-162) goes, one time in three, to an open counter within 40 blocks instead, one customer a counter at a time.
 
-* They walk to the counter's front, through the premises' doors, opening them as an officer does (D-189). The building's door watch shuts each door again afterwards.
+* **Only somebody out under the open sky sets out** (somebody just out of a door, still in a hall behind an iron one, cannot path out).
+* **They come in by the building's street door.** They walk to the street side of the door, square onto it, and the door is held open while they step through the free part of the doorway (an open door's panel takes 3/16 of it). Then they walk to the counter's front. A path never goes through a closed iron door, which is why they do not simply walk there. The building's door watch shuts the door again afterwards.
 * They look round for 15 to 45 seconds, buy one thing at the counter, and walk back out to where they came from.
 * **They ask first for what their city's own shops have run short of (D-201).** While the pub is out of cider, a counter's cider goes before its wine; otherwise a customer picks at random from what is on the counter. A counter takes up a shortage's slack without selling any faster.
 * A customer who cannot reach the counter buys nothing.
-* `/uc_population status` counts visits and purchases.
+* `/uc_population status` counts visits and purchases, and the server log has one line each when a customer sets out, goes in, buys or does not (and why), or is stuck.
 
 A counter sells only when it is:
 
@@ -100,6 +101,17 @@ A shop's line runs short (D-201) when its customers have bought its shelf down t
   * a customer asks first for what the city's shops are short of, never another city's shortage, and picks at random again once the shelf is refilled;
   * a customer buys only at the counter;
   * it is shut at midnight, while the rent is owed, and when closed.
+* **Through a real client (business runs 1 to 10).** Runs 1 to 9 found what kept customers from a counter in a real building; run 10 passed every step:
+  * a Smith rented the Ironhaven workshop's premises on the Home page and set a counter down with a real right click;
+  * stocked it with twelve bottles of berry wine and opened it with a crouching right click;
+  * the first street person who set out walked to the premises' iron street door, came in and bought a bottle after 56 s of play (22, 3 of it tax);
+  * an empty-handed right click paid the till of 19 into the wallet once.
+
+  Scripted, each logged: the clock (13:00, stopped), the operator's prepared start, the travel to Ironhaven, and the counter and the wine given by command. What the runs found and fixed:
+  * the scenario's own read of the business inside another read (runs 1 and 2);
+  * iron street doors no path goes through (run 3);
+  * customers chosen from people still indoors (runs 4 and 5);
+  * a step through a doorway applied one tick in ten, and aimed so close to the open door's panel that a body had a hundredth of a block to spare (runs 6 to 9). Every townsperson's step through a door had the first fault.
 * **`ShortageContractGameTests`:**
   * five minutes short posts one contract and not before;
   * it is offered to the trade and not another;
@@ -114,7 +126,7 @@ A shop's line runs short (D-201) when its customers have bought its shelf down t
 
 ## Limits, said plainly
 
-* No real client has set up a counter, watched a customer walk in, or taken a shortage contract. Customers' paths into real premises (stairs, several doors) are untested in a world.
+* One real-client run has watched a customer walk in and buy (business run 10, the Ironhaven workshop, ground floor, one street door). Premises up stairs or behind several doors are untested in a world. No real client has taken a shortage contract.
 * A player does not set prices, hire staff or advertise in v1. Customers buy one thing a visit, what their city is short of first, otherwise at random.
 * The counter's look uses vanilla textures by reference; it has no art of its own.
 * Shortage contracts are delivered at a terminal, not over the shop's counter.
