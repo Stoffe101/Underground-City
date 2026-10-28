@@ -60,6 +60,7 @@ public final class TownspersonEntity extends PathfinderMob {
     @Override protected void registerGoals() {
         goalSelector.addGoal(0, new FloatGoal(this));
         goalSelector.addGoal(1, new PanicGoal(this, 1.35) { @Override public boolean canUse() { return !police() && super.canUse(); } });
+        goalSelector.addGoal(2, new StepGoal());
         goalSelector.addGoal(2, new ErrandGoal());
         goalSelector.addGoal(5, new WaterAvoidingRandomStrollGoal(this, 0.55, 0.002f) { @Override public boolean canUse() { return !police() && errand == null && !holding && super.canUse(); } });
         goalSelector.addGoal(6, new LookAtPlayerGoal(this, Player.class, 8.0f));
@@ -158,6 +159,7 @@ public final class TownspersonEntity extends PathfinderMob {
 
     /** Sends an officer (or a commuter) to a place at a speed (a multiple of their walking speed); null stands them still. */
     void errand(BlockPos where, double speed) {
+        if (where != null) stepping = null;
         boolean changed = where == null || !where.equals(errand);
         errand = where; errandSpeed = speed;
         if (changed && !police()) { getNavigation().stop(); freshErrand = true; }
@@ -168,7 +170,7 @@ public final class TownspersonEntity extends PathfinderMob {
     private boolean freshErrand;
 
     /** Stands still on purpose, or walks on again. */
-    void hold(boolean on) { holding = on; if (on) getNavigation().stop(); }
+    void hold(boolean on) { holding = on; if (on) { getNavigation().stop(); stepping = null; } }
 
     /**
      * Steps straight to {@code to} without a path (through a doorway the navigation will not plan through, since these people never open doors themselves): the door is opened for them by
@@ -178,7 +180,30 @@ public final class TownspersonEntity extends PathfinderMob {
         errand = null;
         holding = false;
         getNavigation().stop();
+        if (!to.equals(stepping)) stepUntil = tickCount + 100;
+        stepping = to;
         getMoveControl().setWantedPosition(to.getX() + 0.5, to.getY(), to.getZ() + 0.5, 0.6);
+    }
+
+    /** Where {@link #stepThrough} is taking this body, until it is there (or five seconds have passed); null when it is not stepping. */
+    private BlockPos stepping;
+    private int stepUntil;
+
+    /**
+     * Keeps a step going: a move control's wanted position lasts one tick, and a step was given only on the population's pass (one tick in ten), so a body stepping through a doorway moved a
+     * tenth of the time and never got through (business run 8: an open door, a clear doorway, and the body half a block short after ten seconds).
+     */
+    private final class StepGoal extends Goal {
+        StepGoal() { setFlags(java.util.EnumSet.of(Flag.MOVE)); }
+        @Override public boolean canUse() { return stepping != null; }
+        @Override public boolean canContinueToUse() { return stepping != null; }
+        @Override public boolean requiresUpdateEveryTick() { return true; }   // a goal is otherwise ticked every other tick, and a move lasts one
+        @Override public void tick() {
+            if (stepping == null) return;
+            double dx = getX() - (stepping.getX() + 0.5), dz = getZ() - (stepping.getZ() + 0.5);
+            if (dx * dx + dz * dz < 0.2 * 0.2 || tickCount > stepUntil) { stepping = null; return; }
+            getMoveControl().setWantedPosition(stepping.getX() + 0.5, stepping.getY(), stepping.getZ() + 0.5, 0.6);
+        }
     }
 
     /** An officer (or a commuter) leaves (is removed) this many ticks from now; nobody is left standing in a street for good. */
