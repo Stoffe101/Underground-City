@@ -54,13 +54,14 @@ def devWorldName = providers.gradleProperty('ucDevWorldName').orElse(worldLayout
 if (devPackSetsForFurnished(providers)) { if (worldLayout != 'archipelago') throw new GradleException('The furnished set belongs to the archipelago layout (-PucWorldLayout=archipelago)') }
 
 def devPackMods = []
-def devPackManifest = new JsonSlurper().parse(file('../content/modpacks/dev-pack.json'))
-// the sets a launch may name: every set of the manifest but the deferred ones, and Core's own data packages (scarcity; furnished is also Modern Life's set)
-def knownSets = (devPackManifest.mods.collectMany { it.sets }.findAll { !it.endsWith('_deferred') } + ['scarcity']).unique()
 // a dedicated server (runServer, runGameTestServer) leaves out the mods whose manifest entry says the server does not support them (a client-only mod such as Embeddium)
 def dedicatedServer = requestedTasks.any { it in ['runServer', 'runGameTestServer'] } && !requestedTasks.contains('runClient')
 def leftOutOfServer = []
 if (!devPackSets.isEmpty()) {
+    // read only when a launch names sets: a copy of the project without content/ (the connected-client journey's clients) configures as before
+    def devPackManifest = new JsonSlurper().parse(file('../content/modpacks/dev-pack.json'))
+    // the sets a launch may name: every set of the manifest but the deferred ones, and Core's own data packages (scarcity; furnished is also Modern Life's set)
+    def knownSets = (devPackManifest.mods.collectMany { it.sets }.findAll { !it.endsWith('_deferred') } + ['scarcity']).unique()
     def unknown = devPackSets.findAll { !(it in knownSets) }
     if (!unknown.isEmpty()) throw new GradleException('Unknown pack set(s) ' + unknown + ' (known sets: ' + knownSets.join(', ') + ')')
     def manifest = devPackManifest
