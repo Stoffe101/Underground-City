@@ -81,7 +81,15 @@ Preparing the real-client drive found that Driving paid only when the *view* tur
 
 ### Real-client checks
 
-Pending (section 9): the first aid kit, Shooting XP with TaCZ, Driving XP with an Immersive Vehicles quad, and a shortage's notice, the shopkeeper's ask and the short price.
+**The first aid kit and Shooting through a real client (skills run 3: 7 of 7).** A new Gunsmith registered through the screen. Hurt to 10 health, a real right click with a First Aid Kit gave 16, used the kit and started its cooldown. Inside the cooldown a second kit did nothing and was not used. After the cooldown it gave 16 again. Then a TaCZ Glock 17, loaded with a real R and fired with real mouse buttons at a target block 12 blocks away:
+
+* the first hit paid 7 Shooting XP;
+* a second hit on the same block inside two seconds paid nothing;
+* a hit after the pause paid 7 again.
+
+Scripted, each logged: the kits, the pistol and its rounds given by command, the damage, a firing lane cleared and the target set, and natural regeneration turned off. Run 2 had shown a full stomach healing alongside the kit, which made the cooldown check misread; the kit itself was not used inside its cooldown.
+
+Pending (section 9): Driving XP with an Immersive Vehicles quad, and a shortage's notice, the shopkeeper's ask and the short price.
 
 ## 5. Player business v1 and shortage contracts (D-207, D-208)
 
