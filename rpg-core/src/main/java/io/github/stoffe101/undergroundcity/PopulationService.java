@@ -240,6 +240,15 @@ public final class PopulationService {
             case ENTER -> {
                 body.stepThrough(w.goal);
                 if (w.door != null) HouseholdService.openDoorBriefly(level, w.door.lower(), 20);
+                if (w.business != null) {
+                    // a customer of a player's counter, through its street door: once inside, to the counter (business run 5: a path planned from the threshold never went in)
+                    if (near(body, w.goal, 0.8)) {
+                        w.errand = "business"; w.phase = Phase.WALK; w.goal = w.counterFront; w.lastMoved = now;
+                        body.errand(w.goal, 0.55);
+                        LOGGER.info("[UC-POPULATION] a customer is in at {} and goes to the counter at {}", body.blockPosition().toShortString(), w.goal.toShortString());
+                    } else if (now >= w.until) return newErrand(level, body, w, players, now, hour);
+                    return true;
+                }
                 if (near(body, w.goal, 0.8) || now >= w.until) { entered++; return false; }
                 return true;
             }
@@ -328,10 +337,9 @@ public final class PopulationService {
             case "business_door" -> {
                 // at the street door of a player's business: through it, then to the counter
                 HouseholdService.openDoorBriefly(level, w.door.lower(), 30);
-                body.stepThrough(w.door.lower().relative(w.door.out().getOpposite()));
-                w.errand = "business"; w.phase = Phase.WALK; w.goal = w.counterFront; w.lastMoved = now;
-                body.errand(w.goal, 0.55);
-                LOGGER.info("[UC-POPULATION] a customer goes in at {} for the counter at {}", w.door.lower().toShortString(), w.goal.toShortString());
+                w.phase = Phase.ENTER; w.goal = w.door.lower().relative(w.door.out().getOpposite()); w.until = now + 100; w.lastMoved = now;
+                body.stepThrough(w.goal);
+                LOGGER.info("[UC-POPULATION] a customer goes in at {} for the counter at {}", w.door.lower().toShortString(), w.counterFront.toShortString());
                 return true;
             }
             case "business" -> {
@@ -455,7 +463,8 @@ public final class PopulationService {
         w.stuck = Math.max(0, w.stuck - 1);
         w.lastMoved = now;
         w.business = null;
-        if (kind.equals("shop") && level.random.nextInt(BUSINESS_ONE_IN) == 0) {
+        // only from the street: somebody still inside a building (just out of a door, in its hall behind an iron one) cannot path out to a counter (business run 5: two of every three stuck)
+        if (kind.equals("shop") && level.random.nextInt(BUSINESS_ONE_IN) == 0 && level.canSeeSky(body.blockPosition())) {
             // a player's open counter within reach (D-208), one customer at a time: they walk in through its doors to the counter
             PlayerBusiness.Target t = PlayerBusiness.nearestOpen(level, body.blockPosition());
             if (t != null && ACTIVE.values().stream().noneMatch(o -> t.id().equals(o.business))) {
