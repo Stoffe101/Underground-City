@@ -92,6 +92,8 @@ public final class PopulationService {
         /** The player business whose counter this customer is walking to or standing at (D-208), and the street cell they came from and go back to. */
         String business;
         BlockPos origin;
+        /** The cell in front of that business's counter, while the customer is still on the way in through its street door. */
+        BlockPos counterFront;
         Vec3 lastPos = Vec3.ZERO;
         int stuck, legs;
 
@@ -251,6 +253,11 @@ public final class PopulationService {
                     // a player's counter (D-208): they buy at it if they reached it, then walk back out to the street they came from
                     if (PlayerBusiness.customerBuys(level, w.business, body.blockPosition())) businessPurchases++;
                     w.business = null;
+                    if (w.door != null) {   // out through the door they came in by
+                        w.errand = "leave_business"; w.phase = Phase.LEAVE; w.goal = w.door.lower().relative(w.door.out().getOpposite());
+                        body.errand(w.goal, 0.6);
+                        return true;
+                    }
                     w.errand = "leave_business"; w.phase = Phase.WALK; w.goal = w.origin == null ? body.blockPosition() : w.origin;
                     body.errand(w.goal, 0.6);
                     return true;
@@ -311,8 +318,16 @@ public final class PopulationService {
     /** Arrived where the errand went. */
     private static boolean arrive(ServerLevel level, TownspersonEntity body, Walker w, List<ServerPlayer> players, long now, int hour) {
         w.stuck = 0;
-        if (!w.errand.equals("business")) body.passDoors(false);   // back on the street from a player's counter, or never at one
+        if (!w.errand.startsWith("business")) body.passDoors(false);   // back on the street from a player's counter, or never at one
         switch (w.errand) {
+            case "business_door" -> {
+                // at the street door of a player's business: through it, then to the counter
+                HouseholdService.openDoorBriefly(level, w.door.lower(), 30);
+                body.stepThrough(w.door.lower().relative(w.door.out().getOpposite()));
+                w.errand = "business"; w.phase = Phase.WALK; w.goal = w.counterFront; w.lastMoved = now;
+                body.errand(w.goal, 0.55);
+                return true;
+            }
             case "business" -> {
                 // at a player's counter: a look round, then the purchase as they leave (BROWSE)
                 w.phase = Phase.BROWSE; w.until = 0; w.lastMoved = now;
@@ -438,7 +453,12 @@ public final class PopulationService {
             // a player's open counter within reach (D-208), one customer at a time: they walk in through its doors to the counter
             PlayerBusiness.Target t = PlayerBusiness.nearestOpen(level, body.blockPosition());
             if (t != null && ACTIVE.values().stream().noneMatch(o -> t.id().equals(o.business))) {
-                w.errand = "business"; w.business = t.id(); w.origin = body.blockPosition(); w.door = null; w.phase = Phase.WALK; w.goal = t.front();
+                // in through the building's street door as a shop's customer is (an iron door is a wall to a path: business run 3's ten customers never reached the counter), then to it
+                int cx = t.counter().getX() >> 4, cz = t.counter().getZ() >> 4;
+                Optional<TechService.StreetDoor> door = CityBuildings.INSTANCE.known(cx, cz) ? CityBuildings.INSTANCE.ofChunk(level, cx, cz).flatMap(b -> doorOf(level, b)) : Optional.empty();
+                w.errand = door.isPresent() ? "business_door" : "business"; w.business = t.id(); w.origin = body.blockPosition(); w.door = door.orElse(null); w.phase = Phase.WALK;
+                w.counterFront = t.front();
+                w.goal = door.map(d -> d.lower().relative(d.out())).orElse(t.front());
                 body.passDoors(true);
                 body.errand(w.goal, 0.55);
                 businessVisits++;
