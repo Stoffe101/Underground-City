@@ -169,6 +169,19 @@ Owner brief "C70 Integration + Critical Gameplay Fixes" and the owner's follow-u
 
 See [docs/production/ninth-pass-c70-critical-fixes.md](docs/production/ninth-pass-c70-critical-fixes.md).
 
+## October 28 eleventh pass: a player's counter, shortage contracts, homes by the dwelling (scripted, not yet human-tested)
+
+Owner brief "Tenth-Pass Follow-up and Integration Completion" (D-205 to D-208). Tested by scripts, Forge GameTests, the Python suite, the economy model, probes of new disposable worlds and scripted real clients. **The current branch and its recent gameplay systems have not received human playtesting.**
+
+* **A player business (D-208).** A Business Counter set down in rented trade premises takes everyday goods, and the city's own street people walk in during shop hours and buy, after a 12% sales tax. It sells at most eight an hour of active play and pays nothing while everybody is away. Business run 10 passed through a real client: a customer came in through the premises' iron street door and bought. Runs 1 to 9 found and fixed what kept customers out, among them a step through any doorway that moved a body one tick in ten.
+* **Shortage contracts (D-207).** A shop line short for five minutes of play posts one time-bound work order for its trade, paid once at half as much again as the shop pays. The notice, the barkeeper's ask and the short price passed through a real client (workshop runs 6 and 7). No contract was taken through a client.
+* **A home follows the dwelling, not the chunk (D-206).** A house over two chunks is one home, terraced houses two, a block's flats one each. Uncertain boundaries are left unlet. A tenant cannot break the wall to the next flat or the floor under the flat above (GameTested).
+* **Reliability.** No Core frame in any tick over a second in a 60-minute two-client exploring session; the second round of Core waits it found is fixed. Lost Cities' live plans stayed bounded over twice the travel. The general skills' hourly caps survive a restart. The first aid kit and Shooting XP with TaCZ passed through a real client (skills run 3).
+* **The owner's buildings (private, in the cloud only).** Porter 13 stops one-part buildings being stacked on themselves: a cabin had four of its five bedrooms buried. The photo tour's camera finds clear views.
+* **Windows (D-205).** The scripts derive their sets from the manifest, separate client and server mods, print a matching fingerprint, and stage the owner's buildings with one command. They have not been run on Windows.
+
+See [docs/production/eleventh-pass-follow-up.md](docs/production/eleventh-pass-follow-up.md).
+
 ## October 27 tenth pass: clean streets, the owner's buildings, a two-player supply chain (scripted, not yet human-tested)
 
 Owner brief "Living World, C70 City Overhaul, Gameplay Expansion & World Quality" (D-196 to D-204). Tested by scripts, Forge GameTests, the Python suite, probes of new disposable worlds and scripted real clients. **The current branch and its recent gameplay systems have not received human playtesting.**
