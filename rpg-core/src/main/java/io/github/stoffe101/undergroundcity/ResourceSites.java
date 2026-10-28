@@ -97,7 +97,7 @@ public final class ResourceSites {
         for (int i = 0; i < site.veins().size(); i++) {
             var vein = site.veins().get(i);
             BlockPos pos = origin.offset(vein.at());
-            if (!level.isLoaded(pos)) { if (depleted.containsKey(i)) waiting++; continue; }
+            if (!Chunks.ready(level, pos)) { if (depleted.containsKey(i)) waiting++; continue; }
             BlockState here = level.getBlockState(pos);
             if (here.is(vein.block())) {
                 standing++;

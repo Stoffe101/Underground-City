@@ -285,7 +285,7 @@ public final class MachineService {
 
     /** Shows whether a machine runs on its housing (when the housing's chunk is loaded). */
     static void show(ServerLevel level, Machine m, boolean running) {
-        if (m.pos() == null || !level.isLoaded(m.pos())) return;
+        if (m.pos() == null || !Chunks.ready(level, m.pos())) return;
         BlockState here = level.getBlockState(m.pos());
         if (here.getBlock() instanceof MachineBlock && here.getValue(MachineBlock.RUNNING) != running) level.setBlock(m.pos(), here.setValue(MachineBlock.RUNNING, running), 3);
     }

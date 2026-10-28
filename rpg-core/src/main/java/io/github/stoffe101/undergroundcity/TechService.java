@@ -239,7 +239,7 @@ public final class TechService {
 
     /** Shows a building's state on its panel's lamp (when the panel's chunk is loaded). */
     static void lamp(ServerLevel level, Panel panel, TechBlocks.UtilityPanel.State state) {
-        if (panel.pos() == null || !level.isLoaded(panel.pos())) return;
+        if (panel.pos() == null || !Chunks.ready(level, panel.pos())) return;
         BlockState here = level.getBlockState(panel.pos());
         if (here.getBlock() instanceof TechBlocks.UtilityPanel && here.getValue(TechBlocks.UtilityPanel.STATE) != state) level.setBlock(panel.pos(), here.setValue(TechBlocks.UtilityPanel.STATE, state), 3);
     }

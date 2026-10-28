@@ -193,6 +193,17 @@ public final class LostCitiesLink {
         return !RECORDING || !everGenerated || recorded(level, chunkX, chunkZ) || System.nanoTime() - lastGenerated > QUIET_NANOS;
     }
 
+    /**
+     * Lost Cities' characteristics event, on whichever thread is planning a chunk: when that is a generation worker it holds Lost Cities' lock from here on, so the quiet clock starts now
+     * rather than when the chunk is finished (the first chunk after a quiet spell used to find {@link #askable} still true; measured: a 0.7 s wait in the population's area lookup).
+     * The server thread's own questions do not count, or every answer would put the next ones off.
+     */
+    public static void planning(ServerLevel level) {
+        if (!RECORDING || level.dimension() != Level.OVERWORLD || level.getServer().isSameThread()) return;
+        lastGenerated = System.nanoTime();
+        everGenerated = true;
+    }
+
     /** How many plans are recorded, and how questions were answered this session (for the street service's status and the arrival measurement). */
     public static String recordStatus() {
         return "plans recorded " + RECORDED.size() + " (" + recordedOnWorkers + " on the generation workers this session), answered from the record " + recordedHits + ", asked of Lost Cities " + apiLookups + ", put off while it generated " + deferred + ", the city character asked Lost Cities directly " + CityCharacter.askedDirectly + (recordingBroken || !RECORDING ? "; recording is off" : "");

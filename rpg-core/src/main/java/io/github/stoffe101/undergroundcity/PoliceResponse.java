@@ -409,7 +409,7 @@ public final class PoliceResponse {
         BlockPos guess = around.offset((int) Math.round(Math.cos(angle) * r), 0, (int) Math.round(Math.sin(angle) * r));
         for (int dy = 2; dy >= -3; dy--) {
             BlockPos p = guess.offset(0, dy, 0);
-            if (level.isLoaded(p) && level.getBlockState(p).isAir() && level.getBlockState(p.above()).isAir() && level.getBlockState(p.below()).isFaceSturdy(level, p.below(), net.minecraft.core.Direction.UP)) return p;
+            if (Chunks.ready(level, p) && level.getBlockState(p).isAir() && level.getBlockState(p.above()).isAir() && level.getBlockState(p.below()).isFaceSturdy(level, p.below(), net.minecraft.core.Direction.UP)) return p;
         }
         return around;
     }

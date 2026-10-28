@@ -246,6 +246,12 @@ public final class CityCharacter extends SimpleJsonResourceReloadListener {
     }
 
     private void onCharacteristics(net.minecraftforge.eventbus.api.Event event) {
+        try {
+            // a worker is planning a chunk and holds Lost Cities' lock: from now the server thread's questions wait their turn (LostCitiesLink.askable), not from when the chunk is done
+            if (getWorld.invoke(event) instanceof WorldGenLevel planning) LostCitiesLink.planning(planning.getLevel());
+        } catch (ReflectiveOperationException | RuntimeException ignored) {
+            // only a timing hint: the post-generation event still keeps the clock
+        }
         Map<String, Character> loaded = characters;
         if (loaded.isEmpty()) return;
         try {

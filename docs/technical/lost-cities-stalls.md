@@ -106,6 +106,21 @@ Each run is a new world, so the terrain differs; one run per row. In run 3 the 3
 
 Not measured: a dedicated server, two players, a vehicle at speed, and a world reopened after a restart (the record then comes from the file).
 
+## Travelling into new ground (eleventh pass)
+
+The tenth pass's 30-minute exploring session (two real clients flown 96 blocks every 15 seconds along the roads and round the islands while new ground generated; `run_perf_session.py --plan explore`) had 16 ticks over a second in its first phase, the longest 16.4 s. `TickSampler`, on in every performance session, gave the frames of each:
+
+| Where the server thread waited | Samples of 4 ms in ticks over 1 s | Whose |
+| --- | --- | --- |
+| `ServerPlayer.doTick` > `Entity.isInWall` > `getBlockState` > `ServerChunkCache.getChunk` | 19,286 (77 s) | vanilla: a player stands in a chunk that is still generating, and the server waits for it |
+| `BuildingGuard.watchAround` > `getBlockState` > `getChunk` | 1,644 (6.6 s) | Core: the door watch |
+| `ExplorationFinds.spot` > `getBlockState` > `getChunk` | 158 (0.6 s) | Core: the exploration crates |
+| `PopulationService.windowWeight` > Lost Cities' `getBuildingInfo`, blocked on a generation worker | 182 (0.7 s, after the restart) | Core: the street population's area lookup |
+
+**Core's part.** On a server `Level.isLoaded` is true as soon as a chunk is *scheduled* to be full (its ticket level), while it may still be generating. A `getBlockState` there makes the server thread wait for the workers. The door watch, the exploration crates, the lock sweep, police search points, cameras, utility panels, machine housings, resource sites and the casing count all checked `isLoaded` and then read. They now ask `Chunks.ready` (the chunk is generated and loaded, `getChunkNow`) and try again on their next pass. Lost Cities' quiet clock (`LostCitiesLink.askable`), which tells the street population and the households to put off a question while Lost Cities generates, used to start when a chunk was finished. It now starts when a worker begins planning one (Lost Cities' characteristics event, `LostCitiesLink.planning`), so the first chunk after a quiet spell no longer slips through.
+
+**Vanilla's part** is the player outrunning generation: the destination chunk of each 96-block hop was not ready when the player landed. Core cannot make the workers faster. A person travelling at a walk or in a vehicle that keeps to the generation's pace does not meet it, and the islands can be generated ahead of play for a test world ([test-worlds.md](test-worlds.md)).
+
 ## Operating rules
 
 * **The production watchdog stays on.** A server that cannot finish a tick in 60 seconds is better stopped than frozen; the journey fixture's `max-tick-time=-1` and the probe's are for one disposable test server each, and each document that uses it says so. **No server of the pack, and no production-style check, has its watchdog disabled.**

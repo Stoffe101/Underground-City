@@ -132,7 +132,7 @@ public final class SecurityDevices {
         long now = LockService.clock(level.getServer());
         net.minecraft.world.phys.Vec3 eye = player.getEyePosition();
         for (BlockPos camera : cameras) {
-            if (camera.distSqr(player.blockPosition()) > (RANGE + 4) * (RANGE + 4) || !level.isLoaded(camera)) continue;
+            if (camera.distSqr(player.blockPosition()) > (RANGE + 4) * (RANGE + 4) || !Chunks.ready(level, camera)) continue;
             net.minecraft.core.Direction facing = facing(level.getBlockState(camera));
             if (sense && level.getServer().getTickCount() % 20 == 3) showField(level, player, camera, facing);
             if (looped(level, b) || AlarmPanels.jammed(level, b) || TechService.securityDown(level, b) || !sees(level, camera, facing, eye)) continue;

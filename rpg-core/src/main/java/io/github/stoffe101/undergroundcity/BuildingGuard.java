@@ -113,7 +113,7 @@ public final class BuildingGuard {
         BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos();
         for (int dx = -SIGNAL_REACH; dx <= SIGNAL_REACH; dx++) for (int dz = -SIGNAL_REACH; dz <= SIGNAL_REACH; dz++) for (int dy = -2; dy <= 1; dy++) {
             p.set(pos.getX() + dx, pos.getY() + dy, pos.getZ() + dz);
-            if (!level.isLoaded(p)) continue;
+            if (!Chunks.ready(level, p)) continue;
             BlockState state = level.getBlockState(p);
             if (!(state.getBlock() instanceof DoorBlock) || state.getValue(DoorBlock.HALF) != DoubleBlockHalf.LOWER) continue;
             Optional<CityBuildings.Building> found = protectedAt(level, p);
@@ -420,7 +420,7 @@ public final class BuildingGuard {
         BlockPos pos = event.getPos();
         for (Direction side : event.getNotifiedSides()) {
             BlockPos near = pos.relative(side);
-            if (level.isLoaded(near) && level.getBlockState(near).getBlock() instanceof DoorBlock) synchronized (RECHECK) { if (RECHECK.size() < 256) RECHECK.add(near.asLong()); }
+            if (Chunks.ready(level, near) && level.getBlockState(near).getBlock() instanceof DoorBlock) synchronized (RECHECK) { if (RECHECK.size() < 256) RECHECK.add(near.asLong()); }
         }
     }
 
@@ -438,7 +438,7 @@ public final class BuildingGuard {
         }
         for (long key : due) {
             BlockPos pos = BlockPos.of(key);
-            if (!level.isLoaded(pos)) continue;
+            if (!Chunks.ready(level, pos)) continue;
             BlockState state = level.getBlockState(pos);
             if (state.getBlock() instanceof DoorBlock) enforce(level, lowerOf(pos, state));
         }
@@ -456,7 +456,7 @@ public final class BuildingGuard {
         BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos();
         for (int dx = -6; dx <= 6; dx++) for (int dz = -6; dz <= 6; dz++) for (int dy = -2; dy <= 3; dy++) {
             p.set(at.getX() + dx, at.getY() + dy, at.getZ() + dz);
-            if (!level.isLoaded(p)) continue;
+            if (!Chunks.ready(level, p)) continue;
             BlockState state = level.getBlockState(p);
             if (state.getBlock() instanceof DoorBlock && state.getValue(DoorBlock.OPEN) && state.getValue(DoorBlock.HALF) == DoubleBlockHalf.LOWER && enforce(level, p.immutable())) shut++;
         }
