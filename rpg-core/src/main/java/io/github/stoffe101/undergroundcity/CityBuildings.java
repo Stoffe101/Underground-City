@@ -83,7 +83,29 @@ public final class CityBuildings extends SimpleJsonResourceReloadListener {
     }
 
     /** A generated building: its chunk, what Lost Cities says it is, and the volume that belongs to it. */
-    public record Building(String city, int chunkX, int chunkZ, String type, String buildingId, int floors, int cellars, int streetY, SecurityClass security) {
+    /**
+     * The multi-chunk building a chunk is a part of (D-206), as Lost Cities planned it: its id, this chunk's column {@code x} and row {@code z} in it (its grid is {@code buildings[x][z]}) and its
+     * size in chunks. Every chunk of one building gives the same id and corner.
+     */
+    public record Multi(String id, int x, int z, int w, int h) {
+        public boolean valid() { return w >= 1 && h >= 1 && x >= 0 && z >= 0 && x < w && z < h; }
+    }
+
+    /** {@code multi}: the multi-chunk building this chunk belongs to, or null for a single lot. */
+    public record Building(String city, int chunkX, int chunkZ, String type, String buildingId, int floors, int cellars, int streetY, SecurityClass security, Multi multi) {
+        public Building(String city, int chunkX, int chunkZ, String type, String buildingId, int floors, int cellars, int streetY, SecurityClass security) {
+            this(city, chunkX, chunkZ, type, buildingId, floors, cellars, streetY, security, null);
+        }
+        /** The chunk of the building's corner (column 0, row 0): itself for a single lot. */
+        public int cornerX() { return multi == null ? chunkX : chunkX - multi.x(); }
+        public int cornerZ() { return multi == null ? chunkZ : chunkZ - multi.z(); }
+        /** True for a part of a multi-chunk building whose place in it Lost Cities gave. */
+        public boolean multiPart() { return multi != null && multi.valid(); }
+        /** A stable number for the whole building: its corner and its multi-chunk building, or the lot's own key. One burglary permit covers all of it (D-206). */
+        public long instanceKey() {
+            if (!multiPart()) return key();
+            return (long) cornerX() * 0x9E3779B97F4A7C15L + cornerZ() * 0xBF58476D1CE4E5B9L + multi.id().hashCode() * 0x94D049BB133111EBL;
+        }
         /** The lowest block that is part of the building (the floor of the deepest cellar and the foundation under it). */
         public int minY() { return streetY - FLOOR * (cellars + 1) - 2; }
         /** One above the highest block that is part of it (the roof and its parapet). */
@@ -293,7 +315,7 @@ public final class CityBuildings extends SimpleJsonResourceReloadListener {
         int street = LostCitiesLink.realHeight(level, s.cityLevel());
         if (street < 0) street = GROUND_FALLBACK + s.cityLevel() * FLOOR;
         SecurityClass security = graded(classify(region.get(), type, s.floors()), region.get(), cx, cz, level.getSeed());
-        return Optional.of(new Building(region.get(), cx, cz, type, s.buildingId(), s.floors(), s.cellars(), street, security));
+        return Optional.of(new Building(region.get(), cx, cz, type, s.buildingId(), s.floors(), s.cellars(), street, security, s.multi() != null && s.multi().valid() ? s.multi() : null));
     }
 
     /** Test seam: answer every building question from a function (null to stop). */

@@ -45,6 +45,8 @@ public final class CityProbe {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final String OUTPUT = System.getProperty("uc.cityProbe");
     private final List<int[]> queue = new ArrayList<>();
+    /** Every chunk probed, for the homes report (-PucCpHomes=true). */
+    private final List<int[]> probed = new ArrayList<>();
     private final JsonArray chunks = new JsonArray();
     private final Map<String, int[]> totals = new TreeMap<>();
     private long started;
@@ -98,6 +100,7 @@ public final class CityProbe {
         if (!prepared) { prepare(level); prepared = true; }
         for (int n = 0; n < 2 && !queue.isEmpty(); n++) {
             int[] at = queue.remove(queue.size() - 1);
+            probed.add(at);
             try { chunks.add(probe(level, at[0], at[1])); }
             catch (RuntimeException error) { LOGGER.error("[UC-PROBE] chunk {},{} failed: {}", at[0], at[1], error.toString()); }
         }
@@ -113,6 +116,7 @@ public final class CityProbe {
         JsonObject summary = new JsonObject();
         totals.forEach((key, counts) -> { JsonObject o = new JsonObject(); o.addProperty("chunks", counts[0]); o.addProperty("with_vegetation_on_structure", counts[1]); o.addProperty("with_tree_in_city", counts[2]); summary.add(key, o); });
         report.add("summary", summary);
+        if (Boolean.parseBoolean(System.getProperty("uc.cityProbe.homes", "false"))) report.add("homes", homes(level));
         report.addProperty("city_ground", CityGround.status());
         if (GenerationTrace.ON) report.add("guarded_writes_by_feature", GenerationTrace.totals());
         JsonArray legend = new JsonArray();
@@ -124,6 +128,60 @@ public final class CityProbe {
         LOGGER.info("[UC-PROBE] {} chunks probed in {} s, written to {}", chunks.size(), (System.nanoTime() - started) / 1_000_000_000L, OUTPUT);
         finished = true;
         event.getServer().halt(false);
+    }
+
+    /**
+     * The homes of the probed buildings (D-206), counts only: every to-let place registered as the Home page would, then what the ledger holds. A home of several boxes, one over
+     * several chunks, and whether each multi-chunk building's chunks agreed on one corner and one layout (a home is registered across chunks only then).
+     */
+    private JsonObject homes(ServerLevel level) {
+        JsonObject out = new JsonObject();
+        int buildings = 0, multiParts = 0, multiPartsWithPlaces = 0, registered = 0;
+        java.util.Set<String> instances = new java.util.HashSet<>(), lettable = new java.util.HashSet<>();
+        for (int[] at : probed) {
+            var found = CityBuildings.INSTANCE.ofChunk(level, at[0], at[1]);
+            if (found.isEmpty()) continue;
+            buildings++;
+            CityBuildings.Building b = found.get();
+            if (b.multiPart()) {
+                multiParts++;
+                String instance = b.multi().id() + "@" + b.cornerX() + "," + b.cornerZ();
+                instances.add(instance);
+                if (!CityHomes.places(level.getSeed(), b).isEmpty()) { multiPartsWithPlaces++; lettable.add(instance); }
+            }
+            try { registered += CityHomes.ensureBuilding(level, b); }
+            catch (RuntimeException error) { LOGGER.warn("[UC-PROBE] homes of a building at {},{} failed: {}", at[0], at[1], error.toString()); }
+        }
+        CrewLedger ledger = CrewService.ledger(level.getServer());
+        int homes = 0, manyBoxes = 0, manyChunks = 0, maxBoxes = 0, outsideTheirBuilding = 0;
+        if (ledger != null) {
+            for (CrewLedger.Residence r : ledger.allResidences()) {
+                if (!r.id.startsWith(CityHomes.PREFIX)) continue;
+                homes++;
+                if (r.boxes.size() > 1) manyBoxes++;
+                if (r.chunks().size() > 1) manyChunks++;
+                maxBoxes = Math.max(maxBoxes, r.boxes.size());
+                // every chunk a home lies in is a chunk of the building it names (its multi-chunk building's corner, or the lot itself)
+                String prefix = r.id.substring(0, r.id.lastIndexOf(':') + 1);
+                for (var c : r.chunks()) {
+                    var there = CityBuildings.INSTANCE.ofChunk(level, c.x, c.z);
+                    if (there.isEmpty() || !CityHomes.buildingPrefix(there.get()).equals(prefix)) { outsideTheirBuilding++; break; }
+                }
+            }
+        }
+        out.addProperty("buildings", buildings);
+        out.addProperty("multi_chunk_parts", multiParts);
+        out.addProperty("multi_chunk_buildings", instances.size());
+        out.addProperty("multi_chunk_buildings_with_dwellings", lettable.size());
+        out.addProperty("multi_chunk_parts_with_dwellings", multiPartsWithPlaces);
+        out.addProperty("registered_now", registered);
+        out.addProperty("city_homes", homes);
+        out.addProperty("homes_of_several_boxes", manyBoxes);
+        out.addProperty("homes_over_several_chunks", manyChunks);
+        out.addProperty("most_boxes_in_one_home", maxBoxes);
+        out.addProperty("homes_reaching_a_chunk_of_another_building", outsideTheirBuilding);
+        LOGGER.info("[UC-PROBE] homes: {}", out);
+        return out;
     }
 
     private void prepare(ServerLevel level) {

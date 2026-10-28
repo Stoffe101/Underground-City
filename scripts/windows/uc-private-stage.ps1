@@ -10,6 +10,9 @@
     The default -Out is $HOME\UndergroundCityPrivate\runtime, which -C70 finds by itself. Never put it, its work folder or its screenshots in the repository or on GitHub; the
     git hooks (python scripts\install_git_hooks.py) refuse a commit that would carry it.
 
+    Where a home ends is read from each building's rooms (D-206); a building whose rooms leave that uncertain is not let, and runtime-work\wiring-report.json says why.
+    -Dwellings <file> names the dwellings of such buildings yourself ({"<building id>": [dwellings] or "none"}).
+
     The first staging of a download without a uc-private-pack.json needs -Holder and -Summary: who gave the permission and what it covers, in your words. Later stagings reuse it.
     Stage again after every update (uc-update.ps1): a launch refuses a pack staged by an older porter or wiring than the checkout needs.
 .EXAMPLE
@@ -23,7 +26,8 @@ param(
     [string] $Registry = '',
     [string] $Selection = '',
     [string] $Holder = '',
-    [string] $Summary = ''
+    [string] $Summary = '',
+    [string] $Dwellings = ''
 )
 . (Join-Path $PSScriptRoot 'uc-common.ps1')
 if ($Out -eq '') { $Out = $script:UcDefaultPrivate }
@@ -33,6 +37,7 @@ if ($Registry -ne '') { $arguments += @('--registry', (& $resolve $Registry)) } 
 if ($Selection -ne '') { $arguments += @('--selection', (& $resolve $Selection)) }
 if ($Holder -ne '') { $arguments += @('--holder', $Holder) }
 if ($Summary -ne '') { $arguments += @('--summary', $Summary) }
+if ($Dwellings -ne '') { $arguments += @('--dwellings', (& $resolve $Dwellings)) }
 Invoke-UcPython $arguments
 if ($LASTEXITCODE -ne 0) { throw 'Staging stopped (see above); the private folder was not changed.' }
 Write-Host "Next: .\scripts\windows\uc-new-world.ps1 -Name <you> -World <new name> -C70   or   .\scripts\windows\uc-server.ps1 -C70 -World <new name> -LanOfflineMode"

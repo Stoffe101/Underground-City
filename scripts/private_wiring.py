@@ -38,6 +38,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import private_dwellings as dwellings_of  # noqa: E402
 import private_pack_tool as packs  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -45,7 +46,7 @@ PUBLIC = ROOT / "content/generated/world-furnished/pack"
 FLOOR = 6
 COVERED_STEP = 3   # BuildingGuard.COVERED_STEP
 # raised when a plan or a city file changes in a way an older wiring lacks; private_c70.py check refuses a staged pack wired by an older one
-WIRING_VERSION = 11
+WIRING_VERSION = 12
 SPEC = re.compile(r"^(?P<name>[a-z0-9_.-]+:[a-z0-9_./-]+)(?:\[(?P<props>[^\]]*)\])?$")
 # what a block is for a household, by words in its id (furniture mods name their blocks plainly)
 KINDS = [("bed", re.compile(r"_bed$|:bed$|fancy_bed")), ("stove", re.compile(r"furnace|smoker|stove|oven|cooking_pot|range_hood|microwave")),
@@ -261,9 +262,10 @@ def wire(pack_root: Path, selection: dict, public: Path) -> dict:
     rules, listings, by_city = [], [], {}
     first: dict[str, dict] = {}
     multis: dict[str, list[dict]] = {}
+    overrides = selection.get("dwellings", {})
     for chosen in selection.get("multi_buildings", []):
-        # a multi-chunk building (D-198): the city keeps it where Lost Cities plans it, or puts it in place of one with its footprint; each part is a building of its own
-        # to the game's systems (a plan, the class rule, a listing for a part with a street door and a flat), planned with the other parts' roofs as inside
+        # a multi-chunk building (D-198): the city keeps it where Lost Cities plans it, or puts it in place of one with its footprint; each part has a plan of its own (its
+        # household's spots, read with the other parts' roofs as inside), and its homes are the building's dwellings (D-206), never a part's
         mid, city = chosen["id"], chosen["city"]
         multis.setdefault(city, []).append({"id": mid, "weight": chosen.get("weight", 1)})
         if mid.split(":", 1)[1] == "none":
@@ -289,14 +291,15 @@ def wire(pack_root: Path, selection: dict, public: Path) -> dict:
                 kinds[sp["kind"]] = kinds.get(sp["kind"], 0) + 1
             street_door = bool(doc["spots"]) and doc["spots"][0]["kind"] == "door"
             parts_report[part] = {"at": [x, z], "spots": kinds, "units": len(doc.get("units", [])), "street_door": street_door, "missing": missing}
-            if chosen.get("listing") and street_door and doc.get("units"):
-                listings.append({"building": part, **chosen["listing"], "area": city.capitalize(), "tenures": chosen["listing"].get("tenures", ["rent", "buy"]),
-                                 "max_containers": chosen["listing"].get("max_containers", 6), "private_claims": chosen["listing"].get("private_claims", 2),
-                                 "facilities": chosen["listing"].get("facilities", ["bed", "storage", "plumbing"]),
-                                 "summary": chosen["listing"].get("summary", "A furnished home.")})
+        found, why = multi_dwellings(pack, mid, grid, use, overrides.get(mid))
+        if found:
+            write_dwellings(pack_root, mid, grid, found)
+        if chosen.get("listing") and found:
+            listings.append(listing(mid, chosen["listing"], city))
         if chosen.get("class"):
             rules.append({"type_prefix": mid + "_", "class": chosen["class"], "priority": 20})
-        report["buildings"][mid] = {"multi": True, "parts": parts_report, "listed_parts": sum(1 for r in parts_report.values() if r["street_door"] and r["units"]) if chosen.get("listing") else 0}
+        report["buildings"][mid] = {"multi": True, "parts": parts_report, "dwellings": len(found), "dwellings_from": why["from"], "uncertain": why.get("uncertain", []),
+                                    "nobodys_rooms": why.get("nobodys_rooms", 0), "listed": bool(chosen.get("listing") and found)}
     for chosen in selection["buildings"]:
         bid, city, use = chosen["id"], chosen["city"], chosen["use"]
         if use not in USES:
@@ -309,6 +312,15 @@ def wire(pack_root: Path, selection: dict, public: Path) -> dict:
             continue
         first[bid] = chosen
         doc, missing = plan(pack, bid, city, use, chosen.get("title", ""))
+        if use == "flats":
+            # a flat is the rooms behind its own door, not a storey (D-206): the hall and the stairs are nobody's; where that is not certain, nothing is let
+            found, why = dwellings_of.analyse([(bid, 0, 0)], lambda part: layers(pack, part), "flats") if bid not in overrides else (override_dwellings(overrides[bid]), {"uncertain": []})
+            units = [{"id": d["id"], "title": d["title"], "boxes": [r["box"] for r in d["rooms"]]} for d in found if len(d["rooms"]) <= 64]
+            if units:
+                doc["units"] = units
+            else:
+                doc.pop("units", None)
+                missing.append("no flat let: " + ("; ".join(why.get("uncertain", [])) or "no rooms behind a door off the hall with a bed"))
         ns, path = bid.split(":", 1)
         target = pack_root / "data" / ns / "city_buildings" / f"{path}.json"
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -325,11 +337,8 @@ def wire(pack_root: Path, selection: dict, public: Path) -> dict:
             out = pack_root / "data/underground_city/shop_counters" / f"{pack_id}-{path}.json"
             out.parent.mkdir(parents=True, exist_ok=True)
             out.write_text(json.dumps({"schema_version": 1, "outlet": c["outlet"], "building": bid, "spot": c.get("spot", "counter"), "city": city, "title": c["title"]}, indent=2) + "\n", encoding="utf-8")
-        if chosen.get("listing"):
-            listings.append({"building": bid, **chosen["listing"], "area": city.capitalize(), "tenures": chosen["listing"].get("tenures", ["rent", "buy"]),
-                             "max_containers": chosen["listing"].get("max_containers", 6), "private_claims": chosen["listing"].get("private_claims", 2),
-                             "facilities": chosen["listing"].get("facilities", ["bed", "storage", "plumbing"]),
-                             "summary": chosen["listing"].get("summary", "A furnished home.")})
+        if chosen.get("listing") and doc.get("units"):
+            listings.append(listing(bid, chosen["listing"], city))
         by_city.setdefault(city, []).append(chosen)
     # the public buildings a selection keeps, and how often: {"<ns>:<building>": weight}, 0 to leave one out of every ring of its city (the owner prefers
     # the private buildings, D-193); the public buildings it does not name keep their weights
@@ -380,6 +389,46 @@ def wire(pack_root: Path, selection: dict, public: Path) -> dict:
         out.write_text(json.dumps({"schema_version": 1, "city_listings": listings}, indent=2) + "\n", encoding="utf-8")
         report["listings"] = len(listings)
     return report
+
+
+def listing(building: str, terms: dict, city: str) -> dict:
+    """A city listing (data/underground_city/properties) for a building, or a multi-chunk building whose dwellings are let on its terms."""
+    return {"building": building, **terms, "area": city.capitalize(), "tenures": terms.get("tenures", ["rent", "buy"]), "max_containers": terms.get("max_containers", 6),
+            "private_claims": terms.get("private_claims", 2), "facilities": terms.get("facilities", ["bed", "storage", "plumbing"]), "summary": terms.get("summary", "A furnished home.")}
+
+
+def override_dwellings(given) -> list[dict]:
+    """The owner's own dwellings for a building (the selection's ``dwellings``): a list as CityDwellings reads it, or "none" to let nothing. Checked as Core will check it."""
+    if given == "none":
+        return []
+    if not isinstance(given, list):
+        raise SystemExit("a dwellings override is a list of dwellings or \"none\"")
+    for d in given:
+        if not re.fullmatch(r"[a-z0-9_]{2,24}", str(d.get("id", ""))) or not d.get("rooms"):
+            raise SystemExit(f"a dwellings override has a dwelling without an id or rooms: {d.get('id')}")
+    clash = dwellings_of.overlaps(given)
+    if clash:
+        raise SystemExit(f"a dwellings override is refused: {clash}")
+    return given
+
+
+def multi_dwellings(pack: "Pack", mid: str, grid: list[tuple[str, int, int]], use: str, given) -> tuple[list[dict], dict]:
+    """The dwellings of a multi-chunk building: the owner's override, or what its rooms say (private_dwellings), or none when that is uncertain."""
+    if given is not None:
+        return override_dwellings(given), {"from": "override"}
+    found, report = dwellings_of.analyse(grid, lambda part: layers(pack, part), use)
+    report["from"] = "rooms"
+    return found, report
+
+
+def write_dwellings(pack_root: Path, mid: str, grid: list[tuple[str, int, int]], found: list[dict]) -> None:
+    """data/<ns>/city_dwellings/<multi>.json, as CityDwellings reads it: the size, the part at each place (Lost Cities' grid) and the dwellings."""
+    w, h = max(x for _, x, _ in grid) + 1, max(z for _, _, z in grid) + 1
+    parts = [[next(p for p, x, z in grid if x == gx and z == gz) for gz in range(h)] for gx in range(w)]
+    ns, path = mid.split(":", 1)
+    out = pack_root / "data" / ns / "city_dwellings" / f"{path}.json"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps({"schema_version": 1, "size": [w, h], "parts": parts, "dwellings": found}, indent=1) + "\n", encoding="utf-8")
 
 
 def main(argv: list[str]) -> int:

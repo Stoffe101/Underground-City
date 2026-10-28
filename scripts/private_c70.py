@@ -51,8 +51,8 @@ STAGE = "uc-private-stage.json"
 PACK_NAME = "c70-port"
 STAGE_SCHEMA = 1
 # a pack staged by an older porter or wiring than these is refused at launch: stage it again (the numbers rise when a port or a plan changes in a way an old one lacks)
-MIN_PORTER = 11
-MIN_WIRING = 11
+MIN_PORTER = 12
+MIN_WIRING = 12
 # what a pack of Lost Cities buildings needs loaded besides itself: the furnished cities (its buildings join theirs) and the furniture its palettes name
 NEEDS_SETS = ["furnished", "furniture"]
 RECOMMENDED_SETS = ["furnished", "scarcity", "furniture"]
@@ -458,7 +458,7 @@ def dump_registry(work: Path, namespaces: list[str], key: str) -> Path:
     return registry
 
 
-def stage(source: Path, out: Path, work: Path | None, registry_file: Path | None, selection_file: Path | None, holder: str, summary: str) -> dict:
+def stage(source: Path, out: Path, work: Path | None, registry_file: Path | None, selection_file: Path | None, holder: str, summary: str, dwellings_file: Path | None = None) -> dict:
     import port_lostcities_pack as porter  # noqa: E402
     import private_wiring as wiring  # noqa: E402
     source, out = source.resolve(), out.resolve()
@@ -494,11 +494,23 @@ def stage(source: Path, out: Path, work: Path | None, registry_file: Path | None
         print(f"selection: automatic, {picked['summary']['buildings']} building(s) and {picked['summary']['multi_buildings']} multi-chunk building(s); "
               f"{picked['summary']['left_out']} left out (why: {work / 'selection-auto-report.json'}); the selection is {work / 'selection-auto.json'}")
         chosen_by = "auto"
+    if dwellings_file:
+        # the owner's own dwellings for the buildings whose rooms do not say for certain where a home ends (D-206): {"<building id>": [dwellings] or "none"}
+        overrides = json.loads(dwellings_file.read_text(encoding="utf-8"))
+        if not isinstance(overrides, dict):
+            fail(f"{dwellings_file}: dwellings overrides are an object of building id to dwellings")
+        selection = dict(selection, dwellings={**selection.get("dwellings", {}), **overrides})
     wired = wiring.wire(fresh, selection, wiring.PUBLIC)
+    homes = {"multi_buildings_with_dwellings": sum(1 for b in wired["buildings"].values() if b.get("multi") and b.get("dwellings")),
+             "multi_buildings_uncertain": sum(1 for b in wired["buildings"].values() if b.get("multi") and b.get("uncertain")),
+             "dwellings": sum(b.get("dwellings", 0) for b in wired["buildings"].values() if b.get("multi"))}
+    (work / "wiring-report.json").write_text(json.dumps(wired, indent=1) + "\n", encoding="utf-8")
+    print(f"dwellings: {homes['dwellings']} in {homes['multi_buildings_with_dwellings']} multi-chunk building(s); {homes['multi_buildings_uncertain']} uncertain and not let "
+          f"(why: {work / 'wiring-report.json'}; name their dwellings yourself with --dwellings)")
     stage_doc = {"schema_version": STAGE_SCHEMA, "porter_version": porter.PORTER_VERSION, "wiring_version": wiring.WIRING_VERSION, "needs_sets": NEEDS_SETS,
                  "recommended_sets": RECOMMENDED_SETS, "selection": chosen_by, "registry_key": registry_key(manifest), "core_commit": core_commit(),
                  "staged_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
-                 "counts": {"buildings": len(wired["buildings"]), "listings": wired["listings"], "cities": sorted(wired["cities"])},
+                 "counts": {"buildings": len(wired["buildings"]), "listings": wired["listings"], "cities": sorted(wired["cities"]), **homes},
                  "note": "Counts and versions only; written by private_c70.py stage."}
     (fresh / STAGE).write_text(json.dumps(stage_doc, indent=2) + "\n", encoding="utf-8")
     packs.seal(fresh)
@@ -533,6 +545,7 @@ def main(argv: list[str]) -> int:
     s.add_argument("--selection", type=Path)
     s.add_argument("--holder", default="")
     s.add_argument("--summary", default="")
+    s.add_argument("--dwellings", type=Path, help="the owner's dwellings for buildings whose rooms are uncertain: {\"<building id>\": [dwellings] or \"none\"}")
     p = sub.add_parser("select")
     p.add_argument("port", type=Path)
     p.add_argument("selection", type=Path)
@@ -542,7 +555,7 @@ def main(argv: list[str]) -> int:
     c.add_argument("--json", action="store_true")
     args = parser.parse_args(argv)
     if args.command == "stage":
-        stage(args.source, args.out, args.work, args.registry, args.selection, args.holder, args.summary)
+        stage(args.source, args.out, args.work, args.registry, args.selection, args.holder, args.summary, args.dwellings)
         return 0
     if args.command == "select":
         packs.refuse_in_repo(args.port)

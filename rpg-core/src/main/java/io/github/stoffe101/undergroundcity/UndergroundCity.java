@@ -273,6 +273,7 @@ public final class UndergroundCity {
         event.addListener(CityCharacter.INSTANCE);
         event.addListener(ResourceSiteCatalog.INSTANCE);
         event.addListener(BuildingSpots.INSTANCE);
+        event.addListener(CityDwellings.INSTANCE);
         event.addListener(WorldLayout.INSTANCE);
         event.addListener(PropertyPolicies.INSTANCE);
         event.addListener(ExceptionalLoot.INSTANCE);

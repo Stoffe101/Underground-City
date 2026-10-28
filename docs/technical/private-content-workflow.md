@@ -112,6 +112,12 @@ A file that differs from the seal is a warning. A hand-made port without `uc-pri
 
 On the owner's original in the cloud, the automatic selection chose every building the hand-made C70-first selection had chosen and 26 more, and left out 24 for the reasons above. The port's palettes and parts were identical to the port that photo run 13 walked through. Only the plans of the newly chosen buildings and the city files differ.
 
+### What changed in the porter and the wiring (eleventh pass)
+
+* **Porter 12: Create's stones are no longer holes.** The owner's pack used Create's decorative stones (cut, polished cut, layered, bricks, slabs, stairs and walls of calcite, scoria, dripstone, diorite, tuff, deepslate and granite) for walls, floors and steps. Every one that the old rules did not name became air: 87 kinds of Create block in all, about 800 uses of these stones, so walls of cut calcite were generated as gaps in the owner's houses. Each stone now becomes the vanilla block of the nearest look in the same shape, keeping a slab's half, a stair's facing and a wall's sides. A whole glass block stays whole and a seat becomes a carpet. Machinery is still air. The port was checked against the real 1.20.1 registry: loadable, no problems.
+* **Wiring 12: dwellings** (D-206, [dwellings.md](dwellings.md)): a multi-chunk building's homes are read from its rooms and written to `city_dwellings`; a single block's flats are let one by one. `uc-private-stage.ps1 -Dwellings <file>` names the dwellings of a building yourself.
+* A launch refuses a pack staged by porter 11 or wiring 11: stage again.
+
 ## The tested workflow (ninth pass, D-192)
 
 1. **Validate the archive and extract it outside the checkout.** Check its paths and integrity first, and keep the original untouched in its own folder.

@@ -38,13 +38,19 @@ import java.util.function.Function;
 public final class LostCitiesLink {
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    public record ChunkSample(boolean city, int highwayLevel, String building, String buildingId, int floors, int cellars, int cityLevel, String style) {
+    /** {@code multi}: the multi-chunk building this chunk is a part of and where (D-206), or null for a single lot, or a plan recorded before Core asked. */
+    public record ChunkSample(boolean city, int highwayLevel, String building, String buildingId, int floors, int cellars, int cityLevel, String style, CityBuildings.Multi multi) {
+        public ChunkSample(boolean city, int highwayLevel, String building, String buildingId, int floors, int cellars, int cityLevel, String style) {
+            this(city, highwayLevel, building, buildingId, floors, cellars, cityLevel, style, null);
+        }
         /** The three-argument form older callers used (the survey and the launch smoke only read whether it is a city and which building type). */
         public ChunkSample(boolean city, int highwayLevel, String building) { this(city, highwayLevel, building, "", 0, 0, 0, ""); }
     }
 
     private static volatile Object api;
     private static Method getLostInfo, getChunkInfo, isCity, maxHighwayLevel, buildingType, buildingId, numFloors, numCellars, cityLevel, realHeight, cityStyle, styleName;
+    /** Lost Cities' multi-chunk building of a chunk ({@code getMultiBuildingInfo}, 7.5.5); null handles when the version has none, and every chunk then reads as a single lot. */
+    private static Method multiInfo, multiType, multiOffsetX, multiOffsetZ, multiW, multiH;
     private static Method eventWorld, eventChunkX, eventChunkZ;
     /** The overworld's ILostCityInformation, resolved on the server thread when the level loads; the workers' recording uses only this. */
     private static volatile Object overworldInfo;
@@ -207,6 +213,15 @@ public final class LostCitiesLink {
         cityLevel = chunk.getMethod("getCityLevel");
         cityStyle = chunk.getMethod("getCityStyle");
         styleName = Class.forName("mcjty.lostcities.api.ILostCityCityStyle").getMethod("getName");
+        try {
+            Class<?> multi = Class.forName("mcjty.lostcities.api.ILostChunkInfo$MultiBuildingInfo");
+            multiType = multi.getMethod("buildingType"); multiOffsetX = multi.getMethod("offsetX"); multiOffsetZ = multi.getMethod("offsetZ");
+            multiW = multi.getMethod("w"); multiH = multi.getMethod("h");
+            multiInfo = chunk.getMethod("getMultiBuildingInfo");
+        } catch (ReflectiveOperationException absent) {
+            multiInfo = null;
+            LOGGER.warn("[UC] this Lost Cities has no multi-chunk building information: a dwelling over several chunks cannot be let (D-206)");
+        }
         realHeight = info.getMethod("getRealHeight", int.class);
         getLostInfo = root.getMethod("getLostInfo", Level.class);   // last: the others are set once this is
     }
@@ -215,9 +230,14 @@ public final class LostCitiesLink {
         Object sample = getChunkInfo.invoke(information, chunkX, chunkZ);
         Object id = buildingId.invoke(sample);
         Object style = cityStyle.invoke(sample);
+        CityBuildings.Multi multi = null;
+        Object m = multiInfo == null ? null : multiInfo.invoke(sample);
+        if (m != null && multiType.invoke(m) != null) {
+            multi = new CityBuildings.Multi(multiType.invoke(m).toString(), (Integer) multiOffsetX.invoke(m), (Integer) multiOffsetZ.invoke(m), (Integer) multiW.invoke(m), (Integer) multiH.invoke(m));
+        }
         return new ChunkSample((Boolean) isCity.invoke(sample), (Integer) maxHighwayLevel.invoke(sample),
             (String) buildingType.invoke(sample), id == null ? "" : id.toString(), (Integer) numFloors.invoke(sample), (Integer) numCellars.invoke(sample), (Integer) cityLevel.invoke(sample),
-            style == null ? "" : String.valueOf(styleName.invoke(style)));
+            style == null ? "" : String.valueOf(styleName.invoke(style)), multi);
     }
 
     // ------------------------------------------------------------------------------------------------ recording on the generation workers
@@ -338,7 +358,9 @@ public final class LostCitiesLink {
             ListTag list = tag.getList("plans", Tag.TAG_COMPOUND);
             for (int i = 0; i < list.size(); i++) {
                 CompoundTag p = list.getCompound(i);
-                store.plans.put(p.getLong("k"), new ChunkSample(p.getBoolean("c"), p.getInt("h"), p.getString("b"), p.getString("i"), p.getInt("f"), p.getInt("n"), p.getInt("l"), p.getString("s")));
+                // schema 2 (D-206) keeps a part's multi-chunk building; a plan recorded by schema 1 has none, and its chunk reads as a single lot
+                CityBuildings.Multi multi = p.contains("m") ? new CityBuildings.Multi(p.getString("m"), p.getInt("mx"), p.getInt("mz"), p.getInt("mw"), p.getInt("mh")) : null;
+                store.plans.put(p.getLong("k"), new ChunkSample(p.getBoolean("c"), p.getInt("h"), p.getString("b"), p.getString("i"), p.getInt("f"), p.getInt("n"), p.getInt("l"), p.getString("s"), multi));
             }
             return store;
         }
@@ -358,10 +380,13 @@ public final class LostCitiesLink {
                 if (s.cellars() != 0) p.putInt("n", s.cellars());
                 if (s.cityLevel() != 0) p.putInt("l", s.cityLevel());
                 if (!s.style().isEmpty()) p.putString("s", s.style());
+                if (s.multi() != null) {
+                    p.putString("m", s.multi().id()); p.putInt("mx", s.multi().x()); p.putInt("mz", s.multi().z()); p.putInt("mw", s.multi().w()); p.putInt("mh", s.multi().h());
+                }
                 list.add(p);
             }
             tag.put("plans", list);
-            tag.putInt("schema_version", 1);
+            tag.putInt("schema_version", 2);
             return tag;
         }
     }

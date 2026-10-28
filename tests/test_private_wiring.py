@@ -8,6 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
+sys.path.insert(0, str(ROOT / "tests"))
 import building_audit as audit  # noqa: E402
 import private_wiring as wiring  # noqa: E402
 
@@ -154,6 +155,9 @@ class WireTheFixture(unittest.TestCase):
         south[(7, 1, 0)] = "D"
         south[(7, 2, 0)] = "d"
         north = storey(z0=3, z1=15, door=None)
+        # the doorway goes through the north part's wall too: one house, two chunks
+        north.pop((7, 1, 15), None)
+        north.pop((7, 2, 15), None)
         self.f.building("double_0", north)
         self.f.building("double_1", south)
         self.f.write("multibuildings", "double", {"dimx": 1, "dimz": 2, "buildings": [["double_0", "double_1"]]})
@@ -189,8 +193,80 @@ class WireTheFixture(unittest.TestCase):
         rules = json.loads((self.f.pack / "data/underground_city/building_security/fixture_private.json").read_text(encoding="utf-8"))["rules"]
         self.assertEqual(rules, [{"type_prefix": mid + "_", "class": "house", "priority": 20}])
         listings = json.loads((self.f.pack / "data/underground_city/properties/fixture_private.json").read_text(encoding="utf-8"))["city_listings"]
-        self.assertEqual([entry["building"] for entry in listings], [f"{NS}:double_1"], "only the part with the street door and the bed is let")
-        self.assertEqual(report["buildings"][mid]["listed_parts"], 1)
+        self.assertEqual([entry["building"] for entry in listings], [mid], "the house is let as one, under the multi-chunk building's id (D-206), never a part at a time")
+        self.assertEqual(report["buildings"][mid]["dwellings"], 1)
+        homes = json.loads((self.f.pack / "data" / NS / "city_dwellings" / "double.json").read_text(encoding="utf-8"))
+        self.assertEqual(homes["size"], [1, 2])
+        self.assertEqual(homes["parts"], [[f"{NS}:double_0", f"{NS}:double_1"]])
+        self.assertEqual(len(homes["dwellings"]), 1)
+        self.assertEqual({tuple(r["at"]) for r in homes["dwellings"][0]["rooms"]}, {(0, 0), (0, 1)}, "the house's rooms are in both chunks")
+
+    def test_the_owners_dwellings_override_what_the_rooms_say_and_none_lets_nothing(self):
+        mid = self.two_chunk_house()
+        listing = {"share_percent": 30, "category": "small_house", "rent": 85, "deposit": 170, "buy_price": 5400, "upkeep": 17}
+        mine = [{"id": "front", "title": "Front", "rooms": [{"at": [0, 1], "box": [4, 1, 1, 11, 4, 11]}]}]
+        selection = {"schema_version": 1, "buildings": [], "cities": ["valewood"], "dwellings": {mid: mine},
+                     "multi_buildings": [{"id": mid, "city": "valewood", "use": "house", "class": "house", "weight": 3, "listing": listing}]}
+        report = wiring.wire(self.f.pack, selection, self.f.public)
+        self.assertEqual(report["buildings"][mid]["dwellings_from"], "override")
+        homes = json.loads((self.f.pack / "data" / NS / "city_dwellings" / "double.json").read_text(encoding="utf-8"))
+        self.assertEqual(homes["dwellings"], mine)
+        selection["dwellings"] = {mid: "none"}
+        report = wiring.wire(self.f.pack, selection, self.f.public)
+        self.assertEqual((report["buildings"][mid]["dwellings"], report["buildings"][mid]["listed"]), (0, False))
+        selection["dwellings"] = {mid: mine + [{"id": "back", "rooms": [{"at": [0, 1], "box": [4, 1, 12, 11, 4, 12]}]}]}
+        with self.assertRaises(SystemExit):
+            wiring.wire(self.f.pack, selection, self.f.public)
+
+    def flats_block(self, stair: str) -> str:
+        """A single-chunk block drawn with the dwellings tests' plans: a hall with the street door and a stair, two flats behind their own doors on each storey."""
+        import test_private_dwellings as plans
+        def storey(beds: bool, street: bool) -> list[str]:
+            rows = [plans.YARD, "#" * 7 + ("N" if street else "#") + "#" * 8]
+            for z in (2, 3):
+                r = list("#" + "." * 14 + "#")
+                if z == 2 and street:
+                    r[12] = stair
+                rows.append("".join(r))
+            rows.append("####N######N####")
+            for z in range(5, 14):
+                r = list("#" + "." * 6 + "##" + "." * 6 + "#")
+                if beds and z == 8:
+                    r[3] = "B"; r[11] = "B"
+                rows.append("".join(r))
+            rows += ["#" * 16, plans.YARD]
+            return rows
+        layers_of = plans.building({"p": [storey(True, True), storey(True, False)]})
+        out, _ = layers_of("p")
+        palette = [{"char": c, "block": b} for c, b in plans.PALETTE.items()]
+        parts = []
+        for n, (y0, slices, _) in enumerate(out):
+            self.f.write("parts", f"block_{n}", {"xsize": 16, "zsize": 16, "slices": slices, "palette": palette})
+            parts.append({"part": f"{NS}:block_{n}", "ground": n == 0, "top": False})
+        self.f.write("parts", "block_top", {"xsize": 16, "zsize": 16, "slices": [[" " * 16] * 16], "palette": palette})
+        parts.append({"part": f"{NS}:block_top", "top": True})
+        self.f.write("buildings", "block", {"minfloors": 2, "maxfloors": 2, "parts": parts})
+        return f"{NS}:block"
+
+    def test_a_single_block_of_flats_lets_each_flat_behind_its_own_door_and_not_the_hall(self):
+        bid = self.flats_block("U")
+        listing = {"share_percent": 30, "category": "small_apartment", "rent": 40, "deposit": 80, "buy_price": 2000, "upkeep": 8}
+        report = wiring.wire(self.f.pack, {"schema_version": 1, "buildings": [{"id": bid, "city": "ironhaven", "zone": 0, "use": "flats", "class": "flat_block", "listing": listing}]}, self.f.public)
+        doc = json.loads((self.f.pack / "data" / NS / "city_buildings" / "block.json").read_text(encoding="utf-8"))
+        self.assertEqual(len(doc["units"]), 4, report)
+        self.assertTrue(all("boxes" in u and u["boxes"] for u in doc["units"]))
+        hall = {(x, z) for x in range(1, 15) for z in (2, 3)}
+        for u in doc["units"]:
+            for b in u["boxes"]:
+                if b[1] <= 4:
+                    cells = {(x, z) for x in range(b[0], b[3] + 1) for z in range(b[2], b[5] + 1)}
+                    self.assertFalse(cells & hall, "a flat took in the hall")
+
+    def test_a_block_whose_upper_flats_cannot_be_reached_lets_nothing_and_says_so(self):
+        bid = self.flats_block("u")   # a seat, not a stair: the upper storey is reached by nothing
+        report = wiring.wire(self.f.pack, {"schema_version": 1, "buildings": [{"id": bid, "city": "ironhaven", "zone": 0, "use": "flats", "class": "flat_block"}]}, self.f.public)
+        doc = json.loads((self.f.pack / "data" / NS / "city_buildings" / "block.json").read_text(encoding="utf-8"))
+        self.assertEqual(len(doc.get("units", [])), 2, "the ground floor's two flats are still let")
 
     def test_a_ring_left_without_any_building_is_refused(self):
         bid = self.f.building("house", storey(bed=True))
