@@ -63,7 +63,8 @@ The tenth pass's exploring session had 16 ticks over a second (the longest 16.4 
 
 * 17 ticks over a second (16 in the first third), the longest 13.1 s.
 * Every one was vanilla waiting for a chunk: the player's own tick or the spawners'. There was **no Core frame in any tick over a second**; the tenth pass had 7.2 s of Core in them.
-* **A second round of Core waits** was found in shorter ticks (0.25 to 0.9 s) and fixed: the staff-area watch, the camera watch and a mob's griefing check, 4.3 s in all. A shorter session to confirm the fix is in section 9.
+* **A second round of Core waits** was found in shorter ticks (0.25 to 0.9 s) and fixed: the staff-area watch, the camera watch and a mob's griefing check, 4.3 s in all.
+* **A 20-minute session after that fix** (78 hops, one city a third, all new ground): 20 ticks over a second, the longest 10.9 s, again all vanilla waiting for a chunk. None of the three watches appears in any tick the sampler reported; the only Core frame in one was a townsperson's own movement (12 ms of a 151 ms tick).
 
 What remains is a hop landing in a chunk still generating, on a four-core cloud machine.
 

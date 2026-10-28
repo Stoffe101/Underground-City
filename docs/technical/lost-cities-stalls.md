@@ -138,6 +138,19 @@ The tenth pass's 30-minute exploring session (two real clients flown 96 blocks e
 
   The two watches now ask only when the chunk's plan is known or Lost Cities is quiet, as the door watch and the street population do, and try again on their next pass. A mob's griefing check is refused while the plan cannot be answered (fail closed).
 
+**Measured after the second round: a 20-minute session** (the same seed, routes, clients and machine; 78 hops, one city a third, so every third lands on new ground):
+
+| Third | Ticks over 1 s | Longest | Ticks over 250 ms | p95 / p99 |
+| --- | --- | --- | --- | --- |
+| First (Ironhaven) | 7 | 10.9 s | 7 | 31.8 / 60.9 ms |
+| Second (Valewood) | 7 | 8.9 s | 9 | 38.8 / 62.3 ms |
+| Last (Blackwater) | 6 | 3.7 s | 8 | 44.7 / 73.4 ms |
+
+* Every tick over a second was again vanilla waiting for a chunk: the player's own tick (60.2 s) and the spawners' (19.8 s).
+* **No frame of the staff-area watch, the camera watch or a mob's griefing check in any tick the sampler reported** (it reports every tick over 250 ms and the first forty over 100 ms); in the 60-minute session they had 4.3 s.
+* The only Core frame in any reported tick was a townsperson's own movement (12 ms of vanilla collision in a 151 ms tick), not a wait.
+* There are more long ticks per minute than in the 60-minute session's later thirds because each third here is a city's new ground; the 60-minute session's first third, its only one all on new ground, had 16 in twenty minutes.
+
 ## Operating rules
 
 * **The production watchdog stays on.** A server that cannot finish a tick in 60 seconds is better stopped than frozen; the journey fixture's `max-tick-time=-1` and the probe's are for one disposable test server each, and each document that uses it says so. **No server of the pack, and no production-style check, has its watchdog disabled.**
