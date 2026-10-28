@@ -44,6 +44,7 @@ final class Scenarios {
             case "unmarked" -> GunsmithScenario.buildUnmarked();
             case "homes" -> HomeScenario.build();
             case "premises" -> PremisesScenario.build();
+            case "business" -> BusinessScenario.build();
             case "gunsmith" -> GunsmithScenario.build();
             case "sccamera" -> CameraMeasureScenario.build();
             case "alarm" -> AlarmScenario.build();
@@ -62,6 +63,7 @@ final class Scenarios {
             case "car" -> car();
             case "boat" -> boat();
             case "gun" -> gun();
+            case "skills" -> skills();
             case "gallery" -> Gallery.build();
             case "modgallery" -> Gallery.mods();
             default -> throw new IllegalArgumentException("unknown scenario " + scenario);
@@ -1434,6 +1436,22 @@ final class Scenarios {
         Playtest.wait("let the tank update reach the client", 20);
         Playtest.queue("log the fuel state", () -> Playtest.log("after fuelling: " + describeVehicle(ivVehicle(vehicleNear()))));
         board(Scenarios::vehicleNear, () -> roadHeading[0], "car", true);
+        // Driving XP through a real client (eleventh pass, -Duc.playtest.drivexp=true): a registered driver in survival, the XP read on the server before and after the drive
+        boolean driveXp = Boolean.getBoolean("uc.playtest.drivexp");
+        final int[] drivingXp = new int[1];
+        if (driveXp) {
+            Playtest.queue("a citizen at the wheel, in survival", () -> {
+                Playtest.command("uc register ironhaven smith");
+                Playtest.command("gamemode survival");
+                Playtest.log("SCRIPTED: registered by command (the registration screen is proven by other scenarios) and put in survival at the wheel");
+            });
+            Playtest.wait("settle", 40);
+            Playtest.queue("Driving XP before the drive", () -> {
+                drivingXp[0] = JourneyScenario.server(() -> CitizenState.get(JourneyScenario.me().server).find(JourneyScenario.me().getUUID()).map(c -> c.generalXp(GeneralSkills.DRIVING)).orElse(-1));
+                Playtest.log("DRIVEXP before " + drivingXp[0] + ", seated " + (Minecraft.getInstance().player.getVehicle() != null) + ", mode " + JourneyScenario.server(() -> GeneralActivity.mode(JourneyScenario.me())));
+                if (drivingXp[0] < 0) Playtest.fail("the driver is not a citizen");
+            });
+        }
         final RoadDriver[] driver = new RoadDriver[1];
         Playtest.queue("drive along the road with W, A and D", () -> {
             var plan = roadPlan(road);
@@ -1445,6 +1463,12 @@ final class Scenarios {
             Playtest.log("drive: " + driver[0].summary());
             Playtest.screenshotNextFrame("uc-car-driving");
             if (driver[0].summary().isEmpty()) { driver[0].release(); Playtest.fail("the drive did not finish within its time budget at s=" + (int) driver[0].progress()); }
+        });
+        if (driveXp) Playtest.queue("Driving XP after the drive", () -> {
+            int after = JourneyScenario.server(() -> CitizenState.get(JourneyScenario.me().server).find(JourneyScenario.me().getUUID()).map(c -> c.generalXp(GeneralSkills.DRIVING)).orElse(-1));
+            Playtest.log("DRIVEXP after " + after + " (" + (after - drivingXp[0]) + " for the drive: " + driver[0].summary() + ")");
+            if (after <= drivingXp[0]) Playtest.fail("a drive along the road at the wheel of a real vehicle paid no Driving XP");
+            else Playtest.log("DRIVEXP PASS a drive at the wheel of an Immersive Vehicles quad paid " + (after - drivingXp[0]) + " Driving XP");
         });
         Playtest.queue("brake with S and look at the stopping distance", () -> {
             Playtest.keyDown("s");
@@ -1988,6 +2012,152 @@ final class Scenarios {
      * A TaCZ pistol in a client, with real keys and mouse: select it, reload with R, aim with the right button, fire with the left,
      * and check the magazine, the carried ammunition and the damage dealt to a target. Options: none.
      */
+    /**
+     * The first aid kit and Shooting XP through a real client (eleventh pass): a new Gunsmith registers through the screen; hurt, they hold a first aid kit with a real right click and get three
+     * hearts back, a kit used up; a second use inside its cooldown does nothing; after the cooldown a third does. Then the TaCZ pistol, loaded with a real R, fired with real mouse buttons at a
+     * target block twelve blocks away: the hit pays Shooting XP, a second hit on the same block inside two seconds does not, a later one does. XP and health are read back from the server.
+     * Scripted (logged): the kits and the pistol given by command (they are bought), the damage, the lane cleared and the target block set.
+     */
+    private static void skills() {
+        ThiefScenario.tag = "SKILLS";
+        ThiefScenario.register(3, "the Gunsmith card", "1 a new citizen registers as a Gunsmith through the registration screen");
+        net.minecraft.world.item.Item kit = UndergroundCity.FIRST_AID_KIT.get();
+        final float[] health = new float[1];
+        Playtest.queue("two first aid kits, and ten points of damage", () -> {
+            Playtest.command("clear @s");
+            Playtest.command("give @s underground_city:first_aid_kit 2");
+            ThiefScenario.scripted("two first aid kits given by command (an exchange sells them)");
+            var server = Minecraft.getInstance().getSingleplayerServer();
+            server.execute(() -> { var p = server.getPlayerList().getPlayers().get(0); p.hurt(p.damageSources().generic(), 10f); });
+            ThiefScenario.scripted("ten points of damage dealt on the server");
+        }, () -> Minecraft.getInstance().player.getHealth() <= 10.5f && inventoryCount("underground_city:first_aid_kit") == 2, 400);
+        useKit("hold the kit with a real right click", kit);
+        Playtest.queue("three hearts back, one kit used, the cooldown running", () -> {
+            float now = JourneyScenario.server(() -> JourneyScenario.me().getHealth());
+            int kits = inventoryCount("underground_city:first_aid_kit");
+            boolean cooling = Minecraft.getInstance().player.getCooldowns().isOnCooldown(kit);
+            Playtest.log("SKILLS first aid: health " + now + ", kits " + kits + ", cooldown " + cooling);
+            health[0] = now;
+            if (now < 15.5f || kits != 1 || !cooling) Playtest.fail("the first aid kit did not heal three hearts once with its cooldown (health " + now + ", kits " + kits + ")");
+            else ThiefScenario.pass("2 a first aid kit used with a real click gives three hearts back, is used up, and starts its thirty-second cooldown");
+        });
+        Playtest.queue("hurt again", () -> {
+            var server = Minecraft.getInstance().getSingleplayerServer();
+            server.execute(() -> { var p = server.getPlayerList().getPlayers().get(0); p.hurt(p.damageSources().generic(), 6f); });
+            ThiefScenario.scripted("six more points of damage dealt on the server");
+        }, () -> Minecraft.getInstance().player.getHealth() <= health[0] - 5.5f, 400);
+        useKit("try the kit again inside its cooldown", kit);
+        Playtest.queue("nothing inside the cooldown", () -> {
+            float now = JourneyScenario.server(() -> JourneyScenario.me().getHealth());
+            int kits = inventoryCount("underground_city:first_aid_kit");
+            Playtest.log("SKILLS first aid inside the cooldown: health " + now + ", kits " + kits);
+            health[0] = now;
+            if (now > 10.5f || kits != 1) Playtest.fail("a kit worked inside its cooldown (health " + now + ", kits " + kits + ")");
+            else ThiefScenario.pass("3 inside the cooldown the kit does nothing and is not used up");
+        });
+        Playtest.wait("the cooldown runs out (thirty seconds)", FirstAidKitItem.COOLDOWN_TICKS + 20);
+        useKit("the kit again after the cooldown", kit);
+        Playtest.queue("after the cooldown it heals again", () -> {
+            float now = JourneyScenario.server(() -> JourneyScenario.me().getHealth());
+            int kits = inventoryCount("underground_city:first_aid_kit");
+            Playtest.log("SKILLS first aid after the cooldown: health " + now + ", kits " + kits);
+            if (now < health[0] + 5.5f || kits != 0) Playtest.fail("the kit did not heal after its cooldown (health " + now + ", kits " + kits + ")");
+            else ThiefScenario.pass("4 after the cooldown the last kit heals three hearts again");
+        });
+        // ---- Shooting
+        Playtest.queue("the pistol and its ammunition", () -> {
+            Playtest.command("give @s tacz:modern_kinetic_gun{GunId:\"tacz:glock_17\",GunFireMode:\"SEMI\",GunCurrentAmmoCount:0} 1");
+            Playtest.command("give @s tacz:ammo{AmmoId:\"tacz:9mm\"} 50");
+            ThiefScenario.scripted("a TaCZ pistol and fifty rounds given by command (a Gunsmith builds or buys them)");
+        }, () -> gunSlot() >= 0 && ammoCount() == 50, 300);
+        Playtest.queue("hold the pistol", () -> {
+            var mc = Minecraft.getInstance();
+            int slot = gunSlot();
+            if (slot > 8) { Playtest.fail("the pistol is not in the hotbar"); return; }
+            mc.player.getInventory().selected = slot;
+            Playtest.focusWindow();
+        });
+        Playtest.wait("draw", 60);
+        Playtest.queue("hold R to reload", () -> Playtest.keyDown("r"));
+        Playtest.wait("keep it down", 4);
+        Playtest.queue("release R and wait for the magazine", () -> Playtest.keyUp("r"), () -> magazine() > 0, 400);
+        final BlockPos[] targetAt = new BlockPos[1];
+        Playtest.queue("clear a lane and set a target block twelve blocks to the south", () -> {
+            BlockPos feet = Minecraft.getInstance().player.blockPosition();
+            targetAt[0] = feet.offset(0, 1, 12);
+            Playtest.command("fill " + (feet.getX() - 1) + " " + feet.getY() + " " + (feet.getZ() + 1) + " " + (feet.getX() + 1) + " " + (feet.getY() + 3) + " " + (feet.getZ() + 13) + " minecraft:air");
+            Playtest.command("setblock " + targetAt[0].getX() + " " + targetAt[0].getY() + " " + targetAt[0].getZ() + " minecraft:target");
+            ThiefScenario.scripted("a firing lane cleared and a target block set twelve blocks away by command");
+        }, () -> Minecraft.getInstance().level.getBlockState(targetAt[0]).is(net.minecraft.world.level.block.Blocks.TARGET), 200);
+        final int[] xp = new int[3];
+        Playtest.queue("Shooting XP before", () -> {
+            xp[0] = JourneyScenario.server(() -> CitizenState.get(JourneyScenario.me().server).find(JourneyScenario.me().getUUID()).map(c -> c.generalXp(GeneralSkills.SHOOTING)).orElse(-1));
+            Playtest.log("SKILLS Shooting XP before " + xp[0]);
+        });
+        fireAt("the first shot at the target", () -> targetAt[0]);
+        Playtest.wait("let the bullet land", 20);
+        Playtest.queue("the hit paid Shooting XP", () -> {
+            xp[1] = JourneyScenario.server(() -> CitizenState.get(JourneyScenario.me().server).find(JourneyScenario.me().getUUID()).map(c -> c.generalXp(GeneralSkills.SHOOTING)).orElse(-1));
+            Playtest.log("SKILLS Shooting XP after the first hit " + xp[1]);
+            if (xp[1] <= xp[0]) Playtest.fail("a TaCZ hit on a target block twelve blocks away paid no Shooting XP (" + xp[0] + " -> " + xp[1] + ")");
+            else ThiefScenario.pass("5 a TaCZ bullet that hits a target block twelve blocks away pays " + (xp[1] - xp[0]) + " Shooting XP");
+        });
+        fireAt("a second shot at once", () -> targetAt[0]);
+        Playtest.wait("let it land", 10);
+        Playtest.queue("the same block inside two seconds pays nothing", () -> {
+            int now = JourneyScenario.server(() -> CitizenState.get(JourneyScenario.me().server).find(JourneyScenario.me().getUUID()).map(c -> c.generalXp(GeneralSkills.SHOOTING)).orElse(-1));
+            Playtest.log("SKILLS Shooting XP after a second hit inside two seconds " + now);
+            xp[2] = now;
+            if (now != xp[1]) Playtest.fail("a second hit on the same block inside two seconds paid (" + xp[1] + " -> " + now + ")");
+            else ThiefScenario.pass("6 a second hit on the same block inside two seconds pays nothing");
+        });
+        Playtest.wait("more than two seconds", 60);
+        fireAt("a shot after the pause", () -> targetAt[0]);
+        Playtest.wait("let it land", 20);
+        Playtest.queue("a later hit pays again", () -> {
+            int now = JourneyScenario.server(() -> CitizenState.get(JourneyScenario.me().server).find(JourneyScenario.me().getUUID()).map(c -> c.generalXp(GeneralSkills.SHOOTING)).orElse(-1));
+            Playtest.log("SKILLS Shooting XP after the pause " + now);
+            if (now <= xp[2]) Playtest.fail("a hit after the pause paid nothing (" + xp[2] + " -> " + now + ")");
+            else ThiefScenario.pass("7 a hit after the pause pays again (" + (now - xp[2]) + ")");
+        });
+        Playtest.queue("release the aim", () -> Playtest.mouseButton(3, false));
+        Playtest.queue("screenshot", () -> Playtest.screenshotNextFrame("uc-skills-target"));
+        Playtest.wait("frame", 8);
+    }
+
+    /** Selects the first aid kit and holds the right mouse button for longer than its use. */
+    private static void useKit(String label, net.minecraft.world.item.Item kit) {
+        Playtest.queue(label, () -> {
+            var mc = Minecraft.getInstance();
+            int slot = -1;
+            for (int i = 0; i < 9; i++) if (mc.player.getInventory().getItem(i).is(kit)) slot = i;
+            if (slot < 0) { Playtest.fail("no first aid kit in the hotbar"); return; }
+            mc.player.getInventory().selected = slot;
+            mc.player.setXRot(60f);   // at the floor: a right click must not land on a block
+            Playtest.focusWindow();
+            Playtest.mouseButton(3, true);
+        });
+        Playtest.wait("hold it", FirstAidKitItem.USE_TICKS + 10);
+        Playtest.queue("release", () -> Playtest.mouseButton(3, false));
+        Playtest.wait("let the server answer", 10);
+    }
+
+    /** Faces a block's centre, aims with the right button and pulls the trigger with the left until a round leaves the magazine. */
+    private static void fireAt(String label, java.util.function.Supplier<BlockPos> block) {
+        final int[] before = new int[1];
+        Playtest.queue(label + ": aim", () -> { lookAtBlock(block.get()); Playtest.mouseButton(3, true); }, () -> { lookAtBlock(block.get()); return aimProgress() > 0.9f; }, 200);
+        Playtest.queue(label + ": fire", () -> { before[0] = magazine(); lookAtBlock(block.get()); Playtest.mouseButton(1, true); }, () -> magazine() < before[0], 200);
+        Playtest.queue(label + ": let go of the trigger", () -> Playtest.mouseButton(1, false));
+    }
+
+    private static void lookAtBlock(BlockPos b) {
+        var player = Minecraft.getInstance().player;
+        Vec3 delta = Vec3.atCenterOf(b).subtract(player.getEyePosition());
+        float yaw = (float) Math.toDegrees(Math.atan2(-delta.x, delta.z));
+        float pitch = (float) -Math.toDegrees(Math.atan2(delta.y, Math.hypot(delta.x, delta.z)));
+        player.setYRot(yaw); player.yHeadRot = yaw; player.setXRot(pitch);
+    }
+
     private static void gun() {
         final net.minecraft.world.item.ItemStack[] gunRef = new net.minecraft.world.item.ItemStack[1];
         Playtest.queue("survival mode, the pistol and its ammunition", () -> {

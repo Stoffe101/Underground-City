@@ -261,6 +261,7 @@ public final class CitizenState extends SavedData {
         public int generalLevel(String skill) {
             return ProgressionRules.levelForXp(generalXp.getOrDefault(skill, 0));
         }
+        public int generalXp(String skill) { return generalXp.getOrDefault(skill, 0); }
         /** Thievery XP and the Thief level it gives (D-143): a track of its own, never the career's. */
         public int thiefXp() { return generalXp.getOrDefault(ProgressionRules.THIEVERY, 0); }
         public int thiefLevel() { return ProgressionRules.thiefLevelForXp(thiefXp()); }

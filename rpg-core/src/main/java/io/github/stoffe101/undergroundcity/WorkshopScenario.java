@@ -265,7 +265,26 @@ final class WorkshopScenario {
         shot("7-vat-tier2-block");
     }
 
+    /** The shortage variant (eleventh pass, {@code -PucPtShortage=true}): the pub's wine runs short before the sale, so the notice, the barkeeper's ask and the short price are seen. */
+    static final boolean SHORTAGE = Boolean.getBoolean("uc.playtest.shortage");
+
     private static void sell() {
+        if (SHORTAGE) {
+            Playtest.queue("the pub's customers buy its wine down to short (scripted)", () -> {
+                server(() -> {
+                    var srv = mc().getSingleplayerServer();
+                    WorkOrderLedger ledger = WorkOrderLedger.get(srv);
+                    RegionalStock line = RegionalCatalog.INSTANCE.find(WINE_LINE);
+                    ledger.setRegionalUnitsForTest(line, Shortages.mark(line) + 1);
+                    int before = ledger.regionalUnits(line);
+                    if (ledger.drawDown(line, 1) == 1) Shortages.drawnDown(srv, line, before, before - 1);
+                    return null;
+                });
+                scripted("the pub's wine shelf was set one above its short mark and one customer's purchase taken off it on the server, as the city's customers do in play");
+            });
+            until("the shortage notice reaches the client", () -> ClientNotice.lastTitle.endsWith("is short"), 200);
+            Playtest.queue("the Vintner was told", () -> pass("8a when its customers buy the pub's wine short, the Vintner in the game is told by a notice: \"" + ClientNotice.lastTitle + "\""));
+        }
         Playtest.queue("before the sale", () -> {
             F.walletBefore = JourneyScenario.wallet();
             F.shelfBefore = server(() -> WorkOrderLedger.get(mc().getSingleplayerServer()).regionalUnits(RegionalCatalog.INSTANCE.find(WINE_LINE)));
@@ -305,6 +324,12 @@ final class WorkshopScenario {
         ThiefScenario.walkOrTeleport("walk across the public floor to the counter", () -> floor[0] == null ? mc().player.position() : floor[0], 0.6, 900);
         JourneyScenario.speakTo("the barkeeper", WorkshopScenario::keeper);
         shot("8-barkeeper");
+        if (SHORTAGE) Playtest.queue("the barkeeper asks for what is short", () -> {
+            String said = mc().screen instanceof DialogueScreen d ? d.text() : "";
+            Playtest.log("WORKSHOP the barkeeper says: " + said);
+            if (!said.contains("nearly out")) Playtest.fail("the barkeeper of a pub whose wine is short does not ask for it");
+            else pass("8b the barkeeper asks for it: \"" + said + "\"");
+        });
         JourneyScenario.choose("What do you sell?", "terminal");
         JourneyScenario.click("TRADE", true);
         Playtest.wait("draw", 10);
@@ -313,6 +338,13 @@ final class WorkshopScenario {
             for (var o : t.data().offers()) Playtest.log("WORKSHOP pub offer " + o.id() + " " + o.item() + " " + o.price() + " each, " + o.stock() + "/" + o.capacity() + (o.pays() > 0 ? ", buys at " + o.pays() + ", carried " + o.carried() : ""));
             boolean wine = t.data().offers().stream().anyMatch(o -> o.id().equals(WINE_LINE) && o.pays() > 0 && o.carried() == 3);
             if (!wine) Playtest.fail("the pub's counter does not offer to buy the three bottles");
+            if (SHORTAGE) {
+                RegionalStock line = RegionalCatalog.INSTANCE.find(WINE_LINE);
+                int shortPays = Shortages.shortPays(line, RegionalCatalog.INSTANCE.supply(WINE_LINE).pays());
+                boolean premium = t.data().offers().stream().anyMatch(o -> o.id().equals(WINE_LINE) && o.pays() == shortPays);
+                if (!premium) Playtest.fail("the counter does not show the short price of " + shortPays + " a bottle");
+                else pass("8c the pub's counter shows it pays " + shortPays + " a bottle while its wine is short (" + RegionalCatalog.INSTANCE.supply(WINE_LINE).pays() + " otherwise)");
+            }
         });
         shot("9-pub-counter");
         Playtest.queue("click Sell on the wine line", () -> {
@@ -327,6 +359,11 @@ final class WorkshopScenario {
             Playtest.log("WORKSHOP sold: wallet " + F.walletBefore + " -> " + w + ", shelf " + F.shelfBefore + " -> " + shelf + ", Vintner XP " + (c == null ? -1 : c.careerXp()));
             if (w - F.walletBefore < 3 * 14 - 0.01 || shelf != F.shelfBefore + 3) Playtest.fail("the pub did not pay for three bottles and shelve them");
             else pass("8 the pub buys the three bottles over its counter (a real click on Sell): +" + Math.round(w - F.walletBefore) + " credits, its wine shelf " + F.shelfBefore + " -> " + shelf);
+            if (SHORTAGE) {
+                int shortPays = Shortages.shortPays(RegionalCatalog.INSTANCE.find(WINE_LINE), RegionalCatalog.INSTANCE.supply(WINE_LINE).pays());
+                if (Math.abs(w - F.walletBefore - 3 * shortPays) > 0.01) Playtest.fail("the short shelf did not pay " + shortPays + " a bottle (" + (w - F.walletBefore) + " for three)");
+                else pass("8d selling into the shortage paid " + shortPays + " a bottle, a quarter more");
+            }
         });
         shot("10-pub-sold");
         JourneyScenario.closeScreen("close the counter");
