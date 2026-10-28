@@ -114,6 +114,33 @@ class PortTheFixture(unittest.TestCase):
                                                          encoding="utf-8")
         return lc
 
+    def test_a_building_of_one_part_without_conditions_is_built_once(self):
+        # Lost Cities 7 builds storeys 0 to floors and puts a part with no conditions up on every one: a cabin on its own mound, raised to two floors and given two
+        # cellars, came out as five copies whose mounds buried the bedrooms below (eleventh pass, a private generated world)
+        lc = self.source / "data" / "fixturecity" / "lostcities"
+        (lc / "parts" / "fixture_cabin.json").write_text(json.dumps({"xsize": 2, "zsize": 2, "slices": [["##", "##"]] * 9}), encoding="utf-8")
+        (lc / "buildings" / "fixture_cabin.json").write_text(json.dumps({"minfloors": 1, "maxfloors": 1, "parts": [{"part": "fixturecity:fixture_cabin"}]}), encoding="utf-8")
+        (lc / "buildings" / "fixture_cellared.json").write_text(json.dumps({"minfloors": 1, "maxfloors": 1, "maxcellars": 1, "parts": [{"part": "fixturecity:fixture_cabin"}]}),
+                                                              encoding="utf-8")
+        (lc / "parts" / "fixture_tall_ground.json").write_text(json.dumps({"xsize": 2, "zsize": 2, "slices": [["##", "##"]] * 6}), encoding="utf-8")
+        (lc / "parts" / "fixture_tall_floor.json").write_text(json.dumps({"xsize": 2, "zsize": 2, "slices": [["##", "##"]] * 6}), encoding="utf-8")
+        (lc / "parts" / "fixture_tall_top.json").write_text(json.dumps({"xsize": 2, "zsize": 2, "slices": [["##", "##"]] * 6}), encoding="utf-8")
+        (lc / "buildings" / "fixture_tall.json").write_text(json.dumps({"minfloors": 1, "maxfloors": 1, "parts": [
+            {"part": "fixturecity:fixture_tall_ground", "ground": True, "top": False}, {"part": "fixturecity:fixture_tall_floor", "ground": False, "top": False},
+            {"part": "fixturecity:fixture_tall_top", "top": True, "ground": False}]}), encoding="utf-8")
+        result = porter.port(self.source, self.dest)
+        out = self.dest / "data" / "fixturecity" / "lostcities" / "buildings"
+        cabin = json.loads((out / "fixture_cabin.json").read_text(encoding="utf-8"))
+        self.assertEqual((cabin["minfloors"], cabin["maxfloors"], cabin["mincellars"], cabin["maxcellars"]), (0, 0, 0, 0), "storey 0 alone, and no cellar")
+        self.assertTrue(cabin["overrideFloors"], "Lost Cities 7 reads the building's own numbers only when it overrides")
+        cellared = json.loads((out / "fixture_cellared.json").read_text(encoding="utf-8"))
+        self.assertEqual((cellared["minfloors"], cellared["maxfloors"], cellared["maxcellars"]), (0, 0, 1), "cellars the building names are kept")
+        self.assertNotIn("mincellars", cellared)
+        tall = json.loads((out / "fixture_tall.json").read_text(encoding="utf-8"))
+        self.assertEqual((tall["minfloors"], tall["maxfloors"]), (2, 2), "a ground, a middle and a top part still need storeys 0 to 2")
+        self.assertNotIn("maxcellars", tall)
+        self.assertEqual(result["counts"]["single_structures"], 2)
+
     def test_a_character_the_parts_take_from_the_packs_style_is_given_to_the_building(self):
         # the pack's style palette defines "H"; this game's city styles replace the pack's, so without the building's own definition Lost Cities throws and the lot stays empty
         self.add_style_pack()

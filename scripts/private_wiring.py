@@ -46,11 +46,13 @@ PUBLIC = ROOT / "content/generated/world-furnished/pack"
 FLOOR = 6
 COVERED_STEP = 3   # BuildingGuard.COVERED_STEP
 # raised when a plan or a city file changes in a way an older wiring lacks; private_c70.py check refuses a staged pack wired by an older one
-WIRING_VERSION = 12
+WIRING_VERSION = 13
 SPEC = re.compile(r"^(?P<name>[a-z0-9_.-]+:[a-z0-9_./-]+)(?:\[(?P<props>[^\]]*)\])?$")
 # what a block is for a household, by words in its id (furniture mods name their blocks plainly)
 KINDS = [("bed", re.compile(r"_bed$|:bed$|fancy_bed")), ("stove", re.compile(r"furnace|smoker|stove|oven|cooking_pot|range_hood|microwave")),
-         ("seat", re.compile(r"chair|sofa|stool|couch|bench|armchair")), ("counter", re.compile(r"counter|register|till"))]
+         ("seat", re.compile(r"chair|sofa|stool|couch|bench|armchair")), ("counter", re.compile(r"counter|register|till")),
+         # a bathroom's fittings: no household uses this spot; the photo tour does (photo_tour_plan.py)
+         ("bath", re.compile(r"toilet|bathtub|_bath$|shower|bidet|washbasin"))]
 USES = {"house", "flats", "shop", "workshop", "warehouse", "office", "club", "terrace"}
 
 
@@ -97,7 +99,7 @@ def layers(pack: Pack, building_id: str) -> tuple[list[tuple[int, list[list[str]
     building = pack.doc("buildings", building_id)
     if building is None:
         raise SystemExit(f"no building {building_id} in {pack.root}")
-    floors = max(1, int(building.get("minfloors", 1)))
+    floors = max(0, int(building.get("minfloors", 1)))   # storeys 0 to floors, as Lost Cities 7 builds them; 0 is a building of one structure (porter 13)
     base = pack.palette(building.get("refpalette"))
     base.update({str(e.get("char")): e.get("block", "") for e in inline(building) if isinstance(e, dict)})
     out = []

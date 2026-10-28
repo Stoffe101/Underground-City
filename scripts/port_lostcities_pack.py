@@ -28,7 +28,8 @@ What a port does to every palette entry (``data/<ns>/lostcities/palettes/*.json`
   it must not be loaded).
 
 Parts' slices, multibuildings and citystyles are copied unchanged. A building's floors are made explicit for Lost Cities 7 (``overrideFloors``) and
-raised when its middle parts (a roof, an upper storey) would otherwise never be built. A character a building's parts take from the pack's own
+raised when its middle parts (a roof, an upper storey) would otherwise never be built; a building of one part with no conditions is one structure, built once
+(storey 0, no cellars). A character a building's parts take from the pack's own
 city-style palettes (``styles/*.json``), which no palette of the building or its parts defines, is given to the building's palette: this game's city
 styles choose the look, and a character none of them defines makes Lost Cities throw and leave the lot empty. World styles are left out unless ``--keep-worldstyles``
 (then copied and flagged for a person to review): Lost Cities 7 loads them as a registry, and one that names a biome of a mod that is not loaded
@@ -52,7 +53,7 @@ from citykit import CHAR_POOL, LOST_CITIES_RESERVED, LEGACY_RENAMED, as_written 
 
 REPORT = "uc-port-report.json"
 # raised when a port changes in a way an older port lacks; private_c70.py check refuses a staged pack made by an older one
-PORTER_VERSION = 12
+PORTER_VERSION = 13
 PACK_FORMAT_1201 = 15
 
 # 1.18.2 -> 1.20.1 changes that matter for building palettes (vanilla). A rule maps an old id to a new one, optionally with property renames.
@@ -143,7 +144,7 @@ class Porter:
         self.counts = {"palettes": 0, "entries": 0, "renamed": 0, "create_replaced": 0, "foreign_replaced": 0, "spawners_removed": 0,
                        "mob_markers_removed": 0, "loot_dropped": 0, "files_copied": 0, "worldstyles_to_review": 0, "worldstyles_left_out": 0,
                        "kept_but_gone": 0, "properties_dropped": 0, "by_rule": 0, "by_sibling": 0, "by_shape": 0, "to_air": 0,
-                       "floors_made_explicit": 0, "floors_raised": 0, "style_characters_renamed": 0, "parts_with_style_characters_renamed": 0,
+                       "floors_made_explicit": 0, "floors_raised": 0, "single_structures": 0, "style_characters_renamed": 0, "parts_with_style_characters_renamed": 0,
                        "multi_parts_given_building_characters": 0, "multi_part_characters_given": 0,
                        "buildings_given_style_characters": 0, "style_characters_given": 0, "legacy_names_kept": 0}
         self.foreign: dict[str, str] = {}      # replaced block id -> what it became
@@ -260,6 +261,16 @@ class Porter:
         if "overrideFloors" not in building:
             building["overrideFloors"] = True
             self.counts["floors_made_explicit"] += 1
+        parts = [p for p in building["parts"] if isinstance(p, dict)]
+        if len(parts) == 1 and set(parts[0]) == {"part"}:
+            # one part with no conditions is the whole building (a cabin on its own mound, a food truck): Lost Cities 7 builds storeys 0 to ``floors`` and puts that
+            # part up again every six blocks, so each copy's ground buried the rooms of the copy below (a generated cabin: four of its five bedrooms full of dirt).
+            # Storey 0 alone, and no cellars unless the building names them.
+            building["minfloors"] = building["maxfloors"] = 0
+            if "mincellars" not in building and "maxcellars" not in building:
+                building["mincellars"] = building["maxcellars"] = 0
+            self.counts["single_structures"] += 1
+            return
         if middle:
             needed = max(int(p.get("floor", 1)) for p in middle) + 1
             if int(building.get("maxfloors", building.get("minfloors", 1))) < needed:
