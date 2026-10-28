@@ -176,17 +176,20 @@ public final class TownspersonEntity extends PathfinderMob {
      * Steps straight to {@code to} without a path (through a doorway the navigation will not plan through, since these people never open doors themselves): the door is opened for them by
      * {@link PopulationService} or {@link HouseholdService}.
      */
-    void stepThrough(BlockPos to) {
+    void stepThrough(BlockPos to) { stepThrough(net.minecraft.world.phys.Vec3.atBottomCenterOf(to)); }
+
+    /** Steps straight to a point, not only a block's centre: through the free part of a doorway an open door's panel narrows ({@link PopulationService}). */
+    void stepThrough(net.minecraft.world.phys.Vec3 to) {
         errand = null;
         holding = false;
         getNavigation().stop();
         if (!to.equals(stepping)) stepUntil = tickCount + 100;
         stepping = to;
-        getMoveControl().setWantedPosition(to.getX() + 0.5, to.getY(), to.getZ() + 0.5, 0.6);
+        getMoveControl().setWantedPosition(to.x, to.y, to.z, 0.6);
     }
 
     /** Where {@link #stepThrough} is taking this body, until it is there (or five seconds have passed); null when it is not stepping. */
-    private BlockPos stepping;
+    private net.minecraft.world.phys.Vec3 stepping;
     private int stepUntil;
 
     /**
@@ -200,9 +203,9 @@ public final class TownspersonEntity extends PathfinderMob {
         @Override public boolean requiresUpdateEveryTick() { return true; }   // a goal is otherwise ticked every other tick, and a move lasts one
         @Override public void tick() {
             if (stepping == null) return;
-            double dx = getX() - (stepping.getX() + 0.5), dz = getZ() - (stepping.getZ() + 0.5);
-            if (dx * dx + dz * dz < 0.2 * 0.2 || tickCount > stepUntil) { stepping = null; return; }
-            getMoveControl().setWantedPosition(stepping.getX() + 0.5, stepping.getY(), stepping.getZ() + 0.5, 0.6);
+            double dx = getX() - stepping.x, dz = getZ() - stepping.z;
+            if (dx * dx + dz * dz < 0.15 * 0.15 || tickCount > stepUntil) { stepping = null; return; }
+            getMoveControl().setWantedPosition(stepping.x, stepping.y, stepping.z, 0.6);
         }
     }
 

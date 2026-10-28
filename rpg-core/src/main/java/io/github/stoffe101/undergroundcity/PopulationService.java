@@ -211,9 +211,10 @@ public final class PopulationService {
             else if (now - w.lastMoved > 100) {
                 // no progress for five seconds: another errand, and after three of those somewhere to go in, or away out of sight
                 w.lastMoved = now;
-                if (w.business != null) LOGGER.info("[UC-POPULATION] a customer for business {} is stuck at {} on the way to {} ({}, {})", w.business, body.blockPosition().toShortString(),
+                if (w.business != null) LOGGER.info("[UC-POPULATION] a customer for business {} is stuck at {} on the way to {} ({}, {})", w.business, body.position(),
                     w.goal == null ? "nowhere" : w.goal.toShortString(), w.errand, w.phase);
                 if (++w.stuck >= 3) { stuckGivenUp++; return goIn(level, body, w, players, now, hour) || !seen(level, players, body.blockPosition()) ? quietly(level, body, w, players) : rest(body, w, now, 200); }
+                if (w.phase == Phase.ENTER && w.business != null) return true;   // a counter's customer at its door: the step's own ten seconds decide
                 if (w.phase == Phase.ENTER) return false;
                 return newErrand(level, body, w, players, now, hour);
             }
@@ -244,7 +245,8 @@ public final class PopulationService {
                     // a customer of a player's counter, through its street door: square onto the door's street side first, then straight through, then to the counter
                     // (business run 5: a path planned from the threshold never went in; run 6: a step in from two blocks off at an angle met the wall beside the door)
                     BlockPos outside = w.door.lower().relative(w.door.out());
-                    if (w.goal.equals(outside) && near(body, outside, 0.45)) { w.goal = w.door.lower().relative(w.door.out().getOpposite()); body.stepThrough(w.goal); }
+                    if (w.goal.equals(outside) && near(body, outside, 0.45)) w.goal = w.door.lower().relative(w.door.out().getOpposite());
+                    body.stepThrough(throughDoorway(level, w.door, w.goal));
                     if (!w.goal.equals(outside) && near(body, w.goal, 0.8)) {
                         w.errand = "business"; w.phase = Phase.WALK; w.goal = w.counterFront; w.lastMoved = now;
                         body.errand(w.goal, 0.55);
@@ -325,6 +327,21 @@ public final class PopulationService {
             if (ledger.drawDown(line, 1) > 0) { shelfPurchases++; Shortages.drawnDown(level.getServer(), line, before, before - 1); }
         }
         catch (RuntimeException error) { LOGGER.warn("A customer's purchase off a shelf was not saved: {}", error.toString()); }   // a ledger that cannot write never stops the street
+    }
+
+    /**
+     * The point in {@code cell} (a cell in line with the door, outside or inside it) that lines a body up with the free part of the doorway: an open door's panel takes 3/16 of one side, which
+     * leaves a body aimed at the cell's centre a hundredth of a block to spare (business run 9 stuck there).
+     */
+    static Vec3 throughDoorway(ServerLevel level, TechService.StreetDoor door, BlockPos cell) {
+        double ox = 0.5, oz = 0.5;
+        net.minecraft.world.phys.shapes.VoxelShape shape = level.getBlockState(door.lower()).getCollisionShape(level, door.lower());
+        if (!shape.isEmpty()) {
+            net.minecraft.world.phys.AABB b = shape.bounds();
+            if (door.out().getAxis() == Direction.Axis.Z && b.maxX - b.minX < 0.5) ox = b.minX < 0.1 ? (b.maxX + 1) / 2 : b.minX / 2;
+            if (door.out().getAxis() == Direction.Axis.X && b.maxZ - b.minZ < 0.5) oz = b.minZ < 0.1 ? (b.maxZ + 1) / 2 : b.minZ / 2;
+        }
+        return new Vec3(cell.getX() + ox, cell.getY(), cell.getZ() + oz);
     }
 
     private static boolean near(TownspersonEntity body, BlockPos pos, double r) {
