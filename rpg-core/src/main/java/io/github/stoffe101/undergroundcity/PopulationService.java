@@ -241,12 +241,18 @@ public final class PopulationService {
                 body.stepThrough(w.goal);
                 if (w.door != null) HouseholdService.openDoorBriefly(level, w.door.lower(), 20);
                 if (w.business != null) {
-                    // a customer of a player's counter, through its street door: once inside, to the counter (business run 5: a path planned from the threshold never went in)
-                    if (near(body, w.goal, 0.8)) {
+                    // a customer of a player's counter, through its street door: square onto the door's street side first, then straight through, then to the counter
+                    // (business run 5: a path planned from the threshold never went in; run 6: a step in from two blocks off at an angle met the wall beside the door)
+                    BlockPos outside = w.door.lower().relative(w.door.out());
+                    if (w.goal.equals(outside) && near(body, outside, 0.45)) { w.goal = w.door.lower().relative(w.door.out().getOpposite()); body.stepThrough(w.goal); }
+                    if (!w.goal.equals(outside) && near(body, w.goal, 0.8)) {
                         w.errand = "business"; w.phase = Phase.WALK; w.goal = w.counterFront; w.lastMoved = now;
                         body.errand(w.goal, 0.55);
                         LOGGER.info("[UC-POPULATION] a customer is in at {} and goes to the counter at {}", body.blockPosition().toShortString(), w.goal.toShortString());
-                    } else if (now >= w.until) return newErrand(level, body, w, players, now, hour);
+                    } else if (now >= w.until) {
+                        LOGGER.info("[UC-POPULATION] a customer did not get in at {}: at {} stepping for {}", w.door.lower().toShortString(), body.blockPosition().toShortString(), w.goal.toShortString());
+                        return newErrand(level, body, w, players, now, hour);
+                    }
                     return true;
                 }
                 if (near(body, w.goal, 0.8) || now >= w.until) { entered++; return false; }
@@ -337,7 +343,7 @@ public final class PopulationService {
             case "business_door" -> {
                 // at the street door of a player's business: through it, then to the counter
                 HouseholdService.openDoorBriefly(level, w.door.lower(), 30);
-                w.phase = Phase.ENTER; w.goal = w.door.lower().relative(w.door.out().getOpposite()); w.until = now + 100; w.lastMoved = now;
+                w.phase = Phase.ENTER; w.goal = w.door.lower().relative(w.door.out()); w.until = now + 200; w.lastMoved = now;
                 body.stepThrough(w.goal);
                 LOGGER.info("[UC-POPULATION] a customer goes in at {} for the counter at {}", w.door.lower().toShortString(), w.counterFront.toShortString());
                 return true;
