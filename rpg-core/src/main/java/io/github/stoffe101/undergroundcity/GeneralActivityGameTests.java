@@ -76,6 +76,28 @@ public final class GeneralActivityGameTests {
         helper.succeed();
     }
 
+    /** The hour's cap is kept with the world (eleventh pass): a restart and a re-login used to start a new hour; now neither does, and the next hour of play pays again. */
+    @GameTest(template = "empty")
+    public static void aCapReachedBeforeARestartOrAReloginIsStillReachedAfterIt(GameTestHelper helper) {
+        GeneralActivity.clearForTest();
+        ServerPlayer runner = citizen(helper, "uc_capkeeper");
+        long now = 9_000_000;
+        int paid = 0;
+        for (int i = 0; i < 300; i++) paid += GeneralActivity.earn(runner, GeneralActivity.track(runner.getUUID()), GeneralSkills.DRIVING, 2.8, GeneralActivity.DRIVING_CAP, now + i * 100L);
+        check(paid == GeneralActivity.DRIVING_CAP, "the hour paid " + paid);
+        // logging out and in again forgets the movement window, not the hour
+        GeneralActivity.clearForTest();
+        check(GeneralActivity.earn(runner, GeneralActivity.track(runner.getUUID()), GeneralSkills.DRIVING, 5, GeneralActivity.DRIVING_CAP, now + 40_000) == 0, "a re-login started a new hour");
+        // a restart reads the caps back from the world
+        HourlyCaps saved = HourlyCaps.get(runner.server);
+        HourlyCaps read = HourlyCaps.load(saved.save(new net.minecraft.nbt.CompoundTag()));
+        String key = runner.getUUID() + "|" + GeneralSkills.DRIVING;
+        check(read.room(key, GeneralActivity.DRIVING_CAP, now + 40_000) == 0, "after a restart the cap has room again");
+        // an hour of the world's active time later it pays again; time with nobody playing does not count, so being away costs nothing either way
+        check(GeneralActivity.earn(runner, GeneralActivity.track(runner.getUUID()), GeneralSkills.DRIVING, 5, GeneralActivity.DRIVING_CAP, now + HourlyCaps.HOUR_TICKS + 1) == 5, "the next hour did not pay");
+        helper.succeed();
+    }
+
     @GameTest(template = "empty")
     public static void theHourlyCapHoldsAndANewHourPaysAgain(GameTestHelper helper) {
         GeneralActivity.clearForTest();
@@ -144,7 +166,7 @@ public final class GeneralActivityGameTests {
     /** A city's good name (D-204): earned within its hourly cap, a discount only in that city from 50, lost by an arrest, and kept by a save. */
     @GameTest(template = "empty")
     public static void aCitysGoodNameIsEarnedSlowlyGivesASmallDiscountThereAndIsLostByAnArrest(GameTestHelper helper) {
-        CityStanding.clearForTest();
+        CityStanding.clearForTest(helper.getLevel().getServer());
         ServerPlayer player = citizen(helper, "uc_standing");
         CitizenState state = CitizenState.get(player.server);
         int paid = 0;

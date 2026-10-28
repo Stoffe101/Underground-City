@@ -35,7 +35,7 @@ A hit on a `minecraft:target` block anywhere pays: by a TaCZ bullet (TaCZ's own 
 
 ## Limits
 
-- The caps and the window state are in memory. A restart starts a new hour, so restarting the server resets the cap (an operator's choice, not a player's).
+- What each skill has earned in its hour is kept with the world (`HourlyCaps`, eleventh pass; `GeneralActivityGameTests.aCapReachedBeforeARestartOrAReloginIsStillReachedAfterIt`). Neither a restart nor logging out and in again starts a new hour any more (both used to). The hour is one of the world's active time, the clock that runs while somebody plays, so time away neither fills nor empties a cap. A city's good name (D-204) keeps its hourly cap the same way. Only the ten-second movement window is in memory.
 - The Shooting effect on **TaCZ bullets** is applied to the bullet entity when it joins the world (`EntityJoinLevelEvent`). It is GameTested on the vector maths only and has not been measured through a real client with TaCZ. Whether TaCZ's client shows the bullet's tracer on the corrected path is unverified.
 - A vehicle mod that seats its driver in a way Forge cannot see (no vehicle entity) earns no Driving. Immersive Vehicles' and Modern Life's vehicles were not driven in a test.
 - Fitness changes the walking speed attribute. A mod or effect that sets the same attribute stacks with it as Minecraft stacks modifiers.

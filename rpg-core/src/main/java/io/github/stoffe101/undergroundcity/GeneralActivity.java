@@ -39,7 +39,8 @@ import java.util.UUID;
  *   centre of the face, the more; the same block pays once in two seconds; at most its cap in an hour. A shot at a person or a creature never pays.</li>
  * </ul>
  *
- * The caps and the window state are kept in memory: a restart starts a new hour (written down in {@code docs/technical/general-skills.md}).
+ * The movement window is kept in memory; what each skill has earned in its hour is kept with the world ({@link HourlyCaps}, eleventh pass): a restart or logging out and in
+ * again leaves the cap where it was (it used to start a new hour), and the hour is one of the world's active time, so time away neither fills nor empties it.
  */
 @Mod.EventBusSubscriber(modid = UndergroundCity.MOD_ID)
 public final class GeneralActivity {
@@ -62,9 +63,7 @@ public final class GeneralActivity {
         float yaw, pitch;
         double turned;
         long lookedAt = Long.MIN_VALUE / 2;
-        final Map<String, Integer> earned = new HashMap<>();
         final Map<String, Double> carry = new HashMap<>();
-        long hourStart;
         final Map<Long, Long> targets = new HashMap<>();
     }
 
@@ -117,8 +116,9 @@ public final class GeneralActivity {
         if (++t.samples < WINDOW_SAMPLES) return;
         double net = Math.hypot(at.x - t.start.x, at.z - t.start.z);
         if (!t.broken && now - t.lookedAt <= LOOK_TICKS && mode != Mode.NONE) {
-            if (mode == Mode.FOOT) earn(player, t, GeneralSkills.FITNESS, Math.min(net, FOOT_WINDOW_MAX) / FOOT_BLOCKS_PER_XP, FITNESS_CAP, now);
-            else earn(player, t, GeneralSkills.DRIVING, Math.min(net, DRIVE_WINDOW_MAX) / DRIVE_BLOCKS_PER_XP, DRIVING_CAP, now);
+            long clock = HourlyCaps.clock(player.server);
+            if (mode == Mode.FOOT) earn(player, t, GeneralSkills.FITNESS, Math.min(net, FOOT_WINDOW_MAX) / FOOT_BLOCKS_PER_XP, FITNESS_CAP, clock);
+            else earn(player, t, GeneralSkills.DRIVING, Math.min(net, DRIVE_WINDOW_MAX) / DRIVE_BLOCKS_PER_XP, DRIVING_CAP, clock);
         }
         begin(t, at, mode);
         applyFitness(player);
@@ -132,16 +132,17 @@ public final class GeneralActivity {
         t.broken = false;
     }
 
-    /** Pays the whole XP of {@code amount} (the fraction is carried to the next window) within the skill's hourly cap; returns what was paid. */
-    static int earn(ServerPlayer player, Track t, String skill, double amount, int cap, long now) {
-        if (now - t.hourStart >= HOUR_TICKS) { t.hourStart = now; t.earned.clear(); }
+    /** Pays the whole XP of {@code amount} (the fraction is carried to the next window) within the skill's hourly cap; returns what was paid. {@code clock}: the world's active clock. */
+    static int earn(ServerPlayer player, Track t, String skill, double amount, int cap, long clock) {
+        HourlyCaps caps = HourlyCaps.get(player.server);
+        String key = player.getUUID() + "|" + skill;
         double total = amount + t.carry.getOrDefault(skill, 0.0);
         int whole = (int) Math.floor(total);
-        int room = Math.max(0, cap - t.earned.getOrDefault(skill, 0));
+        int room = caps.room(key, cap, clock);
         int paid = Math.min(whole, room);
         t.carry.put(skill, paid < whole ? 0.0 : total - whole);
         if (paid <= 0) return 0;
-        t.earned.merge(skill, paid, Integer::sum);
+        caps.spend(key, paid, clock);
         GeneralSkills.awardQuietly(player, skill, paid);
         return paid;
     }
@@ -170,7 +171,7 @@ public final class GeneralActivity {
         if (last != null && now - last < TARGET_COOLDOWN_TICKS) return 0;
         t.targets.put(target.asLong(), now);
         if (t.targets.size() > 64) t.targets.entrySet().removeIf(e -> now - e.getValue() >= TARGET_COOLDOWN_TICKS);
-        return earn(shooter, t, GeneralSkills.SHOOTING, GeneralSkills.shotXp(score), SHOOTING_CAP, now);
+        return earn(shooter, t, GeneralSkills.SHOOTING, GeneralSkills.shotXp(score), SHOOTING_CAP, HourlyCaps.clock(shooter.server));
     }
 
     /** An arrow a player shot landing on a target block (TaCZ's bullets come through {@link RangeService}). */

@@ -3,8 +3,6 @@ package io.github.stoffe101.undergroundcity;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -24,8 +22,7 @@ final class CityStanding {
     static final int MAX = 100, WELL_SPOKEN = 25, RESPECTED = 50;
     static final int DELIVERY = 1, CIVIC = 3, SHORTAGE = 2, ARREST = 15, HOURLY_CAP = 10;
     static final int DISCOUNT_PERCENT = 2;
-    static final long HOUR_TICKS = 72_000;
-    private static final Map<String, long[]> HOUR = new HashMap<>();   // player|city -> {hour start, earned}
+    static final long HOUR_TICKS = HourlyCaps.HOUR_TICKS;
 
     private CityStanding() {}
 
@@ -40,12 +37,13 @@ final class CityStanding {
         CitizenState state = CitizenState.get(player.server);
         CitizenState.Citizen citizen = state.find(player.getUUID()).orElse(null);
         if (citizen == null) return 0;
-        long now = player.server.getTickCount();
-        long[] hour = HOUR.computeIfAbsent(player.getUUID() + "|" + city, k -> new long[] {now, 0});
-        if (now - hour[0] >= HOUR_TICKS) { hour[0] = now; hour[1] = 0; }
-        int add = (int) Math.min(amount, HOURLY_CAP - hour[1]);
+        // the hour's cap is kept with the world (HourlyCaps): a restart or a re-login no longer starts a new hour
+        HourlyCaps caps = HourlyCaps.get(player.server);
+        long now = HourlyCaps.clock(player.server);
+        String key = player.getUUID() + "|standing:" + city;
+        int add = Math.min(amount, caps.room(key, HOURLY_CAP, now));
         if (add <= 0) return 0;
-        hour[1] += add;
+        caps.spend(key, add, now);
         int before = of(citizen, city), after = state.changeStanding(player.getUUID(), city, add);
         String name = TerminalScreenText.capitalize(city);
         if (before < WELL_SPOKEN && after >= WELL_SPOKEN) Notice.send(player, Notice.Kind.TRUST, "Known in " + name, "People in " + name + " have heard of the work you do for the city.");
@@ -74,7 +72,7 @@ final class CityStanding {
     }
 
     /** Test seam. */
-    static void clearForTest() { HOUR.clear(); }
+    static void clearForTest(net.minecraft.server.MinecraftServer server) { HourlyCaps.get(server).windows.keySet().removeIf(k -> k.contains("|standing:")); }
 
     static String key(UUID player, String city) { return player + "|" + city; }
 }
