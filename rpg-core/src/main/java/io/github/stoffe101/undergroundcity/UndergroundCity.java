@@ -191,6 +191,7 @@ public final class UndergroundCity {
         TechNetwork.register();
         SmithNetwork.register();
         FenceNetwork.register();
+        PackFingerprint.register();
         MinecraftForge.EVENT_BUS.register(this);
         MinecraftForge.EVENT_BUS.register(new RenamedIds());
         MinecraftForge.EVENT_BUS.register(new BurglarySearch());
