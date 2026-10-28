@@ -349,6 +349,18 @@ public final class PlayerBusiness {
         return sell(orders, id, level.random.nextInt(Math.max(1, stock.getAllKeys().stream().mapToInt(stock::getInt).sum())));
     }
 
+    /** Why a customer standing at {@code at} would not buy from business {@code id} now (for the population's log). */
+    static String whyNot(ServerLevel level, String id, BlockPos at) {
+        WorkOrderLedger orders = WorkOrderLedger.get(level.getServer());
+        if (orders.faulted() || !orders.hasBusiness(id)) return "no such business";
+        CompoundTag b = orders.business(id);
+        if (!open(level, b)) return "shut: " + whyShut(level, b);
+        double d = Math.sqrt(BlockPos.of(b.getLong("pos")).distSqr(at));
+        if (d > 3.5) return "too far from the counter (" + Math.round(d * 10) / 10.0 + " blocks)";
+        if (b.getInt("window_sales") >= SALES_PER_HOUR && orders.clock() - b.getLong("window_start") < 72_000) return "the hour's sales are made";
+        return "the sale was refused";
+    }
+
     /** The counter's goods that its city's own shops have run short of (D-201): a customer asks for those first, so a counter takes up the slack while a shelf is low. */
     static List<String> wanted(WorkOrderLedger orders, String city, CompoundTag stock) {
         List<String> keys = new ArrayList<>();

@@ -211,6 +211,8 @@ public final class PopulationService {
             else if (now - w.lastMoved > 100) {
                 // no progress for five seconds: another errand, and after three of those somewhere to go in, or away out of sight
                 w.lastMoved = now;
+                if (w.business != null) LOGGER.info("[UC-POPULATION] a customer for business {} is stuck at {} on the way to {} ({}, {})", w.business, body.blockPosition().toShortString(),
+                    w.goal == null ? "nowhere" : w.goal.toShortString(), w.errand, w.phase);
                 if (++w.stuck >= 3) { stuckGivenUp++; return goIn(level, body, w, players, now, hour) || !seen(level, players, body.blockPosition()) ? quietly(level, body, w, players) : rest(body, w, now, 200); }
                 if (w.phase == Phase.ENTER) return false;
                 return newErrand(level, body, w, players, now, hour);
@@ -251,7 +253,10 @@ public final class PopulationService {
                 body.hold(false);
                 if (w.business != null) {
                     // a player's counter (D-208): they buy at it if they reached it, then walk back out to the street they came from
-                    if (PlayerBusiness.customerBuys(level, w.business, body.blockPosition())) businessPurchases++;
+                    boolean bought = PlayerBusiness.customerBuys(level, w.business, body.blockPosition());
+                    if (bought) businessPurchases++;
+                    LOGGER.info("[UC-POPULATION] a customer at {} (counter front {}) {}", body.blockPosition().toShortString(), w.goal.toShortString(),
+                        bought ? "bought" : "bought nothing: " + PlayerBusiness.whyNot(level, w.business, body.blockPosition()));
                     w.business = null;
                     if (w.door != null) {   // out through the door they came in by
                         w.errand = "leave_business"; w.phase = Phase.LEAVE; w.goal = w.door.lower().relative(w.door.out().getOpposite());
@@ -326,6 +331,7 @@ public final class PopulationService {
                 body.stepThrough(w.door.lower().relative(w.door.out().getOpposite()));
                 w.errand = "business"; w.phase = Phase.WALK; w.goal = w.counterFront; w.lastMoved = now;
                 body.errand(w.goal, 0.55);
+                LOGGER.info("[UC-POPULATION] a customer goes in at {} for the counter at {}", w.door.lower().toShortString(), w.goal.toShortString());
                 return true;
             }
             case "business" -> {
@@ -459,6 +465,8 @@ public final class PopulationService {
                 w.errand = door.isPresent() ? "business_door" : "business"; w.business = t.id(); w.origin = body.blockPosition(); w.door = door.orElse(null); w.phase = Phase.WALK;
                 w.counterFront = t.front();
                 w.goal = door.map(d -> d.lower().relative(d.out())).orElse(t.front());
+                LOGGER.info("[UC-POPULATION] a customer sets out for business {} from {}: {}", t.id(), body.blockPosition().toShortString(),
+                    door.map(d -> "by its street door " + d.lower().toShortString()).orElse("straight to the counter " + t.front().toShortString()));
                 body.passDoors(true);
                 body.errand(w.goal, 0.55);
                 businessVisits++;
