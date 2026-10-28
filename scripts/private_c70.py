@@ -51,7 +51,7 @@ STAGE = "uc-private-stage.json"
 PACK_NAME = "c70-port"
 STAGE_SCHEMA = 1
 # a pack staged by an older porter or wiring than these is refused at launch: stage it again (the numbers rise when a port or a plan changes in a way an old one lacks)
-MIN_PORTER = 13
+MIN_PORTER = 14
 MIN_WIRING = 13
 # what a pack of Lost Cities buildings needs loaded besides itself: the furnished cities (its buildings join theirs) and the furniture its palettes name
 NEEDS_SETS = ["furnished", "furniture"]

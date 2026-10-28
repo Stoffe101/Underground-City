@@ -278,6 +278,15 @@ class PortTheFixture(unittest.TestCase):
         # without a registry nothing is guessed beyond the rules
         self.assertEqual(block_lookalikes.Lookalikes().resolve("othermod:fir_stairs"), ("minecraft:air", "air"))
 
+    def test_a_woven_mat_is_a_floor_and_never_the_bamboo_plant(self):
+        # private tour 15: a restaurant's floor of Quark bamboo mats came out as the bamboo plant, from the shapeless fallback's bare material
+        registry = {"minecraft:bamboo": {"age": ["0", "1"]}, "minecraft:bamboo_mosaic": {}, "minecraft:bamboo_planks": {}, "minecraft:yellow_carpet": {}, "minecraft:granite": {}}
+        look = block_lookalikes.Lookalikes(registry=registry)
+        self.assertEqual(look.resolve("quark:bamboo_mat", {"facing": "north"}), ("minecraft:bamboo_mosaic", "rule"))
+        self.assertEqual(look.resolve("quark:bamboo_mat_carpet"), ("minecraft:yellow_carpet", "rule"))
+        self.assertEqual(look.resolve("othermod:bamboo_thing"), ("minecraft:bamboo_planks", "shape"))
+        self.assertEqual(look.resolve("othermod:granite"), ("minecraft:granite", "shape"))
+
     def test_a_port_with_a_registry_reports_what_became_what(self):
         registry = {"minecraft:stone_bricks": {}, "minecraft:dirt_path": {}, "minecraft:polished_andesite": {}, "minecraft:cut_copper": {}, "minecraft:oak_planks": {},
                     "minecraft:chest": {"facing": ["north", "south", "east", "west"], "type": ["single"], "waterlogged": ["true", "false"]},
