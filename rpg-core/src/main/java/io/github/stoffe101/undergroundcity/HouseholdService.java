@@ -186,7 +186,8 @@ public final class HouseholdService {
         }
         if (lowest == null || share >= 1.0 / 3) return null;
         String item = lowest.registryItem().getDescription().getString();
-        int pays = RegionalCatalog.INSTANCE.supply(lowest.id()).pays();
+        // what the counter pays now, the short price when the shelf is short (workshop run 6: the barkeeper said 14 while the counter paid 18)
+        int pays = Shortages.paysNow(lowest, RegionalCatalog.INSTANCE.supply(lowest.id()).pays(), ledger.regionalUnits(lowest));
         return "We're nearly out of " + item + ". Bring some to the counter and I'll pay " + pays + " a unit.";
     }
 

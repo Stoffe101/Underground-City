@@ -327,8 +327,10 @@ final class WorkshopScenario {
         if (SHORTAGE) Playtest.queue("the barkeeper asks for what is short", () -> {
             String said = mc().screen instanceof DialogueScreen d ? d.text() : "";
             Playtest.log("WORKSHOP the barkeeper says: " + said);
+            int shortPays = Shortages.shortPays(RegionalCatalog.INSTANCE.find(WINE_LINE), RegionalCatalog.INSTANCE.supply(WINE_LINE).pays());
             if (!said.contains("nearly out")) Playtest.fail("the barkeeper of a pub whose wine is short does not ask for it");
-            else pass("8b the barkeeper asks for it: \"" + said + "\"");
+            else if (!said.contains("pay " + shortPays + " a unit")) Playtest.fail("the barkeeper does not quote the short price of " + shortPays + " (workshop run 6 quoted the usual price)");
+            else pass("8b the barkeeper asks for it at the short price: \"" + said + "\"");
         });
         JourneyScenario.choose("What do you sell?", "terminal");
         JourneyScenario.click("TRADE", true);
