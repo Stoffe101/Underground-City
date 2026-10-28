@@ -92,6 +92,10 @@ public final class UndergroundCity {
     public static final RegistryObject<Block> ELECTRONICS_BENCH = BLOCKS.register("electronics_bench",
         () -> new TechBlocks.Bench(BlockBehaviour.Properties.of().mapColor(net.minecraft.world.level.material.MapColor.WOOD).strength(2.0f).sound(net.minecraft.world.level.block.SoundType.WOOD)));
     public static final RegistryObject<Item> ELECTRONICS_BENCH_ITEM = ITEMS.register("electronics_bench", () -> new BlockItem(ELECTRONICS_BENCH.get(), new Item.Properties()));
+    // player business v1 (D-208): a counter set down in trade premises; the city's street people buy from it
+    public static final RegistryObject<Block> BUSINESS_COUNTER = BLOCKS.register("business_counter",
+        () -> new PlayerBusiness.Counter(BlockBehaviour.Properties.of().mapColor(net.minecraft.world.level.material.MapColor.WOOD).strength(2.0f).sound(net.minecraft.world.level.block.SoundType.WOOD)));
+    public static final RegistryObject<Item> BUSINESS_COUNTER_ITEM = ITEMS.register("business_counter", () -> new BlockItem(BUSINESS_COUNTER.get(), new Item.Properties()));
     // the Farmer's drying rack (D-160): two Cannabis Flower dry into one Dried Cannabis in six minutes of play
     public static final RegistryObject<Block> DRYING_RACK = BLOCKS.register("drying_rack",
         () -> new DryingRack.Rack(BlockBehaviour.Properties.of().mapColor(net.minecraft.world.level.material.MapColor.WOOD).strength(1.0f).noOcclusion().sound(net.minecraft.world.level.block.SoundType.WOOD)));
@@ -310,6 +314,7 @@ public final class UndergroundCity {
             event.accept(PERSONAL_COMPUTER_ITEM);
             event.accept(ELECTRONICS_BENCH_ITEM);
             event.accept(DRYING_RACK_ITEM);
+            event.accept(BUSINESS_COUNTER_ITEM);
             WORKSHOP_ITEMS.values().forEach(event::accept);
         }
         if (event.getTabKey() == CreativeModeTabs.OP_BLOCKS && event.hasPermissions()) {
@@ -461,6 +466,7 @@ public final class UndergroundCity {
             )
         );
         root.then(dev);
+        root.then(PlayerBusiness.command());   // a player's own business (D-208)
         root.then(AdminCommands.branch());   // the operator's commands (D-191)
         event.getDispatcher().register(root);
     }

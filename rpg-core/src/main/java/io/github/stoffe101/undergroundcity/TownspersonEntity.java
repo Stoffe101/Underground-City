@@ -95,7 +95,7 @@ public final class TownspersonEntity extends PathfinderMob {
     }
 
     /**
-     * An officer opens the closed doors on the next steps of their path as they reach them, whatever the door (a wooden one, an iron street door), and marks each as opened on purpose for a
+     * An officer, or a customer on the way to a player's counter, opens the closed doors on the next steps of their path as they reach them, whatever the door (a wooden one, an iron street door), and marks each as opened on purpose for a
      * few seconds so the building's door watch does not shut it in their face; the watch shuts it again afterwards. Nobody else's doors are touched.
      */
     private void openDoorsAhead() {
@@ -140,6 +140,18 @@ public final class TownspersonEntity extends PathfinderMob {
 
     boolean police() { return role.equals("police"); }
 
+    /** True while this street person walks to a player's counter and back out (D-208): they go through the doors on their way, as an officer does. */
+    private boolean passDoors;
+
+    /** On for a customer of a player's business, off again once they are back on the street; an officer always passes doors. */
+    void passDoors(boolean on) {
+        if (passDoors == on || police()) return;
+        passDoors = on;
+        if (getNavigation() instanceof GroundPathNavigation ground) { ground.setCanOpenDoors(on); ground.setCanPassDoors(on); }
+        setPathfindingMalus(net.minecraft.world.level.pathfinder.BlockPathTypes.DOOR_WOOD_CLOSED, on ? 0f : -1f);
+        setPathfindingMalus(net.minecraft.world.level.pathfinder.BlockPathTypes.DOOR_IRON_CLOSED, on ? 0f : -1f);
+    }
+
     /** True once an officer has been told to leave. */
     boolean leaving() { return leaveAt != Long.MAX_VALUE; }
     BlockPos errandPlace() { return errand; }
@@ -175,7 +187,7 @@ public final class TownspersonEntity extends PathfinderMob {
     @Override public void tick() {
         super.tick();
         if (!level().isClientSide && leaving() && level().getGameTime() >= leaveAt) discard();
-        if (!level().isClientSide && police() && errand != null && tickCount % 2 == 0) openDoorsAhead();
+        if (!level().isClientSide && (police() || passDoors) && errand != null && tickCount % 2 == 0) openDoorsAhead();
     }
 
     /** Walks to the errand's place while there is one; stands and watches when there is none. */
