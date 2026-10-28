@@ -2026,6 +2026,8 @@ final class Scenarios {
         final float[] health = new float[1];
         Playtest.queue("two first aid kits, and ten points of damage", () -> {
             Playtest.command("clear @s");
+            Playtest.command("gamerule naturalRegeneration false");
+            ThiefScenario.scripted("natural regeneration off, so only the kit heals (skills run 2: a full stomach had healed three points more)");
             Playtest.command("give @s underground_city:first_aid_kit 2");
             ThiefScenario.scripted("two first aid kits given by command (an exchange sells them)");
             var server = Minecraft.getInstance().getSingleplayerServer();
