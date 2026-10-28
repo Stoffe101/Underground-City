@@ -250,7 +250,9 @@ public final class PopulationService {
                         body.errand(w.goal, 0.55);
                         LOGGER.info("[UC-POPULATION] a customer is in at {} and goes to the counter at {}", body.blockPosition().toShortString(), w.goal.toShortString());
                     } else if (now >= w.until) {
-                        LOGGER.info("[UC-POPULATION] a customer did not get in at {}: at {} stepping for {}", w.door.lower().toShortString(), body.blockPosition().toShortString(), w.goal.toShortString());
+                        LOGGER.info("[UC-POPULATION] a customer did not get in at {}: at {} ({}) stepping for {}; the door {}, its upper half {}, the cell inside {}, the move {}", w.door.lower().toShortString(),
+                            body.blockPosition().toShortString(), body.position(), w.goal.toShortString(), level.getBlockState(w.door.lower()), level.getBlockState(w.door.lower().above()),
+                            level.getBlockState(w.goal), body.getMoveControl().hasWanted() ? "wanted " + body.getMoveControl().getWantedX() + "," + body.getMoveControl().getWantedZ() : "none");
                         return newErrand(level, body, w, players, now, hour);
                     }
                     return true;
