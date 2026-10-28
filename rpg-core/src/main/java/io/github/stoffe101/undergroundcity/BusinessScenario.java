@@ -45,14 +45,14 @@ final class BusinessScenario {
             String id = server(() -> PlayerBusiness.businessAt(WorkOrderLedger.get(mc().getSingleplayerServer()), counter));
             Playtest.log("BUSINESS counter at " + counter.toShortString() + " opens business " + id + " (premises " + PremisesScenario.premisesId() + ")");
             if (id == null || !id.equals(PremisesScenario.premisesId())) Playtest.fail("setting the counter down in the rented premises did not open their business");
-            else pass("2 a Business Counter set down with a real right click inside the rented premises opens their business");
+            else pass("3 a Business Counter set down with a real right click inside the rented premises opens their business");
         });
         StationSteps.hold("the berry wine", UndergroundCity.item("berry_wine"));
         JourneyScenario.use("stock the counter with a right click", () -> counter, () -> stock() == BOTTLES, 400);
         Playtest.queue("the counter holds the wine", () -> {
             Playtest.log("BUSINESS stock " + stock() + ", wine carried " + JourneyScenario.count(UndergroundCity.item("berry_wine")));
             if (stock() != BOTTLES || JourneyScenario.count(UndergroundCity.item("berry_wine")) != 0) Playtest.fail("the wine did not move onto the counter");
-            else pass("3 a right click holding " + BOTTLES + " bottles stocks the counter with them");
+            else pass("4 a right click holding " + BOTTLES + " bottles stocks the counter with them");
         });
         Playtest.queue("an empty hand and crouch", () -> {
             Playtest.focusWindow();
@@ -67,7 +67,7 @@ final class BusinessScenario {
             boolean open = server(() -> PlayerBusiness.open(level(), business()));
             Playtest.log("BUSINESS open flag " + business().getBoolean("open") + ", open to customers " + open + (open ? "" : ": " + server(() -> PlayerBusiness.whyShut(level(), business()))));
             if (!open) Playtest.fail("the opened counter is not open to customers");
-            else pass("4 a crouching right click opens the business, and it is open to the city's people (stocked, in good standing, at 13:00)");
+            else pass("5 a crouching right click opens the business, and it is open to the city's people (stocked, in good standing, at 13:00)");
             walletBefore = JourneyScenario.wallet();
         });
         shot("1-counter-open");
@@ -88,7 +88,7 @@ final class BusinessScenario {
             Playtest.log("BUSINESS after " + t[0] / 20 + " s: stock " + stock() + ", till " + takings + ", sold " + business().getInt("sold") + ", tax " + business().getLong("tax")
                 + "; visits " + PopulationService.businessVisits + ", purchases " + PopulationService.businessPurchases);
             if (stock() >= BOTTLES || takings <= 0) Playtest.fail("no customer bought from the counter in eight minutes of play");
-            else pass("5 a street person walked in and bought from the counter after " + t[0] / 20 + " s of play; the till holds " + takings + " after the city's sales tax of " + business().getLong("tax"));
+            else pass("6 a street person walked in and bought from the counter after " + t[0] / 20 + " s of play; the till holds " + takings + " after the city's sales tax of " + business().getLong("tax"));
         });
         ThiefScenario.stopIfFailed("a customer");
         final long[] till = new long[1];
@@ -98,7 +98,7 @@ final class BusinessScenario {
             double now = JourneyScenario.wallet();
             Playtest.log("BUSINESS wallet " + walletBefore + " -> " + now + ", till " + till[0] + " -> " + business().getLong("takings") + ", paid in all " + business().getLong("paid_total"));
             if (Math.abs(now - walletBefore - till[0]) > 0.01) Playtest.fail("the wallet did not rise by the till (" + (now - walletBefore) + " against " + till[0] + ")");
-            else pass("6 an empty-handed right click pays the till of " + till[0] + " into the wallet, once, and starts the statement again");
+            else pass("7 an empty-handed right click pays the till of " + till[0] + " into the wallet, once, and starts the statement again");
         });
         shot("3-collected");
         Playtest.queue("summary", ThiefScenario::summary);
