@@ -133,6 +133,7 @@ public record TerminalData(String city, String career, int level, int xp, double
         final WorkOrder acceptedOrder = accepted;
         List<WorkOrder> jobs = new ArrayList<>(WorkOrderCatalog.INSTANCE.forCareer(citizen.career));
         jobs.addAll(WorkOrderCatalog.INSTANCE.forCareer(WorkOrder.ANY_CAREER));   // a civic contribution anybody can make (D-171)
+        jobs.addAll(0, ShortageContracts.offered(ledger, citizen.career));   // a shop's shortage contract for this trade, first, while it is open (D-207)
         // a Crew contract's parts of the other trades (D-170, seventh pass): a Crew of two that has no Vintner must still see the Vintner's part to have a supplier fill it, or the contract
         // can never be finished (the two-player Crew run found the canteen's cider part on nobody's terminal). Shown to members only; only a member of that trade can take it.
         if (CrewService.ledger(player.server) != null && CrewService.ledger(player.server).crewOf(player.getUUID()) != null)

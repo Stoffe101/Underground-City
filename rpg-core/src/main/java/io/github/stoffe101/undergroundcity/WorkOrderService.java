@@ -73,6 +73,11 @@ public final class WorkOrderService {
     /** Career, level and rival-city visit gates for accepting a catalog order. */
     static void accept(ServerPlayer player, WorkOrderLedger ledger, CitizenState.Citizen citizen, String id) {
         WorkOrder order = WorkOrderCatalog.INSTANCE.find(id);
+        if (order == null && ShortageContracts.isContract(id)) {   // a shortage contract (D-207): open only until it is filled or its deadline passes
+            order = ShortageContracts.find(ledger, id);
+            if (order == null) throw new IllegalStateException("That shortage was filled or its contract ran out of time.");
+            if (ledger.available(order) == 0) throw new IllegalStateException("Somebody else has taken that shortage contract.");
+        }
         if (order == null || !order.openTo(citizen.career)) {
             throw new IllegalStateException("This order belongs to another profession");
         }
@@ -202,10 +207,14 @@ public final class WorkOrderService {
         String civicRefusal = CivicProjects.refusal(ledger, terms);
         if (civicRefusal != null) throw new IllegalStateException(civicRefusal + " Cancel the order to free it.");
         CivicProjects.deliveryRecord(terms, crewRecord);
+        // a shortage contract (D-207): delivered before its deadline at a terminal of the shop's city, or refused before anything is taken
+        String shortageRefusal = ShortageContracts.refusal(player.serverLevel(), ledger, order, terminal);
+        if (shortageRefusal != null) throw new IllegalStateException(shortageRefusal);
         ledger.prepare(player.getUUID(), nonce, after.save(new ListTag()), target, xpTarget, trustAfter, heatAfter, crewRecord);
         recover(player, ledger);
         if (crewRecord.hasUUID("crew")) CrewContracts.afterSettlement(player.server, ledger, crewRecord.getUUID("crew"), CrewContracts.split(terms.crewPart())[0]);
         if (!terms.civic().isEmpty()) CivicProjects.afterSettlement(player.server, ledger, terms.civic());
+        ShortageContracts.delivered(player, ledger, order);   // the goods go onto the shop's shelf and the line rests (a shortage contract only)
         CrewService.sweepIncome(player, credits, nonce); // fully shared finances only; never changes the settlement above
         CitizenState.get(player.server).bumpJourney(player.getUUID(), "deliveries");
         String extra = (skilled > order.credits() ? " + " + (skilled - order.credits()) + " for your skills" : "") + (credits > skilled ? " + " + (credits - skilled) + " for the grade" : "");

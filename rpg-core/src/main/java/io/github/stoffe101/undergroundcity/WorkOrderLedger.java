@@ -399,6 +399,17 @@ public final class WorkOrderLedger {
         putPlayer(player, record); persist();
     }
 
+    // ---------------------------------------------------------------- shortage contracts (eleventh pass, D-207)
+
+    /** The shortage contracts' shared record ({@link ShortageContracts}: the open contracts, how long each line has been short, the lines resting); its caller persists. */
+    CompoundTag shortages() {
+        if (!root.contains("shortages", Tag.TAG_COMPOUND)) root.put("shortages", new CompoundTag());
+        return root.getCompound("shortages");
+    }
+
+    /** Forgets the employer demand of an order that will never be offered again (a closed shortage contract); its caller persists. */
+    void forgetDemand(String orderId) { root.getCompound("demand").remove(orderId); }
+
     // ---------------------------------------------------------------- trust, heat and inspections
 
     int trust(UUID player, String buyer) {
