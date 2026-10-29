@@ -272,7 +272,35 @@ What the journeys do not show:
 
 ## 9. Test evidence
 
-*Completed when the runs finish.* So far: the Python suite (461 tests) passed after the coverage manifest was fixed; `career_balance.py --check`, `economy_model.py --check`, `city_economies.py --check` and `validate_underground_balance.py` hold; the Windows workflow is green on GitHub's runners.
+By level (section 1's terms):
+
+| Level | Evidence | Result |
+| --- | --- | --- |
+| L1, arithmetic | `career_balance.py --check` (seven rules), `economy_model.py --check`, `city_economies.py --check` (five rules), `validate_underground_balance.py`; each rule's test shows it failing on broken data | all hold |
+| L2, GameTests | 480 of 480 locally (run 123), including the bush and the closed-room police tests; CI's GameTest job on every push | all passed; CI green on the pass's pushes since the telemetry fix (9ee9ee2) |
+| L2, Python | `python -m unittest discover -s tests` | 461 tests, OK, 14 skipped |
+| L3, one real client | police cases runs 1 to 9; Farmer 11, Vintner 9, Smith 8, Gunsmith 10, Technician 9, business 13 | see sections 2a, 6 and 8 |
+| L3, two real clients | duo run 12, a dedicated server driving both clients' actions through its own paths | 63 of 63 checks, including police case 8 and a restart |
+| Windows | `windows-scripts.yml` on `windows-latest`, PowerShell 7 and 5.1 | green; scripts only, no game |
+| Screens | the Guide page at 3440×1440 GUI 2 and 1920×1080 GUI 2 and 3 | captured and inspected; two faults found and fixed |
+
+**Runs that failed, and why.** A failed run is kept in the count, not dropped.
+
+| Run | Cause | Fix |
+| --- | --- | --- |
+| Police case run 8 | **a fault in the game**: an officer stood two minutes behind a bush | fixed, GameTested, run 9 passed |
+| Police runs 2 to 6 | the scenario's choice of building and time (section 2a) | scenario |
+| Gunsmith 9 | the scenario looked for Deliver before the terminal had the server's answer; the same race was in five other scenarios | the shared click waits for its button |
+| Technician 8 | the scenario asked for a tier I or II panel | any tier |
+| Business 11 | the scenario read the chat too early, and `/uc_prepare` stops at level 10 | waits for the reply; level 14 by the operator's command |
+| Business 12 | the same chat race in the upgrade step (tier 2 had been fitted) | waits for the reply |
+
+**Performance.** No performance session was run in this pass. The latest measurement is the eleventh pass's 60-minute two-client session: no Core frame in any tick over a second. This pass adds little work per tick, all of it bounded by the officers on duty:
+
+* the arrest check of a response;
+* the beat's look-up of a warrant for each player near a patrol.
+
+No run measured it.
 
 ## 10. For the owner's next playtest (Windows 11, two players)
 
@@ -314,7 +342,40 @@ For the owner's buildings, add `-C70` to the server and client commands (guide 6
 
 ## 11. Not done, not proven, and known problems
 
-*Completed at the end of the pass.*
+**The current branch and its recent gameplay systems have not received human playtesting.**
+
+Not proven:
+
+* **How often a real thief is caught.** The career balance assumes an arrest after 40% of noticed crimes. The scripted thief stands still to be arrested, so the runs show that arrests happen and are settled correctly, not how often. A human session's telemetry should replace the figure.
+* **How much of an active hour is hands-on.** The model assumes half. Telemetry records it once a person plays.
+* **Two players each driving their own client** through a career or a crime. Duo run 12 drives both clients' actions from the server.
+* **Some police cases through a real client:**
+  * a shop robbed after closing with its alarm;
+  * a window broken;
+  * an officer struck;
+  * hiding inside;
+  * leaving the city while wanted;
+  * the step round a bush itself (GameTested).
+* **The underground side of each trade on the rebalanced data:** the Thief, Cannabis and unmarked-firearm runs were not repeated, and the Technician's back channel is still GameTested only.
+* **The Guide page through a person's eyes.** It was captured at three viewports, not at 1280×720, and not used by a person.
+* **Windows:** scripts on GitHub's runners, not a game on Windows and not two PCs.
+
+Not built:
+
+* staff, advertising and supplier contracts for businesses;
+* tier 3 of a counter through a real client (tier 2 was);
+* city demand that differs by city beyond the shops' own lines.
+
+For the owner to decide:
+
+* **D-211:** a small raise to underground pay flips a hybrid from all-legal to all-crime. The proposal is a higher underground band plus a per-buyer limit.
+* **Beginner thieves in Blackwater:** near the city's middle at night, a new thief has no lock to try.
+* **Buyers:** whether Ironhaven needs a Technician buyer, and whether Vesper Holdings belongs in Valewood.
+
+Known problems:
+
+* The scripted runs needed a teleport between cities, a set clock and a prepared level for their second half. Each is logged, and none is how a player gets there.
+* The Technician's panels near Valewood's Willow Way were all tier III or above in run 8's world, where the October 24 world had a tier I or II nearby. It was not traced: building tiers come from the generated city and its neighbourhood grade, and nothing in this pass changed them.
 
 ## 12. What to develop next
 
