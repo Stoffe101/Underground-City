@@ -289,6 +289,33 @@ For the owner's buildings, add `-C70` to the server and client commands (guide 6
 
 ## 12. What to develop next
 
-*Completed at the end of the pass.*
+In order:
+
+1. **A human session.** The owner's two-player session of section 10 and guide 6m. Its telemetry, read with `economy_report.py`, should then replace the model's two biggest assumptions:
+   * the arrest rate (40% of noticed crimes);
+   * the hands-on share of an active hour (one half).
+2. **The owner's decisions:**
+   * D-211, the underground band and a per-buyer limit;
+   * whether a beginner thief should have something to pick near Blackwater's middle at night;
+   * whether Ironhaven needs a Technician buyer and whether Vesper Holdings belongs in Valewood.
+3. **The rest of the police cases through a real client:**
+   * a shop robbed after closing with its alarm;
+   * a window broken;
+   * an officer struck;
+   * hiding inside a building;
+   * leaving the city while wanted.
+
+   A human session should also measure how often a real thief is caught.
+4. **Businesses:**
+   * staff (townspeople who mind a counter, closing a labour gap for two players);
+   * supplier contracts (a counter that buys a partner's goods);
+   * advertising;
+   * tier 3 through a real client.
+5. **Cities that differ in demand:** shortages that come faster where a city's own trades are weak (food in Ironhaven, parts in Valewood), within the five audit rules.
+6. **The underground paths, rerun on the rebalanced data through real clients:**
+   * the Thief track;
+   * Cannabis;
+   * the unmarked firearm;
+   * the Technician's back channel (still GameTested only).
 
 The current branch and its recent gameplay systems have not received human playtesting.
