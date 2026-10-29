@@ -287,7 +287,7 @@ By level (section 1's terms):
 | Level | Evidence | Result |
 | --- | --- | --- |
 | L1, arithmetic | `career_balance.py --check` (seven rules), `economy_model.py --check`, `city_economies.py --check` (five rules), `validate_underground_balance.py`; each rule's test shows it failing on broken data | all hold |
-| L2, GameTests | 480 of 480 locally (run 123), including the bush and the closed-room police tests; CI's GameTest job on every push | all passed; CI green on the pass's pushes since the telemetry fix (9ee9ee2) |
+| L2, GameTests | 480 of 480 locally (runs 123 and 130), including the bush and the closed-room police tests; CI's GameTest jobs on every push | all passed locally. CI was green on the pass's pushes from the telemetry fix (9ee9ee2) to 88aeeb5, except one: on c08a8a9, a docs-only push, the Cannabis loop test failed in the firearms set's job (see below) |
 | L2, Python | `python -m unittest discover -s tests` | 461 tests, OK, 14 skipped |
 | L3, one real client | police cases runs 1 to 9; Farmer 11, Vintner 9, Smith 8, Gunsmith 10, Technician 9, business 13 | see sections 2a, 6 and 8 |
 | L3, two real clients | duo run 12, a dedicated server driving both clients' actions through its own paths | 63 of 63 checks, including police case 8 and a restart |
@@ -304,6 +304,7 @@ By level (section 1's terms):
 | Technician 8 | the scenario asked for a tier I or II panel | any tier |
 | Business 11 | the scenario read the chat too early, and `/uc_prepare` stops at level 10 | waits for the reply; level 14 by the operator's command |
 | Business 12 | the same chat race in the upgrade step (tier 2 had been fitted) | waits for the reply |
+| CI, firearms set, on c08a8a9 | the Cannabis loop GameTest waited a fixed 40 ticks for glowstone to light its plots; on a busy runner the plot still had light 6 and the seed could not be set down (an older test, not this pass's code) | the test waits for the light itself, at most ten seconds more (1a00066); local run 130 passed |
 
 **Performance.** No performance session was run in this pass. The latest measurement is the eleventh pass's 60-minute two-client session: no Core frame in any tick over a second. This pass adds little work per tick, all of it bounded by the officers on duty:
 
