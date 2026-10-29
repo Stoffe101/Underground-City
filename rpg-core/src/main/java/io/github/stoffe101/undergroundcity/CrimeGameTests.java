@@ -35,7 +35,7 @@ public final class CrimeGameTests {
      * was not counted). The street forces its chunks, and the checks wait until that has taken effect: a fixed five ticks were not always enough on a slow runner (October 27: a passer-by
      * beside the blow was not counted as a witness in one CI job). A failed check is the test's failure (a plain assertion error here would stop the server).
      */
-    private static void settled(GameTestHelper helper, Street s, Runnable checks) {
+    static void settled(GameTestHelper helper, Street s, Runnable checks) {
         int[] waited = {0};
         helper.startSequence()
             .thenWaitUntil(() -> { if (!s.missing().isEmpty() && ++waited[0] < SETTLE_TICKS) throw new GameTestAssertException("the street's people are not found yet"); })
@@ -51,7 +51,7 @@ public final class CrimeGameTests {
     }
 
     /** An open stone floor high above the test grid with clear air round it (so lines of sight do not depend on the neighbouring tests), its chunks forced, a striker, and the police and the watch reset. */
-    private static final class Street implements AutoCloseable {
+    static final class Street implements AutoCloseable {
         final ServerLevel level;
         final BlockPos centre;
         final ServerPlayer striker;
@@ -145,20 +145,16 @@ public final class CrimeGameTests {
     }
 
     @GameTest(template = "empty", batch = "uc_crime_b", timeoutTicks = 200)
-    public static void aBlowNobodyElseSeesIsReportedLaterByTheVictimOrNotAtAll(GameTestHelper helper) {
+    public static void aBlowNobodyElseSeesIsAlwaysReportedLaterByTheVictim(GameTestHelper helper) {
         try (Street s = new Street(helper, "uc_crime_b")) {
             TownspersonEntity victim = s.person(1, 0, 3);
-            long tick = s.level.getGameTime(), now = LockService.clock(s.level.getServer());
-            long seed = LawMath.mix(s.striker.getUUID().getMostSignificantBits(), victim.getUUID().getLeastSignificantBits(), tick / CrimeWatch.INCIDENT_TICKS, 0xA55A17L);
-            boolean reports = LawMath.roll(CrimeWatch.VICTIM_REPORTS, seed);
+            long now = LockService.clock(s.level.getServer());
             CrimeWatch.assault(s.striker, s.level, victim, "valewood", false);
             CityLaws.Offence assault = CityLaws.INSTANCE.offence("valewood", CityLaws.ASSAULT);
-            if (reports) {
-                check(PoliceResponse.dispatches() == 1, "the victim's report raised no response");
-                check(PoliceResponse.dispatchAt(0).arriveAt == now + assault.reportSeconds() * CrimeWatch.VICTIM_DELAY_FACTOR * 20L, "a victim's own report is not slower than a passer-by's call");
-            } else {
-                check(PoliceResponse.dispatches() == 0 && CrimeWatch.assaultsUnreported == 1, "an unreported blow raised a response");
-            }
+            // twelfth pass: the person struck always goes to the police (it was three times in five), later than a passer-by would call, and knows the face
+            check(PoliceResponse.dispatches() == 1 && CrimeWatch.assaultsUnreported == 0, "the victim's report raised no response: " + CrimeWatch.status());
+            check(PoliceResponse.dispatchAt(0).arriveAt == now + assault.reportSeconds() * CrimeWatch.VICTIM_DELAY_FACTOR * 20L, "a victim's own report is not slower than a passer-by's call");
+            check(PoliceResponse.dispatchAt(0).identified && WorkOrderLedger.get(s.level.getServer()).warrant(s.striker.getUUID(), "valewood") != null, "the victim knew the face, but no warrant was recorded");
         }
         helper.succeed();
     }

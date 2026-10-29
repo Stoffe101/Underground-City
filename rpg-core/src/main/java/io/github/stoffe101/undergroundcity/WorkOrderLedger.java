@@ -15,6 +15,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -37,6 +38,14 @@ public final class WorkOrderLedger {
     static final int MAX_HEAT = 8;
     /** A checkpoint searches the same traveller at most once per ten active minutes. */
     static final long CHECKPOINT_COOLDOWN_TICKS = 12000;
+    /**
+     * A warrant (twelfth pass): somebody saw who did it, so the police know whom to look for after the response itself has ended (an escape, a logout, a restart). It lasts this long in active play
+     * and is served only while its person is online: an officer on the beat who sees them, or a checkpoint of the city that searches them, arrests them for it.
+     */
+    static final long WARRANT_TICKS = 20L * 60 * 20;
+    /** A conviction counts as a prior offence in its city for two hours of active play (a repeat offender is fined more and warned no more), and a person's record keeps the last few. */
+    static final long PRIORS_TICKS = 20L * 60 * 120;
+    static final int MAX_CONVICTIONS = 6;
     private static final Map<MinecraftServer, WorkOrderLedger> INSTANCES = new WeakHashMap<>();
     private final Path path;
     private CompoundTag root;
@@ -240,6 +249,7 @@ public final class WorkOrderLedger {
                 while (history.size() > SEARCH_HISTORY) history.remove(0);
                 record.put("searches", history);
             }
+            if (pending.contains("convict", Tag.TAG_STRING)) convict(record, pending.getString("convict"));
             applyTargets(record, pending);
             record.remove("pending");
         } else {
@@ -531,6 +541,68 @@ public final class WorkOrderLedger {
 
     int heatAfter(UUID player, String city, int delta) { return Math.max(0, Math.min(MAX_HEAT, heat(player, city) + delta)); }
 
+    // ---------------------------------------------------------------- warrants and convictions (twelfth pass)
+
+    /** A warrant: what the police want this person for in a city, what it will cost, who saw it, and when it lapses (active ticks). */
+    record Warrant(String city, String offence, int fine, int heat, String source, long issued, long expires) {}
+
+    /** The person's live warrant in a city, or null (none, or lapsed). */
+    Warrant warrant(UUID player, String city) {
+        CompoundTag entry = player(player).getCompound("warrants").getCompound(city);
+        if (entry.isEmpty() || entry.getLong("x") <= clock()) return null;
+        return new Warrant(city, entry.getString("o"), entry.getInt("f"), entry.getInt("h"), entry.getString("s"), entry.getLong("i"), entry.getLong("x"));
+    }
+
+    /** Every live warrant of a person, by city. */
+    List<Warrant> warrants(UUID player) {
+        List<Warrant> out = new ArrayList<>();
+        for (String city : player(player).getCompound("warrants").getAllKeys()) { Warrant w = warrant(player, city); if (w != null) out.add(w); }
+        return out;
+    }
+
+    /**
+     * Records (or renews) a warrant: the worse charge of the two stands (the larger fine), and the lapse moves to {@link #WARRANT_TICKS} from now. It changes no inventory or wallet, so it is saved at
+     * once, as heat is.
+     */
+    void issueWarrant(UUID player, String city, String offence, int fine, int heat, String source) {
+        checkHealthy();
+        if (!ProgressionRules.validCity(city)) return;
+        Warrant old = warrant(player, city);
+        CompoundTag record = player(player);
+        CompoundTag all = record.getCompound("warrants");
+        CompoundTag entry = new CompoundTag();
+        boolean keepOld = old != null && old.fine() >= fine;
+        entry.putString("o", keepOld ? old.offence() : offence); entry.putInt("f", keepOld ? old.fine() : fine); entry.putInt("h", keepOld ? old.heat() : heat);
+        entry.putString("s", keepOld ? old.source() : source);
+        entry.putLong("i", old != null ? old.issued() : clock()); entry.putLong("x", Math.addExact(clock(), WARRANT_TICKS));
+        all.put(city, entry);
+        record.put("warrants", all);
+        putPlayer(player, record); persist();
+    }
+
+    /** Convictions in a city still counted as priors (within {@link #PRIORS_TICKS} of active play). */
+    int priors(UUID player, String city) {
+        long now = clock();
+        int n = 0;
+        for (long t : player(player).getCompound("convictions").getLongArray(city)) if (now - t < PRIORS_TICKS) n++;
+        return n;
+    }
+
+    /** Settles a conviction on a record: the warrant in that city is served, and the conviction is remembered (the last {@link #MAX_CONVICTIONS}). Its caller persists. */
+    private void convict(CompoundTag record, String city) {
+        CompoundTag warrants = record.getCompound("warrants");
+        warrants.remove(city);
+        record.put("warrants", warrants);
+        CompoundTag convictions = record.getCompound("convictions");
+        long[] old = convictions.getLongArray(city);
+        int keep = Math.min(old.length, MAX_CONVICTIONS - 1);
+        long[] next = new long[keep + 1];
+        System.arraycopy(old, old.length - keep, next, 0, keep);
+        next[keep] = clock();
+        convictions.putLongArray(city, next);
+        record.put("convictions", convictions);
+    }
+
     /** Heat from an event that changes no inventory or wallet (a tripped alarm): applied and saved immediately. */
     void addHeat(UUID player, String city, int delta) {
         checkHealthy();
@@ -576,6 +648,11 @@ public final class WorkOrderLedger {
      * settlement so that "what was found, where, and why" is never out of step with what was taken.
      */
     void prepareSeizure(UUID player, ListTag inventoryAfter, Double balanceAfter, int xpNow, String city, int heatAfter, ListTag packChanges, CompoundTag searchRecord) {
+        prepareSeizure(player, inventoryAfter, balanceAfter, xpNow, city, heatAfter, packChanges, searchRecord, false);
+    }
+
+    /** As above; {@code conviction} when this is an arrest: its settlement serves the person's warrant in {@code city} and records the conviction, in the same step as the fine. */
+    void prepareSeizure(UUID player, ListTag inventoryAfter, Double balanceAfter, int xpNow, String city, int heatAfter, ListTag packChanges, CompoundTag searchRecord, boolean conviction) {
         checkHealthy();
         CompoundTag record = player(player);
         if (record.contains("pending")) throw new IllegalStateException("Finish recovery before an inspection");
@@ -583,6 +660,7 @@ public final class WorkOrderLedger {
         pending.putString("kind", SEIZURE); pending.put("inventory", inventoryAfter.copy()); pending.putInt("xp", xpNow);
         if (!packChanges.isEmpty()) pending.put("packs", packChanges.copy());
         if (searchRecord != null) pending.put("search", searchRecord.copy());
+        if (conviction) pending.putString("convict", city);
         if (balanceAfter != null) {
             if (!Double.isFinite(balanceAfter) || balanceAfter < 0) throw new IllegalArgumentException("Invalid settlement");
             pending.putDouble("balance", balanceAfter);

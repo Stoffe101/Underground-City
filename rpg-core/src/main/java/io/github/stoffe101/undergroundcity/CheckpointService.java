@@ -74,10 +74,33 @@ public final class CheckpointService {
         guardTurns(player, post);
         int heat = ledger.heat(player.getUUID(), post.jurisdiction());
         double chance = LawMath.inspectionChance(law, post.risk(), heat, SkillService.inspectionModifier(citizen));
+        // a person wanted in this city (twelfth pass): the guard has their description, and a search of them is an arrest for the warrant
+        WorkOrderLedger.Warrant warrant = ledger.warrant(player.getUUID(), post.jurisdiction());
+        if (warrant != null) chance = Math.min(law.maxChance(), chance + WANTED_SEARCH_BONUS);
         UUID id = player.getUUID();
         boolean searched = LawMath.roll(chance, LawMath.mix(id.getMostSignificantBits(), id.getLeastSignificantBits(), LawMath.hash(post.id()), roll));
-        if (!searched) return new Result(Outcome.WAVED_THROUGH, 0, 0, "waved through");
+        if (!searched) {
+            if (warrant != null) PoliceTrace.note(player, post.jurisdiction(), "checkpoint", "wanted person waved through at " + post.id() + " (search chance " + Math.round(chance * 100) + "%)");
+            return new Result(Outcome.WAVED_THROUGH, 0, 0, "waved through");
+        }
+        if (warrant != null) return arrestWanted(player, citizen, post, law, ledger, warrant);
         return inspect(player, citizen, post, law, ledger, player.getVehicle(), new Why(chance, heat));
+    }
+
+    /** How much more likely a checkpoint is to search a person wanted in its city (capped by the city's maximum). */
+    static final double WANTED_SEARCH_BONUS = 0.4;
+
+    /** A checkpoint's guard recognises a wanted person: the arrest of the warrant, through the same prepared record as any arrest. */
+    static Result arrestWanted(ServerPlayer player, CitizenState.Citizen citizen, CheckpointCatalog.Checkpoint post, CityLaws.Law law, WorkOrderLedger ledger, WorkOrderLedger.Warrant warrant) {
+        CityLaws.Offence offence = CityLaws.INSTANCE.offence(post.jurisdiction(), warrant.offence());
+        player.sendSystemMessage(Component.literal(actor(player, post) + " checks your face against a description: you are wanted for " + offence.charge() + ".").withStyle(net.minecraft.ChatFormatting.GOLD));
+        int priors = ledger.priors(player.getUUID(), post.jurisdiction());
+        Result result = arrest(player, citizen, "checkpoint:" + post.id() + ":warrant:" + warrant.offence(), post.jurisdiction(), law, ledger,
+            LawMath.escalatedFine(warrant.fine(), priors), LawMath.escalatedHeat(warrant.heat(), priors));
+        PoliceTrace.note(player, post.jurisdiction(), "arrest", "at checkpoint " + post.id() + " on a warrant for " + warrant.offence() + ": fined " + result.fine() + ", " + result.stacksSeized() + " stack(s) seized");
+        PoliceResponse.arrestsOnWarrant++;
+        Notice.send(player, Notice.Kind.HEAT, "Arrested at the checkpoint", result.stacksSeized() + (result.stacksSeized() == 1 ? " stack" : " stacks") + " taken, " + result.fine() + " credits fined. The warrant is served.");
+        return result;
     }
 
     /** The post's guard, when the zone has a built post: they turn to the traveller and challenge them, so the search has a face. */
@@ -267,7 +290,8 @@ public final class CheckpointService {
             titles.add((entry == null ? (category.equals(StolenGoods.CATEGORY) ? "Stolen goods" : category) : entry.title()) + " (" + status + ")");
         });
         CompoundTag record = searchRecord(postId, city, Why.UNKNOWN, "arrested", taken.size(), paid, whereCounts, titles);
-        ledger.prepareSeizure(player.getUUID(), after.save(new ListTag()), balanceAfter, citizen.careerXp(), city, heatAfter, CarriedStorage.journal(taken), record);
+        // an arrest is a conviction: its settlement serves the person's warrant in the city and records the conviction, in the same step as the fine (twelfth pass)
+        ledger.prepareSeizure(player.getUUID(), after.save(new ListTag()), balanceAfter, citizen.careerXp(), city, heatAfter, CarriedStorage.journal(taken), record, true);
         if (crashAfterPrepare) throw new CrewService.SimulatedCrash("checkpoint_after_prepare");
         WorkOrderService.recover(player, ledger);
         return new Result(Outcome.SEIZED, taken.size(), paid, heatAfter + " heat");
