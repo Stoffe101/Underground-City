@@ -46,7 +46,7 @@ final class PoliceCasesScenario {
 
     private static final class Facts {
         volatile double walletBefore;
-        volatile long arrestsBefore, escapesBefore, warrantArrestsBefore, traceMark, warningsBefore, assaultsBefore;
+        volatile long arrestsBefore, escapesBefore, warrantArrestsBefore, traceMark, warningsBefore, assaultsBefore, raisedBefore;
         volatile int priorsBefore, stolenBefore, breadBefore;
         volatile boolean wantedAfterBurglary, seen, warrantBeforeQuit;
     }
@@ -113,7 +113,14 @@ final class PoliceCasesScenario {
 
     // ------------------------------------------------------------------------------------------------ helpers
 
-    private static int bread() { return server(() -> me().getInventory().countItem(Items.BREAD)); }
+    /** The honest bread carried: bread taken in a burglary is marked stolen and is the arrest's to take (police cases run 9 found three stolen loaves counted as honest ones). */
+    private static int bread() {
+        return server(() -> {
+            int n = 0;
+            for (ItemStack stack : me().getInventory().items) if (stack.is(Items.BREAD) && !StolenGoods.is(stack)) n += stack.getCount();
+            return n;
+        });
+    }
 
     private static void markTrace() { F.traceMark = server(PoliceTrace::count); }
 
@@ -149,6 +156,7 @@ final class PoliceCasesScenario {
             F.breadBefore = bread();
             F.warningsBefore = server(() -> CrimeWatch.warnings);
             F.assaultsBefore = server(() -> CrimeWatch.assaults);
+            F.raisedBefore = server(() -> PoliceResponse.raised);
             Playtest.log(String.format(Locale.ROOT, "CASES %s before: wallet %.0f, priors %d, carrying %d marked unit(s) and %d bread; %s", label, F.walletBefore, F.priorsBefore, F.stolenBefore, F.breadBefore, server(PoliceResponse::status)));
         });
     }
@@ -202,7 +210,8 @@ final class PoliceCasesScenario {
                 return;
             }
             if (!arrested) {
-                if (server(() -> CrimeWatch.assaults) <= F.assaultsBefore && F.stolenBefore == ThiefScenario.stolen()[0] && !label.equals("A")) { Playtest.log("CASES " + label + ": nothing was out for the player"); return; }
+                // nothing raised since the baseline (no report, no alarm, no patrol): nothing was out for the player, even with marked goods from a burglary nobody saw (police cases run 9)
+                if (server(() -> PoliceResponse.raised) <= F.raisedBefore && !label.equals("A")) { Playtest.log("CASES " + label + ": nothing was out for the player"); return; }
                 Playtest.fail(label + ": the citizen who stood still was not arrested: " + server(PoliceResponse::status));
                 return;
             }
