@@ -385,6 +385,7 @@ public final class PoliceResponseGameTests {
             TownspersonEntity officer = officers.get(0);
             officer.moveTo(at.getX() + 2.5, at.getY(), at.getZ() + 0.5, 0, 0);
             check(!PoliceResponse.canTouch(s.level, officer, s.thief), "an officer could lay a hand on the suspect through a two-high bush");
+            officer.setOnGround(true);   // a navigation plans a path only for a creature that stands on something (GameTest run 122)
             var route = officer.getNavigation().createPath(at, 0);
             check(PoliceResponse.routeReaches(route, at), "a route round a bush in the open was taken not to reach: " + route);
             PoliceResponse.pass(s.level.getServer());
@@ -414,6 +415,7 @@ public final class PoliceResponseGameTests {
             officer.moveTo(at.getX() + 2.5, at.getY(), at.getZ() + 0.5, 0, 0);
             check(!PoliceResponse.canTouch(s.level, officer, s.thief), "an officer could lay a hand on the suspect through a stone wall");
             check(PoliceResponse.besideFree(s.level, at, officer.blockPosition()) == null, "a free cell was found inside the walls round the suspect");
+            officer.setOnGround(true);   // a navigation plans a path only for a creature that stands on something (GameTest run 122)
             var route = officer.getNavigation().createPath(at, 0);
             check(route == null || !PoliceResponse.routeReaches(route, at), "a route that ends outside the room was taken to reach the suspect inside it: ends at " + (route == null ? null : route.getEndNode()));
             PoliceResponse.pass(s.level.getServer());
