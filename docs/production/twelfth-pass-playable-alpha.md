@@ -248,7 +248,25 @@ It read the police runs' worlds. On police run 3 it reported one arrest, a fine 
 
 ## 8. Organic progression
 
-*Queued: the five careers' scripted journeys are rerun against the rebalanced data, after the police runs.*
+Each career's scripted journey was run again on this pass's data: the rebalanced orders, grades and fees, and the new buyer. Each ran through a real client in a new world (L3).
+
+* **Track A** is a new citizen's first steps from the real registration screen.
+* **Track B** starts further on, with a level and credits granted by command, logged `PREPARED`.
+
+Every other shortcut (the clock, a teleport, an item moved to the hotbar) is logged `SCRIPTED` and counted.
+
+| Career | Run | Steps | Shortcuts | What it showed |
+| --- | --- | --- | --- | --- |
+| Farmer | 11 | 14 of 14 | 7 | **A:** registration, the kit's Mill placed and grinding flour. **B** (level 4, 120 credits): two skills learned at a public terminal; a Grading Table crafted from the recipe book; a Fine produce crate sold to the General Store (+41); flour sold to the bakery (+20); a save and reopen with nothing doubled |
+| Vintner | 9 | 12 of 12 | 8 | **B** (level 10, 200 credits, materials): four skills; wine fermented; a cask and a still crafted; aged wine and grain spirit made in active time and sold to Blackwater's club bar (+144 and +42); reopen |
+| Smith (engineer) | 8 | 13 of 13 | 5 | **A:** registration, the kit; a drawing spoiled on purpose and sleeved, then one turned to the standard for a Reserve drive shaft (+45 XP). **B** (level 5, 300 credits): two skills; a breakdown at a tier III power hammer (raised at once, scripted); parts bought over the Builders' Yard's counter; a test run refused with its reason; the repair (+77 credits and +180 XP, once); reopen |
+
+What the journeys do not show:
+
+* the hours between the steps (Track B is a prepared start, so they show that each loop works and pays, not how long a person takes to reach it);
+* a person's choices;
+* the underground side of each trade on the rebalanced data (the Thief, Cannabis and unmarked-firearm runs of earlier passes were not rerun);
+* two players each working their own client through a career (the two-client session drives both from the server).
 
 ## 9. Test evidence
 
