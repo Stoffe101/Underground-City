@@ -45,6 +45,14 @@ It prints, per pseudonym, the active minutes, career and levels, credits earned 
 
 Reading it: accept-to-deliver time includes travel and waiting, so it is an upper bound on hands-on time; a short session says little. The report holds pseudonyms only, but a world's file is still the owner's: share a report, not the world.
 
+## Read from scripted real clients (twelfth pass)
+
+* **Police cases run 3 (Blackwater):** the report showed one arrest, a fine of 30 asked and paid, and the teleport between cities as a city change.
+* **Farmer run 11 (Valewood):** 61 credits sold to shops (the Fine produce crate for 41 and four sacks of flour for 20) and 61 spent at the exchanges. The level shows as 1 to 4, because the scripted Track B raised the XP by command rather than by level-ups.
+* **The CI GameTest servers** have no Q Shop credits template. There the wallet field is left out and the line is still written (fixed in this pass: before, the whole line was lost).
+
+**What this does not do yet.** A scripted run's minutes are the script's, not a player's, so they **do not replace the model's assumptions** (half of an active hour hands-on; the minutes an order takes). The first human session's report is the first that can: `python scripts/economy_report.py <world> --out report.md` after a playtest (guide 6m, step 13).
+
 ## Rights and privacy
 
 The file holds no names, ids, chat, inventories or positions beyond the city a player is in. It stays in the world folder; `uc-logs.ps1` does not pack it (it packs logs, never a world).
