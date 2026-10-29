@@ -116,8 +116,9 @@ final class BusinessScenario {
         final int[] mark = new int[1];
         final long[] city = new long[1];
         final long[] at = new long[2];
+        // the reply reaches the client a moment after the server has the price (business run 11 read the chat too early)
         Playtest.queue("8: the owner types /uc business price 90", () -> { mark[0] = Playtest.heardCount(); Playtest.command("uc business price 90"); },
-            () -> business().getInt("price_pct") == 90, 200);
+            () -> business().getInt("price_pct") == 90 && Playtest.heardSince(mark[0], "Prices at") != null, 200);
         Playtest.queue("the price took", () -> {
             var b = business();
             String wine = wineKey(b);
@@ -144,8 +145,9 @@ final class BusinessScenario {
             else pass("9 /uc business upgrade at level 5 is refused (\"" + said + "\"); the parts are kept");
         });
         Playtest.queue("level 14 (scripted)", () -> {
-            Playtest.command("uc_prepare level @s 14");
-            scripted("PREPARED: the Smith's level raised to 14 with /uc_prepare (tier 2's level; the economy model puts it at about 20 active hours of Smith work)");
+            // /uc_prepare stops at level 10 (business run 11); the operator's own command sets any level and is audited
+            Playtest.command("uc admin career " + mc().player.getGameProfile().getName() + " level 14");
+            scripted("PREPARED: the Smith's level raised to 14 with /uc admin career (tier 2's level; the economy model puts it at about 20 active hours of Smith work)");
         }, () -> server(() -> CitizenState.get(mc().getSingleplayerServer()).find(me().getUUID()).map(CitizenState.Citizen::careerLevel).orElse(0)) >= 14, 200);
         Playtest.queue("10: /uc business upgrade at level 14", () -> { mark[0] = Playtest.heardCount(); Playtest.command("uc business upgrade"); },
             () -> PlayerBusiness.tier(business()) == 2, 200);
