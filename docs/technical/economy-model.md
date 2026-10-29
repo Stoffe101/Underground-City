@@ -143,10 +143,10 @@ Everything between the markers is written by `--update-doc` and checked by a uni
 | technician | 5  | security_array_install    | le   | 230     | 140  | 90  | 5.5  | 991   | 600 | 6/h    |                         |                     |
 | technician | 7  | ledger_recovery           | un   | 270     | 130  | 140 | 13.5 | 622   | 360 | 4/h    | bypass_tooling          |                     |
 | technician | 11 | ledger_brokerage          | un   | 800     | 390  | 410 | 31.5 | 781   | 620 | 3/h    | data_brokerage          |                     |
-| technician | 14 | tower_security_install    | le   | 560     | 140  | 420 | 23.9 | 1057  | 720 | 6/h    | systems_integrator      |                     |
+| technician | 14 | tower_security_install    | le   | 560     | 140  | 420 | 29.9 | 844   | 720 | 6/h    | systems_integrator      |                     |
 | technician | 16 | ledger_auction            | un   | 1000    | 520  | 480 | 37.5 | 768   | 780 | 3/h    | ghost_traffic           |                     |
 | technician | 18 | municipal_network_upgrade | le   | 640     | 164  | 476 | 30.6 | 933   | 840 | 6/h    | systems_integrator      |                     |
-| technician | 21 | data_centre_fitout        | le   | 930     | 222  | 708 | 36.9 | 1151  | 960 | 6/h    | systems_integrator      |                     |
+| technician | 21 | data_centre_fitout        | le   | 930     | 222  | 708 | 42.9 | 990   | 960 | 6/h    | systems_integrator      |                     |
 | vintner    | 1  | cellar_bottles            | le   | 28      | 0    | 28  | 5.7  | 295   | 125 | 12/h   |                         |                     |
 | vintner    | 2  | civic_market_wine         | le   | 90      | 48   | 42  | 12.5 | 202   | 220 | 6/h    |                         |                     |
 | vintner    | 2  | crew_canteen_cider        | le   | 120     | 60   | 60  | 10.2 | 353   | 280 | 6/h    |                         |                     |
@@ -218,7 +218,7 @@ Everything between the markers is written by `--update-doc` and checked by a uni
 | vintner    | 2            | 323         | 18                 | 451         | 72%                       |
 | smith      | 3            | 577         | 16                 | 592         | 97%                       |
 | gunsmith   | 3            | 449         | 10                 | 638         | 70%                       |
-| technician | 4            | 515         | 10                 | 814         | 63%                       |
+| technician | 4            | 515         | 10                 | 777         | 66%                       |
 
 ### Rent against income (a household of one)
 
@@ -257,11 +257,11 @@ Everything between the markers is written by `--update-doc` and checked by a uni
 | vintner                       | 1         | 8        | 23         | 26        | 30              | 410            |
 | smith                         | 1         | 7        | 2          | 26        | 30              | 517            |
 | gunsmith                      | 1         | 8        | 2          | 26        | 30              | 508            |
-| technician                    | 1         | 6        | 2          | 22        | 30              | 636            |
+| technician                    | 1         | 6        | 2          | 22        | 30              | 567            |
 | farmer + gunsmith             | 1         | 5        | 2          | 16        | 30/30           | 1059           |
-| smith + technician            | 0         | 3        | 1          | 11        | 30/30           | 1146           |
+| smith + technician            | 0         | 3        | 1          | 11        | 30/30           | 1034           |
 | farmer + smith + gunsmith     | 0         | 3        | 1          | 9         | 30/30/30        | 1535           |
-| vintner + technician + farmer | 0         | 3        | 1          | 10        | 30/30/30        | 1596           |
+| vintner + technician + farmer | 0         | 3        | 1          | 10        | 30/30/30        | 1497           |
 
 ### Vehicle and boat tiers: active hours of the five careers' mean wage to afford one (prices are the planning table of D-101)
 

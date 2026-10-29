@@ -148,6 +148,8 @@ final class ThiefScenario {
         clickAt("CONFIRM", () -> ((RegistrationScreen) mc().screen).confirmCentre());
         until("the screen closes", () -> !(mc().screen instanceof RegistrationScreen), 300);
         Playtest.wait("let the server answer", 20);
+        // the first-login landing (D-187) moves a new citizen once, when its chunks are ready: a scripted teleport before it would be undone by it (police cases run 4)
+        until("the first-login landing is done", () -> server(() -> !CityArrival.pending(mc().getSingleplayerServer(), mc().player.getUUID())), 2400);
         Playtest.queue("survival, and the citizen", () -> {
             Playtest.command("gamemode survival");
             CitizenState.Citizen c = citizen();

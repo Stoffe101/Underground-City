@@ -150,7 +150,7 @@ The economy model's own invariants (`economy_model.py --check`: no break-even lo
 | technician | 10 | 521   | 200 (311)   | 521 (521)   | 100%            | 521                 | -15..420             | 26%          |
 | technician | 15 | 808   | 364 (539)   | 808 (808)   | 100%            | 808                 | -415..916            | 15%          |
 | technician | 20 | 808   | 395 (585)   | 808 (808)   | 100%            | 808                 | -415..916            | 14%          |
-| technician | 30 | 808   | 615 (615)   | 815 (815)   | 70%             | 821                 | 482..964             | 0%           |
+| technician | 30 | 808   | 615 (615)   | 815 (815)   | 70%             | 808                 | 482..964             | 0%           |
 
 ### What each build takes at level 15 (orders and burglaries an hour)
 
@@ -197,10 +197,10 @@ The economy model's own invariants (`economy_model.py --check`: no break-even lo
 | vintner legal          | 0.5          | 0.5             | 1.5            | 3.0        | 5.0           | 6.0              | 10.8          | 16.5              | 23.8      | 56.5      |
 | smith legal            | 0.2          | 0.2             | 1.2            | 2.2        | 3.8           | 4.5              | 8.5           | 14.8              | 22.8      | 53.8      |
 | gunsmith legal         | 0.5          | 0.5             | 1.5            | 2.8        | 4.2           | 5.2              | 9.5           | 14.8              | 21.2      | 48.5      |
-| technician legal       | 0.2          | 0.2             | 1.2            | 2.2        | 3.8           | 4.5              | 9.0           | 14.8              | 22.2      | 56.5      |
+| technician legal       | 0.2          | 0.2             | 1.2            | 2.2        | 3.8           | 4.5              | 9.0           | 14.8              | 22.2      | 57.0      |
 | gunsmith hybrid        | 0.5          | 0.5             | 1.5            | 2.8        | 4.2           | 5.2              | 9.5           | 14.8              | 21.5      | 48.8      |
 | gunsmith underground   | 0.5          | 0.5             | 1.5            | 2.8        | 7.0           | 8.2              | 14.5          | 22.8              | 32.5      | 70.5      |
-| technician hybrid      | 0.2          | 0.2             | 1.2            | 2.2        | 3.8           | 4.5              | 9.0           | 14.8              | 22.2      | 56.5      |
+| technician hybrid      | 0.2          | 0.2             | 1.2            | 2.2        | 3.8           | 4.5              | 9.0           | 14.8              | 22.2      | 57.0      |
 | technician underground | 0.2          | 0.2             | 1.2            | 2.2        | 3.8           | 4.5              | 19.0          | 31.8              | 50.0      | 107.2     |
 | farmer + smith legal   | 0.2          | 0.2             | 1.0            | 1.8        | 2.5           | 3.0              | 5.5           | 8.8               | 14.0      | 33.5      |
 

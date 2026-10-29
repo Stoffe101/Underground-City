@@ -23,5 +23,6 @@
   "capacity": 2,
   "refill_ticks": 12000,
   "legality": "legal",
-  "requires_skill": "technician.systems_integrator"
+  "requires_skill": "technician.systems_integrator",
+  "buyer": "blackwater_towers"
 }
