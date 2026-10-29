@@ -21,6 +21,7 @@ final class PoliceTrace {
     static final int KEEP = 200;
     static volatile boolean on = Boolean.getBoolean("uc.policeTrace") || Boolean.getBoolean("uc.playtest.policetrace");
     private static final ArrayDeque<String> RECENT = new ArrayDeque<>();
+    private static long total;
 
     private PoliceTrace() {}
 
@@ -32,6 +33,7 @@ final class PoliceTrace {
     static synchronized void note(String who, String city, String stage, String detail) {
         String line = who + " " + (city == null || city.isEmpty() ? "-" : city) + " " + stage + ": " + detail;
         RECENT.addLast(line);
+        total++;
         while (RECENT.size() > KEEP) RECENT.removeFirst();
         if (on) LOGGER.info("[UC-POLICE-TRACE] {}", line);
     }
@@ -42,6 +44,12 @@ final class PoliceTrace {
         return all.subList(Math.max(0, all.size() - n), all.size());
     }
 
+    /** Every line noted so far: a mark for {@link #since}. */
+    static synchronized long count() { return total; }
+
+    /** The lines noted since {@code mark} (as many of them as are still kept), oldest first. */
+    static synchronized List<String> since(long mark) { return recent((int) Math.min(KEEP, Math.max(0, total - mark))); }
+
     /** Test seam. */
-    static synchronized void reset() { RECENT.clear(); }
+    static synchronized void reset() { RECENT.clear(); total = 0; }
 }

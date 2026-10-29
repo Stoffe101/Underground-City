@@ -5,7 +5,7 @@ Set-StrictMode -Version 3.0
 $ErrorActionPreference = 'Stop'
 
 $script:UcRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
-$script:UcBranch = 'feature/tenth-pass-living-world'
+$script:UcBranch = 'feature/twelfth-pass-playable-alpha'
 
 # The pack sets build.gradle knows: every set of content/modpacks/dev-pack.json but the deferred ones, plus Core's own scarcity package (tests/test_windows_scripts.py keeps the two
 # lists equal). legacy_travelers, the retired Traveler's Backpack kept for the save-guard test, is left out on purpose. A plain launch already loads world, firearms, vehicles and boats.
@@ -14,7 +14,8 @@ $script:UcKnownSets = @('world', 'firearms', 'vehicles', 'boats', 'vintner', 'fa
 # -C70: the owner's private buildings first (D-193). They join the furnished cities, name the furniture set's blocks and were chosen with the scarcity package in mind.
 $script:UcC70Sets = @('furnished', 'scarcity', 'furniture')
 # where uc-private-stage.ps1 stages them unless told otherwise: outside the repository, in the user's own folder (never commit it, never upload it)
-$script:UcDefaultPrivate = Join-Path ([Environment]::GetFolderPath('UserProfile')) (Join-Path 'UndergroundCityPrivate' 'runtime')
+$script:UcProfile = if ($env:USERPROFILE) { $env:USERPROFILE } else { [Environment]::GetFolderPath('UserProfile') }
+$script:UcDefaultPrivate = Join-Path $script:UcProfile (Join-Path 'UndergroundCityPrivate' 'runtime')
 
 function Get-UcGradle {
     $wrapper = Join-Path $script:UcRoot 'gradlew.bat'
@@ -49,6 +50,8 @@ function Backup-UcRunDir([string] $RunDir = 'run-dev') {
     New-Item -ItemType Directory -Force -Path $backups | Out-Null
     $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
     $target = Join-Path $backups "$RunDir-$stamp"
+    # never into a backup that exists already (two backups in one second: a rollback backs the folder up first)
+    for ($n = 2; Test-Path $target; $n++) { $target = Join-Path $backups "$RunDir-$stamp-$n" }
     # the mods folder is downloaded again by gradle and the logs are not part of a world; everything else (worlds, saves, configs, the Crew ledger inside each world) is copied whole
     Write-Host "Backing up $source to $target ..."
     robocopy $source $target /E /XD mods logs crash-reports /NFL /NDL /NJH /NJS /NP | Out-Null

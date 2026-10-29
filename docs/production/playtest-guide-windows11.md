@@ -32,7 +32,7 @@ In PowerShell:
 ```
 git clone https://github.com/Stoffe101/Underground-City.git
 cd Underground-City
-git checkout feature/tenth-pass-living-world
+git checkout feature/twelfth-pass-playable-alpha
 .\gradlew.bat runServer -PucAcceptEula=true
 ```
 
@@ -82,10 +82,12 @@ The commands in this guide are wrapped in a few PowerShell scripts, so that a se
 | `uc-new-world.ps1 -Name Alice -World UC-S1 [-Pregen] [-C70]` | a single-player client in a NEW world with the furnished cities and scarcity (and with `-C70` the furniture set and the owner's staged buildings); refuses a name that exists. `-Pregen` generates the islands in it once, in the background |
 | `uc-private-stage.ps1 -Source <the C70 folder or zip>` | ports, chooses, wires and seals the owner's private buildings into `%USERPROFILE%\UndergroundCityPrivate\runtime`, outside the repository (section 6k) |
 | `uc-second-copy.ps1` | copies the repository to `..\Underground-City-P2` for a second player on the same PC |
+| `uc-doctor.ps1` | reads this PC and says what is ready and what to fix: Java 17, Git, Python, the branch and local changes, free disk space, memory, the server port, whether the dev server is in offline mode, the backups made. Changes nothing. Run it first on both PCs |
 | `uc-backup.ps1` | copies `rpg-core\run-dev` (worlds, saves, configs) to `backups\run-dev-<date-time>`; stop the server and clients first |
+| `uc-restore.ps1 -List` / `-From run-dev-<date-time>` | lists the backups, or rolls the folder back to one: the folder as it is now is backed up first, so a rollback can be undone; the mods and logs are left alone |
 | `uc-logs.ps1` | packs the logs, crash reports and screenshots (never a world) into `reports\uc-report-<date-time>.zip` for a bug report. After a session with private content it leaves the screenshots out and replaces the private buildings' ids in the logs with `<private>` |
 
-**Tested in the cloud:** a test (`tests/test_windows_scripts.py`) runs the server, client, new-world, logs and staging scripts with PowerShell 7 on GitHub's Linux runners against a stand-in for gradle (and, for the staging script, for Python): the commands they build, the server settings they write, and their refusals (an unknown set, a bad name, an existing world, offline mode not asked for, `-C70` with nothing staged, a private folder that is a pack itself or needs a set the launch leaves out). The same test checks that the scripts accept exactly the sets `build.gradle` knows; the `furniture` set was missing from them until the eleventh pass. **Not tested:** any of it on Windows (PowerShell 5.1 or 7 on Windows 11), `robocopy` (the backup and the second copy), the real gradle launches through the scripts, and Python on Windows. Run `uc-backup.ps1` once by hand and look at the folder it made before you trust it.
+**Tested in the cloud:** a test (`tests/test_windows_scripts.py`) runs the server, client, new-world, logs, staging, doctor and restore scripts against stand-ins for gradle, Java and Python: the commands they build, the server settings they write, and their refusals (an unknown set, a bad name, an existing world, offline mode not asked for, `-C70` with nothing staged, a private folder that is a pack itself or needs a set the launch leaves out, the wrong Java, an unknown backup). The same test checks that the scripts accept exactly the sets `build.gradle` knows. **From the twelfth pass it also runs on GitHub's Windows runners** (`.github/workflows/windows-scripts.yml`) under PowerShell 7 and under Windows PowerShell 5.1, with a backup and a rollback through the real `robocopy`; the same workflow runs the doctor on a fresh Windows machine and the real `gradlew.bat` building Core and fetching the default pack's mods with their pinned hashes checked. **Not tested:** a game started through the scripts on Windows (the runners have no screen and no Minecraft account), two PCs on one network, and `uc-second-copy.ps1`. GitHub's Windows Server runner is not Windows 11 at your desk.
 
 **Both PCs must run the same pack.** Every start prints `Underground City pack fingerprint: <12 characters>` (Core's commit and every mod both sides need, with its pinned version). The server and both clients should print the same; when a client's differs, that player sees *Your game differs from the server's* in the game and the server's log names both. Fix it with `uc-update.ps1` on both PCs and the same sets (or the same `-C70`) on every start.
 

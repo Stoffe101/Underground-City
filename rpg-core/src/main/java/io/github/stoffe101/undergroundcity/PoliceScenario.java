@@ -45,6 +45,9 @@ final class PoliceScenario {
     }
     private static final Facts F = new Facts();
 
+    /** The person the last blow was aimed at (null when none could be found). */
+    static UUID victim() { return F.victim; }
+
     static void build() {
         ThiefScenario.tag = "POLICE";
         Playtest.keepScreens = true;
@@ -112,7 +115,7 @@ final class PoliceScenario {
     }
 
     /** Puts the player beside the person (scripted), turns to them and strikes them with a real left click when the crosshair is on them. */
-    private static void strike(String label, boolean wantWitness, int tries) {
+    static void strike(String label, boolean wantWitness, int tries) {
         final int[] t = {0};
         final boolean[] found = {false};
         Playtest.queue(label + ": find a person " + (wantWitness ? "with a passer-by in sight" : "with nobody else about"), () -> { t[0] = 0; found[0] = false; F.victim = null; }, () -> {

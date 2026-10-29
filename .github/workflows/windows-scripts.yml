@@ -1,0 +1,72 @@
+name: Windows scripts
+
+# The Windows playtest scripts on a real Windows runner (twelfth pass): the script tests under PowerShell 7 and Windows PowerShell 5.1 (the one Windows 11 ships with), a backup and a
+# rollback with the real robocopy, the doctor on a fresh machine, and the real gradlew.bat building Core and fetching the pinned mods from their authors' pages with their hashes checked.
+# Nothing is uploaded: no jar, no world, no log with private content (there is none here; the private buildings never reach CI).
+
+on:
+  push:
+    paths:
+      - "scripts/windows/**"
+      - "tests/test_windows_scripts.py"
+      - "scripts/private_c70.py"
+      - "scripts/private_pack_tool.py"
+      - "rpg-core/build.gradle"
+      - "content/modpacks/dev-pack.json"
+      - ".github/workflows/windows-scripts.yml"
+  pull_request:
+    paths:
+      - "scripts/windows/**"
+      - "tests/test_windows_scripts.py"
+      - "scripts/private_c70.py"
+      - "scripts/private_pack_tool.py"
+      - "rpg-core/build.gradle"
+      - "content/modpacks/dev-pack.json"
+      - ".github/workflows/windows-scripts.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  scripts:
+    name: Scripts on Windows (${{ matrix.shell }})
+    runs-on: windows-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        shell: [pwsh, powershell]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: The PowerShell version under test
+        run: ${{ matrix.shell }} -NoProfile -Command '$PSVersionTable.PSVersion.ToString()'
+      - name: Script tests (stand-ins for gradle, Java and Python; real robocopy for the backup and the rollback)
+        env:
+          UC_PWSH: ${{ matrix.shell }}
+        run: python -m unittest tests.test_windows_scripts -v
+
+  gradle:
+    name: Doctor and a real gradlew.bat build on Windows
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: The doctor on a fresh machine (Java 17, Git, Python, disk, port; reads only)
+        shell: pwsh
+        run: .\scripts\windows\uc-doctor.ps1 -NoBranchCheck
+      - name: The doctor under Windows PowerShell 5.1
+        shell: powershell
+        run: .\scripts\windows\uc-doctor.ps1 -NoBranchCheck
+      - name: Build Core and fetch the default pack's mods from their authors' pages, each checked against its pinned SHA-512
+        run: .\gradlew.bat -p rpg-core compileJava verifyDevPack -PucPack=world,firearms,vehicles,boats --no-daemon --stacktrace

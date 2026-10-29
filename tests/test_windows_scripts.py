@@ -1,5 +1,6 @@
-"""The Windows 11 playtest scripts (scripts/windows): what they write and pass to gradle matches build.gradle, and, where PowerShell 7 is installed (GitHub's Ubuntu runners have it), they build the
-right gradle command and refuse the unsafe or destructive cases. Robocopy (the backup and the second copy) exists only on Windows and is not exercised here."""
+"""The Windows 11 playtest scripts (scripts/windows): what they write and pass to gradle matches build.gradle, and, where PowerShell is installed, they build the right gradle command and
+refuse the unsafe or destructive cases. They run on GitHub's Ubuntu runners under PowerShell 7 and on its Windows runners under PowerShell 7 and Windows PowerShell 5.1
+(.github/workflows/windows-scripts.yml, UC_PWSH=powershell); on Windows the stand-ins for gradle, Java and Python are batch files and the backup and rollback run real robocopy."""
 import json
 import os
 import re
@@ -14,6 +15,19 @@ ROOT = Path(__file__).resolve().parents[1]
 WINDOWS = ROOT / "scripts" / "windows"
 GRADLE = (ROOT / "rpg-core" / "build.gradle").read_text(encoding="utf-8")
 PWSH = os.environ.get("UC_PWSH") or shutil.which("pwsh")
+WINDOWS_HOST = os.name == "nt"
+
+
+def stub(folder: Path, name: str, sh: str, cmd: str) -> Path:
+    """A stand-in program: a shell script on Linux, a batch file (name.cmd) on Windows, where PowerShell finds it through PATHEXT."""
+    if WINDOWS_HOST:
+        path = folder / (name if name.endswith(".bat") else name + ".cmd")
+        path.write_text("@echo off\r\n" + cmd.replace("\n", "\r\n"), encoding="utf-8")
+    else:
+        path = folder / name
+        path.write_text("#!/bin/sh\n" + sh, encoding="utf-8")
+        path.chmod(0o755)
+    return path
 sys.path.insert(0, str(ROOT / "tests"))
 
 
@@ -50,7 +64,7 @@ class Static(unittest.TestCase):
             self.assertIn('"-PucPrivateContent=$privateDir"', (WINDOWS / name).read_text(encoding="utf-8"), name)
 
     def test_the_playtest_branch_is_this_passes_branch(self):
-        self.assertIn("$script:UcBranch = 'feature/tenth-pass-living-world'", (WINDOWS / "uc-common.ps1").read_text(encoding="utf-8"))
+        self.assertIn("$script:UcBranch = 'feature/twelfth-pass-playable-alpha'", (WINDOWS / "uc-common.ps1").read_text(encoding="utf-8"))
 
     def test_offline_mode_is_never_the_default(self):
         script = (WINDOWS / "uc-server.ps1").read_text(encoding="utf-8")
@@ -58,25 +72,22 @@ class Static(unittest.TestCase):
         self.assertEqual(1, script.count("'online-mode' 'false'"), "online-mode=false is written in one place, behind the switch")
 
 
-@unittest.skipUnless(PWSH, "PowerShell 7 (pwsh) is not installed")
-class Behaviour(unittest.TestCase):
+class _Scripts:
+    """A copy of the scripts in a scratch repository, with stand-ins for gradle and Java on the PATH and a scratch home folder."""
+
     def setUp(self):
         self.dir = Path(tempfile.mkdtemp())
         self.repo = self.dir / "repo"
         shutil.copytree(WINDOWS, self.repo / "scripts" / "windows")
         for tool in ("private_c70.py", "private_pack_tool.py"):
             shutil.copy(ROOT / "scripts" / tool, self.repo / "scripts" / tool)
-        stub = self.repo / "gradlew.bat"
-        stub.write_text('#!/bin/sh\necho "$@" > "$(dirname "$0")/gradle-args.txt"\n', encoding="utf-8")
-        stub.chmod(0o755)
+        stub(self.repo, "gradlew.bat", 'echo "$@" > "$(dirname "$0")/gradle-args.txt"\n', 'echo %*> "%~dp0gradle-args.txt"\n')
         bin_dir = self.dir / "bin"
         bin_dir.mkdir()
-        java = bin_dir / "java"
-        java.write_text('#!/bin/sh\necho \'openjdk version "17.0.12" 2024-07-16\' 1>&2\n', encoding="utf-8")
-        java.chmod(0o755)
+        stub(bin_dir, "java", 'echo \'openjdk version "17.0.12" 2024-07-16\' 1>&2\n', 'echo openjdk version "17.0.12" 2024-07-16 1>&2\n')
         self.home = self.dir / "home"
         self.home.mkdir()
-        self.env = dict(os.environ, PATH=f"{bin_dir}{os.pathsep}{os.environ['PATH']}", HOME=str(self.home))
+        self.env = dict(os.environ, PATH=f"{bin_dir}{os.pathsep}{os.environ['PATH']}", HOME=str(self.home), USERPROFILE=str(self.home))
         self.env.pop("UC_PRIVATE_CONTENT_DIR", None)
         subprocess.run(["git", "init", "-q", str(self.repo)], check=True)
 
@@ -84,7 +95,8 @@ class Behaviour(unittest.TestCase):
         shutil.rmtree(self.dir, ignore_errors=True)
 
     def run_script(self, name, *args):
-        result = subprocess.run([PWSH, "-NoProfile", "-File", str(self.repo / "scripts" / "windows" / name), *args], cwd=self.repo, env=self.env, capture_output=True, text=True, timeout=120)
+        result = subprocess.run([PWSH, "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(self.repo / "scripts" / "windows" / name), *args], cwd=self.repo, env=self.env,
+                                capture_output=True, text=True, timeout=180)
         gradle = self.repo / "gradlew.bat"
         called = (self.repo / "gradle-args.txt")
         args_seen = called.read_text(encoding="utf-8").split() if called.exists() else None
@@ -93,6 +105,10 @@ class Behaviour(unittest.TestCase):
         self.assertTrue(gradle.exists())
         return result, args_seen
 
+
+
+@unittest.skipUnless(PWSH, "PowerShell (pwsh, or powershell on Windows) is not installed")
+class Behaviour(_Scripts, unittest.TestCase):
     def test_a_new_lan_server_world_and_the_refusal_to_stay_offline_silently(self):
         result, args = self.run_script("uc-server.ps1", "-Sets", "furnished,scarcity,navigation", "-World", "UC-T1", "-LanOfflineMode", "-AcceptEula")
         self.assertEqual(0, result.returncode, result.stdout + result.stderr)
@@ -201,8 +217,8 @@ class Behaviour(unittest.TestCase):
         fake = self.dir / "fakepy"
         fake.mkdir()
         record = self.dir / "py-args.txt"
-        (fake / "py").write_text('#!/bin/sh\nif [ "$2" = "-c" ]; then echo True; exit 0; fi\necho "$@" > "' + str(record) + '"\n', encoding="utf-8")
-        (fake / "py").chmod(0o755)
+        stub(fake, "py", 'if [ "$2" = "-c" ]; then echo True; exit 0; fi\necho "$@" > "' + str(record) + '"\n',
+             'if "%2"=="-c" (echo True& exit /b 0)\necho %*> "' + str(record) + '"\n')
         self.env["PATH"] = f"{fake}{os.pathsep}{self.env['PATH']}"
         source, registry = self.dir / "c70.zip", self.dir / "registry.json"
         result, args = self.run_script("uc-private-stage.ps1", "-Source", str(source), "-Registry", str(registry), "-Holder", "Owner", "-Summary", "private")
@@ -212,6 +228,66 @@ class Behaviour(unittest.TestCase):
         tool = str(self.repo / "scripts" / "private_c70.py")
         self.assertEqual(["-3", tool, "stage", "--source", str(source), "--out", str(self.home / "UndergroundCityPrivate" / "runtime"), "--registry", str(registry),
                           "--holder", "Owner", "--summary", "private"], seen)
+
+    def test_the_doctor_reads_java_and_the_server_and_changes_nothing(self):
+        run = self.repo / "rpg-core" / "run-dev"
+        run.mkdir(parents=True)
+        (run / "server.properties").write_text("online-mode=false\n", encoding="utf-8")
+        result, args = self.run_script("uc-doctor.ps1", "-NoBranchCheck")
+        out = result.stdout + result.stderr
+        self.assertIsNone(args, "the doctor never starts gradle")
+        self.assertIn("OK    Java 17", out)
+        self.assertIn("OFFLINE mode", out)
+        self.assertIn("no backup of run-dev yet", out)
+        self.assertEqual((run / "server.properties").read_text(encoding="utf-8"), "online-mode=false\n")
+        self.assertEqual(0, result.returncode, out)
+
+    def test_the_doctor_fails_on_the_wrong_java(self):
+        bin_dir = self.dir / "bin"
+        for old in bin_dir.iterdir():
+            old.unlink()
+        stub(bin_dir, "java", 'echo \'openjdk version "21.0.4" 2024-07-16\' 1>&2\n', 'echo openjdk version "21.0.4" 2024-07-16 1>&2\n')
+        result, _ = self.run_script("uc-doctor.ps1", "-NoBranchCheck")
+        self.assertNotEqual(0, result.returncode)
+        self.assertIn("FIX   java -version says", result.stdout)
+
+    def test_restore_lists_and_refuses_an_unknown_backup(self):
+        (self.repo / "backups" / "run-dev-20261029-120000" / "UC-S1").mkdir(parents=True)
+        (self.repo / "backups" / "run-dev-20261029-120000" / "UC-S1" / "level.dat").write_text("x", encoding="utf-8")
+        result, _ = self.run_script("uc-restore.ps1", "-List")
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        self.assertIn("run-dev-20261029-120000   server worlds: UC-S1", result.stdout)
+        for bad in (["-From", "run-dev-19990101-000000"], ["-From", "..\\..\\x"]):
+            result, _ = self.run_script("uc-restore.ps1", *bad, "-Force")
+            self.assertNotEqual(0, result.returncode, bad)
+
+
+@unittest.skipUnless(PWSH and WINDOWS_HOST and shutil.which("robocopy"), "robocopy exists only on Windows")
+class RealWindows(_Scripts, unittest.TestCase):
+    """On a Windows runner: a backup and a rollback with the real robocopy, the world put back as it was and the state before the rollback kept."""
+
+    def test_a_backup_and_a_rollback_round_trip(self):
+        run = self.repo / "rpg-core" / "run-dev"
+        world = run / "UC-S1"
+        world.mkdir(parents=True)
+        (world / "level.dat").write_text("before", encoding="utf-8")
+        (run / "mods").mkdir()
+        (run / "mods" / "a.jar").write_text("jar", encoding="utf-8")
+        result, _ = self.run_script("uc-backup.ps1")
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        backups = sorted(p.name for p in (self.repo / "backups").iterdir())
+        self.assertEqual(1, len(backups), backups)
+        self.assertFalse((self.repo / "backups" / backups[0] / "mods").exists(), "the mods are not backed up")
+        (world / "level.dat").write_text("after", encoding="utf-8")
+        (world / "region.mca").write_text("new", encoding="utf-8")
+        result, _ = self.run_script("uc-restore.ps1", "-From", backups[0], "-Force")
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        self.assertEqual("before", (world / "level.dat").read_text(encoding="utf-8"))
+        self.assertFalse((world / "region.mca").exists(), "a file the backup did not have is gone after the rollback")
+        self.assertTrue((run / "mods" / "a.jar").exists(), "the mods folder is left alone")
+        after = sorted(p.name for p in (self.repo / "backups").iterdir())
+        self.assertEqual(2, len(after), "the state before the rollback is kept as a backup")
+        self.assertEqual("after", (self.repo / "backups" / after[1] / "UC-S1" / "level.dat").read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":

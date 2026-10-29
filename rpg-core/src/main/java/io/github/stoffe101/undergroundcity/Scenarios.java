@@ -16,6 +16,7 @@ final class Scenarios {
             case "citystart" -> CityStartScenario.build();
             case "wreck" -> WreckScenario.build();
             case "police" -> PoliceScenario.build();
+            case "policecases" -> PoliceCasesScenario.build();
             case "doors" -> DoorsScenario.build();
             case "building" -> BuildingScenario.build();
             case "pregen" -> PregenScenario.build();
