@@ -564,6 +564,7 @@ public final class PoliceResponse {
         if (candidates.isEmpty()) return false;
         // where the offender cannot see them appear, when there is such a spot (officers walk in from round a corner; they never appear in front of anybody)
         candidates.sort(java.util.Comparator.comparingInt(c -> inView(level, player, c) ? 1 : 0));
+        long hidden = candidates.stream().filter(c -> !inView(level, player, c)).count();
         BlockPos first = reachableSpot(level, player, d, candidates);
         for (int i = 0; i < d.officersWanted; i++) {
             BlockPos at = i == 0 ? first : spots.find(level, new ChunkPos(first), random, thief).orElse(first);
@@ -576,7 +577,8 @@ public final class PoliceResponse {
             if (level.addFreshEntity(officer)) d.officers.add(officer.getUUID());
         }
         if (!d.officers.isEmpty()) PoliceTrace.note(player, d.city, "arrival", d.officers.size() + " officer(s) on foot from " + first.toShortString() + ", " + Math.round(Math.sqrt(player.distanceToSqr(first.getX() + 0.5, first.getY(), first.getZ() + 0.5))) + " blocks from them"
-            + (inView(level, player, first) ? " (in their view: no spot out of sight was found)" : ", out of their sight"));
+            + (!inView(level, player, first) ? ", out of their sight" : hidden == 0 ? " (in their view: none of " + candidates.size() + " street spot(s) was out of sight)"
+                : " (in their view: " + hidden + " of " + candidates.size() + " street spot(s) were out of sight, but no officer's route from them reached)"));
         return !d.officers.isEmpty();
     }
 

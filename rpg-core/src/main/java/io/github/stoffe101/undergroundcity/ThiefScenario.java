@@ -273,6 +273,12 @@ final class ThiefScenario {
     /** The security classes a burglary may choose (a house; the police acceptance runs take a shop after closing in Blackwater, which has no houses near its middle). */
     static java.util.Set<String> targets = java.util.Set.of("house");
 
+    /** A lock a new thief can try with plain lockpicks: it asks no skill and no tool (a high-security lock needs a Pro Pick Set; police cases run 5 met one on a Blackwater club). */
+    static boolean beginnersLock(CityBuildings.Building b) {
+        LockpickSession.Profile profile = LockProfiles.INSTANCE.find(b.security().lockProfile());
+        return profile != null && profile.requiresSkill().isEmpty() && profile.requiresTool().isEmpty();
+    }
+
     static void chooseHouse() {
         Playtest.queue("choose a Valewood house with nobody in, its alarm not armed, and furniture to search (on the server thread)", () -> {
             var server = mc().getSingleplayerServer();
@@ -303,7 +309,7 @@ final class ThiefScenario {
                         // a house to let is a vacant listing (D-127): nobody lives there and its door is the home's, not a burglar's
                         CityBuildings.INSTANCE.ofChunk(level, cx + dx, cz + dz).filter(b -> b.locked() && b.security() != null && targets.contains(b.security().id()) && !toLet(level, b)
                             && Casing.peopleIn(level, b, time) == 0 && (b.security().response() == null || !PoliceResponse.armed(level, b, b.security().response()))
-                            && furniture(level, b, BlockPos.ZERO).size() >= 3).ifPresent(fit::add);
+                            && furniture(level, b, BlockPos.ZERO).size() >= 3 && beginnersLock(b)).ifPresent(fit::add);
                     }
                     fit.sort(Comparator.comparingInt(b -> Math.abs(b.chunkX() - cx) + Math.abs(b.chunkZ() - cz)));
                     for (CityBuildings.Building b : fit) {
@@ -314,7 +320,7 @@ final class ThiefScenario {
             });
         }, () -> F.looked, 2400);
         Playtest.queue("the house", () -> {
-            if (F.door == null || F.house == null || !targets.contains(F.house.security().id())) { Playtest.fail("no empty, unarmed " + targets + " with three pieces of furniture near the city's middle"); return; }
+            if (F.door == null || F.house == null || !targets.contains(F.house.security().id())) { Playtest.fail("no empty, unarmed " + targets + " with three pieces of furniture and a lock plain picks can try near the city's middle"); return; }
             List<String> kinds = new ArrayList<>();
             for (BlockPos p : F.spots) kinds.add(server(() -> BurglarySearch.LOADER.kindOf(level().getBlockState(p)).title()));
             Playtest.log("THIEF target: " + F.house.type() + " (" + F.house.security().id() + ", tier " + F.house.security().tier() + ", lock " + F.house.security().lockProfile() + ") at chunk "
