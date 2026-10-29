@@ -33,7 +33,7 @@ import java.util.UUID;
  * in a settlement: it is written after one, and a failure to write is logged once and ignored. Off with {@code -Duc.economyTelemetry=false}.
  *
  * <p>Every line has {@code t} (the shared active clock in ticks), {@code wall} (epoch seconds), {@code p} (the pseudonym), {@code career}, {@code level}, {@code wallet} (the Q Shop balance
- * after the event) and {@code kind}: login, logout, city (entered a city, or {@code ""} for open country), accepted, order, service, purchase, supply, fence, encounter, business, arrest,
+ * after the event, left out when the wallet cannot be read) and {@code kind}: login, logout, city (entered a city, or {@code ""} for open country), accepted, order, service, purchase, supply, fence, encounter, business, arrest,
  * search.
  */
 @Mod.EventBusSubscriber(modid = UndergroundCity.MOD_ID)
@@ -74,7 +74,8 @@ final class EconomyTelemetry {
             line.addProperty("wall", System.currentTimeMillis() / 1000L);
             line.addProperty("p", pseudonym(server, player.getUUID()));
             CitizenState.get(server).find(player.getUUID()).ifPresent(c -> { line.addProperty("career", c.career); line.addProperty("level", c.careerLevel()); });
-            line.addProperty("wallet", Math.round(QShopEconomy.balance(player)));
+            // the wallet is read when it can be: a world without Q Shop's credits template (CI's smoke servers had none) still gets the line, without the field
+            try { line.addProperty("wallet", Math.round(QShopEconomy.balance(player))); } catch (RuntimeException noWallet) { /* the line is still written */ }
             line.addProperty("kind", kind);
             for (int i = 0; i + 1 < fields.length; i += 2) {
                 String key = String.valueOf(fields[i]);

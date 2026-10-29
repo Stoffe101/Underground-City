@@ -13,7 +13,7 @@ The economy model ([economy-model.md](economy-model.md)) and the career balance 
 | `t` | the shared active clock in ticks (`LockService.clock`; it runs only while somebody is online) |
 | `wall` | epoch seconds |
 | `p` | a **pseudonym**: the first ten hex digits of SHA-256 over the world's seed and the player's id; never the name, never the id |
-| `career`, `level`, `wallet` | the player's career, career level and Q Shop balance after the event |
+| `career`, `level`, `wallet` | the player's career, career level and Q Shop balance after the event (`wallet` is left out when Q Shop's wallet cannot be read, as on a server without its credits template; the line is still written) |
 | `kind` | what happened (below) |
 
 | Kind | Written when | Fields |
