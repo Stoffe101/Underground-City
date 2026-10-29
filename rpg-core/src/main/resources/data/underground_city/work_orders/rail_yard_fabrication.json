@@ -1,0 +1,28 @@
+{
+  "schema_version": 3,
+  "title": "Fabrication for the rail yard",
+  "career": "smith",
+  "level": 21,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "underground_city:gearbox",
+      "count": 2
+    },
+    {
+      "item": "underground_city:composite_housing",
+      "count": 4
+    },
+    {
+      "item": "underground_city:steel_bracket",
+      "count": 8
+    }
+  ],
+  "credits": 1000,
+  "xp": 960,
+  "capacity": 2,
+  "refill_ticks": 12000,
+  "legality": "legal",
+  "requires_skill": "smith.foundry_partnerships",
+  "requires_facility": "trade"
+}

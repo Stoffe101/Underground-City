@@ -1,0 +1,23 @@
+{
+  "schema_version": 3,
+  "title": "Stock an estate's reserve cellar",
+  "career": "vintner",
+  "level": 18,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "underground_city:aged_wine",
+      "count": 5
+    },
+    {
+      "item": "underground_city:grain_spirit",
+      "count": 2
+    }
+  ],
+  "credits": 360,
+  "xp": 420,
+  "capacity": 1,
+  "refill_ticks": 72000,
+  "legality": "legal",
+  "requires_skill": "vintner.cellar_masters_label"
+}

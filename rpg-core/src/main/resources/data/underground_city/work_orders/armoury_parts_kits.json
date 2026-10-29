@@ -10,10 +10,10 @@
       "count": 2
     }
   ],
-  "credits": 210,
+  "credits": 190,
   "xp": 380,
   "capacity": 2,
-  "refill_ticks": 12000,
+  "refill_ticks": 24000,
   "legality": "legal",
   "requires_skill": "gunsmith.licensed_repairs"
 }

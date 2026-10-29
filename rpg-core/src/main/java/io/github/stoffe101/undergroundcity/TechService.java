@@ -375,9 +375,11 @@ public final class TechService {
     /** What a repair of a building of this tier pays (before the career's contract-rate skills). */
     static int repairFee(int tier) { return 30 + 12 * Math.max(1, tier); }
     static int repairXp(int tier) { return 80 + 30 * Math.max(1, tier); }
-    static int installFee(int tier) { return 45 + 18 * Math.max(1, tier); }
+    /** An install uses up a Municipal Security Array (about 140 credits of exchange goods), so it pays for the array and then the work: until the twelfth pass it paid 45 + 18 x tier and lost money at every tier (tech run 5: 102 for a tier III install). */
+    static int installFee(int tier) { return 150 + 25 * Math.max(1, tier); }
     static int installXp(int tier) { return 110 + 35 * Math.max(1, tier); }
-    static int upgradeFee(int tier) { return 60 + 22 * Math.max(1, tier); }
+    /** A network upgrade is the trade's most skilled legal work (Systems Integrator): 90 + 30 x tier from the twelfth pass (60 + 22 x tier before), so a level 20 Technician's legal hour grows past its level 6 one (D-210). */
+    static int upgradeFee(int tier) { return 90 + 30 * Math.max(1, tier); }
     static int upgradeXp(int tier) { return 140 + 40 * Math.max(1, tier); }
 
     static boolean isTechnician(ServerPlayer player) {

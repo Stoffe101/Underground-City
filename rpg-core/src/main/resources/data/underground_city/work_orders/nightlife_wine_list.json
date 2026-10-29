@@ -1,0 +1,24 @@
+{
+  "schema_version": 3,
+  "title": "A wine list for the Blackwater taproom",
+  "career": "vintner",
+  "level": 14,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "underground_city:aged_wine",
+      "count": 6
+    },
+    {
+      "item": "underground_city:berry_wine",
+      "count": 6
+    }
+  ],
+  "credits": 500,
+  "xp": 680,
+  "capacity": 2,
+  "refill_ticks": 12000,
+  "legality": "legal",
+  "requires_skill": "vintner.cellar_masters_label",
+  "buyer": "blackwater_taproom"
+}

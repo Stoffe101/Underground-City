@@ -1,0 +1,24 @@
+{
+  "schema_version": 3,
+  "title": "Co-op seasonal supply: graded crates",
+  "career": "farmer",
+  "level": 14,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "underground_city:produce_crate",
+      "count": 6
+    },
+    {
+      "item": "underground_city:fruit_crate",
+      "count": 6
+    }
+  ],
+  "credits": 560,
+  "xp": 700,
+  "capacity": 2,
+  "refill_ticks": 12000,
+  "legality": "legal",
+  "requires_skill": "farmer.farm_cooperative",
+  "buyer": "valewood_council"
+}

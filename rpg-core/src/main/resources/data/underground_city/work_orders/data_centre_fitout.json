@@ -1,0 +1,32 @@
+{
+  "schema_version": 3,
+  "title": "Fit out a data centre",
+  "career": "technician",
+  "level": 21,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "underground_city:security_array",
+      "count": 1
+    },
+    {
+      "item": "underground_city:industrial_controller",
+      "count": 1
+    },
+    {
+      "item": "minecraft:observer",
+      "count": 6
+    },
+    {
+      "item": "minecraft:comparator",
+      "count": 4
+    }
+  ],
+  "credits": 930,
+  "xp": 960,
+  "capacity": 2,
+  "refill_ticks": 12000,
+  "legality": "legal",
+  "requires_skill": "technician.systems_integrator",
+  "requires_facility": "trade"
+}

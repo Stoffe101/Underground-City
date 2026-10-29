@@ -1,0 +1,27 @@
+{
+  "schema_version": 3,
+  "title": "Security for a Blackwater office tower",
+  "career": "technician",
+  "level": 14,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "underground_city:security_array",
+      "count": 1
+    },
+    {
+      "item": "minecraft:observer",
+      "count": 4
+    },
+    {
+      "item": "minecraft:comparator",
+      "count": 2
+    }
+  ],
+  "credits": 560,
+  "xp": 720,
+  "capacity": 2,
+  "refill_ticks": 12000,
+  "legality": "legal",
+  "requires_skill": "technician.systems_integrator"
+}

@@ -26,8 +26,8 @@ Before this pass a Technician had contracts on the work-order board and one jam 
 | Job | At the panel, holding | Puzzle | Who may | Pays (before contract-rate skills) | Effect |
 | --- | --- | --- | --- | --- | --- |
 | Repair | Technician's Toolkit | **Trace**: find the dead part (120 s) | any Technician up to tier II; **Bench Electronics** up to III; **Municipal Repairs** any tier, with a third try | 30 + 12·tier credits, 80 + 30·tier XP | the fault is cleared, the lamp turns green |
-| Install | Municipal Security Array (used up) | **Patch**: feed every device (180 s; a bigger grid from tier IV) | **Automation Installer** | 45 + 18·tier credits, 110 + 35·tier XP | a **monitored alarm**: always armed for 8 hours of active play (16 with **Security Systems**) |
-| Upgrade | Technician's Toolkit | **Patch**, large grid | **Systems Integrator** | 60 + 22·tier credits, 140 + 40·tier XP | the network does not fault for 4 hours of active play |
+| Install | Municipal Security Array (used up) | **Patch**: feed every device (180 s; a bigger grid from tier IV) | **Automation Installer** | 150 + 25·tier credits (45 + 18·tier until the twelfth pass, which lost money against the array it uses up: D-210), 110 + 35·tier XP | a **monitored alarm**: always armed for 8 hours of active play (16 with **Security Systems**) |
+| Upgrade | Technician's Toolkit | **Patch**, large grid | **Systems Integrator** | 90 + 30·tier credits (60 + 22·tier until the twelfth pass: D-210), 140 + 40·tier XP | the network does not fault for 4 hours of active play |
 
 * A repair of a tier III building or above uses one **circuit board**.
 * **The trace puzzle:**

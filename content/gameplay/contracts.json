@@ -853,14 +853,15 @@
       "level": 3,
       "legality": "legal",
       "requires_skill": "gunsmith.licensed_repairs",
-      "credits": 210,
+      "credits": 190,
       "xp": 380,
       "requirements": [
         {
           "item": "underground_city:firearm_parts_kit",
           "count": 2
         }
-      ]
+      ],
+      "refill_ticks": 24000
     },
     {
       "id": "unmarked_kits",
@@ -873,7 +874,7 @@
       "trust_gain": 1,
       "capacity": 1,
       "refill_ticks": 24000,
-      "credits": 400,
+      "credits": 370,
       "xp": 420,
       "requirements": [
         {
@@ -882,6 +883,515 @@
         }
       ],
       "origin": "valewood"
+    },
+    {
+      "id": "coop_seasonal_supply",
+      "title": "Co-op seasonal supply: graded crates",
+      "career": "farmer",
+      "level": 14,
+      "legality": "legal",
+      "requires_skill": "farmer.farm_cooperative",
+      "buyer": "valewood_council",
+      "capacity": 2,
+      "refill_ticks": 12000,
+      "credits": 560,
+      "xp": 700,
+      "requirements": [
+        {
+          "item": "underground_city:produce_crate",
+          "count": 6
+        },
+        {
+          "item": "underground_city:fruit_crate",
+          "count": 6
+        }
+      ]
+    },
+    {
+      "id": "glasshouse_expansion",
+      "title": "Glasshouse expansion for an estate",
+      "career": "farmer",
+      "level": 17,
+      "legality": "legal",
+      "requires_skill": "farmer.farm_cooperative",
+      "capacity": 2,
+      "refill_ticks": 12000,
+      "credits": 760,
+      "xp": 780,
+      "requirements": [
+        {
+          "item": "underground_city:precision_greenhouse_unit",
+          "count": 2
+        },
+        {
+          "item": "underground_city:climate_module",
+          "count": 1
+        },
+        {
+          "item": "underground_city:agri_sensor_repair",
+          "count": 2
+        }
+      ]
+    },
+    {
+      "id": "regional_food_contract",
+      "title": "Regional food contract from the farm office",
+      "career": "farmer",
+      "level": 20,
+      "legality": "legal",
+      "requires_skill": "farmer.farm_cooperative",
+      "requires_facility": "trade",
+      "capacity": 2,
+      "refill_ticks": 12000,
+      "credits": 900,
+      "xp": 900,
+      "requirements": [
+        {
+          "item": "underground_city:produce_crate",
+          "count": 10
+        },
+        {
+          "item": "underground_city:fruit_crate",
+          "count": 6
+        },
+        {
+          "item": "underground_city:flour",
+          "count": 16
+        }
+      ]
+    },
+    {
+      "id": "dispensary_reserve_supply",
+      "title": "Licensed reserve stock for the dispensary",
+      "career": "farmer",
+      "level": 16,
+      "legality": "legal",
+      "requires_skill": "farmer.controlled_crop_licence",
+      "buyer": "blackwater_dispensary",
+      "capacity": 2,
+      "refill_ticks": 12000,
+      "credits": 700,
+      "xp": 720,
+      "requirements": [
+        {
+          "item": "underground_city:dried_cannabis",
+          "count": 8
+        }
+      ]
+    },
+    {
+      "id": "estate_crop_run",
+      "title": "A whole crop for Marrow",
+      "career": "farmer",
+      "level": 16,
+      "legality": "underground",
+      "requires_skill": "farmer.back_lot_network",
+      "buyer": "marrow",
+      "origin": "valewood",
+      "min_trust": 2,
+      "trust_gain": 1,
+      "capacity": 1,
+      "refill_ticks": 24000,
+      "credits": 950,
+      "xp": 760,
+      "requirements": [
+        {
+          "item": "underground_city:dried_cannabis",
+          "count": 10
+        }
+      ]
+    },
+    {
+      "id": "nightlife_wine_list",
+      "title": "A wine list for the Blackwater taproom",
+      "career": "vintner",
+      "level": 14,
+      "legality": "legal",
+      "requires_skill": "vintner.cellar_masters_label",
+      "buyer": "blackwater_taproom",
+      "capacity": 2,
+      "refill_ticks": 12000,
+      "credits": 500,
+      "xp": 680,
+      "requirements": [
+        {
+          "item": "underground_city:aged_wine",
+          "count": 6
+        },
+        {
+          "item": "underground_city:berry_wine",
+          "count": 6
+        }
+      ]
+    },
+    {
+      "id": "estate_reserve_cellar",
+      "title": "Stock an estate's reserve cellar",
+      "career": "vintner",
+      "level": 18,
+      "legality": "legal",
+      "requires_skill": "vintner.cellar_masters_label",
+      "capacity": 1,
+      "refill_ticks": 72000,
+      "credits": 360,
+      "xp": 420,
+      "requirements": [
+        {
+          "item": "underground_city:aged_wine",
+          "count": 5
+        },
+        {
+          "item": "underground_city:grain_spirit",
+          "count": 2
+        }
+      ]
+    },
+    {
+      "id": "hotel_bar_contract",
+      "title": "Supply a hotel bar for the season",
+      "career": "vintner",
+      "level": 21,
+      "legality": "legal",
+      "requires_skill": "vintner.cellar_masters_label",
+      "requires_facility": "trade",
+      "capacity": 2,
+      "refill_ticks": 12000,
+      "credits": 1000,
+      "xp": 950,
+      "requirements": [
+        {
+          "item": "underground_city:aged_wine",
+          "count": 12
+        },
+        {
+          "item": "underground_city:apple_cider",
+          "count": 12
+        },
+        {
+          "item": "underground_city:grain_spirit",
+          "count": 6
+        }
+      ]
+    },
+    {
+      "id": "bonded_spirits_run",
+      "title": "Untaxed spirits for Rusk's back bar",
+      "career": "vintner",
+      "level": 16,
+      "legality": "underground",
+      "requires_skill": "vintner.quiet_cellar",
+      "buyer": "ironhaven_backbar",
+      "origin": "valewood",
+      "min_trust": 2,
+      "trust_gain": 1,
+      "capacity": 1,
+      "refill_ticks": 24000,
+      "credits": 420,
+      "xp": 700,
+      "requirements": [
+        {
+          "item": "underground_city:moonshine",
+          "count": 12
+        }
+      ]
+    },
+    {
+      "id": "foundry_gearbox_line",
+      "title": "A gearbox line for the Ironhaven foundry",
+      "career": "smith",
+      "level": 14,
+      "legality": "legal",
+      "requires_skill": "smith.foundry_partnerships",
+      "buyer": "ironhaven_guard",
+      "capacity": 2,
+      "refill_ticks": 12000,
+      "credits": 700,
+      "xp": 720,
+      "requirements": [
+        {
+          "item": "underground_city:gearbox",
+          "count": 1
+        },
+        {
+          "item": "underground_city:precision_machinery_parts",
+          "count": 6
+        }
+      ]
+    },
+    {
+      "id": "pumping_station_refit",
+      "title": "Refit a pumping station",
+      "career": "smith",
+      "level": 18,
+      "legality": "legal",
+      "requires_skill": "smith.master_engineer",
+      "capacity": 2,
+      "refill_ticks": 12000,
+      "credits": 840,
+      "xp": 860,
+      "requirements": [
+        {
+          "item": "underground_city:pump_assembly",
+          "count": 1
+        },
+        {
+          "item": "underground_city:composite_housing",
+          "count": 3
+        },
+        {
+          "item": "underground_city:precision_machinery_parts",
+          "count": 2
+        }
+      ]
+    },
+    {
+      "id": "rail_yard_fabrication",
+      "title": "Fabrication for the rail yard",
+      "career": "smith",
+      "level": 21,
+      "legality": "legal",
+      "requires_skill": "smith.foundry_partnerships",
+      "requires_facility": "trade",
+      "capacity": 2,
+      "refill_ticks": 12000,
+      "credits": 1000,
+      "xp": 960,
+      "requirements": [
+        {
+          "item": "underground_city:gearbox",
+          "count": 2
+        },
+        {
+          "item": "underground_city:composite_housing",
+          "count": 4
+        },
+        {
+          "item": "underground_city:steel_bracket",
+          "count": 8
+        }
+      ]
+    },
+    {
+      "id": "armoured_plate_shipment",
+      "title": "Plate for a quiet armoury in Valewood",
+      "career": "smith",
+      "level": 16,
+      "legality": "underground",
+      "requires_skill": "smith.foundry_fence",
+      "buyer": "hollis",
+      "origin": "ironhaven",
+      "min_trust": 2,
+      "trust_gain": 1,
+      "capacity": 1,
+      "refill_ticks": 24000,
+      "credits": 900,
+      "xp": 760,
+      "requirements": [
+        {
+          "item": "underground_city:unstamped_plate",
+          "count": 12
+        }
+      ]
+    },
+    {
+      "id": "guard_armoury_refit",
+      "title": "Refit the guard armoury's service weapons",
+      "career": "gunsmith",
+      "level": 14,
+      "legality": "legal",
+      "requires_skill": "gunsmith.range_master",
+      "buyer": "ironhaven_guard",
+      "capacity": 2,
+      "refill_ticks": 12000,
+      "credits": 540,
+      "xp": 720,
+      "requirements": [
+        {
+          "item": "underground_city:firearm_parts_kit",
+          "count": 5
+        },
+        {
+          "item": "underground_city:optic_mount_kit",
+          "count": 2
+        }
+      ]
+    },
+    {
+      "id": "security_firm_contract",
+      "title": "Equip a private security firm",
+      "career": "gunsmith",
+      "level": 18,
+      "legality": "legal",
+      "requires_skill": "gunsmith.range_master",
+      "capacity": 2,
+      "refill_ticks": 24000,
+      "credits": 700,
+      "xp": 820,
+      "requirements": [
+        {
+          "item": "underground_city:firearm_parts_kit",
+          "count": 6
+        },
+        {
+          "item": "underground_city:specialized_equipment_platform",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "id": "range_supply_contract",
+      "title": "Supply a shooting range for the season",
+      "career": "gunsmith",
+      "level": 21,
+      "legality": "legal",
+      "requires_skill": "gunsmith.range_master",
+      "requires_facility": "trade",
+      "capacity": 2,
+      "refill_ticks": 12000,
+      "credits": 980,
+      "xp": 940,
+      "requirements": [
+        {
+          "item": "underground_city:firearm_parts_kit",
+          "count": 8
+        },
+        {
+          "item": "underground_city:optic_mount_kit",
+          "count": 4
+        },
+        {
+          "item": "underground_city:licensed_service_kit",
+          "count": 2
+        }
+      ]
+    },
+    {
+      "id": "ghost_kit_crates",
+      "title": "Crates of unmarked kits for Dray",
+      "career": "gunsmith",
+      "level": 16,
+      "legality": "underground",
+      "requires_skill": "gunsmith.ghost_guns",
+      "buyer": "dray",
+      "origin": "valewood",
+      "min_trust": 2,
+      "trust_gain": 1,
+      "capacity": 1,
+      "refill_ticks": 24000,
+      "credits": 730,
+      "xp": 760,
+      "requirements": [
+        {
+          "item": "underground_city:unmarked_parts_kit",
+          "count": 4
+        }
+      ]
+    },
+    {
+      "id": "tower_security_install",
+      "title": "Security for a Blackwater office tower",
+      "career": "technician",
+      "level": 14,
+      "legality": "legal",
+      "requires_skill": "technician.systems_integrator",
+      "capacity": 2,
+      "refill_ticks": 12000,
+      "credits": 560,
+      "xp": 720,
+      "requirements": [
+        {
+          "item": "underground_city:security_array",
+          "count": 1
+        },
+        {
+          "item": "minecraft:observer",
+          "count": 4
+        },
+        {
+          "item": "minecraft:comparator",
+          "count": 2
+        }
+      ]
+    },
+    {
+      "id": "municipal_network_upgrade",
+      "title": "Upgrade the city's control network",
+      "career": "technician",
+      "level": 18,
+      "legality": "legal",
+      "requires_skill": "technician.systems_integrator",
+      "buyer": "valewood_council",
+      "capacity": 2,
+      "refill_ticks": 12000,
+      "credits": 640,
+      "xp": 840,
+      "requirements": [
+        {
+          "item": "underground_city:industrial_controller",
+          "count": 2
+        },
+        {
+          "item": "minecraft:comparator",
+          "count": 4
+        },
+        {
+          "item": "minecraft:observer",
+          "count": 2
+        }
+      ]
+    },
+    {
+      "id": "data_centre_fitout",
+      "title": "Fit out a data centre",
+      "career": "technician",
+      "level": 21,
+      "legality": "legal",
+      "requires_skill": "technician.systems_integrator",
+      "requires_facility": "trade",
+      "capacity": 2,
+      "refill_ticks": 12000,
+      "credits": 930,
+      "xp": 960,
+      "requirements": [
+        {
+          "item": "underground_city:security_array",
+          "count": 1
+        },
+        {
+          "item": "underground_city:industrial_controller",
+          "count": 1
+        },
+        {
+          "item": "minecraft:observer",
+          "count": 6
+        },
+        {
+          "item": "minecraft:comparator",
+          "count": 4
+        }
+      ]
+    },
+    {
+      "id": "ledger_auction",
+      "title": "Ledgers for Vesper's auction",
+      "career": "technician",
+      "level": 16,
+      "legality": "underground",
+      "requires_skill": "technician.ghost_traffic",
+      "buyer": "vesper",
+      "origin": "blackwater",
+      "min_trust": 2,
+      "trust_gain": 1,
+      "capacity": 1,
+      "refill_ticks": 24000,
+      "credits": 1000,
+      "xp": 780,
+      "requirements": [
+        {
+          "item": "underground_city:data_ledger",
+          "count": 4
+        }
+      ]
     }
   ],
   "reference_values": {
@@ -951,7 +1461,11 @@
       "underground_city:springs": 3,
       "underground_city:gear_set": 22,
       "underground_city:firearm_parts_kit": 60,
-      "underground_city:unmarked_parts_kit": 95
+      "underground_city:unmarked_parts_kit": 95,
+      "underground_city:drive_shaft": 24,
+      "underground_city:bearing_set": 4,
+      "underground_city:gearbox": 80,
+      "underground_city:pump_assembly": 125
     }
   }
 }
