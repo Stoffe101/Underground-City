@@ -241,6 +241,7 @@ public final class CheckpointService {
         // One prepared record carries the inventory, the changes to carried packs, the fine, the heat and the record of the search: all or none, replayed after a crash.
         ledger.prepareSeizure(player.getUUID(), after.save(new ListTag()), balanceAfter, citizen.careerXp(), post.jurisdiction(), heatAfter, CarriedStorage.journal(takenFromPerson), record);
         if (crashAfterPrepare) throw new CrewService.SimulatedCrash("checkpoint_after_prepare");
+        EconomyTelemetry.record(player, "search", "city", post.jurisdiction(), "fine", paid, "stacks", seized, "post", post.id());
         // The vehicle's hold is not part of the journaled inventory; its stacks leave it now, after the decision is on disk (a crash here costs the traveller the fine
         // and the heat but not the goods, which is the safe side).
         for (CarriedStorage.Found found : takenFromVehicle) found.take();
@@ -294,6 +295,7 @@ public final class CheckpointService {
         ledger.prepareSeizure(player.getUUID(), after.save(new ListTag()), balanceAfter, citizen.careerXp(), city, heatAfter, CarriedStorage.journal(taken), record, true);
         if (crashAfterPrepare) throw new CrewService.SimulatedCrash("checkpoint_after_prepare");
         WorkOrderService.recover(player, ledger);
+        EconomyTelemetry.record(player, "arrest", "city", city, "fine", paid, "asked", fine, "stacks", taken.size(), "post", postId);
         return new Result(Outcome.SEIZED, taken.size(), paid, heatAfter + " heat");
     }
 

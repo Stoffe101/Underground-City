@@ -670,6 +670,7 @@ public final class RoadEncounters {
         if (choice.heat() > 0 && !heated.isEmpty() && player.getRandom().nextDouble() < choice.heatChance()) heat = Map.of(heated, ledger.heatAfter(player.getUUID(), heated, choice.heat()));
         ledger.prepareEncounter(player.getUUID(), active.id, encounter.id(), choice.pay() - choice.cost(), after.save(new ListTag()), target, xp, heat);
         WorkOrderService.recover(player, ledger);
+        EconomyTelemetry.record(player, "encounter", "encounter", encounter.id(), "credits", choice.pay() - choice.cost());
         if (choice.resolves()) active.resolved = player.serverLevel().getGameTime();
         state.settled++;
         state.setDirty();
@@ -747,6 +748,7 @@ public final class RoadEncounters {
             UUID commit = already ? UUID.randomUUID() : id;   // a stale letter is still taken back, through the same durable path
             ledger.prepareEncounter(player.getUUID(), commit, "letter", fee, after.save(new ListTag()), QShopEconomy.balance(player) + fee, xp, Map.of());
             WorkOrderService.recover(player, ledger);
+            EconomyTelemetry.record(player, "encounter", "encounter", "letter", "credits", fee);
             boolean freight = Freight.KIND.equals(letter.getString("kind"));   // a depot manifest (D-156) travels the letter's path, under its own name
             if (!already) {
                 state.delivered.add(id);

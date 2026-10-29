@@ -289,6 +289,7 @@ public final class PlayerBusiness {
         int xp = CitizenState.get(player.server).find(player.getUUID()).map(c -> c.careerXp()).orElse(0);
         orders.prepareBusinessTakings(player.getUUID(), id, takings, player.getInventory().save(new ListTag()), wallet + takings, xp);
         WorkOrderService.recover(player, orders);
+        EconomyTelemetry.record(player, "business", "credits", takings);
         player.sendSystemMessage(Component.literal("Collected " + takings + " credits from the counter."));
         return takings;
     }

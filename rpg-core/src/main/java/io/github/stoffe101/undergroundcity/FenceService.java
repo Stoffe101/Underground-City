@@ -264,6 +264,7 @@ public final class FenceService {
         ledger.prepareSale(player.getUUID(), nonce, fence, credits, after.save(new ListTag()), balance + credits, citizen.careerXp(), heat);
         WorkOrderService.recover(player, ledger);
         CitizenState.get(player.server).bumpJourney(player.getUUID(), "fenced");
+        EconomyTelemetry.record(player, "fence", "credits", credits, "city", fence.city(), "home_city", home);
         if (own > 0) Thievery.fenced(player, own);
         int sold = units.values().stream().mapToInt(Integer::intValue).sum();
         player.sendSystemMessage(Component.literal("Sold " + sold + " stolen item" + (sold == 1 ? "" : "s") + " to " + fence.title() + " for " + credits + " credits."

@@ -370,6 +370,7 @@ public final class TechWork {
         int xp = ProgressionRules.totalXp(c.careerXp(), Math.max(0, xpGain));
         ledger.prepareEncounter(player.getUUID(), commit, what, credits, after.save(new ListTag()), QShopEconomy.balance(player) + credits, xp, Map.of());
         WorkOrderService.recover(player, ledger);
+        EconomyTelemetry.record(player, "service", "what", what, "credits", credits, "xp", xpGain, "parts", uses.size());
         return true;
     }
 

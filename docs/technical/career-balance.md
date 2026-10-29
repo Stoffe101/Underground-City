@@ -105,7 +105,7 @@ The economy model's own invariants (`economy_model.py --check`: no break-even lo
 
 ## What is not proven
 
-* **The hands-on share (0.5).** Every income figure is multiplied by it. The scripted runs log their steps but not the share of an hour spent producing; economy telemetry that records it per player, so a playtest can replace the assumption, is the next step (P2 of the brief).
+* **The hands-on share (0.5).** Every income figure is multiplied by it. The scripted runs log their steps but not the share of an hour spent producing; [economy telemetry](economy-telemetry.md) now records each order's active minutes from acceptance to delivery and each player's net credits per active hour, so a playtest can replace the assumption (`scripts/economy_report.py`).
 * **The arrest rate (0.4 once noticed).** To be replaced by the police acceptance runs' arrest share.
 * **Station tiers by level and the service-call minutes** are assumptions.
 * Nobody has played an hour of any build.
