@@ -181,10 +181,22 @@ public final class PolicePatrols {
             if (officer.blockPosition().distSqr(patrol.beat.get(spot)) <= REACHED * REACHED) { spot = (spot + 1) % patrol.beat.size(); patrol.next.set(i, spot); }
             officer.errand(patrol.beat.get(spot), SPEED);
         }
+        WorkOrderLedger ledger = WorkOrderLedger.get(server);
         for (ServerPlayer player : players) {
             if (!policed(player)) continue;
             Work work = atWork(level, player);
-            if (work == null) continue;
+            if (work == null) {
+                // somebody wanted in this city (twelfth pass): an officer on the beat who sees them goes after them for the warrant
+                WorkOrderLedger.Warrant warrant = ledger.faulted() ? null : ledger.warrant(player.getUUID(), patrol.city);
+                if (warrant == null) continue;
+                TownspersonEntity seer = seer(officers, player);
+                if (seer != null && PoliceResponse.wantedSeen(player, level, patrol.city, seer, warrant)) {
+                    patrol.remove(seer.getUUID());
+                    caught++;
+                    return patrol.officers.isEmpty();
+                }
+                continue;
+            }
             TownspersonEntity seer = seer(officers, player);
             if (seer != null) {
                 catchAtWork(level, patrol, seer, player, work);

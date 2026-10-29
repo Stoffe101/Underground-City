@@ -1,0 +1,22 @@
+{
+  "schema_version": 3,
+  "title": "Untaxed spirits for Rusk's back bar",
+  "career": "vintner",
+  "level": 16,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "underground_city:moonshine",
+      "count": 12
+    }
+  ],
+  "credits": 420,
+  "xp": 700,
+  "capacity": 1,
+  "refill_ticks": 24000,
+  "legality": "underground",
+  "requires_skill": "vintner.quiet_cellar",
+  "buyer": "ironhaven_backbar",
+  "min_trust": 2,
+  "trust_gain": 1
+}

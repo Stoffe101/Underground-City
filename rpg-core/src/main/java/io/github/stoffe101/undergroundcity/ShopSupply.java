@@ -89,6 +89,7 @@ public final class ShopSupply {
         ledger.prepareSupply(player.getUUID(), nonce, stock, quantity, credits, after.save(new ListTag()), balance, xpAfter);
         WorkOrderService.recover(player, ledger);
         CitizenState.get(player.server).bumpJourney(player.getUUID(), "shop_supplied");
+        EconomyTelemetry.record(player, "supply", "good", stock.id(), "units", quantity, "credits", credits, "own_trade", ownTrade);
         String what = quantity + " x " + stock.registryItem().getDescription().getString();
         long shortBonus = premiumUnits == 0 ? 0 : Math.round((Shortages.shortPays(stock, terms.pays()) - terms.pays()) * premiumWeight);
         long gradeBonus = credits - shortBonus - (long) terms.pays() * quantity;

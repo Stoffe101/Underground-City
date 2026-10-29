@@ -5,7 +5,7 @@ Set-StrictMode -Version 3.0
 $ErrorActionPreference = 'Stop'
 
 $script:UcRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
-$script:UcBranch = 'feature/tenth-pass-living-world'
+$script:UcBranch = 'feature/twelfth-pass-playable-alpha'
 
 # The pack sets build.gradle knows: every set of content/modpacks/dev-pack.json but the deferred ones, plus Core's own scarcity package (tests/test_windows_scripts.py keeps the two
 # lists equal). legacy_travelers, the retired Traveler's Backpack kept for the save-guard test, is left out on purpose. A plain launch already loads world, firearms, vehicles and boats.
@@ -14,7 +14,8 @@ $script:UcKnownSets = @('world', 'firearms', 'vehicles', 'boats', 'vintner', 'fa
 # -C70: the owner's private buildings first (D-193). They join the furnished cities, name the furniture set's blocks and were chosen with the scarcity package in mind.
 $script:UcC70Sets = @('furnished', 'scarcity', 'furniture')
 # where uc-private-stage.ps1 stages them unless told otherwise: outside the repository, in the user's own folder (never commit it, never upload it)
-$script:UcDefaultPrivate = Join-Path ([Environment]::GetFolderPath('UserProfile')) (Join-Path 'UndergroundCityPrivate' 'runtime')
+$script:UcProfile = if ($env:USERPROFILE) { $env:USERPROFILE } else { [Environment]::GetFolderPath('UserProfile') }
+$script:UcDefaultPrivate = Join-Path $script:UcProfile (Join-Path 'UndergroundCityPrivate' 'runtime')
 
 function Get-UcGradle {
     $wrapper = Join-Path $script:UcRoot 'gradlew.bat'
@@ -22,8 +23,19 @@ function Get-UcGradle {
     return $wrapper
 }
 
+# Runs a native program (java, git, python, gradle) with errors not stopping the script. Windows PowerShell 5.1, the one Windows 11 ships with, turns every line such a
+# program writes to its error stream into a PowerShell error once that stream is redirected or captured, and with $ErrorActionPreference = 'Stop' the first one ends the script:
+# `java -version` (which prints its version there) then read as "Java was not found" (found on GitHub's Windows runner, twelfth pass). Check $LASTEXITCODE afterwards instead.
+function Invoke-UcNative([scriptblock] $Block) {
+    $previous = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try { & $Block } finally { $ErrorActionPreference = $previous }
+}
+
 function Test-UcJava {
-    try { $version = (& java -version 2>&1 | Select-Object -First 1) -join '' } catch { throw 'Java was not found. Install JDK 17 (Temurin 17) and put it on the PATH.' }
+    $java = Get-Command java -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($null -eq $java) { throw 'Java was not found. Install JDK 17 (Temurin 17) and put it on the PATH.' }
+    $version = (Invoke-UcNative { & $java.Source -version 2>&1 } | Select-Object -First 1 | ForEach-Object { "$_" }) -join ''
     if ($version -notmatch '"17\.') { Write-Warning "java -version says: $version. Minecraft 1.20.1 with Forge 47.4.10 needs JDK 17." }
 }
 
@@ -49,6 +61,8 @@ function Backup-UcRunDir([string] $RunDir = 'run-dev') {
     New-Item -ItemType Directory -Force -Path $backups | Out-Null
     $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
     $target = Join-Path $backups "$RunDir-$stamp"
+    # never into a backup that exists already (two backups in one second: a rollback backs the folder up first)
+    for ($n = 2; Test-Path $target; $n++) { $target = Join-Path $backups "$RunDir-$stamp-$n" }
     # the mods folder is downloaded again by gradle and the logs are not part of a world; everything else (worlds, saves, configs, the Crew ledger inside each world) is copied whole
     Write-Host "Backing up $source to $target ..."
     robocopy $source $target /E /XD mods logs crash-reports /NFL /NDL /NJH /NJS /NP | Out-Null
@@ -81,7 +95,7 @@ function Get-UcPython {
         $command = Get-Command $candidate[0] -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
         if ($null -eq $command) { continue }
         $rest = @($candidate | Select-Object -Skip 1)
-        try { $ok = (& $command.Source @rest -c 'import sys; print(sys.version_info >= (3, 10))' 2>$null) } catch { continue }
+        try { $ok = (Invoke-UcNative { & $command.Source @rest -c 'import sys; print(sys.version_info >= (3, 10))' 2>$null }) } catch { continue }
         if ("$ok".Trim() -eq 'True') { return ,(@($command.Source) + $rest) }
     }
     throw 'Python 3.10 or newer was not found. Install it from python.org (tick "Add python.exe to PATH"); the private content check and staging need it.'
@@ -90,7 +104,7 @@ function Get-UcPython {
 function Invoke-UcPython([string[]] $Arguments) {
     $python = Get-UcPython
     $rest = @($python | Select-Object -Skip 1)
-    & $python[0] @rest @Arguments
+    Invoke-UcNative { & $python[0] @rest @Arguments }
 }
 
 function Get-UcPrivateTool { return Join-Path (Join-Path $script:UcRoot 'scripts') 'private_c70.py' }

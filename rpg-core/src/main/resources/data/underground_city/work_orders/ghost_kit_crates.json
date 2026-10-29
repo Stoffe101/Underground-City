@@ -1,0 +1,22 @@
+{
+  "schema_version": 3,
+  "title": "Crates of unmarked kits for Dray",
+  "career": "gunsmith",
+  "level": 16,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "underground_city:unmarked_parts_kit",
+      "count": 4
+    }
+  ],
+  "credits": 730,
+  "xp": 760,
+  "capacity": 1,
+  "refill_ticks": 24000,
+  "legality": "underground",
+  "requires_skill": "gunsmith.ghost_guns",
+  "buyer": "dray",
+  "min_trust": 2,
+  "trust_gain": 1
+}

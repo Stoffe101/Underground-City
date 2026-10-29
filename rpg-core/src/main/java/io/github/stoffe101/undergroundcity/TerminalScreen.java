@@ -51,7 +51,13 @@ public final class TerminalScreen extends UcScreen {
     private boolean generalView;
     /** The General tab's cards scroll inside their well (the tenth pass's five skills did not fit at 1920 x 1080, GUI scale 3); the most is found as they are drawn. */
     private int generalScroll, generalMaxScroll;
-    private UcButton treeChip, generalChip;
+    private UcButton treeChip, generalChip, opportunitiesChip, journeyChip;
+    /** The Guide page's tab: what is worth doing now (twelfth pass), or the first half hour. A new citizen starts on the first half hour until its steps are done. */
+    private boolean opportunitiesView;
+    /** Where each opportunity row was drawn this frame (top, bottom), so a click on one opens the page that helps. */
+    private final int[] opportunityRows = new int[2 * TerminalData.MAX_OPPORTUNITIES];
+    /** The first opportunity shown: at 1920 x 1080, GUI scale 3, six of eight rows fit and the last two (the locked order, the city's good name) were dropped without a word. */
+    private int opportunityScroll;
     private final UcButton[] buyOne = new UcButton[MAX_OFFERS], buyLot = new UcButton[MAX_OFFERS];
     // the skill tree, laid out once per snapshot and size: node cards by index
     private int[] nodeX = new int[0], nodeY = new int[0], nodeTier = new int[0], nodeCol = new int[0];
@@ -73,6 +79,7 @@ public final class TerminalScreen extends UcScreen {
         if (carry != null) { current = carry.page(); undergroundView = carry.underground(); }
         else if (data.counter()) current = Page.IMPORTS;   // a shopkeeper's counter opens on what the shop sells
         if (accepted != null) undergroundView = accepted.extra().underground();
+        opportunitiesView = journeyDone() || data.journey().isEmpty() && !data.opportunities().isEmpty();
         List<TerminalData.Row> list = jobs();
         selected = 0;
         if (accepted != null) selected = Math.max(0, indexOf(list, accepted.id()));
@@ -250,6 +257,10 @@ public final class TerminalScreen extends UcScreen {
             .tooltip("Your trade's skill tree: what each skill unlocks and what it costs."));
         generalChip = add(new UcButton(cx + 108, cy, 96, 16, "General", b -> setGeneral(true)).kind(UcButton.Kind.CHIP).accent(UcUi.AMBER).icon(UcUi.Icon.XP)
             .tooltip("Skills every citizen raises by playing: what they give now, what comes next, and how they are earned."));
+        opportunitiesChip = add(new UcButton(cx, cy, 120, 16, "Opportunities", b -> { opportunitiesView = true; refresh(); }).kind(UcButton.Kind.CHIP).accent(UcUi.AMBER).icon(UcUi.Icon.ARROW_RIGHT)
+            .tooltip("What is worth doing now, from what the city holds for you: work you can take, work a skill would open, calls, shortages, a home."));
+        journeyChip = add(new UcButton(cx + 124, cy, 116, 16, "First half hour", b -> { opportunitiesView = false; refresh(); }).kind(UcButton.Kind.CHIP).accent(UcUi.LEGAL).icon(UcUi.Icon.BOOK)
+            .tooltip("The first steps of a new citizen, ticked off as you do them."));
         accept = add(new UcButton(0, 0, 100, 20, "Accept order", b -> send(row().accepted() ? 1 : 0)).kind(UcButton.Kind.PRIMARY));
         cancel = add(new UcButton(0, 0, 70, 20, "Cancel", b -> send(2)).kind(UcButton.Kind.DANGER));
         track = add(new UcButton(0, 0, 70, 16, "Track", b -> {
@@ -365,6 +376,8 @@ public final class TerminalScreen extends UcScreen {
         for (Page page : Page.values()) if (page.name().equals(name)) return page;
         return null;
     }
+    private boolean journeyDone() { return !data.journey().isEmpty() && data.journey().stream().allMatch(TerminalData.Step::done); }
+
     private TerminalData.Step nextStep() { return data.journey().stream().filter(step -> !step.done()).findFirst().orElse(null); }
 
     private static boolean ready(TerminalData.Row job) { return job.reqs().stream().allMatch(req -> req.held() >= req.count()); }
@@ -406,7 +419,11 @@ public final class TerminalScreen extends UcScreen {
             if (page == Page.CONTRACTS) rail[i].badge(registered ? (int) data.jobs().stream().filter(job -> job.available() > 0).count() : -1);
             if (page == Page.SKILLS) rail[i].badge(registered && data.skillPoints() > 0 ? data.skillPoints() : -1);
             if (page == Page.THIEF) rail[i].badge(registered && data.thief().points() > 0 ? data.thief().points() : -1);
-            if (page == Page.GUIDE) rail[i].badge(registered ? (int) data.journey().stream().filter(step -> !step.done()).count() : -1);
+            // the first half hour's steps still to do; once they are done, what is worth doing now
+            if (page == Page.GUIDE) {
+                int left = (int) data.journey().stream().filter(step -> !step.done()).count();
+                rail[i].badge(!registered ? -1 : left > 0 ? left : data.opportunities().isEmpty() ? -1 : data.opportunities().size());
+            }
         }
         boolean contracts = current == Page.CONTRACTS, trade = current == Page.IMPORTS;
         // trade page
@@ -451,7 +468,10 @@ public final class TerminalScreen extends UcScreen {
             track.setX(dx + detailW() - 8 - 70); track.setY(dy - 20);
         }
         // guide page
-        showMe.visible = current == Page.GUIDE && nextStep() != null && !nextStep().page().isEmpty();
+        showMe.visible = current == Page.GUIDE && !opportunitiesView && nextStep() != null && !nextStep().page().isEmpty();
+        opportunitiesChip.visible = journeyChip.visible = current == Page.GUIDE && registered;
+        opportunitiesChip.setX(cx); opportunitiesChip.setY(cy); journeyChip.setX(cx + 124); journeyChip.setY(cy);
+        opportunitiesChip.selected(opportunitiesView); journeyChip.selected(!opportunitiesView);
         // skills page
         treeChip.visible = generalChip.visible = current == Page.SKILLS && registered;
         treeChip.selected(!generalView); generalChip.selected(generalView);
@@ -719,6 +739,8 @@ public final class TerminalScreen extends UcScreen {
         if (button == 0) {
             int job = jobAt(mouseX, mouseY);
             if (job >= 0) { selected = job; refresh(); return true; }
+            int opportunity = opportunityAt(mouseX, mouseY);
+            if (opportunity >= 0) { Page page = pageOf(data.opportunities().get(opportunity).page()); if (page != null) { showPage(page); return true; } }
             int skill = skillAt(mouseX, mouseY);
             if (skill >= 0) { selectedSkill = skill; revealSelectedSkill(); refresh(); return true; }
             if (inTree(mouseX, mouseY) && skillMaxScroll > 0) { draggingTree = true; dragFromY = mouseY; dragFromScroll = skillScroll; return true; }
@@ -739,6 +761,7 @@ public final class TerminalScreen extends UcScreen {
     @Override public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
         if (current == Page.CONTRACTS) { jobScroll = Math.max(0, Math.min(jobScroll - (int) Math.signum(delta), Math.max(0, jobs().size() - visibleRows()))); return true; }
         if (current == Page.IMPORTS) { offerScroll = Math.max(0, offerScroll - (int) Math.signum(delta)); layoutOffers(); return true; }
+        if (current == Page.GUIDE && opportunitiesView) { opportunityScroll = Math.max(0, opportunityScroll - (int) Math.signum(delta)); return true; }
         if (generalShown()) { scrollGeneral(-(int) Math.signum(delta) * GENERAL_STEP); return true; }
         if (skillsPage() && skillMaxScroll > 0) { scrollSkills(-(int) Math.signum(delta) * skillStep); return true; }
         return super.mouseScrolled(mouseX, mouseY, delta);
@@ -1136,6 +1159,13 @@ public final class TerminalScreen extends UcScreen {
 
     /** The goods under the mouse get the whole name, the price and why they cannot be bought, in one tooltip; the Buy buttons keep their own. */
     @Override protected void renderOverlay(GuiGraphics g, int mouseX, int mouseY, float partial) {
+        // an opportunity's whole text: at 3440 x 1440, GUI scale 2, eight rows leave one line each and cut the rest off
+        int opportunity = opportunityAt(mouseX, mouseY);
+        if (opportunity >= 0) {
+            TerminalData.Opportunity o = data.opportunities().get(opportunity);
+            UcUi.tooltip(g, font, java.util.List.of(net.minecraft.network.chat.Component.literal(o.title()), net.minecraft.network.chat.Component.literal(o.detail())), mouseX, mouseY, width, height);
+            return;
+        }
         if (current != Page.IMPORTS || !exchangeOpen()) return;
         for (int i = 0; i < Math.min(MAX_OFFERS, offerRows()) && i + offerScroll < data.offers().size(); i++) {
             int ry = offerTop() + i * TradeLayout.ROW_H;
@@ -1212,18 +1242,22 @@ public final class TerminalScreen extends UcScreen {
     }
 
     // ---- GUIDE
+    private static final int GUIDE_TABS = 22;
+
     private void renderGuide(GuiGraphics g) {
-        if (!registered() || data.journey().isEmpty()) {
+        if (!registered() || data.journey().isEmpty() && data.opportunities().isEmpty()) {
             emptyState(g, UcUi.Icon.BOOK, "Your first half hour", "Register, meet your employer, take an order, deliver it, learn a skill, buy something, travel. A short signpost, not a tutorial: ignore it whenever you like.");
             return;
         }
-        UcUi.display(g, font, "First half hour", cx, cy + 2, UcUi.AMBER);
+        if (opportunitiesView) { renderOpportunities(g); return; }
+        int top = cy + GUIDE_TABS;
+        UcUi.display(g, font, "First half hour", cx, top + 2, UcUi.AMBER);
         long done = data.journey().stream().filter(TerminalData.Step::done).count();
-        UcUi.displayRight(g, font, done + " of " + data.journey().size(), cx + cw, cy + 2, UcUi.DIM);
-        UcUi.bar(g, cx, cy + 14, cw, 4, (float) done / data.journey().size(), UcUi.LEGAL);
+        UcUi.displayRight(g, font, done + " of " + data.journey().size(), cx + cw, top + 2, UcUi.DIM);
+        UcUi.bar(g, cx, top + 14, cw, 4, (float) done / Math.max(1, data.journey().size()), UcUi.LEGAL);
         TerminalData.Step next = nextStep();
-        int y = cy + 24;
-        int rowH = Math.max(16, Math.min(28, (ch - 28 - 18) / data.journey().size()));
+        int y = top + 24;
+        int rowH = Math.max(16, Math.min(28, (ch - GUIDE_TABS - 28 - 18) / Math.max(1, data.journey().size())));
         for (TerminalData.Step step : data.journey()) {
             boolean isNext = step == next;
             int h = isNext ? Math.max(rowH, 42) : rowH;
@@ -1237,5 +1271,64 @@ public final class TerminalScreen extends UcScreen {
             }
             y += h;
         }
+    }
+
+    private static UcUi.Icon opportunityIcon(TerminalData.Opportunity o) {
+        return switch (o.kind()) {
+            case "deliver", "ready" -> UcUi.Icon.CHECK;
+            case "shortage" -> UcUi.Icon.SHOP;
+            case "service" -> UcUi.Icon.KEY;
+            case "skill", "locked" -> UcUi.Icon.POINT;
+            case "home" -> UcUi.Icon.KEY;
+            case "underground" -> UcUi.Icon.UNDERGROUND;
+            case "travel", "standing" -> UcUi.Icon.CITY;
+            default -> UcUi.Icon.CRATE;
+        };
+    }
+
+    /** What is worth doing now: one row an opportunity, its title, two lines of why, and the page that helps (a click opens it). */
+    private void renderOpportunities(GuiGraphics g) {
+        java.util.Arrays.fill(opportunityRows, -1);
+        int top = cy + GUIDE_TABS;
+        UcUi.display(g, font, "What is worth doing now", cx, top + 2, UcUi.AMBER);
+        UcUi.displayRight(g, font, "from " + (data.region().isEmpty() ? TerminalScreenText.capitalize(data.city()) : TerminalScreenText.capitalize(data.region())) + " today", cx + cw, top + 2, UcUi.DIM);
+        if (data.opportunities().isEmpty()) {
+            UcUi.wrapped(g, font, "Nothing stands out right now. Take an order on the Work page, or come back after the shops and employers have changed.", cx, top + 22, cw, UcUi.SOFT, 3);
+            return;
+        }
+        int y = top + 18, n = data.opportunities().size();
+        // two lines of why when there is room, one line (26) when there is not; rows that still do not fit scroll, and the list says how many more there are
+        int avail = cy + ch - y - 10;
+        int rowH = Math.max(26, Math.min(40, avail / n));
+        int shown = Math.max(1, Math.min(n, avail / rowH));
+        opportunityScroll = Math.max(0, Math.min(opportunityScroll, n - shown));
+        for (int slot = 0; slot < shown; slot++) {
+            TerminalData.Opportunity o = data.opportunities().get(opportunityScroll + slot);
+            int accent = o.underground() ? UcUi.UNDERGROUND : o.locked() ? UcUi.FAINT : o.kind().equals("deliver") || o.kind().equals("ready") ? UcUi.OK : UcUi.AMBER;
+            g.fill(cx, y, cx + cw, y + rowH - 3, o.underground() ? 0xff2a1d2a : 0xff111c27);
+            g.fill(cx, y, cx + 3, y + rowH - 3, accent);
+            UcUi.icon(g, o.locked() ? UcUi.Icon.LOCK : opportunityIcon(o), cx + 7, y + (rowH - 3) / 2 - 8, accent);
+            int textW = cw - 34 - (o.page().isEmpty() ? 0 : 54);
+            UcUi.display(g, font, UcUi.fit(font, o.title(), textW), cx + 28, y + 4, o.locked() ? UcUi.SOFT : UcUi.TEXT);
+            UcUi.wrapped(g, font, o.detail(), cx + 28, y + 15, textW, UcUi.DIM, rowH >= 38 ? 2 : 1);
+            if (!o.page().isEmpty()) {
+                Page page = pageOf(o.page());
+                UcUi.textRight(g, font, (page == null ? "" : page.label) + " >", cx + cw - 6, y + (rowH - 3) / 2 - 4, UcUi.SOFT);
+            }
+            opportunityRows[2 * slot] = y; opportunityRows[2 * slot + 1] = y + rowH - 3;
+            y += rowH;
+        }
+        if (shown < n) {
+            int below = n - shown - opportunityScroll;
+            UcUi.textRight(g, font, (opportunityScroll > 0 ? opportunityScroll + " above" + (below > 0 ? ", " : "") : "") + (below > 0 ? below + " more below" : "") + " (scroll)", cx + cw - 6, y + 1, UcUi.DIM);
+        }
+    }
+
+    /** The opportunity row under the pointer, or -1. */
+    private int opportunityAt(double mouseX, double mouseY) {
+        if (current != Page.GUIDE || !opportunitiesView || mouseX < cx || mouseX > cx + cw) return -1;
+        for (int slot = 0; slot < TerminalData.MAX_OPPORTUNITIES; slot++)
+            if (opportunityRows[2 * slot] >= 0 && mouseY >= opportunityRows[2 * slot] && mouseY < opportunityRows[2 * slot + 1] && opportunityScroll + slot < data.opportunities().size()) return opportunityScroll + slot;
+        return -1;
     }
 }

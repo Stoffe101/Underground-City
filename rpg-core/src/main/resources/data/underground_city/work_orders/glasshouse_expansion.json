@@ -1,0 +1,27 @@
+{
+  "schema_version": 3,
+  "title": "Glasshouse expansion for an estate",
+  "career": "farmer",
+  "level": 17,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "underground_city:precision_greenhouse_unit",
+      "count": 2
+    },
+    {
+      "item": "underground_city:climate_module",
+      "count": 1
+    },
+    {
+      "item": "underground_city:agri_sensor_repair",
+      "count": 2
+    }
+  ],
+  "credits": 760,
+  "xp": 780,
+  "capacity": 2,
+  "refill_ticks": 12000,
+  "legality": "legal",
+  "requires_skill": "farmer.farm_cooperative"
+}

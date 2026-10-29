@@ -1,0 +1,22 @@
+{
+  "schema_version": 3,
+  "title": "Plate for a quiet armoury in Valewood",
+  "career": "smith",
+  "level": 16,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "underground_city:unstamped_plate",
+      "count": 12
+    }
+  ],
+  "credits": 900,
+  "xp": 760,
+  "capacity": 1,
+  "refill_ticks": 24000,
+  "legality": "underground",
+  "requires_skill": "smith.foundry_fence",
+  "buyer": "hollis",
+  "min_trust": 2,
+  "trust_gain": 1
+}

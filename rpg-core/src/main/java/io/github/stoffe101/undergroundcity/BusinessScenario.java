@@ -103,7 +103,121 @@ final class BusinessScenario {
             else pass("7 an empty-handed right click pays the till of " + till[0] + " into the wallet, once, and starts the statement again");
         });
         shot("3-collected");
+        growth();
+        reopen();
         Playtest.queue("summary", ThiefScenario::summary);
+    }
+
+    /**
+     * The counter's growth (twelfth pass, D-212), through the owner's own command, which is the business's interface (the statement names it): a price below the city's, an upgrade refused
+     * below its career level with the parts carried, then fitted from them, more stock than tier 1 has room for, and a customer who pays the lower price.
+     */
+    private static void growth() {
+        final int[] mark = new int[1];
+        final long[] city = new long[1];
+        final long[] at = new long[2];
+        // the reply reaches the client a moment after the server has the price (business run 11 read the chat too early)
+        Playtest.queue("8: the owner types /uc business price 90", () -> { mark[0] = Playtest.heardCount(); Playtest.command("uc business price 90"); },
+            () -> business().getInt("price_pct") == 90 && Playtest.heardSince(mark[0], "Prices at") != null, 200);
+        Playtest.queue("the price took", () -> {
+            var b = business();
+            String wine = wineKey(b);
+            city[0] = server(() -> PlayerBusiness.price(wine));
+            long now = server(() -> PlayerBusiness.price(wine, b));
+            at[0] = b.getInt("sold"); at[1] = b.getLong("gross");
+            String said = Playtest.heardSince(mark[0], "Prices at");
+            Playtest.log("BUSINESS price " + b.getInt("price_pct") + "%: wine at " + now + " against the city's " + city[0] + ", " + PlayerBusiness.salesPerHour(b) + " sales an hour; heard '" + said + "'");
+            if (b.getInt("price_pct") != 90 || now >= city[0] || said == null) Playtest.fail("/uc business price 90 did not lower the counter's price");
+            else pass("8 the owner's own command /uc business price 90 puts the wine at " + now + " against the city's " + city[0] + ", for at most " + PlayerBusiness.salesPerHour(b) + " sales an hour (8 at the city's price)");
+        });
+        Playtest.queue("tier 2's parts (scripted)", () -> {
+            Playtest.command("give @s underground_city:machined_parts 4");
+            Playtest.command("give @s underground_city:refined_alloy 2");
+            scripted("four machined parts and two refined alloy given by command (Ironhaven's exchange sells them; a Smith also makes machined parts)");
+        }, () -> JourneyScenario.count(UndergroundCity.item("machined_parts")) == 4 && JourneyScenario.count(UndergroundCity.item("refined_alloy")) == 2, 200);
+        Playtest.queue("9: /uc business upgrade at level 5", () -> { mark[0] = Playtest.heardCount(); Playtest.command("uc business upgrade"); },
+            () -> Playtest.heardSince(mark[0], "Tier 2") != null || Playtest.heardSince(mark[0], "Fitted") != null, 200);
+        Playtest.queue("refused below the level", () -> {
+            String said = Playtest.heardSince(mark[0], "Tier 2 needs career level 14");
+            int tier = PlayerBusiness.tier(business());
+            Playtest.log("BUSINESS upgrade at level 5: tier " + tier + ", parts " + JourneyScenario.count(UndergroundCity.item("machined_parts")) + "+" + JourneyScenario.count(UndergroundCity.item("refined_alloy")) + "; heard '" + said + "'");
+            if (said == null || tier != 1 || JourneyScenario.count(UndergroundCity.item("machined_parts")) != 4) Playtest.fail("an upgrade below career level 14 was not refused, or took the parts");
+            else pass("9 /uc business upgrade at level 5 is refused (\"" + said + "\"); the parts are kept");
+        });
+        Playtest.queue("level 14 (scripted)", () -> {
+            // /uc_prepare stops at level 10 (business run 11); the operator's own command sets any level and is audited
+            Playtest.command("uc admin career " + mc().player.getGameProfile().getName() + " level 14");
+            scripted("PREPARED: the Smith's level raised to 14 with /uc admin career (tier 2's level, reached in play by Smith work)");
+        }, () -> server(() -> CitizenState.get(mc().getSingleplayerServer()).find(me().getUUID()).map(CitizenState.Citizen::careerLevel).orElse(0)) >= 14, 200);
+        Playtest.queue("10: /uc business upgrade at level 14", () -> { mark[0] = Playtest.heardCount(); Playtest.command("uc business upgrade"); },
+            () -> PlayerBusiness.tier(business()) == 2 && Playtest.heardSince(mark[0], "Fitted tier 2") != null, 200);
+        Playtest.queue("tier 2 fitted", () -> {
+            var b = business();
+            String said = Playtest.heardSince(mark[0], "Fitted tier 2");
+            int parts = JourneyScenario.count(UndergroundCity.item("machined_parts")), alloy = JourneyScenario.count(UndergroundCity.item("refined_alloy"));
+            Playtest.log("BUSINESS upgrade at level 14: tier " + PlayerBusiness.tier(b) + ", room " + PlayerBusiness.capacity(b) + ", parts left " + parts + "+" + alloy + "; heard '" + said + "'");
+            if (PlayerBusiness.tier(b) != 2 || parts != 0 || alloy != 0 || said == null) Playtest.fail("tier 2 was not fitted from the parts carried");
+            else pass("10 at level 14 the same command fits tier 2 from the parts carried (\"" + said + "\"): the four machined parts and two refined alloy are used up");
+        });
+        final int[] before = new int[1];
+        Playtest.queue("64 more bottles (scripted)", () -> {
+            before[0] = stock();
+            Playtest.command("give @s underground_city:berry_wine 64");
+            scripted("64 more bottles of berry wine given by command (a Vintner's)");
+        }, () -> JourneyScenario.count(UndergroundCity.item("berry_wine")) == 64, 200);
+        StationSteps.hold("the berry wine", UndergroundCity.item("berry_wine"));
+        JourneyScenario.use("stock the counter again with a right click", () -> counter, () -> JourneyScenario.count(UndergroundCity.item("berry_wine")) == 0, 400);
+        Playtest.queue("more room than tier 1", () -> {
+            int now = stock();
+            Playtest.log("BUSINESS stock " + before[0] + " -> " + now + ", wine carried " + JourneyScenario.count(UndergroundCity.item("berry_wine")));
+            if (now <= PlayerBusiness.CAPACITY || JourneyScenario.count(UndergroundCity.item("berry_wine")) != 0) Playtest.fail("the tier 2 counter did not take more than tier 1's room of " + PlayerBusiness.CAPACITY);
+            else pass("11 a right click stocks 64 more bottles: " + now + " on the counter, more than tier 1's room of " + PlayerBusiness.CAPACITY);
+        });
+        Playtest.queue("an empty hand", () -> { var inv = mc().player.getInventory(); for (int i = 8; i >= 0; i--) if (inv.getItem(i).isEmpty()) { inv.selected = i; break; } });
+        final int[] t = {0};
+        Playtest.queue("wait for a customer at the lower price", () -> t[0] = 0, () -> { t[0]++; return t[0] % 20 == 0 && business().getInt("sold") > at[0]; }, 9600);
+        Playtest.queue("a sale at 90%", () -> {
+            var b = business();
+            String wine = wineKey(b);
+            long priced = server(() -> PlayerBusiness.price(wine, b));
+            int sold = b.getInt("sold") - (int) at[0];
+            long gross = b.getLong("gross") - at[1], each = sold == 0 ? 0 : gross / sold;
+            Playtest.log("BUSINESS after " + t[0] / 20 + " s at 90%: sold " + sold + " for " + gross + ", tax " + b.getLong("tax") + ", till " + b.getLong("takings") + "; the city's price " + city[0]);
+            if (sold == 0) Playtest.fail("no customer bought at the lower price in eight minutes of play");
+            else if (each * sold != gross || each != priced || each >= city[0]) Playtest.fail("the customers did not pay the counter's lower price (" + gross + " for " + sold + ")");
+            else pass("12 a street person bought at the lower price after " + t[0] / 20 + " s of play: " + each + " a bottle against the city's " + city[0] + ", " + b.getLong("takings") + " in the till after tax");
+        });
+    }
+
+    /** The wine's line on the counter (the item and its grade). */
+    private static String wineKey(net.minecraft.nbt.CompoundTag b) {
+        return b.getCompound("stock").getAllKeys().stream().filter(k -> k.startsWith("underground_city:berry_wine|")).findFirst().orElse("underground_city:berry_wine|0");
+    }
+
+    private static final int[] kept = new int[3];
+
+    private static void reopen() {
+        Playtest.queue("13: before the quit", () -> {
+            var b = business();
+            kept[0] = PlayerBusiness.tier(b); kept[1] = b.getInt("price_pct"); kept[2] = stock();
+            Playtest.log("BUSINESS before the quit: tier " + kept[0] + ", price " + kept[1] + "%, stock " + kept[2] + ", till " + b.getLong("takings") + ", wallet " + JourneyScenario.wallet());
+        });
+        Playtest.queue("save and quit to the title screen, then open the world again", () -> {
+            var mc = mc();
+            String folder = System.getProperty("uc.playtest.world", "UC-Playtest");
+            mc.level.disconnect();
+            mc.clearLevel(new net.minecraft.client.gui.screens.GenericDirtMessageScreen(net.minecraft.network.chat.Component.translatable("menu.savingLevel")));
+            mc.setScreen(new net.minecraft.client.gui.screens.TitleScreen());
+            mc.createWorldOpenFlows().loadLevel(mc.screen, folder);
+        }, () -> mc().player != null && mc().level != null && Scenarios.groundBelowPlayer(), 6000);
+        Playtest.wait("settle after the reopen", 60);
+        Playtest.queue("13: after the reopen", () -> {
+            var b = business();
+            Playtest.log("BUSINESS after the reopen: tier " + PlayerBusiness.tier(b) + ", price " + b.getInt("price_pct") + "%, stock " + stock() + ", open " + b.getBoolean("open"));
+            if (PlayerBusiness.tier(b) != kept[0] || b.getInt("price_pct") != kept[1]) Playtest.fail("the counter's tier or price was lost by a save and a reopen");
+            else if (stock() > kept[2]) Playtest.fail("the counter's stock grew over a save and a reopen");
+            else pass("13 saved, quit and reopened: the counter keeps tier " + kept[0] + ", prices at " + kept[1] + "% and its stock (" + stock() + "; nothing doubled), and it is still open");
+        });
     }
 
     private static net.minecraft.nbt.CompoundTag business() {

@@ -148,6 +148,8 @@ final class ThiefScenario {
         clickAt("CONFIRM", () -> ((RegistrationScreen) mc().screen).confirmCentre());
         until("the screen closes", () -> !(mc().screen instanceof RegistrationScreen), 300);
         Playtest.wait("let the server answer", 20);
+        // the first-login landing (D-187) moves a new citizen once, when its chunks are ready: a scripted teleport before it would be undone by it (police cases run 4)
+        until("the first-login landing is done", () -> server(() -> !CityArrival.pending(mc().getSingleplayerServer(), mc().player.getUUID())), 2400);
         Playtest.queue("survival, and the citizen", () -> {
             Playtest.command("gamemode survival");
             CitizenState.Citizen c = citizen();
@@ -268,6 +270,15 @@ final class ThiefScenario {
         return false;
     }
 
+    /** The security classes a burglary may choose (a house; the police acceptance runs take a shop after closing in Blackwater, which has no houses near its middle). */
+    static java.util.Set<String> targets = java.util.Set.of("house");
+
+    /** A lock a new thief can try with plain lockpicks: it asks no skill and no tool (a high-security lock needs a Pro Pick Set; police cases run 5 met one on a Blackwater club). */
+    static boolean beginnersLock(CityBuildings.Building b) {
+        LockpickSession.Profile profile = LockProfiles.INSTANCE.find(b.security().lockProfile());
+        return profile != null && profile.requiresSkill().isEmpty() && profile.requiresTool().isEmpty();
+    }
+
     static void chooseHouse() {
         Playtest.queue("choose a Valewood house with nobody in, its alarm not armed, and furniture to search (on the server thread)", () -> {
             var server = mc().getSingleplayerServer();
@@ -287,7 +298,7 @@ final class ThiefScenario {
                         if (found.isEmpty()) continue;
                         var b = found.get();
                         classes.merge(b.security() == null ? "(none)" : b.security().id() + (b.locked() ? "" : " unlocked"), 1, Integer::sum);
-                        if (b.security() == null || !b.security().id().equals("house") || houses.length() > 1500) continue;
+                        if (b.security() == null || !targets.contains(b.security().id()) || houses.length() > 1500) continue;
                         houses.append(String.format(Locale.ROOT, " [%s %d,%d in %d, armed %s, furniture %d%s]", b.type().replace("underground_city:", ""), b.chunkX(), b.chunkZ(), Casing.peopleIn(level, b, time),
                             b.security().response() != null && PoliceResponse.armed(level, b, b.security().response()), furniture(level, b, BlockPos.ZERO).size(), toLet(level, b) ? ", to let" : ""));
                     }
@@ -296,9 +307,9 @@ final class ThiefScenario {
                     for (int dx = -12; dx <= 12; dx++) for (int dz = -12; dz <= 12; dz++) {
                         if (!level.hasChunk(cx + dx, cz + dz)) continue;
                         // a house to let is a vacant listing (D-127): nobody lives there and its door is the home's, not a burglar's
-                        CityBuildings.INSTANCE.ofChunk(level, cx + dx, cz + dz).filter(b -> b.locked() && b.security() != null && b.security().id().equals("house") && !toLet(level, b)
+                        CityBuildings.INSTANCE.ofChunk(level, cx + dx, cz + dz).filter(b -> b.locked() && b.security() != null && targets.contains(b.security().id()) && !toLet(level, b)
                             && Casing.peopleIn(level, b, time) == 0 && (b.security().response() == null || !PoliceResponse.armed(level, b, b.security().response()))
-                            && furniture(level, b, BlockPos.ZERO).size() >= 3).ifPresent(fit::add);
+                            && furniture(level, b, BlockPos.ZERO).size() >= 3 && beginnersLock(b)).ifPresent(fit::add);
                     }
                     fit.sort(Comparator.comparingInt(b -> Math.abs(b.chunkX() - cx) + Math.abs(b.chunkZ() - cz)));
                     for (CityBuildings.Building b : fit) {
@@ -309,12 +320,12 @@ final class ThiefScenario {
             });
         }, () -> F.looked, 2400);
         Playtest.queue("the house", () -> {
-            if (F.door == null || F.house == null || !F.house.security().id().equals("house")) { Playtest.fail("no empty, unarmed Valewood house with three pieces of furniture near the city's middle"); return; }
+            if (F.door == null || F.house == null || !targets.contains(F.house.security().id())) { Playtest.fail("no empty, unarmed " + targets + " with three pieces of furniture and a lock plain picks can try near the city's middle"); return; }
             List<String> kinds = new ArrayList<>();
             for (BlockPos p : F.spots) kinds.add(server(() -> BurglarySearch.LOADER.kindOf(level().getBlockState(p)).title()));
             Playtest.log("THIEF target: " + F.house.type() + " (" + F.house.security().id() + ", tier " + F.house.security().tier() + ", lock " + F.house.security().lockProfile() + ") at chunk "
                 + F.house.chunkX() + "," + F.house.chunkZ() + ", door " + F.door.door().toShortString() + "; furniture " + kinds);
-            scripted("the house was chosen by the script: nobody in at 13:00, alarm not armed (from the game's own hash), at least three searchable pieces");
+            scripted("the building was chosen by the script: nobody in at the time of day it was chosen (" + String.format(Locale.ROOT, "%02d:00", PopulationPlan.hourOf(server(() -> HouseholdService.dayTime(level())))) + "), alarm not armed (from the game's own hash), at least three searchable pieces, a lock plain picks can try");
         });
     }
 

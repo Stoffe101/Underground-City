@@ -1,0 +1,28 @@
+{
+  "schema_version": 3,
+  "title": "Regional food contract from the farm office",
+  "career": "farmer",
+  "level": 20,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "underground_city:produce_crate",
+      "count": 10
+    },
+    {
+      "item": "underground_city:fruit_crate",
+      "count": 6
+    },
+    {
+      "item": "underground_city:flour",
+      "count": 16
+    }
+  ],
+  "credits": 900,
+  "xp": 900,
+  "capacity": 2,
+  "refill_ticks": 12000,
+  "legality": "legal",
+  "requires_skill": "farmer.farm_cooperative",
+  "requires_facility": "trade"
+}

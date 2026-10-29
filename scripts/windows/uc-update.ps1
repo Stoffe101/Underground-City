@@ -12,14 +12,14 @@ param([string] $Branch = '')
 if ($Branch -eq '') { $Branch = $script:UcBranch }
 Push-Location $script:UcRoot
 try {
-    $dirty = git status --porcelain --untracked-files=no
+    $dirty = Invoke-UcNative { git status --porcelain --untracked-files=no }
     if ($dirty) { throw "You have local changes in tracked files; commit or stash them first (git status shows them). Nothing was changed." }
-    git fetch origin $Branch
+    Invoke-UcNative { git fetch origin $Branch }
     if ($LASTEXITCODE -ne 0) { throw 'git fetch failed (network, or the branch name).' }
-    git checkout $Branch
+    Invoke-UcNative { git checkout $Branch }
     if ($LASTEXITCODE -ne 0) { throw "git checkout $Branch failed." }
-    git pull --ff-only origin $Branch
+    Invoke-UcNative { git pull --ff-only origin $Branch }
     if ($LASTEXITCODE -ne 0) { throw 'git pull --ff-only failed: your branch has commits the remote does not. Ask before doing anything else.' }
-    $sha = git rev-parse --short HEAD
+    $sha = Invoke-UcNative { git rev-parse --short HEAD }
     Write-Host "On $Branch at $sha. The other player should see the same commit."
 } finally { Pop-Location }

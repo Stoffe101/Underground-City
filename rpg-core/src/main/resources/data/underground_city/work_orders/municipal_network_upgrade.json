@@ -1,0 +1,28 @@
+{
+  "schema_version": 3,
+  "title": "Upgrade the city's control network",
+  "career": "technician",
+  "level": 18,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "underground_city:industrial_controller",
+      "count": 2
+    },
+    {
+      "item": "minecraft:comparator",
+      "count": 4
+    },
+    {
+      "item": "minecraft:observer",
+      "count": 2
+    }
+  ],
+  "credits": 640,
+  "xp": 840,
+  "capacity": 2,
+  "refill_ticks": 12000,
+  "legality": "legal",
+  "requires_skill": "technician.systems_integrator",
+  "buyer": "valewood_council"
+}

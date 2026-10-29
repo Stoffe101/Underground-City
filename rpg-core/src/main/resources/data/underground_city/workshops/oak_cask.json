@@ -54,7 +54,7 @@
         "from_input": true,
         "tier3": 1,
         "skills": {
-          "vintner.estate_vintages": 1
+          "vintner.cellar_masters_label": 1
         }
       },
       "note": "Three bottles of berry wine make two bottles that are at least Fine. The wine's own grade carries over."

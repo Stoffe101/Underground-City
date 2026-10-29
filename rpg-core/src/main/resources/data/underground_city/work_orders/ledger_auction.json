@@ -1,0 +1,22 @@
+{
+  "schema_version": 3,
+  "title": "Ledgers for Vesper's auction",
+  "career": "technician",
+  "level": 16,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "underground_city:data_ledger",
+      "count": 4
+    }
+  ],
+  "credits": 1000,
+  "xp": 780,
+  "capacity": 1,
+  "refill_ticks": 24000,
+  "legality": "underground",
+  "requires_skill": "technician.ghost_traffic",
+  "buyer": "vesper",
+  "min_trust": 2,
+  "trust_gain": 1
+}

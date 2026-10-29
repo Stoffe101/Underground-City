@@ -1,0 +1,27 @@
+{
+  "schema_version": 3,
+  "title": "Refit a pumping station",
+  "career": "smith",
+  "level": 18,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "underground_city:pump_assembly",
+      "count": 1
+    },
+    {
+      "item": "underground_city:composite_housing",
+      "count": 3
+    },
+    {
+      "item": "underground_city:precision_machinery_parts",
+      "count": 2
+    }
+  ],
+  "credits": 840,
+  "xp": 860,
+  "capacity": 2,
+  "refill_ticks": 12000,
+  "legality": "legal",
+  "requires_skill": "smith.master_engineer"
+}

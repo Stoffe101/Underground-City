@@ -1,0 +1,24 @@
+{
+  "schema_version": 3,
+  "title": "A gearbox line for the Ironhaven foundry",
+  "career": "smith",
+  "level": 14,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "underground_city:gearbox",
+      "count": 1
+    },
+    {
+      "item": "underground_city:precision_machinery_parts",
+      "count": 6
+    }
+  ],
+  "credits": 700,
+  "xp": 720,
+  "capacity": 2,
+  "refill_ticks": 12000,
+  "legality": "legal",
+  "requires_skill": "smith.foundry_partnerships",
+  "buyer": "ironhaven_guard"
+}

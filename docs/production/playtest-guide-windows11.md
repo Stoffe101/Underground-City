@@ -32,7 +32,7 @@ In PowerShell:
 ```
 git clone https://github.com/Stoffe101/Underground-City.git
 cd Underground-City
-git checkout feature/tenth-pass-living-world
+git checkout feature/twelfth-pass-playable-alpha
 .\gradlew.bat runServer -PucAcceptEula=true
 ```
 
@@ -82,10 +82,12 @@ The commands in this guide are wrapped in a few PowerShell scripts, so that a se
 | `uc-new-world.ps1 -Name Alice -World UC-S1 [-Pregen] [-C70]` | a single-player client in a NEW world with the furnished cities and scarcity (and with `-C70` the furniture set and the owner's staged buildings); refuses a name that exists. `-Pregen` generates the islands in it once, in the background |
 | `uc-private-stage.ps1 -Source <the C70 folder or zip>` | ports, chooses, wires and seals the owner's private buildings into `%USERPROFILE%\UndergroundCityPrivate\runtime`, outside the repository (section 6k) |
 | `uc-second-copy.ps1` | copies the repository to `..\Underground-City-P2` for a second player on the same PC |
+| `uc-doctor.ps1` | reads this PC and says what is ready and what to fix: Java 17, Git, Python, the branch and local changes, free disk space, memory, the server port, whether the dev server is in offline mode, the backups made. Changes nothing. Run it first on both PCs |
 | `uc-backup.ps1` | copies `rpg-core\run-dev` (worlds, saves, configs) to `backups\run-dev-<date-time>`; stop the server and clients first |
+| `uc-restore.ps1 -List` / `-From run-dev-<date-time>` | lists the backups, or rolls the folder back to one: the folder as it is now is backed up first, so a rollback can be undone; the mods and logs are left alone |
 | `uc-logs.ps1` | packs the logs, crash reports and screenshots (never a world) into `reports\uc-report-<date-time>.zip` for a bug report. After a session with private content it leaves the screenshots out and replaces the private buildings' ids in the logs with `<private>` |
 
-**Tested in the cloud:** a test (`tests/test_windows_scripts.py`) runs the server, client, new-world, logs and staging scripts with PowerShell 7 on GitHub's Linux runners against a stand-in for gradle (and, for the staging script, for Python): the commands they build, the server settings they write, and their refusals (an unknown set, a bad name, an existing world, offline mode not asked for, `-C70` with nothing staged, a private folder that is a pack itself or needs a set the launch leaves out). The same test checks that the scripts accept exactly the sets `build.gradle` knows; the `furniture` set was missing from them until the eleventh pass. **Not tested:** any of it on Windows (PowerShell 5.1 or 7 on Windows 11), `robocopy` (the backup and the second copy), the real gradle launches through the scripts, and Python on Windows. Run `uc-backup.ps1` once by hand and look at the folder it made before you trust it.
+**Tested in the cloud:** a test (`tests/test_windows_scripts.py`) runs the server, client, new-world, logs, staging, doctor and restore scripts against stand-ins for gradle, Java and Python: the commands they build, the server settings they write, and their refusals (an unknown set, a bad name, an existing world, offline mode not asked for, `-C70` with nothing staged, a private folder that is a pack itself or needs a set the launch leaves out, the wrong Java, an unknown backup). The same test checks that the scripts accept exactly the sets `build.gradle` knows. **From the twelfth pass it also runs on GitHub's Windows runners** (`.github/workflows/windows-scripts.yml`) under PowerShell 7 and under Windows PowerShell 5.1, with a backup and a rollback through the real `robocopy`; the same workflow runs the doctor on a fresh Windows machine and the real `gradlew.bat` building Core and fetching the default pack's mods with their pinned hashes checked. **Not tested:** a game started through the scripts on Windows (the runners have no screen and no Minecraft account), two PCs on one network, and `uc-second-copy.ps1`. GitHub's Windows Server runner is not Windows 11 at your desk.
 
 **Both PCs must run the same pack.** Every start prints `Underground City pack fingerprint: <12 characters>` (Core's commit and every mod both sides need, with its pinned version). The server and both clients should print the same; when a client's differs, that player sees *Your game differs from the server's* in the game and the server's log names both. Fix it with `uc-update.ps1` on both PCs and the same sets (or the same `-C70`) on every start.
 
@@ -218,7 +220,7 @@ Things to write down: was rent a pleasant pressure or an annoyance; was the mote
 Start (Windows spelling; the extra sets are the furnished cities with their Modern Life furniture, and the world with no natural ore):
 
 ```text
-.\gradlew.bat runClient -PucWorldLayout=archipelago -PucPack=world,furnished,scarcity -PucDevWorldName=UC-Living-Test
+.\gradlew.bat runClient -PucWorldLayout=archipelago "-PucPack=world,furnished,scarcity" -PucDevWorldName=UC-Living-Test
 ```
 
 (For two players, start the dedicated server with the same `-PucPack` and the same world, as in section 3, and both clients with the same sets.)
@@ -251,7 +253,7 @@ Things to write down: was the lock screen readable; did a quiet pick feel like a
 Start exactly as in 6e (a new world with the furnished cities and no natural ore):
 
 ```text
-.\gradlew.bat runClient -PucWorldLayout=archipelago -PucPack=world,furnished,scarcity -PucDevWorldName=UC-First-Hour
+.\gradlew.bat runClient -PucWorldLayout=archipelago "-PucPack=world,furnished,scarcity" -PucDevWorldName=UC-First-Hour
 ```
 
 | # | Do this | You should see |
@@ -446,6 +448,44 @@ Get the branch on both PCs: `.\scripts\windows\uc-update.ps1 -Branch feature/ten
 | 9 | Take it, then the other Vintner tries to take it | the second player is told somebody else has it |
 | 10 | Deliver it at a terminal in the shop's city within thirty minutes of play | paid once, half as much again a bottle as the shop pays; the shop's shelf fills and the keeper stops asking; delivered in another city it is refused |
 | 11 | Stop and restart the server with a contract open | the contract and its time left are kept |
+
+## 6m. Twelfth pass: what to do next, the police, a growing business and the cities (about 60 minutes, a NEW world)
+
+**Written for the October 29 twelfth pass (D-209 to D-214; [twelfth-pass report](twelfth-pass-playable-alpha.md)). GameTested, modelled and run through scripted real clients only; the current branch and its recent gameplay systems have not received human playtesting.**
+
+**Before you start, on both PCs** (PowerShell in the repository folder; `Set-ExecutionPolicy -Scope Process Bypass` if scripts are refused):
+
+```
+.\scripts\windows\uc-doctor.ps1
+.\scripts\windows\uc-update.ps1
+```
+
+The doctor must show no `FIX` line (Java 17, Git, Python, the branch, disk, memory, the port). Both PCs must print the same commit after the update.
+
+**Start** (host PC; a home network with people you trust only, never a port forward, because `-LanOfflineMode` turns authentication off):
+
+```
+.\scripts\windows\uc-server.ps1 -Sets furnished,scarcity -World UC-Twelfth-1 -LanOfflineMode -AcceptEula -Pregen
+.\scripts\windows\uc-client.ps1 -Name Alice -Sets furnished,scarcity -Join
+```
+
+The second player runs `uc-client.ps1 -Name Bob -Sets furnished,scarcity -Join` from their own checkout. The server and both clients must print the same pack fingerprint. Let the pregeneration finish (`/uc admin pregen status` in the server window) before walking far; playing while it runs is fine but slower.
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Register (each player a different career), finish the first-half-hour steps, then open a terminal's **Guide** page | two tabs: **Opportunities** (opened by itself once the first steps are done) and **First half hour**. Up to eight lines of what is worth doing now: an order you can deliver, the best open orders, a shortage, your trade's calls in this city, skill points, a home if you have none, the next order a skill would open (with a lock) and how the city thinks of you. Underground work appears only once you hold your trade's underground skill, drawn in its own colour with what can go wrong |
+| 2 | Click a line | the page it names opens (Work or Skills) |
+| 3 | In a city street by day, hit a passer-by once (left click) with people about | a witness calls the police; one or two officers **walk in** from a street nearby (they should not appear in front of you) and arrest you; the fine is the city's for assault (Blackwater 30, Valewood 40, Ironhaven 60), your honest goods are kept, and the chat gives the fine and your heat in the city |
+| 4 | Do it again in the same city | the fine is higher: each prior conviction adds half (at most double); there is no warning with a record |
+| 5 | Hit somebody, then run: sprint away round corners before an officer sees you | either an officer catches you, or the chase ends and you **escape**, but a witnessed crime leaves a **warrant** for 20 minutes of play |
+| 6 | With a warrant, quit, rejoin and walk near an officer on the beat | the warrant is still there; an officer who sees you stops the beat and comes for you ("wanted for ..."). The other player beside you is never arrested for it |
+| 7 | (Thief, Track B: `/uc_prepare thief @s 3`) pick a house's door at night with nobody in sight, search it, walk out | nothing happens if nobody saw it. If a resident, passer-by or alarm noticed, officers come to the door; an arrest takes the marked goods and fines you |
+| 8 | (Track B: `/uc admin career <your name> level 14` and `/uc_prepare credits @s 3000`; `/uc_prepare level` stops at 10) rent trade premises, set down a Business Counter, then type `/uc business` | the statement shows **Counter tier 1**, its room (64), the price (100% of the city's) and the sales an hour (8) |
+| 9 | Carry 4 machined parts and 2 refined alloy (Ironhaven's exchange) and type `/uc business upgrade` | "Fitted tier 2: room for 128 goods and 9 sales an hour"; the parts are used once. Tier 3 needs level 20 and circuits and optics from Blackwater |
+| 10 | Type `/uc business price 90` | prices at 90% of the city's and one more sale an hour; `price 105` is refused (never above the city's price) |
+| 11 | (Technician, Track B: `/uc admin career <your name> level 14`, then learn Systems Integrator and the skills it needs, Security Systems first, on the Skills page) open a terminal in **Blackwater** | *Security for a Blackwater office tower* for **Blackwater Tower Management**, delivered only in Blackwater; the Valewood Market Council still has its network upgrade |
+| 12 | Stop the server (`stop`), run `.\scripts\windows\uc-backup.ps1`, start again, play a minute, stop, then `.\scripts\windows\uc-restore.ps1 -List` and `-From <the backup>` | the world is back as it was at the backup; the folder as it was before the rollback is itself backed up first |
+| 13 | After the session: `python scripts\economy_report.py rpg-core\run-dev\UC-Twelfth-1 --out reports\economy.md` | a report of what you really earned and spent, per active hour, with players as pseudonyms (no names); send it with the logs (`uc-logs.ps1`) |
 
 ## 7. Logs, screenshots and bug reports
 

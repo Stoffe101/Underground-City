@@ -378,6 +378,30 @@ public final class VisualCaptureHarness {
     private static final TerminalData.Row LICENSED_ROW=new TerminalData.Row("underground_city:licensed_cultivar_supply","Licensed controlled-crop supply",10,225,400,2,false,0,
         List.of(new TerminalData.Req("underground_city:cannabis_flower",6,0)),
         new TerminalData.Extra(false,"Controlled-Crop Licence",false,"Blackwater Licensed Dispensary","blackwater",0,0,List.of()));
+    /** The Guide page's Opportunities tab (twelfth pass) as the server fills it: a new Farmer's first hour done, or an experienced Smith's level 16 in Ironhaven. */
+    private static TerminalData opportunities(boolean advanced) {
+        TerminalData base=rich("valewood",false,0,VALEWOOD_LAW);
+        List<TerminalData.Step> done=new ArrayList<>();
+        for(Journey.Def def:Journey.STEPS) done.add(new TerminalData.Step(def.id(),def.title(),def.hint(),true,def.page()));
+        List<TerminalData.Opportunity> list=advanced?List.of(
+            new TerminalData.Opportunity("deliver","Deliver Foundry gearbox line","You carry everything it asks for: 727 credits and 720 XP when you hand it in.","CONTRACTS",false,false),
+            new TerminalData.Opportunity("shortage","The Anvil is short: steel brackets","96 credits, above what the shop usually pays. One taker, until the shelf is filled.","CONTRACTS",false,false),
+            new TerminalData.Opportunity("service","2 machines down in Ironhaven","77 credits a drive at a tier III works, fixed with parts of your own making.","",false,false),
+            new TerminalData.Opportunity("work","Pumping station refit","840 credits, 860 XP at any terminal. Needs 1 x Pump assembly and more.","CONTRACTS",false,false),
+            new TerminalData.Opportunity("skill","1 skill point to spend","A point opens better orders, pays more for each one or lets you make better goods.","SKILLS",false,false),
+            new TerminalData.Opportunity("underground","Armoured plate shipment","Off the books: a search takes the goods and fines you. 958 credits from Hollis & Sons Haulage in Valewood; checkpoints on the way search, and a hand-off can be seen.","CONTRACTS",true,false),
+            new TerminalData.Opportunity("locked","Next: Rail yard fabrication","1000 credits once you have Foundry Partnerships and level 21.","SKILLS",false,true),
+            new TerminalData.Opportunity("standing","Ironhaven thinks of you: 38 of 100","Deliveries here raise it; at 50 the city's sellers take 2% off. An arrest here lowers it.","",false,false))
+            :List.of(
+            new TerminalData.Opportunity("ready","Ready now: Greenhouse wholesale","You already carry what it needs: 100 credits, 260 XP.","CONTRACTS",false,false),
+            new TerminalData.Opportunity("work","Council stall produce","240 credits, 420 XP at any terminal. Needs 6 x Produce crate.","CONTRACTS",false,false),
+            new TerminalData.Opportunity("skill","2 skill points to spend","A point opens better orders, pays more for each one or lets you make better goods.","SKILLS",false,false),
+            new TerminalData.Opportunity("home","No home yet","Press K for the homes to rent: a motel room is cheapest, and a home keeps your things and gives you a bed.","",false,false),
+            new TerminalData.Opportunity("locked","Next: Broker heirloom seed stock","150 credits once you have Cultivar Broker and level 5.","SKILLS",false,true),
+            new TerminalData.Opportunity("standing","Valewood thinks of you: 4 of 100","Deliveries here raise it; at 50 the city's sellers take 2% off. An arrest here lowers it.","",false,false));
+        return new TerminalData(base.city(),advanced?"smith":base.career(),advanced?16:base.level(),base.xp(),base.balance(),base.economy(),base.active(),base.foreignVisits(),advanced?"ironhaven":base.region(),base.jobs(),base.offers(),
+            base.skillPoints(),base.skills(),base.contacts(),base.laws(),base.heat(),base.lawSummary(),List.copyOf(done),base.outlet(),base.thief(),base.general(),list);
+    }
     /** The first half hour part way through: registered, met the employer, accepted an order. */
     private static List<TerminalData.Step> journeyFixture() {
         List<TerminalData.Step> steps=new ArrayList<>();
@@ -498,6 +522,8 @@ public final class VisualCaptureHarness {
         cases.add(new Case("uc-skills-gunsmith",TerminalScreen.Page.SKILLS,careerSkills("gunsmith",11,java.util.Set.of("gunsmith.fundamentals","gunsmith.licensed_repairs","gunsmith.dealer_licence")),0,false,"gunsmith.unregistered_builds"));
         cases.add(new Case("uc-skills-technician",TerminalScreen.Page.SKILLS,careerSkills("technician",11,java.util.Set.of("technician.fundamentals","technician.municipal_repairs","technician.automation_install")),0,false,"technician.bypass_tooling"));
         cases.add(new Case("uc-skills-farmer-deep",TerminalScreen.Page.SKILLS,careerSkills("farmer",22,java.util.Set.of("farmer.fundamentals","farmer.greenhouse_management","farmer.cultivar_broker","farmer.estate_wholesale","farmer.restricted_cultivation","farmer.concealed_stores","farmer.underground_trade","farmer.grey_market_contacts","farmer.field_logistics")),0,false,"farmer.back_lot_network"));
+        cases.add(new Case("uc-guide-opportunities",TerminalScreen.Page.GUIDE,opportunities(false),0,false,null));
+        cases.add(new Case("uc-guide-opportunities-advanced",TerminalScreen.Page.GUIDE,opportunities(true),0,false,null));
         cases.add(new Case("uc-skills-general",TerminalScreen.Page.SKILLS,generalSkills(),0,false,"general"));
         cases.add(new Case("uc-skills-general-end",TerminalScreen.Page.SKILLS,generalSkills(),0,false,"general-end"));
         cases.add(new Case("uc-skills-available",TerminalScreen.Page.SKILLS,rich("valewood",false,0,VALEWOOD_LAW),0,false,"farmer.concealed_stores"));

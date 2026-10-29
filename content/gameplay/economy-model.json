@@ -249,5 +249,63 @@
       "minecraft:coal": 0.4
     },
     "ore_world_share_min_at_level_5": 0.5
-  }
+  },
+  "station_tiers": {
+    "by_level": {"1": 1, "8": 2, "14": 3},
+    "source": "ASSUMPTION for scripts/career_balance.py: the tier a career's workshop stations are fitted to by level. A tier is fitted from real parts the career makes (WorkshopBlock.upgrade; tier 3 needs the station's skill), a few hundred credits of parts, affordable by the levels named (the affordability table). Graded goods pay by grade (Workshops.GRADE_PRICE), so a character who never upgrades earns less than this."
+  },
+  "service_work": {
+    "status": "Service calls of the Technician (TechService, TechWork) and the Smith (MachineService, SmithWork) for scripts/career_balance.py. Fees, gaps, skill reach and the parts a job uses are CODE (tests/test_career_balance.py reads them from the Java); the minutes a job takes and the tier of the building it is at are ASSUMPTIONS.",
+    "building_tier": 3.5,
+    "building_tier_source": "Assumption: the mean tier of the lockable buildings a call comes from (PropertyIntel's neighbourhood grades spread tiers II to VI, docs/technical/property-intelligence.md); a call is at one of the panels or drives nearest a player in the city.",
+    "jobs": [
+      {"id": "tech_repair", "career": "technician", "level": 1, "fee_base": 30, "fee_per_tier": 12, "xp_base": 80, "xp_per_tier": 30, "per_hour": 5.2, "minutes": 6, "uses": {"underground_city:control_circuits": 1}, "uses_from_tier": 3, "reach": {"": 2, "technician.fundamentals": 3, "technician.municipal_repairs": 6},
+       "source": "TechService.repairFee and repairXp; a new fault every 8 to 15 minutes in a city somebody is in (FAULT_GAP_MIN/MAX: 5.2 an hour), two open at most; a tier III or higher repair uses a circuit board (TechWork.succeed). Minutes: a walk to a panel near you and the trace puzzle (120 s at most); tech run 5 took about five."},
+      {"id": "tech_install", "career": "technician", "level": 5, "skill": "technician.automation_install", "fee_base": 150, "fee_per_tier": 25, "xp_base": 110, "xp_per_tier": 35, "per_hour": 4, "minutes": 7, "uses": {"underground_city:security_array": 1},
+       "source": "TechService.installFee and installXp (D-210); two installs open in a city and topped up as they are taken (MAX_INSTALLS); the job uses a Municipal Security Array. Minutes: a walk and the patch puzzle (180 s at most). The rate is an assumption of how many a player finds near them."},
+      {"id": "tech_upgrade", "career": "technician", "level": 11, "skill": "technician.systems_integrator", "fee_base": 90, "fee_per_tier": 30, "xp_base": 140, "xp_per_tier": 40, "per_hour": 3, "minutes": 7, "uses": {},
+       "source": "TechService.upgradeFee (D-210) and upgradeXp; one open in a city (MAX_UPGRADES), at an office, industrial or commercial building of tier III or higher; wears a repair kit. The rate is an assumption."},
+      {"id": "smith_repair", "career": "smith", "level": 1, "fee_base": 35, "fee_per_tier": 14, "xp_base": 90, "xp_per_tier": 30, "per_hour": 4.6, "minutes": 8, "uses": {"underground_city:steel_bracket": 1, "underground_city:bearing_set": 1},
+       "source": "MachineService.fee and xp; a breakdown every 10 to 16 minutes (GAP_MIN/MAX: 4.6 an hour), two open at most; the drive's worn parts are replaced with the Smith's own (SmithPuzzles.Kind: a coupling's bracket, a bearing set, a gear set or springs; two is typical). Minutes: a walk to the drive and the drive puzzle; engineer run 7 took about seven."}
+    ]
+  },
+  "police_risk": {
+    "status": "ASSUMPTIONS for scripts/career_balance.py (twelfth pass). The odds of being noticed are estimates built from code-defined chances (named in each source); the chance of an arrest once noticed is a placeholder until the scripted police runs of the twelfth pass give an observed rate (docs/technical/career-balance.md says which numbers are measured).",
+    "typical_heat": 1,
+    "p_arrest_given_noticed": 0.4,
+    "p_arrest_source": "Assumption. Officers run at about 5.0 blocks a second against a walking 4.3 and a sprinting 5.6 (PoliceResponse.CHASE_SPEED, PoliceChaseGameTests), chase only what they see and give up 30 s out of sight (PoliceResponse.GIVE_UP_SECONDS); a thief who is noticed but runs at once and breaks the line of sight gets away more often than not. To be replaced by the arrest share of the scripted police runs.",
+    "raid": {
+      "p_noticed": 0.6,
+      "fine": 110,
+      "source": "The bonded store (D-173) is a high-security warehouse: its class's alarm is certain unless a Technician's back channel quietens it (TechService.quieted), its cameras are Core's, a patrol walks outside. 0.6 assumes the job is prepared (the line quietened, the cameras looped) and still often goes wrong; the fine is Ironhaven's theft (city_laws/ironhaven.json)."
+    },
+    "burglary": {
+      "from_level": 3,
+      "tier_by_level": {
+        "1": 1,
+        "3": 2,
+        "6": 3,
+        "10": 4,
+        "15": 5,
+        "20": 6
+      },
+      "minutes_per_visit": 14,
+      "visits_per_fence_trip": 3,
+      "lockpicks_per_visit": 1.5,
+      "lockpick_price": 2,
+      "fine": 100,
+      "fence_credits_per_hour": 390,
+      "career_xp_per_visit": 0,
+      "p_noticed_by_tier": {
+        "1": 0.15,
+        "2": 0.2,
+        "3": 0.25,
+        "4": 0.35,
+        "5": 0.45,
+        "6": 0.6
+      },
+      "source": "Minutes: casing, a lock, five searches and the way out (the Thief scenario took 9 to 16 minutes per house; burglary_audit.py's TYPICAL house), and a fence trip shared by three visits. Noticed: the class's alarm chance (building_security/classes.json: 0.25 at tier 2 to certain at tier 6) for a pick that is not clean (a clean pick slips an alarm below 0.9, PoliceResponse.QUIET_BYPASS_MAX_CHANCE), plus a witness in the street (the city's witness chance, 0.2 to 0.35, with somebody in sight about two times in five), a household at home hearing a search (CrimeWatch.searched: 0.3 by day) and a patrol in sight. The fine is a break-in's or a theft's (80 to 110 by city). The tier a thief works rises with experience (tier_by_level, an assumption). Lockpicks are crafted from two iron nuggets and a stick. The fence pays at most about 390 credits an hour after its opening budget (economy-model.md, the fence table)."
+    }
+  },
+  "business_counter_price": 20
 }

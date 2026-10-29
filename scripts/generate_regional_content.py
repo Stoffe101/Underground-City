@@ -346,7 +346,7 @@ def build(data: dict, contracts: dict) -> dict[Path, bytes]:
             if req.get("label"):
                 entry["label"] = req["label"]
             document["requirements"].append(entry)
-        for key in ("buyer", "min_trust", "trust_gain", "requires_mod"):
+        for key in ("buyer", "min_trust", "trust_gain", "requires_mod", "requires_facility"):
             if c.get(key):
                 document[key] = c[key]
         if c.get("rewards"):

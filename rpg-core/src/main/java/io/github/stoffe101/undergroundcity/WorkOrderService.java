@@ -112,6 +112,7 @@ public final class WorkOrderService {
         UUID nonce = ledger.accept(player.getUUID(), order);
         Raids.opened(player, ledger, order, nonce);   // a raid's job names its target (D-173)
         CitizenState.get(player.server).markJourney(player.getUUID(), "accepted");
+        EconomyTelemetry.accepted(player, order.id());
         net.minecraft.network.chat.MutableComponent message = Component.literal("Accepted: " + order.title() + ". Deliver ");
         boolean first = true;
         for (WorkOrder.Requirement requirement : order.requirements()) {
@@ -217,6 +218,8 @@ public final class WorkOrderService {
         ShortageContracts.delivered(player, ledger, order);   // the goods go onto the shop's shelf and the line rests (a shortage contract only)
         CrewService.sweepIncome(player, credits, nonce); // fully shared finances only; never changes the settlement above
         CitizenState.get(player.server).bumpJourney(player.getUUID(), "deliveries");
+        EconomyTelemetry.record(player, "order", "order", order.id(), "legality", order.underground() ? "underground" : "legal", "credits", credits, "base", order.credits(), "xp", order.xp(),
+            "minutes", EconomyTelemetry.minutesSinceAccepted(player, order.id()), "buyer", buyer == null ? "" : buyer.id(), "level_up", citizen.careerLevel() > levelBefore);
         String extra = (skilled > order.credits() ? " + " + (skilled - order.credits()) + " for your skills" : "") + (credits > skilled ? " + " + (credits - skilled) + " for the grade" : "");
         player.sendSystemMessage(Component.literal("Delivered " + order.title() + ": +" + credits
             + " credits" + (extra.isEmpty() ? "" : " (" + order.credits() + extra + ")") + ", +" + order.xp() + " career XP. Level " + citizen.careerLevel() + "."));

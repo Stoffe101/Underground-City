@@ -1,0 +1,24 @@
+{
+  "schema_version": 3,
+  "title": "Refit the guard armoury's service weapons",
+  "career": "gunsmith",
+  "level": 14,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "underground_city:firearm_parts_kit",
+      "count": 5
+    },
+    {
+      "item": "underground_city:optic_mount_kit",
+      "count": 2
+    }
+  ],
+  "credits": 540,
+  "xp": 720,
+  "capacity": 2,
+  "refill_ticks": 12000,
+  "legality": "legal",
+  "requires_skill": "gunsmith.range_master",
+  "buyer": "ironhaven_guard"
+}

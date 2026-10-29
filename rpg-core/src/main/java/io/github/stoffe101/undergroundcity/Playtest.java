@@ -191,7 +191,8 @@ public final class Playtest {
                 // the first-player journey starts as a new player does, in survival; the other scenarios start in creative and switch when they need to
                 GameType mode = "journey".equals(SCENARIO) || Boolean.getBoolean("uc.playtest.survival") ? GameType.SURVIVAL : GameType.CREATIVE;
                 LevelSettings settings = new LevelSettings(name, mode, false, Difficulty.NORMAL, true, new GameRules(), WorldDataConfiguration.DEFAULT);
-                mc.createWorldOpenFlows().createFreshLevel(name, settings, new WorldOptions(5908L, true, false), DevWorldLauncher::dimensions);
+                // the dev seed unless a scenario asks for another (-PucPtSeed: the police acceptance runs use more than one world)
+                mc.createWorldOpenFlows().createFreshLevel(name, settings, new WorldOptions(Long.getLong("uc.playtest.seed", 5908L), true, false), DevWorldLauncher::dimensions);
             }
             log("opening world " + name + " for scenario " + SCENARIO);
         } catch (RuntimeException error) {

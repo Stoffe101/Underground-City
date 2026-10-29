@@ -1,0 +1,28 @@
+{
+  "schema_version": 3,
+  "title": "Supply a hotel bar for the season",
+  "career": "vintner",
+  "level": 21,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "underground_city:aged_wine",
+      "count": 12
+    },
+    {
+      "item": "underground_city:apple_cider",
+      "count": 12
+    },
+    {
+      "item": "underground_city:grain_spirit",
+      "count": 6
+    }
+  ],
+  "credits": 1000,
+  "xp": 950,
+  "capacity": 2,
+  "refill_ticks": 12000,
+  "legality": "legal",
+  "requires_skill": "vintner.cellar_masters_label",
+  "requires_facility": "trade"
+}

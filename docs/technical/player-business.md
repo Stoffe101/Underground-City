@@ -1,4 +1,4 @@
-# Player business v1 and shortage contracts (D-207, D-208)
+# Player business and shortage contracts (D-207, D-208, D-212)
 
 **Status (October 28, eleventh pass): implemented. L2: `PlayerBusinessGameTests` (2 cases) and `ShortageContractGameTests` (3 cases) on the dedicated test server, with Q Shop's own wallet and a scratch work-order journal. L3 for the counter: business run 10 through a real client (rent, set down, stock, open, a street person walks in through the premises' iron street door and buys, collect). A shortage's notice, the barkeeper's ask and the short price passed through a real client (workshop runs 6 and 7); a shortage contract has not been taken through a real client. No person has played either.** The current branch and its recent gameplay systems have not received human playtesting.
 
@@ -68,6 +68,49 @@ The premises cost their rent or upkeep on the household's active clock as any ho
 * what is on the counter at what price;
 * when the counter is open but sells nothing, why.
 
+## Growing a counter (twelfth pass, D-212)
+
+**Status: implemented. L1: `economy_model.py --check` (every tier at every price against the best legal hour). L2: `PlayerBusinessGameTests.aCounterGrowsByTierAndSellsFasterBelowTheCitysPrice`. L3: business run 13 through a real client (below). Tier 3 was not tried through a client; no person has played it.**
+
+The owner asked for a business that can grow without becoming passive income. A counter grows in three ways, each from something the player does:
+
+| Growth | How | What it gives |
+| --- | --- | --- |
+| **Tier 2** | career level 14; `/uc business upgrade` uses 4 machined parts and 2 refined alloy (Ironhaven's exchange) | room for 128 goods (from 64) and 1 more sale an hour |
+| **Tier 3** | career level 20; uses 4 machined parts, 2 control circuits and 2 optical components (Blackwater's) | room for 192 goods; no more sales than tier 2 |
+| **Price** | `/uc business price <85..100>`, in fives | one more sale an hour for every ten points below the city's price (so 90% or 85%: +1); never above the city's price |
+| **Regulars** | 200 lifetime sales at the counter | 1 more sale an hour |
+
+Rules kept:
+
+* **The parts are real and used once.** The tier is written to the journal before the parts are taken from the inventory.
+* **Never above the city's price.** A counter that charged more than the shops would turn a discount bought at a shop into credits. `economy_model.py` checks that no line bought with every discount sells for more at a counter after tax, at any price the owner may set.
+* **Still not passive.** Every sale is still a street person who walked in, while somebody is in the city, during a shop's hours, from goods the player put on the counter. At its best (tier 2 or 3, 90%, a regular: 11 sales of the dearest line it takes, 47 credits each after tax) a counter takes 517 credits an hour. That is under the best legal hour at level 14 in the model (566). At tier 1 the best is 470, against 521 at level 12.
+* **The statement says it all:** the tier, the room, the price, the sales an hour and what fits the next tier.
+
+Not built: staff, advertising, supplier contracts, a counter's own reputation beyond regulars, and an upgrade screen (it is a command). These are listed in the twelfth-pass report.
+
+
+### Through a real client (business runs 11 to 13)
+
+`-PucPlaytest=business` continues after the takings are collected. The owner's own command is the business's interface, as the statement says.
+
+1. `/uc business price 90` sets the price: the wine went from the city's 22 to 20, at most 9 sales an hour.
+2. `/uc business upgrade` at level 5, with the parts carried, is refused ("Tier 2 needs career level 14 (you are 5).") and the parts are kept.
+3. At level 14 (set by the operator's command, logged `PREPARED`) the same command fits tier 2 and uses up the four machined parts and two refined alloy.
+4. A right click stocks 64 more bottles: 75 on the counter, more than tier 1's room of 64.
+5. A street person walked in and paid the lower price: 20 a bottle, 17 in the till after tax.
+6. After a save and reopen the counter keeps tier 2, its price and its 74 bottles, and is still open.
+
+Run 13 passed all 14 steps with 10 scripted shortcuts:
+
+* the parts and wine were given by command;
+* the level was set by command;
+* the clock was stopped;
+* the player was taken to Ironhaven by teleport.
+
+Runs 11 and 12 did every step too. Their failures were the scenario's: it read the chat reply before it arrived, and `/uc_prepare` stops at level 10.
+
 ## Shortage contracts (D-207)
 
 A shop's line runs short (D-201) when its customers have bought its shelf down to a quarter. If it **stays short for five minutes of active play**, it posts a **shortage contract** on its city's terminals for the trade that makes it ("Shortage: 4 Berry Wine for The Anvil").
@@ -126,7 +169,7 @@ A shop's line runs short (D-201) when its customers have bought its shelf down t
 
 ## Limits, said plainly
 
-* One real-client run has watched a customer walk in and buy (business run 10, the Ironhaven workshop, ground floor, one street door). Premises up stairs or behind several doors are untested in a world. No real client has taken a shortage contract.
-* A player does not set prices, hire staff or advertise in v1. Customers buy one thing a visit, what their city is short of first, otherwise at random.
+* Real-client runs have watched customers walk in and buy only at one place: business runs 10 to 13, the Ironhaven workshop, ground floor, one street door. Premises up stairs or behind several doors are untested in a world. No real client has taken a shortage contract.
+* A player sets a price only below the city's (85% to 100%, D-212); nobody hires staff or advertises. Customers buy one thing a visit, what their city is short of first, otherwise at random.
 * The counter's look uses vanilla textures by reference; it has no art of its own.
 * Shortage contracts are delivered at a terminal, not over the shop's counter.

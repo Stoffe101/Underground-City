@@ -1,0 +1,23 @@
+{
+  "schema_version": 3,
+  "title": "Equip a private security firm",
+  "career": "gunsmith",
+  "level": 18,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "underground_city:firearm_parts_kit",
+      "count": 6
+    },
+    {
+      "item": "underground_city:specialized_equipment_platform",
+      "count": 1
+    }
+  ],
+  "credits": 700,
+  "xp": 820,
+  "capacity": 2,
+  "refill_ticks": 24000,
+  "legality": "legal",
+  "requires_skill": "gunsmith.range_master"
+}

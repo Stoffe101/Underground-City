@@ -71,6 +71,7 @@ public final class RegionalMarket {
         CrewService.checkpoint("purchase_after_prepare");
         WorkOrderService.recover(player, ledger);
         CitizenState.get(player.server).markJourney(player.getUUID(), "bought");
+        EconomyTelemetry.record(player, "purchase", "good", stock.id(), "units", quantity, "credits", cost, "bank", share.credits(), "city", city);
         if (exchange.counter()) Regulars.traded(player.server, city, exchange.outlet(), player.getUUID(), false);   // the keepers remember who buys from them (D-202)
         player.sendSystemMessage(Component.literal("Bought " + quantity + " x " + stock.registryItem().getDescription().getString()
             + " from " + exchange.seller() + " for " + cost + " credits"

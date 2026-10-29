@@ -13,7 +13,20 @@ public record TerminalData(String city, String career, int level, int xp, double
                            boolean economy, UUID active, int foreignVisits, String region,
                            List<Row> jobs, List<Offer> offers,
                            int skillPoints, List<SkillRow> skills, List<Contact> contacts, List<LawRow> laws,
-                           int heat, String lawSummary, List<Step> journey, String outlet, Thief thief, List<General> general) {
+                           int heat, String lawSummary, List<Step> journey, String outlet, Thief thief, List<General> general, List<Opportunity> opportunities) {
+    /**
+     * One opportunity for the Guide page's Opportunities tab (twelfth pass): what is worth doing now, from the server's state. {@code kind} names the icon and the colour,
+     * {@code page} the terminal page that helps ({@link TerminalScreen.Page} name, or empty), {@code underground} marks work off the books and {@code locked} what is not open yet.
+     */
+    public record Opportunity(String kind, String title, String detail, String page, boolean underground, boolean locked) {}
+
+    /** Every snapshot before the Opportunities tab. */
+    public TerminalData(String city, String career, int level, int xp, double balance, boolean economy, UUID active, int foreignVisits, String region,
+                        List<Row> jobs, List<Offer> offers, int skillPoints, List<SkillRow> skills, List<Contact> contacts, List<LawRow> laws,
+                        int heat, String lawSummary, List<Step> journey, String outlet, Thief thief, List<General> general) {
+        this(city, career, level, xp, balance, economy, active, foreignVisits, region, jobs, offers, skillPoints, skills, contacts, laws, heat, lawSummary, journey, outlet, thief, general, List.of());
+    }
+
     /** The Thief track (D-143): its level, XP (and the XP of the next level), unspent Thief points and its tree. */
     public record Thief(int level, int xp, int nextXp, int points, List<SkillRow> skills) {
         public static final Thief NONE = new Thief(1, 0, ProgressionRules.thiefXpAtLevel(2), 0, List.of());
@@ -80,6 +93,7 @@ public record TerminalData(String city, String career, int level, int xp, double
     /** Status is legal, permit or prohibited; licensed is true when this citizen's skills satisfy a permit. */
     public record LawRow(String category, String title, String status, boolean licensed) {}
 
+    static final int MAX_OPPORTUNITIES = 8;
     static final int MAX_STEPS = 12, MAX_ROWS = 33, MAX_REQS = 4, MAX_OFFERS = 16, MAX_SKILLS = 16, MAX_CONTACTS = 8, MAX_LAWS = 8, MAX_REWARDS = 3;
 
     public TerminalData(String city, String career, int level, int xp, double balance, boolean economy, UUID active,
@@ -167,7 +181,8 @@ public record TerminalData(String city, String career, int level, int xp, double
             SkillService.pointsAvailable(citizen), skillRows(citizen), contacts(region, citizen, ledger, player), lawRows(law, citizen),
             region.isEmpty() ? 0 : ledger.heat(player.getUUID(), region), law == null ? "" : law.summary(),
             Journey.steps(citizen, ledger, player.getUUID()), exchange == null ? "" : exchange.counter() ? exchange.outlet() + "|" + exchange.title() : exchange.outlet(),
-            thief(citizen), GeneralSkills.SHOWN.stream().map(skill -> GeneralSkills.row(citizen, skill)).toList());
+            thief(citizen), GeneralSkills.SHOWN.stream().map(skill -> GeneralSkills.row(citizen, skill)).toList(),
+            wayside ? List.of() : Opportunities.of(player, citizen, ledger, region, rows));
     }
 
     /** The Thief track of a citizen, for the terminal's Thief page. */
@@ -278,6 +293,8 @@ public record TerminalData(String city, String career, int level, int xp, double
             buf.writeUtf(row.id, 24); buf.writeUtf(row.title, 32); buf.writeVarInt(row.level); buf.writeVarInt(row.xp); buf.writeVarInt(row.levelXp); buf.writeVarInt(row.nextXp);
             buf.writeUtf(row.now, 200); buf.writeUtf(row.next, 200); buf.writeUtf(row.earn, 200); buf.writeBoolean(row.used);
         }
+        buf.writeVarInt(opportunities.size());
+        for (Opportunity o : opportunities) { buf.writeUtf(o.kind, 16); buf.writeUtf(o.title, 64); buf.writeUtf(o.detail, 200); buf.writeUtf(o.page, 16); buf.writeBoolean(o.underground); buf.writeBoolean(o.locked); }
     }
 
     private static void writeSkills(FriendlyByteBuf buf, List<SkillRow> skills) {
@@ -376,7 +393,11 @@ public record TerminalData(String city, String career, int level, int xp, double
         List<General> general = new ArrayList<>();
         for (int i = 0; i < generalCount; i++)
             general.add(new General(buf.readUtf(24), buf.readUtf(32), buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readUtf(200), buf.readUtf(200), buf.readUtf(200), buf.readBoolean()));
+        int opportunityCount = buf.readVarInt();
+        if (opportunityCount < 0 || opportunityCount > MAX_OPPORTUNITIES) throw new IllegalArgumentException("Invalid opportunity count");
+        List<Opportunity> opportunities = new ArrayList<>();
+        for (int i = 0; i < opportunityCount; i++) opportunities.add(new Opportunity(buf.readUtf(16), buf.readUtf(64), buf.readUtf(200), buf.readUtf(16), buf.readBoolean(), buf.readBoolean()));
         return new TerminalData(city, career, level, xp, balance, economy, active, visits, region, List.copyOf(rows), List.copyOf(offers),
-            points, List.copyOf(skills), List.copyOf(contacts), List.copyOf(laws), heat, lawSummary, List.copyOf(journey), outlet, thief, List.copyOf(general));
+            points, List.copyOf(skills), List.copyOf(contacts), List.copyOf(laws), heat, lawSummary, List.copyOf(journey), outlet, thief, List.copyOf(general), List.copyOf(opportunities));
     }
 }

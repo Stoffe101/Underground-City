@@ -1,0 +1,20 @@
+{
+  "schema_version": 3,
+  "title": "Licensed reserve stock for the dispensary",
+  "career": "farmer",
+  "level": 16,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "underground_city:dried_cannabis",
+      "count": 8
+    }
+  ],
+  "credits": 700,
+  "xp": 720,
+  "capacity": 2,
+  "refill_ticks": 12000,
+  "legality": "legal",
+  "requires_skill": "farmer.controlled_crop_licence",
+  "buyer": "blackwater_dispensary"
+}

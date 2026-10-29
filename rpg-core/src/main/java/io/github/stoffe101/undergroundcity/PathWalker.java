@@ -28,7 +28,7 @@ final class PathWalker {
     private int next, ticks, sinceProgress, replans, legs, jumps, doors, planWait, jumpHold, swims;
     private double best = Double.MAX_VALUE;
     private int bestNode = -1;
-    private boolean done, failed, keysDown, planning, swimming;
+    private boolean done, failed, keysDown, planning, swimming, sprint;
     private Vec3 stuckAt;
     private int sidestep;
     private String summary = "";
@@ -41,6 +41,9 @@ final class PathWalker {
      * reached the road's first stretch through a gully under it, by flat distance, and could not climb on).
      */
     PathWalker(String label, Supplier<Vec3> target, double within, double withinY) { this.label = label; this.target = target; this.within = within; this.withinY = withinY; }
+
+    /** Holds the sprint key with the forward key (a person running from the police). */
+    PathWalker sprinting() { sprint = true; return this; }
 
     boolean done() { return done; }
     boolean failed() { return failed; }
@@ -80,6 +83,7 @@ final class PathWalker {
         if (sidestep > 0) { Playtest.keyUp("a"); Playtest.keyUp("d"); sidestep = 0; }
         if (!keysDown) return;
         Playtest.keyUp("w");
+        if (sprint) Playtest.keyUp("ctrl");
         keysDown = false;
     }
 
@@ -170,7 +174,7 @@ final class PathWalker {
             if (sidestep == 10) Playtest.keyDown(key);
             if (--sidestep == 0) Playtest.keyUp(key);
         }
-        if (!keysDown) { Playtest.focusWindow(); Playtest.keyDown("w"); keysDown = true; }
+        if (!keysDown) { Playtest.focusWindow(); Playtest.keyDown("w"); if (sprint) Playtest.keyDown("ctrl"); keysDown = true; }
         if (node.y > me.getY() + 0.6 && me.onGround()) jump();
         // progress is moving along the route (a later waypoint, or closer to the current one), not getting closer to the target: a route round a building goes away from it first
         double toNode = flat(me.position(), node);

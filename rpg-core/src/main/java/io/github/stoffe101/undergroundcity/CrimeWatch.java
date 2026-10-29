@@ -49,8 +49,11 @@ public final class CrimeWatch {
     static final long WARNING_TICKS = 20 * 60 * 10;
     /** How far a passer-by sees a blow, and how far a person struck runs before they report it themselves. */
     static final double ASSAULT_SIGHT = 20;
-    /** The chance the person struck reports it when nobody else saw (decided once per incident), and how much later than a passer-by's call. */
-    static final double VICTIM_REPORTS = 0.6;
+    /**
+     * The chance the person struck reports it when nobody else saw, and how much later than a passer-by's call. The owner's brief of the twelfth pass: a victim's report must not depend on somebody
+     * else being about. It was 0.6 (D-189); now a person who is struck always goes to the police, later than a passer-by would call.
+     */
+    static final double VICTIM_REPORTS = 1.0;
     static final int VICTIM_DELAY_FACTOR = 2;
 
     private static final Map<String, Long> INCIDENTS = new HashMap<>();
@@ -74,7 +77,10 @@ public final class CrimeWatch {
         } else if (victim instanceof Villager villager && CityNpcs.isCityNpc(villager) && !CityNpcs.onTheRoad(villager)) {
             city = CityRegions.INSTANCE.cityAt(level, villager.blockPosition()).orElse("");
         } else return;
-        if (city == null || city.isEmpty() || CityLaws.INSTANCE.find(city) == null) return;
+        if (city == null || city.isEmpty() || CityLaws.INSTANCE.find(city) == null) {
+            PoliceTrace.note(striker, city, "refused", "a blow to " + victim.getName().getString() + " outside any city's law (city '" + city + "')");
+            return;
+        }
         // a machine that strikes (a mod's fake player) carries the heat as a person would, and nobody calls the police on a machine
         if (striker instanceof FakePlayer) { if (!officer) heat(striker, city, PopulationService.HEAT_FOR_STRIKING); return; }
         try { assault(striker, level, victim, city, officer); }
@@ -106,16 +112,19 @@ public final class CrimeWatch {
         assaults++;
         CityLaws.Offence offence = CityLaws.INSTANCE.offence(city, CityLaws.ASSAULT);
         heat(striker, city, PopulationService.HEAT_FOR_STRIKING);
+        PoliceTrace.note(striker, city, "crime", "struck " + name + " at " + striker.blockPosition().toShortString());
         TownspersonEntity onBeat = PolicePatrols.seer(level, striker);
         if (onBeat != null) {
             Long warned = WARNED.get(striker.getUUID());
-            if (offence.warnFirst() && (warned == null || now - warned > WARNING_TICKS)) {
+            // a warning is for somebody with a clean record here: no prior conviction in the city and no warrant out (twelfth pass: escalation for repeat offences)
+            if (offence.warnFirst() && (warned == null || now - warned > WARNING_TICKS) && cleanRecord(striker, city)) {
                 WARNED.put(striker.getUUID(), now);
                 warnings++;
                 onBeat.getLookControl().setLookAt(striker);
                 striker.sendSystemMessage(Component.literal(onBeat.getName().getString() + ": Hands to yourself. That is your warning.").withStyle(ChatFormatting.GOLD));
                 Notice.send(striker, Notice.Kind.WARN, "Warned by the police", "An officer saw that. Another offence in " + PopulationService.capitalise(city) + " and you will be arrested.");
                 LOGGER.info("[UC-POLICE] {} warned by {} in {} for {}", striker.getGameProfile().getName(), onBeat.getName().getString(), city, offence.id());
+                PoliceTrace.note(striker, city, "warning", onBeat.getName().getString() + " saw it and warned them (a first minor offence, clean record)");
                 return;
             }
             PoliceResponse.seenOnBeat(striker, level, city, striker.blockPosition(), onBeat, offence, "hitting " + name);
@@ -125,6 +134,7 @@ public final class CrimeWatch {
         int seers = bystanders(level, striker, victim);
         if (seers > 0) {
             assaultsReported++;
+            PoliceTrace.note(striker, city, "witnessed", seers + " passer(s)-by in sight; one calls the police");
             PoliceResponse.reportStreetCrime(striker, level, city, striker.blockPosition(), offence, "witness", offence.reportSeconds());
             Notice.send(striker, Notice.Kind.HEAT, "Somebody saw that", "A passer-by is calling the police. Be gone before they come.");
             striker.sendSystemMessage(Component.literal("Somebody saw you strike " + name + " and runs off to call the police.").withStyle(ChatFormatting.RED));
@@ -134,10 +144,12 @@ public final class CrimeWatch {
         long seed = LawMath.mix(striker.getUUID().getMostSignificantBits(), victim.getUUID().getLeastSignificantBits(), now / INCIDENT_TICKS, 0xA55A17L);
         if (LawMath.roll(VICTIM_REPORTS, seed)) {
             assaultsReported++;
+            PoliceTrace.note(striker, city, "witnessed", "nobody else in sight; " + name + " goes to the police (officers in " + offence.reportSeconds() * VICTIM_DELAY_FACTOR + " s)");
             PoliceResponse.reportStreetCrime(striker, level, city, striker.blockPosition(), offence, "the victim", offence.reportSeconds() * VICTIM_DELAY_FACTOR);
             Notice.send(striker, Notice.Kind.HEAT, "They will report you", "Nobody else saw, but " + name + " is going to the police.");
         } else {
             assaultsUnreported++;
+            PoliceTrace.note(striker, city, "undetected", "nobody else in sight and " + name + " did not report it");
             Notice.send(striker, Notice.Kind.INFO, "Nobody else saw that", name + " ran off. People remember a face.");
         }
     }
@@ -148,6 +160,14 @@ public final class CrimeWatch {
         int n = level.getEntitiesOfClass(TownspersonEntity.class, box, p -> p != victim && p.isAlive() && !p.police() && p.distanceTo(striker) <= ASSAULT_SIGHT && p.hasLineOfSight(striker)).size();
         n += level.getEntitiesOfClass(Villager.class, box, v -> v != victim && v.isAlive() && CityNpcs.isCityNpc(v) && v.distanceTo(striker) <= ASSAULT_SIGHT && v.hasLineOfSight(striker)).size();
         return n;
+    }
+
+    /** No prior conviction in the city within two active hours and no warrant out there: a first minor offence may be let off with a warning. */
+    static boolean cleanRecord(ServerPlayer player, String city) {
+        try {
+            WorkOrderLedger ledger = WorkOrderLedger.get(player.server);
+            return ledger.faulted() || (ledger.priors(player.getUUID(), city) == 0 && ledger.warrant(player.getUUID(), city) == null);
+        } catch (RuntimeException error) { return true; }
     }
 
     private static void heat(ServerPlayer player, String city, int amount) {
@@ -192,6 +212,7 @@ public final class CrimeWatch {
             if (building.isEmpty()) continue;
             LOCKS_SEEN.add(id);
             lockWitnessed++;
+            PoliceTrace.note(player, target.city(), "witnessed", seers.get(0).getName().getString() + " saw them working at a lock at " + target.pos().toShortString());
             player.sendSystemMessage(Component.literal(seers.get(0).getName().getString() + " has seen you working at the lock and hurries off.").withStyle(ChatFormatting.RED));
             PoliceResponse.raise(player, level, building.get(), target.pos(), false, false, true);
         }
@@ -220,6 +241,7 @@ public final class CrimeWatch {
                 p -> p.isAlive() && !p.police() && p.homeKey() == b.key() && p.distanceTo(player) <= sight && p.hasLineOfSight(player))) { seer = p; break; }
             if (seer == null) continue;
             intrudersSeen++;
+            PoliceTrace.note(player, b.city(), "witnessed", seer.getName().getString() + (night ? " woke to" : " saw") + " an intruder inside at " + at.toShortString());
             player.sendSystemMessage(Component.literal(seer.getName().getString() + (night ? " wakes, sees you and shouts for help." : " sees a stranger in the place and calls the police.")).withStyle(ChatFormatting.RED));
             PoliceResponse.raise(player, level, b, at, false, false, true);
         }
@@ -248,6 +270,7 @@ public final class CrimeWatch {
         CityBuildings.Response response = b.security() == null ? null : b.security().response();
         if (response != null && !AlarmPanels.jammed(level, b) && PoliceResponse.armed(level, b, response) && rs.next() < 0.1 * Math.max(1, Thievery.tier(b))) {
             sensorsTripped++;
+            PoliceTrace.note(player, b.city(), "reported", "a motion sensor caught a search at " + at.toShortString());
             Notice.send(player, Notice.Kind.HEAT, "A motion sensor", "Something on the wall blinked red. The alarm is ringing.");
             PoliceResponse.raise(player, level, b, at, true, false, false);
             return;
@@ -257,6 +280,7 @@ public final class CrimeWatch {
         boolean home = !level.getEntitiesOfClass(TownspersonEntity.class, new AABB(at).inflate(20), p -> p.isAlive() && !p.police() && p.homeKey() == b.key()).isEmpty();
         if (home && rs.next() < hear) {
             searchesHeard++;
+            PoliceTrace.note(player, b.city(), "witnessed", "somebody at home heard a search at " + at.toShortString());
             player.sendSystemMessage(Component.literal("Somebody in the building heard you, and is on the telephone.").withStyle(ChatFormatting.RED));
             PoliceResponse.raise(player, level, b, at, false, false, true);
         }

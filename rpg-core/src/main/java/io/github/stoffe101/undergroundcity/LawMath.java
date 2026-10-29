@@ -43,6 +43,18 @@ final class LawMath {
         return Math.max(0.02, Math.min(law.maxChance(), chance));
     }
 
+    /**
+     * The fine for an offence by somebody with {@code priors} convictions in the city within two active hours (twelfth pass): half as much again for each, at most two and a half times, never over
+     * an offence's ceiling of 1000. A first offence pays the city's own figure.
+     */
+    static int escalatedFine(int fine, int priors) {
+        int p = Math.max(0, Math.min(3, priors));
+        return (int) Math.min(1000L, (long) fine * (2 + p) / 2);
+    }
+
+    /** The heat an arrest adds for a repeat offender: one more for each prior conviction, at most three more. */
+    static int escalatedHeat(int heat, int priors) { return heat + Math.max(0, Math.min(3, priors)); }
+
     /** Chance a hand-off in a city is seen by someone who matters: heat adds three points each, concealment halves in. */
     static double witnessChance(CityLaws.Law law, int heat, double skillModifier) {
         double chance = law.witnessChance() + 0.03 * Math.max(0, heat) + Math.min(0, skillModifier) * 0.5;

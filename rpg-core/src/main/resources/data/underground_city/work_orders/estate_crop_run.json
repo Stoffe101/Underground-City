@@ -1,0 +1,22 @@
+{
+  "schema_version": 3,
+  "title": "A whole crop for Marrow",
+  "career": "farmer",
+  "level": 16,
+  "foreign_visits": 0,
+  "requirements": [
+    {
+      "item": "underground_city:dried_cannabis",
+      "count": 10
+    }
+  ],
+  "credits": 950,
+  "xp": 760,
+  "capacity": 1,
+  "refill_ticks": 24000,
+  "legality": "underground",
+  "requires_skill": "farmer.back_lot_network",
+  "buyer": "marrow",
+  "min_trust": 2,
+  "trust_gain": 1
+}

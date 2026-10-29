@@ -41,7 +41,7 @@ if ($privateSession) {
     $shots = if ($IncludeScreenshots) { 'screenshots were kept (-IncludeScreenshots)' } else { 'screenshots were left out' }
     Write-Warning "This session loaded private content: $shots, and the ids of $($namespaces.Count) private namespace(s) were replaced by <private> in the logs. Share the report only with the owner and the people the permission covers, never on a public issue."
 }
-$sha = (git -C $script:UcRoot rev-parse --short HEAD) 2>$null
+$sha = Invoke-UcNative { (git -C $script:UcRoot rev-parse --short HEAD) 2>$null }
 Set-Content -Path (Join-Path $stage 'about.txt') -Value @("commit $sha", "folder $RunDir", "packed $stamp", "computer $env:COMPUTERNAME")
 $reports = Join-Path $script:UcRoot 'reports'
 New-Item -ItemType Directory -Force -Path $reports | Out-Null

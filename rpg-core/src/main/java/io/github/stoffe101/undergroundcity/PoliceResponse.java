@@ -58,6 +58,14 @@ public final class PoliceResponse {
     static final double SIGHT = 32, SEARCH_SPREAD = 8, LOST_DISTANCE = 20;
     static final int GIVE_UP_SECONDS = 30;
     static final int ARREST_HEAT = 3, LEAVE_TICKS = 160, MAX_TRIES = 5, CANDIDATE_SPOTS = 6;
+    /**
+     * How fast officers run after somebody they can see, as a multiple of an officer's walking speed (twelfth pass). A mob's ground speed goes with the square of speed times attribute, so an officer
+     * at the old 1.25 (0.375) ran about 6.1 blocks a second, faster than a sprinting player (5.6): nobody in the open ever got away by running. At 1.13 (0.34) an officer runs about 5.0: a walking
+     * thief (4.3) is caught, a sprinting one gains half a block a second and still has to break the line of sight to be lost. {@code PoliceChaseGameTests} measures it.
+     */
+    static final double CHASE_SPEED = 1.13, SEARCH_SPEED = 1.05;
+    /** How often (seconds) the route of the officer nearest a suspect in sight is checked, and after how many checks in a row that do not reach a second unit is sent from a street that does. */
+    static final int ROUTE_CHECK_SECONDS = 3, ROUTE_MISSES_FOR_HELP = 3;
     /** A clean pick does not trip an armed alarm whose chance is below this (an alarm in every building of its class is too good to slip past). */
     static final double QUIET_BYPASS_MAX_CHANCE = 0.9;
 
@@ -88,6 +96,13 @@ public final class PoliceResponse {
         BlockPos lastSeen;
         long lastSeenAt;
         int searchStep;
+        /** True once somebody who saw the offender's face is part of this (a witness, the victim, a household, an officer): only then does a warrant outlive the response (twelfth pass). */
+        boolean identified;
+        /** Where it stands, for the trace: reported (officers on their way), investigating, pursuit. */
+        String state = "reported";
+        /** Route checks of the nearest officer that did not reach a suspect in sight, in a row, and whether a second unit has been sent. */
+        int routeMisses;
+        boolean reinforced;
 
         Dispatch(ServerPlayer player, ServerLevel level, BlockPos door, String city, String securityClass, long buildingKey, String why, long arriveAt, CityBuildings.Response response) {
             this.player = player; burglar = player.getUUID(); dimension = level.dimension(); this.door = door; this.city = city; this.securityClass = securityClass; this.buildingKey = buildingKey;
@@ -99,6 +114,8 @@ public final class PoliceResponse {
     private static final List<Dispatch> DISPATCHES = new ArrayList<>();
     // measurements for /uc_police status
     static long raised, byAlarm, byWitness, byPatrol, arrivals, arrests, escapes, noSpot, seizedStacks;
+    /** Twelfth pass: warrants recorded, wanted people an officer on the beat recognised, arrests on a warrant (beat or checkpoint), second units sent when a route did not reach. */
+    static long warrantsIssued, recognised, arrestsOnWarrant, reinforcements;
 
     // ------------------------------------------------------------------------------------------------ noticing a break-in
 
@@ -157,13 +174,17 @@ public final class PoliceResponse {
             if (existing.burglar.equals(player.getUUID()) && existing.buildingKey == building.key() && existing.dimension == level.dimension()) {
                 existing.arriveAt = Math.min(existing.arriveAt, now + delay);   // a second noise brings them sooner, never later
                 if (armed) ring(level, existing, now);
+                if (seen) identify(level, player, existing, "a witness");
+                PoliceTrace.note(player, existing.city, "reported", "joined the response already out (" + why + ")");
                 return;
             }
         }
-        if (DISPATCHES.size() >= MAX_DISPATCHES) { LOGGER.warn("Police response not raised: {} dispatches are already out", DISPATCHES.size()); return; }
+        if (DISPATCHES.size() >= MAX_DISPATCHES) { refused(player, building.city(), DISPATCHES.size() + " dispatches are already out"); return; }
         Dispatch dispatch = new Dispatch(player, level, door, building.city(), building.security() == null ? "" : building.security().id(), building.key(), why, now + delay, used);
         DISPATCHES.add(dispatch);
         raised++;
+        PoliceTrace.note(player, dispatch.city, "dispatch", dispatch.offence.id() + " at " + door.toShortString() + " (" + why + "), officers in " + delay / 20 + " s, " + used.officers() + " officer(s)");
+        if (seen) identify(level, player, dispatch, armed ? "the alarm and a witness" : "a witness");
         if (armed) { byAlarm++; ring(level, dispatch, now); }
         if (seen) byWitness++;
         // somebody who lives or works in the building and is in it now is a witness too (the households of D-124): a night break-in of an occupied house is seen from the bed
@@ -192,11 +213,14 @@ public final class PoliceResponse {
             raised++;
         }
         byPatrol++;
+        dispatch.state = "pursuit";
+        identify(level, player, dispatch, "an officer on the beat");
+        PoliceTrace.note(player, dispatch.city, "pursuit", officer.getName().getString() + " on the beat saw them " + doing + ", " + Math.round(officer.distanceTo(player)) + " blocks away");
         if (!dispatch.arrived) { dispatch.arrived = true; arrivals++; dispatch.windowEnds = now + dispatch.windowSeconds * 20L; }
         dispatch.officers.add(officer.getUUID());
         dispatch.lastSeen = player.blockPosition();
         dispatch.lastSeenAt = now;
-        officer.errand(player.blockPosition(), 1.25);
+        officer.errand(player.blockPosition(), CHASE_SPEED);
         officer.leaveIn(dispatch.windowSeconds * 20L + 400L);
         Notice.send(player, Notice.Kind.HEAT, "The police saw you", "An officer on the beat is coming for you. Run, or hide.");
         player.sendSystemMessage(Component.literal(officer.getName().getString() + " is on the beat and saw you " + doing + ".").withStyle(ChatFormatting.RED));
@@ -217,6 +241,40 @@ public final class PoliceResponse {
     }
 
     /**
+     * Somebody who saw the offender's face is part of this response (twelfth pass): the police know whom they are looking for, so a warrant is recorded at once and outlives the response itself. A
+     * logout, a restart or an escape no longer wipes a witnessed crime: an officer on the beat who sees them, or a checkpoint of the city, arrests them for it while it lasts. An alarm alone saw nobody.
+     */
+    static void identify(ServerLevel level, ServerPlayer player, Dispatch d, String by) {
+        d.identified = true;
+        try {
+            WorkOrderLedger ledger = WorkOrderLedger.get(level.getServer());
+            if (ledger.faulted() || CitizenState.get(level.getServer()).find(player.getUUID()).isEmpty()) return;
+            ledger.issueWarrant(player.getUUID(), d.city, d.offence.id(), d.offence.fine(), d.offence.heat(), by);
+            warrantsIssued++;
+            PoliceTrace.note(player, d.city, "warrant", "issued or renewed for " + d.offence.id() + " (seen by " + by + "), lasts " + WorkOrderLedger.WARRANT_TICKS / 1200 + " active minutes");
+        } catch (RuntimeException error) { LOGGER.warn("A warrant could not be recorded: {}", error.toString()); }
+    }
+
+    /** A response that could not be raised: said in the log (it used to be the only trace of a dropped report) and in the trace. */
+    private static void refused(ServerPlayer player, String city, String why) {
+        LOGGER.warn("Police response not raised for {} in {}: {}", player.getGameProfile().getName(), city, why);
+        PoliceTrace.note(player, city, "refused", why);
+    }
+
+    /**
+     * An officer on the beat recognises somebody wanted in their city (twelfth pass): a pursuit for the warrant's charge, as if they had seen it happen, unless a response is already out for them.
+     * Returns true when a pursuit started.
+     */
+    static boolean wantedSeen(ServerPlayer player, ServerLevel level, String city, TownspersonEntity officer, WorkOrderLedger.Warrant warrant) {
+        if (outFor(player, level, city) != null) return false;
+        CityLaws.Offence offence = CityLaws.INSTANCE.offence(city, warrant.offence());
+        recognised++;
+        PoliceTrace.note(player, city, "pursuit", officer.getName().getString() + " on the beat recognised them: wanted for " + warrant.offence() + " (seen by " + warrant.source() + ")");
+        seenOnBeat(player, level, city, player.blockPosition(), officer, offence, "wanted for " + offence.charge());
+        return true;
+    }
+
+    /**
      * Somebody reported a crime in the street (D-189): an assault a passer-by saw, or one the victim went to report. Officers come to the scene after {@code delaySeconds} and look for the
      * offender as for a break-in (they chase only what they see). A response already out for this player in this city is joined: it comes no later, and the worse charge stands.
      * Returns the dispatch, or null when none could be raised.
@@ -227,15 +285,19 @@ public final class PoliceResponse {
         if (existing != null) {
             if (!existing.arrived) existing.arriveAt = Math.min(existing.arriveAt, now + delaySeconds * 20L);
             charge(existing, offence);
+            identify(level, player, existing, why);
+            PoliceTrace.note(player, city, "reported", offence.id() + " (" + why + ") joined the response already out");
             return existing;
         }
-        if (DISPATCHES.size() >= MAX_DISPATCHES) { LOGGER.warn("Police response not raised: {} dispatches are already out", DISPATCHES.size()); return null; }
+        if (DISPATCHES.size() >= MAX_DISPATCHES) { refused(player, city, DISPATCHES.size() + " dispatches are already out"); return null; }
         Dispatch d = new Dispatch(player, level, scene, city, "", PopulationPlan.mix(scene.asLong() ^ now), why, now + delaySeconds * 20L, STREET);
         d.offence = offence;
         d.burglary = false;
         DISPATCHES.add(d);
         raised++; byWitness++;
         LOGGER.info("[UC-POLICE] {} reported in {} at {} ({}): officers in {} s", offence.id(), city, scene.toShortString(), why, delaySeconds);
+        PoliceTrace.note(player, city, "dispatch", offence.id() + " reported by " + why + " at " + scene.toShortString() + ", officers in " + delaySeconds + " s");
+        identify(level, player, d, why);
         return d;
     }
 
@@ -255,13 +317,16 @@ public final class PoliceResponse {
             raised++;
         } else charge(d, offence);
         byPatrol++;
+        d.state = "pursuit";
+        identify(level, player, d, "an officer");
+        PoliceTrace.note(player, city, "pursuit", officer.getName().getString() + " saw them " + doing + " (" + d.offence.id() + "), " + Math.round(officer.distanceTo(player)) + " blocks away");
         if (!d.arrived) { d.arrived = true; arrivals++; d.windowEnds = now + d.windowSeconds * 20L; }
         if (!d.officers.contains(officer.getUUID())) d.officers.add(officer.getUUID());
         d.lastSeen = player.blockPosition();
         d.lastSeenAt = now;
         d.challenged = true;
         PolicePatrols.release(officer);
-        officer.errand(player.blockPosition(), 1.25);
+        officer.errand(player.blockPosition(), CHASE_SPEED);
         officer.leaveIn(d.windowSeconds * 20L + 400L);
         officer.getLookControl().setLookAt(player);
         Notice.send(player, Notice.Kind.HEAT, "The police saw you", "An officer is coming for you. Run, or give yourself up.");
@@ -335,7 +400,12 @@ public final class PoliceResponse {
     private static boolean step(MinecraftServer server, Dispatch d, long now) {
         ServerPlayer player = resolve(server, d);
         ServerLevel level = server.getLevel(d.dimension);
-        if (player == null || level == null || !player.isAlive() || player.isCreative() || player.isSpectator()) { dismiss(server, d); return true; }
+        if (player == null || level == null || !player.isAlive() || player.isCreative() || player.isSpectator()) {
+            PoliceTrace.note(player == null ? d.burglar.toString().substring(0, 8) : player.getGameProfile().getName(), d.city, "dropped",
+                player == null ? "the offender is not online" : !player.isAlive() ? "the offender died" : "the offender is in creative or spectator mode");
+            dismiss(server, d);
+            return true;
+        }
         if (now < d.ringUntil && now >= d.nextRing) {
             d.nextRing = now + RING_EVERY_TICKS;
             level.playSound(null, d.door, SoundEvents.BELL_BLOCK, SoundSource.BLOCKS, 3.0f, 0.6f);
@@ -343,10 +413,17 @@ public final class PoliceResponse {
         if (!d.arrived) {
             if (now < d.arriveAt) return false;
             if (!arrive(level, player, d)) {
-                if (++d.tries >= MAX_TRIES) { noSpot++; LOGGER.info("Police could not find a street near {} to arrive at; the response is dropped (nobody is arrested)", d.door); return true; }
+                PoliceTrace.note(player, d.city, "arrival", "no street spot to arrive at near " + d.door.toShortString() + " (try " + (d.tries + 1) + " of " + MAX_TRIES + ")");
+                if (++d.tries >= MAX_TRIES) {
+                    noSpot++;
+                    LOGGER.info("Police could not find a street near {} to arrive at; the response is dropped (nobody is arrested)", d.door);
+                    PoliceTrace.note(player, d.city, "dropped", "no street near the scene in " + MAX_TRIES + " tries" + (d.identified ? "; the warrant stands" : ""));
+                    return true;
+                }
                 return false;
             }
             d.arrived = true; arrivals++;
+            d.state = "investigating";
             d.windowEnds = now + d.windowSeconds * 20L;
             // a word that they are here and searching, once: what a person would hear (sirens, a car door), not where they are
             if (player.level() == level && player.distanceToSqr(d.door.getX() + 0.5, d.door.getY(), d.door.getZ() + 0.5) <= ESCAPE_RANGE * ESCAPE_RANGE)
@@ -356,7 +433,12 @@ public final class PoliceResponse {
         }
         List<TownspersonEntity> officers = officers(level, d);
         // (the notice's longer wording was cut off at three lines in the advanced burglary run)
-        if (officers.isEmpty() || now >= d.windowEnds) { escaped(player, d); Notice.send(player, Notice.Kind.INFO, "The police have gone", "They found nobody. Your heat in " + PopulationService.capitalise(d.city) + " stays up a while."); dismiss(server, d); return true; }
+        if (officers.isEmpty() || now >= d.windowEnds) {
+            escaped(player, d, officers.isEmpty() ? "no officer left (they despawned or were removed)" : "the search window of " + d.windowSeconds + " s ended");
+            Notice.send(player, Notice.Kind.INFO, "The police have gone", d.identified ? "They found nobody, but they know who they are looking for." : "They found nobody. Your heat in " + PopulationService.capitalise(d.city) + " stays up a while.");
+            dismiss(server, d);
+            return true;
+        }
         boolean sameLevel = player.level() == level;
         double nearest = Double.MAX_VALUE;
         TownspersonEntity closest = null;
@@ -368,17 +450,20 @@ public final class PoliceResponse {
             if (sameLevel && distance <= SIGHT && officer.hasLineOfSight(player)) seen = true;
         }
         if (seen) { d.lastSeen = player.blockPosition(); d.lastSeenAt = now; }
+        if (seen && !"pursuit".equals(d.state)) { d.state = "pursuit"; PoliceTrace.note(player, d.city, "pursuit", "an officer sees them, " + Math.round(nearest) + " blocks away"); }
+        else if (!seen && "pursuit".equals(d.state) && now - d.lastSeenAt >= 40) { d.state = "investigating"; PoliceTrace.note(player, d.city, "search", "out of sight; searching where they were last seen, " + (d.lastSeen == null ? "the scene" : d.lastSeen.toShortString())); }
         BlockPos searchAt = d.lastSeen != null ? d.lastSeen : d.door;
         for (int i = 0; i < officers.size(); i++) {
             TownspersonEntity officer = officers.get(i);
-            if (seen && sameLevel && officer.distanceTo(player) <= CHASE_RANGE) officer.errand(player.blockPosition(), 1.25);
-            else if (officer.blockPosition().distSqr(searchAt) > 9) officer.errand(searchAt, 1.15);
+            if (seen && sameLevel && officer.distanceTo(player) <= CHASE_RANGE) officer.errand(player.blockPosition(), CHASE_SPEED);
+            else if (officer.blockPosition().distSqr(searchAt) > 9) officer.errand(searchAt, SEARCH_SPEED);
             else officer.errand(searchPoint(level, searchAt, d, i), 0.9);   // at the last place seen: look round it
         }
+        if (closest != null && seen && sameLevel && now % (ROUTE_CHECK_SECONDS * 20L) < CYCLE) checkRoute(level, player, d, closest, now);
         long giveUp = (Thievery.has(player, "thief.clean_getaway") ? GIVE_UP_SECONDS / 2 : GIVE_UP_SECONDS) * 20L;
         boolean lost = !seen && (d.lastSeen == null ? now - d.arriveAt >= giveUp : now - d.lastSeenAt >= giveUp) && nearest > LOST_DISTANCE;
         if (!sameLevel || lost || (nearest > ESCAPE_RANGE && player.distanceToSqr(d.door.getX() + 0.5, d.door.getY(), d.door.getZ() + 0.5) > ESCAPE_RANGE * ESCAPE_RANGE)) {
-            escaped(player, d);
+            escaped(player, d, !sameLevel ? "left the dimension" : lost ? "out of sight for " + giveUp / 20 + " s and " + Math.round(nearest) + " blocks from the nearest officer" : "more than " + (int) ESCAPE_RANGE + " blocks from the officers and the scene");
             Notice.send(player, Notice.Kind.INFO, "You got away", "The police lost you. Keep your head down.");
             dismiss(server, d);
             return true;
@@ -388,17 +473,101 @@ public final class PoliceResponse {
             closest.getLookControl().setLookAt(player);
             player.sendSystemMessage(Component.literal(closest.getName().getString() + ": Police! Stay where you are.").withStyle(ChatFormatting.GOLD));
             Notice.send(player, Notice.Kind.WARN, "Police", "An officer is coming for you. Run, or hide.");
+            PoliceTrace.note(player, d.city, "pursuit", closest.getName().getString() + " challenged them at " + Math.round(nearest) + " blocks");
         }
-        if (closest != null && nearest <= ARREST_RANGE && Math.abs(closest.getY() - player.getY()) <= 2.5 && closest.hasLineOfSight(player)) return arrest(server, player, closest, d);
+        // an officer close enough to arrest does so when they can lay a hand on the suspect; one with a bush or a post in between steps round to a free cell beside them
+        // (police cases run 8: an officer stood two minutes on the far side of a two-high bush from a suspect who did not move, and the response ended as an escape)
+        if (sameLevel) for (TownspersonEntity officer : officers) {
+            if (officer.distanceTo(player) > ARREST_RANGE || Math.abs(officer.getY() - player.getY()) > 2.5) continue;
+            if (canTouch(level, officer, player)) return arrest(server, player, officer, d);
+            BlockPos beside = besideFree(level, player.blockPosition(), officer.blockPosition());
+            if (beside != null) officer.errand(beside, CHASE_SPEED);
+        }
         return false;
     }
 
-    /** A thief slipped a response: counted, and worth Thief XP once (by the building's tier). */
-    private static void escaped(ServerPlayer player, Dispatch d) {
+    /** Whether an officer this close can lay a hand on the suspect: a clear line at the eyes, the chest or the knees. A bush, a post or a lamp blocks one or two of them; a wall or a window blocks all three. */
+    static boolean canTouch(ServerLevel level, TownspersonEntity officer, ServerPlayer player) {
+        if (officer.hasLineOfSight(player)) return true;
+        for (double h : new double[]{0.9, 0.35}) {
+            net.minecraft.world.phys.Vec3 from = officer.position().add(0, h, 0), to = player.position().add(0, h, 0);
+            if (level.clip(new net.minecraft.world.level.ClipContext(from, to, net.minecraft.world.level.ClipContext.Block.COLLIDER, net.minecraft.world.level.ClipContext.Fluid.NONE, officer)).getType()
+                == net.minecraft.world.phys.HitResult.Type.MISS) return true;
+        }
+        return false;
+    }
+
+    /** The cell beside {@code suspect} a person can stand in that is nearest to {@code from}, or null when every side is closed. */
+    static BlockPos besideFree(ServerLevel level, BlockPos suspect, BlockPos from) {
+        BlockPos best = null;
+        double bestDistance = Double.MAX_VALUE;
+        for (net.minecraft.core.Direction side : net.minecraft.core.Direction.Plane.HORIZONTAL) {
+            BlockPos cell = suspect.relative(side);
+            if (!Chunks.ready(level, cell) || !level.getBlockState(cell).getCollisionShape(level, cell).isEmpty() || !level.getBlockState(cell.above()).getCollisionShape(level, cell.above()).isEmpty()
+                || level.getBlockState(cell.below()).getCollisionShape(level, cell.below()).isEmpty()) continue;
+            double distance = cell.distSqr(from);
+            if (distance < bestDistance) { bestDistance = distance; best = cell; }
+        }
+        return best;
+    }
+
+    /**
+     * Whether a route gets to the suspect: it reached its target and ends near them (they may have moved a step since it was asked for), or it ends right beside them. A path that could not
+     * reach its target ends short of it, and its target (the suspect's own block) says nothing about where it ends (police cases run 8); a route that ends outside a closed room's wall is two
+     * blocks from somebody inside it and does not reach them.
+     */
+    static boolean routeReaches(Path path, BlockPos suspect) {
+        if (path == null) return false;
+        net.minecraft.world.level.pathfinder.Node end = path.getEndNode();
+        if (end == null) return false;
+        int off = end.asBlockPos().distManhattan(suspect);
+        return path.canReach() && off <= 2 || off <= 1;
+    }
+
+    /** A thief slipped a response: counted, traced with the reason, and worth Thief XP once (by the building's tier). A warrant, if somebody saw them, stands. */
+    private static void escaped(ServerPlayer player, Dispatch d, String why) {
         escapes++;
+        PoliceTrace.note(player, d.city, "escape", why + (d.identified ? "; still wanted (a warrant for " + d.offence.id() + ")" : "; nobody saw who it was"));
         if (!d.burglary) return;
         CityBuildings.SecurityClass c = CityBuildings.INSTANCE.securityClass(d.securityClass);
         Thievery.escaped(player, d.buildingKey * 31 + d.arriveAt, c == null ? 1 : Math.max(1, c.tier()));
+    }
+
+    /**
+     * Whether the nearest officer's route reaches a suspect they can see (twelfth pass). A route that ends short (a wall, a fence, a roof) left the officer standing until the window closed, and nothing
+     * said so. Now it is traced, and after {@link #ROUTE_MISSES_FOR_HELP} checks in a row a second unit walks in from a street whose route does reach (once per response). Nobody is ever put next to the
+     * suspect: when no street reaches either, the officers search as far as their routes go, and the suspect may get away.
+     */
+    private static void checkRoute(ServerLevel level, ServerPlayer player, Dispatch d, TownspersonEntity officer, long now) {
+        Path path = officer.getNavigation().getPath();
+        boolean reaches = path == null ? officer.distanceTo(player) <= ARREST_RANGE + 1 : routeReaches(path, player.blockPosition());
+        if (reaches) { if (d.routeMisses > 0) PoliceTrace.note(player, d.city, "route", officer.getName().getString() + "'s route reaches them again"); d.routeMisses = 0; return; }
+        d.routeMisses++;
+        BlockPos stop = path == null || path.getEndNode() == null ? null : path.getEndNode().asBlockPos();
+        String end = stop == null ? "no route at all" : "the route ends at " + stop.toShortString() + ", " + Math.round(Math.sqrt(stop.distSqr(player.blockPosition()))) + " blocks short";
+        PoliceTrace.note(player, d.city, "route", officer.getName().getString() + ": " + end + " (" + d.routeMisses + " in a row)");
+        if (d.reinforced || d.routeMisses < ROUTE_MISSES_FOR_HELP) return;
+        d.reinforced = true;
+        RandomSource random = RandomSource.create(PopulationPlan.mix(d.buildingKey ^ now));
+        List<BlockPos> candidates = new ArrayList<>();
+        ChunkPos home = new ChunkPos(player.blockPosition());
+        for (int dx = -2; dx <= 2 && candidates.size() < CANDIDATE_SPOTS; dx++) for (int dz = -2; dz <= 2 && candidates.size() < CANDIDATE_SPOTS; dz++) {
+            spots.find(level, new ChunkPos(home.x + dx, home.z + dz), random, List.of(player)).filter(spot -> !candidates.contains(spot)).ifPresent(candidates::add);
+        }
+        if (candidates.isEmpty()) candidates.addAll(fallbackSpots(level, player, player.blockPosition()));
+        BlockPos at = candidates.isEmpty() ? null : reachableSpot(level, player, d, candidates, true);
+        if (at == null) { PoliceTrace.note(player, d.city, "route", "no street near them has a route that reaches; the officers search as far as they can go"); return; }
+        TownspersonEntity second = UndergroundCity.TOWNSPERSON.get().create(level);
+        if (second == null) return;
+        second.moveTo(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, random.nextFloat() * 360f, 0f);
+        dress(level, second, d.city, PopulationPlan.mix(d.buildingKey + 7), random);
+        second.errand(player.blockPosition(), CHASE_SPEED);
+        second.leaveIn(Math.max(400L, d.windowEnds - now) + 400L);
+        if (level.addFreshEntity(second)) {
+            d.officers.add(second.getUUID());
+            reinforcements++;
+            PoliceTrace.note(player, d.city, "route", "a second unit walks in from " + at.toShortString() + ", " + Math.round(Math.sqrt(player.distanceToSqr(at.getX() + 0.5, at.getY(), at.getZ() + 0.5))) + " blocks away, whose route reaches");
+        }
     }
 
     /** Where an officer looks next round the last place seen: a fixed walk of points a few blocks out, different for each officer, on standing ground. */
@@ -441,6 +610,7 @@ public final class PoliceResponse {
         if (candidates.isEmpty()) return false;
         // where the offender cannot see them appear, when there is such a spot (officers walk in from round a corner; they never appear in front of anybody)
         candidates.sort(java.util.Comparator.comparingInt(c -> inView(level, player, c) ? 1 : 0));
+        long hidden = candidates.stream().filter(c -> !inView(level, player, c)).count();
         BlockPos first = reachableSpot(level, player, d, candidates);
         for (int i = 0; i < d.officersWanted; i++) {
             BlockPos at = i == 0 ? first : spots.find(level, new ChunkPos(first), random, thief).orElse(first);
@@ -452,6 +622,9 @@ public final class PoliceResponse {
             officer.leaveIn(d.windowSeconds * 20L + 400L);
             if (level.addFreshEntity(officer)) d.officers.add(officer.getUUID());
         }
+        if (!d.officers.isEmpty()) PoliceTrace.note(player, d.city, "arrival", d.officers.size() + " officer(s) on foot from " + first.toShortString() + ", " + Math.round(Math.sqrt(player.distanceToSqr(first.getX() + 0.5, first.getY(), first.getZ() + 0.5))) + " blocks from them"
+            + (!inView(level, player, first) ? ", out of their sight" : hidden == 0 ? " (in their view: none of " + candidates.size() + " street spot(s) was out of sight)"
+                : " (in their view: " + hidden + " of " + candidates.size() + " street spot(s) were out of sight, but no officer's route from them reached)"));
         return !d.officers.isEmpty();
     }
 
@@ -495,9 +668,15 @@ public final class PoliceResponse {
      * building, an officer's path to the thief in front of it ended at a wall, and the officer stood there until the window closed.
      */
     private static BlockPos reachableSpot(ServerLevel level, ServerPlayer player, Dispatch d, List<BlockPos> candidates) {
-        if (candidates.size() == 1) return candidates.get(0);
+        BlockPos found = reachableSpot(level, player, d, candidates, false);
+        return found == null ? candidates.get(0) : found;
+    }
+
+    /** As above; with {@code strict}, null when no spot's route reaches (a second unit is sent only from a street that does). The arrival is traced either way. */
+    private static BlockPos reachableSpot(ServerLevel level, ServerPlayer player, Dispatch d, List<BlockPos> candidates, boolean strict) {
+        if (candidates.size() == 1 && !strict) return candidates.get(0);
         TownspersonEntity probe = UndergroundCity.TOWNSPERSON.get().create(level);
-        if (probe == null) return candidates.get(0);
+        if (probe == null) return strict ? null : candidates.get(0);
         probe.becomeOfficer(d.city, "Officer", 0);
         probe.setOnGround(true);   // a body that has not ticked yet is not "on the ground" and its navigation would refuse to plan
         BlockPos target = player.blockPosition();
@@ -506,7 +685,8 @@ public final class PoliceResponse {
             Path path = probe.getNavigation().createPath(target, 0);
             if (path != null && path.canReach()) return at;
         }
-        return candidates.get(0);
+        PoliceTrace.note(player, d.city, "route", "none of " + candidates.size() + " street spot(s) has a route that reaches them" + (strict ? "" : "; the officers come from the nearest and search"));
+        return strict ? null : candidates.get(0);
     }
 
     private static List<TownspersonEntity> officers(ServerLevel level, Dispatch d) {
@@ -539,14 +719,20 @@ public final class PoliceResponse {
         LockService.interrupt(player, "You are under arrest.");
         BurglarySearch.stop(player);
         String charge = d.offence.charge();
-        player.sendSystemMessage(Component.literal(who + ": Police. You are under arrest for " + charge + ".").withStyle(ChatFormatting.GOLD));
-        CheckpointService.Result result = CheckpointService.arrest(player, citizen, "police:" + d.offence.id() + ":" + (d.securityClass.isEmpty() ? "street" : d.securityClass) + ":" + d.door.toShortString(), d.city, law, ledger, d.offence.fine(), d.offence.heat());
+        // a repeat offender pays more (twelfth pass): half the fine again for each conviction in the city within two active hours, at most two and a half times, and the heat goes up with it
+        int priors = ledger.priors(player.getUUID(), d.city);
+        int fine = LawMath.escalatedFine(d.offence.fine(), priors), heatAdded = LawMath.escalatedHeat(d.offence.heat(), priors);
+        player.sendSystemMessage(Component.literal(who + ": Police. You are under arrest for " + charge + (priors > 0 ? ", and not for the first time" : "") + ".").withStyle(ChatFormatting.GOLD));
+        CheckpointService.Result result = CheckpointService.arrest(player, citizen, "police:" + d.offence.id() + ":" + (d.securityClass.isEmpty() ? "street" : d.securityClass) + ":" + d.door.toShortString(), d.city, law, ledger, fine, heatAdded);
         arrests++; seizedStacks += result.stacksSeized();
         String city = PopulationService.capitalise(d.city);
         int heat = ledger.heat(player.getUUID(), d.city);
         player.sendSystemMessage(Component.literal(who + " searches you and takes " + result.stacksSeized() + " stack" + (result.stacksSeized() == 1 ? "" : "s") + " of stolen or forbidden goods. Fine for " + charge + ": " + result.fine() + " credits. Heat in "
             + city + " is now " + heat + "; checkpoint searches become more likely until it cools."));
         LOGGER.info("[UC-POLICE] arrest of {} in {} for {}: {} stacks seized, fined {}, heat {}", player.getGameProfile().getName(), d.city, d.offence.id(), result.stacksSeized(), result.fine(), heat);
+        PoliceTrace.note(player, d.city, "arrest", who + " for " + d.offence.id() + (priors > 0 ? " (" + priors + " prior conviction(s): fine " + fine + " of " + d.offence.fine() + ")" : "") + ": fined " + result.fine() + " (asked " + fine + "), "
+            + result.stacksSeized() + " stack(s) seized, heat " + heat + " (" + d.why + ")");
+        if (d.why.contains("wanted for")) arrestsOnWarrant++;
         Notice.send(player, Notice.Kind.HEAT, "Arrested", result.stacksSeized() + (result.stacksSeized() == 1 ? " stack" : " stacks") + " taken, " + result.fine() + " credits fined. Heat " + heat + " in " + city + ".");
         CityStanding.arrested(server, player, d.city);   // an arrest is talked about (D-204)
         dismiss(server, d);
@@ -570,7 +756,11 @@ public final class PoliceResponse {
         // nobody is arrested while away: the response ends the moment its thief leaves (and is said so at the next login, while this server runs)
         for (Iterator<Dispatch> it = DISPATCHES.iterator(); it.hasNext(); ) {
             Dispatch dispatch = it.next();
-            if (dispatch.burglar.equals(event.getEntity().getUUID())) { LEFT_WHILE_WANTED.put(dispatch.burglar, dispatch.city); dismiss(server, dispatch); it.remove(); }
+            if (dispatch.burglar.equals(event.getEntity().getUUID())) {
+                LEFT_WHILE_WANTED.put(dispatch.burglar, dispatch.city);
+                PoliceTrace.note(event.getEntity().getGameProfile().getName(), dispatch.city, "dropped", "the offender logged out during the response" + (dispatch.identified ? "; the warrant stands" : "; nobody saw who it was"));
+                dismiss(server, dispatch); it.remove();
+            }
         }
     }
 
@@ -579,15 +769,29 @@ public final class PoliceResponse {
 
     @SubscribeEvent
     public void loggedIn(net.minecraftforge.event.entity.player.PlayerEvent.PlayerLoggedInEvent event) {
-        String city = LEFT_WHILE_WANTED.remove(event.getEntity().getUUID());
-        if (city != null && event.getEntity() instanceof ServerPlayer player)
-            Notice.send(player, Notice.Kind.INFO, "The police stood down", "They were after you in " + PopulationService.capitalise(city) + " when you left. Your heat there is still up.");
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        String city = LEFT_WHILE_WANTED.remove(player.getUUID());
+        List<WorkOrderLedger.Warrant> warrants = List.of();
+        try { WorkOrderLedger ledger = WorkOrderLedger.get(player.server); if (!ledger.faulted()) warrants = ledger.warrants(player.getUUID()); }
+        catch (RuntimeException error) { LOGGER.warn("Warrants could not be read at login: {}", error.toString()); }
+        if (!warrants.isEmpty()) {
+            // a warrant survives a logout and a restart (twelfth pass): said once at login, with how long it has left
+            WorkOrderLedger ledger = WorkOrderLedger.get(player.server);
+            StringBuilder where = new StringBuilder();
+            for (WorkOrderLedger.Warrant w : warrants) {
+                if (where.length() > 0) where.append(", ");
+                where.append(PopulationService.capitalise(w.city())).append(" (").append(CityLaws.INSTANCE.offence(w.city(), w.offence()).charge()).append(", ").append(Math.max(1, (w.expires() - ledger.clock()) / 1200)).append(" min)");
+            }
+            Notice.send(player, Notice.Kind.HEAT, "You are wanted", "The police are looking for you in " + where + ". Officers and checkpoints there will arrest you on sight.");
+            for (WorkOrderLedger.Warrant w : warrants) PoliceTrace.note(player, w.city(), "warrant", "logged in while wanted for " + w.offence() + " (" + Math.max(1, (w.expires() - ledger.clock()) / 1200) + " active minutes left)");
+        } else if (city != null) Notice.send(player, Notice.Kind.INFO, "The police stood down", "They were after you in " + PopulationService.capitalise(city) + " when you left. Your heat there is still up.");
     }
 
     // ------------------------------------------------------------------------------------------------ status and seams
 
     static String status() {
-        return String.format(Locale.ROOT, "dispatches out %d; raised %d (alarm %d, witness %d, patrol %d); officers arrived %d; arrests %d (%d stacks seized); escapes %d; no street found %d", DISPATCHES.size(), raised, byAlarm, byWitness, byPatrol, arrivals, arrests, seizedStacks, escapes, noSpot);
+        return String.format(Locale.ROOT, "dispatches out %d; raised %d (alarm %d, witness %d, patrol %d); officers arrived %d; arrests %d (%d stacks seized, %d on a warrant); escapes %d; no street found %d; warrants issued %d, recognised on the beat %d; second units %d",
+            DISPATCHES.size(), raised, byAlarm, byWitness, byPatrol, arrivals, arrests, seizedStacks, arrestsOnWarrant, escapes, noSpot, warrantsIssued, recognised, reinforcements);
     }
 
     @SubscribeEvent
@@ -596,11 +800,24 @@ public final class PoliceResponse {
             .then(Commands.literal("status").executes(context -> {
                 context.getSource().sendSuccess(() -> Component.literal("[UC] " + status() + "; " + CrimeWatch.status() + "; " + BurglaryDamage.status(context.getSource().getServer())), false);
                 return Command.SINGLE_SUCCESS;
-            })));
+            }))
+            // the police trace (twelfth pass): the latest steps of every case, and whether they are written to the log as they happen
+            .then(Commands.literal("trace")
+                .executes(context -> {
+                    List<String> lines = PoliceTrace.recent(20);
+                    context.getSource().sendSuccess(() -> Component.literal("[UC] police trace (" + (PoliceTrace.on ? "logging" : "kept in memory only") + "), latest " + lines.size() + ":"), false);
+                    for (String line : lines) context.getSource().sendSuccess(() -> Component.literal("  " + line), false);
+                    return Command.SINGLE_SUCCESS;
+                })
+                .then(Commands.literal("on").executes(context -> { PoliceTrace.on = true; context.getSource().sendSuccess(() -> Component.literal("[UC] the police trace is written to the log"), true); return Command.SINGLE_SUCCESS; }))
+                .then(Commands.literal("off").executes(context -> { PoliceTrace.on = false; context.getSource().sendSuccess(() -> Component.literal("[UC] the police trace is kept in memory only"), true); return Command.SINGLE_SUCCESS; }))));
     }
 
     /** Test seam: forget everything. */
-    static void resetForTest() { DISPATCHES.clear(); LEFT_WHILE_WANTED.clear(); spots = PopulationService::findSpot; raised = byAlarm = byWitness = byPatrol = arrivals = arrests = escapes = noSpot = seizedStacks = 0; }
+    static void resetForTest() {
+        DISPATCHES.clear(); LEFT_WHILE_WANTED.clear(); spots = PopulationService::findSpot;
+        raised = byAlarm = byWitness = byPatrol = arrivals = arrests = escapes = noSpot = seizedStacks = warrantsIssued = recognised = arrestsOnWarrant = reinforcements = 0;
+    }
     static int dispatches() { return DISPATCHES.size(); }
     static Dispatch dispatchAt(int index) { return DISPATCHES.get(index); }
 }
