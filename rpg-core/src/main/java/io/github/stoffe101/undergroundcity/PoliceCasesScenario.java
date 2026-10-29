@@ -249,9 +249,10 @@ final class PoliceCasesScenario {
     // ------------------------------------------------------------------------------------------------ case 7: a burglary nobody sees
 
     private static void quietBurglary() {
-        // the city's own homes and shops: Valewood and Ironhaven have houses; Blackwater's middle is towers, offices, clubs and storefronts, and a storefront at night is a shop after closing
+        // whatever the city's middle has: Valewood has houses, Ironhaven's middle flat blocks, storefronts, warehouses and workshops (police cases run 6), Blackwater's towers, clubs
+        // and storefronts; the chooser keeps only a lock plain picks can try (a club's needs a Pro Pick Set)
         Playtest.queue("what to burgle in " + CITY, () -> {
-            ThiefScenario.targets = CITY.equals("blackwater") ? java.util.Set.of("storefront", "club") : java.util.Set.of("house");
+            ThiefScenario.targets = java.util.Set.copyOf(CityBuildings.INSTANCE.classes().keySet());
             Playtest.log("CASES burglary targets in " + CITY + ": " + ThiefScenario.targets);
         });
         ThiefScenario.chooseHouse();
