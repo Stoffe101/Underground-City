@@ -195,6 +195,26 @@ Owner brief "Living World, C70 City Overhaul, Gameplay Expansion & World Quality
 
 See [docs/production/tenth-pass-living-world.md](docs/production/tenth-pass-living-world.md).
 
+## October 29 twelfth pass: the economy rebalanced, the police made reliable, business growth (scripted, not yet human-tested)
+
+Owner brief "Playable RPG Alpha, Complete Economic Rebalance, Reliable Policing & Living-City Progression" (D-209 to D-214). Tested by arithmetic over the game's data, Forge GameTests, the Python suite, scripted real clients, one two-client session and GitHub's Windows runners. **The current branch and its recent gameplay systems have not received human playtesting.**
+
+* **Legal work stays worth doing (D-210).** `scripts/career_balance.py` compares legal, underground and hybrid characters in all five careers from level 1 to 30. Four careers stopped growing after the middle levels. 21 advanced contracts, later grades and fees that cover their parts fixed that, with no flat multiplier. At every level the best legal hour beats the best underground one, and every home up to the villa is reached on legal income. A knife edge between legal and crime is left for the owner (D-211).
+* **The police come and settle (D-209).** Warrants, recognition on the beat, priors that raise fines, and an opt-in trace. Real-client runs in all three cities and in the owner's buildings show:
+  * witnessed blows and noticed burglaries ending in arrests by officers who walked in;
+  * a chase and an escape with the warrant standing;
+  * an unnoticed burglary staying unnoticed;
+  * a reopen while wanted.
+
+  Two faults found in real worlds were fixed: an officer stuck behind a bush, and a route check that could not see a short route. With two real clients, only the player who struck was arrested; the partner beside them, carrying marked goods, was untouched (duo run 12).
+* **What to do next (D-213):** the terminal's Guide page lists up to eight opportunities from the server's state, the underground ones with their risk first.
+* **Cities that stay their own (D-214):** an audit with five rules; Blackwater gained a legal buyer for the Technician.
+* **A business that grows (D-212):** counter tiers from real parts, a price below the city's, regulars; never past legal work. Business run 13 passed through a real client.
+* **Every career's journey ran again** on the rebalanced data through a real client: Farmer, Vintner, Smith, Gunsmith and Technician all passed.
+* **Windows:** the script tests run on GitHub's Windows runners under PowerShell 7 and 5.1, and found a fault that would have stopped every launcher on Windows PowerShell 5.1 (fixed).
+
+See [docs/production/twelfth-pass-playable-alpha.md](docs/production/twelfth-pass-playable-alpha.md).
+
 ## Ownership and license
 
 **Copyright © 2026 Stoffe101. All rights reserved.** See [LICENSE](LICENSE). The license governs **original Underground City material only**. Minecraft, third-party mods, map downloads, artworks, and their trademarks remain subject to their respective owners' terms. Public repository visibility does **not** mean the project is open source. This project is intended for private play, not for sale or public modpack publication.

@@ -19,6 +19,14 @@
 
 This replaces the status lines of October 16 to 21 below, which are kept as history. It was reconciled against the code, the data and the sprint reports on October 24 (sixth pass, owner brief "First Fully Playable Sandbox Alpha"). It changes no decision; decision statuses the owner should settle are listed at the end of this file.
 
+**Update, October 29, 2026 (twelfth pass, [report](twelfth-pass-playable-alpha.md)).** These rows are not re-reconciled.
+
+* **P4:** the careers' legal, underground and hybrid hours are now compared by `career_balance.py`, with seven rules checked (L1).
+* **P7:** witness-based crime with warrants, priors and arrests passed through one real client in three cities (L3), and police case 8 through two clients driven by the server (L4 in kind; duo run 12).
+* **P8:** business growth passed through a real client (L3).
+
+Nothing in this pass was played by a person.
+
 ### Evidence levels
 
 Every claim names one level. Levels are never added together: forty GameTests are not a client run, and a scripted client is not a person.
