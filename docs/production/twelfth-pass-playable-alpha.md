@@ -121,7 +121,19 @@ A scripted thief mostly stands still to be arrested. The runs show that arrests 
 
 **A design question for the owner:** at night, near Blackwater's middle, every occupied storefront has a resident in and every club needs a Pro Pick Set, so a new thief there has nothing to pick. Ironhaven's middle has no houses but plenty of workshops and storefronts with commercial locks.
 
-*Run 8, with the owner's private buildings (case 10), is in progress; its result is reported here without private names or pictures.*
+**Run 8, with the owner's buildings (case 10, private: a new Valewood world, seed 5908; no private name or picture is published), failed and found a fault in the police:**
+
+* The blow was witnessed and reported, and two officers walked in from 15 blocks out of sight.
+* The nearest officer saw and challenged the player at a block or two.
+* That officer's route had stopped on the far side of a two-high bush beside the player. An arrest needed the nearest officer's own line of sight, and the leaves blocked it.
+* The officer stood there for two minutes while the player stood still, and the response ended as an escape.
+
+Two fixes, each covered by a GameTest:
+
+* An officer within arrest range now needs a clear line at the eyes, the chest or the knees, and steps round to a free cell beside the suspect when something is in between. A wall or a window still blocks all three.
+* The route check now compares the end of a path with the suspect, not its target. The target is the suspect's own block, so the check had counted every short route as reaching.
+
+*Run 9, the private rerun with both fixes, is queued; its result is reported here.*
 
 ## 3. Windows install, launch and multiplayer
 

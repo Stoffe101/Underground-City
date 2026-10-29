@@ -25,7 +25,16 @@ The owner asked for optional guidance in the Operations Terminal: what is worth 
 | travel | an open order whose buyer is in another city | at a city terminal |
 | standing | the city's good name (D-204) | under 50 |
 
-A line with a page says which (Work, Skills) and a click opens it. Underground lines are drawn in the underground colour; locked ones with a lock. A wayside desk or a shop counter shows none. A failure to build the list is logged and leaves the list empty, never the terminal closed.
+A line with a page says which (Work, Skills) and a click opens it. Underground lines are drawn in the underground colour, with what can go wrong at the start of the line; locked ones have a lock. A wayside desk or a shop counter shows none. A failure to build the list is logged and leaves the list empty, never the terminal closed.
+
+**On small screens.** A row has two lines of detail when there is room and one when there is not, and the pointer over a row shows its whole text. Rows that still do not fit scroll, and the list says how many are above and below.
+
+The first captures showed both problems:
+
+* at 1920×1080, GUI scale 3, six of eight rows fitted, and the last two (the locked order and the city's good name) were dropped without a word;
+* at 3440×1440, GUI scale 2, the underground line's warning was cut off.
+
+**The Guide tab's badge** counts the first half hour's steps still to do; once they are done, it counts the opportunities.
 
 ## Not done
 

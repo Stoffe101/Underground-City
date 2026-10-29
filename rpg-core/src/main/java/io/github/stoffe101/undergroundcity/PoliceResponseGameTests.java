@@ -370,6 +370,58 @@ public final class PoliceResponseGameTests {
         helper.succeed();
     }
 
+    /** A suspect who stands still beside a two-high bush, an officer two blocks away on its far side (police cases run 8: the officer stood there two minutes and the response ended as an escape). */
+    @GameTest(template = "empty")
+    public static void anOfficerABushAwayStepsRoundItAndArrests(GameTestHelper helper) {
+        try (Scene s = new Scene(helper, "uc_pol_bush", ALARMED, true)) {
+            arrive(s);
+            BlockPos at = s.door.offset(6, 0, 6);
+            s.thief.setPos(at.getX() + 0.5, at.getY(), at.getZ() + 0.5);
+            var leaves = net.minecraft.world.level.block.Blocks.OAK_LEAVES.defaultBlockState().setValue(net.minecraft.world.level.block.LeavesBlock.PERSISTENT, true);
+            s.level.setBlock(at.east(), leaves, 2);
+            s.level.setBlock(at.east().above(), leaves, 2);
+            List<TownspersonEntity> officers = s.officers();
+            for (int i = 1; i < officers.size(); i++) officers.get(i).moveTo(at.getX() + 12.5, at.getY(), at.getZ() + 12.5, 0, 0);
+            TownspersonEntity officer = officers.get(0);
+            officer.moveTo(at.getX() + 2.5, at.getY(), at.getZ() + 0.5, 0, 0);
+            check(!PoliceResponse.canTouch(s.level, officer, s.thief), "an officer could lay a hand on the suspect through a two-high bush");
+            var route = officer.getNavigation().createPath(at, 0);
+            check(PoliceResponse.routeReaches(route, at), "a route round a bush in the open was taken not to reach: " + route);
+            PoliceResponse.pass(s.level.getServer());
+            check(PoliceResponse.arrests == 0, "an officer arrested a suspect through a bush");
+            BlockPos beside = officer.errandPlace();
+            check(beside != null && beside.distManhattan(at) == 1 && s.level.getBlockState(beside).isAir(), "the officer did not step round the bush to a free cell beside the suspect: going to " + beside);
+            officer.moveTo(beside.getX() + 0.5, beside.getY(), beside.getZ() + 0.5, 0, 0);
+            PoliceResponse.pass(s.level.getServer());
+            check(PoliceResponse.arrests == 1, "the officer beside the suspect did not arrest them: " + PoliceResponse.status());
+        }
+        helper.succeed();
+    }
+
+    /** A wall still stops an arrest: an officer two blocks from a suspect shut in a stone room neither arrests through it nor takes a route that ends outside it for one that reaches. */
+    @GameTest(template = "empty")
+    public static void anOfficerOutsideAClosedRoomNeitherArrestsThroughItsWallNorCallsItsRouteGood(GameTestHelper helper) {
+        try (Scene s = new Scene(helper, "uc_pol_room", ALARMED, true)) {
+            arrive(s);
+            BlockPos at = s.door.offset(6, 0, 6);
+            var stone = net.minecraft.world.level.block.Blocks.STONE.defaultBlockState();
+            for (int dx = -1; dx <= 1; dx++) for (int dz = -1; dz <= 1; dz++) for (int dy = 0; dy <= 2; dy++)
+                if (dx != 0 || dz != 0 || dy == 2) s.level.setBlock(at.offset(dx, dy, dz), stone, 2);
+            s.thief.setPos(at.getX() + 0.5, at.getY(), at.getZ() + 0.5);
+            List<TownspersonEntity> officers = s.officers();
+            for (int i = 1; i < officers.size(); i++) officers.get(i).moveTo(at.getX() + 12.5, at.getY(), at.getZ() + 12.5, 0, 0);
+            TownspersonEntity officer = officers.get(0);
+            officer.moveTo(at.getX() + 2.5, at.getY(), at.getZ() + 0.5, 0, 0);
+            check(!PoliceResponse.canTouch(s.level, officer, s.thief), "an officer could lay a hand on the suspect through a stone wall");
+            check(PoliceResponse.besideFree(s.level, at, officer.blockPosition()) == null, "a free cell was found inside the walls round the suspect");
+            var route = officer.getNavigation().createPath(at, 0);
+            check(route == null || !PoliceResponse.routeReaches(route, at), "a route that ends outside the room was taken to reach the suspect inside it: ends at " + (route == null ? null : route.getEndNode()));
+            PoliceResponse.pass(s.level.getServer());
+            check(PoliceResponse.arrests == 0, "an officer arrested a suspect through a wall");
+        }
+        helper.succeed();
+    }
+
     @GameTest(template = "empty")
     public static void anOfficerWhoReachesTheThiefArrestsThemAndTakesOnlyWhatIsStolen(GameTestHelper helper) {
         try (Scene s = new Scene(helper, "uc_pol_f", ALARMED)) {

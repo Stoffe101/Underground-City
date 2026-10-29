@@ -39,7 +39,7 @@ final class Opportunities {
         boolean busy = rows.stream().anyMatch(TerminalData.Row::accepted);
         // 2. a shop's shortage contract for this trade (D-207): time-bound, paid above the shop's price
         rows.stream().filter(r -> ShortageContracts.isContract(r.id()) && r.available() > 0 && !r.accepted()).findFirst()
-            .ifPresent(r -> out.add(new TerminalData.Opportunity("shortage", r.title(), "A shop is short and pays more than usual for a while: " + r.credits() + " credits. One taker; it closes when the shelf is filled.", "CONTRACTS", false, false)));
+            .ifPresent(r -> out.add(new TerminalData.Opportunity("shortage", r.title(), r.credits() + " credits, above what the shop usually pays. One taker, until the shelf is filled.", "CONTRACTS", false, false)));
         // 3. open work the player can take now, legal first, the best paying
         List<TerminalData.Row> open = rows.stream().filter(r -> r.available() > 0 && !r.accepted() && r.extra().skillOk() && r.level() <= citizen.careerLevel()
             && !ShortageContracts.isContract(r.id()) && (r.extra().career().isEmpty() || r.extra().career().equals(citizen.career) || r.extra().career().equals(WorkOrder.ANY_CAREER))
@@ -56,13 +56,13 @@ final class Opportunities {
             long faults = s.faults.keySet().stream().filter(k -> s.panels.containsKey(k) && here.equals(s.panels.get(k).city())).count();
             long jobs = s.jobs.values().stream().filter(j -> s.panels.containsKey(j.key()) && here.equals(s.panels.get(j.key()).city()) && !"quiet".equals(j.kind())).count();
             if (faults + jobs > 0) out.add(new TerminalData.Opportunity("service", (faults + jobs) + " service call" + (faults + jobs == 1 ? "" : "s") + " in " + city(here),
-                faults + " repair" + (faults == 1 ? "" : "s") + " and " + jobs + " install or upgrade job" + (jobs == 1 ? "" : "s") + " at utility panels by street doors. Your computer lists them; a repair pays " + TechService.repairFee(3) + " credits at a tier III building.", "", false, false));
+                "Panels by street doors: " + faults + " repair" + (faults == 1 ? "" : "s") + " (" + TechService.repairFee(3) + " credits at a tier III building), " + jobs + " install or upgrade. Your computer lists them.", "", false, false));
         }
         if ("smith".equals(citizen.career)) {
             MachineService.Works w = MachineService.works(player.server);
             long down = w.breakdowns.keySet().stream().filter(k -> w.machines.containsKey(k) && here.equals(w.machines.get(k).city())).count();
             if (down > 0) out.add(new TerminalData.Opportunity("service", down + " machine" + (down == 1 ? "" : "s") + " down in " + city(here),
-                "A drive that has stopped pays " + MachineService.fee(3) + " credits at a tier III works to the Smith who gets it running again, with parts of your own making.", "", false, false));
+                MachineService.fee(3) + " credits a drive at a tier III works, fixed with parts of your own making.", "", false, false));
         }
         // 5. skill points to spend
         int points = SkillService.pointsAvailable(citizen);
@@ -71,8 +71,8 @@ final class Opportunities {
         if (!HudState.of(player).hasHome()) out.add(new TerminalData.Opportunity("home", "No home yet", "Press K for the homes to rent: a motel room is cheapest, and a home keeps your things and gives you a bed.", "", false, false));
         // 7. underground work this character could take (shown only once its trade's underground skill is held)
         open.stream().filter(r -> r.extra().underground()).max(Comparator.comparingInt(TerminalData.Row::credits))
-            .ifPresent(r -> out.add(new TerminalData.Opportunity("underground", r.title(), r.credits() + " credits from " + r.extra().buyer() + (r.extra().buyerCity().isEmpty() ? "" : " in " + city(r.extra().buyerCity()))
-                + ". Off the books: checkpoints on the way search, a search takes the goods and fines you, and a hand-off can be seen.", "CONTRACTS", true, false)));
+            .ifPresent(r -> out.add(new TerminalData.Opportunity("underground", r.title(), "Off the books: a search takes the goods and fines you. " + r.credits() + " credits from " + r.extra().buyer() + (r.extra().buyerCity().isEmpty() ? "" : " in " + city(r.extra().buyerCity()))
+                + "; checkpoints on the way search, and a hand-off can be seen.", "CONTRACTS", true, false)));
         // 8. the next order a skill would open, if it pays more than what is open now
         int bestOpen = open.stream().mapToInt(TerminalData.Row::credits).max().orElse(0);
         rows.stream().filter(r -> !r.extra().skillOk() && !r.extra().underground() && r.credits() > bestOpen && !r.extra().skill().isEmpty())

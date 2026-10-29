@@ -191,7 +191,7 @@ It logs every shortcut as `SCRIPTED`: the clock, 300 credits by operator command
 | 7 an unnoticed crime stays unnoticed | not shown in these runs (both burglaries were seen: a passer-by saw the thief at the lock). Thief run 12 (October 24, an earlier version) left a Valewood house unnoticed | open in this pass |
 | 8 two players, only the offender punished | GameTests only (`PoliceWarrantGameTests`, `PoliceResponseGameTests`) | not run through two real clients |
 | 9 restart and reconnect | runs 1 and 7 | **passed:** saved, quit and reopened while wanted; the warrant stood, nobody was sent while the player was away, and the player was told "You are wanted" |
-| 10 the owner's buildings | run 8 (private, outside the repository) | see the twelfth-pass report; no private name or picture is published |
+| 10 the owner's buildings | runs 8 and 9 (private: a new Valewood world with the owner's buildings, seed 5908; nothing private is published) | **run 8 failed and found a fault:** the blow was witnessed and two officers walked in from 15 blocks out of sight, but the nearest officer stopped two blocks away on the far side of a two-high bush and could not see the suspect, who stood still for two minutes; the response ended as an escape. Fixed (below); run 9 is the rerun |
 | recognised on the beat | run 7 | **passed:** after the reopen, an officer on the beat recognised the wanted player at 18 blocks, walked to them and arrested them on the warrant (fine 120 escalated by two priors, capped at the 90 left in the wallet) |
 
 What the runs found, and what changed:
@@ -202,7 +202,12 @@ What the runs found, and what changed:
   * Its clubs need a Pro Pick Set: a new thief's plain picks are refused, as the lock rule says (run 5).
   * So a beginner in Blackwater has no empty building to pick near the middle at night. Whether that is the right difficulty for Blackwater is a design question, listed in the report.
   * The scenario now burgles any class whose lock plain picks can try.
-* **Officers' routes fell short** once (run 7: "the route ends 13 blocks short") and the officer still made the arrest. A second unit was never needed in these runs.
+* **Officers' routes fell short** once (run 7: "the route ends 13 blocks short") and the officer still made the arrest.
+* **A bush beside the suspect stopped an arrest (run 8).** An arrest needed the nearest officer's line of sight from eye to eye. An officer whose route stopped on the far side of a two-high bush stood there, two blocks from a suspect who did not move, until the window closed.
+  * Now any officer within arrest range arrests when there is a clear line at the eyes, the chest or the knees.
+  * One with something in between (a bush, a post, a lamp) steps round to a free cell beside the suspect.
+  * A wall or a window still blocks all three, so nobody is arrested through one (`PoliceResponseGameTests`: a bush, and a closed room).
+* **The route check could not see a route that fell short (run 8's diagnosis).** It compared the suspect with the path's target, which is the suspect's own block, so a route ending outside a closed room counted as reaching it and no second unit was sent. It now compares the end of the path.
 
 Not shown through a real client: a shop robbed after closing with an alarm, a window broken, an officer assaulted, a hiding place inside a building, leaving the city while wanted, two real clients. The scripted thief usually stands still to be arrested, so these runs show that arrests happen, not how often a real player is caught: the career balance's assumption (an arrest after 40% of noticed crimes) stays an assumption.
 

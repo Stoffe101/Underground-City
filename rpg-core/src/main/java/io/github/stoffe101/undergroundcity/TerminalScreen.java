@@ -56,6 +56,8 @@ public final class TerminalScreen extends UcScreen {
     private boolean opportunitiesView;
     /** Where each opportunity row was drawn this frame (top, bottom), so a click on one opens the page that helps. */
     private final int[] opportunityRows = new int[2 * TerminalData.MAX_OPPORTUNITIES];
+    /** The first opportunity shown: at 1920 x 1080, GUI scale 3, six of eight rows fit and the last two (the locked order, the city's good name) were dropped without a word. */
+    private int opportunityScroll;
     private final UcButton[] buyOne = new UcButton[MAX_OFFERS], buyLot = new UcButton[MAX_OFFERS];
     // the skill tree, laid out once per snapshot and size: node cards by index
     private int[] nodeX = new int[0], nodeY = new int[0], nodeTier = new int[0], nodeCol = new int[0];
@@ -417,7 +419,11 @@ public final class TerminalScreen extends UcScreen {
             if (page == Page.CONTRACTS) rail[i].badge(registered ? (int) data.jobs().stream().filter(job -> job.available() > 0).count() : -1);
             if (page == Page.SKILLS) rail[i].badge(registered && data.skillPoints() > 0 ? data.skillPoints() : -1);
             if (page == Page.THIEF) rail[i].badge(registered && data.thief().points() > 0 ? data.thief().points() : -1);
-            if (page == Page.GUIDE) rail[i].badge(registered ? (int) data.journey().stream().filter(step -> !step.done()).count() : -1);
+            // the first half hour's steps still to do; once they are done, what is worth doing now
+            if (page == Page.GUIDE) {
+                int left = (int) data.journey().stream().filter(step -> !step.done()).count();
+                rail[i].badge(!registered ? -1 : left > 0 ? left : data.opportunities().isEmpty() ? -1 : data.opportunities().size());
+            }
         }
         boolean contracts = current == Page.CONTRACTS, trade = current == Page.IMPORTS;
         // trade page
@@ -755,6 +761,7 @@ public final class TerminalScreen extends UcScreen {
     @Override public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
         if (current == Page.CONTRACTS) { jobScroll = Math.max(0, Math.min(jobScroll - (int) Math.signum(delta), Math.max(0, jobs().size() - visibleRows()))); return true; }
         if (current == Page.IMPORTS) { offerScroll = Math.max(0, offerScroll - (int) Math.signum(delta)); layoutOffers(); return true; }
+        if (current == Page.GUIDE && opportunitiesView) { opportunityScroll = Math.max(0, opportunityScroll - (int) Math.signum(delta)); return true; }
         if (generalShown()) { scrollGeneral(-(int) Math.signum(delta) * GENERAL_STEP); return true; }
         if (skillsPage() && skillMaxScroll > 0) { scrollSkills(-(int) Math.signum(delta) * skillStep); return true; }
         return super.mouseScrolled(mouseX, mouseY, delta);
@@ -1152,6 +1159,13 @@ public final class TerminalScreen extends UcScreen {
 
     /** The goods under the mouse get the whole name, the price and why they cannot be bought, in one tooltip; the Buy buttons keep their own. */
     @Override protected void renderOverlay(GuiGraphics g, int mouseX, int mouseY, float partial) {
+        // an opportunity's whole text: at 3440 x 1440, GUI scale 2, eight rows leave one line each and cut the rest off
+        int opportunity = opportunityAt(mouseX, mouseY);
+        if (opportunity >= 0) {
+            TerminalData.Opportunity o = data.opportunities().get(opportunity);
+            UcUi.tooltip(g, font, java.util.List.of(net.minecraft.network.chat.Component.literal(o.title()), net.minecraft.network.chat.Component.literal(o.detail())), mouseX, mouseY, width, height);
+            return;
+        }
         if (current != Page.IMPORTS || !exchangeOpen()) return;
         for (int i = 0; i < Math.min(MAX_OFFERS, offerRows()) && i + offerScroll < data.offers().size(); i++) {
             int ry = offerTop() + i * TradeLayout.ROW_H;
@@ -1282,10 +1296,14 @@ public final class TerminalScreen extends UcScreen {
             UcUi.wrapped(g, font, "Nothing stands out right now. Take an order on the Work page, or come back after the shops and employers have changed.", cx, top + 22, cw, UcUi.SOFT, 3);
             return;
         }
-        int y = top + 18;
-        int rowH = Math.max(30, Math.min(40, (ch - GUIDE_TABS - 20) / data.opportunities().size()));
-        int i = 0;
-        for (TerminalData.Opportunity o : data.opportunities()) {
+        int y = top + 18, n = data.opportunities().size();
+        // two lines of why when there is room, one line (26) when there is not; rows that still do not fit scroll, and the list says how many more there are
+        int avail = cy + ch - y - 10;
+        int rowH = Math.max(26, Math.min(40, avail / n));
+        int shown = Math.max(1, Math.min(n, avail / rowH));
+        opportunityScroll = Math.max(0, Math.min(opportunityScroll, n - shown));
+        for (int slot = 0; slot < shown; slot++) {
+            TerminalData.Opportunity o = data.opportunities().get(opportunityScroll + slot);
             int accent = o.underground() ? UcUi.UNDERGROUND : o.locked() ? UcUi.FAINT : o.kind().equals("deliver") || o.kind().equals("ready") ? UcUi.OK : UcUi.AMBER;
             g.fill(cx, y, cx + cw, y + rowH - 3, o.underground() ? 0xff2a1d2a : 0xff111c27);
             g.fill(cx, y, cx + 3, y + rowH - 3, accent);
@@ -1297,17 +1315,20 @@ public final class TerminalScreen extends UcScreen {
                 Page page = pageOf(o.page());
                 UcUi.textRight(g, font, (page == null ? "" : page.label) + " >", cx + cw - 6, y + (rowH - 3) / 2 - 4, UcUi.SOFT);
             }
-            opportunityRows[2 * i] = y; opportunityRows[2 * i + 1] = y + rowH - 3;
+            opportunityRows[2 * slot] = y; opportunityRows[2 * slot + 1] = y + rowH - 3;
             y += rowH;
-            if (++i >= TerminalData.MAX_OPPORTUNITIES || y + rowH > cy + ch) break;
+        }
+        if (shown < n) {
+            int below = n - shown - opportunityScroll;
+            UcUi.textRight(g, font, (opportunityScroll > 0 ? opportunityScroll + " above" + (below > 0 ? ", " : "") : "") + (below > 0 ? below + " more below" : "") + " (scroll)", cx + cw - 6, y + 1, UcUi.DIM);
         }
     }
 
     /** The opportunity row under the pointer, or -1. */
     private int opportunityAt(double mouseX, double mouseY) {
         if (current != Page.GUIDE || !opportunitiesView || mouseX < cx || mouseX > cx + cw) return -1;
-        for (int i = 0; i < data.opportunities().size() && i < TerminalData.MAX_OPPORTUNITIES; i++)
-            if (opportunityRows[2 * i] >= 0 && mouseY >= opportunityRows[2 * i] && mouseY < opportunityRows[2 * i + 1]) return i;
+        for (int slot = 0; slot < TerminalData.MAX_OPPORTUNITIES; slot++)
+            if (opportunityRows[2 * slot] >= 0 && mouseY >= opportunityRows[2 * slot] && mouseY < opportunityRows[2 * slot + 1] && opportunityScroll + slot < data.opportunities().size()) return opportunityScroll + slot;
         return -1;
     }
 }

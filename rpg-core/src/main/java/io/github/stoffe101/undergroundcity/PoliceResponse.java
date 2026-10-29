@@ -475,8 +475,53 @@ public final class PoliceResponse {
             Notice.send(player, Notice.Kind.WARN, "Police", "An officer is coming for you. Run, or hide.");
             PoliceTrace.note(player, d.city, "pursuit", closest.getName().getString() + " challenged them at " + Math.round(nearest) + " blocks");
         }
-        if (closest != null && nearest <= ARREST_RANGE && Math.abs(closest.getY() - player.getY()) <= 2.5 && closest.hasLineOfSight(player)) return arrest(server, player, closest, d);
+        // an officer close enough to arrest does so when they can lay a hand on the suspect; one with a bush or a post in between steps round to a free cell beside them
+        // (police cases run 8: an officer stood two minutes on the far side of a two-high bush from a suspect who did not move, and the response ended as an escape)
+        if (sameLevel) for (TownspersonEntity officer : officers) {
+            if (officer.distanceTo(player) > ARREST_RANGE || Math.abs(officer.getY() - player.getY()) > 2.5) continue;
+            if (canTouch(level, officer, player)) return arrest(server, player, officer, d);
+            BlockPos beside = besideFree(level, player.blockPosition(), officer.blockPosition());
+            if (beside != null) officer.errand(beside, CHASE_SPEED);
+        }
         return false;
+    }
+
+    /** Whether an officer this close can lay a hand on the suspect: a clear line at the eyes, the chest or the knees. A bush, a post or a lamp blocks one or two of them; a wall or a window blocks all three. */
+    static boolean canTouch(ServerLevel level, TownspersonEntity officer, ServerPlayer player) {
+        if (officer.hasLineOfSight(player)) return true;
+        for (double h : new double[]{0.9, 0.35}) {
+            net.minecraft.world.phys.Vec3 from = officer.position().add(0, h, 0), to = player.position().add(0, h, 0);
+            if (level.clip(new net.minecraft.world.level.ClipContext(from, to, net.minecraft.world.level.ClipContext.Block.COLLIDER, net.minecraft.world.level.ClipContext.Fluid.NONE, officer)).getType()
+                == net.minecraft.world.phys.HitResult.Type.MISS) return true;
+        }
+        return false;
+    }
+
+    /** The cell beside {@code suspect} a person can stand in that is nearest to {@code from}, or null when every side is closed. */
+    static BlockPos besideFree(ServerLevel level, BlockPos suspect, BlockPos from) {
+        BlockPos best = null;
+        double bestDistance = Double.MAX_VALUE;
+        for (net.minecraft.core.Direction side : net.minecraft.core.Direction.Plane.HORIZONTAL) {
+            BlockPos cell = suspect.relative(side);
+            if (!Chunks.ready(level, cell) || !level.getBlockState(cell).getCollisionShape(level, cell).isEmpty() || !level.getBlockState(cell.above()).getCollisionShape(level, cell.above()).isEmpty()
+                || level.getBlockState(cell.below()).getCollisionShape(level, cell.below()).isEmpty()) continue;
+            double distance = cell.distSqr(from);
+            if (distance < bestDistance) { bestDistance = distance; best = cell; }
+        }
+        return best;
+    }
+
+    /**
+     * Whether a route gets to the suspect: it reached its target and ends near them (they may have moved a step since it was asked for), or it ends right beside them. A path that could not
+     * reach its target ends short of it, and its target (the suspect's own block) says nothing about where it ends (police cases run 8); a route that ends outside a closed room's wall is two
+     * blocks from somebody inside it and does not reach them.
+     */
+    static boolean routeReaches(Path path, BlockPos suspect) {
+        if (path == null) return false;
+        net.minecraft.world.level.pathfinder.Node end = path.getEndNode();
+        if (end == null) return false;
+        int off = end.asBlockPos().distManhattan(suspect);
+        return path.canReach() && off <= 2 || off <= 1;
     }
 
     /** A thief slipped a response: counted, traced with the reason, and worth Thief XP once (by the building's tier). A warrant, if somebody saw them, stands. */
@@ -495,10 +540,11 @@ public final class PoliceResponse {
      */
     private static void checkRoute(ServerLevel level, ServerPlayer player, Dispatch d, TownspersonEntity officer, long now) {
         Path path = officer.getNavigation().getPath();
-        boolean reaches = path == null ? officer.distanceTo(player) <= ARREST_RANGE + 1 : path.canReach() || path.getTarget().distManhattan(player.blockPosition()) <= 2;
+        boolean reaches = path == null ? officer.distanceTo(player) <= ARREST_RANGE + 1 : routeReaches(path, player.blockPosition());
         if (reaches) { if (d.routeMisses > 0) PoliceTrace.note(player, d.city, "route", officer.getName().getString() + "'s route reaches them again"); d.routeMisses = 0; return; }
         d.routeMisses++;
-        String end = path == null ? "no route at all" : "the route ends at " + path.getTarget().toShortString() + ", " + Math.round(Math.sqrt(path.getTarget().distSqr(player.blockPosition()))) + " blocks short";
+        BlockPos stop = path == null || path.getEndNode() == null ? null : path.getEndNode().asBlockPos();
+        String end = stop == null ? "no route at all" : "the route ends at " + stop.toShortString() + ", " + Math.round(Math.sqrt(stop.distSqr(player.blockPosition()))) + " blocks short";
         PoliceTrace.note(player, d.city, "route", officer.getName().getString() + ": " + end + " (" + d.routeMisses + " in a row)");
         if (d.reinforced || d.routeMisses < ROUTE_MISSES_FOR_HELP) return;
         d.reinforced = true;
