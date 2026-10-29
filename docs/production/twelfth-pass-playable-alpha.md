@@ -171,7 +171,12 @@ The terminal's Guide page has an **Opportunities** tab, opened by default once t
 * a buyer in another city;
 * the city's good name under 50.
 
-A click opens the page it names. GameTested (`OpportunitiesGameTests`). Captures at 3440×1440 GUI 2 and 1920×1080 GUI 2 and 3 are queued ([opportunities.md](../technical/opportunities.md)).
+A click opens the page it names, and the pointer shows a line's whole text. GameTested (`OpportunitiesGameTests`).
+
+Captured and inspected at 3440×1440 GUI 2 and 1920×1080 GUI 2 and 3. The first captures found two faults, fixed and captured again:
+
+* at GUI 3 the last two lines (the locked order and the city's good name) were dropped without a word; the list now scrolls and says how many lines are below;
+* at 3440×1440 the underground line's warning was cut off; it now comes first. ([opportunities.md](../technical/opportunities.md)).
 
 ## 5. City economies (D-214)
 

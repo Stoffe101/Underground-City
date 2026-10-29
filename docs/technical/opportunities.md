@@ -1,6 +1,6 @@
 # Opportunities on the Guide page (twelfth pass)
 
-**Status:** implemented; L2 (`OpportunitiesGameTests`); capture cases `uc-guide-opportunities` and `uc-guide-opportunities-advanced` in the visual harness (the captures are recorded below once taken); not yet seen through a scripted client on a live terminal; no person has used it. The current branch and its recent gameplay systems have not received human playtesting.
+**Status:** implemented; L2 (`OpportunitiesGameTests`); captured and inspected at 3440×1440 GUI scale 2 and 1920×1080 GUI scale 2 and 3 (`uc-guide-opportunities`, `uc-guide-opportunities-advanced`, `uc-terminal-guide`; at GUI 3 seven of eight rows show and the list says one more is below); not yet seen through a scripted client on a live terminal; no person has used it. The current branch and its recent gameplay systems have not received human playtesting.
 
 The owner asked for optional guidance in the Operations Terminal: what is worth doing now, achievable routes for a beginner and advanced work for an experienced player, and why something is not open. The Guide page now has two tabs:
 
