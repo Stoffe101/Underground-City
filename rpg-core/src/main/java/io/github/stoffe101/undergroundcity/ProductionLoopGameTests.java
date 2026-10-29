@@ -239,16 +239,24 @@ public final class ProductionLoopGameTests {
     private static void runLoop(GameTestHelper helper, boolean grafting) {
         if (!QShopEconomy.available()) { helper.succeed(); return; }
         Loop loop = begin(helper, grafting ? "uc_loop_g" : "uc_loop", grafting);
-        helper.runAfterDelay(40, () -> {
-            try {
-                judge(finish(helper, loop), grafting);
-                helper.succeed();
-            } catch (AssertionError | RuntimeException error) {
-                helper.fail(String.valueOf(error.getMessage()));
-            } finally {
-                loop.close();
-            }
-        });
+        helper.runAfterDelay(40, () -> whenLit(helper, loop, grafting, 0));
+    }
+
+    /**
+     * Plants once the glowstone's light has reached every plot. The light engine lights new cells in its own time: on a busy CI runner forty ticks were not always enough (the firearms
+     * set's GameTests, October 29: light 6 at a plot, so the seed could not be set down), so the test waits for the light itself, at most ten seconds more, and then judges as before.
+     */
+    private static void whenLit(GameTestHelper helper, Loop loop, boolean grafting, int waited) {
+        boolean lit = java.util.Arrays.stream(loop.plots).allMatch(plot -> loop.level.getRawBrightness(plot, 0) >= RestrictedCropBlock.LIGHT_NEEDED);
+        if (!lit && waited < 200) { helper.runAfterDelay(10, () -> whenLit(helper, loop, grafting, waited + 10)); return; }
+        try {
+            judge(finish(helper, loop), grafting);
+            helper.succeed();
+        } catch (AssertionError | RuntimeException error) {
+            helper.fail(String.valueOf(error.getMessage()));
+        } finally {
+            loop.close();
+        }
     }
 
     // each loop is its own batch: it swaps the city circles for several ticks, and nothing else may run beside it
