@@ -387,7 +387,7 @@ public final class VisualCaptureHarness {
             new TerminalData.Opportunity("deliver","Deliver Foundry gearbox line","You carry everything it asks for: 727 credits and 720 XP when you hand it in.","CONTRACTS",false,false),
             new TerminalData.Opportunity("shortage","The Anvil is short: steel brackets","A shop is short and pays more than usual for a while: 96 credits. One taker; it closes when the shelf is filled.","CONTRACTS",false,false),
             new TerminalData.Opportunity("service","2 machines down in Ironhaven","A drive that has stopped pays 77 credits at a tier III works to the Smith who gets it running again, with parts of your own making.","",false,false),
-            new TerminalData.Opportunity("work","Pumping station refit","873 credits, 860 XP from Valewood Council in Valewood. Needs 1 x Pump assembly and more.","CONTRACTS",false,false),
+            new TerminalData.Opportunity("work","Pumping station refit","840 credits, 860 XP at any terminal. Needs 1 x Pump assembly and more.","CONTRACTS",false,false),
             new TerminalData.Opportunity("skill","1 skill point to spend","A point opens better orders, pays more for each one or lets you make better goods.","SKILLS",false,false),
             new TerminalData.Opportunity("underground","Armoured plate shipment","958 credits from Hollis & Sons Haulage in Valewood. Off the books: checkpoints on the way search, a search takes the goods and fines you, and a hand-off can be seen.","CONTRACTS",true,false),
             new TerminalData.Opportunity("locked","Next: Rail yard fabrication","1000 credits once you have Foundry Partnerships and level 21.","SKILLS",false,true),

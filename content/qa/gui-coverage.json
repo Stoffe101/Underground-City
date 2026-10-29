@@ -38,6 +38,20 @@
       "description": "Guide page: first-half-hour journey checklist with the current step, a hint and a shortcut to the right page"
     },
     {
+      "id": "operations_terminal.guide_opportunities",
+      "expected_file": "uc-guide-opportunities.png",
+      "owner": "underground_city",
+      "group": "operations_terminal",
+      "description": "Guide page, Opportunities tab: a beginner's lines (ready to deliver, open orders, a home to find, a locked order with its skill, a city's good name)"
+    },
+    {
+      "id": "operations_terminal.guide_opportunities_advanced",
+      "expected_file": "uc-guide-opportunities-advanced.png",
+      "owner": "underground_city",
+      "group": "operations_terminal",
+      "description": "Guide page, Opportunities tab: an experienced player's lines (a shortage contract, service calls, an underground order drawn as underground, travel to another city)"
+    },
+    {
       "id": "contracts.accepted",
       "expected_file": "uc-contract-accepted.png",
       "owner": "underground_city",
