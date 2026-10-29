@@ -707,15 +707,16 @@ final class TechScenario {
             F.second = server(() -> {
                 BlockPos here = me().blockPosition();
                 TechService.Panel best = null;
+                // the lowest tier near the player, then the nearest: tech run 8's world had no tier I or II panel within 96 blocks after the install (the call is only tracked, not repaired)
                 for (TechService.Panel p : TechService.systems(level().getServer()).panels.values()) {
-                    if (p.pos() == null || p.key() == F.panel.key() || p.tier() > 2 || p.pos().distSqr(here) > 96 * 96) continue;
-                    if (best == null || p.pos().distSqr(here) < best.pos().distSqr(here)) best = p;
+                    if (p.pos() == null || p.key() == F.panel.key() || p.pos().distSqr(here) > 96 * 96) continue;
+                    if (best == null || p.tier() < best.tier() || p.tier() == best.tier() && p.pos().distSqr(here) < best.pos().distSqr(here)) best = p;
                 }
                 if (best != null) TechService.open(level().getServer(), level(), best, LockService.clock(level().getServer()));
                 return best;
             });
             if (F.second == null) Playtest.fail("no second panel for a call");
-            else scripted("a second fault was raised at " + F.second.address());
+            else scripted("a second fault was raised at " + F.second.address() + " (tier " + F.second.tier() + ")");
         });
         trackFromComputer("the second call", () -> F.second.address(), "repair");
         xaeroShows("11a", "the second call", "Till repair|Alarm repair");
