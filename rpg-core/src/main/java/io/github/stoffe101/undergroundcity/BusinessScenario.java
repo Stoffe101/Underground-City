@@ -150,7 +150,7 @@ final class BusinessScenario {
             scripted("PREPARED: the Smith's level raised to 14 with /uc admin career (tier 2's level; the economy model puts it at about 20 active hours of Smith work)");
         }, () -> server(() -> CitizenState.get(mc().getSingleplayerServer()).find(me().getUUID()).map(CitizenState.Citizen::careerLevel).orElse(0)) >= 14, 200);
         Playtest.queue("10: /uc business upgrade at level 14", () -> { mark[0] = Playtest.heardCount(); Playtest.command("uc business upgrade"); },
-            () -> PlayerBusiness.tier(business()) == 2, 200);
+            () -> PlayerBusiness.tier(business()) == 2 && Playtest.heardSince(mark[0], "Fitted tier 2") != null, 200);
         Playtest.queue("tier 2 fitted", () -> {
             var b = business();
             String said = Playtest.heardSince(mark[0], "Fitted tier 2");
