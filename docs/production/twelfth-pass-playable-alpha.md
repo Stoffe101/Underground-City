@@ -219,7 +219,16 @@ A Business Counter grows from things the player does:
 
 At its best a counter takes 517 credits an hour against 566 for the best legal hour at level 14 (`economy_model.py --check`). A business adds to a trade and never replaces it.
 
-GameTested. Not tried through a real client. Staff, advertising and supplier contracts were not built ([player-business.md](../technical/player-business.md)).
+GameTested, and **business run 13 passed through a real client** (14 of 14 steps, 10 scripted shortcuts). It showed:
+
+* the price set with the owner's command, 20 credits a bottle against the city's 22;
+* an upgrade refused at level 5;
+* tier 2 fitted at level 14 from the parts carried;
+* 75 bottles stocked;
+* a street person who paid the lower price;
+* tier, price and stock kept over a reopen.
+
+Tier 3 was not tried through a client. Staff, advertising and supplier contracts were not built ([player-business.md](../technical/player-business.md#through-a-real-client-business-runs-11-to-13)).
 
 ## 7. Economy telemetry (P2)
 
@@ -262,6 +271,7 @@ Every other shortcut (the clock, a teleport, an item moved to the hotbar) is log
 | Smith (engineer) | 8 | 13 of 13 | 5 | **A:** registration, the kit; a drawing spoiled on purpose and sleeved, then one turned to the standard for a Reserve drive shaft (+45 XP). **B** (level 5, 300 credits): two skills; a breakdown at a tier III power hammer (raised at once, scripted); parts bought over the Builders' Yard's counter; a test run refused with its reason; the repair (+77 credits and +180 XP, once); reopen |
 | Gunsmith | 10 | 10 of 10 | 6 | **A:** registration, the kit; the bench and TaCZ's Gun Smith Table placed; a parts kit started on the bench (four minutes of play); the blueprint read; a Glock 17 built on TaCZ's own screen, registered to the maker. The bench's kit made a second. **B** (level 4 and Licensed Repairs given, as the armoury asks; Smith's parts and iron given): Accept and Deliver hand both pistols to the city armoury (+400). Run 9 had built both pistols and stopped at Deliver: the scenario looked for the button before the terminal had the server's answer, fixed in the shared click |
 | Technician | 9 | 18 of 18 | 12 | **A:** registration, the kit; panels beside six street doors; a service call (raised at once, scripted) on the computer's board; Track to the panel (the status display's arrow; Xaero's Minimap was not installed); the repair puzzle worked with real clicks (+66 credits and 170 XP, once). **B** (level 5 and three skills given): a toolkit made on the Electronics Bench; an install worked on the patch grid (+234, a monitored alarm; the grid's answer was read from the server, the turns were real clicks); a second call tracked across a save and reopen with the repair and the alarm kept. Run 8 had passed the same steps up to the second call, which its scenario looked for only at tier I or II panels |
+| Business (a Smith's counter) | 13 | 14 of 14 | 10 | **B** (level 5, 1,000 credits and a kit with `/uc_prepare`): the workshop's premises rented with a real click; a counter set down, stocked and opened; a street person bought (+19 after tax); the takings collected once; then the growth steps of section 6 (level 14 by the operator's command) |
 
 What the journeys do not show:
 
