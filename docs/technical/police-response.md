@@ -168,9 +168,47 @@ What the run does not show: a thief who moves (the script stands still), two off
 | Priors | An arrest records a conviction in the same journal settlement as its fine (kept two hours of play, at most six): each prior raises the fine by half (at most double, never over 1,000) and adds a point of heat; a person with priors or a warrant gets no warning. | `LawMath.escalatedFine`, `WorkOrderLedger.convict` |
 | Trace | `/uc_police trace on` (operators), the system property `uc.policeTrace`, or a scenario's `-PucPtPolicetrace=true` writes every step of every case to the log with `[UC-POLICE-TRACE]`: crime, refused (outside a city's law), undetected, witnessed and by whom, reported, dispatch, arrival and where from, route checks that fall short, pursuit, search, arrest and its fine, escape and why, warrant. The last 200 lines are kept in memory either way (`/uc_police trace`). Names, cities and short reasons only. | `PoliceTrace` |
 
+## Real-client acceptance (twelfth pass, police cases runs 1 to 8)
+
+`-PucPlaytest=policecases` (`PoliceCasesScenario`) drives a real client in a new archipelago world with the furnished cities (`-PucPtCity`, `-PucPtSeed`). It covers the owner's ten acceptance cases where one client can. The scenario uses real input for:
+
+* the registration screens;
+* the blows (left clicks until the server counts one);
+* the lock (pin by pin on the lock screen);
+* the search (right clicks on furniture);
+* the sprint away.
+
+It logs every shortcut as `SCRIPTED`: the clock, 300 credits by operator command (so fines can be paid), the trace switched on, a teleport to the city's middle, four bread put in the pockets (honest goods an arrest must not take), five lockpicks, the choice of building and the steps beside each piece of furniture. The police trace below is the game's own log of each case.
+
+| Case | Evidence | Result |
+| --- | --- | --- |
+| 1 a witnessed crime | runs 1 (Valewood, seed 5908), 3 and 5 (Blackwater, seed 20261029), 6 and 7 (Ironhaven, seed 7741) | **passed in all three cities.** A blow with passers-by in sight: one calls the police, a warrant is issued |
+| 2 a real dispatch | the same runs | **passed:** officers in 20 s (Ironhaven), 25 s (Valewood), 35 s (Blackwater) for an assault; 150 s for a witnessed break-in in Ironhaven |
+| 3 officers reach the suspect | the same runs | **passed:** two officers walked in from 16 to 19 blocks away and arrested a player standing still. In Valewood and Ironhaven they came from out of the player's sight; in Blackwater (run 5) they arrived in view, because no street spot out of sight was found among the candidates near a tower block (the trace now says which of the two reasons applied, D-209) |
+| 4 a chase of a moving player | run 7 | **passed:** an officer saw the sprinting player 4 blocks away and challenged them, lost sight, searched where they were last seen, and gave up when they were out of sight for 30 s and 107 blocks from the nearest officer |
+| 5 arrest, fine and confiscation | runs 1 and 7 | **passed:** after a noticed burglary, an officer walked to the door and arrested the thief: fine 150 in Ironhaven (100 raised by one prior conviction), all 5 stacks of marked goods taken, the 8 bread kept. Every fine matched `LawMath.escalatedFine` and was taken from Q Shop's wallet |
+| 6 an escape | run 7 | **passed:** the escape left the warrant for assault standing |
+| 7 an unnoticed crime stays unnoticed | not shown in these runs (both burglaries were seen: a passer-by saw the thief at the lock). Thief run 12 (October 24, an earlier version) left a Valewood house unnoticed | open in this pass |
+| 8 two players, only the offender punished | GameTests only (`PoliceWarrantGameTests`, `PoliceResponseGameTests`) | not run through two real clients |
+| 9 restart and reconnect | runs 1 and 7 | **passed:** saved, quit and reopened while wanted; the warrant stood, nobody was sent while the player was away, and the player was told "You are wanted" |
+| 10 the owner's buildings | run 8 (private, outside the repository) | see the twelfth-pass report; no private name or picture is published |
+| recognised on the beat | run 7 | **passed:** after the reopen, an officer on the beat recognised the wanted player at 18 blocks, walked to them and arrested them on the warrant (fine 120 escalated by two priors, capped at the 90 left in the wallet) |
+
+What the runs found, and what changed:
+
+* **The first-login landing undid a scripted teleport** when the server was slow (run 4). This was the scenario's fault, not the game's: registration now waits for the landing.
+* **A city's middle may have no houses.** Blackwater's has towers, offices, clubs and storefronts; Ironhaven's has flat blocks, storefronts, warehouses and workshops (runs 2 and 6).
+  * At 03:00 and 05:00 every occupied Blackwater storefront had a resident inside.
+  * Its clubs need a Pro Pick Set: a new thief's plain picks are refused, as the lock rule says (run 5).
+  * So a beginner in Blackwater has no empty building to pick near the middle at night. Whether that is the right difficulty for Blackwater is a design question, listed in the report.
+  * The scenario now burgles any class whose lock plain picks can try.
+* **Officers' routes fell short** once (run 7: "the route ends 13 blocks short") and the officer still made the arrest. A second unit was never needed in these runs.
+
+Not shown through a real client: a shop robbed after closing with an alarm, a window broken, an officer assaulted, a hiding place inside a building, leaving the city while wanted, two real clients. The scripted thief usually stands still to be arrested, so these runs show that arrests happen, not how often a real player is caught: the career balance's assumption (an arrest after 40% of noticed crimes) stays an assumption.
+
 ## What is not done
 
-* **Little real-client evidence.** One scripted run (above) has seen an officer find a way through a real Lost Cities street and make an arrest, after a path bug it exposed was fixed. Nobody has seen whether officers arrive from somewhere believable in other streets, whether a *moving* thief is caught or escapes in a real street, or whether being chased is fun or merely irritating. GameTests (October 22) prove that officers turn after a thief who moves, that a partner standing beside an officer with marked goods is never arrested for the thief's break-in, that two thieves at one building and one thief at two buildings get separate responses, and that a witness's call is slower than an alarm. `PoliceResponse.status()` (`/uc_police status`, operators) counts raised responses, arrivals, arrests, escapes and "no street found" so a real run can report them.
+* **Real-client evidence is scripted.** The twelfth-pass acceptance runs (above) are scripted clients, not people. Before them, one scripted run had seen an officer find a way through a real Lost Cities street and make an arrest, after a path bug it exposed was fixed. Nobody has seen whether officers arrive from somewhere believable in other streets, whether a *moving* thief is caught or escapes in a real street, or whether being chased is fun or merely irritating. GameTests (October 22) prove that officers turn after a thief who moves, that a partner standing beside an officer with marked goods is never arrested for the thief's break-in, that two thieves at one building and one thief at two buildings get separate responses, and that a witness's call is slower than an alarm. `PoliceResponse.status()` (`/uc_police status`, operators) counts raised responses, arrivals, arrests, escapes and "no street found" so a real run can report them.
 * No jail, bail, vehicle pursuit, SWAT or lethal force. A response is bounded and reversible: a fine up to the wallet, goods lost, heat that decays, a warrant that runs out after 20 minutes of active play and a record of convictions that runs out after two hours.
 * Officers have gone through doors since D-189; whether a chase through a furnished building's rooms reads well to a person has not been seen.
 * A stock Lost Cities building's alarm is still a hash with nothing to see; only the furnished buildings have a panel (D-128) and cameras (D-146, D-149, D-153). There are no sirens.

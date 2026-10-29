@@ -89,7 +89,39 @@ The real-client acceptance runs and what each case did are in section 2a.
 
 The operator command gives 300 credits so fines can be paid. The clock is set by command. The scenario chooses the building from the game's own data (nobody in, alarm not armed, a lock plain picks can try) and travels between cities by teleport. Each of these is logged as `SCRIPTED`.
 
-*Runs in progress; this section is completed when they finish.* Finished so far: in **Valewood** (seed 5908, run 1) a witnessed blow, a noticed burglary of a house and a second blow each ended in an arrest by officers who walked in; the reopen showed nothing pending. In **Blackwater** (seed 20261029, runs 2, 3 and 5) the witnessed blow passed three times, fined 30.
+Seven runs in three cities on two seeds (the case-by-case table and the trace are in [police-response.md](../technical/police-response.md#real-client-acceptance-twelfth-pass-police-cases-runs-1-to-8)):
+
+| Run | City, seed | Outcome |
+| --- | --- | --- |
+| 1 | Valewood, 5908 | a witnessed blow, a noticed burglary of a house and a second blow each ended in an arrest by officers who walked in (fines 40, 120 and 80, priors escalating); the chase found no officer looking; the reopen showed nothing pending |
+| 2, 3 | Blackwater, 20261029 | the blow passed (fine 30) both times; the burglary found no house near the middle (run 2), then no storefront or club both empty and unarmed at 03:00 (run 3) |
+| 4 | Blackwater | stopped by the scenario: the first-login landing moved the player back after its teleport. Fixed in the scenario |
+| 5 | Blackwater | the blow passed (fine 30; the officers arrived in view); the burglary chose a club, whose high-security lock a new thief's picks cannot try. The scenario now chooses a lock plain picks can try |
+| 6 | Ironhaven, 7741 | the blow passed (fine 60); no house near the middle |
+| **7** | **Ironhaven, 7741** | **every case passed** (8 of 8, 19 scripted shortcuts). See below |
+
+Run 7, in order:
+
+1. **The blow:** arrested for assault by two officers who walked in from 18 blocks out of sight; fine 60, bread kept.
+2. **The burglary:** a workshop's commercial lock picked pin by pin at 03:00 (75 Thief XP) and seven pieces of furniture searched (13 stolen units, each marked with the thief's name).
+   * A passer-by had seen the thief at the lock; the response took 150 s.
+   * One officer walked to the door; his route fell 13 blocks short, and he arrested the thief anyway.
+   * Fine 150 (100 raised by one prior), all 5 stacks of marked goods taken, 8 bread kept.
+3. **The chase:** a second blow, then a sprint away. The officer saw the player at 4 blocks and challenged them, then lost sight and searched where they were last seen. The player was out of sight 30 s and 107 blocks away: **an escape, with the warrant still standing.**
+4. **Save, quit, reopen:** the warrant still stood, nobody had been sent while the player was away, and the screen said "You are wanted".
+5. **The beat:** an officer on the beat recognised the wanted player at 18 blocks, walked to them and arrested them on the warrant (fine 120 by two priors, capped at the 90 left).
+
+**What the runs did not show:**
+
+* an unnoticed crime in this pass (both burglaries were seen; Thief run 12 of October 24 was unnoticed);
+* two real clients (GameTests only);
+* a shop robbed after closing, a window, an officer struck, hiding inside, leaving the city while wanted.
+
+A scripted thief mostly stands still to be arrested. The runs show that arrests happen and are settled correctly, not how often a real player is caught.
+
+**A design question for the owner:** at night, near Blackwater's middle, every occupied storefront has a resident in and every club needs a Pro Pick Set, so a new thief there has nothing to pick. Ironhaven's middle has no houses but plenty of workshops and storefronts with commercial locks.
+
+*Run 8, with the owner's private buildings (case 10), is in progress; its result is reported here without private names or pictures.*
 
 ## 3. Windows install, launch and multiplayer
 

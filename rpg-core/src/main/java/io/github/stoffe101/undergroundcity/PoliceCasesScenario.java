@@ -415,7 +415,7 @@ final class PoliceCasesScenario {
         Playtest.queue("R: recognised?", () -> {
             logTrace("recognised");
             long onWarrant = server(() -> PoliceResponse.arrestsOnWarrant) - F.warrantArrestsBefore, arrests = server(() -> PoliceResponse.arrests) - F.arrestsBefore;
-            Playtest.log("CASES recognised: arrests " + arrests + " (on a warrant at a checkpoint " + onWarrant + "), warrant now " + (warrant() == null ? "none" : "still") + "; " + server(PoliceResponse::status));
+            Playtest.log("CASES recognised: arrests " + arrests + " (" + onWarrant + " of them on a warrant), warrant now " + (warrant() == null ? "none" : "still") + "; " + server(PoliceResponse::status));
             if (arrests > 0) pass("an officer on the beat recognised the wanted player and arrested them on the warrant");
             else Playtest.log("CASES no officer on the beat came close enough to recognise the player in this run");
         });

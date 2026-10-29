@@ -325,7 +325,7 @@ final class ThiefScenario {
             for (BlockPos p : F.spots) kinds.add(server(() -> BurglarySearch.LOADER.kindOf(level().getBlockState(p)).title()));
             Playtest.log("THIEF target: " + F.house.type() + " (" + F.house.security().id() + ", tier " + F.house.security().tier() + ", lock " + F.house.security().lockProfile() + ") at chunk "
                 + F.house.chunkX() + "," + F.house.chunkZ() + ", door " + F.door.door().toShortString() + "; furniture " + kinds);
-            scripted("the house was chosen by the script: nobody in at 13:00, alarm not armed (from the game's own hash), at least three searchable pieces");
+            scripted("the building was chosen by the script: nobody in at the time of day it was chosen (" + String.format(Locale.ROOT, "%02d:00", PopulationPlan.hourOf(server(() -> HouseholdService.dayTime(level())))) + "), alarm not armed (from the game's own hash), at least three searchable pieces, a lock plain picks can try");
         });
     }
 
