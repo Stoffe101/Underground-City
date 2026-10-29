@@ -364,6 +364,7 @@ Not built:
 
 * staff, advertising and supplier contracts for businesses;
 * tier 3 of a counter through a real client (tier 2 was);
+* a counter's customers on an upper floor, through the owner's buildings' entrances, or in premises over several chunks (business runs used the ground floor of Ironhaven's workshop);
 * city demand that differs by city beyond the shops' own lines.
 
 For the owner to decide:
