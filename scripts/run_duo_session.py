@@ -2,7 +2,8 @@
 """Two real clients on a dedicated server for the ninth pass (DuoSessionServer, DuoSessionClient) on a NEW furnished archipelago world.
 
 Phase 1: both clients join and answer their own first-login screen (one Valewood, one Blackwater); the server checks where each was really put, runs the operator commands from its console
-(``/uc admin``: credits through Q Shop, levels, points, a general skill, the audit, and the mistakes), checks that the player who is not an operator cannot reach them, then a two-player burglary
+(``/uc admin``: credits through Q Shop, levels, points, a general skill, the audit, and the mistakes), checks that the player who is not an operator cannot reach them, then the supply chain (DuoSupplyChain), then police case 8 (DuoPolice: the Farmer strikes a passer-by beside
+the Vintner; only the Farmer is arrested and fined, and the Vintner's marked goods, wallet and record are untouched), then a two-player burglary
 (only the permit holder may break things; nothing drops), then a save and a normal stop. Phase 2 starts the same world again: both rejoin as the same citizens, nothing moves them again, the
 commands' changes are still there, and the house is put back once its wait (shortened to one minute with ``-Duc.burglary.restoreMinutes=1``) is over. The report is build/duo-session/report.json;
 build/duo-session/logs has every process's log.

@@ -168,7 +168,7 @@ What the run does not show: a thief who moves (the script stands still), two off
 | Priors | An arrest records a conviction in the same journal settlement as its fine (kept two hours of play, at most six): each prior raises the fine by half (at most double, never over 1,000) and adds a point of heat; a person with priors or a warrant gets no warning. | `LawMath.escalatedFine`, `WorkOrderLedger.convict` |
 | Trace | `/uc_police trace on` (operators), the system property `uc.policeTrace`, or a scenario's `-PucPtPolicetrace=true` writes every step of every case to the log with `[UC-POLICE-TRACE]`: crime, refused (outside a city's law), undetected, witnessed and by whom, reported, dispatch, arrival and where from, route checks that fall short, pursuit, search, arrest and its fine, escape and why, warrant. The last 200 lines are kept in memory either way (`/uc_police trace`). Names, cities and short reasons only. | `PoliceTrace` |
 
-## Real-client acceptance (twelfth pass, police cases runs 1 to 8)
+## Real-client acceptance (twelfth pass, police cases runs 1 to 9)
 
 `-PucPlaytest=policecases` (`PoliceCasesScenario`) drives a real client in a new archipelago world with the furnished cities (`-PucPtCity`, `-PucPtSeed`). It covers the owner's ten acceptance cases where one client can. The scenario uses real input for:
 

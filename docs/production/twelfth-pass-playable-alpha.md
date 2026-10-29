@@ -75,7 +75,7 @@ The owner saw a house robbed and civilians punched with no police and no consequ
 
 The real-client acceptance runs and what each case did are in section 2a.
 
-### 2a. Real-client acceptance (police cases runs 1 to 7)
+### 2a. Real-client acceptance (police cases runs 1 to 9)
 
 `-PucPlaytest=policecases` (`PoliceCasesScenario`): a real client in a fresh archipelago world with the furnished cities. A new Farmer registers through the real screens, then:
 
@@ -89,7 +89,7 @@ The real-client acceptance runs and what each case did are in section 2a.
 
 The operator command gives 300 credits so fines can be paid. The clock is set by command. The scenario chooses the building from the game's own data (nobody in, alarm not armed, a lock plain picks can try) and travels between cities by teleport. Each of these is logged as `SCRIPTED`.
 
-Seven runs in three cities on two seeds (the case-by-case table and the trace are in [police-response.md](../technical/police-response.md#real-client-acceptance-twelfth-pass-police-cases-runs-1-to-8)):
+Nine runs in three cities on two seeds, two of them with the owner's buildings (the case-by-case table and the trace are in [police-response.md](../technical/police-response.md#real-client-acceptance-twelfth-pass-police-cases-runs-1-to-9)):
 
 | Run | City, seed | Outcome |
 | --- | --- | --- |
@@ -111,14 +111,6 @@ Run 7, in order:
 3. **The chase:** a second blow, then a sprint away. The officer saw the player at 4 blocks and challenged them, then lost sight and searched where they were last seen. The player was out of sight 30 s and 107 blocks away: **an escape, with the warrant still standing.**
 4. **Save, quit, reopen:** the warrant still stood, nobody had been sent while the player was away, and the screen said "You are wanted".
 5. **The beat:** an officer on the beat recognised the wanted player at 18 blocks, walked to them and arrested them on the warrant (fine 120 by two priors, capped at the 90 left).
-
-**What the runs did not show:**
-
-* an unnoticed crime in this pass (both burglaries were seen; Thief run 12 of October 24 was unnoticed);
-* two real clients (GameTests only);
-* a shop robbed after closing, a window, an officer struck, hiding inside, leaving the city while wanted.
-
-A scripted thief mostly stands still to be arrested. The runs show that arrests happen and are settled correctly, not how often a real player is caught.
 
 **A design question for the owner:** at night, near Blackwater's middle, every occupied storefront has a resident in and every club needs a Pro Pick Set, so a new thief there has nothing to pick. Ironhaven's middle has no houses but plenty of workshops and storefronts with commercial locks.
 
@@ -144,6 +136,14 @@ Two fixes, each covered by a GameTest:
 * no beat officer came close enough to recognise the player in the time given.
 
 The run's two reported failures were the scenario's own checks, fixed after it: stolen bread was counted as honest bread, and marked goods from an unseen burglary were taken to mean the police were out.
+
+**What runs 1 to 9 did not show:**
+
+* the step round a bush itself (run 9's officers came from another street; a GameTest covers it);
+* two real clients (GameTests only);
+* a shop robbed after closing, a window, an officer struck, hiding inside, leaving the city while wanted.
+
+A scripted thief mostly stands still to be arrested. The runs show that arrests happen and are settled correctly, not how often a real player is caught.
 
 ## 3. Windows install, launch and multiplayer
 
