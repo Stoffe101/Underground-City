@@ -154,6 +154,9 @@ final class JourneyScenario {
     /** Moves the real pointer onto a button found by its label, waits a frame, and clicks it. A missing button is a failure; an inactive one is clicked anyway when {@code expectActive} is false. */
     static void click(String label, boolean expectActive) {
         final AbstractWidget[] found = new AbstractWidget[1];
+        // the screen may still wait for the server's answer to the last click (a new snapshot after Accept): up to three seconds for the button before it is missing (gunsmith run 9)
+        final int[] waited = {0};
+        Playtest.queue("wait for '" + label + "'", () -> waited[0] = 0, () -> widget(label) != null || ++waited[0] >= 60, 70);
         Playtest.queue("point at '" + label + "'", () -> {
             found[0] = widget(label);
             if (found[0] == null) { Playtest.fail("no '" + label + "' on " + (mc().screen == null ? "no screen" : mc().screen.getClass().getSimpleName())); return; }
