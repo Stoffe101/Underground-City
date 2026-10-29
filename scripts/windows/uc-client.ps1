@@ -62,4 +62,4 @@ if ($Pregen) { $arguments += '-PucPregen=islands' }
 if ($privateDir -ne '') { $arguments += "-PucPrivateContent=$privateDir" }
 Write-Host "Starting: gradlew.bat $($arguments -join ' ')"
 Push-Location $script:UcRoot
-try { & $gradle @arguments } finally { Pop-Location }
+try { Invoke-UcNative { & $gradle @arguments } } finally { Pop-Location }

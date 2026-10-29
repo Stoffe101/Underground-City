@@ -220,7 +220,7 @@ Things to write down: was rent a pleasant pressure or an annoyance; was the mote
 Start (Windows spelling; the extra sets are the furnished cities with their Modern Life furniture, and the world with no natural ore):
 
 ```text
-.\gradlew.bat runClient -PucWorldLayout=archipelago -PucPack=world,furnished,scarcity -PucDevWorldName=UC-Living-Test
+.\gradlew.bat runClient -PucWorldLayout=archipelago "-PucPack=world,furnished,scarcity" -PucDevWorldName=UC-Living-Test
 ```
 
 (For two players, start the dedicated server with the same `-PucPack` and the same world, as in section 3, and both clients with the same sets.)
@@ -253,7 +253,7 @@ Things to write down: was the lock screen readable; did a quiet pick feel like a
 Start exactly as in 6e (a new world with the furnished cities and no natural ore):
 
 ```text
-.\gradlew.bat runClient -PucWorldLayout=archipelago -PucPack=world,furnished,scarcity -PucDevWorldName=UC-First-Hour
+.\gradlew.bat runClient -PucWorldLayout=archipelago "-PucPack=world,furnished,scarcity" -PucDevWorldName=UC-First-Hour
 ```
 
 | # | Do this | You should see |

@@ -115,10 +115,16 @@ final class PoliceScenario {
     }
 
     /** Puts the player beside the person (scripted), turns to them and strikes them with a real left click when the crosshair is on them. */
-    static void strike(String label, boolean wantWitness, int tries) {
+    static void strike(String label, boolean wantWitness, int tries) { strike(label, wantWitness, tries, () -> true); }
+
+    /** The same, every step skipped while {@code when} says no (a retry that is not needed). */
+    static void strike(String label, boolean wantWitness, int tries, java.util.function.BooleanSupplier when) {
+        final boolean[] on = {true};
+        Playtest.queue(label + ": needed?", () -> on[0] = when.getAsBoolean());
         final int[] t = {0};
         final boolean[] found = {false};
-        Playtest.queue(label + ": find a person " + (wantWitness ? "with a passer-by in sight" : "with nobody else about"), () -> { t[0] = 0; found[0] = false; F.victim = null; }, () -> {
+        Playtest.queue(label + ": find a person " + (wantWitness ? "with a passer-by in sight" : "with nobody else about"), () -> { t[0] = 0; found[0] = false; if (on[0]) F.victim = null; }, () -> {
+            if (!on[0]) return true;
             if (t[0]++ % 40 != 0) return false;
             Object[] pick = server(() -> victimWithWitness(wantWitness));
             if (pick == null) return t[0] > 40 * tries;
@@ -135,8 +141,8 @@ final class PoliceScenario {
         }, 40 * tries + 40);
         Playtest.wait("settle", 6);
         final int[] k = {0};
-        Playtest.queue(label + ": an empty hand, look at them and strike with the left button", () -> { k[0] = 0; F.heardMark = Playtest.heardCount(); Playtest.focusWindow(); Playtest.tap("8"); }, () -> {
-            if (F.victim == null) return true;
+        Playtest.queue(label + ": an empty hand, look at them and strike with the left button", () -> { k[0] = 0; if (!on[0]) return; F.heardMark = Playtest.heardCount(); Playtest.focusWindow(); Playtest.tap("8"); }, () -> {
+            if (!on[0] || F.victim == null) return true;
             var target = mc().level.getEntities(mc().player, mc().player.getBoundingBox().inflate(6), e -> e.getUUID().equals(F.victim));
             if (target.isEmpty()) { if (++k[0] > 100) Playtest.log("POLICE " + label + ": the person is not in reach any more"); return k[0] > 100; }
             look(target.get(0).getEyePosition().subtract(0, 0.5, 0));

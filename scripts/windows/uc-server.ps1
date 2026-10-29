@@ -86,4 +86,4 @@ if ($Pregen) { $arguments += '-PucPregen=islands'; Write-Host 'The islands are g
 if ($AcceptEula) { $arguments += '-PucAcceptEula=true'; Write-Host 'You accept the Minecraft EULA (https://aka.ms/MinecraftEULA) by passing -AcceptEula.' }
 Write-Host "Starting: gradlew.bat $($arguments -join ' ')"
 Push-Location $script:UcRoot
-try { & $gradle @arguments } finally { Pop-Location }
+try { Invoke-UcNative { & $gradle @arguments } } finally { Pop-Location }

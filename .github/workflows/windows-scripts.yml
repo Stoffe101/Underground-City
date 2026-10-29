@@ -69,4 +69,4 @@ jobs:
         shell: powershell
         run: .\scripts\windows\uc-doctor.ps1 -NoBranchCheck
       - name: Build Core and fetch the default pack's mods from their authors' pages, each checked against its pinned SHA-512
-        run: .\gradlew.bat -p rpg-core compileJava verifyDevPack -PucPack=world,firearms,vehicles,boats --no-daemon --stacktrace
+        run: .\gradlew.bat -p rpg-core compileJava verifyDevPack "-PucPack=world,firearms,vehicles,boats" --no-daemon --stacktrace

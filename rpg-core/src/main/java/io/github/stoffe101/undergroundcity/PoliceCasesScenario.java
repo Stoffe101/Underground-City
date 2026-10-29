@@ -46,7 +46,7 @@ final class PoliceCasesScenario {
 
     private static final class Facts {
         volatile double walletBefore;
-        volatile long arrestsBefore, escapesBefore, warrantArrestsBefore, traceMark, warningsBefore;
+        volatile long arrestsBefore, escapesBefore, warrantArrestsBefore, traceMark, warningsBefore, assaultsBefore;
         volatile int priorsBefore, stolenBefore, breadBefore;
         volatile boolean wantedAfterBurglary, seen, warrantBeforeQuit;
     }
@@ -81,15 +81,25 @@ final class PoliceCasesScenario {
         ThiefScenario.stopIfFailed("the street");
         Playtest.wait("people come out", 300);
 
-        witnessedArrest("A", "1-2-3 a witnessed blow", false);
-        ThiefScenario.stopIfFailed("the first arrest");
-        quietBurglary();
-        Playtest.queue("bread in the pockets (legal goods the arrest must leave)", () -> {
+        Playtest.queue("bread in the pockets (lawful goods an arrest must leave)", () -> {
             mc().getSingleplayerServer().execute(() -> me().getInventory().add(new ItemStack(Items.BREAD, 4)));
             scripted("four bread were put in the pockets: lawful goods an arrest must not take");
         });
         Playtest.wait("settle", 10);
-        witnessedArrest("B", "5 a second offence carrying marked goods", true);
+        before("A");
+        strikeUntilReported("A");
+        awaitArrest("A", "1-2-3 a witnessed blow");
+        ThiefScenario.stopIfFailed("the first arrest");
+        Playtest.queue("the clock: 03:00 (the streets empty)", () -> { Playtest.command("time set 21000"); scripted("the time was set to 03:00"); });
+        Playtest.wait("the street empties", 400);
+        quietBurglary();
+        // a burglary somebody noticed brings the police to the door: stand there and be arrested with the marked goods (case 5); one nobody noticed leaves the goods for the next arrest
+        awaitArrest("B", "5 an arrest after a noticed burglary");
+        Playtest.queue("the clock: 13:00 again", () -> { Playtest.command("time set 7000"); scripted("the time was set back to 13:00"); });
+        Playtest.wait("people come out again", 400);
+        before("B2");
+        strikeUntilReported("B2", () -> ThiefScenario.stolen()[0] > 0);
+        awaitArrest("B2", "5 a second offence carrying marked goods");
         chase();
         reopen();
         recognised();
@@ -126,8 +136,8 @@ final class PoliceCasesScenario {
 
     // ------------------------------------------------------------------------------------------------ cases 1, 2, 3 and 5: a witnessed blow, the arrest
 
-    /** A blow a passer-by sees; the player stands still; officers come and arrest them. Checks the fine (raised by priors) and, when {@code carrying}, that the marked goods go and the bread stays. */
-    private static void witnessedArrest(String label, String step, boolean carrying) {
+    /** The state before a case: wallet, priors, marked goods and bread carried, the counters. */
+    private static void before(String label) {
         Playtest.queue(label + ": before", () -> {
             markTrace();
             F.arrestsBefore = server(() -> PoliceResponse.arrests);
@@ -136,12 +146,37 @@ final class PoliceCasesScenario {
             F.stolenBefore = ThiefScenario.stolen()[0];
             F.breadBefore = bread();
             F.warningsBefore = server(() -> CrimeWatch.warnings);
+            F.assaultsBefore = server(() -> CrimeWatch.assaults);
             Playtest.log(String.format(Locale.ROOT, "CASES %s before: wallet %.0f, priors %d, carrying %d marked unit(s) and %d bread; %s", label, F.walletBefore, F.priorsBefore, F.stolenBefore, F.breadBefore, server(PoliceResponse::status)));
         });
-        PoliceScenario.strike(label + ": the blow", true, 30);
+    }
+
+    private static void strikeUntilReported(String label) { strikeUntilReported(label, () -> true); }
+
+    /**
+     * A blow a passer-by can see, tried up to three times until the server has counted it (run 1's third blow was aimed on the client while the person walked off behind a wall,
+     * and the server never had a blow to judge). Skipped altogether when {@code when} says no.
+     */
+    private static void strikeUntilReported(String label, java.util.function.BooleanSupplier when) {
+        final boolean[] go = {false};
+        Playtest.queue(label + ": strike?", () -> { go[0] = when.getAsBoolean(); if (!go[0]) Playtest.log("CASES " + label + ": skipped"); });
+        for (int attempt = 1; attempt <= 3; attempt++) {
+            final int n = attempt;
+            PoliceScenario.strike(label + ": the blow, try " + n, true, 30, () -> go[0] && server(() -> CrimeWatch.assaults) <= F.assaultsBefore);
+        }
+        Playtest.queue(label + ": the blow counted?", () -> {
+            if (!go[0]) return;
+            long counted = server(() -> CrimeWatch.assaults) - F.assaultsBefore;
+            Playtest.log("CASES " + label + ": blows the server counted " + counted);
+            if (counted <= 0) Playtest.fail(label + ": three blows never reached the server");
+        });
         shot(label + "-1-blow");
+    }
+
+    /** Stands still until officers arrive and arrest (or the response ends). Checks the fine (raised by priors) and that marked goods carried are taken and the bread stays. */
+    private static void awaitArrest(String label, String step) {
         final int[] t = {0};
-        Playtest.queue(label + ": stand still until the police arrive and arrest (or give up)", () -> t[0] = 0, () -> {
+        Playtest.queue(label + ": stand still until the police arrive and arrest (or nothing is out)", () -> t[0] = 0, () -> {
             t[0]++;
             if (t[0] % 400 == 0) Playtest.log("CASES " + label + " waiting " + t[0] / 20 + " s: " + server(PoliceResponse::status));
             return server(() -> PoliceResponse.arrests) > F.arrestsBefore || (!server(() -> PoliceResponse.wanted(me().getUUID())) && t[0] > 100);
@@ -150,24 +185,62 @@ final class PoliceCasesScenario {
         shot(label + "-2-arrest");
         Playtest.queue(label + ": the arrest", () -> {
             logTrace(label);
+            boolean arrested = server(() -> PoliceResponse.arrests) > F.arrestsBefore;
             double wallet = server(() -> QShopEconomy.balance(me()));
-            int base = CityLaws.INSTANCE.offence(CITY, CityLaws.ASSAULT).fine();
+            String offence = lastArrestOffence();
+            int base = offence == null ? 0 : CityLaws.INSTANCE.offence(CITY, offence).fine();
             int expected = (int) Math.min(F.walletBefore, LawMath.escalatedFine(base, F.priorsBefore));
             int stolenAfter = ThiefScenario.stolen()[0], breadAfter = bread();
-            boolean arrested = server(() -> PoliceResponse.arrests) > F.arrestsBefore;
-            Playtest.log(String.format(Locale.ROOT, "CASES %s arrest %s: wallet %.0f -> %.0f (assault %d, priors %d, expected %d); marked goods %d -> %d; bread %d -> %d; priors now %d",
-                label, arrested, F.walletBefore, wallet, base, F.priorsBefore, expected, F.stolenBefore, stolenAfter, F.breadBefore, breadAfter,
+            int seized = seizedAtLastArrest();
+            Playtest.log(String.format(Locale.ROOT, "CASES %s arrest %s for %s: wallet %.0f -> %.0f (fine %d, priors %d, expected %d); marked goods %d -> %d; bread %d -> %d; priors now %d",
+                label, arrested, offence, F.walletBefore, wallet, base, F.priorsBefore, expected, F.stolenBefore, stolenAfter, F.breadBefore, breadAfter,
                 server(() -> WorkOrderLedger.get(level().getServer()).priors(me().getUUID(), CITY))));
             if (!arrested && server(() -> CrimeWatch.warnings) > F.warningsBefore && F.priorsBefore == 0) {
                 pass("3 a first minor offence in front of an officer on the beat, with a clean record: a warning, no arrest (" + label + ")");
                 return;
             }
-            if (!arrested) { Playtest.fail(label + ": the citizen who stood still was not arrested: " + server(PoliceResponse::status)); return; }
+            if (!arrested) {
+                if (server(() -> CrimeWatch.assaults) <= F.assaultsBefore && F.stolenBefore == ThiefScenario.stolen()[0] && !label.equals("A")) { Playtest.log("CASES " + label + ": nothing was out for the player"); return; }
+                Playtest.fail(label + ": the citizen who stood still was not arrested: " + server(PoliceResponse::status));
+                return;
+            }
             if (Math.abs(F.walletBefore - wallet - expected) > 0.5) { Playtest.fail(label + ": the fine was " + (F.walletBefore - wallet) + ", not " + expected); return; }
-            if (carrying && (F.stolenBefore == 0 || stolenAfter != 0)) { Playtest.fail(label + ": the marked goods were not taken (" + F.stolenBefore + " -> " + stolenAfter + ")"); return; }
+            if ((F.stolenBefore > 0 || seized > 0) && stolenAfter != 0) { Playtest.fail(label + ": the marked goods were not all taken (" + F.stolenBefore + " -> " + stolenAfter + ")"); return; }
             if (breadAfter != F.breadBefore) { Playtest.fail(label + ": lawful goods were taken (bread " + F.breadBefore + " -> " + breadAfter + ")"); return; }
-            pass(step + ": arrested by officers who walked in, fined " + expected + (F.priorsBefore > 0 ? " (" + base + " raised by " + F.priorsBefore + " prior conviction)" : "")
-                + (carrying ? "; " + F.stolenBefore + " marked unit(s) taken, " + breadAfter + " bread kept" : ""));
+            pass(step + ": arrested for " + offence + " by officers who walked in, fined " + expected + (F.priorsBefore > 0 ? " (" + base + " raised by " + F.priorsBefore + " prior conviction(s))" : "")
+                + (seized > 0 ? "; " + seized + " stack(s) of marked goods taken, none left" : "") + ", " + breadAfter + " bread kept");
+        });
+    }
+
+    /** The stacks the latest arrest since the mark took, from its trace line, or 0. */
+    private static int seizedAtLastArrest() {
+        return server(() -> {
+            int found = 0;
+            for (String line : PoliceTrace.since(F.traceMark)) {
+                int at = line.indexOf(" stack(s) seized");
+                if (line.contains(" arrest: ") && at > 0) {
+                    int from = line.lastIndexOf(' ', at - 1);
+                    try { found = Integer.parseInt(line.substring(from + 1, at)); } catch (NumberFormatException ignored) { }
+                }
+            }
+            return found;
+        });
+    }
+
+    /** The offence of the player's latest arrest, from its trace line. */
+    private static String lastArrestOffence() {
+        return server(() -> {
+            for (String line : PoliceTrace.since(F.traceMark)) {
+                int at = line.indexOf(" arrest: ");
+                if (at < 0) continue;
+                int f = line.indexOf(" for ", at);
+                if (f < 0) continue;
+                String rest = line.substring(f + 5);
+                int end = rest.indexOf(' ');
+                String id = (end < 0 ? rest : rest.substring(0, end)).replace(":", "");
+                return id;
+            }
+            return null;
         });
     }
 
@@ -177,6 +250,7 @@ final class PoliceCasesScenario {
         ThiefScenario.chooseHouse();
         ThiefScenario.stopIfFailed("finding a house");
         ThiefScenario.prepareAtDoor();
+        before("B");   // a noticed burglary's arrest may come while the thief is still inside: the baseline is taken before the pick
         ThiefScenario.waitForClearStreet(CITY);
         // a careful thief also waits for the passers-by to go: nobody within 24 blocks who can see the door
         final int[] t = {0};
@@ -203,9 +277,8 @@ final class PoliceCasesScenario {
             if (!wanted && w == null) pass("7 a burglary nobody saw stayed undetected: no report, no dispatch, no warrant, with " + ThiefScenario.stolen()[0] + " marked unit(s) carried away");
             else Playtest.log("CASES the burglary was noticed (case 7 not shown in this run; see the trace above)");
         });
-        // whatever came of it, out to the street; a response already out is met standing still at the door
+        // whatever came of it, out to the street; a response already out is met standing still at the door (awaitArrest)
         ThiefScenario.walkOrTeleport("out of the house to the street", () -> ThiefScenario.door().stand(), 1.5, 900);
-        until("no response out for the citizen", () -> !server(() -> PoliceResponse.wanted(me().getUUID())), 20 * 300);
     }
 
     // ------------------------------------------------------------------------------------------------ cases 4 and 6: a chase
@@ -216,8 +289,8 @@ final class PoliceCasesScenario {
             F.escapesBefore = server(() -> PoliceResponse.escapes);
             F.arrestsBefore = server(() -> PoliceResponse.arrests);
         });
-        Playtest.wait("people about", 200);
-        PoliceScenario.strike("C: the third blow", true, 30);
+        before("C");
+        strikeUntilReported("C");
         untilSeen(300);
         Playtest.queue("C: seen?", () -> {
             F.seen = server(() -> { var d = dispatch(); return d != null && d.arrived && d.lastSeen != null; });

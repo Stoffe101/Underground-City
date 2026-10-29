@@ -23,8 +23,19 @@ function Get-UcGradle {
     return $wrapper
 }
 
+# Runs a native program (java, git, python, gradle) with errors not stopping the script. Windows PowerShell 5.1, the one Windows 11 ships with, turns every line such a
+# program writes to its error stream into a PowerShell error once that stream is redirected or captured, and with $ErrorActionPreference = 'Stop' the first one ends the script:
+# `java -version` (which prints its version there) then read as "Java was not found" (found on GitHub's Windows runner, twelfth pass). Check $LASTEXITCODE afterwards instead.
+function Invoke-UcNative([scriptblock] $Block) {
+    $previous = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try { & $Block } finally { $ErrorActionPreference = $previous }
+}
+
 function Test-UcJava {
-    try { $version = (& java -version 2>&1 | Select-Object -First 1) -join '' } catch { throw 'Java was not found. Install JDK 17 (Temurin 17) and put it on the PATH.' }
+    $java = Get-Command java -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($null -eq $java) { throw 'Java was not found. Install JDK 17 (Temurin 17) and put it on the PATH.' }
+    $version = (Invoke-UcNative { & $java.Source -version 2>&1 } | Select-Object -First 1 | ForEach-Object { "$_" }) -join ''
     if ($version -notmatch '"17\.') { Write-Warning "java -version says: $version. Minecraft 1.20.1 with Forge 47.4.10 needs JDK 17." }
 }
 
@@ -84,7 +95,7 @@ function Get-UcPython {
         $command = Get-Command $candidate[0] -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
         if ($null -eq $command) { continue }
         $rest = @($candidate | Select-Object -Skip 1)
-        try { $ok = (& $command.Source @rest -c 'import sys; print(sys.version_info >= (3, 10))' 2>$null) } catch { continue }
+        try { $ok = (Invoke-UcNative { & $command.Source @rest -c 'import sys; print(sys.version_info >= (3, 10))' 2>$null }) } catch { continue }
         if ("$ok".Trim() -eq 'True') { return ,(@($command.Source) + $rest) }
     }
     throw 'Python 3.10 or newer was not found. Install it from python.org (tick "Add python.exe to PATH"); the private content check and staging need it.'
@@ -93,7 +104,7 @@ function Get-UcPython {
 function Invoke-UcPython([string[]] $Arguments) {
     $python = Get-UcPython
     $rest = @($python | Select-Object -Skip 1)
-    & $python[0] @rest @Arguments
+    Invoke-UcNative { & $python[0] @rest @Arguments }
 }
 
 function Get-UcPrivateTool { return Join-Path (Join-Path $script:UcRoot 'scripts') 'private_c70.py' }

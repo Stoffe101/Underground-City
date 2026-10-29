@@ -76,7 +76,7 @@ class _Scripts:
     """A copy of the scripts in a scratch repository, with stand-ins for gradle and Java on the PATH and a scratch home folder."""
 
     def setUp(self):
-        self.dir = Path(tempfile.mkdtemp())
+        self.dir = Path(os.path.realpath(tempfile.mkdtemp()))   # long names on Windows: the scripts resolve RUNNER~1 to runneradmin
         self.repo = self.dir / "repo"
         shutil.copytree(WINDOWS, self.repo / "scripts" / "windows")
         for tool in ("private_c70.py", "private_pack_tool.py"):
