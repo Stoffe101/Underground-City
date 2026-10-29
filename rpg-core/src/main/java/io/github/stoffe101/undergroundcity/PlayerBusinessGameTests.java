@@ -52,6 +52,51 @@ public final class PlayerBusinessGameTests {
         return at;
     }
 
+    /** D-212: a counter's tier is fitted from real parts at the career level that allows it, a lower price sells faster but never above the city's, and the parts are used once. */
+    @GameTest(template = "empty", timeoutTicks = 300, batch = "uc_player_business")
+    public static void aCounterGrowsByTierAndSellsFasterBelowTheCitysPrice(GameTestHelper helper) throws Exception {
+        if (!QShopEconomy.available()) { helper.succeed(); return; }
+        try (PropertyGameTests.Fix f = new PropertyGameTests.Fix(helper, Map.of("t:biz", BusinessGameTests.tradeTerms("t:biz"), "t:bizflat", PropertyGameTests.flatTerms("t:bizflat")));
+             BusinessGameTests.Orders o = new BusinessGameTests.Orders(helper, "ironhaven")) {
+            ServerLevel level = helper.getLevel();
+            ServerPlayer owner = f.person(helper, "uc_pb_grow", "vintner", 0);
+            premises(f, owner);
+            String id = PlayerBusiness.placed(owner, o.ledger, counter(f, level, 0, 2, 2));
+            check(id != null, "no business opened");
+            var b = o.ledger.business(id);
+            check(PlayerBusiness.tier(b) == 1 && PlayerBusiness.capacity(b) == 64 && PlayerBusiness.salesPerHour(b) == PlayerBusiness.SALES_PER_HOUR, "a new counter is not tier 1 at the base rate");
+            // too young a career, then the parts missing, then fitted and the parts used once
+            check(PlayerBusiness.upgrade(owner, o.ledger, id).contains("career level 14"), "tier 2 was fitted below its level");
+            CitizenState.get(owner.server).restoreCareerXp(owner.getUUID(), ProgressionRules.xpAtLevel(14));
+            check(PlayerBusiness.upgrade(owner, o.ledger, id).contains("do not carry"), "tier 2 was fitted without its parts");
+            owner.getInventory().add(new ItemStack(UndergroundCity.item("machined_parts"), 5));
+            owner.getInventory().add(new ItemStack(UndergroundCity.item("refined_alloy"), 2));
+            check(PlayerBusiness.upgrade(owner, o.ledger, id).startsWith("Fitted tier 2"), "tier 2 was not fitted");
+            check(owner.getInventory().countItem(UndergroundCity.item("machined_parts")) == 1 && owner.getInventory().countItem(UndergroundCity.item("refined_alloy")) == 0, "the parts were not used, or used twice");
+            b = o.ledger.business(id);
+            check(PlayerBusiness.tier(b) == 2 && PlayerBusiness.capacity(b) == 128 && PlayerBusiness.salesPerHour(b) == PlayerBusiness.SALES_PER_HOUR + 1, "tier 2 did not add room and a sale an hour");
+            check(PlayerBusiness.upgrade(owner, o.ledger, id).contains("career level 20"), "tier 3 was fitted below its level");
+            // a price above the city's, or off the steps, is refused; ten points below sells one more an hour, at the lower price
+            check(PlayerBusiness.setPrice(owner, o.ledger, id, 105).startsWith("Prices are set"), "a price above the city's was taken");
+            check(PlayerBusiness.setPrice(owner, o.ledger, id, 87).startsWith("Prices are set"), "a price off the steps was taken");
+            check(PlayerBusiness.setPrice(owner, o.ledger, id, 90).startsWith("Prices at 90%"), "a price ten points below was refused");
+            b = o.ledger.business(id);
+            String key = PlayerBusiness.key(wine(1));
+            check(PlayerBusiness.salesPerHour(b) == PlayerBusiness.SALES_PER_HOUR + 2, "ten points below did not add a sale an hour: " + PlayerBusiness.salesPerHour(b));
+            check(PlayerBusiness.price(key, b) == Math.round(PlayerBusiness.price(key) * 0.9) && PlayerBusiness.price(key, b) < PlayerBusiness.price(key), "the counter does not charge its lower price");
+            owner.getInventory().add(wine(20));
+            PlayerBusiness.stock(owner, o.ledger, id, key, 20);
+            long gross = PlayerBusiness.price(key, o.ledger.business(id));
+            check(PlayerBusiness.sell(o.ledger, id, 0) && o.ledger.business(id).getLong("gross") == gross, "a sale did not take the counter's own price");
+            for (int i = 1; i < PlayerBusiness.SALES_PER_HOUR + 2; i++) check(PlayerBusiness.sell(o.ledger, id, 0), "sale " + (i + 1) + " was refused");
+            check(!PlayerBusiness.sell(o.ledger, id, 0), "the counter sold more than its hour allows");
+            // a restart keeps the tier and the price
+            o.restart();
+            check(PlayerBusiness.tier(o.ledger.business(id)) == 2 && PlayerBusiness.pricePct(o.ledger.business(id)) == 90, "a restart lost the tier or the price");
+        }
+        helper.succeed();
+    }
+
     @GameTest(template = "empty", timeoutTicks = 300, batch = "uc_player_business")
     public static void aCounterSellsWhatItsHolderStockedAtTheCitysPriceAndPaysTheTillOnceAfterTax(GameTestHelper helper) throws Exception {
         if (!QShopEconomy.available()) { helper.succeed(); return; }

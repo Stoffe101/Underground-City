@@ -90,7 +90,9 @@ final class PoliceCasesScenario {
         strikeUntilReported("A");
         awaitArrest("A", "1-2-3 a witnessed blow");
         ThiefScenario.stopIfFailed("the first arrest");
-        Playtest.queue("the clock: 03:00 (the streets empty)", () -> { Playtest.command("time set 21000"); scripted("the time was set to 03:00"); });
+        // Blackwater's clubs keep their staff until three (D-185): its shops and clubs are empty by five
+        final boolean late = CITY.equals("blackwater");
+        Playtest.queue("the clock: " + (late ? "05:00" : "03:00") + " (the streets empty)", () -> { Playtest.command(late ? "time set 23000" : "time set 21000"); scripted("the time was set to " + (late ? "05:00" : "03:00")); });
         Playtest.wait("the street empties", 400);
         quietBurglary();
         // a burglary somebody noticed brings the police to the door: stand there and be arrested with the marked goods (case 5); one nobody noticed leaves the goods for the next arrest
@@ -247,6 +249,11 @@ final class PoliceCasesScenario {
     // ------------------------------------------------------------------------------------------------ case 7: a burglary nobody sees
 
     private static void quietBurglary() {
+        // the city's own homes and shops: Valewood and Ironhaven have houses; Blackwater's middle is towers, offices, clubs and storefronts, and a storefront at night is a shop after closing
+        Playtest.queue("what to burgle in " + CITY, () -> {
+            ThiefScenario.targets = CITY.equals("blackwater") ? java.util.Set.of("storefront", "club") : java.util.Set.of("house");
+            Playtest.log("CASES burglary targets in " + CITY + ": " + ThiefScenario.targets);
+        });
         ThiefScenario.chooseHouse();
         ThiefScenario.stopIfFailed("finding a house");
         ThiefScenario.prepareAtDoor();

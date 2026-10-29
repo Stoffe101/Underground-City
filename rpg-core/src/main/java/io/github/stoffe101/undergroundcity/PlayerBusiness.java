@@ -54,6 +54,32 @@ public final class PlayerBusiness {
     /** Street people come from this far to an open counter. */
     static final int REACH = 40;
 
+    // ------------------------------------------------------------------------------------------------ the counter's growth (twelfth pass, D-212)
+
+    /**
+     * A counter's tier (1 to 3): tier 2 (career level 14) more room and one more sale an hour, tier 3 (level 20) more room again, fitted from parts bought at the exchanges. A counter's best hour
+     * at every tier stays under the best legal hour at the level it opens (economy_model.py): a business adds to a trade, it does not replace one.
+     */
+    static final int[] TIER_LEVEL = {1, 14, 20}, TIER_CAPACITY = {64, 128, 192}, TIER_SALES = {0, 1, 1};
+    /** What fitting each tier uses up: tier 2 Ironhaven's machined parts and alloy; tier 3 Blackwater's circuits and optics as well. */
+    static final List<Map<String, Integer>> TIER_PARTS = List.of(Map.of(),
+        Map.of("machined_parts", 4, "refined_alloy", 2),
+        Map.of("machined_parts", 4, "control_circuits", 2, "optical_components", 2));
+    /** The owner may sell below the city's price to sell faster (85 to 100 percent, in fives; ten points below brings one more sale an hour), never above it: a counter that
+     * charged more than the shops would turn a discount bought at a shop into credits (economy_model.py checks the loop). */
+    static final int MIN_PRICE_PCT = 85;
+    /** Regulars: the lifetime sales at which one more customer an hour comes back. */
+    static final int[] REGULARS = {200};
+
+    static int tier(CompoundTag b) { return Math.max(1, Math.min(3, b.contains("tier") ? b.getInt("tier") : 1)); }
+    static int capacity(CompoundTag b) { return TIER_CAPACITY[tier(b) - 1]; }
+    static int pricePct(CompoundTag b) { return b.contains("price_pct") ? Math.max(MIN_PRICE_PCT, Math.min(100, b.getInt("price_pct"))) : 100; }
+    static int regulars(CompoundTag b) { int n = 0; for (int at : REGULARS) if (b.getInt("sold_total") >= at) n++; return n; }
+    /** At most this many sales an hour of active play: the tier's, one more at ten points below the city's price, and the regulars'. */
+    static int salesPerHour(CompoundTag b) { return SALES_PER_HOUR + TIER_SALES[tier(b) - 1] + (100 - pricePct(b)) / 10 + regulars(b); }
+    /** What a line sells for at this counter: the city's price, less the owner's reduction. */
+    static long price(String key, CompoundTag b) { long base = price(key); return base < 1 ? base : Math.max(1, Math.round(base * pricePct(b) / 100.0)); }
+
     private PlayerBusiness() {}
 
     // ------------------------------------------------------------------------------------------------ what a counter sells and at what price
@@ -231,8 +257,9 @@ public final class PlayerBusiness {
 
     /** Puts up to {@code count} of the line the player holds onto the counter (prepared settlement); returns how many. */
     static int stock(ServerPlayer player, WorkOrderLedger orders, String id, String key, int count) {
-        int room = CAPACITY - orders.business(id).getCompound("stock").getAllKeys().stream().mapToInt(k -> orders.business(id).getCompound("stock").getInt(k)).sum();
-        if (room <= 0) throw new IllegalStateException("The counter is full (" + CAPACITY + " goods).");
+        int capacity = capacity(orders.business(id));
+        int room = capacity - orders.business(id).getCompound("stock").getAllKeys().stream().mapToInt(k -> orders.business(id).getCompound("stock").getInt(k)).sum();
+        if (room <= 0) throw new IllegalStateException("The counter is full (" + capacity + " goods).");
         Inventory after = new Inventory(player);
         after.load(player.getInventory().save(new ListTag()));
         int moved = 0;
@@ -245,7 +272,7 @@ public final class PlayerBusiness {
         }
         if (moved == 0) return 0;
         int xp = CitizenState.get(player.server).find(player.getUUID()).map(c -> c.careerXp()).orElse(0);
-        orders.prepareBusinessStock(player.getUUID(), id, Map.of(key, moved), CAPACITY, after.save(new ListTag()), QShopEconomy.balance(player), xp);
+        orders.prepareBusinessStock(player.getUUID(), id, Map.of(key, moved), capacity, after.save(new ListTag()), QShopEconomy.balance(player), xp);
         WorkOrderService.recover(player, orders);
         return moved;
     }
@@ -274,7 +301,7 @@ public final class PlayerBusiness {
         }
         if (moved == 0) return 0;
         int xp = CitizenState.get(player.server).find(player.getUUID()).map(c -> c.careerXp()).orElse(0);
-        orders.prepareBusinessStock(player.getUUID(), id, change, CAPACITY, after.save(new ListTag()), QShopEconomy.balance(player), xp);
+        orders.prepareBusinessStock(player.getUUID(), id, change, capacity(orders.business(id)), after.save(new ListTag()), QShopEconomy.balance(player), xp);
         WorkOrderService.recover(player, orders);
         return moved;
     }
@@ -300,6 +327,9 @@ public final class PlayerBusiness {
         List<String> out = new ArrayList<>();
         out.add((b.getString("title").isEmpty() ? "Your business" : b.getString("title")) + (b.getBoolean("open") ? " (open)" : " (closed)") + ": since the takings were last collected, "
             + b.getInt("sold") + " sold for " + b.getLong("gross") + ", city sales tax " + b.getLong("tax") + ", in the till " + b.getLong("takings") + ".");
+        out.add("Counter tier " + tier(b) + " (room for " + capacity(b) + "), prices at " + pricePct(b) + "% of the city's, at most " + salesPerHour(b) + " sales an hour"
+            + (regulars(b) > 0 ? " (" + regulars(b) + " regular" + (regulars(b) == 1 ? "" : "s") + " among them)" : "") + "; " + b.getInt("sold_total") + " sold in all."
+            + (tier(b) < 3 ? " Tier " + (tier(b) + 1) + " at career level " + TIER_LEVEL[tier(b)] + ": " + partsText(TIER_PARTS.get(tier(b))) + " (/uc business upgrade)." : ""));
         CrewLedger crews = CrewService.ledger(level.getServer());
         CrewLedger.Residence home = crews == null ? null : crews.residence(id);
         if (home != null && home.charge > 0)
@@ -308,11 +338,57 @@ public final class PlayerBusiness {
         if (stock.isEmpty()) out.add("The counter is empty.");
         else {
             List<String> lines = new ArrayList<>();
-            for (String key : stock.getAllKeys()) lines.add(stock.getInt(key) + " x " + stackOf(key, 1).getHoverName().getString() + " at " + price(key));
+            for (String key : stock.getAllKeys()) lines.add(stock.getInt(key) + " x " + stackOf(key, 1).getHoverName().getString() + " at " + price(key, b));
             out.add("On the counter: " + String.join(", ", lines) + ".");
         }
         if (b.getBoolean("open") && !open(level, b)) out.add(whyShut(level, b));
         return out;
+    }
+
+    static String partsText(Map<String, Integer> parts) {
+        List<String> out = new ArrayList<>();
+        for (var e : new java.util.TreeMap<>(parts).entrySet()) out.add(e.getValue() + " x " + new ItemStack(UndergroundCity.item(e.getKey())).getHoverName().getString());
+        return String.join(", ", out);
+    }
+
+    /**
+     * Fits the next tier to the counter from parts the owner carries (the workshop stations' rule: real parts, used up, a level that allows it). The tier is written to the journal first
+     * and the parts taken after, so a crash between the two leaves the owner the parts and the tier, never neither.
+     */
+    static String upgrade(ServerPlayer player, WorkOrderLedger orders, String id) {
+        CompoundTag b = orders.business(id);
+        if (!mayRun(player.serverLevel(), b, player.getUUID())) return "This counter is somebody else's business.";
+        int next = tier(b) + 1;
+        if (next > 3) return "The counter is at its top tier already.";
+        int level = CitizenState.get(player.server).find(player.getUUID()).map(CitizenState.Citizen::careerLevel).orElse(0);
+        if (level < TIER_LEVEL[next - 1]) return "Tier " + next + " needs career level " + TIER_LEVEL[next - 1] + " (you are " + level + ").";
+        Map<String, Integer> parts = TIER_PARTS.get(next - 1);
+        for (var e : parts.entrySet()) if (player.getInventory().countItem(UndergroundCity.item(e.getKey())) < e.getValue()) return "Tier " + next + " is fitted from " + partsText(parts) + ": you do not carry them all.";
+        b.putInt("tier", next);
+        orders.putBusiness(id, b);
+        orders.persist();
+        for (var e : parts.entrySet()) {
+            int left = e.getValue();
+            for (ItemStack s : player.getInventory().items) {
+                if (left <= 0) break;
+                if (!s.is(UndergroundCity.item(e.getKey()))) continue;
+                int take = Math.min(left, s.getCount());
+                s.shrink(take);
+                left -= take;
+            }
+        }
+        return "Fitted tier " + next + ": room for " + capacity(b) + " goods and " + salesPerHour(b) + " sales an hour.";
+    }
+
+    /** Sets the counter's prices to {@code pct} percent of the city's (85 to 100, in fives). */
+    static String setPrice(ServerPlayer player, WorkOrderLedger orders, String id, int pct) {
+        CompoundTag b = orders.business(id);
+        if (!mayRun(player.serverLevel(), b, player.getUUID())) return "This counter is somebody else's business.";
+        if (pct < MIN_PRICE_PCT || pct > 100 || pct % 5 != 0) return "Prices are set from " + MIN_PRICE_PCT + " to 100 percent of the city's, in fives.";
+        b.putInt("price_pct", pct);
+        orders.putBusiness(id, b);
+        orders.persist();
+        return "Prices at " + pct + "% of the city's: at most " + salesPerHour(b) + " sales an hour.";
     }
 
     // ------------------------------------------------------------------------------------------------ the city's customers
@@ -330,7 +406,7 @@ public final class PlayerBusiness {
             CompoundTag b = orders.business(id);
             BlockPos counter = BlockPos.of(b.getLong("pos"));
             double d = counter.distSqr(from);
-            if (d >= bestDistance || b.getInt("window_sales") >= SALES_PER_HOUR && orders.clock() - b.getLong("window_start") < 72_000 || !open(level, b)) continue;
+            if (d >= bestDistance || b.getInt("window_sales") >= salesPerHour(b) && orders.clock() - b.getLong("window_start") < 72_000 || !open(level, b)) continue;
             best = new Target(id, counter, front(level, counter));
             bestDistance = d;
         }
@@ -358,7 +434,7 @@ public final class PlayerBusiness {
         if (!open(level, b)) return "shut: " + whyShut(level, b);
         double d = Math.sqrt(BlockPos.of(b.getLong("pos")).distSqr(at));
         if (d > 3.5) return "too far from the counter (" + Math.round(d * 10) / 10.0 + " blocks)";
-        if (b.getInt("window_sales") >= SALES_PER_HOUR && orders.clock() - b.getLong("window_start") < 72_000) return "the hour's sales are made";
+        if (b.getInt("window_sales") >= salesPerHour(b) && orders.clock() - b.getLong("window_start") < 72_000) return "the hour's sales are made";
         return "the sale was refused";
     }
 
@@ -388,9 +464,10 @@ public final class PlayerBusiness {
 
     /** Sells one unit of the line {@code key} at its price less tax. */
     static boolean sellKey(WorkOrderLedger orders, String id, String key) {
-        long gross = price(key);
+        CompoundTag b = orders.business(id);
+        long gross = price(key, b);
         if (gross < 1) return false;
-        boolean sold = orders.businessSale(id, key, gross, tax(gross), SALES_PER_HOUR);
+        boolean sold = orders.businessSale(id, key, gross, tax(gross), salesPerHour(b));
         if (sold) customerSales++;
         return sold;
     }
@@ -424,6 +501,25 @@ public final class PlayerBusiness {
                 ctx.getSource().sendSuccess(() -> Component.literal(total > 0 ? "Collected " + total + " credits in all." : "No takings to collect."), false);
                 return (int) Math.min(Integer.MAX_VALUE, paid);
             }))
+            .then(Commands.literal("upgrade").executes(ctx -> {
+                ServerPlayer player = ctx.getSource().getPlayerOrException();
+                WorkOrderLedger orders = WorkOrderLedger.get(player.server);
+                String said = "You run no business.";
+                for (String id : orders.businesses()) if (mayRun(player.serverLevel(), orders.business(id), player.getUUID())) { said = upgrade(player, orders, id); break; }
+                String text = said;
+                ctx.getSource().sendSuccess(() -> Component.literal(text), false);
+                return 1;
+            }))
+            .then(Commands.literal("price").then(Commands.argument("percent", com.mojang.brigadier.arguments.IntegerArgumentType.integer(MIN_PRICE_PCT, 100)).executes(ctx -> {
+                ServerPlayer player = ctx.getSource().getPlayerOrException();
+                WorkOrderLedger orders = WorkOrderLedger.get(player.server);
+                int pct = com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "percent");
+                String said = "You run no business.";
+                for (String id : orders.businesses()) if (mayRun(player.serverLevel(), orders.business(id), player.getUUID())) said = setPrice(player, orders, id, pct);
+                String text = said;
+                ctx.getSource().sendSuccess(() -> Component.literal(text), false);
+                return 1;
+            })))
             .then(Commands.literal("withdraw").executes(ctx -> {
                 ServerPlayer player = ctx.getSource().getPlayerOrException();
                 WorkOrderLedger orders = WorkOrderLedger.get(player.server);

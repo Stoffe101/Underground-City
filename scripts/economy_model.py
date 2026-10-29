@@ -687,6 +687,9 @@ def shop_sell_vs_orders(model: Model) -> list[str]:
 BUSINESS_TAX = 0.12                # PlayerBusiness.TAX
 BUSINESS_MAX_PRICE = 60            # PlayerBusiness.CUSTOMER_MAX_PRICE
 BUSINESS_SALES_PER_HOUR = 8        # PlayerBusiness.SALES_PER_HOUR
+BUSINESS_TIERS = ((1, 0), (14, 1), (20, 1))   # PlayerBusiness.TIER_LEVEL and TIER_SALES (D-212)
+BUSINESS_MIN_PRICE_PCT = 85        # PlayerBusiness.MIN_PRICE_PCT: one more sale an hour for every ten points below the city's price
+BUSINESS_REGULARS = 1              # PlayerBusiness.REGULARS: at most one more an hour
 BUSINESS_MIN_TAX = 2               # PlayerBusiness.MIN_TAX
 CONTRACT_PAY = 1.5                 # ShortageContracts.PAY
 MAX_TOTAL_DISCOUNT = 0.10          # SkillNode.MAX_TOTAL_DISCOUNT
@@ -732,11 +735,19 @@ def business_problems(model: Model) -> list[str]:
         if not unit < line["unit_price"]:
             problems.append(f"shortage contract: {line['item']} pays {unit} a unit, not between the shop's {supply['pays']} and its price {line['unit_price']}")
     sellable = [p for p in lowest.values() if BUSINESS_MIN_TAX < p <= BUSINESS_MAX_PRICE]
-    hourly = BUSINESS_SALES_PER_HOUR * max(p - business_tax(p) for p in sellable) if sellable else 0
-    best_legal = max(model.income(c, 12, ALL_MODS)["net"] for c in CAREERS)
     limit = model.a["targets"]["business_hourly_ceiling_vs_best_legal_max"]
-    if hourly > limit * best_legal:
-        problems.append(f"business: a counter's best hour takes {hourly} after tax, over {limit:.0%} of the best legal hour at level 12 ({best_legal:.0f})")
+    # every tier at its best: full price, or the lowest price with its extra sales, and every regular; against the best legal hour at the level the tier opens (premises are
+    # taken from level 12 in the model, so never earlier than that)
+    for tier, (level, extra) in enumerate(BUSINESS_TIERS, start=1):
+        best_hour = 0.0
+        for pct in range(BUSINESS_MIN_PRICE_PCT, 101, 5):
+            sales = BUSINESS_SALES_PER_HOUR + extra + (100 - pct) // 10 + BUSINESS_REGULARS
+            unit = max((max(1, java_round(p * pct / 100)) - business_tax(max(1, java_round(p * pct / 100))) for p in sellable), default=0)
+            best_hour = max(best_hour, sales * unit)
+        at = max(12, level)
+        best_legal = max(model.income(c, at, ALL_MODS)["net"] for c in CAREERS)
+        if best_hour > limit * best_legal:
+            problems.append(f"business: a tier {tier} counter's best hour takes {best_hour:.0f} after tax, over {limit:.0%} of the best legal hour at level {at} ({best_legal:.0f})")
     return problems
 
 
