@@ -449,6 +449,44 @@ Get the branch on both PCs: `.\scripts\windows\uc-update.ps1 -Branch feature/ten
 | 10 | Deliver it at a terminal in the shop's city within thirty minutes of play | paid once, half as much again a bottle as the shop pays; the shop's shelf fills and the keeper stops asking; delivered in another city it is refused |
 | 11 | Stop and restart the server with a contract open | the contract and its time left are kept |
 
+## 6m. Twelfth pass: what to do next, the police, a growing business and the cities (about 60 minutes, a NEW world)
+
+**Written for the October 29 twelfth pass (D-209 to D-214; [twelfth-pass report](twelfth-pass-playable-alpha.md)). GameTested, modelled and run through scripted real clients only; the current branch and its recent gameplay systems have not received human playtesting.**
+
+**Before you start, on both PCs** (PowerShell in the repository folder; `Set-ExecutionPolicy -Scope Process Bypass` if scripts are refused):
+
+```
+.\scripts\windows\uc-doctor.ps1
+.\scripts\windows\uc-update.ps1
+```
+
+The doctor must show no `FIX` line (Java 17, Git, Python, the branch, disk, memory, the port). Both PCs must print the same commit after the update.
+
+**Start** (host PC; a home network with people you trust only, never a port forward, because `-LanOfflineMode` turns authentication off):
+
+```
+.\scripts\windows\uc-server.ps1 -Sets furnished,scarcity -World UC-Twelfth-1 -LanOfflineMode -AcceptEula -Pregen
+.\scripts\windows\uc-client.ps1 -Name Alice -Sets furnished,scarcity -Join
+```
+
+The second player runs `uc-client.ps1 -Name Bob -Sets furnished,scarcity -Join` from their own checkout. The server and both clients must print the same pack fingerprint. Let the pregeneration finish (`/uc admin pregen status` in the server window) before walking far; playing while it runs is fine but slower.
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Register (each player a different career), finish the first-half-hour steps, then open a terminal's **Guide** page | two tabs: **Opportunities** (opened by itself once the first steps are done) and **First half hour**. Up to eight lines of what is worth doing now: an order you can deliver, the best open orders, a shortage, your trade's calls in this city, skill points, a home if you have none, the next order a skill would open (with a lock) and how the city thinks of you. Underground work appears only once you hold your trade's underground skill, drawn in its own colour with what can go wrong |
+| 2 | Click a line | the page it names opens (Work or Skills) |
+| 3 | In a city street by day, hit a passer-by once (left click) with people about | a witness calls the police; one or two officers **walk in** from a street nearby (they should not appear in front of you) and arrest you; the fine is the city's for assault (Blackwater 30, Valewood 40, Ironhaven 60), your honest goods are kept, and the chat gives the fine and your heat in the city |
+| 4 | Do it again in the same city | the fine is higher: each prior conviction adds half (at most double); there is no warning with a record |
+| 5 | Hit somebody, then run: sprint away round corners before an officer sees you | either an officer catches you, or the chase ends and you **escape**, but a witnessed crime leaves a **warrant** for 20 minutes of play |
+| 6 | With a warrant, quit, rejoin and walk near an officer on the beat | the warrant is still there; an officer who sees you stops the beat and comes for you ("wanted for ..."). The other player beside you is never arrested for it |
+| 7 | (Thief, Track B: `/uc_prepare thief @s 3`) pick a house's door at night with nobody in sight, search it, walk out | nothing happens if nobody saw it. If a resident, passer-by or alarm noticed, officers come to the door; an arrest takes the marked goods and fines you |
+| 8 | (Track B: `/uc_prepare level @s 14`, `/uc_prepare credits @s 3000`) rent trade premises, set down a Business Counter, then type `/uc business` | the statement shows **Counter tier 1**, its room (64), the price (100% of the city's) and the sales an hour (8) |
+| 9 | Carry 4 machined parts and 2 refined alloy (Ironhaven's exchange) and type `/uc business upgrade` | "Fitted tier 2: room for 128 goods and 9 sales an hour"; the parts are used once. Tier 3 needs level 20 and circuits and optics from Blackwater |
+| 10 | Type `/uc business price 90` | prices at 90% of the city's and one more sale an hour; `price 105` is refused (never above the city's price) |
+| 11 | (Technician, Track B: level 14 and Systems Integrator) open a terminal in **Blackwater** | *Security for a Blackwater office tower* for **Blackwater Tower Management**, delivered only in Blackwater; the Valewood Market Council still has its network upgrade |
+| 12 | Stop the server (`stop`), run `.\scripts\windows\uc-backup.ps1`, start again, play a minute, stop, then `.\scripts\windows\uc-restore.ps1 -List` and `-From <the backup>` | the world is back as it was at the backup; the folder as it was before the rollback is itself backed up first |
+| 13 | After the session: `python scripts\economy_report.py rpg-core\run-dev\UC-Twelfth-1 --out reports\economy.md` | a report of what you really earned and spent, per active hour, with players as pseudonyms (no names); send it with the logs (`uc-logs.ps1`) |
+
 ## 7. Logs, screenshots and bug reports
 
 * Server log: `rpg-core\run-dev\logs\latest.log` (authenticated pack: `build\server-pack\server\logs\latest.log`); crash reports: `rpg-core\run-dev\crash-reports\`.
