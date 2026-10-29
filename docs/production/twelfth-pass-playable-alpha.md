@@ -99,6 +99,7 @@ Seven runs in three cities on two seeds (the case-by-case table and the trace ar
 | 5 | Blackwater | the blow passed (fine 30; the officers arrived in view); the burglary chose a club, whose high-security lock a new thief's picks cannot try. The scenario now chooses a lock plain picks can try |
 | 6 | Ironhaven, 7741 | the blow passed (fine 60); no house near the middle |
 | **7** | **Ironhaven, 7741** | **every case passed** (8 of 8, 19 scripted shortcuts). See below |
+| 8, 9 | Valewood, 5908, the owner's buildings (private) | run 8 found the bush fault; run 9, with the fixes, passed every case it reached (see below) |
 
 Run 7, in order:
 
@@ -133,7 +134,16 @@ Two fixes, each covered by a GameTest:
 * An officer within arrest range now needs a clear line at the eyes, the chest or the knees, and steps round to a free cell beside the suspect when something is in between. A wall or a window still blocks all three.
 * The route check now compares the end of a path with the suspect, not its target. The target is the suspect's own block, so the check had counted every short route as reaching.
 
-*Run 9, the private rerun with both fixes, is queued; its result is reported here.*
+**Run 9, the private rerun with both fixes (same world settings and the same spot):**
+
+* the witnessed blow ended in an arrest; the officers came from another street this time, so the run does not show the step-round itself, which a GameTest covers;
+* **a burglary nobody saw stayed unnoticed** (case 7: no report, no dispatch, no warrant);
+* a second offence carrying the 7 stolen units ended in an arrest that took them all, fine 60 (40 raised by one prior);
+* a chase and an escape with the warrant standing; **a second unit was sent for the first time in a real run**, because the first officer's route fell short (the corrected route check);
+* the reopen kept the warrant;
+* no beat officer came close enough to recognise the player in the time given.
+
+The run's two reported failures were the scenario's own checks, fixed after it: stolen bread was counted as honest bread, and marked goods from an unseen burglary were taken to mean the police were out.
 
 ## 3. Windows install, launch and multiplayer
 
