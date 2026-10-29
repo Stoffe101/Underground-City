@@ -89,7 +89,7 @@ The real-client acceptance runs and what each case did are in section 2a.
 
 The operator command gives 300 credits so fines can be paid. The clock is set by command. The scenario chooses the building from the game's own data (nobody in, alarm not armed, a lock plain picks can try) and travels between cities by teleport. Each of these is logged as `SCRIPTED`.
 
-Nine runs in three cities on two seeds, two of them with the owner's buildings (the case-by-case table and the trace are in [police-response.md](../technical/police-response.md#real-client-acceptance-twelfth-pass-police-cases-runs-1-to-9)):
+Nine runs in three cities on two seeds, two of them with the owner's buildings (the case-by-case table and the trace are in [police-response.md](../technical/police-response.md#real-client-acceptance-twelfth-pass-police-cases-runs-1-to-9-duo-run-12)):
 
 | Run | City, seed | Outcome |
 | --- | --- | --- |
@@ -137,10 +137,19 @@ Two fixes, each covered by a GameTest:
 
 The run's two reported failures were the scenario's own checks, fixed after it: stolen bread was counted as honest bread, and marked goods from an unseen burglary were taken to mean the police were out.
 
-**What runs 1 to 9 did not show:**
+**Case 8 with two real clients (duo run 12).** This is the two-client session on a dedicated server (`scripts/run_duo_session.py`), where the server drives each action through its own path for what a client sends.
+
+* The Valewood Farmer struck a passer-by. The Blackwater Vintner, their Crew partner, stood two blocks away with two gold ingots marked stolen in their pockets (scripted).
+* The response was for the Farmer alone.
+* Nobody else saw the blow, so the person struck reported it: two officers came in 50 seconds and arrested the Farmer 5 seconds later (fine 40, a first prior).
+* The Vintner's wallet, record and gold were untouched.
+* After the server was stopped and started again, the Farmer's conviction and the Vintner's clean record were as before.
+* All 63 of the session's checks passed, including the supply chain, the Crew bank and the house put back after a burglary.
+
+**What runs 1 to 9 and duo run 12 did not show:**
 
 * the step round a bush itself (run 9's officers came from another street; a GameTest covers it);
-* two real clients (GameTests only);
+* two players each driving their own client through a crime (duo run 12 is driven by the server);
 * a shop robbed after closing, a window, an officer struck, hiding inside, leaving the city while wanted.
 
 A scripted thief mostly stands still to be arrested. The runs show that arrests happen and are settled correctly, not how often a real player is caught.
